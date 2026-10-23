@@ -3,7 +3,7 @@
 实现过程中和一开始设想不一样的地方：原来以为什么、实际是什么、怎么决定的、好处和代价。
 由 `docs/research/build.py` 从 `docs/research/entries.py` 生成，不要直接改这个文件。更新于 2026-10-23。
 
-共 33 条：已解决 16，进行中 7，推迟 5，待验证 5。
+共 43 条：已解决 23，进行中 12，推迟 5，待验证 3。
 
 ## 目录
 
@@ -30,6 +30,7 @@
   - [D3 每次合并 pnpm-lock.yaml 都冲突](#d3)（已解决）
   - [D4 检查规则比部分代码晚到](#d4)（已解决）
   - [D5 并行开发需要正式的仓库目录](#d5)（已解决）
+  - [D6 第 2 波又收到约 30 条接口意见](#d6)（进行中）
 - **E · 实现中的技术问题**：真正写代码、跑真实 agent 时撞到的
   - [E1 跨 contextBridge 的错误会丢掉 code](#e1)（已解决）
   - [E2 claude 在 tmux 里自己降到 256 色](#e2)（进行中）
@@ -40,12 +41,21 @@
   - [E7 SQLite 原生模块要按 Electron 重新编译](#e7)（推迟）
   - [E8 MVP 先只做 macOS](#e8)（已解决）
   - [E9 代码还没推到 GitHub](#e9)（推迟）
+  - [E10 claude 的 --settings 钩子和用户自己的钩子是合并的](#e10)（已解决）
+  - [E11 codex 的钩子能临时注入，但要处理“信任”](#e11)（已解决）
+  - [E12 拒绝批准、按 Esc 打断时 claude 不发任何钩子](#e12)（进行中）
+  - [E13 claude 的提问是从“权限请求”钩子来的](#e13)（已解决）
+  - [E14 codex 的会话 id 要等第一次输入之后才知道](#e14)（进行中）
+  - [E15 打包后嵌入的 localhost 页面算跨站，登录 cookie 存不进](#e15)（已解决）
+  - [E16 刚接上终端时要替 xterm 回答终端查询](#e16)（进行中）
+  - [E17 tmux 自带的活动提醒不能用](#e17)（进行中）
+  - [E18 codex 退出后还会留下常驻进程，并自己下载更新](#e18)（已解决）
+  - [E19 Claude Code 里配的 codex MCP 坏了，每个新 session 都提示重连](#e19)（已解决）
+  - [E20 主仓库搬家后，修 worktree 要把每个路径传给 git](#e20)（已解决）
 - **F · 还没验证的**：已经有对策，但要等对应的线用真东西试过才算数
-  - [F1 claude 的 --settings 钩子是合并还是替换用户自己的钩子](#f1)（待验证）
-  - [F2 localhost 页面嵌进 iframe 后登录态会不会丢](#f2)（待验证）
-  - [F3 claude 能不能把对话 fork 到另一个目录](#f3)（待验证）
-  - [F4 codex 的钩子能不能在启动时临时注入](#f4)（待验证）
-  - [F5 Approve all 发的“允许一次”按键对不对](#f5)（待验证）
+  - [F1 claude 能不能把对话 fork 到另一个目录](#f1)（待验证）
+  - [F2 Approve all 发的“允许一次”按键对不对](#f2)（待验证）
+  - [F3 经过 tmux 后的手感，要人在真界面上确认](#f3)（待验证）
 
 ## A · 产品形态
 
@@ -291,6 +301,18 @@
 - **好处**：每条线一个分支，互不干扰，能逐个检查、合并。
 - **代价**：代码还没推到 GitHub，CI 没在云端跑过（见 E7）。
 
+<a id="d6"></a>
+
+### D6 第 2 波又收到约 30 条接口意见
+
+状态：进行中 · 出处：提交 a913dcf、1aa89fe
+
+- **原来以为**：0.1.1 和 0.1.2 之后接口够用了。
+- **实际情况**：4 条线各自发现了不够用的地方：白板只能按 type 写特例、白板没法给窗口发命令、复用窗口重启后失效、拿不到主目录、远端分支、接回已有 worktree、启动前不知道终端 id、codex 会话 id、拒绝批准没有钩子、网页窗口的标题栏等。
+- **决策**：出 contracts 0.1.3，全部只加不改；能直接接上的（命令通道、repairWorktrees、stash 来源、假实现）当场改完，其余在各包的 CONTRACT_NOTES.md 里标为“待某条线跟进”。
+- **好处**：线 1 一开始就用 0.1.3，不用再改一轮。
+- **代价**：有一批新字段已经在接口里、但实现还没用上，要各条线再跟进一次。
+
 ## E · 实现中的技术问题
 
 真正写代码、跑真实 agent 时撞到的
@@ -326,22 +348,22 @@
 状态：进行中 · 出处：F7 试验；docs/decisions.md
 
 - **原来以为**：应用里起的 agent 和在终端里敲命令一样能找到、能登录。
-- **实际情况**：macOS 从程序坞打开的应用环境很少：PATH 里没有 /opt/homebrew/bin、~/.local/bin，可能缺登录相关的变量；F7 在干净环境里跑 claude 得到 API Error: 403。tmux 服务也只认启动时的环境。
+- **实际情况**：macOS 从程序坞打开的应用环境很少：PATH 里没有 /opt/homebrew/bin、~/.local/bin，可能缺登录相关的变量。tmux 服务也只认第一次启动它的进程的环境（F7 发现在 Claude Code 里起服务会把 CLAUDECODE=1 带给所有会话）。F7 当时看到的 403 后来查明是试验环境里 claude 没登录。
 - **决策**：启动时运行一次 $SHELL -ilc env 读出登录 shell 的环境（3 秒超时，失败退回当前环境并提示），由 apps/desktop 传给 tmux-host（建会话时 -e）和 agent 适配器。
 - **好处**：不管从哪里打开应用，agent 都能找到并正常登录。
-- **代价**：启动多一次 shell（几百毫秒）；用户 shell 配置有问题（卡住、报错）时要兜底；具体缺的是哪个变量 F7 还在查。
+- **代价**：启动多一次 shell（几百毫秒）；用户 shell 配置有问题（卡住、报错）时要兜底；tmux 服务要用干净的环境启动，不能继承 Electron 的。
 
 <a id="e4"></a>
 
 ### E4 经过 tmux 后按键手感
 
-状态：进行中 · 出处：F7 试验（进行中）
+状态：进行中 · 出处：packages/tmux-host/AGENTS.md
 
 - **原来以为**：（风险 4）tmux 可能吃掉 Esc、⌃C、方向键等，手感变差。
 - **实际情况**：F7 用真 claude 和 codex 实测：按键测试两边都通过，codex 的 Esc 中断、一轮中途断开再接上都正常。
 - **决策**：用 AgentDeck 自己的 tmux 配置：关掉前缀键和默认绑定、真彩色、扩展按键、escape-time 0 等，结论写进 packages/tmux-host/AGENTS.md。
 - **好处**：风险 4 基本排除，线 1 可以放心按这个方案做。
-- **代价**：需要人工确认的几项（鼠标滚动、粘贴的观感）还在 F7 的清单里。
+- **代价**：还有 9 项需要人在真界面上确认（见 F3）。
 
 <a id="e5"></a>
 
@@ -351,9 +373,9 @@
 
 - **原来以为**：需求里写的是“没有 tmux 就用随应用打包的 tmux”。
 - **实际情况**：把 tmux 打进应用要自己编译（依赖 libevent、ncurses）、签名、公证，工作量不小，和 MVP 的核心功能无关。
-- **决策**：MVP 要求已安装 tmux ≥ 3.3，没装时显示一页说明（brew install tmux）和 Retry；打包推迟。
+- **决策**：MVP 要求已安装 tmux ≥ 3.5（F7 实测 codex 的 Shift+Enter 要 3.5 的 extended-keys-format），没装或太旧时显示一页说明（brew install tmux）和 Retry；打包推迟。
 - **好处**：省掉编译和签名的工作，先把核心功能做出来。
-- **代价**：第一次使用多一步安装；没有 Homebrew 的用户会卡住。
+- **代价**：第一次使用多一步安装；没有 Homebrew 的用户会卡住；Ubuntu 24.04 自带的 3.4 不够（Linux 本来也不在 MVP 里）。
 
 <a id="e6"></a>
 
@@ -403,33 +425,145 @@
 - **好处**：不会在没准备好时把代码发出去。
 - **代价**：macOS 和 Ubuntu 上的 CI 结果未知；不能用云端 session 并行。
 
+<a id="e10"></a>
+
+### E10 claude 的 --settings 钩子和用户自己的钩子是合并的
+
+状态：已解决 · 出处：packages/agent-adapters/AGENTS.md
+
+- **原来以为**：（待验证）启动时用 --settings 加钩子，可能会替换掉用户自己配的钩子。
+- **实际情况**：线 4 用临时项目和临时 CLAUDE_CONFIG_DIR 实测：用户的钩子和我们的同时运行，互不影响。只有用户开了 disableAllHooks 时，我们的也被关掉。
+- **决策**：照原方案用 --settings 临时注入，不改任何配置文件；disableAllHooks 时状态退回看输出活动，并用 AgentInfo.warning 提示（contracts 0.1.3）。
+- **好处**：用户的配置完全不动，钩子也不冲突。
+- **代价**：用户关掉所有钩子时我们的状态就不准了，只能提示。
+
+<a id="e11"></a>
+
+### E11 codex 的钩子能临时注入，但要处理“信任”
+
+状态：已解决 · 出处：packages/agent-adapters/AGENTS.md
+
+- **原来以为**：（待验证）codex 能不能像 claude 一样在启动参数里加钩子。
+- **实际情况**：-c hooks.<Event>=… 能加钩子，但 codex 只运行有“信任哈希”的钩子；--dangerously-bypass-hook-trust 会连项目里没审过的钩子一起放行。
+- **决策**：启动前起一次 codex app-server 调 hooks/list 拿我们钩子的哈希，再用 -c hooks.state=… 只信任我们自己的；失败就不带钩子启动。旧版 codex 退回 notify。
+- **好处**：不改 ~/.codex/config.toml，也不放行别人的钩子。
+- **代价**：每次开 codex 多一次 app-server 往返；依赖 codex 的内部协议，升级要用真 agent 测试复查（线 4 留了 AGENTDECK_REAL_AGENTS=1 的测试）。
+
+<a id="e12"></a>
+
+### E12 拒绝批准、按 Esc 打断时 claude 不发任何钩子
+
+状态：进行中 · 出处：packages/agent-adapters 状态表第 15 行
+
+- **原来以为**：agent 的每个状态变化都会有钩子通知。
+- **实际情况**：线 4 用真 claude 实测：拒绝权限请求（Esc 或 No）、运行中按 Esc，都不触发任何钩子，状态会一直停在“等你批准”或“运行中”。
+- **决策**：状态机加兜底：用户输入过、之后 3 秒没有输出也没有钩子，就算这一轮结束。tmux-host 在 write / sendKeys 时发 terminal.input 事件（contracts 0.1.3）。
+- **好处**：状态不会卡住。
+- **代价**：是推断不是事实，3 秒内 agent 恰好没输出又没结束时会短暂误判为空闲。
+
+<a id="e13"></a>
+
+### E13 claude 的提问是从“权限请求”钩子来的
+
+状态：已解决 · 出处：packages/agent-adapters；contracts agent.ts
+
+- **原来以为**：提问和批准是两种不同的钩子。
+- **实际情况**：claude 的 AskUserQuestion 以 PermissionRequest（tool_name: AskUserQuestion）的形式到达；如果按批准处理，Auto-approve 会替用户回答问题。
+- **决策**：适配器把它转成 question 事件；HookReply 注释写明提问永远回 none（contracts 0.1.3）。
+- **好处**：Approve all 和 Auto-approve 不会碰到提问。
+- **代价**：依赖 claude 的工具名，改名要同步。
+
+<a id="e14"></a>
+
+### E14 codex 的会话 id 要等第一次输入之后才知道
+
+状态：进行中 · 出处：contracts status.ts
+
+- **原来以为**：启动 agent 时就能拿到会话 id，用来恢复和 Fork。
+- **实际情况**：claude 的 id 是我们生成的；codex 的 id 只在 SessionStart 钩子里，而它实测在用户第一次输入之后才来，启动结果里拿不到。
+- **决策**：StatusSnapshot 加 sessionId（contracts 0.1.3），界面收到后存进 TerminalWindowData。
+- **好处**：codex 也能恢复会话、Fork。
+- **代价**：没输入过的 codex 终端没有 id，重启后只能新开。
+
+<a id="e15"></a>
+
+### E15 打包后嵌入的 localhost 页面算跨站，登录 cookie 存不进
+
+状态：已解决 · 出处：packages/ui/widgets/browser/AGENTS.md
+
+- **原来以为**：（风险 3）iframe 里的本地页面可能丢登录态，开发模式下试一下就知道。
+- **实际情况**：开发模式下白板也是 http://localhost，和页面同站，看不出问题；打包后白板是 file://，iframe 里的 localhost 算跨站，SameSite=Lax 的 cookie 根本存不进（线 5 实测）。
+- **决策**：主进程把本地来源响应里的 Set-Cookie 改成 SameSite=None; Secure，服务端写的登录 cookie 就能用；页面 JS 写的 cookie、第三方 OAuth、弹窗在 MVP 里用 Open in browser；P1 用 <webview partition> 独立窗口模式（实测全部能登录，也能跟着白板缩放）。
+- **好处**：大部分本地开发服务的登录直接能用。
+- **代价**：改写 cookie 只对本地来源，别的情况要用户点 Open in browser；每个 session 的 onHeadersReceived 只能挂一个，别的模块要改响应头得合并。
+
+<a id="e16"></a>
+
+### E16 刚接上终端时要替 xterm 回答终端查询
+
+状态：进行中 · 出处：packages/tmux-host/AGENTS.md
+
+- **原来以为**：xterm.js attach 上 tmux 就能直接用。
+- **实际情况**：tmux 接上时会查询终端版本（XTVERSION）和前景、背景色（OSC 10/11）；xterm.js 不回答的话，之后 5 秒里每次按 Esc 都会被扣住 500 毫秒。刚接上时的 Esc 还可能和终端的应答粘在一起发给 agent。
+- **决策**：终端窗口（T2）替 xterm 回答这几个查询，并且在收到第一段输出之前先扣住用户输入（F7 留了参考实现）。
+- **好处**：Esc 的手感和直接运行一样。
+- **代价**：多一段要维护的终端协议代码。
+
+<a id="e17"></a>
+
+### E17 tmux 自带的活动提醒不能用
+
+状态：进行中 · 出处：packages/tmux-host/AGENTS.md
+
+- **原来以为**：用 tmux 的 monitor-activity / monitor-silence 判断有没有输出。
+- **实际情况**：F7 实测 tmux 的提醒钩子不可靠；服务在最后一个会话结束时会退出，运行时挂的钩子也跟着丢；pipe-pane 不和 new-session 放在同一次调用里会漏掉开头的输出。
+- **决策**：活动和静默从 pipe-pane 抄送出来的输出流里算；pipe-pane 和 new-session 在同一次 tmux 调用里执行。
+- **好处**：看不见的终端状态也准，开头的输出（比如 dev server 打印的地址）不会漏。
+- **代价**：tmux-host 要自己维护计时器，比直接用 tmux 的功能多写一些代码。
+
+<a id="e18"></a>
+
+### E18 codex 退出后还会留下常驻进程，并自己下载更新
+
+状态：已解决 · 出处：packages/tmux-host/AGENTS.md 第 15 条
+
+- **原来以为**：关掉 codex 的终端，codex 就结束了。
+- **实际情况**：codex 会在它的 CODEX_HOME 下留一个常驻守护进程（app-server daemon），TUI 退出后还在，还会自己下载新版本。F7 用临时目录测试时留下了 11 个，其中一个下载卡了 40 多分钟。
+- **决策**：试验脚本结束时按临时目录清理这些进程；AgentDeck 关掉 codex 终端时不假设它的进程都结束了。
+- **好处**：不留垃圾进程。
+- **代价**：用户自己的 codex 守护进程不归我们管，codex 升级（这次自动升到了 0.164）可能改变行为。
+
+<a id="e19"></a>
+
+### E19 Claude Code 里配的 codex MCP 坏了，每个新 session 都提示重连
+
+状态：已解决 · 出处：本次会话
+
+- **原来以为**：（和 AgentDeck 无关的环境问题）
+- **实际情况**：~/.claude.json 里的 codex MCP 用 codex mcp-server 启动，codex 0.159 已经没有这个子命令；并行开了十来个 session，每个都提示 reconnect。
+- **决策**：用户同意后用 claude mcp remove codex --scope user 删掉这一项，其他配置不动，删除前留了备份。
+- **好处**：不再弹提示。
+- **代价**：以后要重新接 codex，得用 codex 新版提供的接入方式。
+
+<a id="e20"></a>
+
+### E20 主仓库搬家后，修 worktree 要把每个路径传给 git
+
+状态：已解决 · 出处：提交 1aa89fe
+
+- **原来以为**：git worktree repair 在主仓库里跑一下就行。
+- **实际情况**：写 repairWorktrees 的测试时发现：不带参数时只修主仓库这一侧的记录，worktree 里的 .git 文件还指向旧位置，打不开。
+- **决策**：repairWorktrees 先列出所有 worktree，再把它们的路径都传给 git worktree repair；加了真实仓库搬家的测试。
+- **好处**：ProjectService.locate 之后已有工作区能直接用。
+- **代价**：worktree 本身也被挪走的情况仍然修不了，只能重新 locate。
+
 ## F · 还没验证的
 
 已经有对策，但要等对应的线用真东西试过才算数
 
 <a id="f1"></a>
 
-### F1 claude 的 --settings 钩子是合并还是替换用户自己的钩子
-
-状态：待验证 · 出处：线 4
-
-- **原来以为**：启动时用 --settings 加的钩子会和用户自己的钩子合并。
-- **实际情况**：还没实测。如果是替换，用户自己配的钩子会在 AgentDeck 里失效。
-- **怎么验证**：线 4 用临时 HOME 实测，不碰用户真实配置；是替换的话想办法合并后再注入。
-
-<a id="f2"></a>
-
-### F2 localhost 页面嵌进 iframe 后登录态会不会丢
-
-状态：待验证 · 出处：线 5
-
-- **原来以为**：iframe 里打开本地页面和在浏览器里一样。
-- **实际情况**：页面在 iframe 里时 cookie 算第三方，SameSite=Lax 的登录态可能丢（风险 3）。
-- **怎么验证**：线 5 写一个带登录的本地小服务实测；不行的页面改用 <webview> 独立窗口模式。
-
-<a id="f3"></a>
-
-### F3 claude 能不能把对话 fork 到另一个目录
+### F1 claude 能不能把对话 fork 到另一个目录
 
 状态：待验证 · 出处：P1 · X4
 
@@ -437,23 +571,23 @@
 - **实际情况**：claude 的会话记录按目录存放，换目录后可能找不到原会话。
 - **怎么验证**：P1 做 Fork 前先实测；不行就先把记录复制到新目录对应的位置。
 
-<a id="f4"></a>
+<a id="f2"></a>
 
-### F4 codex 的钩子能不能在启动时临时注入
-
-状态：待验证 · 出处：线 4
-
-- **原来以为**：codex 和 claude 一样能在启动参数里加钩子。
-- **实际情况**：本机 codex 0.159 有 hooks，但注入方式还没确认；不能改用户的 ~/.codex/config.toml。
-- **怎么验证**：线 4 查 -c 覆盖等办法；做不到就退回 notify，只知道一轮结束。
-
-<a id="f5"></a>
-
-### F5 Approve all 发的“允许一次”按键对不对
+### F2 Approve all 发的“允许一次”按键对不对
 
 状态：待验证 · 出处：线 1、P1 · X3
 
 - **原来以为**：claude 按回车、codex 按 y 就是“允许一次”。
 - **实际情况**：各家确认界面的默认选项和按键可能变，选错了会变成“以后都允许”。
 - **怎么验证**：线 1 用真终端核对后写进适配器；核对不过的 agent 不提供 Approve all。
+
+<a id="f3"></a>
+
+### F3 经过 tmux 后的手感，要人在真界面上确认
+
+状态：待验证 · 出处：packages/tmux-host/AGENTS.md「需要人工确认」
+
+- **原来以为**：自动测试能覆盖终端手感。
+- **实际情况**：F7 能自动测的都通过了，但有 9 项只能人看：颜色和框线字符、真实键盘上 Esc / Shift+Enter / 多行粘贴、触控板滚动和回滚、拖选复制、和系统终端同时接上、claude 的完成提醒、tmux 3.5 上加载配置。
+- **怎么验证**：线 1 做出终端窗口后，按 packages/tmux-host/AGENTS.md 里的清单请用户逐项试。
 
