@@ -1,0 +1,158 @@
+/* dev 页面的布局。颜色只用 tokens。 */
+
+html,
+body,
+#root,
+.dev {
+  height: 100%;
+  margin: 0;
+}
+
+.dev {
+  display: flex;
+  flex-direction: column;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--text-md);
+}
+
+.dev-header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-xl);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.dev-title {
+  font-weight: var(--weight-strong);
+}
+
+.dev-muted {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.dev-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.dev-controls {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: var(--space-xl);
+  width: 260px;
+  padding: var(--space-lg);
+  overflow: auto;
+  border-right: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.dev-controls section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-xs);
+}
+
+.dev-controls h2 {
+  margin: 0 0 var(--space-xs);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-strong);
+}
+
+.dev-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: var(--text-sm);
+}
+
+.dev-input {
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--control-sm);
+  padding: 0 var(--space-sm);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-inset);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.dev-log {
+  margin: 0;
+  padding-left: var(--space-lg);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  overflow-wrap: anywhere;
+}
+
+.dev-board {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+}
+
+.dev-layer {
+  position: absolute;
+  top: var(--space-2xl);
+  left: var(--space-2xl);
+  transform-origin: 0 0;
+}
+
+.dev-window {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-window);
+  background: var(--surface);
+}
+
+.dev-window[data-focused='true'] {
+  border-color: var(--ink);
+  box-shadow: var(--shadow-float);
+  z-index: 1;
+}
+
+.dev-window-title {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 0 var(--space-xs) 0 var(--space-md);
+  border-bottom: 1px solid var(--line-subtle);
+  font-size: var(--text-sm);
+}
+
+.dev-window-title > span:first-child {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dev-status {
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.dev-status[data-tone='error'] {
+  color: var(--ink);
+}
+
+/* 橙色只用于“需要你处理”。 */
+.dev-status[data-tone='attention'] {
+  color: var(--attention);
+}
