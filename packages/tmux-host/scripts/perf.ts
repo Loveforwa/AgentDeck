@@ -161,6 +161,7 @@ try {
 } finally {
   await host.killServer();
   await host.dispose();
+  rmSync(join(process.env.TMUX_TMPDIR ?? '/tmp', `tmux-${process.getuid?.() ?? 0}`, host.socketName), { force: true }); // tmux 退出后留下的 socket 文件
   if (codexHome) {
     for (let i = 0; i < 10; i++) {
       try {

@@ -131,7 +131,8 @@ packages/tmux-host/scripts/trial.sh all                  # F7 的试验
 7. **web 字体晚于 xterm 加载**会让 xterm 先按兜底字体量出格子（行数偏多），字体加载完重新量后行列数变了；如果这时 attach 还没返回，tmux 会一直按旧行列数画（实测 claude 画面错位）。终端窗口在 attach 返回后补发一次 resize。
 8. **FitAddon 把 xterm 父元素的 padding 算进可用宽度**（多出两列，右边被裁）。留白要放在外层。
 9. **xterm 的链接要先悬停再单击**（Linkifier 在 mousemove 时才算出当前链接）；自动化测试里直接 click 不会触发。真鼠标没问题。
-10. **xterm 默认 16 色在深色底上蓝色很暗**（pnpm dev 打印的地址几乎看不清）。tokens 里还没有终端调色板，见 CONTRACT_NOTES.md。
+10. **tmux 3.6a 退出后不删自己的 socket 文件**（`/tmp/tmux-<uid>/<名字>`，kill-server 和最后一个会话结束都一样）。无害；测试和脚本用完的名字顺手删掉。
+11. **xterm 默认 16 色在深色底上蓝色很暗**（pnpm dev 打印的地址几乎看不清）。tokens 里还没有终端调色板，见 CONTRACT_NOTES.md。
 
 ## F7 的试验结论
 

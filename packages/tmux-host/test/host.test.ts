@@ -95,6 +95,8 @@ describe.skipIf(!tmuxOk)('TmuxHost with real tmux', () => {
       // 已经没了
     }
     rmSync(runDir, { recursive: true, force: true });
+    // tmux 3.6a 退出后不删自己的 socket 文件（实测），测试用的名字每次不同，顺手删掉
+    rmSync(join(process.env.TMUX_TMPDIR ?? '/tmp', `tmux-${process.getuid?.() ?? 0}`, SOCKET), { force: true });
   });
 
   it('reports the tmux version', () => {
