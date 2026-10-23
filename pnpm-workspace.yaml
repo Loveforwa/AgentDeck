@@ -2,4 +2,6 @@ packages:
   - apps/*
   - packages/*
   - packages/ui/*
+  - packages/ui/widgets/*
+  - packages/ui/panels/*
   - tools/*

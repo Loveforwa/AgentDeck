@@ -18,9 +18,47 @@ Electron + TypeScript + React 18 + Zustand，白板用 React Flow（@xyflow/reac
 ## 规矩
 
 - 只改你的任务负责的目录。要改 `packages/contracts` 先停下，单独提交，见它的 AGENTS.md。
-- 界面依赖方向：`packages/ui/*` 只能依赖 contracts 和 design-tokens；服务不能依赖 ui；各 widget、各 adapter 之间不互相引用。
+- 界面依赖方向：`packages/ui/*` 只能依赖 contracts 和 design-tokens；服务不能依赖 ui；各 widget、各 adapter 之间不互相引用。机器检查的完整规则见下面「检查和模块边界」。
 - 产品界面上的所有文字用英文；注释、文档、提交说明里的解释用中文也可以。
 - 组件里不写颜色值，样子只在 `packages/design-tokens` 里定。界面风格：暖灰加墨黑，只有“需要你处理”用橙色；不用渐变、发光、emoji。
 - 分支名和提交信息带任务编号，例如 `feat/F6-fakes`、`F6: add fake TerminalHost`。
-- 提交前：`pnpm -r typecheck`（F5 完成后改为 `pnpm check`）和本包测试。
+- 提交前：`pnpm check`（含所有包的测试）。
 - 每个包有自己的 AGENTS.md：职责、对外接口、不许碰的目录、怎么跑测试。新建包时一起写。
+
+## 检查和模块边界
+
+`pnpm check` = `pnpm typecheck`（`pnpm -r typecheck`）+ `pnpm lint`（ESLint）+ `pnpm boundaries`（dependency-cruiser）+ `pnpm test`（Vitest，跑所有包的测试）。CI（`.github/workflows/check.yml`）在 macOS 和 Ubuntu 上跑 `pnpm install --frozen-lockfile && pnpm check`。
+
+- 配置都在根目录，各包不要再放自己的：`eslint.config.js`、`.dependency-cruiser.cjs`、`vitest.config.ts`、`.prettierrc.json`。
+- `pnpm test` 把 `pnpm-workspace.yaml` 里每个有 package.json 的包当作一个 Vitest project；包里有自己的 `vitest.config.*` 就用它（界面包要 jsdom 时自己写一个）。单跑一个包：`pnpm --filter <包名> test`。
+- Prettier 是可选的：`pnpm format` / `pnpm format:check`，不在 `pnpm check` 里（contracts 目前没按它排版）。
+- `pnpm boundaries` 直接调 dependency-cruiser 的 API（`scripts/boundaries.mjs`），因为 `depcruise` 命令行拒绝在 node 25 上跑。
+
+### 模块边界（`.dependency-cruiser.cjs`）
+
+规则按路径写，`import type` 也算依赖。每条规则在 `tools/boundary-fixtures/cases/<规则名>/` 有一个故意违规的样例，`cases/allowed/` 是所有允许的写法，`pnpm test` 断言前者被拦、后者不拦。改规则时同步改样例。
+
+| 规则 | 内容 |
+| --- | --- |
+| `contracts-standalone` | `packages/contracts` 不依赖任何其他内部包、第三方包、node 内置模块 |
+| `ui-allowed-deps` / `ui-widget-panel-allowed-deps` | `packages/ui/**` 只能依赖 contracts、design-tokens、`ui/kit`、`ui/canvas` 的注册表和自己包里的文件（第三方包如 react 可以） |
+| `no-widget-to-widget` / `no-panel-to-panel` | `ui/widgets/*` 之间、`ui/panels/*` 之间不互相 import |
+| `ui-no-services` | 界面不 import 服务包，走 `window.agentdeck` |
+| `ui-no-electron` / `ui-no-node-builtins` | 界面不 import electron 和 node 内置模块 |
+| `service-no-ui` | 服务包（tmux-host、git-service、workspace-service、agent-adapters、port-watch、store）不依赖 `packages/ui/**` |
+| `service-to-service` / `workspace-service-only-git-service` | 服务包之间不互相 import，只有 workspace-service → git-service 可以 |
+| `fakes-only-contracts` | `tools/fakes` 在内部只依赖 contracts（第三方包和 node 内置模块可以） |
+| `fakes-only-in-tests-and-dev` | 只有测试文件和 dev 入口能 import `tools/fakes` |
+| `only-desktop-uses-services` / `only-desktop-uses-ui` | 只有 `apps/desktop` 能用服务包、能把界面装起来，也就是只有它把两边接在一起 |
+
+几个约定，写代码时照着做规则才认：
+
+- canvas 的注册表放在 `packages/ui/canvas/src/registry.ts`（或 `src/registry/` 目录），package.json 用子路径导出，例如 `"./registry": "./src/registry.ts"`。canvas 其他文件对别的界面包不开放。
+- 测试文件：`*.test.ts(x)`、`*.spec.ts(x)`、`__tests__/`、`test/`、`tests/`、`e2e/` 下的文件、`*.setup.ts`、`vitest.config.*`、`playwright.config.*`。dev 入口：`dev/` 目录下的文件或 `*.dev.ts(x)`。
+- `packages/ui/widgets/*`、`packages/ui/panels/*` 已加进 `pnpm-workspace.yaml`，每个 widget/panel 是一个独立的包。
+- 需要放宽规则（比如 canvas 要用 window-shell）时，改 `.dependency-cruiser.cjs` 和对应样例，单独提交并在提交说明里写原因。
+
+### 界面里不写颜色值
+
+- `.ts` / `.tsx`：ESLint 规则（根目录 `eslint.config.js` 的 `no-restricted-syntax`），作用于 `packages/ui/**`，拦十六进制颜色和 `rgb()` `hsl()` `hwb()` `lab()` `lch()` `oklab()` `oklch()`。只看字符串和模板字符串，注释不算。确实要写时：`// eslint-disable-next-line no-restricted-syntax -- 原因`。像 `'#123'` 这样的字符串会被当成颜色，同样用这个注释放行。
+- `.css`：用 F4 的 `packages/design-tokens/lint/raw-colors.mjs`（命令行，放行写 `raw-color-ok`）。它同时提供 ESLint 插件 `agentdeck/no-raw-colors`，**不接进 ESLint**，避免同一处报两次；两边的正则保持一致。F4 合并后把它的命令行加进 `pnpm check`。

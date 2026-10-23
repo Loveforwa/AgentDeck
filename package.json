@@ -4,9 +4,27 @@
   "type": "module",
   "packageManager": "pnpm@10.33.0",
   "scripts": {
-    "typecheck": "pnpm -r typecheck"
+    "typecheck": "pnpm -r typecheck",
+    "lint": "eslint . --max-warnings 0",
+    "boundaries": "node scripts/boundaries.mjs",
+    "test": "vitest run",
+    "check": "pnpm typecheck && pnpm lint && pnpm boundaries && pnpm test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "devDependencies": {
-    "typescript": "5.6.3"
+    "@eslint/js": "10.0.1",
+    "dependency-cruiser": "18.7.0",
+    "eslint": "10.13.0",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "17.13.0",
+    "prettier": "3.9.10",
+    "typescript": "5.6.3",
+    "typescript-eslint": "8.72.0",
+    "vitest": "5.0.5"
+  },
+  "engines": {
+    "node": ">=22.12"
   }
 }
