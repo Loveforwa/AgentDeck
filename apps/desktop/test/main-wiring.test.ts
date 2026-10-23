@@ -69,7 +69,9 @@ describe('host process', () => {
     let onExit: (code: number) => void = () => {};
     const child = {
       postMessage: vi.fn(),
-      on: (_e: 'exit', l: (code: number) => void) => (onExit = l),
+      on: (e: 'exit' | 'message', l: (arg: never) => void) => {
+        if (e === 'exit') onExit = l as (code: number) => void;
+      },
       kill: vi.fn(() => true),
     };
     const exited = vi.fn();

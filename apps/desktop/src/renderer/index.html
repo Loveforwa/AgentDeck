@@ -2,9 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!-- frame-src：白板上的网页窗口是 iframe（dev server 的 http(s) 页面、agentdeck-file:// 的本地 HTML），见 src/main/browser/index.ts -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; frame-src http: https: agentdeck-file:"
     />
     <title>AgentDeck</title>
   </head>
