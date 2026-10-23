@@ -44,7 +44,7 @@ Electron + TypeScript + React 18 + Zustand，白板用 React Flow（@xyflow/reac
 | `ui-allowed-deps` / `ui-widget-panel-allowed-deps` | `packages/ui/**` 只能依赖 contracts、design-tokens、`ui/kit`、`ui/canvas` 的注册表和自己包里的文件（第三方包如 react 可以） |
 | `no-widget-to-widget` / `no-panel-to-panel` | `ui/widgets/*` 之间、`ui/panels/*` 之间不互相 import |
 | `ui-no-services` | 界面不 import 服务包，走 `window.agentdeck` |
-| `ui-no-electron` / `ui-no-node-builtins` | 界面不 import electron 和 node 内置模块 |
+| `ui-no-electron` / `ui-no-node-builtins` | 界面不 import electron 和 node 内置模块（vite / vitest / playwright 的构建配置可以用 node 内置模块） |
 | `service-no-ui` | 服务包（tmux-host、git-service、workspace-service、agent-adapters、port-watch、store）不依赖 `packages/ui/**` |
 | `service-to-service` / `workspace-service-only-git-service` | 服务包之间不互相 import，只有 workspace-service → git-service 可以 |
 | `fakes-only-contracts` | `tools/fakes` 在内部只依赖 contracts（第三方包和 node 内置模块可以） |

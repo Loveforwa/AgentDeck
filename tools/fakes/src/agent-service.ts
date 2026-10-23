@@ -10,8 +10,8 @@ import type {
   StartAgentRequest,
   StartAgentResult,
 } from '@agentdeck/contracts';
-import { FakeStatusService } from './status-service.ts';
-import { FakeTerminalHost } from './terminal-host.ts';
+import type { FakeStatusService } from './status-service.ts';
+import type { FakeTerminalHost } from './terminal-host.ts';
 import { clone, fail, idGenerator } from './util.ts';
 
 export interface FakeAgentDefinition {

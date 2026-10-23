@@ -11,9 +11,9 @@ import type {
   WorkspaceRepo,
   WorkspaceService,
 } from '@agentdeck/contracts';
-import { FakeEventBus } from './bus.ts';
-import { FakeGitService } from './git-service.ts';
-import { FakeProjectService } from './project-service.ts';
+import type { FakeEventBus } from './bus.ts';
+import type { FakeGitService } from './git-service.ts';
+import type { FakeProjectService } from './project-service.ts';
 import { clone, fail, idGenerator, nowIso, slug } from './util.ts';
 
 export interface FakeWorkspaceServiceOptions {

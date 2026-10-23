@@ -32,6 +32,9 @@ const TEST_OR_DEV = [
   '\\.setup\\.tsx?$',
 ];
 
+/** 构建配置文件，在 node 里跑。 */
+const BUILD_CONFIG = '(^|/)(vite|vitest|playwright)\\.config\\.[cm]?[jt]s$';
+
 /** @type {import('dependency-cruiser').IConfiguration} */
 module.exports = {
   forbidden: [
@@ -90,9 +93,9 @@ module.exports = {
     },
     {
       name: 'ui-no-node-builtins',
-      comment: '界面跑在渲染进程，不能 import node 内置模块（fs、path、child_process……）。',
+      comment: '界面跑在渲染进程，不能 import node 内置模块（fs、path、child_process……）。构建配置（vite / vitest / playwright 的 config）在 node 里跑，不算。',
       severity: 'error',
-      from: { path: '^packages/ui/' },
+      from: { path: '^packages/ui/', pathNot: BUILD_CONFIG },
       to: { dependencyTypes: ['core'] },
     },
 

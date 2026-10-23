@@ -23,6 +23,8 @@ export default defineConfig(
       '**/dist/**',
       '**/out/**',
       'docs/**',
+      // 并行开发 session 的 worktree，各自在自己的目录里检查
+      '.claude/**',
       // 故意违规的样例，由 tools/boundary-fixtures 的测试单独检查
       'tools/boundary-fixtures/cases/**',
       'tools/boundary-fixtures/eslint/**',
