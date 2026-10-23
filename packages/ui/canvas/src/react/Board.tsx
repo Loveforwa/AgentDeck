@@ -1,0 +1,219 @@
+// 白板画布（任务 B1）：React Flow。两指滚动和拖空白处平移，⌘ + 滚轮缩放（25%–200%），不响应双指捏合；
+// 20px 点阵，缩到 50% 以下隐藏。框和窗口都是不可拖的节点，移动和改大小由我们自己的手势做（只能拖标题栏）。
+
+import { useEffect, useMemo, useRef, type MouseEvent as ReactMouseEvent } from 'react';
+import {
+  Background,
+  BackgroundVariant,
+  ReactFlow,
+  useReactFlow,
+  type Node,
+  type NodeTypes,
+  type Viewport,
+} from '@xyflow/react';
+import '@xyflow/react/dist/base.css';
+import { Button, Menu, Popover, type MenuEntry } from '@agentdeck/ui-kit';
+import { useState } from 'react';
+import { MAX_ZOOM, MIN_ZOOM } from '../model/geometry.ts';
+import { BoardMenu, terminalItems } from './BoardMenu.tsx';
+import { BoardDialogs } from './dialogs.tsx';
+import { FrameNodeView, PendingFrameView } from './FrameNodeView.tsx';
+import { WindowNodeView } from './WindowNodeView.tsx';
+import { useBoardState, useController } from './context.tsx';
+import '../canvas.css';
+
+const nodeTypes: NodeTypes = {
+  window: WindowNodeView as NodeTypes[string],
+  frame: FrameNodeView as NodeTypes[string],
+  pending: PendingFrameView as NodeTypes[string],
+};
+
+/** 窗口永远在框上面。 */
+const WINDOW_Z = 1000;
+
+export function Board() {
+  const c = useController();
+  const rf = useReactFlow();
+  const wrapper = useRef<HTMLDivElement>(null);
+  const frames = useBoardState((s) => s.frames);
+  const windows = useBoardState((s) => s.windows);
+  const resizing = useBoardState((s) => s.resizing);
+  const pending = useBoardState((s) => s.pending);
+  const viewport = useBoardState((s) => s.viewport);
+  const loaded = useBoardState((s) => s.loaded);
+
+  // 让控制器能做带动画的平移缩放（⌘J、⌘1、放大窗口）
+  useEffect(() => {
+    c.viewportApi = {
+      setViewport: (vp, opts) => void rf.setViewport(vp, opts),
+      origin: () => {
+        const r = wrapper.current?.getBoundingClientRect();
+        return { x: r?.left ?? 0, y: r?.top ?? 0 };
+      },
+    };
+    return () => {
+      c.viewportApi = null;
+    };
+  }, [c, rf]);
+
+  useEffect(() => {
+    const el = wrapper.current;
+    if (!el) return;
+    const measure = () => c.setPane({ w: el.clientWidth, h: el.clientHeight });
+    measure();
+    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
+    ro?.observe(el);
+    return () => ro?.disconnect();
+  }, [c]);
+
+  const nodes = useMemo<Node[]>(() => {
+    // 节点不可拖、不可选时 React Flow 会给它 pointer-events: none，这里自己处理手势，所以打开
+    const base = { draggable: false, selectable: false, connectable: false, focusable: false } as const;
+    return [
+      ...pending.map((p) => ({
+        ...base,
+        id: `pending:${p.id}`,
+        type: 'pending',
+        position: { x: p.rect.x, y: p.rect.y },
+        data: { pendingId: p.id },
+        style: { width: p.rect.w, height: p.rect.h, pointerEvents: 'all' as const },
+        zIndex: 0,
+      })),
+      ...frames.map((f) => ({
+        ...base,
+        id: `frame:${f.workspaceId}`,
+        type: 'frame',
+        position: { x: f.rect.x, y: f.rect.y },
+        data: { workspaceId: f.workspaceId },
+        style: { width: f.rect.w, height: f.rect.h, pointerEvents: 'all' as const },
+        zIndex: f.z,
+      })),
+      ...windows.map((w) => {
+        const r = resizing?.id === w.id ? resizing.rect : w.rect;
+        return {
+          ...base,
+          id: w.id,
+          type: 'window',
+          className: 'nopan',
+          position: { x: r.x, y: r.y },
+          data: { id: w.id },
+          style: { width: r.w, height: r.h, pointerEvents: 'all' as const },
+          zIndex: WINDOW_Z + w.z,
+        };
+      }),
+    ];
+  }, [frames, windows, resizing, pending]);
+
+  const openPaneMenu = (e: ReactMouseEvent | MouseEvent) => {
+    e.preventDefault();
+    c.openMenu({
+      screen: { x: e.clientX, y: e.clientY },
+      flow: c.clientToFlow({ x: e.clientX, y: e.clientY }),
+      target: { kind: 'pane' },
+    });
+  };
+
+  return (
+    <div
+      ref={wrapper}
+      className="ad-board"
+      onDoubleClick={(e) => {
+        // 双击空白处也弹出菜单（不直接创建，避免误触）
+        if ((e.target as Element).classList.contains('react-flow__pane')) openPaneMenu(e);
+      }}
+    >
+      {loaded ? (
+        <ReactFlow
+          nodes={nodes}
+          nodeTypes={nodeTypes}
+          viewport={viewport}
+          onViewportChange={(vp: Viewport) => c.viewportChanged(vp)}
+          minZoom={MIN_ZOOM}
+          maxZoom={MAX_ZOOM}
+          panOnScroll
+          zoomOnScroll={false}
+          zoomOnPinch={false}
+          zoomActivationKeyCode="Meta"
+          zoomOnDoubleClick={false}
+          panOnDrag={[0, 1]}
+          selectionOnDrag={false}
+          nodesDraggable={false}
+          nodesConnectable={false}
+          elementsSelectable={false}
+          nodesFocusable={false}
+          edgesFocusable={false}
+          autoPanOnNodeFocus={false}
+          disableKeyboardA11y
+          deleteKeyCode={null}
+          selectionKeyCode={null}
+          multiSelectionKeyCode={null}
+          onPaneClick={() => {
+            c.closeMenu();
+            c.focusWindow(null);
+          }}
+          onPaneContextMenu={openPaneMenu}
+        >
+          {viewport.zoom >= 0.5 ? <Background variant={BackgroundVariant.Dots} gap={20} size={1.2} color="var(--line-strong)" /> : null}
+        </ReactFlow>
+      ) : null}
+      <EmptyState />
+      <ZoomControl />
+      <BoardMenu />
+      <BoardDialogs />
+    </div>
+  );
+}
+
+/** 空白状态：视口中间一句话和两个按钮。 */
+function EmptyState() {
+  const c = useController();
+  const empty = useBoardState((s) => s.loaded && s.frames.length === 0 && s.windows.length === 0 && s.pending.length === 0);
+  const agents = useBoardState((s) => s.agents);
+  const ref = useRef<HTMLButtonElement>(null);
+  const [open, setOpen] = useState(false);
+  if (!empty) return null;
+  return (
+    <div className="ad-board-empty">
+      <p>Add a project to get started, or right-click to open a terminal.</p>
+      <div className="ad-board-empty-actions">
+        <Button variant="primary" onClick={() => void c.addProject()}>
+          Add project
+        </Button>
+        <Button ref={ref} onClick={() => setOpen(true)}>
+          New terminal
+        </Button>
+        <Popover open={open} anchor={ref} chrome={false} autoFocus={false} onClose={() => setOpen(false)}>
+          <Menu
+            items={terminalItems(agents, (agent) => void c.newTerminal({ agent, workspaceId: null }))}
+            aria-label="New terminal"
+            defaultActive="first"
+            onClose={() => setOpen(false)}
+          />
+        </Popover>
+      </div>
+    </div>
+  );
+}
+
+/** 左下角的缩放比例，单击弹出 25%、50%、100%、200%、Show all。 */
+function ZoomControl() {
+  const c = useController();
+  const zoom = useBoardState((s) => s.viewport.zoom);
+  const ref = useRef<HTMLButtonElement>(null);
+  const [open, setOpen] = useState(false);
+  const items: MenuEntry[] = [
+    ...[0.25, 0.5, 1, 2].map((z) => ({ id: `z${z}`, label: `${z * 100}%`, onSelect: () => c.zoomTo(z) })),
+    { type: 'separator' as const },
+    { id: 'show-all', label: 'Show all', shortcut: '⌘1', onSelect: () => c.showAll() },
+  ];
+  return (
+    <div className="ad-board-zoom">
+      <Button ref={ref} size="sm" variant="ghost" aria-label="Zoom" onClick={() => setOpen((v) => !v)}>
+        {Math.round(zoom * 100)}%
+      </Button>
+      <Popover open={open} anchor={ref} placement="top-start" chrome={false} autoFocus={false} onClose={() => setOpen(false)}>
+        <Menu items={items} aria-label="Zoom" onClose={() => setOpen(false)} />
+      </Popover>
+    </div>
+  );
+}
