@@ -1,0 +1,70 @@
+# @agentdeck/ui-widget-terminal
+
+白板上的终端窗口（线 1 · T2 T3 T5 T6 T8）。需求见设计画布「5 · 终端窗口」「3 · 白板」（摘要卡）「9 · 保存与重启」「6 · 终端状态与提醒」（标题栏状态）。进程在 tmux 里（`packages/tmux-host`），这里只负责显示和输入。
+
+## 对外接口
+
+```ts
+import { registerTerminalWindow, terminalWindowType, TerminalWindow, OPEN_SETTINGS_EVENT } from '@agentdeck/ui-widget-terminal';
+
+registerTerminalWindow(); // = registerWindow(terminalWindowType)，registerWindow 来自 @agentdeck/ui-canvas/registry
+```
+
+`terminalWindowType`（contracts 0.1.3 的 `WindowTypeDefinition<TerminalWindowData>`）：
+
+| 字段 | 值 |
+| --- | --- |
+| `type` / `label` | `'terminal'` / `'Terminal'` |
+| `defaultSize` / `minSize` / `summaryBelow` | 560×360 / 110×60 / 320×200 |
+| `pinnedToWorkspace` | `true` |
+| `title(data)` | agent 名（claude、codex）；Shell 用命令名（`zsh`）；自定义命令用命令的第一个词 |
+| `closeConfirm(data)` | 有 terminalId 时：“Close claude?” / “claude will be stopped. This can’t be undone.” / “Stop and close”（拿不到进程是否活着，见 tmux-host/CONTRACT_NOTES.md 第 1 条） |
+| `onClose(data)` | `terminals.kill(terminalId)` |
+| `menu` | Clear（⌘K）、Restart、Open in system terminal（命令 id：`clear`、`restart`、`open-in-system-terminal`）。Rename 由白板做 |
+| `termSize(contentSize)` | 13px JetBrains Mono（7.8×17）加内边距 8/4 算行列数；attach 时按 xterm 实际量到的格子再校正 |
+
+## 行为
+
+- **显示（T2）**：`visible` 为 true 且不是摘要卡时 attach，否则 detach。attach 前 `reset()` xterm，按 FitAddon 量到的行列数 attach；`contentSize` 变了（白板保证松手后才变）才 resize，行列数没变不发。attach 在路上时大小又变了（字体刚加载完），返回后补一次 resize。看不见的终端卸掉 WebGL 插件（浏览器同时只给十几个 WebGL 上下文）。
+- **tmux 那边要求的几件事**（tmux-host/AGENTS.md F7 问题 1、2、10、11）：替 xterm 回答 XTVERSION（`CSI > q`）、OSC 10/11（颜色取 tokens）、`CSI ? 996 n`；收到第一段输出之前用户输入先扣住；Shift+Enter 发 `ESC [ 13 ; 2 u`；`macOptionClickForcesSelection`、`macOptionIsMeta`（Option 当 Meta：claude / codex 的 Option+Enter 换行、shell 的 Option+b/f 要它；代价是非美式键盘上 Option 打不出特殊字符，以后可以做成设置）；OSC 52 经 clipboard 插件写系统剪贴板（不许程序读）。
+- **输入（T3）**：聚焦时不带 ⌘ 的按键全部交给 xterm（Esc、⌃C、Tab、方向键、空格）；⌘C / ⌘V 不让 xterm 处理，由浏览器发 copy / paste 事件、xterm 自己接（多行粘贴按程序的 bracketed paste 模式发）；其他 ⌘ 组合冒泡给白板。从访达拖进来的文件写入带单引号的路径（当作粘贴）。
+- **链接**：屏幕上的 localhost 地址和“文件:行号”画下划线（规则是 port-watch 的副本，见下）。单击 localhost → `openWindow({ type: 'browser', data: { url, mode: 'frame', openedBy: { terminalId, label } }, reuseKey: <origin> })`，label 是 “zsh · pnpm dev” 这种；单击文件 → `app.openInEditor(绝对路径, 行)`（相对路径按 `data.cwd` 拼）；OSC 8 里的其他网址 → `window.open`（组装时转系统浏览器）。
+- **标题栏状态**：`status.snapshot()` 取一次，之后 `status.changed` 按 terminalId 对上，`setStatus`：Starting / Running · 4m / Needs approval · 3m（attention）/ Needs reply · 3m（attention）/ Idle · 12m / Exited / Error · exit 1，每 30 秒刷新时间。没有状态机的数据时，进程退出用 Exited / Error · exit N。`status.changed` 带 `sessionId` 且和 data 里不同时 `updateData({ sessionId })`。
+- **退出（T5）**：`terminal.exit` 或 list() 里 `alive: false` → 内容保留，底部 “Process exited (code 1)”（0 时 “Process exited”）+ Restart / Close。Restart = 先 kill 旧会话，再 `agents.start({ agent, cwd, workspaceId, mode: new, size, command: startCommand })`，`updateData({ terminalId, cmd, args, sessionId })`。`command-not-found` → “Command not found: claude” + Open Settings（发冒泡的 `agentdeck:open-settings` 事件）/ Use Shell instead（`agents.start({ agent: 'shell' })`，data 改成 shell）。
+- **重开应用（T6）**：按保存的 terminalId 在 `terminals.list()` 里找（同一时刻多个窗口合成一次调用）。找到就接回；没有（或 terminalId 为 null）→ “Previous session ended” + Restart ▾（有 sessionId 时菜单：Resume conversation / New conversation），否则 Restart。`terminal.host-lost` → “Session ended”。
+- **摘要卡（T8）**：`summary` 为 true 时不 attach、不改行列数，显示 `lastLines(id, 3)`；有 activity / silence / exit 时最多每秒重读一次。在等你时最后一行用 attention 色。恢复原大小由白板做（单击摘要卡）。
+- **命令（onCommand）**：`clear` → xterm `clear()` + `sendKeys(['C-l'])`（tmux 历史清不掉，见 CONTRACT_NOTES.md 第 2 条）；`restart`；`open-in-system-terminal` → `app.openInSystemTerminal`。
+
+## 目录
+
+| 路径 | 内容 |
+| --- | --- |
+| `src/definition.ts` | `terminalWindowType` |
+| `src/TerminalWindow.tsx` | 组件：状态（checking / live / starting / ended / not-found / failed）、退出条、提示页、摘要卡 |
+| `src/session.ts` | `TerminalSession`：xterm、插件、attach / detach / resize、输入扣留、按键、链接。不依赖 React |
+| `src/router.ts` | 终端输出按 viewId 分发（早到的先缓存）；`list()` 合并调用 |
+| `src/queries.ts` `keys.ts` `links.ts` `status.ts` `theme.ts` `metrics.ts` `title.ts` | 纯函数 |
+| `test/` | jsdom + `createFakeApi()`；xterm 用 `@xterm/headless` 垫（`test/setup.ts`） |
+| `dev/` | dev 页面（假 api；`?real=1` 接 tmux-host 的 dev bridge） |
+
+## 和 port-watch 的约定
+
+`src/links.ts` 是 `packages/port-watch/src/links.ts` 的副本，`test/link-cases.json` 是 port-watch 那份的副本（界面包不能 import 服务包，也不能用 fs 读）。port-watch 的测试检查两份 json 一样。改规则时两边一起改。
+
+## 不许碰
+
+只改 `packages/ui/widgets/terminal/`。依赖只有 contracts、design-tokens、ui-kit、`@agentdeck/ui-canvas/registry` 和 xterm；服务只走 `window.agentdeck`。组件里不写颜色值（xterm 主题从 tokens 的 CSS 变量读）。
+
+## 怎么跑
+
+```bash
+pnpm --filter @agentdeck/ui-widget-terminal test
+pnpm --filter @agentdeck/ui-widget-terminal dev            # http://localhost:5340，假数据
+pnpm --filter @agentdeck/tmux-host dev:bridge              # 另开终端，然后打开 http://localhost:5340/?real=1（真 tmux，刷新 = 重开应用）
+```
+
+调试：`document.querySelector('.ad-terminal__xterm').agentdeckSession` 能拿到 `TerminalSession`（`.term` 是 xterm 实例），端到端测试可以用。
+
+## 需要人工确认
+
+见 `packages/tmux-host/AGENTS.md`「需要人工确认」，第 1、2、5 步是这个包的。

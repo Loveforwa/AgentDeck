@@ -1,41 +1,145 @@
 # @agentdeck/tmux-host
 
-AgentDeck 自己的 tmux 实例：`tmux -L agentdeck -f packages/tmux-host/tmux.conf`。所有 agent 进程都跑在里面，界面只为视口里的终端 `tmux attach`，移出视口就 detach。
+AgentDeck 自己的 tmux 实例：`tmux -L agentdeck -f packages/tmux-host/tmux.conf`。所有 agent 进程都跑在里面，界面只为视口里的终端 `tmux attach`，移出视口就 detach。第 1 波 F7 定了配置和做法，第 2 波线 1（T1）在这里实现了 TerminalHost。
 
-## 现在有什么（F7）
+## 职责
 
-这一步只有配置、试验脚本和结论。TerminalHost 的 TypeScript 实现（T1）在第 2 波线 1 做，到时在这个包里加 `package.json` 和 `src/`。
+- `TerminalHost`（contracts 0.1.3 `packages/contracts/src/terminal.ts`）的真实实现：会话的建、结束、列出、接上显示、按键、最后几行、链接（T1）。
+- 输出抄送（pipe-pane）→ `terminal.activity` / `terminal.silence`（默认 3 秒）/ `terminal.link`（链接识别由组装注入 port-watch）。
+- 进程退出（pane-died 钩子）→ `terminal.exit`；tmux 服务没了 → `terminal.host-lost`；用户输入 → `terminal.input`。
+- 以后跑在 Electron 的 utilityProcess 里。这个包只导出入口，接线留给第 3 波组装（不改 apps/desktop）。
+
+## 文件
 
 | 文件 | 内容 |
 | --- | --- |
-| `tmux.conf` | 最终配置，每一项都有注释说明为什么 |
-| `scripts/trial.sh` | 试验入口：起会话、attach / detach、跑下面的检查、清理 |
-| `scripts/lib.mjs` | 公用：干净环境、起会话、node-pty + @xterm/headless 模拟终端窗口、xterm 查询应答 |
-| `scripts/timing.mjs` | attach 到首屏、detach 的时间，20 轮取中位数 |
-| `scripts/keys.mjs` | 按键、粘贴、鼠标、焦点、颜色、OSC 透传（窗格里跑 `keyprobe.py` 记下收到的字节） |
-| `scripts/commands.mjs` | capture-pane、pipe-pane、display-message、list-sessions、退出码、钩子、大小、历史和内存、隔离 |
-| `scripts/agent.mjs` | 真实 claude / codex：同一组按键直接跑一遍、经过 tmux 跑一遍，逐项对比 |
-| `scripts/keyprobe.py` | 按键探针 |
+| `src/host.ts` | `startTmuxHost(options)`：TerminalHost 的实现 |
+| `src/stream.ts` | 收 pipe-pane 输出和 pane-died 钩子的 Unix socket（tmux 那边用 `nc -U` 连上来） |
+| `src/tmux.ts` | 调 tmux（固定 `-L -f`）、`tmux -V` 检查、引号和格式转义 |
+| `src/env.ts` | 窗格环境（登录 shell 的环境去掉终端身份和宿主注入的变量）、tmux 服务的最小环境、在 PATH 里找命令 |
+| `src/input.ts` | 判断 write() 的字节是不是用户输入（xterm 的查询回答、焦点、滚轮不算） |
+| `src/signals.ts` | `pane_dead_signal`（名字）→ 退出码 128 + 编号 |
+| `src/pty.ts` | 加载 node-pty，补 spawn-helper 的执行权限 |
+| `tmux.conf` | 最终配置（F7），每一项都有注释 |
+| `test/host.test.ts` | 真 tmux 的集成测试（`-L agentdeck-test-<pid>`，测完 kill-server） |
+| `test/pure.test.ts` | 纯函数 |
+| `dev/bridge.ts` | 本地演示：把真 tmux-host 经 HTTP 交给终端窗口的 dev 页面（`?real=1`） |
+| `scripts/approve-keys.ts` | 用真 claude / codex 核对 Approve all 的按键 |
+| `scripts/perf.ts` | 6 个终端同时打字的延迟、attach 速度 |
+| `scripts/fix-spawn-helper.mjs` | postinstall：给 node-pty 的 spawn-helper 补执行权限 |
+| `scripts/trial.sh` 等 | F7 的试验脚本，见下面「F7 的试验结论」 |
+
+## 对外接口
+
+```ts
+import { startTmuxHost } from '@agentdeck/tmux-host';
+import { createLinkWatcher } from '@agentdeck/port-watch';
+
+const host = await startTmuxHost({
+  env: loginShellEnv,                 // 必填。apps/desktop 启动时读的登录 shell 环境（docs/decisions.md），可以传函数
+  onEvent: (e) => bus.emit(e),        // TerminalEvent
+  onData: (m) => portOf(m.viewId)?.postMessage(m), // TerminalDataMessage，写进对应窗口的 MessagePort
+  linkWatcher: () => createLinkWatcher(), // 不给就不发 terminal.link（服务包之间不能直接 import，所以由组装注入）
+  // 可选：socketName（默认 'agentdeck'）、configPath（默认本包的 tmux.conf）、tmuxPath、runDir（默认 ~/.agentdeck/run）、
+  //       ncPath（默认 /usr/bin/nc）、silenceMs（3000）、healthIntervalMs（2000）
+});
+// host 实现 TerminalHost，另有：host.tmuxVersion、host.dispose()（不结束会话）、host.killServer()（Stop all and quit）
+```
+
+- tmux 不在或低于 3.5：`startTmuxHost` 抛 `AgentDeckError('tmux-unavailable')`，`message` 是一句话（“tmux 3.5 or later is required (found 3.4).”），`detail` 带 `brew install tmux`。界面显示说明页和 Retry，Retry 就是再调一次 `startTmuxHost`。
+- `create`：调用方传的 `id` 只能是 `[A-Za-z0-9_-]{1,64}`（tmux 会话名不能有 `:` `.`），已存在抛 `invalid-argument`；目录不存在 `invalid-argument`（“Folder not found: …”）；命令在合并后的 PATH 里找不到抛 `command-not-found`（“Command not found: claude”）。不传 id 时生成 `t-<12 位十六进制>`。
+- `kill`：活着的进程发一次 `terminal.exit`（129），已退出的只去掉；不存在抛 `not-found`。
+- `attach`：不存在抛 `not-found`。返回后第一段 `onData` 是 tmux 重画的整屏。**收到第一段输出之前写入的输入先排队**（F7 问题 2，界面那边也扣了一道）。
+- `write`：用户输入时发 `terminal.input`（同一终端 250ms 内只发一次）；xterm 的查询回答、焦点事件、滚轮和鼠标移动不算。发过鼠标事件之后的第一个按键会先让 tmux 退出回滚再写（F7 问题 9）；PageUp / PageDown 留在回滚里。
+- `sendKeys`：先退出回滚再 `send-keys`；发 `terminal.input`。
+- `lastLines(id, n)`：`capture-pane -p -J`，去掉末尾空行后取最后 n 行。
+- `attachCommand`：`<tmux 绝对路径> -L agentdeck -f <tmux.conf> -u attach-session -t =<id>`（只带 `-u`，见 F7 问题 4）。
+- `recentLinks`：新的在前，最多 20 条，同一个链接再出现时挪到最前、不再发事件。重开应用后第一次调用时从 tmux 历史（最后 500 行）里补找一遍。
+- `terminal.silence`：最后一次输出**或输入**之后 3 秒发（输入也重新计时：用户按了 Esc 而程序什么都没输出时，状态机的兜底规则也能等到 silence）。一段连续输出只发一次 `terminal.activity`。
+
+### 给组装（第 3 波）
+
+1. **utilityProcess 入口**：在 `apps/desktop/src/utility/` 里换掉 echo-host，`startTmuxHost({ env, onEvent, onData, linkWatcher })`，服务调用（invoke）按方法名转给 host。`onData` 按 viewId 找到发起 attach 的那个窗口的 MessagePort（主进程转 invoke 时把 webContents.id 带过来，attach 返回后记下 viewId → 窗口）。
+2. **窗口刷新或关掉**（`window-closed`）：对这个窗口的所有 viewId 调 `detach`，否则 tmux 里会留着 attach 客户端（dev bridge 里实测：刷新三次页面就有三个客户端，窗口大小跟着乱）。
+3. **登录 shell 环境**：用干净的环境起登录 shell 读 env（`env -i HOME=… USER=… SHELL=… PATH=/usr/bin:/bin $SHELL -ilc 'env -0'`），不要把 Electron 自己的环境带进去。本机 claude 要靠登录 shell 里的 `http_proxy` 等代理变量才能连上（不带就是 403，F7 当时误以为是没登录，见下面「线 1 的新发现」）。
+4. **tmux.conf 路径**：打包后 `import.meta.url` 不再指向本包，`configPath` 要传 resources 里那份的绝对路径。
+5. **node-pty**：标成 external，放进 `asar.unpacked`；打包后确认 `prebuilds/darwin-*/spawn-helper` 是 0755（预编译包里没有执行权限，开发时由本包的 postinstall 和 `src/pty.ts` 补，签名后的 .app 里改不了，见 F7 问题 14）。node-pty 是 N-API 预编译，Electron 里不用重新编译（`pnpm approve-builds` 提示的 node-pty 安装脚本可以不批准）。
+6. **nc**：用 macOS 自带的 `/usr/bin/nc`（要支持 `-U`）。
+7. **Stop all and quit**：`host.killServer()`；⌘Q 只 `host.dispose()`，会话留在 tmux 里。
+8. **agent-adapters 的 Approve all 按键**：见下面「Approve all 的按键核对」，claude 适配器建议改成 `['1']`。
+9. 界面那边的 `TerminalWindowData.cmd/args` 由 `agents.start` 的结果写入；终端窗口的 Restart 也走 `agents.start`（不直接 `terminals.create`），所以 claude 的 `--session-id`、钩子都由适配器重新生成。
 
 ## 不许碰
 
-只改 `packages/tmux-host/`。不改 contracts。试验只用 `-L agentdeck`，不碰用户默认的 tmux 服务（`tmux ls` 那个）。
+只改 `packages/tmux-host/`、`packages/port-watch/`、`packages/ui/widgets/terminal/`（线 1）。不改 contracts（意见写在 `CONTRACT_NOTES.md`）。测试和脚本只用自己的 `-L` 名字（`agentdeck-test-<pid>`、`agentdeck-dev`、`agentdeck-keys`、`agentdeck-perf`），不碰用户默认的 tmux 服务和正式的 `agentdeck`。
 
 ## 怎么跑
 
 ```bash
-packages/tmux-host/scripts/trial.sh all        # 全部检查，最后 kill-server
-packages/tmux-host/scripts/trial.sh keys       # 只跑其中一项：timing / keys / commands / agent claude / agent codex
-packages/tmux-host/scripts/trial.sh start demo -- claude   # 起一个会话
-packages/tmux-host/scripts/trial.sh attach demo            # 在你的终端里接上看（没有前缀键；另开终端 trial.sh detach demo 断开）
-packages/tmux-host/scripts/trial.sh cleanup                # tmux -L agentdeck kill-server
+pnpm --filter @agentdeck/tmux-host test          # 集成测试要本机有 tmux ≥ 3.5，没有时整组跳过
+pnpm --filter @agentdeck/tmux-host dev:bridge    # 本地演示（另开 pnpm --filter @agentdeck/ui-widget-terminal dev，打开 http://localhost:5340/?real=1）
+node packages/tmux-host/scripts/approve-keys.ts claude   # 或 codex；会真的调用模型一两轮
+node packages/tmux-host/scripts/perf.ts                  # 6 个 cat；加 agents 参数是 3 个 claude + 3 个 codex
+packages/tmux-host/scripts/trial.sh all                  # F7 的试验
 ```
 
-第一次运行会把 node-pty 1.1.0 和 @xterm/headless 6.0.0 装到 `~/.cache/agentdeck/trial-deps`（可用 `AGENTDECK_TRIAL_DEPS` 改），不进仓库、不改 lockfile。`agent` 会真的调用模型：只发 “Reply with just the word OK” 和数数这类提示词；claude 用 plan 模式，codex 用只读沙箱和临时 `CODEX_HOME`（复制 auth.json 和 config.toml，加上对仓库的信任），不改 `~/.codex`。claude 的“长输出”和“忙”用 `! seq 1 80`、`! sleep 30`（用户自己执行的命令，不经过模型）。
+## 实现要点
+
+- **输出流**：`pipe-pane` 的命令是 `{ echo 'pipe <id>'; exec cat; } | exec /usr/bin/nc -U ~/.agentdeck/run/term-agentdeck.sock`，和 `new-session` 写在同一次 tmux 调用里（F7 问题 8）。选 socket + nc 而不是 FIFO：AgentDeck 退出后 nc 连不上就退出，pipe-pane 随之关掉，tmux 不会一直攒着没人读的输出；重开时 `startTmuxHost` 给每个活着的会话重新接一次 pipe-pane（不带 `-o`，替换旧的）。
+- **退出**：`set-hook -g pane-died 'run-shell -b "echo exit #{session_name} #{pane_dead_status} #{pane_dead_signal} | nc -U …"'`，每次 create 和启动时都随命令一起设（服务重启后运行时钩子会丢，F7 问题 7）。另外每 2 秒 `list-sessions` 一次兜底：发现漏掉的退出、被外面结束的会话（按 129 发 exit），以及服务没了（发 `host-lost`）。pipe 连接断开时提前查一次。
+- **显示**：`node-pty` 跑 `tmux -L agentdeck -f <conf> -u -T RGB,extkeys,hyperlinks,sync,strikethrough,usstyle,overline attach-session -t =<id>`，`name: 'xterm-256color'`，环境是最小环境 + `TERM`。detach 直接结束 pty（SIGHUP，最快）。
+- **窗格环境**：`new-session -e K=V` 逐个给：登录 shell 的环境去掉 `TERM`、`TMUX`、`COLORTERM`、外层终端的标识、`CLAUDECODE`、`CLAUDE_CODE_ENTRYPOINT` 等宿主注入的变量、`ELECTRON_*`、`npm_*`，再合并 `req.env`，最后是 `AGENTDECK_TERM`（不能被覆盖）。没有参数的命令经 `/usr/bin/env <命令>` 直接 exec（只有一个参数时 tmux 会交给 shell）。
+- **tmux 服务**的环境只有 `HOME USER LOGNAME SHELL PATH TMPDIR LANG`（F7 问题 5）。
+
+## Approve all 的按键核对（调研记录 F2，`scripts/approve-keys.ts`）
+
+2026-10-23，claude 2.1.291、codex-cli 0.164.0，经 tmux（`sendKeys`）发按键，提示词只让它运行 `node -e "console.log('ok-from-agentdeck')"`（`echo`、`printf` 这类只读命令两个 agent 都直接放行，不会弹提示）。
+
+| agent | 提示长什么样 | 发的键 | 结果 |
+| --- | --- | --- | --- |
+| claude（`--permission-mode default`） | “Do you want to proceed?” `❯ 1. Yes` / `2. Yes, and don’t ask again for: node *` / `3. Yes, and switch to auto mode` / `4. No` | `Enter` | 选中 1，命令只跑这一次，`.claude/settings.local.json` 没有写规则 ✓ |
+| claude | 同上 | `1` | 同样选中 1 ✓ |
+| codex（`-a on-request -s read-only`，让模型申请沙箱外运行） | “Would you like to run the following command?” `› 1. Yes, proceed (y)` / `2. Yes, and don't ask again for commands that start with … (p)` / `3. No, and tell Codex what to do differently (esc)` | `y` | 选中 1，命令跑了一次 ✓ |
+
+结论和给 agent-adapters 的建议（适配器不归线 1，组装时改）：
+
+- **claude 适配器的 `approveOnceKeys` 建议从 `['Enter']` 改成 `['1']`**：`Enter` 确认的是当前高亮的那一项，用户如果在提示里按过方向键，Enter 可能变成“don’t ask again”或“switch to auto mode”；`1` 不管高亮在哪都是“Yes”。
+- codex 保持 `['y']`。注意 codex 0.164 的“don’t ask again”快捷键已经从 `a` 变成 `p`，永远不要发 `p`。
+- 两个 agent 默认设置都可能根本不弹提示：本机 claude 的默认权限模式是 auto（启动画面 “auto mode on”），codex 0.164 的 `--ask-for-approval` 只剩 `on-request` / `never`（`untrusted` 被去掉了，命令在沙箱里能跑就不问）。状态机靠的是 PermissionRequest 钩子，没有钩子就没有“等批准”，Approve all 自然不会出现，不会误发。
+
+## 性能（`scripts/perf.ts`，2026-10-23，MacBook Air（Apple 芯片）、tmux 3.6a、node 25）
+
+量的是 tmux-host 这一层：`write()` 到这个 view 收到下一段输出的时间（cat 的回显、agent 重画输入框），不含 Electron IPC 和 xterm 渲染。6 个终端同时打字（每个约 25 字/秒），另有一个不接显示、每 50ms 刷 200 行的窗格模拟后台输出。单位 ms。
+
+| 场景 | attach 到首屏（中位数 / p90 / 最大） | 按键到输出（中位数 / p90 / p99 / 最大） |
+| --- | --- | --- |
+| 6 个 `cat` | 6.8 / 9.9 / 14.2 | 0.5 / 0.7 / 1.0 / 1.5 |
+| 3 个 claude + 3 个 codex（真 agent，只在输入框里打字） | 7.4 / 10.4 / 15.8 | 9.0 / 25.6 / 29.3 / 31.5 |
+
+- agent 一行的大头是 agent 自己的重画节奏（claude 的 Ink、codex 的帧），tmux-host 本身不到 1ms。都在 50ms 以内，打字没有可感知的延迟。
+- tmux 服务 7 MB；host 进程（node，含 node-pty）约 92 MB RSS。
+- 真窗口里的数据（WebGL 渲染、IPC）要在组装后用真 Electron 再量，见「需要人工确认」。
+
+## 线 1 的新发现
+
+1. **F7 的 claude 403 不是没登录，是缺代理变量**。干净环境（`env -i`）里 `claude -p` 回 403；用登录 shell 的环境（本机 `.zshrc` 里有 `http_proxy` / `https_proxy` / `all_proxy`）就正常回答。印证了“agent 用登录 shell 的环境”这条决策，也说明登录 shell 的环境必须原样（除了终端身份变量）带进窗格。
+2. **pipe-pane 的命令会被 strftime 展开**：`%s` 变成时间戳（实测 `printf '%s\n' a` 收到的是 `1792763452`）。命令里不能有 `%`，路径要把 `%` 写成 `%%`、`#` 写成 `##`（`tmuxFormatEscape`）。
+3. **Unix socket 路径最长 103 字节**（macOS），scratch 目录下的长路径 listen 直接 EINVAL。默认放 `~/.agentdeck/run/term-<socket>.sock`。
+4. **pane-died 后 pipe 不断**：remain-on-exit 留着窗格时 pipe-pane 的连接也一直在，退出只能靠钩子或轮询。
+5. **`kill-session` 不触发 pane-died**，kill() 自己发 129。
+6. **codex 0.164 的守护进程不理 SIGTERM**，要 `kill -9`；按路径 pkill 时要用真实路径（`/private/var/...`，不是 `/var/...`）。codex 的信任记录也按真实路径。
+7. **web 字体晚于 xterm 加载**会让 xterm 先按兜底字体量出格子（行数偏多），字体加载完重新量后行列数变了；如果这时 attach 还没返回，tmux 会一直按旧行列数画（实测 claude 画面错位）。终端窗口在 attach 返回后补发一次 resize。
+8. **FitAddon 把 xterm 父元素的 padding 算进可用宽度**（多出两列，右边被裁）。留白要放在外层。
+9. **xterm 的链接要先悬停再单击**（Linkifier 在 mousemove 时才算出当前链接）；自动化测试里直接 click 不会触发。真鼠标没问题。
+10. **xterm 默认 16 色在深色底上蓝色很暗**（pnpm dev 打印的地址几乎看不清）。tokens 里还没有终端调色板，见 CONTRACT_NOTES.md。
+
+## F7 的试验结论
+
+下面是 F7（第 1 波）用试验脚本得到的结论，线 1 照做了。文件见上表的 `scripts/trial.sh` 等；`trial.sh` 第一次运行会把 node-pty 1.1.0 和 @xterm/headless 6.0.0 装到 `~/.cache/agentdeck/trial-deps`（可用 `AGENTDECK_TRIAL_DEPS` 改），不进仓库。`agent` 会真的调用模型：只发 “Reply with just the word OK” 和数数这类提示词。
 
 测试环境：macOS 26.4.1（arm64），tmux 3.6a，claude 2.1.291，codex-cli 0.159.2，node 25.9.0。
 
-## 结论
+### 结论
 
 经过 tmux 一层后，claude 和 codex 的按键、粘贴、滚动、颜色和直接在 xterm 里跑一致（下面的表全部通过）。前提是界面层做到「T2 / T3 必须做的事」里的几条，其中最重要的是 **xterm 要回答 tmux 的查询**，否则每次 attach 后 5 秒内按 Esc 会慢 500ms。attach 到首屏 10–20 ms（p90 不到 25 ms），结束 pty 断开 1–2 ms，白板平移时反复接上、断开没有问题。
 
@@ -151,6 +255,7 @@ direct = node-pty + xterm 直接跑；tmux = 经过 `tmux -L agentdeck`。两者
    - 这次试验是在 Claude 桌面版的一个会话里跑的。那个会话里的 claude 由宿主提供认证（环境里有 `CLAUDE_CODE_SDK_HAS_HOST_AUTH_REFRESH`、`CLAUDE_CODE_MESSAGING_SOCKET` 等），干净环境把这些都去掉了，claude 只能用本机 CLI 自己保存的登录，而那份登录看来已失效或不可用。
    - 没有继续查钥匙串里的凭据，也没有替用户执行 `/login`（登录是用户自己的事）。
    - 下一步：用户在自己的终端里运行 `claude`，需要的话 `/login`，然后 `trial.sh agent claude`。AgentDeck 本身也会遇到同样的情况：agent 用的是用户本机 CLI 的登录。
+   - **线 1 更正**：不是登录失效，是干净环境里没有登录 shell 的代理变量（`http_proxy` 等）。用登录 shell 的环境跑 `claude -p` 正常回答，`scripts/approve-keys.ts` 里 claude 也真的跑完了一轮，见上面「线 1 的新发现」第 1 条。
 ² claude 在主屏、不要鼠标：经过 tmux 时滚轮进 copy-mode 翻 tmux 历史（`pane_in_mode=1`），直接运行时是 xterm 自己的回滚。codex 在备用屏、要鼠标：滚轮交给 codex 自己翻（`pane_in_mode=0`，屏幕上出现 “↓ Back to bottom”），两种方式一样。
 
 其他观察：
@@ -175,7 +280,7 @@ direct = node-pty + xterm 直接跑；tmux = 经过 `tmux -L agentdeck`。两者
 | 大小 | `new-session -x -y` 生效；attach 后窗口跟客户端；两个客户端时跟最近活动的；node-pty resize 会改窗口；一个客户端离开后跟剩下的；没有客户端时保持 |
 | 隔离 | 套接字 `/private/tmp/tmux-501/agentdeck`；`#{config_files}` 是这份配置；默认 tmux 服务没有被启动 |
 
-## 发现的问题和绕过办法
+### F7 发现的问题和绕过办法
 
 1. **attach 后 5 秒内 Esc 慢 500ms**（T2 必须处理）。tmux 每次 attach 都向外层发 XTVERSION（`CSI > q`）和 OSC 10/11（前景、背景色）查询，xterm.js 不回答这两个；tmux 在等回答期间收到单独的 ESC 会扣住 500ms（以为是回答的开头），5 秒后放弃等待才恢复。实测：不回答时 501 ms，回答后 1.4 ms。只回答其中一个不够，两个都要。办法：终端窗口用 xterm.js 的 parser 钩子回答，写法见 `scripts/lib.mjs` 的 `installQueryAnswers`：
    - `registerCsiHandler({ prefix: '>', final: 'q' })` → 回 `ESC P >|xterm.js ESC \`
@@ -202,31 +307,48 @@ direct = node-pty + xterm 直接跑；tmux = 经过 `tmux -L agentdeck`。两者
 14. **node-pty 1.1.0 的预编译 `spawn-helper` 没有执行权限**，npm 装完直接用会报 `posix_spawnp failed`；`trial.sh` 里用 `chmod +x` 绕过。打包 Electron 时（第 3 波）要确认这个文件保留执行权限。
 15. **codex 会在它的 `CODEX_HOME` 下留一个常驻守护进程**（`codex app-server --managed-daemon` 和 `daemon pid-update-loop`），TUI 退出后还在，还会自己下载新版本（这次在临时目录里下了 0.164）。`agent.mjs` 结束时按临时目录路径 `pkill -f` 这些进程再删目录。线 4 起 codex 时也要知道：AgentDeck 关掉 codex 终端不等于 codex 的所有进程都结束了。
 
-## 需要人工确认
+## 需要人工确认（线 1 做完后，按这个顺序试）
 
-下面这些脚本测不到，需要有人在真的 AgentDeck 窗口或真的终端里看一下：
+脚本和 jsdom 测不到的地方。前 4 步只要本仓库，不用等组装；第 5 步以后要第 3 波组装出真的 Electron 窗口。
 
-- [ ] **需要人工确认**：claude 登录后跑一遍 `trial.sh agent claude`，确认 “Enter 提交，agent 回答 OK” 这一项也通过（这次因为本机 CLI 没登录而跳过）。
-- [ ] **需要人工确认**：在真的 xterm.js（WebGL 渲染，T2 做好后）里看 claude、codex 的颜色、粗体、暗淡、框线字符和直接在 iTerm2 / Ghostty 里跑是否一样。脚本只比较了每个格子的颜色值，没有看渲染。
-- [ ] **需要人工确认**：真实键盘上 Esc、⌃C、Tab、方向键、Shift+Enter（T3 映射后）、⌘V 多行粘贴的手感，尤其是 Esc 在刚 attach 时（平移白板之后马上按）不卡。
-- [ ] **需要人工确认**：触控板滚动：claude 里往上翻、回到底部自动退出回滚；codex 里滚动交给 codex。惯性滚动会一次发很多个滚轮事件，确认速度合适（现在每格 3 行）。
-- [ ] **需要人工确认**：在回滚里拖动选中文字，松开后系统剪贴板里有这段文字（需要 T2 装 clipboard 插件）；按住 Option 拖动是 xterm.js 自己的选中。
-- [ ] **需要人工确认**：用系统终端 attach（`trial.sh attach <id>` 或 T5 的 Open in system terminal）：iTerm2、Ghostty 颜色正常；Terminal.app 不乱（会降到 256 色）。
-- [ ] **需要人工确认**：AgentDeck 和系统终端同时 attach 同一个会话，大小不同时来回切换的效果（窗口大小跟最近有输入的客户端走，另一边会出现空白或被裁掉）。
-- [ ] **需要人工确认**：claude 的通知（任务完成时的响铃 / OSC 9）在 attach 时是否到达 xterm 并被界面正确处理。
-- [ ] **需要人工确认**：tmux 3.5 上能否正常加载这份配置（只在 3.6a 上测过，3.6 才有的选项已用 `%if` 包起来）。
+准备：本机 `tmux -V` ≥ 3.5（`brew install tmux`）。
 
-## 未完成（交给线 1）
+1. **dev 页面（假数据）**：`pnpm --filter @agentdeck/ui-widget-terminal dev`，打开 http://localhost:5340 。
+   - [ ] 5 个窗口：claude 回放、pnpm dev（地址带下划线）、codex 底部 “Process exited (code 1)” + Restart / Close、“Previous session ended” + Restart ▾、一个 300×150 的摘要卡（最后 3 行）。
+   - [ ] 把鼠标移到 pnpm dev 的 `http://localhost:5173/` 上单击：左下 Events 出现 `openWindow browser … reuseKey=http://localhost:5173`。
+   - [ ] 窗口标题栏的 S / M / L 改大小、Hide / Show（detach / attach）后内容正常；把 M 改成 S 变摘要卡，再改回 M 画面不乱。
+   - [ ] 聚焦 claude 窗口点 “Agent needs approval”：标题栏 “Needs approval · now” 变橙色。
+2. **dev 页面（真 tmux）**：另开一个终端 `pnpm --filter @agentdeck/tmux-host dev:bridge`，打开 http://localhost:5340/?real=1 。
+   - [ ] 点 shell，打字、跑 `seq 1 300`，滚轮往上翻（进 tmux 回滚），直接打一个字母：回滚退出，字母出现在提示符后面（不用多按一次）。
+   - [ ] 在 shell 里 `cd` 到一个已信任的仓库运行 `claude`：中文、框线、颜色正常；Shift+Enter 在输入框里换行；⌃C 清空输入；Esc 打断；`/` 菜单方向键能移动。
+   - [ ] 刷新页面（= 重开应用）：窗口按 terminalId 接回，内容还在，tmux 里只有一个客户端（`tmux -L agentdeck-dev list-clients`）。
+   - [ ] 在 shell 里 `exit`：底部出现 “Process exited”，标题栏 “Exited”；点 Restart 回到新的 shell。
+   - [ ] `tmux -L agentdeck-dev kill-server`：所有窗口显示 “Session ended”。
+   - [ ] 用完 `tmux -L agentdeck-dev kill-server`，或带 `AGENTDECK_BRIDGE_KILL=1` 启动 bridge，Ctrl+C 时自动清掉。
+3. **按键核对复跑**（会调用模型一两轮）：`node packages/tmux-host/scripts/approve-keys.ts claude`、`… codex`、`… claude 1`，输出里 `afterEnter` / `afterY` 是 “prompt closed”、`persistedRule` 是 “no”。agent 升级后再跑一次。
+4. **性能复跑**：`node packages/tmux-host/scripts/perf.ts agents`，按键到输出的 p99 应在 50ms 以内。
+5. **组装后，真 Electron 窗口**：
+   - [ ] 白板上开 6 个真 agent（3 claude + 3 codex），轮流在每个里打字，感觉不到延迟；平移白板让终端进出视口，回来时画面立刻是最新的。
+   - [ ] 刚平移进视口马上按 Esc：claude 立刻响应（XTVERSION / OSC 10/11 的回答生效，F7 问题 1）。
+   - [ ] ⌘V 粘贴多行：留在 claude 输入框里，不提交。从访达拖一个文件进终端：输入带引号的路径（需要 preload 提供 `webUtils.getPathForFile`，见 CONTRACT_NOTES.md）。
+   - [ ] 在 tmux 回滚里拖选文字，松开后 ⌘V 到别处能粘出来（OSC 52 → clipboard 插件）；按住 Option 拖动是 xterm 自己的选中，⌘C 复制。
+   - [ ] 触控板滚动：claude 里往上翻、回到底部自动退出回滚；codex 里滚动交给 codex；惯性滚动速度合适。
+   - [ ] ⌘K 清屏（发 C-l）；标题栏右键 Clear / Restart / Open in system terminal；关闭运行中的终端先确认，确认后进程结束。
+   - [ ] ⌘Q 再打开：终端接回、历史都在；点过的 localhost 链接仍在网页窗口的起始页（recentLinks）。
+   - [ ] 深浅色切换：终端背景、文字、光标跟着变。
+   - [ ] 用系统终端 attach（Open in system terminal）：iTerm2、Ghostty 颜色正常；Terminal.app 不乱（降到 256 色）。两边同时接着时大小跟最近有输入的那边。
+   - [ ] claude 任务完成的响铃 / OSC 9 通知在 attach 时到达 xterm（界面怎么处理留给组装）。
+6. **环境**：
+   - [ ] tmux 3.5 上加载 `tmux.conf`、跑一遍 `pnpm --filter @agentdeck/tmux-host test`（只在 3.6a 上测过）。
+   - [ ] 没有 `tmux-256color` terminfo 的机器（F7 说要退回 screen-256color，线 1 没做，见「未完成」）。
 
-F7 到这里收尾，没有继续扩展测试。以下没做，留给线 1（T1 / T2 / T3）或有人工的时候：
+## 未完成
 
-- claude 的“提交后得到回答”一项（需要本机 claude CLI 登录，见上面的 ¹）。
-- 上面“需要人工确认”清单里的所有项，尤其是真的 xterm.js（WebGL）渲染、触控板滚动、系统剪贴板。
-- tmux 3.5 上加载配置；Linux 上一项都没跑过（只测了 macOS 26 + tmux 3.6a）。
-- 没有 tmux-256color terminfo 时改用 screen-256color：配置注释里写了由 tmux-host 处理，但没有测（本机有这个 terminfo）。T1 启动时用 `infocmp tmux-256color` 检查。
-- 问题 1、2、4 的界面侧做法（回答查询、attach 后缓存输入、`-u -T`）只在 headless xterm 里验证过，T2 做出真窗口后要再测一遍：`timing.mjs`、`keys.mjs` 的 Esc 延迟一项可以直接对着真实现改写。
-- 活动 / 静默用 pipe-pane 计时（问题 6）、从登录 shell 取 PATH（问题 5）、钩子随服务重建（问题 7）只是结论，没有实现，是 T1 的工作。
-- 同时开 6 个以上 agent 时的内存和 attach 速度没有测（T2 的完成标准是“6 个真实 agent 同时开，打字无可感知延迟”）。
+- 没有 `tmux-256color` terminfo 时退回 `screen-256color`：没做（本机和 macOS 26、主流 Linux 都有）。要做的话在 `startTmuxHost` 里 `infocmp tmux-256color` 失败时，在 new-session 前加 `set -s default-terminal screen-256color`。
+- Linux 上一项都没跑过（MVP 只支持 macOS）。Linux 的 nc 要是 OpenBSD 版才有 `-U`。
+- 真 Electron 里的 IPC + xterm 渲染延迟没量（要组装后）；上面的性能数据只到 tmux-host 这一层。
+- “Open Settings”、拖入文件的路径、⌘K 清 tmux 历史、真正的“运行中才确认关闭”都缺接口，见 CONTRACT_NOTES.md。
+- claude 适配器的 `approveOnceKeys` 改成 `['1']` 留给组装（agent-adapters 不归线 1）。
 
 ## 最低 tmux 版本
 
