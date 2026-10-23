@@ -1,77 +1,82 @@
 # @agentdeck/desktop
 
-Electron 应用外壳和 IPC 层（任务 F3）。按 `packages/contracts/src/ipc.ts` 的线路约定，把界面的 `window.agentdeck` 接到主进程里注册的服务上。第 3 波组装时，真实服务在这里注册。
+Electron 应用：IPC 层（F3）加第 3 波组装。只有这个包能把服务包和界面包接在一起（根目录 AGENTS.md「模块边界」）。
 
 ## 结构
 
 ```
-electron.vite.config.ts   main / preload / renderer 三份构建；contracts 打进产物，preload 输出 CJS（sandbox 要求）
+electron.vite.config.ts   main / preload / renderer 三份构建；@agentdeck/* 打进产物，better-sqlite3 / node-pty 外部化；preload 输出 CJS
 src/main/
-  index.ts          入口：建窗口、装 IPC、启动终端 utilityProcess、注册服务
-  services.ts       唯一的注册表实例：registerService、emit
-  registry.ts       注册表：按 { service, method } 路由，异常转 AgentDeckErrorData（纯逻辑，可单测）
-  ipc.ts            ipcMain ↔ 注册表 / 终端端口（Electron 对象注入）
-  events.ts         emit(event) 广播给所有窗口
+  index.ts          入口：数据目录、登录 shell 环境、store、终端 utilityProcess、git / 工作区 / agent / browser 服务、菜单、窗口、退出
+  paths.ts          数据目录、运行目录（socket 路径太长时挪到 /tmp）、tmux 名字、tmux.conf 和 agentdeck-notify 在哪（纯逻辑）
+  login-env.ts      $SHELL -ilc 读登录 shell 环境（干净环境、标记、3 秒超时、失败退回）
+  settings.ts       设置存在 <数据目录>/settings.json
+  app-service.ts    AppService：选文件夹、编辑器、系统终端、访达、废纸篓、设置、退出、角标
+  alerts.ts         后台通知和程序坞角标（规则在 agent-adapters 的 backgroundAlerts）
+  terminal-service.ts 主进程里的 TerminalHost 转发层：调用交给 utilityProcess，attach 带上发起的窗口
+  host-process.ts   启动终端 utilityProcess，转交端口和控制消息、收回复
   terminal-ports.ts 每个窗口一条 MessageChannelMain：port1 给 preload，port2 给 utilityProcess
-  host-process.ts   启动终端 utilityProcess，转交端口和控制消息
-  dev-services.ts   内联的最小假服务（app、terminals），只用来自检，组装时删除
+  menu.ts           应用菜单：白板快捷键注册成 accelerator；不占 ⌘R ⌘[ ⌘] ⌘L
+  screenshot.ts     AGENTDECK_SCREENSHOT 截图模式
+  services.ts / registry.ts / ipc.ts / events.ts   注册表、IPC 路由、事件广播（F3）
+  browser/          网页窗口的主进程部分（线 5）：BrowserService、响应头改写、agentdeck-file://、iframe 小桥
 src/utility/
-  echo-host.ts      utilityProcess 里跑的回显假进程，以后换成 packages/tmux-host
-src/preload/
-  index.ts          contextBridge.exposeInMainWorld('agentdeck', ...)
-  api.ts            通用代理（纯逻辑，可单测）
-src/shared/
-  methods.ts        每个服务的方法名单 + 穷尽检查（contracts 加方法时这里会类型报错）
-  wire.ts           错误转换、消息校验、FIRE_AND_FORGET 判断
-  host-protocol.ts  主进程 ↔ utilityProcess 的控制消息（不属于 contracts）
-src/renderer/       React 18 页面。现在只有浅灰底和左下角的 IPC 自检
-test/               Vitest：注册表、preload 代理、主进程接线
+  tmux-host.ts      utilityProcess 入口：startTmuxHost + port-watch，输出按 viewId 写进窗口端口
+src/preload/        window.agentdeck（contracts 的 AgentDeckApi）、window.agentdeckDesktop、window.agentdeckFiles
+src/shared/         方法名单、线路工具、主进程 ↔ utilityProcess 协议、应用壳自己的 IPC（desktop-bridge.ts）
+src/renderer/       顶栏 + 白板（ui-canvas）+ 源代码管理面板（scm-panel）；注册终端、网页两种窗口；演示模式（demo.ts）
+test/               Vitest：注册表、preload 代理、主进程接线、组装用到的纯逻辑（assembly.test.ts）、browser
+ASSEMBLY_NOTES.md   组装时发现的、要别的包改的问题
 ```
-
-## 线路
-
-- 调用：`api.git.status(repo)` → `ipcRenderer.invoke('agentdeck:invoke', { service, method, args })` → 注册表 → 结果或 `{ error }`；preload 把 `{ error }` 还原成 `AgentDeckError` 抛出。
-- `FIRE_AND_FORGET` 里的方法（`terminals.write/resize`、`app.setBadge`）走 `ipcRenderer.send('agentdeck:send', ...)`，没有返回，出错只记日志。
-- 事件：服务调 `emit(event)` → 所有窗口的 `agentdeck:event` → `api.on(type, listener)`。
-- 终端输出：preload 启动时发 `agentdeck:terminal-port`，主进程建 MessageChannelMain，port1 发给该窗口，port2 连同窗口 id（webContents.id）交给 utilityProcess。utilityProcess 直接往端口写 `TerminalDataMessage`，界面用 `api.onTerminalData` 收。
-- 只接受顶层 frame 的 IPC；子 frame 的调用返回 invalid-argument。
-
-## 注册服务
-
-```ts
-import { emit, registerService, registry } from './services.ts';
-
-registerService('git', gitService);          // 实现 contracts 里的 GitService；可以只实现部分方法
-emit({ type: 'git.changed', repo });         // 推事件
-registry.context()?.senderId;                // 在服务方法里取发起调用的窗口（webContents.id），异步链里也有效
-```
-
-- 服务抛 `AgentDeckError`（或 `AgentDeckErrorData` 形状的对象）会原样传到界面；其他异常变成 `internal`，`detail` 是堆栈。
-- 没注册的服务或方法返回 `not-found`。同名重复注册会抛错。
-- 现在 `src/main/index.ts` 里调用 `registerDevServices` 注册了内联假服务；接真实实现时去掉它，避免重复注册。
-
-## 安全
-
-`contextIsolation: true`、`nodeIntegration: false`、`sandbox: true`；页面只能用 `window.agentdeck`。禁止页面跳转和 `window.open`。index.html 带 CSP。
 
 ## 运行
 
 ```bash
-pnpm dev                                  # 根目录，等于 pnpm --filter @agentdeck/desktop dev
-pnpm --filter @agentdeck/desktop test     # 单测
+pnpm dev                                                   # 根目录。数据在仓库的 .agentdeck-dev/（git 忽略），tmux -L agentdeck-desktop-dev
+AGENTDECK_DEMO=1 pnpm dev                                  # 自动把本仓库加成项目、建主目录工作区、开 Shell（git status / log）和 claude（只启动）
+AGENTDECK_DEMO=1 AGENTDECK_SCREENSHOT=/abs/shot.png pnpm dev   # 白板加载完、终端有输出后截整个窗口，然后正常退出（tmux 里的终端留着）
+pnpm --filter @agentdeck/desktop test
 pnpm --filter @agentdeck/desktop typecheck
-pnpm --filter @agentdeck/desktop build    # 产物在 out/
 ```
 
-开发模式下界面的 console 会打到终端；窗口左下角四项自检（invoke、event、error、terminal port）都应是 `ok`，终端里会有对应的 `[ipc-check] ... ok` 行。
+环境变量：
 
-Electron 45 第一次运行时才下载二进制（pnpm 10 不跑依赖的 postinstall）。走代理时 `@electron/get` 不认 `https_proxy`，需要：
+| 变量 | 作用 |
+| --- | --- |
+| `AGENTDECK_DATA_DIR` | 数据目录。默认：开发时 `<仓库>/.agentdeck-dev`，打包后 `~/.agentdeck` |
+| `AGENTDECK_TMUX_SOCKET` | tmux `-L` 名字。默认：开发时 `agentdeck-desktop-dev`，打包后 `agentdeck` |
+| `AGENTDECK_DEMO=1` | 演示：见上 |
+| `AGENTDECK_SCREENSHOT=<png>` | 截图后退出；`AGENTDECK_SCREENSHOT_DELAY`（毫秒，默认 6000）是终端都有输出之后再等多久 |
+| `AGENTDECK_DEBUG_PORT` | 只在开发时：界面开 Chrome DevTools 协议端口，脚本驱动界面用；控制台里 `__board` 是白板控制器 |
 
-```bash
-ELECTRON_GET_USE_PROXY=1 GLOBAL_AGENT_HTTPS_PROXY=$https_proxy node apps/desktop/node_modules/electron/install.js
-```
+清掉开发数据：退出应用，`tmux -L agentdeck-desktop-dev kill-server`，删 `.agentdeck-dev/`。
+
+Electron 45 第一次运行时才下载二进制（pnpm 10 不跑依赖的 postinstall）：`node apps/desktop/node_modules/electron/install.js`（走代理时加 `ELECTRON_GET_USE_PROXY=1 GLOBAL_AGENT_HTTPS_PROXY=$https_proxy`）。
+
+## 接线要点
+
+- **登录 shell 环境**：启动时读一次（`login-env.ts`），传给 tmux-host（窗格环境）、agent-adapters（检测、启动命令）、git-service、编辑器 / 系统终端。读失败时界面左下角提示。
+- **终端**：tmux-host 跑在 utilityProcess（`src/utility/tmux-host.ts`）。主进程的 `terminals` 服务是转发层，attach 时带上 `registry.context().senderId`；输出不经过主进程，直接写进那个窗口的 MessagePort。窗口刷新或关掉时 detach 它的所有 view。tmux 起不来时界面显示说明页和 Retry（再起一次）。
+- **状态机**：tmux-host 的 `terminal.*` 事件交给 agent runtime；`terminal.input` 时调 `noteInput`（claude 拒绝批准、Esc 打断没有钩子）。`agents.start` 之后把终端记进 store 的 terminals 表，重开应用时按记录 `track` 回来。
+- **钩子**：每次启动在 `<数据目录>/bin/agentdeck-notify` 写一个 sh 入口（带 `AGENTDECK_HOOK_SOCKET`；用登录 shell 里的 node，没有就用 Electron 当 node），把它的绝对路径交给适配器。
+- **git**：git-service 的 `git.status` 事件同时交给 workspace-service 的 `noteStatus`（分支变了更新框标题）。
+- **网页**：`registerBrowserService(registry)`。onHeadersReceived 每个 session 只能有一个，现在只有 browser 模块用；别的地方要改响应头，合进 `browser/index.ts` 的 `installOnSession`。
+- **菜单**：白板快捷键注册成 accelerator，点击时发给界面（`agentdeck-desktop:shortcut`），界面调 `runShortcut`；同一组合键白板页面刚处理过（500ms 内）就不再执行。编辑菜单是 copy / paste 必需的。
+- **关窗口和退出**：关窗口默认隐藏（后台继续），程序坞点回来；⌘Q、程序坞 Quit 先让界面存白板，再断开 tmux-host（会话留着）；Stop All Terminals and Quit 才 kill-server。
+
+## 线路（F3）
+
+- 调用：`api.git.status(repo)` → `ipcRenderer.invoke('agentdeck:invoke', { service, method, args })` → 注册表 → 结果或 `{ error }`；preload 把 `{ error }` 还原成 `AgentDeckError` 抛出。
+- `FIRE_AND_FORGET` 里的方法（`terminals.write/resize`、`app.setBadge`）走 `ipcRenderer.send('agentdeck:send', ...)`，没有返回，出错只记日志。
+- 事件：服务调 `emit(event)` → 所有窗口的 `agentdeck:event` → `api.on(type, listener)`。
+- 只接受顶层 frame 的 IPC；子 frame（嵌进来的网页）的调用返回 invalid-argument。
+- 服务抛 `AgentDeckError`（或 `AgentDeckErrorData` 形状的对象）会原样传到界面；其他异常变成 `internal`。没注册的服务或方法返回 `not-found`。
+
+## 安全
+
+`contextIsolation: true`、`nodeIntegration: false`、`sandbox: true`；页面只能用 `window.agentdeck` 和上面两个小接口。禁止页面跳转；`window.open` 一律拒绝，http(s) 交给系统浏览器。index.html 的 CSP 带 `frame-src http: https: agentdeck-file:`（网页窗口的 iframe）。
 
 ## 不许碰
 
-- `packages/contracts`：线路约定有问题写进 `CONTRACT_NOTES.md`。
-- 其他包的目录。这里不 import `tools/fakes`、`packages/ui/*` 以外的界面包；组装前也不 import 服务包。
+- `packages/contracts`：线路约定有问题写进 `CONTRACT_NOTES.md`；组装时发现的写进 `ASSEMBLY_NOTES.md`。
+- 其他包的目录（问题写进 `ASSEMBLY_NOTES.md`）。

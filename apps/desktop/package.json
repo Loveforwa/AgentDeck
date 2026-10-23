@@ -12,7 +12,21 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@agentdeck/contracts": "workspace:*"
+    "@agentdeck/agent-adapters": "workspace:*",
+    "@agentdeck/contracts": "workspace:*",
+    "@agentdeck/design-tokens": "workspace:*",
+    "@agentdeck/git-service": "workspace:*",
+    "@agentdeck/port-watch": "workspace:*",
+    "@agentdeck/scm-panel": "workspace:*",
+    "@agentdeck/store": "workspace:*",
+    "@agentdeck/tmux-host": "workspace:*",
+    "@agentdeck/ui-canvas": "workspace:*",
+    "@agentdeck/ui-kit": "workspace:*",
+    "@agentdeck/ui-widget-browser": "workspace:*",
+    "@agentdeck/ui-widget-terminal": "workspace:*",
+    "@agentdeck/workspace-service": "workspace:*",
+    "better-sqlite3": "13.0.3",
+    "node-pty": "1.1.0"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",

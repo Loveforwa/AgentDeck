@@ -150,8 +150,8 @@ describe('ClaudeAdapter', () => {
     expect(hookHint('Stop', {})).toEqual({});
   });
 
-  it('approves once with Enter', () => {
-    expect(claude.approveOnceKeys).toEqual(['Enter']);
+  it('approves once with 1 (not Enter, which picks the highlighted row)', () => {
+    expect(claude.approveOnceKeys).toEqual(['1']);
   });
 });
 

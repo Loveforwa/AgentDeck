@@ -41,9 +41,51 @@ importers:
 
   apps/desktop:
     dependencies:
+      '@agentdeck/agent-adapters':
+        specifier: workspace:*
+        version: link:../../packages/agent-adapters
       '@agentdeck/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@agentdeck/design-tokens':
+        specifier: workspace:*
+        version: link:../../packages/design-tokens
+      '@agentdeck/git-service':
+        specifier: workspace:*
+        version: link:../../packages/git-service
+      '@agentdeck/port-watch':
+        specifier: workspace:*
+        version: link:../../packages/port-watch
+      '@agentdeck/scm-panel':
+        specifier: workspace:*
+        version: link:../../packages/ui/panels/scm
+      '@agentdeck/store':
+        specifier: workspace:*
+        version: link:../../packages/store
+      '@agentdeck/tmux-host':
+        specifier: workspace:*
+        version: link:../../packages/tmux-host
+      '@agentdeck/ui-canvas':
+        specifier: workspace:*
+        version: link:../../packages/ui/canvas
+      '@agentdeck/ui-kit':
+        specifier: workspace:*
+        version: link:../../packages/ui/kit
+      '@agentdeck/ui-widget-browser':
+        specifier: workspace:*
+        version: link:../../packages/ui/widgets/browser
+      '@agentdeck/ui-widget-terminal':
+        specifier: workspace:*
+        version: link:../../packages/ui/widgets/terminal
+      '@agentdeck/workspace-service':
+        specifier: workspace:*
+        version: link:../../packages/workspace-service
+      better-sqlite3:
+        specifier: 13.0.3
+        version: 13.0.3
+      node-pty:
+        specifier: 1.1.0
+        version: 1.1.0
     devDependencies:
       '@types/node':
         specifier: ^26.6.5

@@ -27,8 +27,8 @@ export class ClaudeAdapter implements AgentAdapterExt {
   readonly id = 'claude';
   readonly label = 'Claude Code';
   readonly command = 'claude';
-  /** 权限确认框默认选中第一项 “1. Yes”，回车即“允许一次”（2.1.291 实测）。待线 1 用真终端核对 send-keys 的效果。 */
-  readonly approveOnceKeys = ['Enter'];
+  /** “1. Yes” = 允许一次。发 '1' 而不是 Enter：Enter 选的是当前高亮的那一行，用户按过方向键时可能变成“以后都允许”（线 1 实测，tmux-host/AGENTS.md「Approve all 的按键核对」）。 */
+  readonly approveOnceKeys = ['1'];
   private lastVersion: string | null = null;
   private readonly newSessionId: () => string;
 

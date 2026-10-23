@@ -1,39 +1,71 @@
-/* 临时色值。F4 交付 packages/design-tokens 后改为引用 tokens.css 里的变量。 */
-:root {
-  --tmp-bg: #ecebe8;
-  --tmp-ink: #1c1b1a;
-  --tmp-muted: #77736d;
-  --tmp-attention: #d9661f;
-}
+/* 应用壳的几处样式。颜色、字号、间距只用 design-tokens 的变量（@agentdeck/ui-kit/base.css 已经引了 tokens.css）。 */
 
 html,
 body,
 #root {
   height: 100%;
   margin: 0;
+  overflow: hidden;
 }
 
-body {
-  background: var(--tmp-bg);
-  color: var(--tmp-ink);
-  font: 13px/1.5 -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+/* tmux 不可用时的说明页 */
+.app-blocker {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-md);
+  max-width: 560px;
+  margin: 0 auto;
+  padding: var(--space-2xl) var(--space-xl);
+  height: 100%;
+  justify-content: center;
 }
 
-.ipc-check {
-  position: fixed;
-  left: 16px;
-  bottom: 16px;
+.app-blocker h1 {
   margin: 0;
-  padding: 0;
-  list-style: none;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 12px;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-strong);
 }
 
-.ipc-check li[data-state='pending'] {
-  color: var(--tmp-muted);
+.app-blocker p {
+  margin: 0;
 }
 
-.ipc-check li[data-state='fail'] {
-  color: var(--tmp-attention);
+.app-blocker pre {
+  margin: 0;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  font-size: var(--text-sm);
+  white-space: pre-wrap;
+}
+
+.app-muted {
+  color: var(--muted);
+}
+
+/* 启动时的提示（例如读不到登录 shell 的环境） */
+.app-notices {
+  position: fixed;
+  left: var(--space-lg);
+  bottom: var(--space-lg);
+  z-index: var(--z-toast);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  max-width: 520px;
+}
+
+.app-notice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-window);
+  background: var(--raised);
+  box-shadow: var(--shadow-float);
+  font-size: var(--text-sm);
 }
