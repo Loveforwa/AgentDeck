@@ -1,0 +1,14 @@
+{
+  "name": "pnpm-dev",
+  "description": "A shell running pnpm dev: Vite starts and prints http://localhost:5173/, then an HMR update a few seconds later. The process keeps running.",
+  "size": { "cols": 100, "rows": 24 },
+  "events": [
+    { "delayMs": 0, "data": "\u001b[1m~/code/agentdeck\u001b[0m % pnpm dev\r\n" },
+    { "delayMs": 300, "data": "\r\n> agentdeck@0.1.0 dev /Users/you/code/agentdeck\r\n> vite\r\n\r\n" },
+    { "delayMs": 500, "data": "\r\n  \u001b[32m\u001b[1mVITE\u001b[22m v5.4.10\u001b[39m  \u001b[2mready in \u001b[0m\u001b[1m312\u001b[22m\u001b[2m ms\u001b[22m\r\n\r\n" },
+    { "delayMs": 0, "data": "  \u001b[32m➜\u001b[39m  \u001b[1mLocal\u001b[22m:   \u001b[36mhttp://localhost:\u001b[1m5173\u001b[22m/\u001b[39m\r\n" },
+    { "delayMs": 0, "data": "  \u001b[32m➜\u001b[39m  \u001b[1mNetwork\u001b[22m\u001b[2m: use \u001b[22m\u001b[1m--host\u001b[22m\u001b[2m to expose\u001b[22m\r\n" },
+    { "delayMs": 0, "data": "  \u001b[32m➜\u001b[39m  \u001b[2mpress \u001b[22m\u001b[1mh + enter\u001b[22m\u001b[2m to show help\u001b[22m\r\n" },
+    { "delayMs": 5000, "data": "\u001b[2m3:41:07 PM\u001b[22m \u001b[36m\u001b[1m[vite]\u001b[22m\u001b[39m \u001b[32mhmr update \u001b[39m\u001b[2m/src/App.tsx\u001b[22m\r\n" }
+  ]
+}

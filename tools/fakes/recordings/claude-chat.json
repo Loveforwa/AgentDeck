@@ -1,0 +1,29 @@
+{
+  "name": "claude-chat",
+  "description": "Claude Code style session: one prompt, a few tool calls, a summary that mentions a file:line and a localhost URL, then back to the input box.",
+  "size": { "cols": 100, "rows": 30 },
+  "events": [
+    { "delayMs": 0, "data": "\u001b[38;5;173m╭──────────────────────────────────────────────╮\u001b[0m\r\n" },
+    { "delayMs": 0, "data": "\u001b[38;5;173m│\u001b[0m \u001b[38;5;173m✻\u001b[0m Welcome to \u001b[1mClaude Code\u001b[0m!                      \u001b[38;5;173m│\u001b[0m\r\n" },
+    { "delayMs": 0, "data": "\u001b[38;5;173m│\u001b[0m                                              \u001b[38;5;173m│\u001b[0m\r\n" },
+    { "delayMs": 0, "data": "\u001b[38;5;173m│\u001b[0m   \u001b[2mcwd: /Users/you/code/agentdeck\u001b[0m             \u001b[38;5;173m│\u001b[0m\r\n" },
+    { "delayMs": 0, "data": "\u001b[38;5;173m╰──────────────────────────────────────────────╯\u001b[0m\r\n\r\n" },
+    { "delayMs": 600, "data": "\u001b[2m>\u001b[0m Add a login form with email and password fields\r\n\r\n" },
+    { "delayMs": 300, "data": "\u001b[38;5;173m✻\u001b[0m Thinking…" },
+    { "delayMs": 700, "data": "\r\u001b[2K\u001b[38;5;173m✻\u001b[0m Thinking… \u001b[2m(1s · esc to interrupt)\u001b[0m" },
+    { "delayMs": 700, "data": "\r\u001b[2K" },
+    { "delayMs": 0, "data": "⏺ I'll add a login form. Let me look at the current app first.\r\n\r\n" },
+    { "delayMs": 400, "data": "\u001b[32m⏺\u001b[0m \u001b[1mRead\u001b[0m(src/App.tsx)\r\n" },
+    { "delayMs": 200, "data": "  ⎿  Read \u001b[1m42\u001b[0m lines\r\n\r\n" },
+    { "delayMs": 600, "data": "\u001b[32m⏺\u001b[0m \u001b[1mWrite\u001b[0m(src/Login.tsx)\r\n" },
+    { "delayMs": 300, "data": "  ⎿  Wrote \u001b[1m38\u001b[0m lines to src/Login.tsx\r\n\r\n" },
+    { "delayMs": 500, "data": "\u001b[32m⏺\u001b[0m \u001b[1mUpdate\u001b[0m(src/App.tsx)\r\n" },
+    { "delayMs": 300, "data": "  ⎿  Updated src/App.tsx with \u001b[1m3\u001b[0m additions and \u001b[1m1\u001b[0m removal\r\n\r\n" },
+    { "delayMs": 800, "data": "⏺ Added a login form in src/Login.tsx:12 and wired it into src/App.tsx:8.\r\n" },
+    { "delayMs": 0, "data": "  Run pnpm dev and open http://localhost:5173/login to try it.\r\n\r\n" },
+    { "delayMs": 200, "data": "\u001b[2m╭──────────────────────────────────────────────╮\u001b[0m\r\n" },
+    { "delayMs": 0, "data": "\u001b[2m│\u001b[0m >                                            \u001b[2m│\u001b[0m\r\n" },
+    { "delayMs": 0, "data": "\u001b[2m╰──────────────────────────────────────────────╯\u001b[0m\r\n" },
+    { "delayMs": 0, "data": "  \u001b[2m? for shortcuts\u001b[0m" }
+  ]
+}

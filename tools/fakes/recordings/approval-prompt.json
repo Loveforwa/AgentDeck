@@ -1,0 +1,19 @@
+{
+  "name": "approval-prompt",
+  "description": "An agent asks to run pnpm test and waits on (y/n). Playback pauses until any input (write or sendKeys), then the tests run and pass.",
+  "size": { "cols": 100, "rows": 24 },
+  "events": [
+    { "delayMs": 0, "data": "\u001b[2m>\u001b[0m Run the test suite and fix anything that fails\r\n\r\n" },
+    { "delayMs": 500, "data": "\u001b[1m•\u001b[0m Running pnpm test to see the current state.\r\n\r\n" },
+    { "delayMs": 400, "data": "\u001b[33mAllow command?\u001b[0m\r\n" },
+    { "delayMs": 0, "data": "  \u001b[2m$\u001b[0m pnpm test\r\n" },
+    { "delayMs": 0, "data": "  \u001b[1m(y/n)\u001b[0m " },
+    { "delayMs": 0, "waitForInput": true },
+    { "delayMs": 100, "data": "\r\n\r\n \u001b[46m\u001b[30m RUN \u001b[0m \u001b[36mv2.1.4 \u001b[0m\u001b[2m/Users/you/code/agentdeck\u001b[0m\r\n\r\n" },
+    { "delayMs": 600, "data": " \u001b[32m✓\u001b[0m src/login.test.ts \u001b[2m(4 tests) 12ms\u001b[0m\r\n" },
+    { "delayMs": 200, "data": " \u001b[32m✓\u001b[0m src/cart.test.ts \u001b[2m(8 tests) 20ms\u001b[0m\r\n\r\n" },
+    { "delayMs": 100, "data": "\u001b[2m Test Files \u001b[0m \u001b[1m\u001b[32m2 passed\u001b[0m \u001b[2m(2)\u001b[0m\r\n" },
+    { "delayMs": 0, "data": "\u001b[2m      Tests \u001b[0m \u001b[1m\u001b[32m12 passed\u001b[0m \u001b[2m(12)\u001b[0m\r\n\r\n" },
+    { "delayMs": 500, "data": "\u001b[1m•\u001b[0m All 12 tests pass. Nothing to fix.\r\n\r\n\u001b[2m>\u001b[0m " }
+  ]
+}
