@@ -1,0 +1,253 @@
+/* 窗口外框。颜色只用 tokens。 */
+
+.ad-window {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-window);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  transition:
+    border-color var(--motion),
+    box-shadow var(--motion);
+}
+
+.ad-window--attention {
+  border-color: var(--attention);
+}
+
+.ad-window--focused {
+  border-color: var(--ink);
+  box-shadow: var(--shadow-float);
+  outline: 0.5px solid var(--ink);
+}
+
+.ad-window--lifted {
+  box-shadow: var(--shadow-float);
+}
+
+.ad-window-titlebar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-sm);
+  box-sizing: border-box;
+  height: 28px;
+  padding: 0 var(--space-xs) 0 var(--space-md);
+  border-bottom: 1px solid var(--line-subtle);
+  white-space: nowrap;
+  cursor: default;
+  user-select: none;
+  touch-action: none;
+}
+
+.ad-window-name {
+  flex: none;
+  font-family: var(--font-mono);
+  font-weight: var(--weight-medium);
+}
+
+.ad-window-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  text-overflow: ellipsis;
+}
+
+.ad-window-status {
+  flex: none;
+  color: var(--muted);
+}
+
+.ad-window-status--attention {
+  color: var(--attention);
+}
+
+.ad-window-status--error {
+  color: var(--ink);
+}
+
+.ad-window-actions {
+  display: flex;
+  flex: none;
+  gap: var(--space-2xs);
+  opacity: 0;
+  transition: opacity var(--motion);
+}
+
+.ad-window:hover .ad-window-actions,
+.ad-window--focused .ad-window-actions,
+.ad-window-actions:focus-within {
+  opacity: 1;
+}
+
+.ad-window-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-sm);
+  height: var(--control-sm);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--muted);
+}
+
+.ad-window-button:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+
+.ad-window-button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.ad-window-dot {
+  flex: none;
+  box-sizing: border-box;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.ad-window-dot--filled {
+  background: var(--ink);
+}
+
+.ad-window-dot--hollow {
+  border: 1.5px solid var(--muted);
+}
+
+.ad-window-dot--none {
+  width: 8px;
+  height: 2px;
+  border-radius: 0;
+  background: var(--muted);
+}
+
+.ad-window-dot--empty {
+  width: 0;
+  margin-right: calc(-1 * var(--space-sm));
+}
+
+.ad-window-dot--filled.ad-window-dot--attention {
+  background: var(--attention);
+}
+
+.ad-window-dot--hollow.ad-window-dot--attention {
+  border-color: var(--attention);
+}
+
+.ad-window-content {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 0 0 var(--radius-window) var(--radius-window);
+}
+
+/* 再次打开时边框闪一下 */
+.ad-window-flash {
+  position: absolute;
+  inset: -1px;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-window);
+  pointer-events: none;
+  animation: ad-window-flash 600ms var(--motion-ease) forwards;
+}
+
+@keyframes ad-window-flash {
+  0%,
+  40% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ad-window-flash {
+    animation-duration: 1ms;
+  }
+}
+
+/* 改大小的边和角：边 6px，角 12px，稍微伸出窗口外面一点 */
+.ad-window-resize {
+  position: absolute;
+  z-index: 2;
+  touch-action: none;
+}
+
+.ad-window-resize--n,
+.ad-window-resize--s {
+  left: 8px;
+  right: 8px;
+  height: 6px;
+  cursor: ns-resize;
+}
+
+.ad-window-resize--e,
+.ad-window-resize--w {
+  top: 8px;
+  bottom: 8px;
+  width: 6px;
+  cursor: ew-resize;
+}
+
+.ad-window-resize--n {
+  top: -3px;
+}
+
+.ad-window-resize--s {
+  bottom: -3px;
+}
+
+.ad-window-resize--e {
+  right: -3px;
+}
+
+.ad-window-resize--w {
+  left: -3px;
+}
+
+.ad-window-resize--ne,
+.ad-window-resize--nw,
+.ad-window-resize--se,
+.ad-window-resize--sw {
+  width: 12px;
+  height: 12px;
+}
+
+.ad-window-resize--ne {
+  top: -4px;
+  right: -4px;
+  cursor: nesw-resize;
+}
+
+.ad-window-resize--sw {
+  bottom: -4px;
+  left: -4px;
+  cursor: nesw-resize;
+}
+
+.ad-window-resize--nw {
+  top: -4px;
+  left: -4px;
+  cursor: nwse-resize;
+}
+
+.ad-window-resize--se {
+  right: -4px;
+  bottom: -4px;
+  cursor: nwse-resize;
+}
