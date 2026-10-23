@@ -30,11 +30,18 @@ export interface TerminalInfo {
 export interface TerminalHost {
   /** 在 tmux 里新建会话。应用退出后会话继续存在。 */
   create(req: CreateTerminalRequest): Promise<{ id: TerminalId }>;
+  /**
+   * 结束会话。进程还活着时会发一次 terminal.exit，退出码按 128 + 信号算（SIGHUP 是 129），然后从 list() 里去掉。
+   * 进程已经退出（窗格因 remain-on-exit 还留着）时只去掉，不再发 exit。
+   */
   kill(id: TerminalId): Promise<void>;
   /** 重开应用时用它对上保存的窗口。 */
   list(): Promise<TerminalInfo[]>;
 
-  /** 只为视口里的终端接上显示，移出视口就 detach。输出通过 TerminalDataChannel 推送。 */
+  /**
+   * 只为视口里的终端接上显示，移出视口就 detach。输出通过 TerminalDataMessage 推送。
+   * 接上后的第一条消息是当前整屏（tmux 重画），之后是增量。界面在 attach 前先 reset 自己的 xterm，不用自己判断要不要清屏。
+   */
   attach(id: TerminalId, size: TermSize): Promise<{ viewId: ViewId }>;
   detach(viewId: ViewId): Promise<void>;
   /** 用户输入。不等待返回。 */

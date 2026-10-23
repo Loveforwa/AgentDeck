@@ -13,7 +13,7 @@ import type { ApprovalService, StatusEvent, StatusService } from './status.ts';
 import type { TerminalDataMessage, TerminalEvent, TerminalHost } from './terminal.ts';
 import type { WorkspaceEvent, WorkspaceService } from './workspace.ts';
 
-export const CONTRACTS_VERSION = '0.1.0';
+export const CONTRACTS_VERSION = '0.1.1';
 
 /** 所有从服务推给界面的事件。新增事件只能往这里加，不能改已有事件的形状。 */
 export type AgentDeckEvent = AppEvent | ProjectEvent | WorkspaceEvent | TerminalEvent | StatusEvent | GitEvent;

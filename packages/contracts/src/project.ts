@@ -57,7 +57,7 @@ export type ProjectPatch = Partial<Pick<Project, 'name' | 'worktreeRoot' | 'copy
 
 export interface ProjectService {
   probe(folder: AbsPath): Promise<ProjectProbe>;
-  /** 'separately' 会返回多个项目。 */
+  /** 'separately' 会返回多个项目。文件夹已经加过时不报错，直接返回已有的项目。 */
   add(req: AddProjectRequest): Promise<Project[]>;
   /** 最近用过的在前。 */
   list(): Promise<Project[]>;

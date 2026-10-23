@@ -1,7 +1,7 @@
 // agent 接入：每个 agent 一个适配器，加一个 agent 就是加一个文件再注册一行。
 // 需求见「5 · 终端窗口」「6 · 终端状态与提醒」。实现：packages/agent-adapters（线 4）。
 
-import type { AbsPath, AgentKind, AgentSessionId, IsoTime, TerminalId, WorkspaceId } from './common.ts';
+import type { AbsPath, AgentKind, AgentSessionId, IsoTime, TermSize, TerminalId, WorkspaceId } from './common.ts';
 
 export interface AgentCapabilities {
   /** 有钩子，状态准确（claude、新版 codex）。没有时只能靠 tmux 的输出活动判断运行中和空闲。 */
@@ -91,6 +91,8 @@ export interface StartAgentRequest {
   mode: LaunchMode;
   /** agent 为 'custom' 或 'shell' 时的命令，例如 'pnpm dev'。 */
   command?: string;
+  /** 窗口当前能放下的行列数，原样传给 terminals.create，避免 TUI 先按 80×24 画、attach 后再跳一次。 */
+  size?: TermSize;
 }
 
 export interface StartAgentResult {

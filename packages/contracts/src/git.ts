@@ -64,6 +64,20 @@ export interface CommitInfo {
   onBase: boolean;
 }
 
+export interface StashInfo {
+  /** git 的 stash 引用，例如 'stash@{0}'。apply 后其他条目的编号会变，用前重新取列表。 */
+  id: string;
+  /** 存的时候所在的分支。 */
+  branch: string | null;
+  message: string;
+  at: IsoTime;
+}
+
+export interface StatusOptions {
+  /** 计算 aheadOfBase、onBase 用的基础分支。不传时用 defaultBranch(repo)。项目设置里改过基础分支时由调用方传入。 */
+  baseBranch?: string;
+}
+
 export type SwitchStrategy =
   /** 带着改动切（git 允许时）。 */
   | 'carry'
@@ -71,18 +85,25 @@ export type SwitchStrategy =
   | 'stash';
 
 export interface GitService {
-  status(repo: AbsPath): Promise<RepoStatus>;
+  status(repo: AbsPath, opts?: StatusOptions): Promise<RepoStatus>;
+  /** 路径不存在时抛 git-failed，detail 是 git 原话（pathspec did not match）。unstage、discard 同样。 */
   stage(repo: AbsPath, paths: string[]): Promise<void>;
   unstage(repo: AbsPath, paths: string[]): Promise<void>;
   /** 已跟踪文件还原；未跟踪文件移到废纸篓。确认由界面负责。 */
   discard(repo: AbsPath, paths: string[]): Promise<void>;
-  /** all=true：没有暂存时提交全部改动（Commit all n changes）。 */
+  /** all=true：没有暂存时提交全部改动（Commit all n changes）。没有可提交的内容时抛 git-failed，detail 是 git 原话（nothing to commit）。 */
   commit(repo: AbsPath, message: string, opts: { all: boolean }): Promise<CommitInfo>;
   branches(repo: AbsPath): Promise<BranchInfo[]>;
   switchBranch(repo: AbsPath, branch: string, strategy: SwitchStrategy): Promise<void>;
   createBranch(repo: AbsPath, name: string, opts: { from?: string; switchTo: boolean }): Promise<void>;
+  /** 分支正在某个 worktree 里检出时抛 branch-in-use；没合并且 force=false 时抛 git-failed。workspace-service 回滚时也用它。 */
+  deleteBranch(repo: AbsPath, name: string, opts: { force: boolean }): Promise<void>;
+  /** 新的在前。切分支时用 'stash' 存下的改动，切回来时界面据此提示恢复。 */
+  stashes(repo: AbsPath): Promise<StashInfo[]>;
+  /** 恢复一条 stash。drop=true 时恢复成功后删掉它（相当于 pop）。有冲突时抛 git-failed，改动留在工作区。 */
+  applyStash(repo: AbsPath, id: string, opts: { drop: boolean }): Promise<void>;
   /** 当前分支上、不在基础分支里的提交，加基础分支最近的几条。 */
-  log(repo: AbsPath, limit: number): Promise<CommitInfo[]>;
+  log(repo: AbsPath, limit: number, opts?: StatusOptions): Promise<CommitInfo[]>;
   /** 统一 diff 文本。staged=true 时比较暂存区和 HEAD。 */
   diff(repo: AbsPath, path: string, opts: { staged: boolean }): Promise<string>;
 
