@@ -1,6 +1,6 @@
 # 并发开发安排
 
-接口已经定在 `packages/contracts`（0.1.0）。之后分三波：先并发补齐地基，再 5 条线并发做功能，最后组装。
+接口已经定在 `packages/contracts`（现在是 0.1.2）。之后分三波：先并发补齐地基，再 5 条线并发做功能，最后组装。
 任务编号对应《AgentDeck MVP 实施计划》表（docs/design/agentdeck-mvp-plan.html）。
 
 ## 第 0 波 · 已完成
@@ -45,6 +45,8 @@ F6 最先需要：第 2 波每条线都靠它脱离别人独立运行。可以�
 - 线 3 `workspaces.create` 返回的 `setup` → 线 2 在框里开一个 Shell。
 - 线 2 的 New terminal ▸ → 线 4 的 `agents.start`，返回的 terminalId 交给线 1 的终端窗口。
 - `status.changed` → 线 1 标题栏、线 2 框和顶栏。
+- 窗口组件拿到的 props 是 contracts 的 `WindowComponentProps`（0.1.2）。线 2 在 `packages/ui/canvas/src/registry.ts` 导出 `registerWindow`，线 1、线 5 的 widget 调它注册。
+- 登录 shell 的环境由 apps/desktop 读一次，传给线 1 的 tmux-host 和线 4 的 agent-adapters（见 docs/decisions.md）。
 
 ## 第 3 波 · 组装（1 个 agent + 1 个审查）
 

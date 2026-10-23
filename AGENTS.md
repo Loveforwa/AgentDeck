@@ -8,6 +8,7 @@
 - 实施方案（技术选型、模块、风险）：https://claude.ai/artifact/QrjHF5gpT6zdHJr6wdFaWp ，本地副本 `docs/design/agentdeck-plan.html`
 - MVP 任务表（任务编号、依赖、完成标准）：https://claude.ai/artifact/8UAh7Quj23xxk7oEikgdEg ，本地副本 `docs/design/agentdeck-mvp-plan.html`
 - 并发安排：`docs/parallel.md`
+- 已定的决策（平台、tmux、环境变量等）：`docs/decisions.md`
 - 接口：`packages/contracts`，规则见 `packages/contracts/AGENTS.md`
 - `docs/design/agentdeck-mvp-spec.html` 是早期版本，已不维护。
 
