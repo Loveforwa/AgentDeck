@@ -14,3 +14,18 @@ export type {
   FakeRepoInit,
   FakeStash,
 } from './git-service.ts';
+export { DEFAULT_SETTINGS, FakeAppService } from './app-service.ts';
+export type { FakeAppCall, FakeAppServiceOptions } from './app-service.ts';
+export { FakeBoardStore, emptyBoard } from './board-store.ts';
+export { FakeBrowserService, isLocalhostUrl } from './browser-service.ts';
+export { FakeProjectService } from './project-service.ts';
+export type { FakeProjectServiceOptions } from './project-service.ts';
+export { FakeWorkspaceService } from './workspace-service.ts';
+export type { FakeWorkspaceServiceOptions } from './workspace-service.ts';
+export { DEFAULT_AGENTS, FakeAgentService } from './agent-service.ts';
+export type { FakeAgentDefinition, FakeAgentServiceOptions } from './agent-service.ts';
+export { FakeApprovalService, FakeStatusService } from './status-service.ts';
+export type { FakeApprovalServiceOptions, FakeStatusServiceOptions, TrackedTerminal } from './status-service.ts';
+export { Scenario, createFakeApi, createFakeServices, defaultRecordingFor } from './api.ts';
+export type { CreateFakeApiOptions, FakeApi, FakeServices } from './api.ts';
+export { SAMPLE, seedSample } from './sample.ts';

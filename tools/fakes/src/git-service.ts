@@ -204,6 +204,19 @@ export class FakeGitService implements GitService {
     return clone(this.locate(path).repo.stashes);
   }
 
+  /** 所有仓库的主 worktree 路径。FakeProjectService 探测多仓库文件夹时用。 */
+  repoPaths(): AbsPath[] {
+    return this.repos.flatMap((r) => [...r.trees.values()].filter((t) => t.main).map((t) => t.path));
+  }
+
+  /** GitService 没有删分支的方法；假的 workspace 回滚时用它删掉刚建的分支，见 CONTRACT_NOTES.md。 */
+  deleteBranch(path: AbsPath, branch: string): void {
+    const { repo } = this.locate(path);
+    if ([...repo.trees.values()].some((t) => t.branch === branch)) fail('branch-in-use', `Branch ${branch} is checked out`);
+    repo.branches.delete(branch);
+    repo.tracking.delete(branch);
+  }
+
   /** 手动刷新：发一次 git.status。 */
   async refresh(path: AbsPath): Promise<RepoStatus> {
     return this.emitStatus(path);
@@ -398,15 +411,18 @@ export class FakeGitService implements GitService {
   ): Promise<void> {
     await this.enter('addWorktree');
     const { repo, tree } = this.locate(repoPath);
-    if (this.repos.some((r) => r.trees.has(path))) fail('invalid-argument', `${path} is already a worktree`);
+    // 先查分支再查目录，分支的错误对用户更有用
+    let start: string | null = null;
     if (branch.create) {
       checkBranchName(branch.name);
       if (repo.branches.has(branch.name)) fail('branch-exists', `Branch ${branch.name} already exists`);
-      repo.branches.set(branch.name, branch.from ? this.resolve(repo, branch.from) : this.headOf(repo, tree));
+      start = branch.from ? this.resolve(repo, branch.from) : this.headOf(repo, tree);
     } else {
       if (!repo.branches.has(branch.name)) fail('not-found', `Branch ${branch.name} not found`);
       this.checkNotCheckedOut(repo, branch.name, null);
     }
+    if (this.repos.some((r) => r.trees.has(path))) fail('invalid-argument', `${path} is already a worktree`);
+    if (branch.create) repo.branches.set(branch.name, start);
     repo.trees.set(path, this.newTree(path, false, branch.name));
   }
 
