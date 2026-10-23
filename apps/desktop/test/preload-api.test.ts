@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  AgentDeckError,
   CONTRACTS_VERSION,
   FIRE_AND_FORGET,
   isAgentDeckErrorData,
@@ -204,5 +205,32 @@ describe('preload api: main-world install', () => {
       'use strict';
       g.agentdeck = {} as AgentDeckApi;
     }).toThrow();
+  });
+});
+
+describe('preload api: errors across contextBridge', () => {
+  // contextBridge 跨世界复制值的方式和结构化克隆一样：Error 只剩 message，name 变回 Error，自定义字段丢失。
+  it('a thrown AgentDeckError does not survive the copy (why the API is built in the main world)', () => {
+    const copied = structuredClone(new AgentDeckError({ code: 'not-found', message: 'gone', detail: 'd' }));
+    expect(copied.name).toBe('Error');
+    expect((copied as { code?: unknown }).code).toBeUndefined();
+    expect((copied as { detail?: unknown }).detail).toBeUndefined();
+  });
+
+  it('keeps code and detail when every value crossing the bridge is cloned', async () => {
+    // 模拟 executeInMainWorld：函数按源码重建，bridge 进出的值都经过 structuredClone。
+    const rebuilt = new Function(`return (${installAgentDeckApi.toString()})`)() as typeof installAgentDeckApi;
+    const { transport } = fakeTransport(() => ({ error: { code: 'not-found', message: 'Service not available: projects', detail: 'd' } }));
+    const cloned: RawBridge = {
+      invoke: async (message) => structuredClone(await transport.invoke(structuredClone(message))),
+      send: (message) => transport.send(structuredClone(message)),
+      onEvent: (listener) => transport.onEvent((event) => listener(structuredClone(event))),
+      onTerminalData: (listener) => transport.onTerminalData((data) => listener(structuredClone(data))),
+    };
+    const api = rebuilt(cloned, structuredClone(manifest), false)!;
+    const err = await api.projects.list().catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(Error);
+    expect(isAgentDeckErrorData(err)).toBe(true);
+    expect(err).toMatchObject({ name: 'AgentDeckError', code: 'not-found', message: 'Service not available: projects', detail: 'd' });
   });
 });
