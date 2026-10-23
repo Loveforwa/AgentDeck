@@ -1,0 +1,115 @@
+.demo-header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-2xl);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.demo-title {
+  font-weight: var(--weight-strong);
+}
+
+.demo-subtitle {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.demo-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 1100px) {
+  .demo-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.demo-theme {
+  min-height: 100vh;
+  padding: var(--space-xl) var(--space-2xl) var(--space-2xl);
+  background: var(--ground);
+}
+
+.demo-theme + .demo-theme {
+  border-left: 1px solid var(--line);
+}
+
+.demo-theme-name {
+  margin-bottom: var(--space-sm);
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.demo-section {
+  padding: var(--space-lg) 0 var(--space-xl);
+  border-top: 1px solid var(--line);
+}
+
+.demo-section-title {
+  margin: 0 0 var(--space-md);
+  font-size: var(--text-md);
+  font-weight: var(--weight-strong);
+}
+
+.demo-row {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-xs) 0;
+}
+
+.demo-row-label {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.demo-row-items {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.demo-menu-stage {
+  display: flex;
+  align-items: flex-start;
+  gap: 180px;
+  min-height: 260px;
+}
+
+.demo-menu-stage > .ad-menu {
+  flex: none;
+}
+
+.demo-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-sm);
+}
+
+.demo-popover-text {
+  max-width: 240px;
+}
+
+.demo-hint {
+  margin: 0 0 var(--space-md);
+  color: var(--muted);
+}
+
+.demo-context-area {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 96px;
+  margin-top: var(--space-md);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-frame);
+  color: var(--muted);
+  font-size: var(--text-sm);
+  user-select: none;
+}

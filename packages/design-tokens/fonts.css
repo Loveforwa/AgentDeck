@@ -1,0 +1,3 @@
+/* 应用离线运行，字体随包带上，不从网上加载。可选：不引这个文件就用系统字体兜底。 */
+@import '@fontsource-variable/inter/index.css';
+@import '@fontsource-variable/jetbrains-mono/index.css';
