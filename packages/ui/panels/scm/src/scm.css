@@ -1,0 +1,662 @@
+/* 源代码管理面板。只用 design-tokens 的变量；橙色（--attention）只给冲突和会丢东西的提示。 */
+
+.scm {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  height: 100%;
+  min-width: 0;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  line-height: var(--leading);
+}
+
+/* 只给面板自己的按钮兜底；:where 不加权重，ui-kit 的 Button 样式照常生效 */
+:where(.scm) button {
+  font: inherit;
+  color: inherit;
+}
+
+.scm-top {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-sm);
+  height: var(--control-md);
+  padding: 0 var(--space-xs) 0 var(--space-md);
+  border-bottom: 1px solid var(--line-subtle);
+}
+
+.scm-eyebrow {
+  flex: 1;
+  color: var(--muted);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-strong);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.scm-refreshing {
+  font-size: var(--text-xs);
+}
+
+.scm-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.scm-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--line-subtle);
+}
+
+.scm-section-title {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-strong);
+}
+
+.scm-muted {
+  color: var(--muted);
+}
+
+.scm-mono {
+  font-family: var(--font-mono);
+}
+
+.scm-small {
+  font-size: var(--text-xs);
+}
+
+.scm-empty {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-lg) var(--space-md);
+  overflow-wrap: anywhere;
+}
+
+.scm-message {
+  margin: 0;
+}
+
+/* ---- 顶部：工作区名和目录 ---- */
+
+.scm-head {
+  gap: var(--space-2xs);
+}
+
+.scm-head-name {
+  font-size: var(--text-md);
+  font-weight: var(--weight-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scm-path {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: var(--text-xs);
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: default;
+}
+
+.scm-path:hover {
+  color: var(--ink);
+}
+
+/* ---- 分支 ---- */
+
+.scm-branch-line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.scm-branch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+  max-width: 100%;
+  height: var(--control-sm);
+  padding: 0 var(--space-sm);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  cursor: default;
+}
+
+.scm-branch:hover:not(:disabled) {
+  background: var(--hover);
+}
+
+.scm-branch--small {
+  height: calc(var(--control-sm) - 4px);
+  padding: 0 var(--space-xs);
+  font-size: var(--text-xs);
+}
+
+.scm-branch-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scm-branch > svg {
+  flex: none;
+  color: var(--muted);
+}
+
+.scm-badge {
+  flex: none;
+  padding: 0 var(--space-xs);
+  border: 1px solid var(--attention);
+  border-radius: var(--radius-inset);
+  color: var(--attention);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+}
+
+.scm-branch-popover {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  width: 260px;
+}
+
+.scm-branch-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 280px;
+  overflow: auto;
+}
+
+.scm-branch-note {
+  padding: var(--space-xs) var(--space-sm);
+}
+
+.scm-branch-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  height: var(--row);
+  padding: 0 var(--space-sm) 0 var(--space-xs);
+  border-radius: var(--radius-inset);
+  white-space: nowrap;
+  cursor: default;
+}
+
+.scm-branch-option[data-active] {
+  background: var(--hover);
+}
+
+.scm-branch-option[data-occupied] .scm-branch-name {
+  color: var(--muted);
+}
+
+.scm-branch-option[aria-disabled='true'] {
+  opacity: var(--opacity-disabled);
+}
+
+.scm-branch-check {
+  display: inline-flex;
+  flex: none;
+  width: 12px;
+}
+
+.scm-branch-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--font-mono);
+}
+
+.scm-branch-name--action {
+  font-family: var(--font-ui);
+}
+
+.scm-branch-option-note {
+  flex: none;
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.scm-separator {
+  height: 1px;
+  margin: var(--space-xs) var(--space-2xs);
+  background: var(--line-subtle);
+}
+
+/* ---- stash 提示 ---- */
+
+.scm-stash {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+  margin-top: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--ground);
+  font-size: var(--text-xs);
+}
+
+.scm-stash-actions {
+  display: flex;
+  gap: var(--space-xs);
+  margin-left: auto;
+}
+
+/* ---- 提交框 ---- */
+
+.scm-input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  line-height: var(--leading);
+}
+
+.scm-input::placeholder {
+  color: var(--muted);
+}
+
+.scm-input:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -1px;
+  border-color: transparent;
+}
+
+.scm-message-input {
+  min-height: 48px;
+  resize: vertical;
+}
+
+.scm-commit-button {
+  width: 100%;
+}
+
+.scm-error {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  overflow-wrap: anywhere;
+}
+
+.scm-error summary {
+  color: var(--muted);
+  font-size: var(--text-xs);
+  cursor: default;
+}
+
+.scm-error-title {
+  font-weight: var(--weight-medium);
+}
+
+.scm-error-output {
+  max-height: 200px;
+  margin: var(--space-2xs) 0 0;
+  padding: var(--space-xs) var(--space-sm);
+  overflow: auto;
+  border-radius: var(--radius-inset);
+  background: var(--ground);
+  font-size: var(--text-xs);
+  white-space: pre-wrap;
+}
+
+.scm-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+
+/* ---- 改动列表 ---- */
+
+.scm-groups {
+  padding: var(--space-xs) 0;
+  border-bottom: 1px solid var(--line-subtle);
+}
+
+.scm-row {
+  --depth: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  box-sizing: border-box;
+  height: var(--row);
+  padding: 0 var(--space-md) 0 calc(var(--space-sm) + var(--depth) * 12px);
+}
+
+.scm-row:hover,
+.scm-row:focus-within {
+  background: var(--hover);
+}
+
+.scm-row-main {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: default;
+}
+
+.scm-row-main:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.scm-row-main > svg {
+  flex: none;
+  color: var(--muted);
+}
+
+.scm-row--group .scm-group-title {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-strong);
+}
+
+.scm-count {
+  min-width: 14px;
+  padding: 0 var(--space-2xs);
+  border-radius: var(--radius-inset);
+  background: var(--line-subtle);
+  color: var(--muted);
+  font-size: var(--text-xs);
+  text-align: center;
+}
+
+.scm-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scm-name[data-deleted] {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+
+.scm-desc {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: var(--text-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scm-row--file .scm-row-main {
+  padding-left: 14px;
+}
+
+.scm-actions {
+  display: none;
+  flex: none;
+  gap: var(--space-2xs);
+}
+
+.scm-row:hover .scm-actions,
+.scm-row:focus-within .scm-actions {
+  display: flex;
+}
+
+.scm-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-inset);
+  background: none;
+  cursor: default;
+}
+
+.scm-icon-button:hover:not(:disabled) {
+  background: var(--line-subtle);
+}
+
+.scm-icon-button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.scm-icon-button:disabled {
+  opacity: var(--opacity-disabled);
+}
+
+.scm-letter {
+  flex: none;
+  width: 12px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-strong);
+  text-align: center;
+}
+
+.scm-letter[data-conflict] {
+  color: var(--attention);
+}
+
+/* ---- 多仓库分组 ---- */
+
+.scm-repo {
+  border-bottom: 1px solid var(--line-subtle);
+}
+
+.scm-repo-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+  padding: var(--space-sm) var(--space-xs) 0 var(--space-md);
+}
+
+.scm-repo-name {
+  flex: none;
+  font-weight: var(--weight-strong);
+}
+
+.scm-repo-commit {
+  margin-left: auto;
+  flex: none;
+}
+
+.scm-repo-summary {
+  display: block;
+  padding: 0 var(--space-md);
+}
+
+.scm-repo .scm-groups {
+  border-bottom: 0;
+}
+
+.scm-repo .scm-empty {
+  padding: var(--space-sm) var(--space-md);
+}
+
+/* ---- Repository、Commits ---- */
+
+.scm-list {
+  gap: 0;
+}
+
+.scm-list .scm-section-title {
+  padding-bottom: var(--space-2xs);
+}
+
+.scm-list-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  height: var(--row);
+  margin: 0 calc(var(--space-xs) * -1);
+  padding: 0 var(--space-xs);
+  border: 0;
+  border-radius: var(--radius-inset);
+  background: none;
+  text-align: left;
+  white-space: nowrap;
+  cursor: default;
+}
+
+.scm-list-row:hover:not(:disabled) {
+  background: var(--hover);
+}
+
+.scm-list-row:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.scm-list-row:disabled {
+  opacity: 1;
+}
+
+.scm-list-row[data-current] {
+  font-weight: var(--weight-strong);
+}
+
+.scm-list-row[data-off] {
+  color: var(--muted);
+}
+
+.scm-list-row > svg {
+  flex: none;
+  color: var(--muted);
+}
+
+.scm-list-main {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.scm-list-note {
+  flex: none;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-regular);
+}
+
+.scm-hash {
+  flex: none;
+  font-size: var(--text-xs);
+}
+
+.scm-on-base {
+  margin-top: var(--space-2xs);
+  padding-top: var(--space-2xs);
+  border-top: 1px dashed var(--line);
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+/* ---- 普通文件夹 ---- */
+
+.scm-plain {
+  gap: var(--space-sm);
+  align-items: flex-start;
+}
+
+/* ---- 差异 ---- */
+
+.scm-diff {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.scm-diff-bar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  border-bottom: 1px solid var(--line-subtle);
+}
+
+.scm-diff-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: var(--weight-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scm-diff-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.scm-diff-body .scm-message {
+  padding: var(--space-md);
+}
+
+.scm-diff-code {
+  margin: 0;
+  padding: var(--space-xs) 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: 1.55;
+}
+
+.scm-diff-line {
+  display: block;
+  padding: 0 var(--space-sm);
+  white-space: pre;
+}
+
+.scm-diff-line--meta,
+.scm-diff-line--hunk {
+  color: var(--muted);
+}
+
+.scm-diff-line--hunk {
+  margin-top: var(--space-xs);
+  background: var(--ground);
+}
+
+.scm-diff-line--add {
+  background: var(--hover);
+}
+
+.scm-diff-line--del {
+  background: var(--line-subtle);
+  color: var(--muted);
+}
