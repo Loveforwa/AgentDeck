@@ -13,15 +13,16 @@
 //   webview               <webview>，独立 partition，不改响应头
 
 import { mkdir, mkdtemp, realpath, stat, writeFile } from 'node:fs/promises';
-import { createServer, type RequestListener } from 'node:http';
+import { createServer, type RequestListener, type Server } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { app, BrowserWindow, session, webContents, type Session, type WebFrameMain } from 'electron';
+import { BrowserWindow, session, webContents, type Session, type WebFrameMain } from 'electron';
 import { createLoginApp } from '../../../../../../packages/ui/widgets/browser/dev/login-app.ts';
 import { BOARD_FRAME_NAME_PREFIX, BRIDGE_SCRIPT } from '../bridge.ts';
 import { stripFrameBlockingHeaders } from '../headers.ts';
 import { installOnSession } from '../index.ts';
 import { createBrowserService, type BrowserCore } from '../service.ts';
+import { runTrial } from './shutdown.ts';
 
 const FRAME_NAME = `${BOARD_FRAME_NAME_PREFIX}trial`;
 const HOST_ORIGIN = 'http://localhost:5343';
@@ -30,12 +31,15 @@ type Embed = 'iframe-no-cookie-fix' | 'iframe' | 'webview';
 type Host = 'file' | 'localhost';
 
 const hostPages = new Map<string, string>();
+const servers: Server[] = [];
 let tempDir = '';
 
 /** localhost 和 127.0.0.1 都要能连上，所以 IPv4、IPv6 各起一个。 */
 async function serve(port: number, handler: RequestListener): Promise<void> {
   for (const host of ['127.0.0.1', '::1']) {
-    await new Promise<void>((resolve) => createServer(handler).listen(port, host, resolve));
+    const server = createServer(handler);
+    servers.push(server);
+    await new Promise<void>((resolve) => server.listen(port, host, resolve));
   }
 }
 
@@ -263,10 +267,7 @@ async function moduleChecks(): Promise<Record<string, unknown>> {
   return out;
 }
 
-// 每个场景关掉窗口后不要退出应用。
-app.on('window-all-closed', () => {});
-
-void app.whenReady().then(async () => {
+runTrial(async () => {
   tempDir = await realpath(await mkdtemp(join(tmpdir(), 'agentdeck-risk3-')));
   await serve(5341, createLoginApp({ denyFraming: true, label: 'trial 5341' }));
   await serve(5343, (req, res) => {
@@ -291,5 +292,5 @@ void app.whenReady().then(async () => {
   console.log('\n== module checks ==');
   console.log(JSON.stringify(await moduleChecks(), null, 2));
   console.log(`electron ${process.versions.electron}, chrome ${process.versions.chrome}`);
-  app.exit(0);
+  return servers.map((s) => () => new Promise((resolve) => s.close(resolve)));
 });

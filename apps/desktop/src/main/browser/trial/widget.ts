@@ -13,6 +13,7 @@ import { app, BrowserWindow, ipcMain, type WebFrameMain } from 'electron';
 import { createServer, type ViteDevServer } from 'vite';
 import type { BrowserService } from '@agentdeck/contracts';
 import { registerBrowserService } from '../index.ts';
+import { keepAliveWhenWindowsClose, runTrial } from './shutdown.ts';
 
 const DEV_PAGE = 'http://localhost:5330/';
 const WIDGET_DIR = join(import.meta.dirname, '../../../../../../packages/ui/widgets/browser');
@@ -46,7 +47,14 @@ async function waitFor<T>(fn: () => Promise<T | null | undefined>, ms = 6000): P
   return null;
 }
 
-void app.whenReady().then(async () => {
+if (show) {
+  keepAliveWhenWindowsClose();
+  void app.whenReady().then(trial);
+} else {
+  runTrial(trial);
+}
+
+async function trial(): Promise<(() => Promise<unknown>)[]> {
   const devServer = await ensureDevServer();
   let service: Partial<BrowserService> = {};
   registerBrowserService({ register: (_name, impl) => void (service = impl as Partial<BrowserService>) });
@@ -154,7 +162,5 @@ void app.whenReady().then(async () => {
   results['screenshot'] = shot;
 
   console.log(JSON.stringify(results, null, 2));
-  if (show) return;
-  await devServer?.close();
-  app.exit(0);
-});
+  return devServer === null ? [] : [() => devServer.close()];
+}
