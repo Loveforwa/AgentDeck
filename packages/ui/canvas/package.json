@@ -1,0 +1,44 @@
+{
+  "name": "@agentdeck/ui-canvas",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./registry": "./src/registry.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "dev": "vite",
+    "dev:build": "vite build"
+  },
+  "dependencies": {
+    "@agentdeck/contracts": "workspace:*",
+    "@agentdeck/design-tokens": "workspace:*",
+    "@agentdeck/ui-kit": "workspace:*",
+    "@agentdeck/ui-topbar": "workspace:*",
+    "@agentdeck/ui-window-shell": "workspace:*",
+    "@xyflow/react": "^12.12.0",
+    "zustand": "^5.0.16"
+  },
+  "peerDependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.31",
+    "@types/react-dom": "18.3.7",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "typescript": "5.6.3",
+    "vitest": "^5.0.5",
+    "@agentdeck/fakes": "workspace:*",
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.8",
+    "@vitejs/plugin-react": "^6.1.2",
+    "jsdom": "^30.1.3",
+    "vite": "^8.3.5"
+  }
+}

@@ -1,0 +1,49 @@
+.ad-topbar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-md);
+  box-sizing: border-box;
+  height: 40px;
+  padding: 0 var(--space-md) 0 var(--space-lg);
+  border-bottom: 1px solid var(--line);
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--text-md);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.ad-topbar-name {
+  font-weight: var(--weight-strong);
+}
+
+.ad-topbar-summary,
+.ad-topbar-count {
+  color: var(--muted);
+}
+
+.ad-topbar-spacer {
+  flex: 1;
+}
+
+.ad-topbar-waiting {
+  height: var(--control-sm);
+  padding: 0 var(--space-sm);
+  border: 1px solid var(--attention);
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--attention);
+  font: inherit;
+  font-weight: var(--weight-medium);
+}
+
+.ad-topbar-waiting:hover {
+  background: var(--hover);
+}
+
+.ad-topbar-waiting:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}

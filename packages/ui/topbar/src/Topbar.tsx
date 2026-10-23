@@ -1,0 +1,76 @@
+import { useRef, useState } from 'react';
+import { Button, Menu, Popover, type MenuEntry } from '@agentdeck/ui-kit';
+import './topbar.css';
+
+export interface TopbarProps {
+  /** 白板名，MVP 只有一块：“My Board”。 */
+  boardName?: string;
+  workspaces: number;
+  terminals: number;
+  running: number;
+  waiting: number;
+  /** Projects ▾ 菜单的内容，由白板按项目列表生成。 */
+  projectsMenu: readonly MenuEntry[];
+  /** 单击“n waiting”：跳到下一个在等你的窗口（和 ⌘J 相同）。 */
+  onWaitingClick?(): void;
+  onSettings?(): void;
+}
+
+/** “2 workspaces · 4 terminals” */
+export function summaryText(workspaces: number, terminals: number): string {
+  return `${plural(workspaces, 'workspace')} · ${plural(terminals, 'terminal')}`;
+}
+
+function plural(n: number, word: string): string {
+  return `${n} ${word}${n === 1 ? '' : 's'}`;
+}
+
+/** 顶栏（任务 B4）：左边白板名和数量，右边 Projects ▾、运行中、在等你、Settings。 */
+export function Topbar(props: TopbarProps) {
+  const { boardName = 'My Board', workspaces, terminals, running, waiting, projectsMenu } = props;
+  const projectsRef = useRef<HTMLButtonElement>(null);
+  const [projectsOpen, setProjectsOpen] = useState(false);
+
+  return (
+    <header className="ad-topbar">
+      <span className="ad-topbar-name">{boardName}</span>
+      <span className="ad-topbar-summary">{summaryText(workspaces, terminals)}</span>
+      <span className="ad-topbar-spacer" />
+      <Button
+        ref={projectsRef}
+        size="sm"
+        aria-haspopup="menu"
+        aria-expanded={projectsOpen}
+        onClick={() => setProjectsOpen((v) => !v)}
+      >
+        Projects
+        <ChevronIcon />
+      </Button>
+      <Popover open={projectsOpen} anchor={projectsRef} chrome={false} autoFocus={false} onClose={() => setProjectsOpen(false)}>
+        <Menu items={projectsMenu} aria-label="Projects" onClose={() => setProjectsOpen(false)} />
+      </Popover>
+      {running > 0 ? <span className="ad-topbar-count">{running} running</span> : null}
+      {waiting > 0 ? (
+        <button
+          type="button"
+          className="ad-topbar-waiting"
+          title="Jump to the next window waiting for you (⌘J)"
+          onClick={() => props.onWaitingClick?.()}
+        >
+          {waiting} waiting
+        </button>
+      ) : null}
+      <Button size="sm" variant="ghost" onClick={() => props.onSettings?.()}>
+        Settings
+      </Button>
+    </header>
+  );
+}
+
+function ChevronIcon() {
+  return (
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden="true">
+      <path d="M2.5 4 5 6.5 7.5 4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}

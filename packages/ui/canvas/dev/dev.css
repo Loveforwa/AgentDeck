@@ -1,0 +1,78 @@
+html,
+body,
+#root {
+  height: 100%;
+  overflow: hidden;
+}
+
+/* 代替终端和网页的假窗口 */
+.dev-window {
+  box-sizing: border-box;
+  height: 100%;
+  padding: var(--space-sm) var(--space-md);
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-all;
+  outline: none;
+}
+
+.dev-window--summary {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  color: var(--muted);
+}
+
+.dev-window--browser {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  font-family: var(--font-ui);
+  white-space: normal;
+}
+
+.dev-window-url {
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  font-family: var(--font-mono);
+}
+
+.dev-muted {
+  color: var(--muted);
+}
+
+/* 右侧面板：代替线 3 的源代码管理面板，附带演示按钮 */
+.dev-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  box-sizing: border-box;
+  height: 100%;
+  padding: var(--space-lg);
+  overflow: auto;
+}
+
+.dev-panel h2 {
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: var(--weight-strong);
+}
+
+.dev-panel section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.dev-panel p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.dev-panel .ad-button {
+  justify-content: flex-start;
+}

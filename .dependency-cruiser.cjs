@@ -50,10 +50,19 @@ module.exports = {
     // ---- 界面 ----
     {
       name: 'ui-allowed-deps',
-      comment: 'packages/ui/* 只能依赖 contracts、design-tokens、ui/kit、ui/canvas 的注册表，以及自己包里的文件。',
+      comment: 'packages/ui/* 只能依赖 contracts、design-tokens、ui/kit、ui/canvas 的注册表，以及自己包里的文件。canvas 另见下一条。',
       severity: 'error',
-      from: { path: '^packages/ui/(?!widgets/|panels/)([^/]+)/' },
+      from: { path: '^packages/ui/(?!widgets/|panels/|canvas/)([^/]+)/' },
       to: { path: INTERNAL, pathNot: [...UI_SHARED, '^packages/ui/$1/'] },
+    },
+    {
+      name: 'ui-canvas-allowed-deps',
+      comment:
+        'packages/ui/canvas 是白板，把窗口外框（ui/window-shell）和顶栏（ui/topbar）组装起来，所以比其他界面包多这两个；' +
+        '这两个包本身只是外观，不反过来依赖 canvas。其他照 ui-allowed-deps。',
+      severity: 'error',
+      from: { path: '^packages/ui/canvas/' },
+      to: { path: INTERNAL, pathNot: [...UI_SHARED, '^packages/ui/(canvas|window-shell|topbar)/'] },
     },
     {
       name: 'ui-widget-panel-allowed-deps',

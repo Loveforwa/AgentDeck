@@ -1,0 +1,378 @@
+/* 白板、工作区框、整体布局。颜色只用 tokens。 */
+
+.ad-workbench {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--text-md);
+}
+
+.ad-workbench-main {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ---- 白板 ---- */
+
+.ad-board {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--ground);
+}
+
+.ad-board .react-flow {
+  --xy-background-color: var(--ground);
+  --xy-background-pattern-dots-color: var(--line-strong);
+  --xy-node-border-radius: 0;
+  background: var(--ground);
+}
+
+.ad-board .react-flow__node {
+  cursor: default;
+}
+
+.ad-board .react-flow__attribution {
+  background: transparent;
+  font-size: var(--text-xs);
+}
+
+.ad-board .react-flow__attribution a {
+  color: var(--muted);
+}
+
+.ad-board .react-flow__pane {
+  cursor: default;
+}
+
+.ad-board .react-flow__pane.dragging {
+  cursor: grabbing;
+}
+
+.ad-board-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.ad-board-empty p {
+  margin: 0;
+}
+
+.ad-board-empty-actions {
+  display: flex;
+  gap: var(--space-sm);
+  pointer-events: auto;
+}
+
+.ad-board-zoom {
+  position: absolute;
+  bottom: var(--space-sm);
+  left: var(--space-sm);
+  z-index: 5;
+  color: var(--muted);
+}
+
+.ad-board-zoom .ad-button {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- 窗口节点 ---- */
+
+.ad-window-node {
+  width: 100%;
+  height: 100%;
+}
+
+/* 没聚焦时盖在内容上：滚轮平移白板，第一下单击只聚焦 */
+.ad-window-cover {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.ad-window-missing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--muted);
+}
+
+/* ---- 工作区框 ---- */
+
+.ad-frame {
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-frame);
+  background: var(--surface);
+  background: color-mix(in srgb, var(--surface) 55%, transparent);
+  transition: border-color var(--motion);
+}
+
+.ad-frame--selected {
+  outline: 1.5px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* 拖着窗口进了这个框 */
+.ad-frame--drop {
+  border: 1.5px dashed var(--ink);
+}
+
+.ad-frame--pending {
+  border-style: dashed;
+}
+
+.ad-frame-header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  box-sizing: border-box;
+  height: 36px;
+  padding: var(--space-sm) var(--space-md) 0 var(--space-md);
+  font-size: var(--text-md);
+  white-space: nowrap;
+  cursor: default;
+  user-select: none;
+  touch-action: none;
+}
+
+.ad-frame-project {
+  font-weight: var(--weight-strong);
+}
+
+.ad-frame-branch {
+  overflow: hidden;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  text-overflow: ellipsis;
+}
+
+.ad-frame-name {
+  color: var(--muted);
+}
+
+.ad-frame-spacer {
+  flex: 1;
+}
+
+.ad-frame-waiting {
+  color: var(--attention);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+}
+
+.ad-frame-note {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.ad-frame-empty {
+  position: absolute;
+  inset: 36px 0 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.ad-frame-error {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  white-space: pre-wrap;
+}
+
+.ad-frame-error-actions {
+  display: flex;
+  gap: var(--space-sm);
+  font-family: var(--font-ui);
+}
+
+.ad-frame-resize {
+  position: absolute;
+  z-index: 2;
+  touch-action: none;
+}
+
+.ad-frame-resize--n,
+.ad-frame-resize--s {
+  left: 12px;
+  right: 12px;
+  height: 8px;
+  cursor: ns-resize;
+}
+
+.ad-frame-resize--e,
+.ad-frame-resize--w {
+  top: 12px;
+  bottom: 12px;
+  width: 8px;
+  cursor: ew-resize;
+}
+
+.ad-frame-resize--n {
+  top: -4px;
+}
+
+.ad-frame-resize--s {
+  bottom: -4px;
+}
+
+.ad-frame-resize--e {
+  right: -4px;
+}
+
+.ad-frame-resize--w {
+  left: -4px;
+}
+
+.ad-frame-resize--ne,
+.ad-frame-resize--nw,
+.ad-frame-resize--se,
+.ad-frame-resize--sw {
+  width: 16px;
+  height: 16px;
+}
+
+.ad-frame-resize--ne {
+  top: -5px;
+  right: -5px;
+  cursor: nesw-resize;
+}
+
+.ad-frame-resize--sw {
+  bottom: -5px;
+  left: -5px;
+  cursor: nesw-resize;
+}
+
+.ad-frame-resize--nw {
+  top: -5px;
+  left: -5px;
+  cursor: nwse-resize;
+}
+
+.ad-frame-resize--se {
+  right: -5px;
+  bottom: -5px;
+  cursor: nwse-resize;
+}
+
+/* ---- 右侧面板 ---- */
+
+.ad-panel {
+  position: relative;
+  flex: none;
+  box-sizing: border-box;
+  min-width: 0;
+  border-left: 1px solid var(--line);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.ad-panel-resizer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -3px;
+  z-index: 2;
+  width: 6px;
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+/* ---- 对话框里的字段 ---- */
+
+.ad-field {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  align-items: baseline;
+  gap: var(--space-md);
+}
+
+.ad-field-label {
+  color: var(--muted);
+}
+
+.ad-field-control {
+  min-width: 0;
+}
+
+.ad-field-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.ad-field-hint {
+  flex: none;
+  color: var(--muted);
+}
+
+.ad-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: var(--control-md);
+  padding: 0 var(--space-sm);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: var(--text-md);
+}
+
+.ad-input:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -1px;
+}
+
+.ad-input[aria-invalid] {
+  border-color: var(--ink);
+}
+
+.ad-select {
+  min-width: 120px;
+  justify-content: space-between;
+}
+
+.ad-select-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ad-checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.ad-checkbox input {
+  margin: 0;
+  accent-color: var(--ink);
+}
