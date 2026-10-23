@@ -9,6 +9,7 @@
 - MVP 任务表（任务编号、依赖、完成标准）：https://claude.ai/artifact/8UAh7Quj23xxk7oEikgdEg ，本地副本 `docs/design/agentdeck-mvp-plan.html`
 - 并发安排：`docs/parallel.md`
 - 已定的决策（平台、tmux、环境变量等）：`docs/decisions.md`
+- 调研记录（实现中和最初设想不一样的地方、怎么决定的、好处和代价）：`docs/research-log.md`，网页版 https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK 。各条线发现新的情况写进自己的汇报或 CONTRACT_NOTES.md，合并时由集成负责人加进 `docs/research/entries.py`，不要各自直接改它（避免并行冲突）。
 - 接口：`packages/contracts`，规则见 `packages/contracts/AGENTS.md`
 - `docs/design/agentdeck-mvp-spec.html` 是早期版本，已不维护。
 
