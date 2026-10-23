@@ -1,0 +1,24 @@
+{
+  "_comment": "findLinks 的例子。终端窗口的 links.ts 用同一份（用 fs 读，不 import），两边规则保持一致。",
+  "cases": [
+    { "line": "  ➜  Local:   http://localhost:5173/", "links": [{ "kind": "localhost", "url": "http://localhost:5173/" }] },
+    { "line": "ready on localhost:3000", "links": [{ "kind": "localhost", "url": "http://localhost:3000/" }] },
+    { "line": "Server running at http://127.0.0.1:8080/api?x=1.", "links": [{ "kind": "localhost", "url": "http://127.0.0.1:8080/api?x=1" }] },
+    { "line": "listening on http://0.0.0.0:4000", "links": [{ "kind": "localhost", "url": "http://localhost:4000/" }] },
+    { "line": "(see http://localhost:3000/docs)", "links": [{ "kind": "localhost", "url": "http://localhost:3000/docs" }] },
+    { "line": "https://localhost:8443/login", "links": [{ "kind": "localhost", "url": "https://localhost:8443/login" }] },
+    { "line": "open http://[::1]:5000/", "links": [{ "kind": "localhost", "url": "http://[::1]:5000/" }] },
+    { "line": "the word localhost alone", "links": [] },
+    { "line": "Network: http://192.168.1.5:5173/", "links": [] },
+    { "line": "src/auth/oauth.ts:44", "links": [{ "kind": "file", "path": "src/auth/oauth.ts", "line": 44 }] },
+    { "line": "  at handler (src/server/index.ts:120:15)", "links": [{ "kind": "file", "path": "src/server/index.ts", "line": 120, "column": 15 }] },
+    { "line": "src/app.tsx(12,5): error TS2322: Type 'string' is not assignable", "links": [{ "kind": "file", "path": "src/app.tsx", "line": 12, "column": 5 }] },
+    { "line": "  File \"/Users/me/proj/main.py\", line 7, in <module>", "links": [{ "kind": "file", "path": "/Users/me/proj/main.py", "line": 7 }] },
+    { "line": "./scripts/deploy.sh:10: command not found", "links": [{ "kind": "file", "path": "./scripts/deploy.sh", "line": 10 }] },
+    { "line": "/abs/path/to/file.go:12:3: undefined: foo", "links": [{ "kind": "file", "path": "/abs/path/to/file.go", "line": 12, "column": 3 }] },
+    { "line": "Edit README.md:3 and package.json:10", "links": [{ "kind": "file", "path": "README.md", "line": 3 }, { "kind": "file", "path": "package.json", "line": 10 }] },
+    { "line": "Error:12 v1.2:3 example.com:8080 time 12:30:45", "links": [] },
+    { "line": "see https://github.com/foo/bar/blob/main/a.ts:3", "links": [] },
+    { "line": "http://localhost:3000/a.ts:3", "links": [{ "kind": "localhost", "url": "http://localhost:3000/a.ts:3" }] }
+  ]
+}

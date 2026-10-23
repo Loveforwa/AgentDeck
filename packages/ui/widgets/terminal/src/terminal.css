@@ -1,0 +1,115 @@
+/* 终端窗口。颜色、尺寸只用 design-tokens 的变量。 */
+
+.ad-terminal {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+}
+
+.ad-terminal[data-drag-over] {
+  box-shadow: inset 0 0 0 1px var(--focus);
+}
+
+/* 和 metrics.ts 的 PAD_X / PAD_Y 一致 */
+.ad-terminal__screen {
+  flex: 1;
+  min-height: 0;
+  padding: 4px 8px;
+  box-sizing: border-box;
+}
+
+.ad-terminal__screen[hidden] {
+  display: none;
+}
+
+.ad-terminal__xterm {
+  width: 100%;
+  height: 100%;
+}
+
+.ad-terminal__xterm .xterm {
+  height: 100%;
+}
+
+.ad-terminal__screen .xterm-viewport {
+  background-color: var(--surface) !important;
+}
+
+/* 退出后底部的提示条：“Process exited (code 1)” Restart Close */
+.ad-terminal__bar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  border-top: 1px solid var(--line-subtle);
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.ad-terminal__bar-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* 内容区一整页的提示：Previous session ended、Command not found…… */
+.ad-terminal__notice {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding: var(--space-lg);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+
+.ad-terminal__notice p {
+  margin: 0;
+}
+
+.ad-terminal__actions {
+  display: flex;
+  gap: var(--space-xs);
+  font-family: var(--font-ui);
+}
+
+.ad-terminal__muted {
+  color: var(--muted);
+}
+
+/* 摘要卡：最后 3 行 */
+.ad-terminal__summary {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 0;
+  padding: var(--space-xs) var(--space-sm);
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: var(--leading);
+}
+
+.ad-terminal__summary-line {
+  overflow: hidden;
+  white-space: pre;
+  text-overflow: ellipsis;
+}
+
+.ad-terminal__summary[data-waiting] .ad-terminal__summary-line:last-child {
+  color: var(--attention);
+}
