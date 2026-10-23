@@ -264,7 +264,7 @@ function RemoveWorkspaceDialog({ dialog }: { dialog: Of<'remove-workspace'> }) {
       {deleteFolder && dialog.dirty ? (
         <>
           <DialogText tone="attention">Uncommitted changes in this worktree will be lost</DialogText>
-          <Checkbox checked={understood} onChange={setUnderstood}>
+          <Checkbox checked={understood} onChange={setUnderstood} autoFocus>
             I understand these changes will be lost
           </Checkbox>
         </>

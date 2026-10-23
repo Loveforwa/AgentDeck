@@ -1,6 +1,6 @@
 // 对话框里的小字段：下拉（用 ui-kit 的 Button + Popover + Menu 拼）、文本框、勾选框。ui-kit 里还没有这几个。
 
-import { useId, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { Button, Menu, Popover, type MenuEntry } from '@agentdeck/ui-kit';
 
 export interface SelectOption {
@@ -94,11 +94,18 @@ export function TextInput(props: {
   );
 }
 
-export function Checkbox(props: { checked: boolean; onChange(checked: boolean): void; children: ReactNode }) {
+export function Checkbox(props: { checked: boolean; onChange(checked: boolean): void; autoFocus?: boolean; children: ReactNode }) {
   const id = useId();
+  const ref = useRef<HTMLInputElement>(null);
+  // 出现时把焦点放进来：比如删除时才发现有改动，之前按的按钮已经禁用、焦点丢了，Esc 和 Tab 都要能用
+  useEffect(() => {
+    if (props.autoFocus) ref.current?.focus({ preventScroll: true });
+    // 只在出现时
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   return (
     <label className="ad-checkbox" htmlFor={id}>
-      <input id={id} type="checkbox" checked={props.checked} onChange={(e) => props.onChange(e.target.checked)} />
+      <input ref={ref} id={id} type="checkbox" checked={props.checked} onChange={(e) => props.onChange(e.target.checked)} />
       <span>{props.children}</span>
     </label>
   );

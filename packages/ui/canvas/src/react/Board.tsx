@@ -153,7 +153,7 @@ export function Board() {
           }}
           onPaneContextMenu={openPaneMenu}
         >
-          {viewport.zoom >= 0.5 ? <Background variant={BackgroundVariant.Dots} gap={20} size={1.2} color="var(--line-strong)" /> : null}
+          {viewport.zoom >= 0.5 ? <Background variant={BackgroundVariant.Dots} gap={20} size={2} color="var(--line-strong)" /> : null}
         </ReactFlow>
       ) : null}
       <EmptyState />

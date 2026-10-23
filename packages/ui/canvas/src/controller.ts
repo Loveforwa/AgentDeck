@@ -893,14 +893,27 @@ export class BoardController {
     return { w: t.w + FRAME_PAD * 2, h: t.h + FRAME_HEADER + FRAME_PAD };
   }
 
+  /**
+   * 没给位置的新框放哪：视口中心空着就放中心（对话框的位置）；和别的框或窗口重叠时放到所有东西的右边，再把视口移过去。
+   */
+  private freeFrameRect(size: Size): Rect {
+    const c = this.viewportCenter();
+    const centered = { x: Math.round(c.x - size.w / 2), y: Math.round(c.y - size.h / 2), ...size };
+    const s = this.state;
+    const taken = [...s.frames.map((f) => f.rect), ...s.windows.map((w) => w.rect), ...s.pending.map((p) => p.rect)];
+    if (!taken.some((r) => intersects(r, centered))) return centered;
+    const all = bounds(taken)!;
+    return { x: all.x + all.w + GAP * 3, y: all.y, ...size };
+  }
+
   /** 提交 New workspace 对话框：框先出现（Creating worktree…），建好后换成真的框，有初始化命令就在框里开一个 Shell。 */
   async createWorkspace(req: CreateWorkspaceRequest, at: Point | null, pendingId?: string): Promise<WorkspaceId | null> {
     this.set({ dialog: null });
     const project = this.state.projects.find((p) => p.id === req.projectId);
     const size = this.defaultFrameSize();
-    const c = this.viewportCenter();
     const existing = pendingId ? this.state.pending.find((p) => p.id === pendingId) : undefined;
-    const rect = existing?.rect ?? (at ? { x: at.x, y: at.y, ...size } : { x: c.x - size.w / 2, y: c.y - size.h / 2, ...size });
+    const rect = existing?.rect ?? (at ? { x: at.x, y: at.y, ...size } : this.freeFrameRect(size));
+    if (!existing && !at && !this.isVisible(rect)) this.centerOn(rect, Math.min(1, Math.max(this.state.viewport.zoom, SUMMARY_ZOOM)));
     const id = existing?.id ?? `pending-${++this.pendingSeq}`;
     const tail = req.mode === 'main-folder' ? 'main folder' : (req.branch?.name ?? '');
     const pending: PendingFrame = {
