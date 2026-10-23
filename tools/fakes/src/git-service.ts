@@ -13,6 +13,8 @@ import type {
   IsoTime,
   RepoOperation,
   RepoStatus,
+  StashInfo,
+  StatusOptions,
   SwitchStrategy,
   WorktreeInfo,
 } from '@agentdeck/contracts';
@@ -58,6 +60,7 @@ export interface FakeRepoInit {
 
 export interface FakeStash {
   branch: string | null;
+  message: string;
   files: FileChange[];
   at: IsoTime;
 }
@@ -93,7 +96,7 @@ interface Tree {
 
 interface Repo {
   defaultBranch: string;
-  /** 默认等于 defaultBranch，setBaseBranch 可改，见 CONTRACT_NOTES.md。 */
+  /** 默认等于 defaultBranch，setBaseBranch 可改；status / log 传了 baseBranch 时以传入的为准。 */
   baseBranch: string;
   commits: Map<string, Commit>;
   /** 分支名 → 提交；还没有提交时为 null。 */
@@ -199,22 +202,14 @@ export class FakeGitService implements GitService {
     this.faults.set(method, queue);
   }
 
-  /** switchBranch(..., 'stash') 存下的改动，新的在前。 */
-  stashes(path: AbsPath): FakeStash[] {
+  /** switchBranch(..., 'stash') 存下的改动（含文件），新的在前。测试里查看用；界面走 stashes()。 */
+  peekStashes(path: AbsPath): FakeStash[] {
     return clone(this.locate(path).repo.stashes);
   }
 
   /** 所有仓库的主 worktree 路径。FakeProjectService 探测多仓库文件夹时用。 */
   repoPaths(): AbsPath[] {
     return this.repos.flatMap((r) => [...r.trees.values()].filter((t) => t.main).map((t) => t.path));
-  }
-
-  /** GitService 没有删分支的方法；假的 workspace 回滚时用它删掉刚建的分支，见 CONTRACT_NOTES.md。 */
-  deleteBranch(path: AbsPath, branch: string): void {
-    const { repo } = this.locate(path);
-    if ([...repo.trees.values()].some((t) => t.branch === branch)) fail('branch-in-use', `Branch ${branch} is checked out`);
-    repo.branches.delete(branch);
-    repo.tracking.delete(branch);
   }
 
   /** 手动刷新：发一次 git.status。 */
@@ -224,10 +219,44 @@ export class FakeGitService implements GitService {
 
   // ---- GitService ----
 
-  async status(repo: AbsPath): Promise<RepoStatus> {
+  async status(repo: AbsPath, opts?: StatusOptions): Promise<RepoStatus> {
     if (this.latencyMs >= 1000) this.bus.emit({ type: 'git.refreshing', repo });
     await this.enter('status');
-    return this.buildStatus(repo);
+    return this.buildStatus(repo, opts?.baseBranch);
+  }
+
+  async deleteBranch(repoPath: AbsPath, name: string, opts: { force: boolean }): Promise<void> {
+    await this.enter('deleteBranch');
+    const { repo } = this.locate(repoPath);
+    if (!repo.branches.has(name)) fail('not-found', `Branch ${name} not found`);
+    this.checkNotCheckedOut(repo, name, null);
+    const head = repo.branches.get(name) ?? null;
+    const merged = head === null || this.ancestors(repo, repo.branches.get(repo.baseBranch) ?? null).has(head);
+    if (!merged && !opts.force) {
+      fail('git-failed', `Branch ${name} is not fully merged`, `error: the branch '${name}' is not fully merged.`);
+    }
+    repo.branches.delete(name);
+    repo.tracking.delete(name);
+  }
+
+  async stashes(repoPath: AbsPath): Promise<StashInfo[]> {
+    await this.enter('stashes');
+    return this.locate(repoPath).repo.stashes.map((s, i) => ({ id: `stash@{${i}}`, branch: s.branch, message: s.message, at: s.at }));
+  }
+
+  async applyStash(repoPath: AbsPath, id: string, opts: { drop: boolean }): Promise<void> {
+    await this.enter('applyStash');
+    const { repo, tree } = this.locate(repoPath);
+    const index = Number(/^stash@\{(\d+)\}$/.exec(id)?.[1] ?? NaN);
+    const stash = repo.stashes[index];
+    if (!stash) fail('not-found', `No stash ${id}`);
+    const clash = stash.files.find((f) => tree.changes.has(f.path));
+    if (clash) {
+      fail('git-failed', 'Your local changes would be overwritten', `error: Your local changes to the following files would be overwritten by merge:\n\t${clash.path}`);
+    }
+    for (const f of stash.files) tree.changes.set(f.path, { ...f });
+    if (opts.drop) repo.stashes.splice(index, 1);
+    this.emitStatus(repoPath);
   }
 
   async stage(repo: AbsPath, paths: string[]): Promise<void> {
@@ -365,10 +394,11 @@ export class FakeGitService implements GitService {
     }
   }
 
-  async log(repoPath: AbsPath, limit: number): Promise<CommitInfo[]> {
+  async log(repoPath: AbsPath, limit: number, opts?: StatusOptions): Promise<CommitInfo[]> {
     await this.enter('log');
     const { repo, tree } = this.locate(repoPath);
-    const baseSet = this.ancestors(repo, repo.branches.get(repo.baseBranch) ?? null);
+    const base = opts?.baseBranch ?? repo.baseBranch;
+    const baseSet = this.ancestors(repo, repo.branches.get(base) ?? null);
     const out: CommitInfo[] = [];
     let baseCount = 0;
     let hash = this.headOf(repo, tree);
@@ -376,7 +406,7 @@ export class FakeGitService implements GitService {
       const c = repo.commits.get(hash);
       if (!c) break;
       const onBase = baseSet.has(hash);
-      if (onBase && tree.branch !== repo.baseBranch && baseCount++ >= BASE_LOG_COUNT) break;
+      if (onBase && tree.branch !== base && baseCount++ >= BASE_LOG_COUNT) break;
       out.push(this.commitInfo(c, onBase));
       hash = c.parent;
     }
@@ -543,7 +573,12 @@ export class FakeGitService implements GitService {
       fail('dirty-worktree', 'Resolve conflicts before switching branches');
     }
     if (strategy === 'stash' && tree.changes.size > 0) {
-      repo.stashes.unshift({ branch: tree.branch, files: [...tree.changes.values()].map(toFileChange), at: nowIso() });
+      repo.stashes.unshift({
+        branch: tree.branch,
+        message: `On ${tree.branch ?? 'HEAD'}: switching to ${branch}`,
+        files: [...tree.changes.values()].map(toFileChange),
+        at: nowIso(),
+      });
       tree.changes.clear();
     }
     tree.branch = branch;
@@ -563,11 +598,12 @@ export class FakeGitService implements GitService {
     return [...out];
   }
 
-  private buildStatus(path: AbsPath): RepoStatus {
+  private buildStatus(path: AbsPath, baseBranch?: string): RepoStatus {
     const { repo, tree } = this.locate(path);
+    const base = baseBranch ?? repo.baseBranch;
     const head = this.headOf(repo, tree);
     const tracking = tree.branch ? repo.tracking.get(tree.branch) : undefined;
-    const baseSet = this.ancestors(repo, repo.branches.get(repo.baseBranch) ?? null);
+    const baseSet = this.ancestors(repo, repo.branches.get(base) ?? null);
     let aheadOfBase = 0;
     for (const h of this.ancestors(repo, head)) if (!baseSet.has(h)) aheadOfBase += 1;
     return {
@@ -578,7 +614,7 @@ export class FakeGitService implements GitService {
       ahead: tracking?.ahead ?? 0,
       behind: tracking?.behind ?? 0,
       aheadOfBase,
-      baseBranch: repo.baseBranch,
+      baseBranch: base,
       operation: tree.operation,
       files: [...tree.changes.values()].sort((a, b) => a.path.localeCompare(b.path)).map(toFileChange),
       at: nowIso(),

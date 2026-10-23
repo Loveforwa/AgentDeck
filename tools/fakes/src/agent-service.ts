@@ -72,7 +72,13 @@ export class FakeAgentService implements AgentService {
 
   async start(req: StartAgentRequest): Promise<StartAgentResult> {
     const { cmd, args, sessionId } = this.launch(req);
-    const terminalId = this.terminals.createWith({ cmd, args, cwd: req.cwd, env: { AGENTDECK_AGENT: req.agent } });
+    const terminalId = this.terminals.createWith({
+      cmd,
+      args,
+      cwd: req.cwd,
+      env: { AGENTDECK_AGENT: req.agent },
+      ...(req.size ? { size: req.size } : {}),
+    });
     this.status?.track(terminalId, { agent: req.agent, workspaceId: req.workspaceId });
     const result: StartAgentResult = { terminalId, sessionId, cmd, args };
     this.started.push({ request: clone(req), result: clone(result) });

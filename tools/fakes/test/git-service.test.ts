@@ -130,8 +130,8 @@ describe('FakeGitService branches and log', () => {
     await git.switchBranch(WT, 'old', 'stash');
     const s = await git.status(WT);
     expect(s).toMatchObject({ branch: 'old', files: [] });
-    expect(git.stashes(WT)).toMatchObject([{ branch: 'feat/login' }]);
-    expect(git.stashes(WT)[0]?.files).toHaveLength(3);
+    expect(git.peekStashes(WT)).toMatchObject([{ branch: 'feat/login' }]);
+    expect(git.peekStashes(WT)[0]?.files).toHaveLength(3);
     // carry 带着改动走
     git.addChanges(WT, { path: 'x.ts' });
     await git.switchBranch(WT, 'feat/login', 'carry');

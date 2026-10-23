@@ -75,11 +75,14 @@ export class FakeWorkspaceService implements WorkspaceService {
     try {
       for (const r of repos) {
         const path = multi ? `${dir}/${r.name}` : dir;
-        this.progress(project.id, 'worktree', `Creating worktree for ${r.name === '.' ? project.name : r.name}`, r.name);
+        this.progress(project.id, 'worktree', `Creating worktree for ${r.name === '.' ? project.name : r.name}`, r.name, branch.name);
         await this.git.addWorktree(
           r.path,
           path,
-          branch.kind === 'new' ? { name: branch.name, create: true, from: branch.from } : { name: branch.name, create: false },
+          // from 不填时每个仓库用自己的基础分支
+          branch.kind === 'new'
+            ? { name: branch.name, create: true, from: branch.from ?? r.baseBranch }
+            : { name: branch.name, create: false },
         );
         created.push({ repo: r, path });
       }
@@ -88,17 +91,14 @@ export class FakeWorkspaceService implements WorkspaceService {
       for (const c of created.reverse()) {
         await this.git.removeWorktree(c.repo.path, c.path, { force: true }).catch(() => undefined);
         if (branch.kind === 'new') {
-          try {
-            this.git.deleteBranch(c.repo.path, branch.name);
-          } catch {
-            // 回滚尽力而为
-          }
+          // 回滚尽力而为
+          await this.git.deleteBranch(c.repo.path, branch.name, { force: true }).catch(() => undefined);
         }
       }
       throw err;
     }
     if (project.copyIntoWorktrees.length > 0) {
-      this.progress(project.id, 'copy-files', `Copying ${project.copyIntoWorktrees.join(', ')}`);
+      this.progress(project.id, 'copy-files', `Copying ${project.copyIntoWorktrees.join(', ')}`, undefined, branch.name);
     }
     const ws = this.insert({
       projectId: project.id,
@@ -108,7 +108,7 @@ export class FakeWorkspaceService implements WorkspaceService {
       branch: branch.name,
       repos: created.map((c) => ({ name: c.repo.name, path: c.path, branch: branch.name })),
     });
-    this.progress(project.id, 'done', `Workspace ${ws.name} is ready`);
+    this.progress(project.id, 'done', `Workspace ${ws.name} is ready`, undefined, branch.name);
     return { workspace: ws, setup: project.setupCommand ? { command: project.setupCommand, cwd: ws.path } : null };
   }
 
@@ -128,9 +128,17 @@ export class FakeWorkspaceService implements WorkspaceService {
     const ws = this.require(req.id);
     if (req.deleteFolder && ws.mode === 'worktree') {
       const project = this.projects.get(ws.projectId);
+      // 先查完所有仓库再删，避免多仓库时删了一半
+      if (!req.force) {
+        for (const r of ws.repos) {
+          const { files } = await this.git.status(r.path);
+          if (files.length > 0) {
+            fail('dirty-worktree', `${r.name === '.' ? ws.name : r.name} has uncommitted changes`);
+          }
+        }
+      }
       for (const r of ws.repos) {
         const repoPath = project.repos.find((p) => p.name === r.name)?.path ?? r.path;
-        // 界面已经确认过，所以带 force，见 CONTRACT_NOTES.md
         await this.git.removeWorktree(repoPath, r.path, { force: true });
       }
     }
@@ -181,12 +189,21 @@ export class FakeWorkspaceService implements WorkspaceService {
     return clone(ws);
   }
 
-  private progress(projectId: Workspace['projectId'], step: 'worktree' | 'copy-files' | 'done', message: string, repo?: string): void {
-    this.bus.emit(
-      repo === undefined
-        ? { type: 'workspace.progress', projectId, step, message }
-        : { type: 'workspace.progress', projectId, step, repo, message },
-    );
+  private progress(
+    projectId: Workspace['projectId'],
+    step: 'worktree' | 'copy-files' | 'done',
+    message: string,
+    repo?: string,
+    branch?: string,
+  ): void {
+    this.bus.emit({
+      type: 'workspace.progress',
+      projectId,
+      step,
+      message,
+      ...(repo === undefined ? {} : { repo }),
+      ...(branch === undefined ? {} : { branch }),
+    });
   }
 
   private emitChanged(ws: Workspace): void {
