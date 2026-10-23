@@ -146,7 +146,11 @@ direct = node-pty + xterm 直接跑；tmux = 经过 `tmux -L agentdeck`。两者
 | Esc 打断（re-attach 后第一次按） | ok | ok | ok | ok |
 | 首屏颜色集合一致 | 一致 | | 一致 | |
 
-¹ 本机 claude CLI 在干净环境里回 “API Error: 403 · Please run /login”（这次是在 Claude 桌面版的会话里跑的，认证不会带进干净环境），direct 和 tmux 一样，与 tmux 无关；提交本身（上方向键能调出这条）是正常的。见人工清单。
+¹ 本机 claude CLI 在干净环境里回 “Please run /login · API Error: 403 Request not allowed”，direct 和 tmux 一样，与 tmux 无关；提交本身（上方向键能调出这条）是正常的。查到的程度：
+   - 启动画面显示 “Claude Max”，说明 claude 读到了 `~/.claude` 里的账号信息，但请求被拒。
+   - 这次试验是在 Claude 桌面版的一个会话里跑的。那个会话里的 claude 由宿主提供认证（环境里有 `CLAUDE_CODE_SDK_HAS_HOST_AUTH_REFRESH`、`CLAUDE_CODE_MESSAGING_SOCKET` 等），干净环境把这些都去掉了，claude 只能用本机 CLI 自己保存的登录，而那份登录看来已失效或不可用。
+   - 没有继续查钥匙串里的凭据，也没有替用户执行 `/login`（登录是用户自己的事）。
+   - 下一步：用户在自己的终端里运行 `claude`，需要的话 `/login`，然后 `trial.sh agent claude`。AgentDeck 本身也会遇到同样的情况：agent 用的是用户本机 CLI 的登录。
 ² claude 在主屏、不要鼠标：经过 tmux 时滚轮进 copy-mode 翻 tmux 历史（`pane_in_mode=1`），直接运行时是 xterm 自己的回滚。codex 在备用屏、要鼠标：滚轮交给 codex 自己翻（`pane_in_mode=0`，屏幕上出现 “↓ Back to bottom”），两种方式一样。
 
 其他观察：
@@ -196,6 +200,7 @@ direct = node-pty + xterm 直接跑；tmux = 经过 `tmux -L agentdeck`。两者
 12. **OSC 9 / 777 通知只在 attach 时能到外层**。`allow-passthrough on` 只对接着的客户端有效，没 attach 的终端收不到。“需要你处理”靠 agent 的钩子（线 4），不靠终端通知。
 13. **pane_dead_signal 是名字**（`term`、`kill`……），不是数字，T1 转成 contracts 的退出码时要映射（习惯上 128 + 信号编号）。
 14. **node-pty 1.1.0 的预编译 `spawn-helper` 没有执行权限**，npm 装完直接用会报 `posix_spawnp failed`；`trial.sh` 里用 `chmod +x` 绕过。打包 Electron 时（第 3 波）要确认这个文件保留执行权限。
+15. **codex 会在它的 `CODEX_HOME` 下留一个常驻守护进程**（`codex app-server --managed-daemon` 和 `daemon pid-update-loop`），TUI 退出后还在，还会自己下载新版本（这次在临时目录里下了 0.164）。`agent.mjs` 结束时按临时目录路径 `pkill -f` 这些进程再删目录。线 4 起 codex 时也要知道：AgentDeck 关掉 codex 终端不等于 codex 的所有进程都结束了。
 
 ## 需要人工确认
 
@@ -210,6 +215,18 @@ direct = node-pty + xterm 直接跑；tmux = 经过 `tmux -L agentdeck`。两者
 - [ ] **需要人工确认**：AgentDeck 和系统终端同时 attach 同一个会话，大小不同时来回切换的效果（窗口大小跟最近有输入的客户端走，另一边会出现空白或被裁掉）。
 - [ ] **需要人工确认**：claude 的通知（任务完成时的响铃 / OSC 9）在 attach 时是否到达 xterm 并被界面正确处理。
 - [ ] **需要人工确认**：tmux 3.5 上能否正常加载这份配置（只在 3.6a 上测过，3.6 才有的选项已用 `%if` 包起来）。
+
+## 未完成（交给线 1）
+
+F7 到这里收尾，没有继续扩展测试。以下没做，留给线 1（T1 / T2 / T3）或有人工的时候：
+
+- claude 的“提交后得到回答”一项（需要本机 claude CLI 登录，见上面的 ¹）。
+- 上面“需要人工确认”清单里的所有项，尤其是真的 xterm.js（WebGL）渲染、触控板滚动、系统剪贴板。
+- tmux 3.5 上加载配置；Linux 上一项都没跑过（只测了 macOS 26 + tmux 3.6a）。
+- 没有 tmux-256color terminfo 时改用 screen-256color：配置注释里写了由 tmux-host 处理，但没有测（本机有这个 terminfo）。T1 启动时用 `infocmp tmux-256color` 检查。
+- 问题 1、2、4 的界面侧做法（回答查询、attach 后缓存输入、`-u -T`）只在 headless xterm 里验证过，T2 做出真窗口后要再测一遍：`timing.mjs`、`keys.mjs` 的 Esc 延迟一项可以直接对着真实现改写。
+- 活动 / 静默用 pipe-pane 计时（问题 6）、从登录 shell 取 PATH（问题 5）、钩子随服务重建（问题 7）只是结论，没有实现，是 T1 的工作。
+- 同时开 6 个以上 agent 时的内存和 attach 速度没有测（T2 的完成标准是“6 个真实 agent 同时开，打字无可感知延迟”）。
 
 ## 最低 tmux 版本
 

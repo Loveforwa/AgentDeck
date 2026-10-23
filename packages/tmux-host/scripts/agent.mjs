@@ -345,5 +345,15 @@ if (runs.direct?.ctx.colors && runs.tmux?.ctx.colors) {
 }
 if (runs.tmux) console.log(`tmux pane: ${runs.tmux.ctx.info}`);
 if (timing) console.log(`timing on the ${which} session: ${JSON.stringify(timing)}`);
-for (const r of Object.values(runs)) if (r.env.CODEX_HOME) fs.rmSync(r.env.CODEX_HOME, { recursive: true, force: true });
+// codex 会在 CODEX_HOME 下起一个常驻的 app-server 守护进程（还会自己下载更新），TUI 退出后它还在。
+// 按路径结束这些进程再删目录；用户自己 ~/.codex 下的守护进程不动。
+for (const r of Object.values(runs)) {
+  if (!r.env.CODEX_HOME) continue;
+  try {
+    execFileSync('pkill', ['-f', r.env.CODEX_HOME]);
+  } catch {
+    // 没有这样的进程
+  }
+  fs.rmSync(r.env.CODEX_HOME, { recursive: true, force: true });
+}
 process.exit(0);
