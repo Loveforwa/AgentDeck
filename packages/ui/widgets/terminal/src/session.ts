@@ -81,6 +81,8 @@ export class TerminalSession {
       }),
     );
     this.term.open(opts.container);
+    // 调试和端到端测试用：从 DOM 拿到这个终端（document.querySelector('.ad-terminal__xterm').agentdeckSession）
+    Object.defineProperty(opts.container, 'agentdeckSession', { value: this, configurable: true });
 
     this.disposables.push(
       installQueryAnswers(this.term.parser, (d) => this.send(d), () => this.colors),
@@ -88,6 +90,14 @@ export class TerminalSession {
       this.term.onBinary((d) => this.send(d)),
       this.term.registerLinkProvider(this.linkProvider()),
     );
+    // 等宽字体（JetBrains Mono）可能在 xterm 量格子之后才加载完：加载完再量一次，否则字会挤在一起或留缝
+    void document.fonts?.ready.then(() => {
+      if (this.disposed) return;
+      const family = this.term.options.fontFamily ?? 'monospace';
+      this.term.options.fontFamily = `${family} `;
+      this.term.options.fontFamily = family;
+      this.fitToContainer();
+    });
     this.term.attachCustomKeyEventHandler((e) => {
       const d = decideKey(e, this.isMac);
       if (d.kind === 'terminal') return true;
@@ -118,6 +128,8 @@ export class TerminalSession {
       return;
     }
     this.viewId = viewId;
+    // attach 在路上时大小可能又变了（字体刚加载完、窗口刚改大小），补一次 resize，不然 tmux 按旧的行列数画
+    if (this.size.cols !== size.cols || this.size.rows !== size.rows) this.opts.api.terminals.resize(viewId, this.size);
     let first = true;
     this.unlisten = routerFor(this.opts.api).listen(viewId, (data) => {
       this.term.write(data);

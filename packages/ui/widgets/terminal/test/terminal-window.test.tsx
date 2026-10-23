@@ -65,6 +65,8 @@ function mount(data: Partial<TerminalWindowData>, initial: Partial<HostProps> = 
   function Host(): ReactNode {
     const [props, setProps] = useState<HostProps>({ visible: true, summary: false, focused: true, contentSize: { w: 560, h: 332 }, ...initial });
     const [d, setD] = useState(current);
+    // 和白板一样：setStatus 会让外面重新渲染，每次传进去的回调都是新的（防止来回触发）
+    const [, rerender] = useState(0);
     setOuter = (p) => setProps((x) => ({ ...x, ...p }));
     const node: WindowNode<TerminalWindowData> = {
       id: 'w1' as WindowId,
@@ -87,6 +89,7 @@ function mount(data: Partial<TerminalWindowData>, initial: Partial<HostProps> = 
         }}
         setStatus={(s) => {
           status = s;
+          rerender((n) => n + 1);
         }}
         requestFocus={() => {}}
         openWindow={(req) => opened.push(req as OpenWindowRequest)}
@@ -383,5 +386,26 @@ describe('terminalWindowType', () => {
     makeTerminal();
     await terminalWindowType.onClose?.(terminalWindowType.create({ terminalId: T }));
     expect(api.fakes.terminals.has(T)).toBe(false);
+  });
+});
+
+describe('size changes while attaching', () => {
+  it('sends a resize when the size changed before attach() returned', async () => {
+    makeTerminal({ history: 'x' });
+    const resize = vi.spyOn(api.terminals, 'resize');
+    const attach = api.terminals.attach.bind(api.terminals);
+    let release: () => void = () => {};
+    vi.spyOn(api.terminals, 'attach').mockImplementation(async (id, size) => {
+      await new Promise<void>((r) => (release = r));
+      return attach(id, size);
+    });
+    const h = mount({ terminalId: T, agent: 'claude', cmd: 'claude', cwd: '/repo' }, { contentSize: { w: 560, h: 332 } });
+    await flush();
+    // attach 还没返回时窗口改了大小
+    h.setProps({ contentSize: { w: 400, h: 200 } });
+    await flush();
+    release();
+    await waitFor(() => expect(resize).toHaveBeenCalled());
+    expect(resize.mock.calls.at(-1)?.[1]).toEqual({ cols: 49, rows: 11 });
   });
 });

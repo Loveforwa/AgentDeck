@@ -23,13 +23,16 @@ export interface TmuxRunner {
 
 /** tmux 返回非 0。stderr 原样放在 detail 里。 */
 export class TmuxError extends Error {
-  constructor(
-    readonly args: string[],
-    readonly stderr: string,
-    readonly exitCode: number | null,
-  ) {
+  readonly args: string[];
+  readonly stderr: string;
+  readonly exitCode: number | null;
+
+  constructor(args: string[], stderr: string, exitCode: number | null) {
     super(`tmux ${args[0] ?? ''} failed: ${stderr.trim() || `exit ${exitCode}`}`);
     this.name = 'TmuxError';
+    this.args = args;
+    this.stderr = stderr;
+    this.exitCode = exitCode;
   }
 
   /** 服务没在跑（还没起过，或者已经退出）。 */

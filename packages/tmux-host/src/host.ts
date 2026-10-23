@@ -157,14 +157,19 @@ class TmuxHostImpl implements TmuxHost {
   private viewCounter = 0;
   private readonly silenceMs: number;
   private readonly pty: PtyModule;
+  private readonly opts: TmuxHostOptions;
+  private readonly tmux: TmuxRunner;
+  readonly tmuxVersion: string;
+  private readonly ncPath: string;
+  private readonly socketPath: string;
 
-  constructor(
-    private readonly opts: TmuxHostOptions,
-    private readonly tmux: TmuxRunner,
-    readonly tmuxVersion: string,
-    private readonly ncPath: string,
-    private readonly socketPath: string,
-  ) {
+  // 不用参数属性：这样 node 自带的去类型（node dev/bridge.ts）也能直接跑
+  constructor(opts: TmuxHostOptions, tmux: TmuxRunner, tmuxVersion: string, ncPath: string, socketPath: string) {
+    this.opts = opts;
+    this.tmux = tmux;
+    this.tmuxVersion = tmuxVersion;
+    this.ncPath = ncPath;
+    this.socketPath = socketPath;
     this.socketName = tmux.socket;
     this.silenceMs = opts.silenceMs ?? 3000;
     this.pty = opts.pty ?? loadNodePty();

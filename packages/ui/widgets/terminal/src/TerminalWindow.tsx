@@ -58,7 +58,7 @@ function errorOf(e: unknown): { code: string | null; message: string } {
 }
 
 export function TerminalWindow(props: TerminalWindowProps): ReactNode {
-  const { window: node, focused, contentSize, summary, visible, setStatus, onCommand } = props;
+  const { window: node, focused, contentSize, summary, visible, onCommand } = props;
   const data = node.data;
 
   // 重启后 updateData 要等白板回传才进 props，这段时间用自己记的新 id
@@ -172,11 +172,12 @@ export function TerminalWindow(props: TerminalWindowProps): ReactNode {
               ? exitBadge(exitCode)
               : null;
   const badgeKey = badge ? `${badge.text}|${badge.tone}|${badge.dot}` : '';
+  // 只在内容变了时调用；setStatus 走 ref，白板每次渲染传新函数也不会来回触发
+  const badgeRef = useRef(badge);
+  badgeRef.current = badge;
   useEffect(() => {
-    setStatus(badge);
-    // badgeKey 已经概括了 badge 的内容
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [badgeKey, setStatus]);
+    propsRef.current.setStatus(badgeRef.current);
+  }, [badgeKey]);
 
   // ---- xterm ----
   const onLink = useCallback((link: TerminalLink | { kind: 'external'; url: string }) => {
@@ -295,25 +296,27 @@ export function TerminalWindow(props: TerminalWindowProps): ReactNode {
   );
 
   // ---- 白板发来的命令（⌘K、标题栏右键菜单）----
+  const commandRef = useRef({ start, terminalId, exitCode });
+  commandRef.current = { start, terminalId, exitCode };
   useEffect(
     () =>
       onCommand((command) => {
-        const id = ownId ?? propsRef.current.window.data.terminalId;
+        const { start: restart, terminalId: id, exitCode: code } = commandRef.current;
         switch (command) {
           case 'clear':
             sessionRef.current?.clear();
             // tmux 里的画面和历史在服务那边，发 C-l 让程序自己清屏重画（见 CONTRACT_NOTES.md：缺 clear 接口）
-            if (id && exitCode === null) void api().terminals.sendKeys(id, ['C-l']).catch(() => {});
+            if (id && code === null) void api().terminals.sendKeys(id, ['C-l']).catch(() => {});
             return;
           case 'restart':
-            void start({ mode: 'new' });
+            void restart({ mode: 'new' });
             return;
           case 'open-in-system-terminal':
             if (id) void api().app.openInSystemTerminal(id).catch(() => {});
             return;
         }
       }),
-    [onCommand, start, ownId, exitCode],
+    [onCommand],
   );
 
   // ---- T8：摘要卡 ----
@@ -376,7 +379,10 @@ export function TerminalWindow(props: TerminalWindowProps): ReactNode {
       onDragLeave={() => setDragOver(false)}
       onDrop={onDrop}
     >
-      <div className="ad-terminal__screen" ref={screenRef} hidden={!showScreen || summary} />
+      {/* 留白放在外层：FitAddon 按 xterm 父元素的尺寸算行列数，父元素自己不能有 padding */}
+      <div className="ad-terminal__screen" hidden={!showScreen || summary}>
+        <div className="ad-terminal__xterm" ref={screenRef} />
+      </div>
 
       {summary && (
         <div className="ad-terminal__summary" data-waiting={waiting || undefined}>

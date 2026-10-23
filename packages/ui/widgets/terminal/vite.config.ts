@@ -12,6 +12,6 @@ export default defineConfig({
   server: {
     port: 5340,
     strictPort: true,
-    proxy: { '/bridge': { target: 'http://127.0.0.1:5341', changeOrigin: false } },
+    proxy: { '/bridge/': { target: 'http://127.0.0.1:5341', changeOrigin: false } },
   },
 });
