@@ -27,7 +27,7 @@ Electron + TypeScript + React 18 + Zustand，白板用 React Flow（@xyflow/reac
 
 ## 检查和模块边界
 
-`pnpm check` = `pnpm typecheck`（`pnpm -r typecheck`）+ `pnpm lint`（ESLint）+ `pnpm boundaries`（dependency-cruiser）+ `pnpm test`（Vitest，跑所有包的测试）。CI（`.github/workflows/check.yml`）在 macOS 和 Ubuntu 上跑 `pnpm install --frozen-lockfile && pnpm check`。
+`pnpm check` = `pnpm typecheck`（`pnpm -r typecheck`）+ `pnpm lint`（ESLint）+ `pnpm colors`（CSS 里的颜色值）+ `pnpm boundaries`（dependency-cruiser）+ `pnpm test`（Vitest，跑所有包的测试）。CI（`.github/workflows/check.yml`）在 macOS 和 Ubuntu 上跑 `pnpm install --frozen-lockfile && pnpm check`。
 
 - 配置都在根目录，各包不要再放自己的：`eslint.config.js`、`.dependency-cruiser.cjs`、`vitest.config.ts`、`.prettierrc.json`。
 - `pnpm test` 把 `pnpm-workspace.yaml` 里每个有 package.json 的包当作一个 Vitest project；包里有自己的 `vitest.config.*` 就用它（界面包要 jsdom 时自己写一个）。单跑一个包：`pnpm --filter <包名> test`。
@@ -61,4 +61,4 @@ Electron + TypeScript + React 18 + Zustand，白板用 React Flow（@xyflow/reac
 ### 界面里不写颜色值
 
 - `.ts` / `.tsx`：ESLint 规则（根目录 `eslint.config.js` 的 `no-restricted-syntax`），作用于 `packages/ui/**`，拦十六进制颜色和 `rgb()` `hsl()` `hwb()` `lab()` `lch()` `oklab()` `oklch()`。只看字符串和模板字符串，注释不算。确实要写时：`// eslint-disable-next-line no-restricted-syntax -- 原因`。像 `'#123'` 这样的字符串会被当成颜色，同样用这个注释放行。
-- `.css`：用 F4 的 `packages/design-tokens/lint/raw-colors.mjs`（命令行，放行写 `raw-color-ok`）。它同时提供 ESLint 插件 `agentdeck/no-raw-colors`，**不接进 ESLint**，避免同一处报两次；两边的正则保持一致。F4 合并后把它的命令行加进 `pnpm check`。
+- `.css`：用 F4 的 `packages/design-tokens/lint/raw-colors.mjs`（命令行，放行写 `raw-color-ok`）。它同时提供 ESLint 插件 `agentdeck/no-raw-colors`，**不接进 ESLint**，避免同一处报两次；两边的正则保持一致。已接进 `pnpm check`（`pnpm colors`）。
