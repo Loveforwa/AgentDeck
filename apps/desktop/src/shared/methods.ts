@@ -1,0 +1,57 @@
+// 每个服务在 IPC 上能调的方法名单。
+// contextBridge 只会复制对象上真实存在的键，不能直接暴露 JS Proxy，
+// 所以 preload 按这张表给每个服务生成方法。下面的穷尽检查保证它和 contracts 的 Services 一致：
+// contracts 加了方法而这里没加，类型检查就会报错。
+
+import type { ServiceName, Services } from '@agentdeck/contracts';
+
+type MethodsOf<S extends ServiceName> = keyof Services[S] & string;
+
+export const SERVICE_METHODS = {
+  app: [
+    'pickFolder',
+    'openInEditor',
+    'openInSystemTerminal',
+    'revealInFinder',
+    'moveToTrash',
+    'getSettings',
+    'updateSettings',
+    'quit',
+    'setBadge',
+  ],
+  projects: ['probe', 'add', 'list', 'update', 'remove', 'locate', 'initGit'],
+  workspaces: ['create', 'list', 'rename', 'remove'],
+  git: [
+    'status',
+    'stage',
+    'unstage',
+    'discard',
+    'commit',
+    'branches',
+    'switchBranch',
+    'createBranch',
+    'log',
+    'diff',
+    'worktrees',
+    'addWorktree',
+    'removeWorktree',
+    'repoRoot',
+    'defaultBranch',
+    'init',
+  ],
+  terminals: ['create', 'kill', 'list', 'attach', 'detach', 'write', 'resize', 'sendKeys', 'lastLines', 'attachCommand'],
+  agents: ['list', 'refresh', 'start'],
+  status: ['snapshot'],
+  approvals: ['approve', 'setAutoApprove', 'history'],
+  board: ['load', 'save'],
+  browser: ['prepare', 'fileUrl', 'openExternal', 'ping'],
+} as const satisfies { readonly [S in ServiceName]: readonly MethodsOf<S>[] };
+
+// 穷尽检查：漏掉的方法名会出现在报错信息里。
+type Missing = {
+  [S in ServiceName]: Exclude<MethodsOf<S>, (typeof SERVICE_METHODS)[S][number]>;
+}[ServiceName];
+const exhaustive: [Missing] extends [never] ? true : Missing = true;
+void exhaustive;
+
+export const SERVICE_NAMES = Object.keys(SERVICE_METHODS) as ServiceName[];
