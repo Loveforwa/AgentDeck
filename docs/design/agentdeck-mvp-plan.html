@@ -1,0 +1,290 @@
+<title>AgentDeck MVP 实施计划</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<style>
+/* Layout: a working document — milestone strip on top, one long task table grouped by milestone, filters above it. */
+:root {
+  --ground: #F7F7F5; --surface: #FFFFFF; --ink: #1A1A1A; --muted: #6B6B66; --line: #E3E3DF; --soft: #F0F0EC;
+  --attention: #C2410C;
+  --font-ui: "IBM Plex Sans", "Noto Sans SC", "PingFang SC", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --ground: #161615; --surface: #1E1E1C; --ink: #ECECE8; --muted: #9C9C95; --line: #34342F; --soft: #262623;
+  --attention: #F08A4B; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --ground: #161615; --surface: #1E1E1C; --ink: #ECECE8; --muted: #9C9C95; --line: #34342F; --soft: #262623;
+  --attention: #F08A4B; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--ground); color: var(--ink); font-family: var(--font-ui); font-size: 14px; line-height: 1.6;
+  padding-block: 40px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) }
+.wrap { max-width: 1360px; margin: 0 auto; display: flex; flex-direction: column; gap: 40px }
+.mono { font-family: var(--font-mono) }
+.small { font-size: 12.5px }
+.muted { color: var(--muted) }
+header { display: flex; flex-direction: column; gap: 10px; max-width: 860px }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; color: var(--muted); letter-spacing: .04em }
+h1 { margin: 0; font-size: 30px; font-weight: 600; letter-spacing: -.01em; text-wrap: balance }
+h2 { margin: 0; font-size: 18px; font-weight: 600 }
+h3 { margin: 0; font-size: 15px; font-weight: 600 }
+header p { margin: 0; color: var(--muted); font-size: 15px; max-width: 68ch }
+.facts { display: flex; flex-wrap: wrap; gap: 8px 24px; font-size: 13px; color: var(--muted); margin-top: 4px }
+.facts b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums }
+section { display: flex; flex-direction: column; gap: 14px }
+.section-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px }
+.section-head p { margin: 0; color: var(--muted); font-size: 13px }
+.ms-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); overflow: hidden }
+.ms { padding: 16px 16px 18px; display: flex; flex-direction: column; gap: 8px; border-left: 1px solid var(--line); min-width: 0 }
+.ms:first-child { border-left: 0 }
+.ms p { margin: 0; font-size: 13px; color: var(--muted) }
+.ms .exit { color: var(--ink); display: flex; flex-direction: column; gap: 2px }
+.ms-base { box-shadow: inset 0 3px 0 var(--ink) }
+.ms-head { display: flex; justify-content: space-between; align-items: baseline }
+.ms-n { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums }
+.mid { font-family: var(--font-mono); font-weight: 500; font-size: 13px }
+.label { font-size: 11px; letter-spacing: .06em; color: var(--muted) }
+.path { font-size: 13px; color: var(--muted); margin: 0 }
+.path .mono { color: var(--ink) }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
+.filters .sep { width: 1px; height: 20px; background: var(--line); margin: 0 4px }
+.chip { font: inherit; font-size: 12.5px; height: 30px; padding: 0 11px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; display: inline-flex; align-items: center; gap: 6px }
+.chip .n { color: var(--muted); font-variant-numeric: tabular-nums }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--ground); border-color: var(--ink) }
+.chip[aria-pressed="true"] .n { color: inherit; opacity: .7 }
+.chip:focus-visible, .dep:focus-visible { outline: 2px solid var(--attention); outline-offset: 2px }
+.table-box { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface) }
+table { border-collapse: collapse; width: 100%; min-width: 1120px }
+thead th { position: sticky; top: 0; background: var(--soft); text-align: left; font-size: 12px; font-weight: 600; color: var(--muted); padding: 9px 12px; border-bottom: 1px solid var(--line); white-space: nowrap }
+td { padding: 11px 12px; border-top: 1px solid var(--line); vertical-align: top }
+tr.group th { text-align: left; padding: 14px 12px 10px; background: var(--ground); border-top: 1px solid var(--line); font-size: 14px; font-weight: 600 }
+tr.group:first-child th { border-top: 0 }
+.gnote { font-weight: 400; color: var(--muted); font-size: 13px; margin-left: 12px }
+td.id { white-space: nowrap; width: 84px }
+td.id .mono { font-weight: 500; display: inline-block; width: 30px }
+.pri { font-family: var(--font-mono); font-size: 10.5px; padding: 1px 5px; border-radius: 4px; margin-left: 4px; vertical-align: 1px }
+.pri.p0 { background: var(--ink); color: var(--ground) }
+.pri.p1 { border: 1px solid var(--muted); color: var(--ink) }
+td.task { width: 32%; min-width: 280px }
+td.task b { display: block; font-weight: 600; margin-bottom: 2px }
+td.task span { color: var(--muted); font-size: 13px }
+td.done { font-size: 13px; width: 20% }
+td.size { text-align: center; width: 48px }
+.sz { font-family: var(--font-mono); font-size: 12px; display: inline-block; min-width: 22px; padding: 1px 0; border: 1px solid var(--line); border-radius: 4px }
+td.spec { white-space: nowrap; color: var(--muted) }
+.dep { color: var(--ink); text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px }
+tr:target td { background: var(--soft) }
+.empty { padding: 20px 12px; color: var(--muted) }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px }
+.later { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; border-top: 1px solid var(--line) }
+.later li { display: grid; grid-template-columns: 180px minmax(0, 1fr) 48px; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 13.5px }
+.later li span:nth-child(2) { color: var(--muted) }
+.notes { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 8px; font-size: 13.5px }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 20px; font-size: 12.5px; color: var(--muted) }
+@media (max-width: 960px) {
+  .ms-list { grid-template-columns: minmax(0, 1fr) }
+  .ms { border-left: 0; border-top: 1px solid var(--line) }
+  .ms:first-child { border-top: 0 }
+  .two { grid-template-columns: minmax(0, 1fr) }
+  .later li { grid-template-columns: minmax(0, 1fr) 48px }
+  .later li b { grid-column: 1 / -1 }
+}
+.waves { grid-template-columns: repeat(4, minmax(0, 1fr)) }
+.wave { padding: 16px 16px 18px; display: flex; flex-direction: column; gap: 8px; border-left: 1px solid var(--line); min-width: 0 }
+.wave:first-child { border-left: 0; background: var(--soft) }
+.wave ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 13px }
+.wave ul .mono { display: inline-block; min-width: 38px; margin-right: 6px; font-size: 12px }
+.wave .who { margin: 0; margin-top: auto; font-size: 12px; color: var(--muted) }
+.sub { display: flex; flex-direction: column; gap: 10px; min-width: 0 }
+.small-table { min-width: 520px }
+.small-table td { font-size: 13px; padding: 8px 12px }
+.done-tag { font-family: var(--font-mono); font-size: 10.5px; padding: 1px 5px; border-radius: 4px; margin-left: 4px; border: 1px solid var(--muted); color: var(--muted) }
+@media (max-width: 960px) { .waves { grid-template-columns: minmax(0, 1fr) } .wave { border-left: 0; border-top: 1px solid var(--line) } .wave:first-child { border-top: 0 } }
+@media (prefers-reduced-motion: no-preference) { .chip { transition: background-color 120ms, color 120ms } }
+</style>
+
+<div class="wrap">
+<header>
+  <span class="eyebrow">AgentDeck · 实施计划 · 2026-10-23</span>
+  <h1>AgentDeck MVP 实施计划</h1>
+  <p>把设计画布里的需求拆成可以交给一个 agent 独立完成的任务，按“地基 → 白板和终端 → 工作区和 Git → 状态和网页”的顺序推进。M3 做完就是基础 MVP：能用它过完一整天真实的开发。</p>
+  <div class="facts">
+    <span>基础 MVP（P0）<b>39</b> 项</span>
+    <span>MVP 完整版（P1）<b>11</b> 项</span>
+    <span>里程碑 <b>5</b> 个</span>
+    <span>并行线 <b>5</b> 条</span>
+  </div>
+</header>
+
+<section aria-labelledby="ms-title">
+  <div class="section-head"><h2 id="ms-title">里程碑</h2><p>每个里程碑结束时集成一次，按 contracts → 服务 → 界面的顺序合并。</p></div>
+  <ol class="ms-list">
+<li class="ms">
+  <div class="ms-head"><span class="mid">M0</span><span class="ms-n">8 项</span></div>
+  <h3>地基</h3>
+  <p>一个 agent 串行完成，所有接口在这一步定下来。</p>
+  <p class="exit"><span class="label">完成标准</span>pnpm dev 打开一块空白板，接假 tmux 显示一个正在回放输出的终端；故意越界的提交 CI 不通过。</p>
+</li><li class="ms">
+  <div class="ms-head"><span class="mid">M1</span><span class="ms-n">13 项</span></div>
+  <h3>白板与终端</h3>
+  <p>能在白板上开真实的 agent 终端，关掉应用也不丢。</p>
+  <p class="exit"><span class="label">完成标准</span>同时开 6 个真实的 claude / codex，打字无可感知延迟；⌘Q 再打开，agent 一直在跑，历史输出都在。</p>
+</li><li class="ms">
+  <div class="ms-head"><span class="mid">M2</span><span class="ms-n">9 项</span></div>
+  <h3>工作区与 Git</h3>
+  <p>每个框一个 worktree 和分支，右侧面板能提交和切分支。</p>
+  <p class="exit"><span class="label">完成标准</span>同一仓库开两个框，两个 agent 同时改代码互不影响；在面板里提交后 git log 看得到。做完这一步，就可以用 AgentDeck 开发它自己。</p>
+</li><li class="ms ms-base">
+  <div class="ms-head"><span class="mid">M3</span><span class="ms-n">9 项</span></div>
+  <h3>状态、提醒、网页</h3>
+  <p>一眼看出谁在等你，点 dev server 链接在白板上看效果。基础 MVP 到此完成。</p>
+  <p class="exit"><span class="label">完成标准</span>agent 请求批准后 2 秒内窗口、框、顶栏一起提示，⌘J 跳过去直接回复；点 localhost 链接，页面出现在同一个框里；“10 · 全局规则”的验收场景全绿。</p>
+</li><li class="ms">
+  <div class="ms-head"><span class="mid">M4</span><span class="ms-n">11 项</span></div>
+  <h3>MVP 完整版</h3>
+  <p>基础闭环跑通以后，再补齐需求里已经定下的增强功能。</p>
+  <p class="exit"><span class="label">完成标准</span>批准汇总、Fork 对话、关窗口后台继续、恢复上次会话、无 git 文件夹等全部可用。</p>
+</li>
+  </ol>
+  <p class="path"><span class="label">关键路径</span>　<span class="mono">F1 → F2 → F3 → T1 → T2 → W3 → G2 → S1 → S2 → S3 → R2</span>。终端显示（T2）最重，越早开始越好；白板、Git、网页三条线在 M0 之后可以和它同时做。</p>
+</section>
+
+
+<section aria-labelledby="par-title">
+  <div class="section-head"><h2 id="par-title">并发安排</h2><p>接口先定在 packages/contracts，之后每一波里的任务互不依赖，可以同时交给不同的 agent。</p></div>
+  <ol class="ms-list waves"><li class="wave"><div class="ms-head"><span class="mid">第 0 波</span><span class="ms-n">已完成</span></div><h3>接口定下来</h3><ul><li><span class="mono">F2</span>contracts 0.1.0：11 个文件，全部服务、事件、钩子协议、IPC 线路</li></ul><p class="who">1 个 agent</p></li><li class="wave"><div class="ms-head"><span class="mid">第 1 波</span><span class="ms-n">约 1–2 天</span></div><h3>地基，彼此不依赖</h3><ul><li><span class="mono">F3</span>IPC 层和应用空壳</li><li><span class="mono">F4</span>tokens 和基础零件</li><li><span class="mono">F5</span>CI 和边界</li><li><span class="mono">F6</span>每个服务的假实现（最先要）</li><li><span class="mono">F7</span>tmux 试验</li><li><span class="mono">F8</span>SQLite 存储</li></ul><p class="who">6 个 agent 同时</p></li><li class="wave"><div class="ms-head"><span class="mid">第 2 波</span><span class="ms-n">约 1–2 周</span></div><h3>5 条线，各自对着假实现开发</h3><ul><li><span class="mono">线 1</span>终端：T1 T2 T3 T5 T6 T7 T8</li><li><span class="mono">线 2</span>白板：B1–B5 W3 W5 S3 R1</li><li><span class="mono">线 3</span>工作区和 Git：W1 W2 W4 G1–G4</li><li><span class="mono">线 4</span>Agent 和状态：T4 S1 S2 S4</li><li><span class="mono">线 5</span>网页：U1 U2 U3</li></ul><p class="who">5 个 agent 同时</p></li><li class="wave"><div class="ms-head"><span class="mid">第 3 波</span><span class="ms-n">约 2–3 天</span></div><h3>组装和验收</h3><ul><li><span class="mono">组装</span>apps/desktop 接上真实实现，替换假实现</li><li><span class="mono">R2</span>验收场景写成 Playwright 用例</li><li><span class="mono">合并</span>contracts → 服务 → 界面</li></ul><p class="who">1 个 agent + 1 个审查</p></li></ol>
+  <div class="two">
+    <div class="sub">
+      <h3>接口和负责的线</h3>
+      <div class="table-box"><table class="small-table"><thead><tr><th>文件</th><th>接口</th><th>谁实现</th><th>谁调用</th></tr></thead><tbody><tr><td class="mono">project.ts</td><td>ProjectService</td><td>线 3</td><td>线 2</td></tr><tr><td class="mono">workspace.ts</td><td>WorkspaceService</td><td>线 3</td><td>线 2</td></tr><tr><td class="mono">git.ts</td><td>GitService</td><td>线 3</td><td>线 3 面板、workspace-service</td></tr><tr><td class="mono">terminal.ts</td><td>TerminalHost</td><td>线 1</td><td>线 1 窗口、线 4</td></tr><tr><td class="mono">agent.ts</td><td>AgentService、AgentAdapter、钩子协议</td><td>线 4</td><td>线 2、线 1</td></tr><tr><td class="mono">status.ts</td><td>StatusService、ApprovalService</td><td>线 4</td><td>线 1、线 2、线 3</td></tr><tr><td class="mono">board.ts</td><td>BoardStore、窗口注册表</td><td>F8、线 2</td><td>线 2、各窗口</td></tr><tr><td class="mono">browser.ts</td><td>BrowserService</td><td>线 5</td><td>线 5</td></tr><tr><td class="mono">app.ts</td><td>AppService、Settings</td><td>组装</td><td>所有界面</td></tr><tr><td class="mono">ipc.ts</td><td>AgentDeckApi、事件总表、线路约定</td><td>F3</td><td>所有界面</td></tr></tbody></table></div>
+    </div>
+    <div class="sub">
+      <h3>线和线之间的接缝</h3>
+      <p class="muted small">两边都按 contracts 写，开发时各自用假数据，组装时直接接上。</p>
+      <ul class="notes"><li>终端的 activity / silence / exit → 线 4 的状态机</li><li>线 4 的 agent.turn-end → 线 3 的面板刷新</li><li>terminal.link（localhost）→ 线 2 在同一个框里开线 5 的网页窗口</li><li>workspaces.create 返回的 setup → 线 2 在框里开一个 Shell</li><li>线 2 的 New terminal ▸ → 线 4 的 agents.start → 线 1 的终端窗口</li><li>status.changed → 线 1 标题栏、线 2 框和顶栏</li></ul>
+      <p class="muted small">规矩：并发期间 contracts 只加不改；要改就单独提交、版本号加一、其他线 rebase。详细见仓库里的 docs/parallel.md 和 packages/contracts/AGENTS.md。</p>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="table-title">
+  <div class="section-head"><h2 id="table-title">任务表</h2><p>依赖列里的编号可以点，跳到那一行。“需求”列是设计画布里对应的需求画板编号。</p></div>
+  <div class="filters" role="group" aria-label="筛选">
+    <button type="button" class="chip" data-filter-p="all" aria-pressed="true">全部 <span class="n">50</span></button>
+    <button type="button" class="chip" data-filter-p="P0" aria-pressed="false">只看基础 MVP <span class="n">39</span></button>
+    <button type="button" class="chip" data-filter-p="P1" aria-pressed="false">只看完整版 <span class="n">11</span></button>
+    <span class="sep" aria-hidden="true"></span>
+    <button type="button" class="chip" data-filter-l="串行" aria-pressed="false">串行（M0 一个 agent 做完） <span class="n">8</span></button><button type="button" class="chip" data-filter-l="线1" aria-pressed="false">线 1 · 终端 <span class="n">9</span></button><button type="button" class="chip" data-filter-l="线2" aria-pressed="false">线 2 · 白板 <span class="n">10</span></button><button type="button" class="chip" data-filter-l="线3" aria-pressed="false">线 3 · 工作区与 Git <span class="n">10</span></button><button type="button" class="chip" data-filter-l="线4" aria-pressed="false">线 4 · Agent 与状态 <span class="n">8</span></button><button type="button" class="chip" data-filter-l="线5" aria-pressed="false">线 5 · 网页 <span class="n">4</span></button><button type="button" class="chip" data-filter-l="审查" aria-pressed="false">审查与验收 <span class="n">1</span></button>
+  </div>
+  <div class="legend">
+    <span><span class="pri p0">P0</span> 基础 MVP，M0–M3</span>
+    <span><span class="pri p1">P1</span> MVP 完整版，M4</span>
+    <span>规模按一个 agent 的工作量：<span class="mono">S</span> 半天到 1 天，<span class="mono">M</span> 1 到 3 天，<span class="mono">L</span> 3 天以上</span>
+  </div>
+  <div class="table-box">
+    <table>
+      <thead><tr><th>编号</th><th>能力和要做的事</th><th>模块</th><th>依赖</th><th>完成标准</th><th>规模</th><th>负责</th><th>需求</th></tr></thead>
+      <tbody id="rows">
+<tr class="group" data-m="M0"><th colspan="8"><span class="mid">M0</span> 地基<span class="gnote">一个 agent 串行完成，所有接口在这一步定下来。</span></th></tr>
+<tr id="F1" data-p="P0" data-l="串行"><td class="id"><span class="mono">F1</span><span class="pri p0" title="基础 MVP">P0</span></td><td class="task"><b>单仓骨架</b><span>pnpm workspaces、electron-vite、TypeScript strict；建好 apps/desktop 和各个空包，每个包一份 AGENTS.md</span></td><td class="mono small">apps/desktop、packages/*</td><td class="mono small">—</td><td class="done">pnpm dev 打开一个空窗口</td><td class="size"><span class="sz" title="半天到 1 天">S</span></td><td class="small">串行（M0 一个 agent 做完）</td><td class="small spec">—</td></tr>
+<tr id="F2" data-p="P0" data-l="串行"><td class="id"><span class="mono">F2</span><span class="pri p0" title="基础 MVP">P0</span><span class=done-tag>Done</span></td><td class="task"><b>contracts 第一版</b><span>TerminalHost、AgentAdapter、GitService、WorkspaceService、ProjectStore、BoardState 的接口和事件；IPC 通道清单</span></td><td class="mono small">contracts</td><td class="mono small"><a href="#F1" class="dep">F1</a></td><td class="done">各服务和界面只 import contracts 就能编译</td><td class="size"><span class="sz" title="1 到 3 天">M</span></td><td class="small">串行（M0 一个 agent 做完）</td><td class="small spec">—</td></tr>
+<tr id="F3" data-p="P0" data-l="串行"><td class="id"><span class="mono">F3</span><span class="pri p0" title="基础 MVP">P0</span></td><td class="task"><b>IPC 层</b><span>界面 ↔ 主进程 ↔ utilityProcess 的类型化调用和事件订阅；统一的超时和错误包装</span></td><td class="mono small">apps/desktop、contracts</td><td class="mono small"><a href="#F2" class="dep">F2</a></td><td class="done">一个假服务的调用和事件端到端跑通，有单测</td><td class="size"><span class="sz" title="1 到 3 天">M</span></td><td class="small">串行（M0 一个 agent 做完）</td><td class="small spec">—</td></tr>
+<tr id="F4" data-p="P0" data-l="串行"><td class="id"><span class="mono">F4</span><span class="pri p0" title="基础 MVP">P0</span></td><td class="task"><b>设计 tokens 和基础零件</b><span>tokens.css；Button、Menu、Dialog、Toast、Popover，对应需求页的“界面零件”</span></td><td class="mono small">design-tokens、ui/kit</td><td class="mono small"><a href="#F1" class="dep">F1</a></td><td class="done">零件演示页可看；lint 拦住组件里写死的颜色</td><td class="size"><span class="sz" title="1 到 3 天">M</span></td><td class="small">串行（M0 一个 agent 做完）</td><td class="small spec">零件页</td></tr>
+<tr id="F5" data-p="P0" data-l="串行"><td class="id"><span class="mono">F5</span><span class="pri p0" title="基础 MVP">P0</span></td><td class="task"><b>CI 和模块边界</b><span>类型检查、ESLint、dependency-cruiser（ui 只能依赖 contracts 和 tokens，服务不能依赖 ui）、Vitest；pnpm check</span></td><td class="mono small">根目录</td><td class="mono small"><a href="#F1" class="dep">F1</a></td><td class="done">故意越界的提交 CI 不通过</td><td class="size"><span class="sz" title="半天到 1 天">S</span></td><td class="small">串行（M0 一个 agent 做完）</td><td class="small spec">—</td></tr>
+<tr id="F6" data-p="P0" data-l="串行"><td class="id"><span class="mono">F6</span><span class="pri p0" title="基础 MVP">P0</span></td><td class="task"><b>假实现和夹具</b><span>假 tmux（回放录好的输出）、假 GitService、临时 git 仓库生成器、示例白板数据</span></td><td class="mono small">tools/fakes</td><td class="mono small"><a href="#F2" class="dep">F2</a></td><td class="done">界面接上假实现能单独运行</td><td class="size"><span class="sz" title="1 到 3 天">M</span></td><td class="small">串行（M0 一个 agent 做完）</td><td class="small spec">—</td></tr>
+<tr id="F7" data-p="P0" data-l="串行"><td class="id"><span class="mono">F7</span><span class="pri p0" title="基础 MVP">P0</span></td><td class="task"><b>tmux 配置试验</b><span>独立实例 tmux -L agentdeck：关前缀、开鼠标、真彩色、扩展按键、bracketed paste；量 attach / detach 的速度</span></td><td class="mono small">tmux-host</td><td class="mono small"><a href="#F1" class="dep">F1</a></td><td class="done">claude、codex 在里面的按键、滚动、颜色和直接运行一样；结论写进 AGENTS.md</td><td class="size"><span class="sz" title="1 到 3 天">M</span></td><td class="small">串行（M0 一个 agent 做完）</td><td class="small spec">5</td></tr>
+<tr id="F8" data-p="P0" data-l="串行"><td class="id"><span class="mono">F8</span><span class="pri p0" title="基础 MVP">P0</span></td><td class="task"><b>本地存储</b><span>SQLite（better-sqlite3）：projects、workspaces、windows、terminals 四张表和迁移</span></td><td class="mono small">packages/store</td><td class="mono small"><a href="#F2" class="dep">F2</a></td><td class="done">写入再读出的往返测试通过</td><td class="size"><span class="sz" title="半天到 1 天">S</span></td><td class="small">串行（M0 一个 agent 做完）</td><td class="small spec">9</td></tr>
+<tr class="group" data-m="M1"><th colspan="8"><span class="mid">M1</span> 白板与终端<span class="gnote">能在白板上开真实的 agent 终端，关掉应用也不丢。</span></th></tr>
+<tr id="B1" data-p="P0" data-l="线2"><td class="id"><span class="mono">B1</span><span class="pri p0" title="基础 MVP">P0</span></td><td class="task"><b>白板画布</b><span>React Flow：两指滚动和拖空白处平移、⌘ + 滚轮缩放（备用）、⌘0 / ⌘1、点阵背景</span></td><td class="mono small">ui/canvas</td><td class="mono small"><a href="#F4" class="dep">F4</a></td><td class="done">放 30 个空窗口平移不掉帧</td><td class="size"><span class="sz" title="1 到 3 天">M</span></td><td class="small">线 2 · 白板</td><td class="small spec">3</td></tr>
+<tr id="B2" data-p="P0" data-l="线2"><td class="id"><span class="mono">B2</span><span class="pri p0" title="基础 MVP">P0</span></td><td class="task"><b>窗口外框</b><span>拖标题栏移动、拖边和角改大小、放大还原（双击标题栏、⌘⇧↩）、关闭、聚焦描边、层级</span></td><td class="mono small">ui/window-shell</td><td class="mono small"><a href="#B1" class="dep">B1</a></td><td class="done">假窗口上所有手势可用，有 Playwright 用例</td><td class="size"><span class="sz" title="1 到 3 天">M</span></td><td class="small">线 2 · 白板</td><td class="small spec">1、5</td></tr>
+<tr id="B3" data-p="P0" data-l="线2"><td class="id"><span class="mono">B3</span><span class="pri p0" title="基础 MVP">P0</span></td><td class="task"><b>窗口注册表和右键菜单</b><span>registerWindow；空白处右键：New terminal ▸、New browser、New workspace…、Add project…</span></td><td class="mono small">ui/canvas</td><td class="mono small"><a href="#B2" class="dep">B2</a></td><td class="done">新增一种窗口只需加一个文件夹和一行注册</td><td class="size"><span class="sz" title="半天到 1 天">S</span></td><td class="small">线 2 · 白板</td><td class="small spec">3</td></tr>
+<tr id="B4" data-p="P0" data-l="线2"><td class="id"><span class="mono">B4</span><span class="pri p0" title="基础 MVP">P0</span></td><td class="task"><b>顶栏</b><span>白板名、“3 running · 1 waiting”、Projects ▾、在等你的按钮（先接假数据）</span></td><td class="mono small">ui/topbar</td><td class="mono small"><a href="#F4" class="dep">F4</a></td><td class="done">数字随假事件变化</td><td class="size"><span class="sz" title="半天到 1 天">S</span></td><td class="small">线 2 · 白板</td><td class="small spec">1</td></tr>
+<tr id="B5" data-p="P0" data-l="线2"><td class="id"><span class="mono">B5</span><span class="pri p0" title="基础 MVP">P0</span></td><td class="task"><b>布局自动保存</b><span>平移缩放位置、窗口位置大小类型名字、面板宽度；改动后半秒写入，启动时恢复</span></td><td class="mono small">ui/canvas、store</td><td class="mono small"><a href="#B2" class="dep">B2</a>、<a href="#F8" class="dep">F8</a></td><td class="done">杀掉进程再开，布局完全一样</td><td class="size"><span class="sz" title="半天到 1 天">S</span></td><td class="small">线 2 · 白板</td><td class="small spec">9</td></tr>
+<tr id="T1" data-p="P0" data-l="线1"><td class="id"><span class="mono">T1</span><span class="pri p0" title="基础 MVP">P0</span></td><td class="task"><b>tmux-host 服务</b><span>在 utilityProcess 里管会话：create / kill / list；给每个窗格设 AGENTDECK_TERM；查目录、命令、输出活动和静默</span></td><td class="mono small">tmux-host</td><td class="mono small"><a href="#F3" class="dep">F3</a>、<a href="#F7" class="dep">F7</a></td><td class="done">真 tmux 的集成测试通过；应用退出后会话还在</td><td class="size"><span class="sz" title="1 到 3 天">M</span></td><td class="small">线 1 · 终端</td><td class="small spec">5</td></tr>
+<tr id="T2" data-p="P0" data-l="线1"><td class="id"><span class="mono">T2</span><span class="pri p0" title="基础 MVP">P0</span></td><td class="task"><b>终端窗口显示</b><span>xterm（webgl、fit）；只为视口里的终端 attach，移出视口就 detach；改大小松手后才通知行列数</span></td><td class="mono small">widgets/terminal</td><td class="mono small"><a href="#T1" class="dep">T1</a>、<a href="#B2" class="dep">B2</a></td><td class="done">6 个真实 agent 同时开，打字无可感知延迟</td><td class="size"><span class="sz" title="3 天以上">L</span></td><td class="small">线 1 · 终端</td><td class="small spec">5</td></tr>
+<tr id="T3" data-p="P0" data-l="线1"><td class="id"><span class="mono">T3</span><span class="pri p0" title="基础 MVP">P0</span></td><td class="task"><b>输入、复制、粘贴</b><span>聚焦时不带 ⌘ 的按键全部交给终端；⌘C / ⌘V、多行粘贴；从访达拖入文件写入路径</span></td><td class="mono small">widgets/terminal</td><td class="mono small"><a href="#T2" class="dep">T2</a></td><td class="done">claude 里 Esc、⌃C、Tab、方向键都正常</td><td class="size"><span class="sz" title="1 到 3 天">M</span></td><td class="small">线 1 · 终端</td><td class="small spec">5</td></tr>
+<tr id="T4" data-p="P0" data-l="线4"><td class="id"><span class="mono">T4</span><span class="pri p0" title="基础 MVP">P0</span></td><td class="task"><b>agent 适配器</b><span>claude、codex、Shell、自定义命令：检测是否安装、启动命令（claude 传 --session-id）、命令找不到时的提示</span></td><td class="mono small">agent-adapters</td><td class="mono small"><a href="#F2" class="dep">F2</a></td><td class="done">New terminal ▸ 只列出已安装的 agent</td><td class="size"><span class="sz" title="1 到 3 天">M</span></td><td class="small">线 4 · Agent 与状态</td><td class="small spec">5</td></tr>
+<tr id="T5" data-p="P0" data-l="线1"><td class="id"><span class="mono">T5</span><span class="pri p0" title="基础 MVP">P0</span></td><td class="task"><b>退出、出错、重启</b><span>Exited / Error 状态、Restart、关闭运行中终端前确认、Open in system terminal</span></td><td class="mono small">widgets/terminal</td><td class="mono small"><a href="#T2" class="dep">T2</a></td><td class="done">进程退出后标题栏和内容区按需求显示</td><td class="size"><span class="sz" title="半天到 1 天">S</span></td><td class="small">线 1 · 终端</td><td class="small spec">5</td></tr>
+<tr id="T6" data-p="P0" data-l="线1"><td class="id"><span class="mono">T6</span><span class="pri p0" title="基础 MVP">P0</span></td><td class="task"><b>重开应用自动接上</b><span>启动时用 list() 对上保存的窗口，接回 tmux 会话，历史输出都在</span></td><td class="mono small">tmux-host、widgets/terminal</td><td class="mono small"><a href="#T1" class="dep">T1</a>、<a href="#B5" class="dep">B5</a></td><td class="done">⌘Q 再打开，agent 一直在跑，输出完整</td><td class="size"><span class="sz" title="半天到 1 天">S</span></td><td class="small">线 1 · 终端</td><td class="small spec">9</td></tr>
+<tr id="T7" data-p="P0" data-l="线1"><td class="id"><span class="mono">T7</span><span class="pri p0" title="基础 MVP">P0</span></td><td class="task"><b>链接识别</b><span>pipe-pane 抄送输出，找出 localhost 地址和“文件:行号”，单击打开</span></td><td class="mono small">port-watch</td><td class="mono small"><a href="#T1" class="dep">T1</a></td><td class="done">pnpm dev 打印的地址可以点</td><td class="size"><span class="sz" title="半天到 1 天">S</span></td><td class="small">线 1 · 终端</td><td class="small spec">5、7</td></tr>
+<tr id="T8" data-p="P0" data-l="线1"><td class="id"><span class="mono">T8</span><span class="pri p0" title="基础 MVP">P0</span></td><td class="task"><b>摘要卡</b><span>终端拉到小于 320×200 时变成摘要卡，用 capture-pane 取最后 3 行和状态；单击恢复原大小</span></td><td class="mono small">widgets/terminal</td><td class="mono small"><a href="#T2" class="dep">T2</a></td><td class="done">拉小、恢复后程序画面不乱</td><td class="size"><span class="sz" title="半天到 1 天">S</span></td><td class="small">线 1 · 终端</td><td class="small spec">3、5</td></tr>
+<tr class="group" data-m="M2"><th colspan="8"><span class="mid">M2</span> 工作区与 Git<span class="gnote">每个框一个 worktree 和分支，右侧面板能提交和切分支。</span></th></tr>
+<tr id="W1" data-p="P0" data-l="线3"><td class="id"><span class="mono">W1</span><span class="pri p0" title="基础 MVP">P0</span></td><td class="task"><b>项目</b><span>Add project…（选文件夹，自动用仓库根目录）、Projects ▾ 菜单、Settings › Projects（名称、基础分支、worktree 位置、复制的文件、初始化命令）</span></td><td class="mono small">workspace-service、ui</td><td class="mono small"><a href="#F8" class="dep">F8</a>、<a href="#B3" class="dep">B3</a></td><td class="done">三个入口打开同一个选文件夹窗口；重启后项目还在</td><td class="size"><span class="sz" title="1 到 3 天">M</span></td><td class="small">线 3 · 工作区与 Git</td><td class="small spec">2</td></tr>
+<tr id="W2" data-p="P0" data-l="线3"><td class="id"><span class="mono">W2</span><span class="pri p0" title="基础 MVP">P0</span></td><td class="task"><b>新建工作区</b><span>新 worktree 加新分支或已有分支，或主目录工作区；复制 .env；运行初始化命令；失败回滚</span></td><td class="mono small">workspace-service</td><td class="mono small"><a href="#W1" class="dep">W1</a>、<a href="#F6" class="dep">F6</a></td><td class="done">临时仓库上建、删 worktree 的测试通过；分支被占用时报错写清楚</td><td class="size"><span class="sz" title="1 到 3 天">M</span></td><td class="small">线 3 · 工作区与 Git</td><td class="small spec">4</td></tr>
+<tr id="W3" data-p="P0" data-l="线2"><td class="id"><span class="mono">W3</span><span class="pri p0" title="基础 MVP">P0</span></td><td class="task"><b>工作区框</b><span>框节点：标题是项目 · 分支；拖标题带走里面的窗口；改大小、改名；框里新建的终端目录就是工作区目录</span></td><td class="mono small">ui/canvas</td><td class="mono small"><a href="#B2" class="dep">B2</a>、<a href="#W2" class="dep">W2</a></td><td class="done">在框里开 claude，pwd 是 worktree 目录</td><td class="size"><span class="sz" title="1 到 3 天">M</span></td><td class="small">线 2 · 白板</td><td class="small spec">4</td></tr>
+<tr id="W4" data-p="P0" data-l="线3"><td class="id"><span class="mono">W4</span><span class="pri p0" title="基础 MVP">P0</span></td><td class="task"><b>删除工作区</b><span>“Remove from board”或“Also delete the worktree folder”；有运行中的终端时先说明会结束什么</span></td><td class="mono small">workspace-service、ui</td><td class="mono small"><a href="#W3" class="dep">W3</a></td><td class="done">删除后磁盘和白板一致</td><td class="size"><span class="sz" title="半天到 1 天">S</span></td><td class="small">线 3 · 工作区与 Git</td><td class="small spec">4、10</td></tr>
+<tr id="W5" data-p="P0" data-l="线2"><td class="id"><span class="mono">W5</span><span class="pri p0" title="基础 MVP">P0</span></td><td class="task"><b>终端换框的限制</b><span>把终端拖进别的框：弹回原处，提示在新框里新开同款 agent（Open new）</span></td><td class="mono small">ui/canvas</td><td class="mono small"><a href="#W3" class="dep">W3</a>、<a href="#T4" class="dep">T4</a></td><td class="done">不会出现看起来换了目录、其实没换的情况</td><td class="size"><span class="sz" title="半天到 1 天">S</span></td><td class="small">线 2 · 白板</td><td class="small spec">5</td></tr>
+<tr id="G1" data-p="P0" data-l="线3"><td class="id"><span class="mono">G1</span><span class="pri p0" title="基础 MVP">P0</span></td><td class="task"><b>git-service</b><span>status --porcelain=v2、分支和 ahead / behind、worktree list；在后台执行，有超时，出错显示 git 原文</span></td><td class="mono small">git-service</td><td class="mono small"><a href="#F2" class="dep">F2</a>、<a href="#F6" class="dep">F6</a></td><td class="done">单测覆盖新增、修改、删除、重命名、冲突</td><td class="size"><span class="sz" title="1 到 3 天">M</span></td><td class="small">线 3 · 工作区与 Git</td><td class="small spec">8</td></tr>
+<tr id="G2" data-p="P0" data-l="线3"><td class="id"><span class="mono">G2</span><span class="pri p0" title="基础 MVP">P0</span></td><td class="task"><b>源代码管理面板</b><span>跟随聚焦的窗口；更改按文件夹树形列出；+ / − 暂存；提交框、⌘↩、Commit all n changes</span></td><td class="mono small">panels/scm</td><td class="mono small"><a href="#G1" class="dep">G1</a>、<a href="#B2" class="dep">B2</a></td><td class="done">在面板里提交后，git log 里看得到</td><td class="size"><span class="sz" title="1 到 3 天">M</span></td><td class="small">线 3 · 工作区与 Git</td><td class="small spec">8</td></tr>
+<tr id="G3" data-p="P0" data-l="线3"><td class="id"><span class="mono">G3</span><span class="pri p0" title="基础 MVP">P0</span></td><td class="task"><b>切换分支</b><span>分支下拉；被别的工作区占用的分支灰显，单击跳到那个框；有未提交更改时 Switch with changes / Stash and switch；New branch…</span></td><td class="mono small">panels/scm、git-service</td><td class="mono small"><a href="#G2" class="dep">G2</a></td><td class="done">同一仓库的两个框各自切换，互不影响</td><td class="size"><span class="sz" title="1 到 3 天">M</span></td><td class="small">线 3 · 工作区与 Git</td><td class="small spec">8</td></tr>
+<tr id="G4" data-p="P0" data-l="线3"><td class="id"><span class="mono">G4</span><span class="pri p0" title="基础 MVP">P0</span></td><td class="task"><b>刷新时机</b><span>只在切换聚焦、agent 一轮结束、自己操作 git 之后刷新；手动刷新按钮；超过 1 秒显示 Refreshing…</span></td><td class="mono small">panels/scm</td><td class="mono small"><a href="#G2" class="dep">G2</a></td><td class="done">不监听文件，空闲时 CPU 接近 0</td><td class="size"><span class="sz" title="半天到 1 天">S</span></td><td class="small">线 3 · 工作区与 Git</td><td class="small spec">8</td></tr>
+<tr class="group" data-m="M3"><th colspan="8"><span class="mid">M3</span> 状态、提醒、网页<span class="gnote">一眼看出谁在等你，点 dev server 链接在白板上看效果。基础 MVP 到此完成。</span></th></tr>
+<tr id="S1" data-p="P0" data-l="线4"><td class="id"><span class="mono">S1</span><span class="pri p0" title="基础 MVP">P0</span></td><td class="task"><b>钩子接收</b><span>本地 socket 加一个 agentdeck-notify 小命令；启动 claude 时用 --settings 注入 UserPromptSubmit、PermissionRequest、Stop 钩子</span></td><td class="mono small">agent-adapters、apps/desktop</td><td class="mono small"><a href="#T1" class="dep">T1</a>、<a href="#T4" class="dep">T4</a></td><td class="done">每个事件 100ms 内到达界面，并对上是哪个终端</td><td class="size"><span class="sz" title="1 到 3 天">M</span></td><td class="small">线 4 · Agent 与状态</td><td class="small spec">6</td></tr>
+<tr id="S2" data-p="P0" data-l="线4"><td class="id"><span class="mono">S2</span><span class="pri p0" title="基础 MVP">P0</span></td><td class="task"><b>状态机</b><span>Starting / Running / Needs approval / Needs reply / Idle / Exited / Error；标题栏的点、文字和计时；没有钩子的程序用 tmux 的输出活动判断</span></td><td class="mono small">agent-adapters、widgets/terminal</td><td class="mono small"><a href="#S1" class="dep">S1</a></td><td class="done">“什么时候进入哪个状态”表里每一行都有单测</td><td class="size"><span class="sz" title="1 到 3 天">M</span></td><td class="small">线 4 · Agent 与状态</td><td class="small spec">6</td></tr>
+<tr id="S3" data-p="P0" data-l="线2"><td class="id"><span class="mono">S3</span><span class="pri p0" title="基础 MVP">P0</span></td><td class="task"><b>界面提醒</b><span>未聚焦时橙色边框、框标题“1 waiting”、顶栏 waiting 按钮和 ⌘J 依次跳转、摘要卡同样变橙</span></td><td class="mono small">ui/canvas、ui/topbar</td><td class="mono small"><a href="#S2" class="dep">S2</a>、<a href="#B4" class="dep">B4</a></td><td class="done">agent 请求批准后 2 秒内三处一起提示</td><td class="size"><span class="sz" title="半天到 1 天">S</span></td><td class="small">线 2 · 白板</td><td class="small spec">6</td></tr>
+<tr id="S4" data-p="P0" data-l="线4"><td class="id"><span class="mono">S4</span><span class="pri p0" title="基础 MVP">P0</span></td><td class="task"><b>后台通知</b><span>应用不在前台时发系统通知、程序坞角标；单击通知跳到那个终端</span></td><td class="mono small">apps/desktop</td><td class="mono small"><a href="#S2" class="dep">S2</a></td><td class="done">切到别的应用，也能收到批准请求的通知</td><td class="size"><span class="sz" title="半天到 1 天">S</span></td><td class="small">线 4 · Agent 与状态</td><td class="small spec">6</td></tr>
+<tr id="U1" data-p="P0" data-l="线5"><td class="id"><span class="mono">U1</span><span class="pri p0" title="基础 MVP">P0</span></td><td class="task"><b>网页窗口</b><span>iframe；主进程去掉 localhost 的 X-Frame-Options 和 frame-ancestors；地址栏、后退、刷新、在系统浏览器打开</span></td><td class="mono small">widgets/browser、apps/desktop</td><td class="mono small"><a href="#B2" class="dep">B2</a></td><td class="done">localhost:3000 在白板上能正常显示和操作</td><td class="size"><span class="sz" title="1 到 3 天">M</span></td><td class="small">线 5 · 网页</td><td class="small spec">7</td></tr>
+<tr id="U2" data-p="P0" data-l="线5"><td class="id"><span class="mono">U2</span><span class="pri p0" title="基础 MVP">P0</span></td><td class="task"><b>从终端打开网页</b><span>单击输出里的 localhost 链接，在同一个框里开网页窗口；同一地址已经开着就聚焦并刷新</span></td><td class="mono small">widgets/browser</td><td class="mono small"><a href="#U1" class="dep">U1</a>、<a href="#T7" class="dep">T7</a></td><td class="done">点 dev server 的地址，页面出现在终端旁边</td><td class="size"><span class="sz" title="半天到 1 天">S</span></td><td class="small">线 5 · 网页</td><td class="small spec">7</td></tr>
+<tr id="U3" data-p="P0" data-l="线5"><td class="id"><span class="mono">U3</span><span class="pri p0" title="基础 MVP">P0</span></td><td class="task"><b>网页出错页和本地文件</b><span>服务没起来时显示“isn’t responding”和 Retry；本地 HTML 走自定义协议</span></td><td class="mono small">widgets/browser</td><td class="mono small"><a href="#U1" class="dep">U1</a></td><td class="done">关掉 dev server 再刷新，出现出错页</td><td class="size"><span class="sz" title="半天到 1 天">S</span></td><td class="small">线 5 · 网页</td><td class="small spec">7</td></tr>
+<tr id="R1" data-p="P0" data-l="线2"><td class="id"><span class="mono">R1</span><span class="pri p0" title="基础 MVP">P0</span></td><td class="task"><b>快捷键</b><span>⌘N、⌘T、⌘⇧N、⌘W、⌘⇧↩、⌘J、⌘B、⌘0 / ⌘1、⌘K</span></td><td class="mono small">apps/desktop</td><td class="mono small"><a href="#B2" class="dep">B2</a>、<a href="#T3" class="dep">T3</a></td><td class="done">快捷键表全部可用；终端聚焦时不抢它的按键</td><td class="size"><span class="sz" title="半天到 1 天">S</span></td><td class="small">线 2 · 白板</td><td class="small spec">10</td></tr>
+<tr id="R2" data-p="P0" data-l="审查"><td class="id"><span class="mono">R2</span><span class="pri p0" title="基础 MVP">P0</span></td><td class="task"><b>端到端验收</b><span>把“10 · 全局规则”里的验收场景写成 Playwright（Electron 模式）用例，接假 tmux 在 CI 里跑</span></td><td class="mono small">e2e</td><td class="mono small">以上全部</td><td class="done">验收场景全部通过</td><td class="size"><span class="sz" title="1 到 3 天">M</span></td><td class="small">审查与验收</td><td class="small spec">10</td></tr>
+<tr class="group" data-m="M4"><th colspan="8"><span class="mid">M4</span> MVP 完整版<span class="gnote">基础闭环跑通以后，再补齐需求里已经定下的增强功能。</span></th></tr>
+<tr id="X1" data-p="P1" data-l="线4"><td class="id"><span class="mono">X1</span><span class="pri p1" title="MVP 完整版">P1</span></td><td class="task"><b>codex 钩子</b><span>接 codex 的 PermissionRequest、Stop 等钩子事件；旧版本退回 notify，只认一轮结束</span></td><td class="mono small">agent-adapters</td><td class="mono small"><a href="#S1" class="dep">S1</a></td><td class="done">codex 的三种状态和 claude 一样准</td><td class="size"><span class="sz" title="半天到 1 天">S</span></td><td class="small">线 4 · Agent 与状态</td><td class="small spec">6</td></tr>
+<tr id="X2" data-p="P1" data-l="线4"><td class="id"><span class="mono">X2</span><span class="pri p1" title="MVP 完整版">P1</span></td><td class="task"><b>其他 agent 的“等你”文字</b><span>Settings › Agents 里给 agent 配一句匹配文字（如“(y/n)”），停下 3 秒且最后几行出现才算等你</span></td><td class="mono small">agent-adapters</td><td class="mono small"><a href="#S2" class="dep">S2</a></td><td class="done">配好后 gemini 能进入等你状态</td><td class="size"><span class="sz" title="半天到 1 天">S</span></td><td class="small">线 4 · Agent 与状态</td><td class="small spec">6</td></tr>
+<tr id="X3" data-p="P1" data-l="线4"><td class="id"><span class="mono">X3</span><span class="pri p1" title="MVP 完整版">P1</span></td><td class="task"><b>Approve all</b><span>⌘⇧J；列出所有在等批准的请求，破坏性命令默认不勾；按各 agent 的“允许一次”按键批准，2 秒内状态没变就标 Couldn’t approve</span></td><td class="mono small">agent-adapters、ui</td><td class="mono small"><a href="#S2" class="dep">S2</a>、<a href="#X1" class="dep">X1</a></td><td class="done">两个 agent 同时请求批准，一次确认都继续跑</td><td class="size"><span class="sz" title="1 到 3 天">M</span></td><td class="small">线 4 · Agent 与状态</td><td class="small spec">6</td></tr>
+<tr id="X4" data-p="P1" data-l="线4"><td class="id"><span class="mono">X4</span><span class="pri p1" title="MVP 完整版">P1</span></td><td class="task"><b>Fork conversation</b><span>换框时选 New conversation 或 Fork；claude --resume &lt;id&gt; --fork-session、codex fork &lt;id&gt;；先用真 agent 验证跨目录</span></td><td class="mono small">agent-adapters、ui/canvas</td><td class="mono small"><a href="#W5" class="dep">W5</a>、<a href="#S1" class="dep">S1</a></td><td class="done">fork 后新框里的 agent 记得之前的对话</td><td class="size"><span class="sz" title="1 到 3 天">M</span></td><td class="small">线 4 · Agent 与状态</td><td class="small spec">5</td></tr>
+<tr id="X5" data-p="P1" data-l="线1"><td class="id"><span class="mono">X5</span><span class="pri p1" title="MVP 完整版">P1</span></td><td class="task"><b>关窗口后台继续</b><span>关闭窗口时销毁界面，主进程保留 tmux 和钩子连接；Settings 里可改成直接退出</span></td><td class="mono small">apps/desktop</td><td class="mono small"><a href="#S4" class="dep">S4</a></td><td class="done">关掉窗口后照样收到通知，点开半秒内回来</td><td class="size"><span class="sz" title="1 到 3 天">M</span></td><td class="small">线 1 · 终端</td><td class="small spec">9</td></tr>
+<tr id="X6" data-p="P1" data-l="线1"><td class="id"><span class="mono">X6</span><span class="pri p1" title="MVP 完整版">P1</span></td><td class="task"><b>恢复上次会话</b><span>Stop all and quit 或电脑重启后：Restore all，agent 按会话 id 接回原对话，Shell 在原目录填好命令不运行；也可以逐个 Restore</span></td><td class="mono small">tmux-host、agent-adapters</td><td class="mono small"><a href="#T6" class="dep">T6</a>、<a href="#S1" class="dep">S1</a></td><td class="done">重启电脑后一键恢复，claude 接着原来的对话</td><td class="size"><span class="sz" title="1 到 3 天">M</span></td><td class="small">线 1 · 终端</td><td class="small spec">9</td></tr>
+<tr id="X7" data-p="P1" data-l="线3"><td class="id"><span class="mono">X7</span><span class="pri p1" title="MVP 完整版">P1</span></td><td class="task"><b>没有 git 的文件夹</b><span>按普通文件夹添加，只有主目录工作区、没有分支；面板显示 Initialize Repository</span></td><td class="mono small">workspace-service、panels/scm</td><td class="mono small"><a href="#W1" class="dep">W1</a>、<a href="#G2" class="dep">G2</a></td><td class="done">加一个普通文件夹，能开终端，面板不报错</td><td class="size"><span class="sz" title="半天到 1 天">S</span></td><td class="small">线 3 · 工作区与 Git</td><td class="small spec">2</td></tr>
+<tr id="X8" data-p="P1" data-l="线3"><td class="id"><span class="mono">X8</span><span class="pri p1" title="MVP 完整版">P1</span></td><td class="task"><b>差异和放弃更改</b><span>单击文件看只读差异、Open in editor；Discard 和移到废纸篓要确认</span></td><td class="mono small">panels/scm</td><td class="mono small"><a href="#G2" class="dep">G2</a></td><td class="done">差异和 git diff 一致</td><td class="size"><span class="sz" title="1 到 3 天">M</span></td><td class="small">线 3 · 工作区与 Git</td><td class="small spec">8</td></tr>
+<tr id="X9" data-p="P1" data-l="线3"><td class="id"><span class="mono">X9</span><span class="pri p1" title="MVP 完整版">P1</span></td><td class="task"><b>提交记录和合并状态</b><span>列出当前分支和基础分支上的提交；合并或变基中显示 Merging，冲突文件置顶</span></td><td class="mono small">panels/scm、git-service</td><td class="mono small"><a href="#G1" class="dep">G1</a></td><td class="done">制造一次冲突，面板显示正确</td><td class="size"><span class="sz" title="半天到 1 天">S</span></td><td class="small">线 3 · 工作区与 Git</td><td class="small spec">8</td></tr>
+<tr id="X10" data-p="P1" data-l="线2"><td class="id"><span class="mono">X10</span><span class="pri p1" title="MVP 完整版">P1</span></td><td class="task"><b>多选和撤销</b><span>框选多选、一起移动；⌘Z / ⌘⇧Z 撤销白板上的操作（不撤销进程和 git）</span></td><td class="mono small">ui/canvas</td><td class="mono small"><a href="#B2" class="dep">B2</a></td><td class="done">移动、改大小、关闭窗口都能撤销</td><td class="size"><span class="sz" title="1 到 3 天">M</span></td><td class="small">线 2 · 白板</td><td class="small spec">3、10</td></tr>
+<tr id="X11" data-p="P1" data-l="线5"><td class="id"><span class="mono">X11</span><span class="pri p1" title="MVP 完整版">P1</span></td><td class="task"><b>需要登录的网页</b><span>登录态在 iframe 里丢失时，切换为独立窗口模式，改用 webview</span></td><td class="mono small">widgets/browser</td><td class="mono small"><a href="#U1" class="dep">U1</a></td><td class="done">本地带登录的页面能登录</td><td class="size"><span class="sz" title="1 到 3 天">M</span></td><td class="small">线 5 · 网页</td><td class="small spec">7</td></tr>
+      </tbody>
+    </table>
+    <p class="empty" id="empty" hidden>没有符合筛选条件的任务。</p>
+  </div>
+</section>
+
+<div class="two">
+  <section aria-labelledby="later-title">
+    <div class="section-head"><h2 id="later-title">不在这次 MVP 里</h2></div>
+    <ul class="later"><li><b>多仓库项目</b><span>一个工作区里多个仓库各一个 worktree，面板按仓库分组</span><span class="mono small muted">8</span></li><li><b>Auto-approve</b><span>按工作区自动批准，挡住危险命令并留记录</span><span class="mono small muted">6</span></li><li><b>Skills · MCP 面板</b><span>本地库、按工作区启用、同步到各 agent</span><span class="mono small muted">v0.2</span></li><li><b>自动存档</b><span>写文件后存快照到隐藏的 git ref，可回滚</span><span class="mono small muted">v0.2</span></li><li><b>小地图、按状态筛选、对齐吸附</b><span>白板上的整理工具</span><span class="mono small muted">v0.2</span></li><li><b>合并回 main、创建 PR</b><span>同仓多框改同一文件时提示</span><span class="mono small muted">v0.3</span></li><li><b>更多 agent 适配</b><span>gemini、aider、opencode 等的钩子</span><span class="mono small muted">v0.2</span></li></ul>
+  </section>
+  <section aria-labelledby="use-title">
+    <div class="section-head"><h2 id="use-title">怎么用这张表</h2></div>
+    <ol class="notes">
+      <li>一行就是一个任务说明：复制“要做的事”“模块”“完成标准”，套进实施方案页里的任务模板，交给一个 agent。</li>
+      <li>分支名带上编号，例如 <span class="mono">feat/T2-terminal-view</span>，提交信息也以编号开头，方便对回这张表。</li>
+      <li>依赖没做完时用 tools/fakes 里的假实现先做，不等别人。</li>
+      <li>任务需要改 contracts 时先停下，单独提一个只改 contracts 的提交，合进 main 后其他线再 rebase。</li>
+      <li>每完成一项，跑 <span class="mono">pnpm check</span> 和本包测试，再请审查 agent 看一遍。</li>
+    </ol>
+  </section>
+</div>
+</div>
+
+<script>
+(function () {
+  var state = { p: 'all', l: null };
+  var rows = Array.prototype.slice.call(document.querySelectorAll('#rows tr[data-p]'));
+  var groups = Array.prototype.slice.call(document.querySelectorAll('#rows tr.group'));
+  function apply() {
+    var shown = 0;
+    rows.forEach(function (r) {
+      var ok = (state.p === 'all' || r.dataset.p === state.p) && (!state.l || r.dataset.l === state.l);
+      r.hidden = !ok; if (ok) shown++;
+    });
+    groups.forEach(function (g) {
+      var any = rows.some(function (r) { return !r.hidden && groupOf(r) === g; });
+      g.hidden = !any;
+    });
+    document.getElementById('empty').hidden = shown > 0;
+    document.querySelectorAll('[data-filter-p]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.filterP === state.p)); });
+    document.querySelectorAll('[data-filter-l]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.filterL === state.l)); });
+  }
+  function groupOf(r) { var e = r.previousElementSibling; while (e && !e.classList.contains('group')) e = e.previousElementSibling; return e; }
+  document.querySelectorAll('[data-filter-p]').forEach(function (b) { b.addEventListener('click', function () { state.p = b.dataset.filterP; apply(); }); });
+  document.querySelectorAll('[data-filter-l]').forEach(function (b) { b.addEventListener('click', function () { state.l = state.l === b.dataset.filterL ? null : b.dataset.filterL; apply(); }); });
+})();
+</script>

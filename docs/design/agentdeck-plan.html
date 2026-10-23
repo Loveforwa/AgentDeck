@@ -1,0 +1,365 @@
+<title>AgentDeck 实施方案</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<style>
+/* 布局：单栏阅读文档，760px 正文宽，表格和代码各自横向滚动；配色沿用白板原型的暖灰 + 墨黑 + 一个“需要你”的橙色 */
+:root {
+  --bg: #F7F7F5; --surface: #FFFFFF; --fg: #1A1A1A; --muted: #5F5F5A; --line: #E3E3E0; --soft: #EFEFEC; --accent: #B93E0B;
+  --sans: "IBM Plex Sans", "Noto Sans SC", "PingFang SC", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #141413; --surface: #1C1C1A; --fg: #EDEDEA; --muted: #A3A39E; --line: #2E2E2B; --soft: #242422; --accent: #F08A4B; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #141413; --surface: #1C1C1A; --fg: #EDEDEA; --muted: #A3A39E; --line: #2E2E2B; --soft: #242422; --accent: #F08A4B; color-scheme: dark }
+
+body { background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 15px; line-height: 1.75;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 48px 96px; }
+.wrap { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 56px; }
+header { display: flex; flex-direction: column; gap: 10px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: 0.04em; }
+h1 { margin: 0; font-size: 30px; line-height: 1.3; font-weight: 600; text-wrap: balance; }
+h2 { margin: 0; font-size: 20px; line-height: 1.4; font-weight: 600; text-wrap: balance; }
+h3 { margin: 0; font-size: 15px; font-weight: 600; }
+p { margin: 0; }
+.lede { color: var(--muted); max-width: 62ch; }
+section { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.muted { color: var(--muted); }
+code { font-family: var(--mono); font-size: 0.88em; background: var(--soft); padding: 1px 5px; border-radius: 4px; }
+pre { margin: 0; font-family: var(--mono); font-size: 12.5px; line-height: 1.65; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; overflow-x: auto; }
+pre code { background: none; padding: 0; font-size: inherit; }
+ul, ol { margin: 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: 6px; }
+li::marker { color: var(--muted); }
+.summary { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px 22px; display: grid; grid-template-columns: 7em minmax(0, 1fr); gap: 10px 16px; }
+.summary dt { font-weight: 600; }
+.summary dd { margin: 0; min-width: 0; }
+.scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 13.5px; line-height: 1.6; }
+th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+th { font-weight: 600; font-size: 12px; color: var(--muted); background: var(--soft); }
+tr:last-child td { border-bottom: 0; }
+td:first-child { white-space: nowrap; font-weight: 500; }
+.tag { display: inline-block; font-family: var(--mono); font-size: 11px; line-height: 1; padding: 4px 6px; border: 1px solid var(--line); border-radius: 4px; color: var(--muted); white-space: nowrap; }
+.tag.mvp { color: var(--fg); border-color: var(--fg); }
+.risk { display: flex; flex-direction: column; gap: 14px; }
+.risk > div { border-top: 1px solid var(--line); padding-top: 14px; display: flex; flex-direction: column; gap: 6px; }
+.risk h3 span { color: var(--accent); font-family: var(--mono); font-weight: 500; margin-right: 6px; }
+.steps { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow: hidden; }
+.step { display: grid; grid-template-columns: 4.5em minmax(0, 1fr); gap: 16px; padding: 16px 18px; border-bottom: 1px solid var(--line); }
+.step:last-child { border-bottom: 0; }
+.step .id { font-family: var(--mono); font-size: 13px; font-weight: 500; }
+.step .body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.done { font-size: 13.5px; color: var(--muted); }
+.done b { color: var(--fg); font-weight: 600; }
+.cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.card h3 { font-size: 14px; }
+.card ul { font-size: 14px; }
+.mermaid { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px; overflow-x: auto; font-family: var(--sans); }
+@media (max-width: 640px) {
+  body { font-size: 14.5px; padding-block: 32px 64px; }
+  h1 { font-size: 24px; }
+  .summary { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .summary dd { margin-bottom: 10px; }
+  .cols { grid-template-columns: minmax(0, 1fr); }
+  .step { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">AgentDeck · 实施方案 · 2026-10</span>
+    <h1>从白板原型到能用的第一版</h1>
+    <p class="lede">这份方案回答六件事：用什么技术、最小能用的版本做哪些、界面怎么不显得像 AI 做的、功能怎么拆、怎么让多个 agent 并行开发它，以及怎么保证以后改一个模块不牵动全身。</p>
+  </header>
+
+  <dl class="summary">
+    <dt>技术栈</dt><dd>Electron + TypeScript + React，白板用 React Flow。终端进程由 tmux 托管，界面用 xterm.js 显示；Git 直接调用系统的 <code>git</code> 命令，不监听文件。</dd>
+    <dt>MVP</dt><dd>白板上开工作区框，框里跑 agent 终端，看得到谁在等你，点进去直接回复，右侧面板提交代码，终端里的 localhost 链接在白板上打开。</dd>
+    <dt>不牵一发</dt><dd>模块之间只通过 <code>contracts</code> 包里的接口通信；窗口类型和 agent 都用注册表接入；依赖方向由 CI 检查。</dd>
+    <dt>并行开发</dt><dd>先由一个 agent 搭好骨架和接口，之后拆成 5 条线，每条线一个 worktree、只改自己的目录。</dd>
+  </dl>
+
+  <section id="stack">
+    <h2>技术选型</h2>
+    <p>决定选型的是两件最难的事：在可以缩放的白板里放真实的终端和真实的网页。终端这边，进程交给 tmux 管，我们只负责显示和同步信息；网页这边，Electron 有成熟的现成方案，所以第一版用它。</p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>层</th><th>选择</th><th>为什么</th><th>没选的方案</th></tr></thead>
+        <tbody>
+          <tr><td>桌面外壳</td><td>Electron + electron-vite</td><td>xterm.js 是 VS Code 在用的终端组件，最成熟。主进程能改写 localhost 的响应头，网页窗口才能嵌进白板。MVP 只支持 macOS 和 Linux，Windows 需要 WSL（tmux 没有原生 Windows 版）。</td><td>Tauri 2：体积小，但子 webview 是原生图层，不能跟着白板一起平移缩放。等产品稳定后再评估。</td></tr>
+          <tr><td>语言与仓库</td><td>TypeScript，pnpm workspaces 单仓多包</td><td>前后端一种语言；每个模块一个包，边界清楚，agent 好分工。</td><td></td></tr>
+          <tr><td>界面</td><td>React 18 + Zustand（按领域分 store）</td><td>React Flow 和 xterm 封装都是 React 生态；Zustand 按 terminals、workspaces、git 各自一块，互不影响。</td><td>Redux：样板代码多，对这个规模没必要。</td></tr>
+          <tr><td>白板</td><td>React Flow（@xyflow/react，MIT）</td><td>节点就是普通 React 组件；自带平移缩放、拖角缩放（NodeResizer）、分组节点（可直接当工作区框）和小地图。</td><td>tldraw：画图能力更强，但用在正式产品里需要购买授权，而且我们不需要画笔类功能。</td></tr>
+          <tr><td>终端进程</td><td>tmux，AgentDeck 自己的独立实例（<code>tmux -L agentdeck</code>）和配置，关掉快捷键前缀</td><td>agent 进程归 tmux 管：关掉应用也继续跑，重开直接接上，历史输出由 tmux 保存；你也能在自己的终端里 <code>tmux attach</code> 接上同一个会话。需要的信息 tmux 都能给：当前目录和命令（<code>display-message</code>）、最后几行（<code>capture-pane</code>，给缩小后的摘要用）、输出抄送（<code>pipe-pane</code>，用来找 localhost 链接）、有没有新输出（<code>monitor-activity</code> / <code>monitor-silence</code>）。不影响你自己的 tmux。</td><td>node-pty 直接起进程：应用一退出进程就没了；看不见的终端也得一直接收输出；重启后恢复历史要自己做。</td></tr>
+          <tr><td>终端显示</td><td>@xterm/xterm（fit、webgl 插件）+ node-pty，只用来接上 tmux 会话</td><td>只为视口里的终端开一个 <code>tmux attach</code> 显示，移出视口就断开，不占资源。连接放在 Electron 的 utilityProcess 里，出问题不会拖垮界面。</td><td></td></tr>
+          <tr><td>Git</td><td>系统 <code>git</code> 命令（可用 simple-git 包一层）</td><td>worktree、暂存、提交图这些功能都完整，行为和你在命令行里看到的一致。</td><td>isomorphic-git：不支持 worktree。</td></tr>
+          <tr><td>git 刷新时机</td><td>不监听文件，按事件刷新</td><td>只在三种时候刷新：切换聚焦的窗口或工作区；agent 一轮结束（钩子通知）；你自己提交、暂存、切换分支之后。另有手动刷新按钮。少一个模块，多个 worktree 时也没有额外开销。</td><td>@parcel/watcher 监听文件：每个 worktree 都要监听，大仓库下开销大；agent 场景下没必要实时刷新。</td></tr>
+          <tr><td>本地数据</td><td>SQLite（better-sqlite3）</td><td>存白板布局、会话信息（窗口对应哪个 tmux 会话）、skills 库索引。终端历史由 tmux 保存，不另存。</td><td></td></tr>
+          <tr><td>网页窗口</td><td>iframe + 主进程去掉 localhost 的 <code>X-Frame-Options</code> / <code>frame-ancestors</code>；本地 HTML 走自定义协议</td><td>能像普通 DOM 一样跟着白板缩放。</td><td>Electron &lt;webview&gt;：隔离更好，作为登录类页面的退路（见风险 3）。</td></tr>
+          <tr><td>agent 状态</td><td>优先用 agent 自带的通知钩子，退路是 tmux 报告的输出活动</td><td>Claude Code 和新版 Codex 都有 hooks（UserPromptSubmit、PermissionRequest、Stop 等事件），启动时临时注入，不改用户自己的配置；旧版 Codex 退回 notify；钩子回调到应用的本地端口，比猜输出准。没有钩子的程序，用 tmux 的 monitor-activity / monitor-silence 判断运行中和空闲，不需要打开终端界面。</td><td>只靠正则匹配输出：各家 TUI 一改版就失效。</td></tr>
+          <tr><td>测试</td><td>Vitest（单元）+ Playwright 的 Electron 模式（端到端）</td><td>每个包能单独测，agent 改完自己能验证。</td><td></td></tr>
+          <tr><td>模块边界</td><td>dependency-cruiser，放进 CI</td><td>谁能依赖谁写成规则，越界的提交直接不通过。</td><td>只靠约定：并行开发时一定会被打破。</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>动手前先验证四个风险</h3>
+    <p class="muted">每个用半天做一个最小试验，结论会影响后面的设计。</p>
+    <div class="risk">
+      <div>
+        <h3><span>风险 1</span>终端在缩放的白板里会发糊、选区错位</h3>
+        <p>xterm 用 canvas 画字，外层被 CSS 缩放后字会模糊，鼠标坐标也会对不上。所以想放下更多窗口时，靠拖边框把窗口改小，字号不变；终端被拉到小于 320×200 时换成摘要卡，只显示最后几行和状态。白板整体缩放只留 ⌘ + 滚轮作为备用，低于 75% 时同样换成摘要卡。真正的 xterm 只在 1:1 尺寸下渲染。摘要卡的内容用 tmux 的 <code>capture-pane</code> 读，不需要打开终端界面。原型第 3 屏就是这个状态。</p>
+      </div>
+      <div>
+        <h3><span>风险 2</span>正在运行的 agent 换不了工作目录</h3>
+        <p>进程启动后，它的当前目录就改不了。所以第一版规定：终端在创建时就绑定它所在的框；把运行中的终端拖进别的框，只是挪位置，同时提示“在这个框里新开一个同款 agent”。不要做成看起来已经切换了目录、其实没切的样子。</p>
+      </div>
+      <div>
+        <h3><span>风险 3</span>嵌进来的本地页面可能登录不了</h3>
+        <p>页面在 iframe 里时，它的 cookie 算第三方 cookie，<code>SameSite=Lax</code> 的登录态会丢。普通页面用 iframe；遇到需要登录的页面，提供“切换为独立窗口模式”，改用 &lt;webview&gt;，它有自己独立的会话。</p>
+      </div>
+      <div>
+        <h3><span>风险 4</span>经过 tmux 一层后，终端手感变差</h3>
+        <p>按键、滚动、鼠标、颜色都要经过 tmux 转一层，配置不对就会出现快捷键被吃掉、滚动变成翻 tmux 历史、颜色变淡这类问题。要先用 claude 和 codex 实测：关掉前缀键、打开鼠标支持、真彩色、bracketed paste、扩展按键都能正常工作；同时测在白板上平移时，终端反复接上、断开的速度够不够快。</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="arch">
+    <h2>整体结构</h2>
+    <p>界面进程只负责显示和交互，所有碰系统的事（tmux、git、网络头）都在主进程或独立进程里，通过一层类型化的 IPC 调用。agent 进程本身跑在 tmux 里，不在 AgentDeck 的任何进程里。</p>
+    <pre class="mermaid">
+flowchart LR
+  subgraph R[界面进程 React]
+    C[白板 canvas] --- W[窗口: 终端 / 浏览器]
+    C --- P[面板: 源代码管理 / Skills]
+  end
+  R <-- 类型化 IPC --> M[主进程：组装、改写响应头、自定义协议]
+  M --> TH[tmux-host 独立进程]
+  TH --> TM[tmux 实例：所有 agent 在这里运行]
+  U[你自己的终端] -. tmux attach .-> TM
+  M --> G[git-service / workspace-service]
+  M --> A[agent-adapters]
+  TM -. 通知钩子 .-> H[本地回调端口]
+  H --> M
+    </pre>
+    <p>目录按模块分包。每个包的职责写在它自己的 <code>AGENTS.md</code> 里。</p>
+<pre><code>agentdeck/
+├─ apps/desktop/             Electron 入口：建窗口、把各服务接起来，只做组装
+├─ packages/
+│  ├─ contracts/             接口、IPC 消息、事件类型。所有包都依赖它，改它要单独提交
+│  ├─ design-tokens/         颜色、字号、间距、圆角，界面上的样子只在这里定
+│  ├─ tmux-host/             管 AgentDeck 自己的 tmux 实例：新建和结束会话、为视口里的终端
+│  │                         接上显示、读最后几行、抄送输出、查询目录和活动状态
+│  ├─ git-service/           status、暂存、提交、分支、log、worktree；按事件刷新，不监听文件
+│  ├─ workspace-service/     工作区 = 仓库 + worktree + 分支，负责创建和归档
+│  ├─ agent-adapters/        每个 agent 一个文件：启动命令、配置位置、状态来源
+│  ├─ port-watch/            从 tmux 抄送的输出里找出 localhost 地址
+│  ├─ checkpoint/            自动存档（v0.2）
+│  ├─ profile-sync/          把 skills、MCP、说明文件写到各 agent 认的位置（v0.2）
+│  └─ ui/
+│     ├─ canvas/             白板、工作区框、右键菜单、缩放
+│     ├─ window-shell/       所有窗口共用的外框：标题栏、拖动、缩放、放大、关闭
+│     ├─ widgets/terminal/   终端窗口
+│     ├─ widgets/browser/    网页窗口
+│     ├─ panels/scm/         源代码管理面板
+│     └─ panels/skills/      Skills · MCP 面板（v0.2）
+└─ tools/fakes/              假 tmux（回放录好的输出）、临时 git 仓库、示例数据</code></pre>
+  </section>
+
+  <section id="modular">
+    <h2>怎么做到改一个模块不牵动全身</h2>
+    <p>核心是三条：只通过接口通信、用注册表接入、边界交给机器检查。剩下几条是让这三条真正落地的办法。</p>
+    <ol>
+      <li><b>只通过 contracts 通信。</b>每个服务在 <code>contracts</code> 里有一份接口和事件定义，界面和服务都只认它。比如把 git-service 从命令行实现换成别的实现，界面一行不用动。</li>
+      <li><b>注册表代替 if/else。</b>窗口类型（终端、浏览器，以后的 diff 查看器、笔记）和 agent（claude、codex、gemini、自定义命令）都通过注册表接入。加一种窗口或一个 agent，就是加一个文件夹，再加一行注册。</li>
+      <li><b>数据单向流动。</b>服务发出事件，对应的 store 更新，组件只读 store。组件之间不互相调用，白板也不知道终端内部怎么实现。</li>
+      <li><b>依赖方向写成规则。</b><code>ui/*</code> 只能依赖 <code>contracts</code> 和 <code>design-tokens</code>；服务不能依赖 <code>ui</code>；各个 widget 之间、各个 adapter 之间不能互相引用。dependency-cruiser 在 CI 里检查。</li>
+      <li><b>每个模块自带假实现。</b>有了假 tmux 和假 GitService，做界面的人不用等服务写完，做服务的人也不用开界面就能测。</li>
+      <li><b>样子只在 tokens 里改。</b>组件里禁止写颜色值（lint 规则拦住十六进制颜色），以后换风格只改 <code>design-tokens</code>。</li>
+      <li><b>每个包一份 AGENTS.md。</b>写清楚职责、对外接口、不许碰的目录、怎么跑测试。这是写给并行开发的 agent 读的，也是以后你自己回来改代码时的入口。</li>
+    </ol>
+    <p class="muted">三个核心接口的样子：</p>
+<pre><code>// packages/contracts/src/terminal.ts
+export interface TerminalHost {
+  // 会话：在 AgentDeck 自己的 tmux 实例里创建，应用退出后继续存在
+  create(req: { cmd: string; args: string[]; cwd: string; env?: Record&lt;string, string&gt; }): Promise&lt;{ id: string }&gt;;
+  kill(id: string): Promise&lt;void&gt;;
+  list(): Promise&lt;{ id: string; cwd: string; command: string; alive: boolean }[]&gt;;   // 重开应用时用来接上
+  // 显示：只为视口里的终端接上，移出视口就断开
+  attach(id: string, cols: number, rows: number): Promise&lt;{ viewId: string }&gt;;
+  detach(viewId: string): void;
+  write(viewId: string, data: string): void;
+  resize(viewId: string, cols: number, rows: number): void;
+  // 不用接上也能拿到的信息
+  lastLines(id: string, n: number): Promise&lt;string[]&gt;;                          // 缩小后的摘要
+  attachCommand(id: string): string;                                            // 在系统终端里接上用
+}
+export type TerminalEvent =
+  | { type: 'data'; viewId: string; data: string }       // 只有接上的终端才有
+  | { type: 'activity'; id: string }                     // 有新输出
+  | { type: 'silence'; id: string }                      // 一段时间没有输出
+  | { type: 'link'; id: string; url: string }            // 输出里出现了 localhost 地址
+  | { type: 'exit'; id: string; code: number };
+
+// packages/contracts/src/agent.ts
+export interface AgentAdapter {
+  id: string;                                   // 'claude' | 'codex' | 'gemini' | 'custom'
+  label: string;
+  detect(): Promise&lt;{ installed: boolean; version?: string }&gt;;
+  launch(ws: Workspace): { cmd: string; args: string[]; env?: Record&lt;string, string&gt; };
+  statusSource: 'hooks' | 'idle';               // 状态从钩子来，还是靠输出空闲判断
+  installHooks?(ws: Workspace, callbackUrl: string): Promise&lt;void&gt;;
+  writeProfile?(ws: Workspace, profile: Profile): Promise&lt;void&gt;;   // v0.2：skills / MCP
+}
+
+// packages/ui/canvas/src/registry.ts
+registerWindow({
+  type: 'terminal',
+  component: TerminalWindow,
+  defaultSize: { w: 480, h: 320 },
+  serialize: (node) =&gt; ({ ptyId: node.data.ptyId, agent: node.data.agent }),
+});</code></pre>
+  </section>
+
+  <section id="features">
+    <h2>功能拆解</h2>
+    <p>按模块列出所有功能，标出放在哪个版本。<span class="tag mvp">MVP</span> 是第一版必须有的。</p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>模块</th><th>功能</th><th>版本</th></tr></thead>
+        <tbody>
+          <tr><td>白板</td><td>平移、⌘ + 滚轮缩放（备用）、右键菜单、多选、布局保存与恢复、终端拉小后变摘要卡</td><td><span class="tag mvp">MVP</span></td></tr>
+          <tr><td></td><td>小地图、按状态筛选、对齐吸附</td><td><span class="tag">v0.2</span></td></tr>
+          <tr><td>窗口外框</td><td>拖标题栏移动、拖右下角缩放、放大/还原、关闭、聚焦高亮</td><td><span class="tag mvp">MVP</span></td></tr>
+          <tr><td>终端窗口</td><td>在 tmux 里启动任意命令、输入输出、复制粘贴、识别 localhost 链接、在系统终端里打开</td><td><span class="tag mvp">MVP</span></td></tr>
+          <tr><td>会话常驻</td><td>关掉应用后 agent 继续运行，重新打开自动接上，历史输出都在；电脑重启后提供“重新启动”</td><td><span class="tag mvp">MVP</span></td></tr>
+          <tr><td></td><td>终端内搜索</td><td><span class="tag">v0.2</span></td></tr>
+          <tr><td>工作区框</td><td>新建（选仓库，自动建 worktree 和分支）、改名、拖框时带走里面的窗口</td><td><span class="tag mvp">MVP</span></td></tr>
+          <tr><td></td><td>归档（删除 worktree，分支保留）、从框复制出新工作区</td><td><span class="tag">v0.2</span></td></tr>
+          <tr><td>Agent 接入</td><td>claude、codex、自定义命令；“等你处理”状态（先做 Claude Code 的钩子）</td><td><span class="tag mvp">MVP</span></td></tr>
+          <tr><td></td><td>gemini、aider、opencode 等更多适配；自动检测已安装的 agent</td><td><span class="tag">v0.2</span></td></tr>
+          <tr><td>源代码管理</td><td>变更文件树、暂存/取消暂存、提交、切换分支、提交列表、仓库内所有 worktree 列表；在切换聚焦、agent 一轮结束、自己操作 git 之后刷新，另有手动刷新</td><td><span class="tag mvp">MVP</span></td></tr>
+          <tr><td></td><td>提交图、和 main 对比、推送与拉取</td><td><span class="tag">v0.2</span></td></tr>
+          <tr><td>自动存档</td><td>写文件后存一份快照到隐藏的 git ref，可以回滚到任一快照</td><td><span class="tag">v0.2</span></td></tr>
+          <tr><td>网页窗口</td><td>点击 localhost 链接在白板上打开、后退、刷新、在系统浏览器打开</td><td><span class="tag mvp">MVP</span></td></tr>
+          <tr><td></td><td>起始页列出本机服务、打开工作区里的 HTML 文件、独立窗口模式</td><td><span class="tag">v0.2</span></td></tr>
+          <tr><td>Skills · MCP</td><td>本地库、按工作区启用、同步到框里的每个 agent</td><td><span class="tag">v0.2</span></td></tr>
+          <tr><td></td><td>从 GitHub 或市场下载 skill</td><td><span class="tag">v0.3</span></td></tr>
+          <tr><td>合并</td><td>合并回 main、创建 PR、同仓多框改同一文件时提示</td><td><span class="tag">v0.3</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted">自动存档的做法：用一个临时 index（设置 <code>GIT_INDEX_FILE</code>）执行 <code>git add -A</code>、<code>write-tree</code>、<code>commit-tree</code>，再用 <code>update-ref</code> 写到 <code>refs/agentdeck/checkpoints/…</code>。这样连未跟踪的文件也能存下来，又不碰你真正的暂存区和分支历史。</p>
+  </section>
+
+  <section id="mvp">
+    <h2>MVP 怎么做</h2>
+    <p>判断标准只有一个：你能不能用它过完一整天真实的开发。为此需要的最小闭环是：在白板上开三个工作区，各跑一个 agent；一眼看出谁在等你；点进去直接回复；在右侧提交；点 dev server 的链接，在白板上看效果。</p>
+    <div class="steps">
+      <div class="step"><span class="id">M0</span><div class="body">
+        <h3>骨架（一个 agent 串行完成）</h3>
+        <p>单仓多包、contracts 第一版（含 TerminalHost）、design-tokens、window-shell 空壳、窗口和 agent 的注册表、CI（类型检查、lint、依赖边界、单元测试）、假 tmux 和临时仓库夹具。同时做完风险 4 的 tmux 配置试验，定下 AgentDeck 自带的 tmux 配置。</p>
+        <p class="done"><b>完成标准：</b><code>pnpm dev</code> 打开一块空白板，用假 tmux 在上面显示一个正在回放输出的终端窗口。</p>
+      </div></div>
+      <div class="step"><span class="id">M1</span><div class="body">
+        <h3>白板和终端</h3>
+        <p>右键新建终端，进程在 AgentDeck 的 tmux 实例里运行；拖动、缩放、放大；只为视口里的终端接上显示，拉小后显示摘要卡；退出再打开时布局恢复、终端自动接上；右键 › 在系统终端里打开。</p>
+        <p class="done"><b>完成标准：</b>同时开 6 个真实的 claude / codex 终端，打字没有可感知的延迟；退出应用再打开，终端还在跑，历史输出都在；在系统终端里接上同一个会话，两边输入同步。</p>
+      </div></div>
+      <div class="step"><span class="id">M2</span><div class="body">
+        <h3>工作区和 Git</h3>
+        <p>右键画框，选仓库，自动建 worktree 和分支；框里新开的终端目录正确；右侧面板跟随聚焦的窗口，只在切换聚焦、agent 一轮结束、自己操作 git 之后刷新；暂存、提交、切换分支。</p>
+        <p class="done"><b>完成标准：</b>同一个仓库开两个框，两个 agent 同时改代码互不影响；在面板里提交后，<code>git log</code> 里看得到。</p>
+      </div></div>
+      <div class="step"><span class="id">M3</span><div class="body">
+        <h3>状态和网页窗口</h3>
+        <p>“等你处理”状态（先接 Claude Code 的钩子，其他 agent 用 tmux 的输出活动判断）；agent 一轮结束时通知右侧面板刷新；终端里的 localhost 链接点开就是白板上的网页窗口。</p>
+        <p class="done"><b>完成标准：</b>某个 agent 停下来问你问题，2 秒内它的窗口亮起橙点；点 dev server 链接，页面在同一个框里打开。</p>
+      </div></div>
+    </div>
+    <p class="muted">M2 做完以后，就可以用 AgentDeck 自己来开发后面的版本。</p>
+  </section>
+
+  <section id="parallel">
+    <h2>多 agent 并行开发</h2>
+    <p>M0 必须一个 agent 串行做完，因为所有人的接口都在这一步定下来。之后拆成 5 条线，每条线一个 worktree、一个分支，只改自己负责的目录。</p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>线</th><th>负责的目录</th><th>交付</th><th>依赖</th></tr></thead>
+        <tbody>
+          <tr><td>1 终端</td><td><code>tmux-host</code>、<code>ui/widgets/terminal</code>、<code>port-watch</code></td><td>tmux 会话管理、只为视口里的终端接上显示、摘要卡内容、链接识别、在系统终端里打开、重开应用后自动接上</td><td>window-shell（M0 已有）</td></tr>
+          <tr><td>2 白板</td><td><code>ui/canvas</code>、<code>ui/window-shell</code></td><td>右键菜单、框、拖动缩放、布局保存</td><td>只用假窗口，不依赖别的线</td></tr>
+          <tr><td>3 Git</td><td><code>git-service</code>、<code>workspace-service</code>、<code>ui/panels/scm</code></td><td>worktree 生命周期、源代码管理面板、按事件刷新（不监听文件）</td><td>用临时仓库测试，不依赖界面；“一轮结束”事件来自第 4 条线，先用假事件</td></tr>
+          <tr><td>4 Agent</td><td><code>agent-adapters</code></td><td>claude、codex、自定义命令；Claude Code 钩子回调；发出“一轮结束”事件</td><td>用假 tmux 测试</td></tr>
+          <tr><td>5 网页</td><td><code>ui/widgets/browser</code>、主进程里的响应头改写和自定义协议</td><td>网页窗口、后退刷新、独立窗口模式</td><td>window-shell</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>规则</h3>
+    <ul>
+      <li>只改自己的目录。需要改 <code>contracts</code> 时先停下来，单独提一个只改 contracts 的小提交，合进 main 后其他线再 rebase。</li>
+      <li>每条线都有假实现可用，不等别人写完。</li>
+      <li>每完成一个里程碑集成一次，按 contracts → 服务 → 界面的顺序合并。</li>
+      <li>提交前跑 <code>pnpm check</code>（类型检查、lint、依赖边界、本包测试）。</li>
+      <li>另开一个只读的 agent 做审查，只提意见不改代码。</li>
+    </ul>
+    <h3>给每条线的任务说明模板</h3>
+<pre><code>任务：做出源代码管理面板，以及它背后的 git 服务
+你负责的目录：packages/git-service/、packages/workspace-service/、packages/ui/panels/scm/
+可以读但不能改：packages/contracts/（需要改就停下来告诉我要改什么）
+不要碰：其他所有目录
+对外接口：contracts/src/git.ts 里的 GitService、WorkspaceService
+完成标准：
+  - pnpm --filter git-service test 通过（用 tools/fakes 的临时仓库）
+  - 面板接上假 GitService，可以演示暂存、提交、切换分支
+  - 更新这几个目录下的 AGENTS.md</code></pre>
+  </section>
+
+  <section id="style">
+    <h2>界面怎么做到不像 AI 做的</h2>
+    <p>“AI 味”主要来自几种被用滥的做法：紫蓝渐变、发光和毛玻璃、每个东西都配彩色头像、✨ 和 emoji、到处都是圆角卡片和阴影、“Smart”“AI is doing it for you”这类文案。反过来，参照专业工具的克制：VS Code 的源代码管理、Figma 的画布、终端本身。</p>
+    <div class="cols">
+      <div class="card">
+        <h3>要做的</h3>
+        <ul>
+          <li>暖灰加墨黑，只留一个强调色给“需要你处理”</li>
+          <li>agent 名字用等宽字写命令名：claude、codex</li>
+          <li>一种界面字体加一种等宽字体，字号只用 11 / 12 / 13 / 15</li>
+          <li>用 1px 线分隔；只有浮起来的东西（菜单、聚焦窗口、拖动中）才有阴影</li>
+          <li>圆角固定三档：按钮 6、窗口 8、框和面板 12</li>
+          <li>一套线性图标（如 Lucide，1.5 线宽）</li>
+          <li>界面文案全部用英文，状态写成事实：“Needs approval”“Running · 12m”</li>
+          <li>动效 120–160ms、减速曲线，跟随系统的减少动效设置</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>不做的</h3>
+        <ul>
+          <li>渐变、发光、毛玻璃背景</li>
+          <li>给每个 agent 配彩色头像或 logo</li>
+          <li>emoji、✨、闪光图标</li>
+          <li>每块内容都套圆角卡片加阴影</li>
+          <li>用颜色区分所有状态（运行中用黑点、空闲用空心点就够了）</li>
+          <li>“Smart …”“AI is working on it for you…”“✓ Perfect!”这类文案</li>
+          <li>空状态放插画</li>
+          <li>弹跳、缩放进场的动画</li>
+        </ul>
+      </div>
+    </div>
+    <p>落地办法：先写 <code>design-tokens</code>，再写组件；lint 禁止组件里出现颜色值；每个里程碑截一张全屏图，对照上面两列检查一遍。</p>
+<pre><code>/* packages/design-tokens/tokens.css */
+:root {
+  --ground: #F7F7F5;   --surface: #FFFFFF;   --ink: #1A1A1A;
+  --muted: #6B6B6B;    --line: #E3E3E0;      --attention: #C2410C;   /* 只用于“需要你处理” */
+  --font-ui: Inter, "PingFang SC", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --text-xs: 11px; --text-sm: 12px; --text-md: 13px; --text-lg: 15px;
+  --radius-control: 6px; --radius-window: 8px; --radius-frame: 12px;
+  --shadow-float: 0 8px 24px rgba(0, 0, 0, 0.08);
+  --motion: 140ms cubic-bezier(0.2, 0, 0, 1);
+}</code></pre>
+  </section>
+</div>
