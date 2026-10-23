@@ -1,0 +1,71 @@
+.ad-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-dialog);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 18vh;
+  background: var(--scrim);
+  animation: ad-dialog-fade var(--motion);
+}
+
+.ad-dialog-host {
+  outline: none;
+}
+
+.ad-dialog {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  max-width: calc(100vw - 32px);
+  padding: var(--space-xl);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-window);
+  background: var(--raised);
+  box-shadow: var(--shadow-float);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--text-md);
+  line-height: var(--leading);
+}
+
+.ad-dialog-title {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-strong);
+  line-height: 1.35;
+}
+
+.ad-dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+}
+
+.ad-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  margin-top: var(--space-xl);
+}
+
+.ad-dialog-text {
+  margin: 0;
+}
+
+.ad-dialog-text--muted {
+  color: var(--muted);
+}
+
+.ad-dialog-text--attention {
+  color: var(--attention);
+}
+
+@keyframes ad-dialog-fade {
+  from {
+    opacity: 0;
+  }
+}

@@ -1,0 +1,66 @@
+.ad-toast-viewport {
+  position: fixed;
+  left: 50%;
+  bottom: var(--space-lg);
+  z-index: var(--z-toast);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.ad-toast-viewport > * {
+  pointer-events: auto;
+}
+
+/* 墨色底，在深色主题下自动变成浅底深字。 */
+.ad-toast {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-md);
+  box-sizing: border-box;
+  max-width: 480px;
+  min-height: 32px;
+  padding: var(--space-xs) var(--space-md);
+  border-radius: var(--radius-control);
+  background: var(--ink);
+  box-shadow: var(--shadow-float);
+  color: var(--on-ink);
+  font-family: var(--font-ui);
+  font-size: var(--text-md);
+  line-height: var(--leading);
+  animation: ad-toast-in var(--motion);
+}
+
+.ad-toast-message {
+  min-width: 0;
+}
+
+.ad-toast-action {
+  flex: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: var(--weight-strong);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: default;
+}
+
+.ad-toast-action:focus-visible {
+  outline: 2px solid var(--on-ink);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+@keyframes ad-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}

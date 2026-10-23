@@ -1,0 +1,26 @@
+/* 应用入口引一次：tokens 加上最基本的页面样式。 */
+@import '@agentdeck/design-tokens/tokens.css';
+
+html {
+  background: var(--ground);
+}
+
+html,
+[data-theme] {
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--text-md);
+  line-height: var(--leading);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+}
+
+code,
+kbd,
+pre {
+  font-family: var(--font-mono);
+}

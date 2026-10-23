@@ -1,0 +1,63 @@
+.ad-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  box-sizing: border-box;
+  height: var(--control-md);
+  padding: 0 var(--space-md);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--text-md);
+  font-weight: var(--weight-regular);
+  line-height: 1;
+  white-space: nowrap;
+  cursor: default;
+  user-select: none;
+  transition:
+    background-color var(--motion),
+    border-color var(--motion);
+}
+
+.ad-button--sm {
+  height: var(--control-sm);
+  padding: 0 var(--space-sm);
+  font-size: var(--text-sm);
+}
+
+.ad-button:hover:not(:disabled) {
+  background: var(--hover);
+}
+
+.ad-button--primary {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--on-ink);
+  font-weight: var(--weight-medium);
+}
+
+.ad-button--primary:hover:not(:disabled) {
+  border-color: var(--ink-hover);
+  background: var(--ink-hover);
+}
+
+.ad-button--ghost {
+  border-color: transparent;
+  background: transparent;
+}
+
+.ad-button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.ad-button:disabled {
+  opacity: var(--opacity-disabled);
+}
+
+.ad-button > svg {
+  flex: none;
+}

@@ -1,0 +1,90 @@
+.ad-menu {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  min-width: 180px;
+  padding: var(--space-xs);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--raised);
+  box-shadow: var(--shadow-float);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--text-md);
+  line-height: var(--leading);
+  outline: none;
+  user-select: none;
+}
+
+.ad-menu-slot {
+  position: relative;
+}
+
+.ad-menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  box-sizing: border-box;
+  height: var(--row);
+  padding: 0 var(--space-sm);
+  border-radius: var(--radius-inset);
+  white-space: nowrap;
+  cursor: default;
+  outline: none;
+}
+
+.ad-menu-item[data-active] {
+  background: var(--hover);
+}
+
+.ad-menu-item[aria-disabled='true'] {
+  opacity: var(--opacity-disabled);
+}
+
+.ad-menu-check {
+  display: inline-flex;
+  flex: none;
+  width: 12px;
+  margin-right: calc(var(--space-2xs) * -1);
+}
+
+.ad-menu-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ad-menu-shortcut {
+  flex: none;
+  margin-left: var(--space-lg);
+  color: var(--muted);
+  font-size: var(--text-sm);
+  letter-spacing: 0.02em;
+}
+
+.ad-menu-arrow {
+  display: inline-flex;
+  flex: none;
+  width: 8px;
+  color: var(--muted);
+}
+
+.ad-menu-separator {
+  height: 1px;
+  margin: var(--space-xs) var(--space-2xs);
+  background: var(--line-subtle);
+}
+
+/* 子菜单嵌在父项里，贴着父项右边，第一项和父项对齐。 */
+.ad-menu--sub {
+  position: absolute;
+  top: calc((var(--space-xs) + 1px) * -1);
+  left: calc(100% + var(--space-xs));
+  z-index: 1;
+}
+
+.ad-menu--sub.ad-menu--flip {
+  left: auto;
+  right: calc(100% + var(--space-xs));
+}

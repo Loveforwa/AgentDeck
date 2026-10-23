@@ -1,0 +1,70 @@
+.ad-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.ad-radio {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  cursor: default;
+}
+
+.ad-radio[data-disabled] {
+  opacity: var(--opacity-disabled);
+}
+
+/* 原生 radio 盖在圆点上、透明，键盘和读屏行为全靠它。 */
+.ad-radio-input {
+  position: absolute;
+  top: 2px;
+  left: 0;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  opacity: 0;
+}
+
+.ad-radio-dot {
+  position: relative;
+  flex: none;
+  box-sizing: border-box;
+  width: 14px;
+  height: 14px;
+  margin-top: 2px;
+  /* 圆点的边用 muted：line-strong 在白底上太淡，空心圆点会看不见。 */
+  border: 1px solid var(--muted);
+  border-radius: 50%;
+  background: var(--surface);
+  transition: border-color var(--motion);
+}
+
+.ad-radio-input:checked + .ad-radio-dot {
+  border-color: var(--ink);
+}
+
+.ad-radio-input:checked + .ad-radio-dot::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: var(--ink);
+}
+
+.ad-radio-input:focus-visible + .ad-radio-dot {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.ad-radio-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ad-radio-description {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}

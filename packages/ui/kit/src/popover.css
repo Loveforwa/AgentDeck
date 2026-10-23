@@ -1,0 +1,40 @@
+.ad-popover {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: var(--z-popover);
+  outline: none;
+  animation: ad-popover-in var(--motion);
+}
+
+.ad-popover--chrome {
+  box-sizing: border-box;
+  max-width: 320px;
+  padding: var(--space-md);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-window);
+  background: var(--raised);
+  box-shadow: var(--shadow-float);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--text-md);
+  line-height: var(--leading);
+}
+
+.ad-popover-panel {
+  display: inline-block;
+}
+
+/* 浮层里常见的“一句话 + 按钮行” */
+.ad-popover-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+}
+
+@keyframes ad-popover-in {
+  from {
+    opacity: 0;
+  }
+}
