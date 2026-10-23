@@ -5,7 +5,7 @@ export { createBoardStore, type BoardStore, type BoardStoreState, type DialogSta
 export { Workbench, type PanelContext, type WorkbenchProps } from './react/Workbench.tsx';
 export { Board } from './react/Board.tsx';
 export { BoardProvider, useBoardState, useController } from './react/context.tsx';
-export { WINDOW_COMMAND_EVENT, useShortcuts, type WindowCommandDetail } from './react/useShortcuts.ts';
+export { useShortcuts } from './react/useShortcuts.ts';
 export { matchShortcut, resolveShortcut, shouldHandle, SHORTCUT_LABELS, type ShortcutId } from './model/shortcuts.ts';
 export { summarize, nextWaiting, isWaiting, type AttentionSummary } from './model/attention.ts';
 export { createAutosave, type Autosave } from './model/autosave.ts';

@@ -60,6 +60,8 @@ function setup(data: Partial<Data> = {}, options: { focused?: boolean } = {}): H
         requestFocus={requestFocus}
         openWindow={() => {}}
         close={() => {}}
+        toggleMaximize={() => {}}
+        onCommand={() => () => {}}
       />
     );
   }

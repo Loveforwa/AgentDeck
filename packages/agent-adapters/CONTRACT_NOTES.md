@@ -1,5 +1,7 @@
 # 对 contracts 0.1.2 的意见（线 4 写适配器和状态机时发现）
 
+> **已处理（2026-10-23，contracts 0.1.3，提交 a913dcf）**：第 1 条选了 `CreateTerminalRequest.id`（由 AgentService 先生成），第 2–6 条都加进了 contracts（`LaunchContext.command`、`StatusSnapshot.sessionId`、`terminal.input` 事件、`tool-done`、`AgentInfo.warning`），第 7–9 条写进了注释。本包改用这些新字段（去掉 `CommandLaunchContext`、`PENDING_TERMINAL_ID`、`hookHint`）待线 4 跟进；`terminal.input` 由线 1 的 tmux-host 发。
+
 没有改 `packages/contracts`。下面是接口不够用或说得不清的地方，交给集成负责人决定；每条都写了本包现在的临时做法。
 
 ## 需要加东西（都是只加不改）

@@ -1,6 +1,6 @@
 // 在真实的临时仓库上跑 GitService（createTempRepo 来自 tools/fakes）。
 
-import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { AgentDeckError } from '@agentdeck/contracts';
 import { createTempRepo, type TempRepo } from '@agentdeck/fakes/temp-repo';
@@ -349,7 +349,7 @@ describe('branches and switching', () => {
     expect(s).toMatchObject({ branch: 'feature/login', files: [] });
     const stashes = await git.stashes(r.path);
     expect(stashes).toEqual([
-      { id: 'stash@{0}', branch: 'main', message: 'AgentDeck: switched to feature/login', at: expect.stringMatching(/Z$/) },
+      { id: 'stash@{0}', branch: 'main', message: 'AgentDeck: switched to feature/login', at: expect.stringMatching(/Z$/), byAgentDeck: true },
     ]);
 
     await git.switchBranch(r.path, 'main', 'carry');
@@ -486,6 +486,22 @@ describe('worktrees', () => {
     await git.removeWorktree(r.path, wt, { force: false });
     expect((await git.worktrees(r.path)).map((w) => w.path)).toEqual([r.path]);
     await git.deleteBranch(r.path, 'feat/gone', { force: false });
+  });
+});
+
+describe('repairWorktrees', () => {
+  it('fixes worktrees after the main repo moved', async () => {
+    const root = dir();
+    const { git } = makeGit();
+    const r = await repo();
+    const wt = join(root, 'wt');
+    await git.addWorktree(r.path, wt, { name: 'feat/moved', create: true });
+    const moved = join(root, 'moved-main');
+    renameSync(r.path, moved);
+    // 搬家后 worktree 的 .git 文件还指向旧位置，打不开
+    await expect(git.status(wt)).rejects.toBeTruthy();
+    await git.repairWorktrees(moved);
+    expect((await git.status(wt)).branch).toBe('feat/moved');
   });
 });
 

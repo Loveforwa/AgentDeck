@@ -9,6 +9,7 @@ type MethodsOf<S extends ServiceName> = keyof Services[S] & string;
 
 export const SERVICE_METHODS = {
   app: [
+    'homeDir',
     'pickFolder',
     'openInEditor',
     'openInSystemTerminal',
@@ -39,10 +40,11 @@ export const SERVICE_METHODS = {
     'addWorktree',
     'removeWorktree',
     'repoRoot',
+    'repairWorktrees',
     'defaultBranch',
     'init',
   ],
-  terminals: ['create', 'kill', 'list', 'attach', 'detach', 'write', 'resize', 'sendKeys', 'lastLines', 'attachCommand'],
+  terminals: ['create', 'kill', 'list', 'attach', 'detach', 'write', 'resize', 'sendKeys', 'lastLines', 'attachCommand', 'recentLinks'],
   agents: ['list', 'refresh', 'start'],
   status: ['snapshot'],
   approvals: ['approve', 'setAutoApprove', 'history'],

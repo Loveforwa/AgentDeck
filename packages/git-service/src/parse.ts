@@ -203,6 +203,9 @@ export function parseLog(out: string): ParsedCommit[] {
 /** 字段：stash@{n}、reflog 标题（“On main: msg” / “WIP on main: abc subject”）、时间。 */
 export const STASH_FORMAT = '%gd%x00%gs%x00%cI%x1e';
 
+/** AgentDeck 切分支时存 stash 用的信息前缀。 */
+export const AGENTDECK_STASH_PREFIX = 'AgentDeck: ';
+
 export function parseStashes(out: string): StashInfo[] {
   const list: StashInfo[] = [];
   for (const rec of out.split('\x1e')) {
@@ -216,7 +219,8 @@ export function parseStashes(out: string): StashInfo[] {
       branch = m[2] === '(no branch)' ? null : (m[2] ?? null);
       message = m[1] === 'On' ? (m[3] ?? '') : subject;
     }
-    list.push({ id, branch, message, at: toIso(at) });
+    // switchBranch(..., 'stash') 存的信息以 AGENTDECK_STASH_PREFIX 开头
+    list.push({ id, branch, message, at: toIso(at), byAgentDeck: message.startsWith(AGENTDECK_STASH_PREFIX) });
   }
   return list;
 }

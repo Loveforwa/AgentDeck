@@ -30,7 +30,7 @@ registerWindow<TerminalWindowData>({
   - `visible`：窗口和视口有交集。终端据此 attach / detach。
   - `focused` 为 false 时内容上盖了一层：滚轮平移白板，第一下单击只聚焦，所以组件不用自己处理“没聚焦时的滚轮”。
   - `setStatus` 的 `tone: 'attention'` 也会算进“在等你”（不是终端的窗口用）。
-  - ⌘K 时白板往聚焦窗口的 `.ad-window-content` 上发 DOM 事件 `agentdeck:window-command`（`detail: { command: 'clear' }`，常量 `WINDOW_COMMAND_EVENT`）。contracts 里还没有对应的 prop，见 CONTRACT_NOTES.md。
+  - ⌘K 时白板调用聚焦窗口的 `onCommand('clear')`（contracts 0.1.3 的 `WindowComponentProps.onCommand`，实现是 `BoardController.sendWindowCommand`）。
 - 白板对 `type: 'terminal'` 有几条特别规则（不能换框、关闭前确认、按 `data.terminalId` 对状态、标题栏显示 `data.agent`），网页是 `type: 'browser'`（标题栏显示主机名、New browser 和 ⌘T 用它）。两种类型没注册时对应菜单项变灰。
 
 ### 给组装（apps/desktop，第 3 波）

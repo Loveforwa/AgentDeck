@@ -1,5 +1,7 @@
 # 对 contracts 0.1.2 的意见（线 2 白板）
 
+> **已处理（2026-10-23，contracts 0.1.3，提交 a913dcf）**：第 1–6 条都加进了 contracts（第 4 条选了 `AppService.homeDir()`，第 5 条只改注释），第 7 条留给组装。白板已经改用 `onCommand` / `toggleMaximize`（不再发 DOM 事件）；按 `pinnedToWorkspace` / `title` / `closeConfirm` / `onClose` / `menu` / `titleBar` / `termSize` 读窗口类型、`reuseKey` 随白板保存、用 `homeDir()` 还没改，待线 2 跟进。
+
 没有改 `packages/contracts`。下面是做白板时发现接口不够用或说得不清的地方，交给集成负责人决定；每条都写了白板现在的临时做法。都是“只加不改”。
 
 ## 需要加东西

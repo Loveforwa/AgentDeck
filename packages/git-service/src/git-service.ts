@@ -19,6 +19,7 @@ import type {
 } from '@agentdeck/contracts';
 import { AgentDeckError } from '@agentdeck/contracts';
 import {
+  AGENTDECK_STASH_PREFIX,
   BRANCH_FORMAT,
   LOG_FORMAT,
   STASH_FORMAT,
@@ -203,7 +204,7 @@ export class SystemGitService implements GitService {
         return;
       }
       const before = await this.stashTop(repo);
-      await this.git(repo, ['stash', 'push', '--include-untracked', '-m', `AgentDeck: switched to ${branch}`], {
+      await this.git(repo, ['stash', 'push', '--include-untracked', '-m', `${AGENTDECK_STASH_PREFIX}switched to ${branch}`], {
         timeoutMs: this.longTimeoutMs,
       });
       const stashed = (await this.stashTop(repo)) !== before;
@@ -359,6 +360,12 @@ export class SystemGitService implements GitService {
     if (refs.has('refs/heads/master') || refs.has('refs/remotes/origin/master')) return 'master';
     // 都没有（刚 init、或者用别的名字）：用当前分支
     return (await this.currentBranch(repo)) ?? 'main';
+  }
+
+  async repairWorktrees(repo: AbsPath): Promise<void> {
+    // 主仓库搬家后，worktree 里的 .git 文件还指向旧位置；不带参数的 repair 修不到它们，要把每个 worktree 的路径传进去
+    const others = (await this.worktrees(repo)).filter((w) => !w.main && existsSync(w.path)).map((w) => w.path);
+    await this.queue(repo, () => this.git(repo, ['worktree', 'repair', ...others]));
   }
 
   async init(dir: AbsPath): Promise<void> {

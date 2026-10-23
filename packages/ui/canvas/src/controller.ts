@@ -1,26 +1,7 @@
 // BoardController：白板的全部行为。React 组件只负责画和把手势交给它；它只通过 window.agentdeck（AgentDeckApi）调服务。
 // 不依赖 React，测试里直接拿 createFakeApi() 跑。
 
-import type {
-  AgentDeckApi,
-  AgentDeckErrorData,
-  AgentKind,
-  BoardState,
-  CreateWorkspaceRequest,
-  ErrorCode,
-  FrameNode,
-  OpenWindowRequest,
-  ProjectId,
-  Rect,
-  Size,
-  TerminalWindowData,
-  Unsubscribe,
-  Viewport,
-  WindowId,
-  WindowNode,
-  WindowStatusBadge,
-  WorkspaceId,
-} from '@agentdeck/contracts';
+import type { AgentDeckApi, AgentDeckErrorData, AgentKind, BoardState, CreateWorkspaceRequest, ErrorCode, FrameNode, OpenWindowRequest, ProjectId, Rect, Size, TerminalWindowData, Unsubscribe, Viewport, WindowCommand, WindowId, WindowNode, WindowStatusBadge, WorkspaceId } from '@agentdeck/contracts';
 import { TITLE_BAR_HEIGHT, resizeRect, type ResizeEdge } from '@agentdeck/ui-window-shell';
 import { isSummarySize, windowRegistry, type WindowDefinition, type WindowRegistry } from './registry.ts';
 import { nextWaiting, summarize, statusOf, type AttentionSummary } from './model/attention.ts';
@@ -123,8 +104,10 @@ export class BoardController {
   private readonly autosave: Autosave<BoardState>;
   private readonly unsubs: Unsubscribe[] = [];
   private drag: DragSession | null = null;
-  /** openWindow 的 reuseKey，按窗口记。不保存（contracts 的 WindowNode 没有这个字段）。 */
+  /** openWindow 的 reuseKey，按窗口记。不保存（contracts 0.1.3 加了 WindowNode.reuseKey，待改成随白板保存）。 */
   private readonly reuseKeys = new Map<WindowId, string>();
+  /** WindowComponentProps.onCommand 的订阅，按窗口记。 */
+  private readonly commandListeners = new Map<WindowId, Set<(command: WindowCommand) => void>>();
   private lastBadgeCount = -1;
   private started = false;
   private pendingSeq = 0;
@@ -506,6 +489,25 @@ export class BoardController {
     }
     this.focusWindow(id);
     if (this.state.viewport.zoom < SUMMARY_ZOOM) this.centerOn(w.rect, 1);
+  }
+
+  /** 窗口订阅白板发来的命令（WindowComponentProps.onCommand）。 */
+  onWindowCommand(id: WindowId, listener: (command: WindowCommand) => void): Unsubscribe {
+    let set = this.commandListeners.get(id);
+    if (!set) this.commandListeners.set(id, (set = new Set()));
+    set.add(listener);
+    return () => {
+      set.delete(listener);
+      if (set.size === 0) this.commandListeners.delete(id);
+    };
+  }
+
+  /** 给窗口发命令（⌘K 的 clear、标题栏菜单项）。没有窗口订阅时返回 false。 */
+  sendWindowCommand(id: WindowId, command: WindowCommand): boolean {
+    const set = this.commandListeners.get(id);
+    if (!set || set.size === 0) return false;
+    for (const l of [...set]) l(command);
+    return true;
   }
 
   /** 双击标题栏、放大按钮、⌘⇧↩：占满视口（缩放到 100%）；再做一次还原。 */

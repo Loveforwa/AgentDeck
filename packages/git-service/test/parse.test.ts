@@ -98,9 +98,9 @@ describe('parseBranches / parseLog / parseStashes', () => {
       `stash@{2}${Z}On (no branch): detached work${Z}2026-10-20T07:00:00Z\x1e`,
     ].join('\n');
     expect(parseStashes(out)).toEqual([
-      { id: 'stash@{0}', branch: 'feat/x', message: 'AgentDeck: switched to main', at: '2026-10-20T09:00:00.000Z' },
-      { id: 'stash@{1}', branch: 'main', message: 'WIP on main: abc123 Add thing', at: '2026-10-20T08:00:00.000Z' },
-      { id: 'stash@{2}', branch: null, message: 'detached work', at: '2026-10-20T07:00:00.000Z' },
+      { id: 'stash@{0}', branch: 'feat/x', message: 'AgentDeck: switched to main', at: '2026-10-20T09:00:00.000Z', byAgentDeck: true },
+      { id: 'stash@{1}', branch: 'main', message: 'WIP on main: abc123 Add thing', at: '2026-10-20T08:00:00.000Z', byAgentDeck: false },
+      { id: 'stash@{2}', branch: null, message: 'detached work', at: '2026-10-20T07:00:00.000Z', byAgentDeck: false },
     ]);
   });
 });

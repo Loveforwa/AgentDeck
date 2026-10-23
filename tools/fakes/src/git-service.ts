@@ -241,7 +241,14 @@ export class FakeGitService implements GitService {
 
   async stashes(repoPath: AbsPath): Promise<StashInfo[]> {
     await this.enter('stashes');
-    return this.locate(repoPath).repo.stashes.map((s, i) => ({ id: `stash@{${i}}`, branch: s.branch, message: s.message, at: s.at }));
+    // 假实现里的 stash 都是 switchBranch(..., 'stash') 存的
+    return this.locate(repoPath).repo.stashes.map((s, i) => ({
+      id: `stash@{${i}}`,
+      branch: s.branch,
+      message: s.message,
+      at: s.at,
+      byAgentDeck: true,
+    }));
   }
 
   async applyStash(repoPath: AbsPath, id: string, opts: { drop: boolean }): Promise<void> {
@@ -480,6 +487,11 @@ export class FakeGitService implements GitService {
   async defaultBranch(repoPath: AbsPath): Promise<string> {
     await this.enter('defaultBranch');
     return this.locate(repoPath).repo.defaultBranch;
+  }
+
+  async repairWorktrees(repoPath: AbsPath): Promise<void> {
+    await this.enter('repairWorktrees');
+    this.locate(repoPath); // 内存里没有“指向”可修，只检查仓库存在
   }
 
   async init(dir: AbsPath): Promise<void> {

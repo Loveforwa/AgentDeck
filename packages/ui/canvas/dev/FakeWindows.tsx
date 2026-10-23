@@ -12,7 +12,6 @@ import type {
   WindowStatusBadge,
 } from '@agentdeck/contracts';
 import { registerWindow } from '../src/registry.ts';
-import { WINDOW_COMMAND_EVENT } from '../src/react/useShortcuts.ts';
 
 const ESC = /\u001b(?:\[[0-?]*[ -/]*[@-~]|\][^\u0007\u001b]*(?:\u0007|\u001b\\)|[@-Z\\-_])/g;
 
@@ -52,7 +51,7 @@ export function badgeFor(s: StatusSnapshot | null): WindowStatusBadge | null {
 }
 
 function FakeTerminal(props: WindowComponentProps<TerminalWindowData>) {
-  const { window: node, focused, summary, visible, setStatus, contentSize } = props;
+  const { window: node, focused, summary, visible, setStatus, contentSize, onCommand } = props;
   const id = node.data.terminalId;
   const [text, setText] = useState('');
   const viewRef = useRef<ViewId | null>(null);
@@ -112,13 +111,7 @@ function FakeTerminal(props: WindowComponentProps<TerminalWindowData>) {
   }, [id, visible]);
 
   // ⌘K：白板发来的 clear
-  useEffect(() => {
-    const content = rootRef.current?.closest('.ad-window-content');
-    if (!content) return;
-    const onCommand = () => setText('');
-    content.addEventListener(WINDOW_COMMAND_EVENT, onCommand);
-    return () => content.removeEventListener(WINDOW_COMMAND_EVENT, onCommand);
-  }, []);
+  useEffect(() => onCommand((command) => command === 'clear' && setText('')), [onCommand]);
 
   useEffect(() => {
     if (focused) rootRef.current?.focus({ preventScroll: true });

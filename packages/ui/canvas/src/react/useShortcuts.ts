@@ -2,11 +2,6 @@ import { useEffect } from 'react';
 import type { BoardController } from '../controller.ts';
 import { resolveShortcut } from '../model/shortcuts.ts';
 
-/** 窗口组件收到的白板命令（contracts 里还没有对应的 prop，见 CONTRACT_NOTES.md）。目前只有 ⌘K 的 clear。 */
-export const WINDOW_COMMAND_EVENT = 'agentdeck:window-command';
-export interface WindowCommandDetail {
-  command: 'clear';
-}
 
 const EDITABLE = 'input, textarea, select, [contenteditable=""], [contenteditable="true"], [role="dialog"], [role="menu"]';
 
@@ -29,10 +24,8 @@ export function useShortcuts(c: BoardController, target: Window | null = typeof 
       if (!c.runShortcut(id)) return;
       e.preventDefault();
       e.stopPropagation();
-      if (id === 'clear-terminal' && s.focusedId) {
-        const content = target.document.querySelector(`[data-window-id="${s.focusedId}"] .ad-window-content`);
-        content?.dispatchEvent(new CustomEvent<WindowCommandDetail>(WINDOW_COMMAND_EVENT, { detail: { command: 'clear' } }));
-      }
+      // ⌘K 交给聚焦的窗口（WindowComponentProps.onCommand）
+      if (id === 'clear-terminal' && s.focusedId) c.sendWindowCommand(s.focusedId, 'clear');
     };
     target.addEventListener('keydown', onKeyDown, true);
     return () => target.removeEventListener('keydown', onKeyDown, true);

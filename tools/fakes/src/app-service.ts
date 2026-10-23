@@ -37,6 +37,8 @@ export interface FakeAppServiceOptions {
   settings?: Settings;
   /** pickFolder 没有排队答案时返回什么。默认 null（相当于取消）。 */
   defaultPick?: AbsPath | null;
+  /** homeDir() 返回的主目录。默认 '/Users/you'。 */
+  home?: AbsPath;
 }
 
 export class FakeAppService implements AppService {
@@ -47,6 +49,7 @@ export class FakeAppService implements AppService {
   badge = 0;
   quitRequest: QuitRequest | null = null;
   defaultPick: AbsPath | null;
+  readonly home: AbsPath;
   private settings: Settings;
   private readonly picks: (AbsPath | null)[] = [];
 
@@ -54,6 +57,11 @@ export class FakeAppService implements AppService {
     this.bus = opts.bus ?? new FakeEventBus();
     this.settings = clone(opts.settings ?? DEFAULT_SETTINGS);
     this.defaultPick = opts.defaultPick ?? null;
+    this.home = opts.home ?? '/Users/you';
+  }
+
+  async homeDir(): Promise<AbsPath> {
+    return this.home;
   }
 
   /** 让接下来几次 pickFolder 依次返回这些值（null 表示取消）。 */

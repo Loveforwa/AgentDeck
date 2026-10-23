@@ -1,6 +1,6 @@
 import { useMemo, type MouseEvent } from 'react';
 import type { NodeProps } from '@xyflow/react';
-import type { OpenWindowRequest, WindowComponentProps, WindowId, WindowStatusBadge } from '@agentdeck/contracts';
+import type { OpenWindowRequest, WindowCommand, WindowComponentProps, WindowId, WindowStatusBadge } from '@agentdeck/contracts';
 import { WindowShell } from '@agentdeck/ui-window-shell';
 import { isWaiting } from '../model/attention.ts';
 import { defaultName } from '../model/windows.ts';
@@ -34,6 +34,8 @@ export function WindowNodeView({ data }: NodeProps & { data: WindowNodeData }) {
       requestFocus: () => c.focusWindow(id),
       openWindow: <T,>(req: OpenWindowRequest<T>) => void c.openWindow(id, req),
       close: () => c.closeWindow(id),
+      toggleMaximize: () => c.toggleMaximize(id),
+      onCommand: (listener: (command: WindowCommand) => void) => c.onWindowCommand(id, listener),
     }),
     [c, id],
   );

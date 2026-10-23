@@ -83,6 +83,8 @@ interface Term {
   /** 正在出输出（发过 activity、还没发 silence）。 */
   active: boolean;
   seenLinks: Set<string>;
+  /** 最近出现过的链接，新的在前，最多 20 条。 */
+  recentLinks: TerminalLink[];
 }
 
 interface View {
@@ -234,6 +236,10 @@ export class FakeTerminalHost implements TerminalHost {
     return lines.slice(-n);
   }
 
+  async recentLinks(id: TerminalId): Promise<TerminalLink[]> {
+    return clone(this.require(id).recentLinks);
+  }
+
   async attachCommand(id: TerminalId): Promise<string> {
     this.require(id);
     return `tmux -L agentdeck attach-session -t ${id}`;
@@ -268,6 +274,7 @@ export class FakeTerminalHost implements TerminalHost {
       silenceTimer: null,
       active: false,
       seenLinks: new Set(),
+      recentLinks: [],
     };
     this.terms.set(id, t);
     if (t.playOn === 'create') this.startPlayback(t);
@@ -384,6 +391,7 @@ export class FakeTerminalHost implements TerminalHost {
       const key = JSON.stringify(link);
       if (t.seenLinks.has(key)) continue;
       t.seenLinks.add(key);
+      t.recentLinks = [link, ...t.recentLinks].slice(0, 20);
       this.bus.emit({ type: 'terminal.link', id: t.id, link });
     }
     if (t.silenceTimer) clearTimeout(t.silenceTimer);

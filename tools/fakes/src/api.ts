@@ -75,7 +75,7 @@ export function defaultRecordingFor(req: CreateTerminalRequest): Recording | nul
 /** 只建服务、不装数据。想自己预置数据时用它，再调 seedSample 或自己的函数。 */
 export function createFakeServices(opts: CreateFakeApiOptions = {}): { bus: FakeEventBus; fakes: FakeServices } {
   const bus = new FakeEventBus();
-  const app = new FakeAppService({ bus });
+  const app = opts.home === undefined ? new FakeAppService({ bus }) : new FakeAppService({ bus, home: opts.home });
   const git = new FakeGitService({ bus });
   const terminalOpts: ConstructorParameters<typeof FakeTerminalHost>[0] = {
     bus,

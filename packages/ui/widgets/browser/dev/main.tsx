@@ -242,6 +242,8 @@ function DevFrame(props: {
           requestFocus={onFocus}
           openWindow={(req) => openWindow(req as OpenWindowRequest<Data>)}
           close={onClose}
+          toggleMaximize={() => {}}
+          onCommand={() => () => {}}
         />
       </div>
     </div>
