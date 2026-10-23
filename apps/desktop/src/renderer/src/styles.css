@@ -1,0 +1,39 @@
+/* 临时色值。F4 交付 packages/design-tokens 后改为引用 tokens.css 里的变量。 */
+:root {
+  --tmp-bg: #ecebe8;
+  --tmp-ink: #1c1b1a;
+  --tmp-muted: #77736d;
+  --tmp-attention: #d9661f;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--tmp-bg);
+  color: var(--tmp-ink);
+  font: 13px/1.5 -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+}
+
+.ipc-check {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+}
+
+.ipc-check li[data-state='pending'] {
+  color: var(--tmp-muted);
+}
+
+.ipc-check li[data-state='fail'] {
+  color: var(--tmp-attention);
+}
