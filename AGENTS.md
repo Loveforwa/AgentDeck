@@ -43,6 +43,7 @@ Electron + TypeScript + React 18 + Zustand，白板用 React Flow（@xyflow/reac
 | --- | --- |
 | `contracts-standalone` | `packages/contracts` 不依赖任何其他内部包、第三方包、node 内置模块 |
 | `ui-allowed-deps` / `ui-widget-panel-allowed-deps` | `packages/ui/**` 只能依赖 contracts、design-tokens、`ui/kit`、`ui/canvas` 的注册表和自己包里的文件（第三方包如 react 可以） |
+| `ui-canvas-allowed-deps` | `ui/canvas`（白板）在上一条之外还能用 `ui/window-shell` 和 `ui/topbar`；这两个包只管外观，不反过来依赖 canvas |
 | `no-widget-to-widget` / `no-panel-to-panel` | `ui/widgets/*` 之间、`ui/panels/*` 之间不互相 import |
 | `ui-no-services` | 界面不 import 服务包，走 `window.agentdeck` |
 | `ui-no-electron` / `ui-no-node-builtins` | 界面不 import electron 和 node 内置模块（vite / vitest / playwright 的构建配置可以用 node 内置模块） |
