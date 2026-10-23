@@ -1,0 +1,133 @@
+<title>AgentDeck MVP 验收报告</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<style>
+/* Layout: a status report — summary and two progress bars on top, screenshots, then what works, smoke results, the two evidence tables, issues and tomorrow's checklist. */
+:root {
+  --ground: #F7F7F5; --surface: #FFFFFF; --ink: #1A1A1A; --muted: #6B6B66; --line: #E3E3DF; --soft: #F0F0EC;
+  --attention: #C2410C; --good: #2F6B45; --partial: #8A6D1F;
+  --font-ui: "IBM Plex Sans", "Noto Sans SC", "PingFang SC", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --ground: #161615; --surface: #1E1E1C; --ink: #ECECE8; --muted: #9C9C95; --line: #34342F; --soft: #262623;
+  --attention: #F08A4B; --good: #7DBB92; --partial: #D8B65A; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --ground: #161615; --surface: #1E1E1C; --ink: #ECECE8; --muted: #9C9C95; --line: #34342F; --soft: #262623;
+  --attention: #F08A4B; --good: #7DBB92; --partial: #D8B65A; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--ground); color: var(--ink); font-family: var(--font-ui); font-size: 14px; line-height: 1.65;
+  padding-block: 40px 80px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) }
+.wrap { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 44px }
+.mono { font-family: var(--font-mono); font-weight: 500 }
+.muted { color: var(--muted) }
+.b { font-weight: 600 }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; color: var(--muted); letter-spacing: .04em }
+header { display: flex; flex-direction: column; gap: 12px }
+h1 { margin: 0; font-size: 30px; font-weight: 600; text-wrap: balance }
+h2 { margin: 0; font-size: 19px; font-weight: 600 }
+h3 { margin: 0; font-size: 15px; font-weight: 600 }
+.lede { margin: 0; font-size: 15.5px; max-width: 72ch }
+.bars { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px 32px; margin-top: 6px }
+.barbox { display: flex; flex-direction: column; gap: 8px; min-width: 0 }
+.barbox .t { font-size: 13px; color: var(--muted) }
+.bar { display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: var(--soft); gap: 2px }
+.seg-auto, .seg-ok { background: var(--good) }
+.seg-manual, .seg-part { background: var(--partial) }
+.seg-partial, .seg-no { background: var(--muted) }
+.seg-todo { background: var(--line) }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--muted) }
+.legend b { color: var(--ink); font-variant-numeric: tabular-nums }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 5px; vertical-align: 0 }
+section.block { display: flex; flex-direction: column; gap: 14px }
+.head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px }
+.head p { margin: 0; color: var(--muted); font-size: 13px }
+.shots { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px }
+figure { margin: 0; display: flex; flex-direction: column; gap: 6px; min-width: 0 }
+figure img { width: 100%; height: auto; border: 1px solid var(--line); border-radius: 8px; display: block }
+figcaption { font-size: 12.5px; color: var(--muted) }
+.feats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); overflow: hidden }
+.feat { padding: 14px 16px 16px; border-left: 1px solid var(--line); border-top: 1px solid var(--line); min-width: 0 }
+.feat:nth-child(3n+1) { border-left: 0 }
+.feat:nth-child(-n+3) { border-top: 0 }
+.feat ul { margin: 8px 0 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 5px; font-size: 13px }
+.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface) }
+table { border-collapse: collapse; width: 100%; font-size: 13px }
+.wide { min-width: 980px }
+th { text-align: left; font-size: 12px; font-weight: 600; color: var(--muted); background: var(--soft); padding: 8px 12px; white-space: nowrap; border-bottom: 1px solid var(--line) }
+td { padding: 9px 12px; border-top: 1px solid var(--line); vertical-align: top }
+tr:first-child td { border-top: 0 }
+.st { font-size: 11.5px; padding: 1px 7px; border-radius: 4px; white-space: nowrap; border: 1px solid transparent; display: inline-block }
+.st-auto, .st-ok { background: var(--good); color: var(--surface) }
+.st-manual, .st-part, .st-skip { border-color: var(--partial); color: var(--partial) }
+.st-partial, .st-no, .st-none { border: 1px dashed var(--muted); color: var(--muted) }
+.st-todo { border: 1px dashed var(--line); color: var(--muted) }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px }
+.list { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 7px; font-size: 13.5px }
+.try { list-style: none; margin: 0; padding: 0; counter-reset: s; display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 10px; background: var(--surface) }
+.try li { counter-increment: s; padding: 12px 16px 12px 48px; border-top: 1px solid var(--line); position: relative }
+.try li:first-child { border-top: 0 }
+.try li::before { content: counter(s); position: absolute; left: 16px; top: 12px; font-family: var(--font-mono); font-size: 12px; color: var(--muted) }
+.try code { display: inline-block; margin-top: 4px; font-family: var(--font-mono); font-size: 12.5px; background: var(--soft); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere }
+.try p { margin: 4px 0 0; font-size: 13px; color: var(--muted) }
+@media (max-width: 900px) {
+  .bars, .shots, .two { grid-template-columns: minmax(0, 1fr) }
+  .feats { grid-template-columns: minmax(0, 1fr) }
+  .feat { border-left: 0 !important; border-top: 1px solid var(--line) !important }
+  .feat:first-child { border-top: 0 !important }
+}
+</style>
+
+<div class="wrap">
+<header>
+  <span class="eyebrow">AgentDeck · MVP 验收报告 · 2026-10-23 · main 24c44e5</span>
+  <h1>AgentDeck MVP 验收报告</h1>
+  <p class="lede">第一个能打开、能用的版本已经组装好：白板、tmux 托管的真终端、工作区和 Git 面板、agent 状态提醒、网页窗口接在了一起，在 main 上启动、退出再打开都正常。自动测试覆盖了绝大部分基础功能，但 14 条验收场景还没有一条用端到端测试从头跑过，不少环节只在真窗口里手动试过一次或还没试。</p>
+  <div class="bars">
+    <div class="barbox"><span class="t">39 项基础功能（P0）</span><div class="bar"><span class="seg seg-auto" style="flex:33" title="完成，有自动测试 33"></span><span class="seg seg-manual" style="flex:2" title="完成，只有手动验证 2"></span><span class="seg seg-partial" style="flex:4" title="部分完成 / 未做 4"></span></div>
+      <div class="legend"><span><i class="dot seg-auto"></i>有自动测试 <b>33</b></span><span><i class="dot seg-manual"></i>只有手动验证 <b>2</b></span><span><i class="dot seg-partial"></i>部分完成 / 未做 <b>4</b></span></div></div>
+    <div class="barbox"><span class="t">14 条验收场景（真窗口里）</span><div class="bar"><span class="seg seg-ok" style="flex:1" title="基本可以 1"></span><span class="seg seg-part" style="flex:6" title="部分验证 6"></span><span class="seg seg-no" style="flex:6" title="还没验证 6"></span><span class="seg seg-todo" style="flex:1" title="没做（P1） 1"></span></div>
+      <div class="legend"><span><i class="dot seg-ok"></i>基本可以 <b>1</b></span><span><i class="dot seg-part"></i>部分验证 <b>6</b></span><span><i class="dot seg-no"></i>还没验证 <b>6</b></span><span><i class="dot seg-todo"></i>P1 没做 <b>1</b></span></div></div>
+  </div>
+</header>
+
+<section class="block">
+  <div class="head"><h2>启动后的样子</h2><p>都是在 main 上启动 Electron 后由应用自己截的整窗图（深色跟随系统）。</p></div>
+  <div class="shots">
+    <figure><img src="shots/demo.png" alt="AgentDeck 演示模式：顶栏、agenduck 工作区框里的 zsh 和 claude 终端、右侧源代码管理面板"><figcaption>演示模式：本仓库作为项目，框里两个真终端（zsh 跑了 git status 和 git log；claude 停在它的信任提示），右侧面板显示 main 的状态、所有 worktree 和提交记录。</figcaption></figure>
+    <figure><img src="shots/reopen.png" alt="退出后重开：同样的框和两个终端，输出完整"><figcaption>退出后重开：框和窗口位置不变，tmux 里的会话接回，历史输出都在。右侧提示“isn’t in a workspace”是因为还没有聚焦窗口（已知问题 7）。</figcaption></figure>
+  </div>
+</section>
+
+<section class="block">
+  <div class="head"><h2>已经实现的基础功能</h2></div>
+  <div class="feats"><section class="feat"><h3>白板和窗口</h3><ul><li>一整块可平移、⌘ + 滚轮缩放的白板，点阵背景；⌘0 / ⌘1 缩放到 100% / 显示全部</li><li>窗口外框：拖标题栏移动、拖边和角改大小、放大还原、关闭、聚焦描边、层级</li><li>右键菜单：New terminal ▸（列出已安装的 agent）、New browser、New workspace…、Add project…</li><li>顶栏：白板名、“n running · n waiting”、Projects ▾、在等你的按钮</li><li>布局改动后半秒自动保存，重开应用原样恢复</li><li>终端拉小到 320×200 以下变摘要卡（最后 3 行和状态），单击恢复</li></ul></section><section class="feat"><h3>终端（tmux 托管）</h3><ul><li>所有终端跑在 AgentDeck 自己的 tmux 实例里，关掉或退出应用后继续运行，重开自动接回，历史输出都在</li><li>只为视口里的终端接上显示，移出就断开</li><li>按键直通：不带 ⌘ 的按键全部交给终端；Shift+Enter、多行粘贴、拖入文件路径</li><li>进程退出显示 Exited / Error 和 Restart；命令找不到有提示</li><li>输出里的 localhost 地址和“文件:行号”可以点</li><li>agent 用登录 shell 的环境启动（拿得到 PATH 和代理变量），claude 在 tmux 里保持真彩色</li></ul></section><section class="feat"><h3>项目、工作区和 Git</h3><ul><li>添加项目（自动用仓库根目录、识别基础分支），项目可以是一个仓库、多个仓库或没有 git 的文件夹</li><li>新建工作区：新 worktree + 新分支或已有分支，或主目录工作区；复制 .env；自动运行初始化命令；失败回滚</li><li>工作区框：标题是“项目 · 分支”，拖标题带走里面的窗口；框里新开的终端在工作区目录</li><li>删除工作区：只从白板移除，或连目录一起删；有未提交的改动要再确认</li><li>右侧源代码管理面板跟随聚焦的窗口：树形更改、暂存 / 取消暂存、提交（⌘↩）、切换分支（被占用的灰显）、stash 往返、提交记录</li><li>Git 不监听文件，只在切换聚焦、agent 一轮结束、自己操作之后刷新</li></ul></section><section class="feat"><h3>agent 状态和提醒</h3><ul><li>claude、codex 的状态来自它们自己的钩子（启动时临时注入，不改你的配置），其他程序看输出活动</li><li>标题栏状态点和文字：Running · 4m、Needs approval、Needs reply、Idle、Exited、Error</li><li>在等你的窗口：橙色边框、框标题和顶栏显示“1 waiting”，⌘J 依次跳过去</li><li>应用在后台时：系统通知和程序坞角标</li></ul></section><section class="feat"><h3>网页窗口</h3><ul><li>在白板上打开网页，地址栏、后退、刷新、在系统浏览器打开</li><li>单击终端里的 localhost 链接，网页窗口出现在终端旁边、同一个框里；同一地址已开着就聚焦它</li><li>本地页面能嵌进来（主进程改响应头），服务端写的登录 cookie 能用；服务没起来时显示出错页和 Retry</li></ul></section><section class="feat"><h3>工程基础</h3><ul><li>pnpm check：类型检查、代码规范、界面不许写颜色、15 条模块边界规则、所有测试</li><li>所有服务都有假实现，各条线可以单独开发和演示</li><li>contracts 0.1.3：模块之间唯一的约定，并行开发期间只加不改</li><li>演示和截图模式：AGENTDECK_DEMO=1、AGENTDECK_SCREENSHOT=&lt;路径&gt;</li></ul></section></div>
+</section>
+
+<section class="block">
+  <div class="head"><h2>今晚的烟测</h2><p>在 main（24c44e5）上重跑。</p></div>
+  <div class="tbl"><table><thead><tr><th>项目</th><th>结果</th><th>说明</th></tr></thead><tbody><tr><td class="b">pnpm check（main，24c44e5）</td><td><span class="st st-ok">通过</span></td><td>类型检查、ESLint、颜色检查、模块边界全部通过；Vitest 719 个通过、4 个跳过（需要真 agent 的那 4 个）。其中约 15 个用真 tmux、约 68 个用真 git 临时仓库。</td></tr><tr><td class="b">演示模式启动（AGENTDECK_DEMO=1）</td><td><span class="st st-ok">通过</span></td><td>在 main 上启动 Electron：自动加本仓库为项目、建主目录工作区、开 zsh 和 claude 两个真终端，2 个终端都有输出后截图并正常退出。</td></tr><tr><td class="b">退出后重开</td><td><span class="st st-ok">通过</span></td><td>不带演示模式再启动一次：框、两个窗口位置不变，tmux 里的会话还在，历史输出完整接回。</td></tr><tr><td class="b">真 claude / codex 测试（AGENTDECK_REAL_AGENTS=1）</td><td><span class="st st-skip">没跑</span></td><td>今晚没跑：它会自动回答 codex 的“信任这个文件夹”，往你的 codex 配置里写记录，需要你同意。线 4 开发时跑过两次，都通过。</td></tr><tr><td class="b">端到端（Playwright）</td><td><span class="st st-none">没有</span></td><td>还没有写。14 条验收场景都没有自动化的端到端测试。</td></tr><tr><td class="b">GitHub Actions</td><td><span class="st st-none">没有</span></td><td>仓库没推送，没跑过；而且工作流里没装 tmux，真 tmux 的测试在 CI 上会被跳过。</td></tr></tbody></table></div>
+</section>
+
+<section class="block">
+  <div class="head"><h2>39 项基础功能的证据</h2><p>“真窗口里验证”指在组装好的 Electron 应用里实际操作过；数字是粗数，it.each 展开前。</p></div>
+  <div class="tbl"><table class="wide"><thead><tr><th>编号</th><th>功能</th><th>状态</th><th>自动测试</th><th>真窗口里验证</th><th>备注</th></tr></thead><tbody><tr><td class="mono b">F1</td><td class="b">单仓骨架</td><td><span class="st st-manual">完成，只有手动验证</span></td><td>只有 pnpm check</td><td>pnpm dev 能打开窗口</td><td class="muted"></td></tr><tr><td class="mono b">F2</td><td class="b">contracts</td><td><span class="st st-auto">完成，有自动测试</span></td><td>类型检查 + 假实现的接口测试</td><td>各包接进应用后编译通过</td><td class="muted">当前 0.1.3</td></tr><tr><td class="mono b">F3</td><td class="b">IPC 层</td><td><span class="st st-auto">完成，有自动测试</span></td><td>34 例（路由、错误还原、preload）</td><td>真 IPC 在用</td><td class="muted">“统一超时包装”没找到</td></tr><tr><td class="mono b">F4</td><td class="b">tokens 和零件</td><td><span class="st st-auto">完成，有自动测试</span></td><td>46 例（含禁止写死颜色）</td><td>有演示页</td><td class="muted"></td></tr><tr><td class="mono b">F5</td><td class="b">CI 和模块边界</td><td><span class="st st-auto">完成，有自动测试</span></td><td>每条规则有违规样例</td><td>—</td><td class="muted">CI 没在云端跑过</td></tr><tr><td class="mono b">F6</td><td class="b">假实现</td><td><span class="st st-auto">完成，有自动测试</span></td><td>74 例</td><td>各演示页都用它</td><td class="muted"></td></tr><tr><td class="mono b">F7</td><td class="b">tmux 配置试验</td><td><span class="st st-manual">完成，只有手动验证</span></td><td>真 tmux 测试加载了这份配置</td><td>试验脚本 + 测量数据</td><td class="muted">9 项需要人工确认，都还没勾</td></tr><tr><td class="mono b">F8</td><td class="b">本地存储</td><td><span class="st st-auto">完成，有自动测试</span></td><td>38 例（真 SQLite）</td><td>开发数据库已生成</td><td class="muted"></td></tr><tr><td class="mono b">B1</td><td class="b">白板画布</td><td><span class="st st-partial">部分完成 / 未做</span></td><td>没有手势测试（jsdom 测不了）</td><td>dev 页手动试过</td><td class="muted">“30 个窗口平移不掉帧”没测量</td></tr><tr><td class="mono b">B2</td><td class="b">窗口外框</td><td><span class="st st-partial">部分完成 / 未做</span></td><td>16 例</td><td>截图里外框正常</td><td class="muted">完成标准要的 Playwright 用例没有</td></tr><tr><td class="mono b">B3</td><td class="b">窗口注册表和右键菜单</td><td><span class="st st-auto">完成，有自动测试</span></td><td>9 例</td><td>右键菜单出现</td><td class="muted">菜单里多一个 custom，应用里先藏了</td></tr><tr><td class="mono b">B4</td><td class="b">顶栏</td><td><span class="st st-auto">完成，有自动测试</span></td><td>数字随事件变</td><td>“1 waiting”出现过</td><td class="muted"></td></tr><tr><td class="mono b">B5</td><td class="b">布局自动保存</td><td><span class="st st-auto">完成，有自动测试</span></td><td>自动保存、重启恢复、存储往返</td><td>⌘Q 后重开一样</td><td class="muted">没测强杀进程</td></tr><tr><td class="mono b">T1</td><td class="b">tmux-host 服务</td><td><span class="st st-auto">完成，有自动测试</span></td><td>25 例，15 例真 tmux</td><td>跑在 utilityProcess，退出后会话还在</td><td class="muted"></td></tr><tr><td class="mono b">T2</td><td class="b">终端窗口显示</td><td><span class="st st-auto">完成，有自动测试</span></td><td>30 例（含真 xterm 解析）</td><td>两个真终端正常显示</td><td class="muted">在 Electron 里的打字延迟没测（tmux-host 层 p99 &lt; 50ms）</td></tr><tr><td class="mono b">T3</td><td class="b">输入、复制、粘贴</td><td><span class="st st-auto">完成，有自动测试</span></td><td>按键决策、Shift+Enter、拖入路径</td><td>—</td><td class="muted">真键盘在 Electron 里没试</td></tr><tr><td class="mono b">T4</td><td class="b">agent 适配器</td><td><span class="st st-auto">完成，有自动测试</span></td><td>30 例 + 4 例真 agent</td><td>检测到 claude 和 codex</td><td class="muted"></td></tr><tr><td class="mono b">T5</td><td class="b">退出、出错、重启</td><td><span class="st st-auto">完成，有自动测试</span></td><td>退出、关闭确认、系统终端命令</td><td>—</td><td class="muted">Open in system terminal 没真点</td></tr><tr><td class="mono b">T6</td><td class="b">重开应用自动接上</td><td><span class="st st-auto">完成，有自动测试</span></td><td>真 tmux 接管 + 窗口重连</td><td>重开截图，输出都在</td><td class="muted">重开后状态时间从“现在”算</td></tr><tr><td class="mono b">T7</td><td class="b">链接识别</td><td><span class="st st-auto">完成，有自动测试</span></td><td>12 组用例</td><td>组装时点 http.server 的链接开了网页窗口</td><td class="muted"></td></tr><tr><td class="mono b">T8</td><td class="b">摘要卡</td><td><span class="st st-auto">完成，有自动测试</span></td><td>变摘要卡、恢复并聚焦、真 tmux 取最后几行</td><td>—</td><td class="muted">Electron 里拉小再恢复没验证</td></tr><tr><td class="mono b">W1</td><td class="b">项目</td><td><span class="st st-partial">部分完成 / 未做</span></td><td>9 例真 git + 选文件夹流程</td><td>只用演示模式加过项目</td><td class="muted">没有 Settings › Projects 界面，Settings 打开的是 settings.json</td></tr><tr><td class="mono b">W2</td><td class="b">新建工作区</td><td><span class="st st-auto">完成，有自动测试</span></td><td>8 例真 git（新分支、复制 .env、回滚、分支被占用）</td><td>—</td><td class="muted">Electron 里没建过 worktree</td></tr><tr><td class="mono b">W3</td><td class="b">工作区框</td><td><span class="st st-auto">完成，有自动测试</span></td><td>框里终端目录、拖框带窗口</td><td>主目录工作区的框正常</td><td class="muted">worktree 框没在 Electron 里看过</td></tr><tr><td class="mono b">W4</td><td class="b">删除工作区</td><td><span class="st st-auto">完成，有自动测试</span></td><td>6 例真 git（有改动要强删、分支保留）</td><td>—</td><td class="muted"></td></tr><tr><td class="mono b">W5</td><td class="b">终端换框的限制</td><td><span class="st st-auto">完成，有自动测试</span></td><td>弹回和 Open new</td><td>—</td><td class="muted"></td></tr><tr><td class="mono b">G1</td><td class="b">git-service</td><td><span class="st st-auto">完成，有自动测试</span></td><td>49 例，41 例真 git</td><td>面板显示真实状态</td><td class="muted"></td></tr><tr><td class="mono b">G2</td><td class="b">源代码管理面板</td><td><span class="st st-auto">完成，有自动测试</span></td><td>18 例</td><td>暂存和取消暂存试过</td><td class="muted">Electron 里没真提交</td></tr><tr><td class="mono b">G3</td><td class="b">切换分支</td><td><span class="st st-auto">完成，有自动测试</span></td><td>灰显、跳转、stash；9 例真 git</td><td>—</td><td class="muted">跳到别的框没试</td></tr><tr><td class="mono b">G4</td><td class="b">刷新时机</td><td><span class="st st-auto">完成，有自动测试</span></td><td>数刷新次数</td><td>—</td><td class="muted">“空闲 CPU 接近 0”没测量</td></tr><tr><td class="mono b">S1</td><td class="b">钩子接收</td><td><span class="st st-auto">完成，有自动测试</span></td><td>18 例（100ms 内到达）+ 真 agent</td><td>手动发批准请求和 Stop，一路到标题栏</td><td class="muted"></td></tr><tr><td class="mono b">S2</td><td class="b">状态机</td><td><span class="st st-auto">完成，有自动测试</span></td><td>40 例，状态表每行一例</td><td>Idle、Needs approval 都显示过</td><td class="muted">claude 停在信任提示时显示 Idle</td></tr><tr><td class="mono b">S3</td><td class="b">界面提醒</td><td><span class="st st-auto">完成，有自动测试</span></td><td>橙色、计数、⌘J</td><td>橙色、“1 waiting”、角标都出现了</td><td class="muted">“2 秒内”没计时</td></tr><tr><td class="mono b">S4</td><td class="b">后台通知</td><td><span class="st st-auto">完成，有自动测试</span></td><td>通知规则 6 例</td><td>角标出现</td><td class="muted">点系统通知没试</td></tr><tr><td class="mono b">U1</td><td class="b">网页窗口</td><td><span class="st st-auto">完成，有自动测试</span></td><td>73 例（响应头改写、服务、组件）</td><td>组装时开过</td><td class="muted"></td></tr><tr><td class="mono b">U2</td><td class="b">从终端打开网页</td><td><span class="st st-auto">完成，有自动测试</span></td><td>复用和打开位置</td><td>组装时开过</td><td class="muted"></td></tr><tr><td class="mono b">U3</td><td class="b">出错页和本地文件</td><td><span class="st st-auto">完成，有自动测试</span></td><td>15 例</td><td>试验脚本</td><td class="muted"></td></tr><tr><td class="mono b">R1</td><td class="b">快捷键</td><td><span class="st st-auto">完成，有自动测试</span></td><td>快捷键分发 + 菜单</td><td>菜单项触发 ⌘B ⌘W</td><td class="muted">真键盘在网页里没试</td></tr><tr><td class="mono b">R2</td><td class="b">端到端验收</td><td><span class="st st-partial">部分完成 / 未做</span></td><td>没有</td><td>没有</td><td class="muted">没有 Playwright，14 条验收场景都没自动化</td></tr></tbody></table></div>
+</section>
+
+<section class="block">
+  <div class="head"><h2>14 条验收场景</h2><p>来自设计画布「10 · 全局规则」：MVP 完成时每一条都要能从头走到尾。</p></div>
+  <div class="tbl"><table class="wide"><thead><tr><th>#</th><th>场景</th><th>状态</th><th>依据</th></tr></thead><tbody><tr><td class="mono b">1</td><td>右键 › Add project… 选文件夹，直接进入新建工作区对话框</td><td><span class="st st-no">还没验证</span></td><td class="muted">流程有单测（假的选文件夹）；Electron 里没点过，组装用的是演示模式</td></tr><tr><td class="mono b">2</td><td>基于 main 新建 feat/oauth：框出现、worktree 建好、.env 已复制、初始化命令自动运行</td><td><span class="st st-no">还没验证</span></td><td class="muted">服务层有真 git 测试；Electron 里没建过 worktree</td></tr><tr><td class="mono b">3</td><td>同一仓库再建 fix/rate-limit，两个框各开一个 claude 同时改代码</td><td><span class="st st-no">还没验证</span></td><td class="muted">服务层支持多 worktree；两个真 claude 并行没试过</td></tr><tr><td class="mono b">4</td><td>claude 请求批准：2 秒内变橙，框和顶栏“1 waiting”，后台时有系统通知</td><td><span class="st st-part">部分验证</span></td><td class="muted">手动发一个批准请求，橙色、计数、角标都出现了；真 claude 还停在信任提示，系统通知没真弹</td></tr><tr><td class="mono b">5</td><td>⌘J 跳过去，直接批准，状态回到运行中</td><td><span class="st st-no">还没验证</span></td><td class="muted">⌘J 有单测；真 claude 批准后回到运行中没测。场景写“按 y”，claude 实测是 1 或回车</td></tr><tr><td class="mono b">6</td><td>框里跑 dev server，点 localhost 链接，网页窗口出现在右边同一个框里</td><td><span class="st st-part">部分验证</span></td><td class="muted">组装时用 python http.server 点开过网页窗口；pnpm dev 没试</td></tr><tr><td class="mono b">7</td><td>聚焦 claude，面板显示更改，暂存、写信息、⌘↩ 提交，提交记录里出现</td><td><span class="st st-part">部分验证</span></td><td class="muted">暂存和取消暂存在 Electron 里试过；真提交没做（避免改 main）</td></tr><tr><td class="mono b">8</td><td>切到 fix/rate-limit 时显示“in fix/rate-limit”，单击跳到那个框</td><td><span class="st st-no">还没验证</span></td><td class="muted">面板有单测；要第二个 worktree，组装时没试</td></tr><tr><td class="mono b">9</td><td>两个终端拉小成摘要卡，单击恢复原大小并聚焦</td><td><span class="st st-part">部分验证</span></td><td class="muted">白板和终端窗口都有单测；Electron 里没拉过</td></tr><tr><td class="mono b">10</td><td>退出再打开：位置不变，终端还在运行，历史都在</td><td><span class="st st-ok">基本可以</span></td><td class="muted">今晚在 main 上重开过一次，截图为证；没测强杀进程</td></tr><tr><td class="mono b">11</td><td>标题栏右键 › Open in system terminal，两边输入同步</td><td><span class="st st-no">还没验证</span></td><td class="muted">命令拼装有单测；没真点</td></tr><tr><td class="mono b">12</td><td>删除 fix/rate-limit 并删目录：有改动要先确认；目录消失、分支还在</td><td><span class="st st-part">部分验证</span></td><td class="muted">服务层有真 git 测试；Electron 里没走过</td></tr><tr><td class="mono b">13</td><td>关掉窗口 claude 继续跑，批准请求来通知，点通知回来并跳到它</td><td><span class="st st-part">部分验证</span></td><td class="muted">关窗口后台继续在 Electron 里试过；点通知没试</td></tr><tr><td class="mono b">14</td><td>重启电脑后 Restore all，接回原来的对话</td><td><span class="st st-todo">没做（P1）</span></td><td class="muted">属于 P1（MVP 完整版），还没做</td></tr></tbody></table></div>
+</section>
+
+<div class="two">
+  <section class="block"><div class="head"><h2>已知问题</h2><p>apps/desktop/ASSEMBLY_NOTES.md，都不会让程序崩</p></div><ol class="list"><li><b>tmux-host</b>：变量重名导致终端进程一启动就崩，组装时在构建配置里绕过了，根子没改</li><li><b>tmux-host</b>：打包后默认的 tmux.conf 路径不对，应用现在总是显式传路径</li><li><b>workspace-service</b>：没有“worktree 放哪”的选项，开发模式下借一个假的主目录</li><li><b>白板</b>：第二次 start() 在白板加载完之前就返回</li><li><b>白板</b>：新建终端菜单里有用不了的 custom，按 agent id 而不是名字显示</li><li><b>agent-adapters</b>：claude 停在信任提示时状态显示 Idle，应该算在等你</li><li><b>源代码管理面板</b>：没有聚焦任何窗口时也显示“This window isn’t in a workspace.”</li><li><b>agent-adapters</b>：重开应用后状态都显示“Idle · now”，开始时间没接上</li><li><b>终端窗口</b>：连着建两个终端时第二个可能误显示“Previous session ended”</li></ol></section>
+  <section class="block"><div class="head"><h2>还没处理的</h2></div><ul class="list"><li>线 1 的 13 条接口意见还没整理成 contracts 0.1.4（关闭确认要知道进程在不在跑、⌘K 清历史、拖入文件的路径、打开外部链接等）。</li><li>线 2–5 还没把 contracts 0.1.3 的新字段用进各自的代码（白板仍按 type 写特例，网页窗口仍用本地的 reloadToken 等）。</li><li>没有 Settings 界面：设置存在 settings.json，点 Settings 用系统程序打开它。</li><li>右下角有 React Flow 的水印，可以关掉。</li><li>面板的 Repository 区列出了开发期间留下的十几个已合并分支，可以清理。</li></ul>
+    <div class="head" style="margin-top:12px"><h2>建议的下一步</h2></div><ol class="list"><li>写 R2：把 14 条验收场景做成 Playwright（Electron 模式）用例，先做能完全自动的 1、2、6、7、9、10、12。</li><li>修 ASSEMBLY_NOTES 里的 9 条（多数是一两行的事），尤其是 tmux-host 的变量重名和“信任提示显示 Idle”。</li><li>整理 contracts 0.1.4，并让线 2–5 把 0.1.3 的新字段用起来。</li><li>补三项性能测量：30 个窗口平移、Electron 里 6 个终端打字延迟、空闲 CPU。</li><li>给 CI 装 tmux，推到 GitHub 跑一次（需要你给仓库名）。</li></ol></section>
+</div>
+
+<section class="block">
+  <div class="head"><h2>明天验货</h2><p>按顺序试，大约 15 分钟。</p></div>
+  <ol class="try"><li><div class="try-h"><b>启动</b></div><code>cd /Users/liu/2026/agenduck &amp;&amp; pnpm dev</code><p>开发数据在 .agentdeck-dev/，不碰你真实的 ~/.agentdeck。上次的演示终端还在 dev 的 tmux 里，会直接接回。</p></li><li><div class="try-h"><b>让 claude 真的跑起来</b></div><code>在 claude 窗口里选 “Yes, I trust this folder”</code><p>这一步会写进你的 ~/.claude.json，所以我没替你点。之后发一句话，看标题栏从 Idle 变 Running 再回到 Idle。</p></li><li><div class="try-h"><b>看批准提醒</b></div><code>让 claude 运行一个需要批准的命令（例如 “run ls in a new shell”）</code><p>应该 2 秒内变橙，框和顶栏出现“1 waiting”；切到别的应用会收到系统通知。按 1 批准。</p></li><li><div class="try-h"><b>新建一个工作区</b></div><code>右键 › New workspace…，基于 main 新建一个分支</code><p>框出现，里面开的终端在新 worktree 里；右侧面板显示这个分支。用完可以右键框删除，选连目录一起删。</p></li><li><div class="try-h"><b>网页窗口</b></div><code>在 Shell 里运行 python3 -m http.server 8765，点输出里的地址</code><p>网页窗口出现在终端右边、同一个框里。</p></li><li><div class="try-h"><b>摘要卡和快捷键</b></div><code>把终端右下角往里拉到很小；试 ⌘J、⌘B、⌘0、⌘1</code><p>变摘要卡，单击恢复；快捷键在网页窗口里也要有效。</p></li><li><div class="try-h"><b>退出再打开</b></div><code>⌘Q，再 pnpm dev</code><p>框和窗口位置不变，终端输出都在。</p></li><li><div class="try-h"><b>清理开发数据（可选）</b></div><code>tmux -L agentdeck-desktop-dev kill-server &amp;&amp; rm -rf .agentdeck-dev</code><p>先退出应用再执行。</p></li></ol>
+</section>
+</div>
