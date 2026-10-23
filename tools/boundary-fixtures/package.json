@@ -1,0 +1,17 @@
+{
+  "name": "@agentdeck/boundary-fixtures",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "dependency-cruiser": "18.7.0",
+    "eslint": "10.13.0",
+    "typescript": "5.6.3",
+    "vitest": "5.0.5"
+  }
+}
