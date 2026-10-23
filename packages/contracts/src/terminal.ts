@@ -7,6 +7,8 @@ import type { AbsPath, IsoTime, TermSize, TerminalId, ViewId } from './common.ts
 export const TERMINAL_ID_ENV = 'AGENTDECK_TERM';
 
 export interface CreateTerminalRequest {
+  /** 调用方生成 id 时传入（agent-adapters 要在启动前知道 id）；不填由 tmux-host 生成。已存在时抛 invalid-argument。 */
+  id?: TerminalId;
   cmd: string;
   args: string[];
   cwd: AbsPath;
@@ -55,6 +57,8 @@ export interface TerminalHost {
   lastLines(id: TerminalId, n: number): Promise<string[]>;
   /** 在系统终端里接上同一个会话用的命令。 */
   attachCommand(id: TerminalId): Promise<string>;
+  /** 这个终端输出里最近出现过的链接（新的在前，最多 20 条），网页窗口的起始页用。 */
+  recentLinks(id: TerminalId): Promise<TerminalLink[]>;
 }
 
 /**
@@ -74,6 +78,8 @@ export type TerminalEvent =
   /** 输出里出现了可点的地址。来自 pipe-pane 抄送，由 port-watch 识别。 */
   | { type: 'terminal.link'; id: TerminalId; link: TerminalLink }
   | { type: 'terminal.exit'; id: TerminalId; code: number }
+  /** 用户往这个终端输入了（write / sendKeys）。状态机靠它兜底：claude 里拒绝批准、按 Esc 打断都不触发钩子。 */
+  | { type: 'terminal.input'; id: TerminalId; at: IsoTime }
   /** tmux 服务本身没了（例如电脑重启后第一次启动）。 */
   | { type: 'terminal.host-lost' };
 

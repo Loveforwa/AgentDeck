@@ -2,7 +2,7 @@
 // 实现：packages/agent-adapters 里的 status 模块（线 4），运行在主进程，
 // 输入是钩子事件（agent.ts）和 tmux 的 activity / silence / exit（terminal.ts）。
 
-import type { AgentKind, IsoTime, RequestId, TerminalId, WorkspaceId } from './common.ts';
+import type { AgentKind, AgentSessionId, IsoTime, RequestId, TerminalId, WorkspaceId } from './common.ts';
 
 export type TerminalStatus =
   | 'starting' // 刚创建，还没有任何输出
@@ -38,6 +38,13 @@ export interface StatusSnapshot {
   exitCode: number | null;
   /** status 为 needs-approval / needs-reply 时有值。 */
   pending: PendingRequest | null;
+  /** 终端所在的工作区；散放为 null。面板据此知道这个目录里有哪些 agent 在跑。 */
+  workspaceId?: WorkspaceId | null;
+  /**
+   * agent 自己的会话 id。claude 启动时就知道；codex 要等 SessionStart 钩子（实测在第一次输入之后）。
+   * 界面拿到后存进 TerminalWindowData.sessionId，恢复会话和 Fork 用。
+   */
+  sessionId?: AgentSessionId | null;
 }
 
 export interface StatusService {
@@ -65,6 +72,6 @@ export interface ApprovalRecord {
 
 export type StatusEvent =
   | { type: 'status.changed'; snapshot: StatusSnapshot }
-  /** 一轮结束。源代码管理面板据此刷新（不监听文件）。 */
+  /** 一轮结束。源代码管理面板据此刷新（不监听文件）。只对有“一轮”的 agent 发；Shell、自定义命令停下来不发。 */
   | { type: 'agent.turn-end'; terminalId: TerminalId; workspaceId: WorkspaceId | null }
   | { type: 'approval.auto-approved'; record: ApprovalRecord };

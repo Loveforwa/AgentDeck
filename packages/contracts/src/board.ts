@@ -1,7 +1,7 @@
 // 白板的数据形状和保存。需求见「3 · 白板」「9 · 保存与重启」。
 // 保存实现：packages/store（M0），运行在主进程，SQLite。白板界面：packages/ui/canvas（线 2）。
 
-import type { AgentKind, AgentSessionId, IsoTime, Rect, Size, TerminalId, WindowId, WorkspaceId } from './common.ts';
+import type { AgentKind, AgentSessionId, IsoTime, Rect, Size, TermSize, TerminalId, Unsubscribe, WindowId, WorkspaceId } from './common.ts';
 import type { Workspace } from './workspace.ts';
 
 export interface Viewport {
@@ -30,8 +30,10 @@ export interface WindowNode<TData = unknown> {
   z: number;
   /** 用户用 Rename 起的名字；null 时显示默认标题。 */
   title: string | null;
-  /** 放大前的位置，还原时用。 */
+  /** 放大前、或拉小成摘要卡前的位置，还原时用。两种不会同时出现。 */
   restoreRect: Rect | null;
+  /** 打开时带的 OpenWindowRequest.reuseKey，随白板保存，重启后同一地址仍然复用这个窗口。 */
+  reuseKey?: string | null;
   data: TData;
 }
 
@@ -49,9 +51,14 @@ export interface TerminalWindowData {
 }
 
 export interface BrowserWindowData {
+  /** http(s) 地址，或本地文件的绝对路径（打开时再经 BrowserService.prepare 换成可加载的地址）。 */
   url: string;
   /** frame：iframe，能跟白板一起缩放；webview：需要登录的页面用（P1）。 */
   mode: 'frame' | 'webview';
+  /** 白板复用这个窗口打开同一地址时换一个新值（例如 Date.now()），网页窗口据此刷新。 */
+  reloadToken?: number;
+  /** 从哪个终端打开的，工具栏显示“from zsh · pnpm dev”。 */
+  openedBy?: { terminalId: TerminalId; label: string } | null;
 }
 
 export interface BoardState {
@@ -78,8 +85,23 @@ export interface OpenWindowRequest<TData = unknown> {
   workspaceId?: WorkspaceId | null;
   /** 不填时放在发起窗口右边。 */
   rect?: Partial<Rect>;
-  /** 同类型、同 key 的窗口已经开着时聚焦它而不是新开，例如网页窗口用 URL 的 origin。 */
+  /**
+   * 同类型、同 key 的窗口已经开着时聚焦它而不是新开，例如网页窗口用 URL 的 origin。
+   * 复用时白板把 data 浅合并进已开窗口的 data（网页窗口看到 url 变了就跳过去，同一地址靠 reloadToken 刷新）。
+   */
   reuseKey?: string;
+}
+
+/** 白板发给窗口的命令：⌘K 清屏、标题栏右键菜单里的项。 */
+export type WindowCommand = 'clear' | 'restart' | (string & {});
+
+export interface WindowMenuItem {
+  /** 选中时作为 WindowCommand 发给窗口。 */
+  id: string;
+  /** 英文。 */
+  label: string;
+  /** 只用来显示，例如 '⌘K'。 */
+  shortcut?: string;
 }
 
 /**
@@ -105,6 +127,10 @@ export interface WindowComponentProps<TData = unknown> {
   requestFocus(): void;
   openWindow<T>(req: OpenWindowRequest<T>): void;
   close(): void;
+  /** 放大或还原。titleBar 为 'none' 的窗口自己画按钮时用。 */
+  toggleMaximize(): void;
+  /** 订阅白板发来的命令（⌘K、标题栏右键菜单）。 */
+  onCommand(listener: (command: WindowCommand) => void): Unsubscribe;
 }
 
 export interface WindowStatusBadge {
@@ -129,4 +155,20 @@ export interface WindowTypeDefinition<TData, TComponent = unknown> {
   component: TComponent;
   /** 新建时的初始数据。 */
   create(init: Partial<TData>): TData;
+
+  // 以下都可选。白板只读这些字段，不按 type 写特例。
+  /** 创建后不能换框（终端：进程的目录改不了）。拖进别的框时弹回并提示。 */
+  pinnedToWorkspace?: boolean;
+  /** 标题栏上的名字（等宽字），用户没有 Rename 时用。例如终端返回 agent 名或命令名。 */
+  title?(data: TData): string;
+  /** 关闭前要确认时返回对话框文案（英文），不用确认返回 null。 */
+  closeConfirm?(data: TData): { title: string; body: string; confirm: string } | null;
+  /** 确认关闭后要做的事，例如结束终端进程。 */
+  onClose?(data: TData): Promise<void>;
+  /** 加到标题栏右键菜单里的项，选中时走 WindowComponentProps.onCommand。 */
+  menu?: WindowMenuItem[];
+  /** 'board'（默认）：白板画标题栏；'none'：窗口自己画一整行，元素上加 data-window-drag 作为拖动区域。 */
+  titleBar?: 'board' | 'none';
+  /** 由内容区像素大小算行列数，白板新开终端时传给 agents.start。没有就由白板粗估、attach 后由窗口校正。 */
+  termSize?(contentSize: Size): TermSize;
 }

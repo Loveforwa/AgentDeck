@@ -21,8 +21,10 @@ export type LaunchMode =
 
 export interface LaunchContext {
   cwd: AbsPath;
-  /** 这个终端将使用的 id，钩子回调时用它对上。 */
+  /** 这个终端将使用的 id（AgentService 先生成，再传给 TerminalHost.create 的 id）。钩子靠 AGENTDECK_TERM 对上。 */
   terminalId: TerminalId;
+  /** shell / custom 要运行的命令，例如 'pnpm dev'。 */
+  command?: string;
   mode: LaunchMode;
   /** agentdeck-notify 小命令的绝对路径，写进钩子配置。 */
   notifyCommand: AbsPath;
@@ -55,6 +57,8 @@ export type AgentHookEvent =
       command: string | null;
     }
   | { type: 'question'; summary: string }
+  /** 一个工具跑完了（claude 的 PostToolUse）。claude 会并行跑工具，跑完的不一定是还在等批准的那个。 */
+  | { type: 'tool-done'; tool: string | null; summary: string }
   | { type: 'turn-end' }
   | { type: 'session-end' };
 
@@ -82,6 +86,8 @@ export interface AgentInfo {
   installed: boolean;
   version: string | null;
   capabilities: AgentCapabilities;
+  /** 有问题时给 Settings › Agents 显示的一句话（英文），例如钩子被用户关掉、状态退回看输出活动。 */
+  warning?: string | null;
 }
 
 export interface StartAgentRequest {
@@ -138,6 +144,7 @@ export interface HookEnvelope {
 
 export interface HookReply {
   v: 1;
+  /* 只对批准类请求（permission-request）回 allow。提问（claude 的 AskUserQuestion 也走 PermissionRequest 钩子）永远回 none，否则会替用户回答。 */
   /** allow：Auto-approve 打开且不是危险命令时直接允许；none：照常显示 agent 自己的确认。 */
   decision: 'allow' | 'none';
 }

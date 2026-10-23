@@ -33,6 +33,8 @@ export interface QuitRequest {
 }
 
 export interface AppService {
+  /** 用户主目录的绝对路径。散放的终端在这里运行。 */
+  homeDir(): Promise<AbsPath>;
   /** 系统的选文件夹窗口。取消返回 null。 */
   pickFolder(opts: { title: string; defaultPath?: AbsPath }): Promise<AbsPath | null>;
   openInEditor(path: AbsPath, line?: number): Promise<void>;

@@ -27,6 +27,11 @@ export interface CreateWorkspaceRequest {
   repos?: string[];
   /** 不填时用分支名，主目录工作区用项目名。 */
   name?: string;
+  /**
+   * mode 为 worktree 时：把磁盘上已有的这个 worktree 记成工作区（不跑 git worktree add，branch 不用填）。
+   * 面板 Repository 区“not on board”的 worktree 单击 Add to board 时用。
+   */
+  adoptPath?: AbsPath;
 }
 
 export interface WorkspaceRepo {
@@ -77,6 +82,10 @@ export interface WorkspaceService {
   remove(req: RemoveWorkspaceRequest): Promise<void>;
 }
 
+/**
+ * workspace.changed 也会在分支变了时发：workspace-service 接收 git-service 的 git.status，
+ * 发现某个工作区的分支和记录的不一样（面板里切了，或用户在终端里 git switch），就更新记录并发 workspace.changed。
+ */
 export type WorkspaceEvent =
   | {
       type: 'workspace.progress';

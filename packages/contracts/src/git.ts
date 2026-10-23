@@ -44,6 +44,8 @@ export interface BranchInfo {
   current: boolean;
   /** 已经在某个 worktree 里检出时是那个目录；分支下拉里灰显。 */
   checkedOutAt: AbsPath | null;
+  /** 远端分支时是远端名（例如 'origin'），name 不带远端前缀；本地分支为 null 或不填。 */
+  remote?: string | null;
   lastCommitAt: IsoTime | null;
 }
 
@@ -71,6 +73,8 @@ export interface StashInfo {
   branch: string | null;
   message: string;
   at: IsoTime;
+  /** 是 AgentDeck 切分支时用 'stash' 存的（不是用户自己在终端里 git stash 的）。切回来时只对这种提示恢复。 */
+  byAgentDeck?: boolean;
 }
 
 export interface StatusOptions {
@@ -84,16 +88,28 @@ export type SwitchStrategy =
   /** 先 stash，切回来时提示恢复。 */
   | 'stash';
 
+/**
+ * 事件：git-service 通过构造参数里的 emit 发 git.status / git.refreshing（status 超过 1 秒先发 refreshing，结束发 status）。
+ * 写操作之后不自动发 status，由调用方（面板）再调一次 status。
+ */
 export interface GitService {
   status(repo: AbsPath, opts?: StatusOptions): Promise<RepoStatus>;
   /** 路径不存在时抛 git-failed，detail 是 git 原话（pathspec did not match）。unstage、discard 同样。 */
   stage(repo: AbsPath, paths: string[]): Promise<void>;
   unstage(repo: AbsPath, paths: string[]): Promise<void>;
-  /** 已跟踪文件还原；未跟踪文件移到废纸篓。确认由界面负责。 */
+  /**
+   * 放弃更改，确认由界面负责。照 VS Code：有没暂存的改动 → 工作区还原成暂存区；只有暂存的改动 → 暂存区和工作区都还原成 HEAD；
+   * 新加进暂存区的文件 → 拿出暂存区并移到废纸篓；未跟踪文件 → 移到废纸篓；冲突 → 还原成 HEAD。
+   */
   discard(repo: AbsPath, paths: string[]): Promise<void>;
-  /** all=true：没有暂存时提交全部改动（Commit all n changes）。没有可提交的内容时抛 git-failed，detail 是 git 原话（nothing to commit）。 */
+  /**
+   * all=true：先暂存全部改动（含未跟踪文件）再提交，面板只在没有暂存时这样调（Commit all n changes）。
+   * 没有可提交的内容时抛 git-failed，detail 是 git 原话（nothing to commit）。
+   */
   commit(repo: AbsPath, message: string, opts: { all: boolean }): Promise<CommitInfo>;
-  branches(repo: AbsPath): Promise<BranchInfo[]>;
+  /** 默认只有本地分支；remote=true 时加上远端分支（已有同名本地分支的不重复列）。 */
+  branches(repo: AbsPath, opts?: { remote?: boolean }): Promise<BranchInfo[]>;
+  /** branch 是远端分支名时（没有同名本地分支）建一个跟踪它的本地分支再切过去，和 git switch 一样。 */
   switchBranch(repo: AbsPath, branch: string, strategy: SwitchStrategy): Promise<void>;
   createBranch(repo: AbsPath, name: string, opts: { from?: string; switchTo: boolean }): Promise<void>;
   /** 分支正在某个 worktree 里检出时抛 branch-in-use；没合并且 force=false 时抛 git-failed。workspace-service 回滚时也用它。 */
@@ -102,7 +118,10 @@ export interface GitService {
   stashes(repo: AbsPath): Promise<StashInfo[]>;
   /** 恢复一条 stash。drop=true 时恢复成功后删掉它（相当于 pop）。有冲突时抛 git-failed，改动留在工作区。 */
   applyStash(repo: AbsPath, id: string, opts: { drop: boolean }): Promise<void>;
-  /** 当前分支上、不在基础分支里的提交，加基础分支最近的几条。 */
+  /**
+   * `<base>..HEAD` 的提交（onBase=false），加上从 HEAD 和基础分支的合并基点往前的几条（onBase=true，至少 3 条，总数不超过 limit）。
+   * 基础分支名先找本地分支，再找 origin/<名字>。
+   */
   log(repo: AbsPath, limit: number, opts?: StatusOptions): Promise<CommitInfo[]>;
   /** 统一 diff 文本。staged=true 时比较暂存区和 HEAD。 */
   diff(repo: AbsPath, path: string, opts: { staged: boolean }): Promise<string>;
@@ -111,8 +130,10 @@ export interface GitService {
   worktrees(repo: AbsPath): Promise<WorktreeInfo[]>;
   addWorktree(repo: AbsPath, path: AbsPath, branch: { name: string; create: boolean; from?: string }): Promise<void>;
   removeWorktree(repo: AbsPath, path: AbsPath, opts: { force: boolean }): Promise<void>;
-  /** 这个目录在不在 git 仓库里，在的话返回仓库根目录。 */
+  /** 这个目录在不在 git 仓库里，在的话返回仓库根目录。目录不存在时也返回 null，不抛错。 */
   repoRoot(dir: AbsPath): Promise<AbsPath | null>;
+  /** 主仓库搬了位置以后修好各个 worktree 的指向（git worktree repair）。ProjectService.locate 会调用。 */
+  repairWorktrees(repo: AbsPath): Promise<void>;
   defaultBranch(repo: AbsPath): Promise<string>;
   init(dir: AbsPath): Promise<void>;
 }

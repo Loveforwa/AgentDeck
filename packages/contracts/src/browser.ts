@@ -17,10 +17,13 @@ export interface BrowserService {
    * 打开前调用：localhost 的来源会被加进响应头改写名单（去掉 X-Frame-Options 和 frame-ancestors），
    * 本地文件会映射到 LOCAL_FILE_SCHEME。
    */
-  prepare(url: string): Promise<PreparedPage>;
+  prepare(url: string, opts?: { mode?: 'frame' | 'webview' }): Promise<PreparedPage>;
   /** 本地文件路径转成可打开的地址。 */
   fileUrl(path: AbsPath): Promise<string>;
   openExternal(url: string): Promise<void>;
-  /** 判断服务是否在响应，出错页的 Retry 用。 */
+  /**
+   * 判断服务是否在响应，出错页的 Retry 用。http(s)：回了任何 HTTP 响应（含 404、500）就是 ok；连不上或 3 秒没响应是 { ok: false, status: null }。
+   * 本地文件：存在 { ok: true, status: 200 }，不存在 { ok: false, status: 404 }。
+   */
   ping(url: string): Promise<{ ok: boolean; status: number | null }>;
 }
