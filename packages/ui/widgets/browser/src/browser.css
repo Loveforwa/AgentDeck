@@ -1,0 +1,126 @@
+/* 网页窗口。颜色、尺寸只用 design-tokens 的变量。 */
+
+.ad-browser {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+}
+
+.ad-browser__toolbar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-2xs);
+  height: calc(var(--control-sm) + var(--space-sm));
+  padding: 0 var(--space-xs);
+  border-bottom: 1px solid var(--line-subtle);
+}
+
+.ad-browser__toolbar > .ad-button {
+  width: var(--control-sm);
+  padding: 0;
+  color: var(--muted);
+}
+
+.ad-browser__toolbar > .ad-button:hover:not(:disabled) {
+  color: var(--ink);
+}
+
+.ad-browser__address {
+  flex: 1;
+  min-width: 0;
+  height: var(--control-sm);
+  margin: 0 var(--space-xs);
+  padding: 0 var(--space-sm);
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  border-radius: var(--radius-inset);
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  text-overflow: ellipsis;
+  outline: none;
+}
+
+.ad-browser__address:hover {
+  border-color: var(--line);
+}
+
+.ad-browser__address:focus {
+  border-color: var(--focus);
+  background: var(--surface);
+}
+
+.ad-browser__address::placeholder {
+  color: var(--muted);
+}
+
+.ad-browser__hint {
+  flex: none;
+  padding: var(--space-xs) var(--space-md);
+  border-bottom: 1px solid var(--line-subtle);
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.ad-browser__content {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  background: var(--ground);
+}
+
+.ad-browser__frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  /* 加载前显示的底色。网页的 color-scheme 和白板不同时（例如暗色白板里的普通网页），Chromium 会给网页画不透明的默认底色。 */
+  background: var(--surface);
+}
+
+.ad-browser__frame[hidden] {
+  display: none;
+}
+
+.ad-browser__message {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding: var(--space-lg);
+  text-align: center;
+  line-height: var(--leading);
+}
+
+.ad-browser__message p {
+  margin: 0;
+  max-width: 44ch;
+}
+
+.ad-browser__message-title {
+  color: var(--ink);
+  font-size: var(--text-md);
+}
+
+.ad-browser__message-detail {
+  color: var(--muted);
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+}
+
+/* 没聚焦时盖住网页：第一次单击只聚焦窗口，滚轮交给白板。 */
+.ad-browser__shield {
+  position: absolute;
+  inset: 0;
+}
