@@ -1,0 +1,24 @@
+// @agentdeck/agent-adapters：agent 适配器、AgentService、钩子 socket、状态机、后台通知规则。只在主进程里用。
+
+export { createAgentRuntime } from './runtime.ts';
+export type { AgentRuntime, AgentRuntimeOptions } from './runtime.ts';
+export { AgentServiceImpl, PENDING_TERMINAL_ID } from './agent-service.ts';
+export type { AgentServiceOptions, StartedAgent } from './agent-service.ts';
+export { createDefaultAdapters } from './adapters/index.ts';
+export { ClaudeAdapter, claudeHookEvents, claudeHookSettings } from './adapters/claude.ts';
+export { CODEX_HOOK_EVENTS, CodexAdapter, codexHookOverrides, parseHooksList, queryTrustViaAppServer } from './adapters/codex.ts';
+export type { CodexAdapterOptions, CodexHookTrust, CodexTrustQuery } from './adapters/codex.ts';
+export { CustomCommandAdapter, ShellAdapter } from './adapters/shell.ts';
+export type { CommandLaunchContext } from './adapters/shell.ts';
+export type { AdapterDeps, AgentAdapterExt } from './adapters/types.ts';
+export { compareVersions, findExecutable, readVersion, shellQuote, splitCommand } from './env.ts';
+export type { Env, EnvSource } from './env.ts';
+export { hookHint, parseCommonHook, parsePermissionRequest } from './hook-payload.ts';
+export { defaultHookSocketPath, HookServer, parseEnvelope } from './hook-server.ts';
+export type { HookServerOptions, ReceivedHook } from './hook-server.ts';
+export { StatusMachine } from './status/machine.ts';
+export type { HookHint, StatusMachineOptions, TrackOptions } from './status/machine.ts';
+export { ApprovalServicePlaceholder } from './status/approval.ts';
+export { compilePatterns, DEFAULT_DESTRUCTIVE_PATTERNS, isDestructive } from './status/destructive.ts';
+export { backgroundAlerts, badgeCount, isWaiting } from './background-alerts.ts';
+export type { AlertInput, AlertOutput, SystemNotification } from './background-alerts.ts';
