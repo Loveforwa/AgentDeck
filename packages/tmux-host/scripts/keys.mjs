@@ -7,7 +7,7 @@
 import os from 'node:os';
 import fs from 'node:fs';
 import path from 'node:path';
-import { View, attachView, cleanEnv, fmt, hex, newSession, show, sleep, stats, tmux, tmuxOk, waitUntil, PKG_DIR } from './lib.mjs';
+import { View, attachView, cleanEnv, fmt, hex, newSession, show, sleep, stats, tmuxOk, waitUntil, PKG_DIR } from './lib.mjs';
 
 const PROBE = path.join(PKG_DIR, 'scripts', 'keyprobe.py');
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agentdeck-keys-'));
