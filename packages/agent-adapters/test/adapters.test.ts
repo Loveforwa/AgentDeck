@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { AgentDeckError } from '@agentdeck/contracts';
 import type { AgentSessionId, LaunchContext, TerminalId } from '@agentdeck/contracts';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { ClaudeAdapter, claudeHookSettings } from '../src/adapters/claude.ts';
+import { ClaudeAdapter, claudeHookSettings, claudeMcpConfig } from '../src/adapters/claude.ts';
 import { CODEX_HOOK_EVENTS, CodexAdapter, codexHookOverrides, parseHooksList } from '../src/adapters/codex.ts';
 import type { CodexTrustQuery } from '../src/adapters/codex.ts';
 import { CustomCommandAdapter, ShellAdapter } from '../src/adapters/shell.ts';
@@ -66,6 +66,33 @@ describe('ClaudeAdapter', () => {
     expect(JSON.parse(spec.args[3]!)).toEqual(claudeHookSettings(NOTIFY, '2.1.291'));
     expect(spec.args.slice(4)).toEqual(['--model', 'opus']);
     expect(spec.env).toEqual({ CLAUDE_CODE_TMUX_TRUECOLOR: '1' });
+  });
+
+  it('mcp: --mcp-config refers to the token and terminal through env vars; the token itself only goes into env', () => {
+    const mcp = { url: 'http://127.0.0.1:47621/mcp', token: 'secret-token' };
+    const spec = claude.launch(ctx({ mcp, extraArgs: ['--model', 'opus'] }));
+    const i = spec.args.indexOf('--mcp-config');
+    expect(i).toBeGreaterThan(0);
+    expect(JSON.parse(spec.args[i + 1]!)).toEqual({
+      mcpServers: {
+        agentdeck: {
+          type: 'http',
+          url: 'http://127.0.0.1:47621/mcp',
+          headers: { Authorization: 'Bearer ${AGENTDECK_MCP_TOKEN}', 'x-agentdeck-terminal': '${AGENTDECK_TERM}' },
+        },
+      },
+    });
+    expect(spec.args.join(' ')).not.toContain('secret-token');
+    expect(spec.env).toEqual({ CLAUDE_CODE_TMUX_TRUECOLOR: '1', AGENTDECK_MCP_TOKEN: 'secret-token' });
+    expect(claudeMcpConfig(mcp)).toEqual(JSON.parse(spec.args[i + 1]!));
+    expect(claude.launch(ctx()).args).not.toContain('--mcp-config');
+  });
+
+  it('prompt: goes last after --, only for new conversations', () => {
+    const spec = claude.launch(ctx({ prompt: '-fix the tests', extraArgs: ['--allowedTools', 'Bash'] }));
+    expect(spec.args.slice(-4)).toEqual(['--allowedTools', 'Bash', '--', '-fix the tests']);
+    const resumed = claude.launch(ctx({ prompt: 'hi', mode: { kind: 'resume', sessionId: 'old' as AgentSessionId } }));
+    expect(resumed.args).not.toContain('hi');
   });
 
   it('resume: --resume <id>, same session id', () => {
@@ -209,6 +236,13 @@ describe('CodexAdapter', () => {
     const f = codex.launch(ctx({ mode: { kind: 'fork', sessionId: 'th-1' as AgentSessionId } }));
     expect(f.args.slice(0, 2)).toEqual(['fork', 'th-1']);
     expect(f.sessionId).toBeNull();
+  });
+
+  it('prompt: positional after --; codex gets no MCP', () => {
+    const codex = new CodexAdapter({ env, queryTrust: allTrusted });
+    const spec = codex.launch(ctx({ prompt: 'review this', mcp: { url: 'http://x/mcp', token: 't' } }));
+    expect(spec.args.slice(-2)).toEqual(['--', 'review this']);
+    expect(spec.args.join(' ')).not.toContain('mcp');
   });
 
   it('falls back to no hooks when codex does not list them', async () => {

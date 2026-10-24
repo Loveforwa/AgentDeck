@@ -4,7 +4,7 @@
 //   TerminalHost 的事件 → onTerminalEvent；IPC 层的 terminals.write / sendKeys → noteInput
 // 组装时把 agents / status / approvals 挂到 IPC 上，emit 接到事件通道。
 
-import type { AbsPath, AgentKind, StatusEvent, TerminalEvent, TerminalHost, TerminalId } from '@agentdeck/contracts';
+import type { AbsPath, AgentKind, McpEndpoint, StatusEvent, TerminalEvent, TerminalHost, TerminalId } from '@agentdeck/contracts';
 import { createDefaultAdapters } from './adapters/index.ts';
 import type { AgentAdapterExt } from './adapters/types.ts';
 import { AgentServiceImpl } from './agent-service.ts';
@@ -26,6 +26,8 @@ export interface AgentRuntimeOptions {
   destructivePatterns: () => readonly string[];
   /** Settings › Agents › extraArgs。 */
   extraArgs?: (agent: AgentKind) => string[];
+  /** AgentDeck 的 MCP 服务（M1），见 AgentServiceOptions.mcp。 */
+  mcp?: () => McpEndpoint | null;
   /** 默认 ~/.agentdeck/run/hooks.sock。 */
   socketPath?: string;
   /** 默认 createDefaultAdapters。 */
@@ -47,6 +49,7 @@ export function createAgentRuntime(opts: AgentRuntimeOptions) {
     env: opts.env,
     notifyCommand: opts.notifyCommand,
     ...(opts.extraArgs ? { extraArgs: opts.extraArgs } : {}),
+    ...(opts.mcp ? { mcp: opts.mcp } : {}),
     onStarted: (s) =>
       status.track(s.terminalId, { agent: s.agent, workspaceId: s.workspaceId, hooks: s.hooks, sessionId: s.sessionId }),
   });

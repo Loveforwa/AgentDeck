@@ -2,7 +2,8 @@
 // hooks 是合并的，两边都会运行，所以不会顶掉用户自己的钩子，也不改任何配置文件。详见 AGENTS.md「钩子实测」。
 
 import { randomUUID } from 'node:crypto';
-import type { AgentCapabilities, AgentHookEvent, AgentSessionId, LaunchContext, LaunchSpec } from '@agentdeck/contracts';
+import { MCP_SERVER_NAME, MCP_TERMINAL_HEADER, MCP_TOKEN_ENV, TERMINAL_ID_ENV } from '@agentdeck/contracts';
+import type { AgentCapabilities, AgentHookEvent, AgentSessionId, LaunchContext, LaunchSpec, McpEndpoint } from '@agentdeck/contracts';
 import { atLeast, shellQuote } from '../env.ts';
 import { parseClaudeNotification, parseCommonHook } from '../hook-payload.ts';
 import type { AdapterDeps, AgentAdapterExt, DetectResult } from './types.ts';
@@ -68,14 +69,16 @@ export class ClaudeAdapter implements AgentAdapterExt {
     if (this.capabilities(this.lastVersion).hooks) {
       args.push('--settings', JSON.stringify(claudeHookSettings(ctx.notifyCommand, this.lastVersion)));
     }
+    // claude 在 tmux 里检测到 $TMUX 会自己降到 256 色（docs/decisions.md）。
+    const env: Record<string, string> = { CLAUDE_CODE_TMUX_TRUECOLOR: '1' };
+    if (ctx.mcp) {
+      args.push('--mcp-config', JSON.stringify(claudeMcpConfig(ctx.mcp)));
+      env[MCP_TOKEN_ENV] = ctx.mcp.token;
+    }
     args.push(...ctx.extraArgs);
-    return {
-      cmd: this.command,
-      args,
-      // claude 在 tmux 里检测到 $TMUX 会自己降到 256 色（docs/decisions.md）。
-      env: { CLAUDE_CODE_TMUX_TRUECOLOR: '1' },
-      sessionId: sessionId as AgentSessionId,
-    };
+    // --mcp-config 和不少用户参数后面能跟多个值，提示词放在 -- 之后才不会被吃掉（2.1.291 实测）。
+    if (ctx.prompt && ctx.mode.kind === 'new') args.push('--', ctx.prompt);
+    return { cmd: this.command, args, env, sessionId: sessionId as AgentSessionId };
   }
 
   parseHook(hookName: string, payload: unknown): AgentHookEvent | null {
@@ -114,4 +117,23 @@ export function claudeHookSettings(notifyCommand: string, version: string | null
     ];
   }
   return { hooks };
+}
+
+/**
+ * `--mcp-config` 的内容。token 和终端 id 写成 `${…}`，由 claude 从环境里展开（2.1.291 实测），不出现在命令行上。
+ * 和用户自己配的 MCP 合并，不用 --strict-mcp-config。
+ */
+export function claudeMcpConfig(mcp: McpEndpoint): { mcpServers: Record<string, unknown> } {
+  return {
+    mcpServers: {
+      [MCP_SERVER_NAME]: {
+        type: 'http',
+        url: mcp.url,
+        headers: {
+          Authorization: `Bearer \${${MCP_TOKEN_ENV}}`,
+          [MCP_TERMINAL_HEADER]: `\${${TERMINAL_ID_ENV}}`,
+        },
+      },
+    },
+  };
 }

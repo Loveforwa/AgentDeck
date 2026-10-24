@@ -24,6 +24,7 @@ const rt = createAgentRuntime({
   emit: (e) => sendToRenderer(e),                 // status.changed、agent.turn-end
   destructivePatterns: () => settings.approvals.destructivePatterns,
   extraArgs: (agent) => settings.agents[agent]?.extraArgs ?? [],
+  mcp: () => mcpServer.endpoint,                  // M1：AgentDeck 的 MCP 服务（packages/mcp-server），没起来返回 null
 });
 await rt.start();                                 // 监听 ~/.agentdeck/run/hooks.sock
 tmuxHostEvents.on((e) => rt.onTerminalEvent(e));  // terminal.activity / silence / exit / host-lost
@@ -101,6 +102,14 @@ tmuxHostEvents.on((e) => rt.onTerminalEvent(e));  // terminal.activity / silence
   `PostToolUse`；`Stop`；**拒绝批准（Esc）时有 `Interrupt`**，适配器转成 turn-end。回答 PermissionRequest 的输出格式和 claude 相同（`hookSpecificOutput.decision.behavior`）。
 - 准备失败（app-server 不通、超时 10 秒、没列出我们的钩子）：这次启动不加钩子，`onStarted` 报 `hooks: false`，状态按输出活动判断。
 - 0.159 之前的版本：用 legacy `-c notify=[notify路径,"codex","notify"]`，只知道一轮结束；**会顶掉用户自己的 notify 设置**。
+
+## AgentDeck 的 MCP（M1）
+
+`LaunchContext.mcp` 有值时 claude 适配器加 `--mcp-config <json>`：一个叫 `agentdeck` 的 http 服务，
+`Authorization: Bearer ${AGENTDECK_MCP_TOKEN}`、`x-agentdeck-terminal: ${AGENTDECK_TERM}`，由 claude 从环境里展开（2.1.291 实测），
+token 本身只放进 `LaunchSpec.env`，不进命令行。和用户自己配的 MCP 合并（不用 `--strict-mcp-config`）。codex 暂时不挂。
+
+`StartAgentRequest.prompt`（第一条消息）：claude、codex 都放在参数最后、`--` 之后（`--mcp-config` 和不少用户参数后面能跟多个值，不隔开会被吃掉）。只在新会话时带。
 
 ## agentdeck-notify 怎么打包（组装阶段）
 
