@@ -1,7 +1,7 @@
 // 只用于类型检查：确认接口能被实现、事件能按 type 收窄。不会被打包。
 import type {
   AgentDeckApi, ApproveResult, AutoApproveState, CommitInfo, EventOf, GitService, LogOptions, TerminalHost, TerminalId, TerminalUsage,
-  UsageService, WindowGroupId, WindowId, WindowNode, WorkspaceId,
+  TerminalWindowData, UsageService, WindowGroupId, WindowId, WindowNode, WorkspaceId,
 } from './index.ts';
 import { FIRE_AND_FORGET, isAutoApproveOn } from './index.ts';
 
@@ -79,3 +79,7 @@ const noUsage: UsageService['get'] = async (terminalId) => ({
   model: null, total: null, last: null, requests: 0, context: null, rateLimits: null, updatedAt: null,
 });
 void noUsage; void api.usage.watch;
+
+// PL2：用量条的设置随白板保存，是可选字段，老数据没有它
+const strip: TerminalWindowData['usage'] = { on: true, position: 'bottom' };
+void strip;
