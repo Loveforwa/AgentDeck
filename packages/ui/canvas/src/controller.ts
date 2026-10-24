@@ -4,7 +4,7 @@
 import type { AgentDeckApi, AgentDeckErrorData, AgentKind, BoardState, CreateWorkspaceRequest, ErrorCode, FrameNode, OpenWindowRequest, ProjectId, Rect, Size, TerminalWindowData, Unsubscribe, Viewport, WindowCommand, WindowId, WindowNode, WindowStatusBadge, WorkspaceId } from '@agentdeck/contracts';
 import { TITLE_BAR_HEIGHT, resizeRect, type ResizeEdge } from '@agentdeck/ui-window-shell';
 import { isSummarySize, windowRegistry, type WindowDefinition, type WindowRegistry } from './registry.ts';
-import { nextWaiting, summarize, statusOf, type AttentionSummary } from './model/attention.ts';
+import { nextWaiting, prevWaiting, summarize, statusOf, type AttentionSummary } from './model/attention.ts';
 import { createAutosave, type Autosave } from './model/autosave.ts';
 import { decideDrop, dropTargetAt } from './model/drop.ts';
 import {
@@ -22,6 +22,7 @@ import {
   zoomAroundCenter,
   type Point,
 } from './model/geometry.ts';
+import { adjacentWindow, windowOrder } from './model/navigation.ts';
 import type { ShortcutId } from './model/shortcuts.ts';
 import {
   BROWSER_TYPE,
@@ -645,11 +646,37 @@ export class BoardController {
     this.focusWindow(id);
   }
 
-  /** ⌘J、顶栏的“n waiting”：依次跳到每个在等你的窗口。 */
+  /** ⌘J、顶栏的“n waiting”：依次跳到每个在等你的窗口（最早开始等的在前），跳到的窗口闪一下。 */
   jumpToNextWaiting(): WindowId | null {
     const next = nextWaiting(this.attention().waiting, this.state.focusedId);
-    if (next) this.jumpToWindow(next);
+    if (next) this.jumpAndFlash(next);
     return next;
+  }
+
+  /** ⌘⇧J：反方向。 */
+  jumpToPrevWaiting(): WindowId | null {
+    const prev = prevWaiting(this.attention().waiting, this.state.focusedId);
+    if (prev) this.jumpAndFlash(prev);
+    return prev;
+  }
+
+  /** ⌘⇧] / ⌘⇧[：按位置切到下一个 / 上一个窗口（见 model/navigation.ts）。 */
+  jumpToAdjacentWindow(step: 1 | -1): WindowId | null {
+    const s = this.state;
+    const order = windowOrder(s.windows, s.frames);
+    const frameStart = s.selectedFrame ? (order.find((id) => this.windowById(id)?.workspaceId === s.selectedFrame) ?? null) : null;
+    const target = adjacentWindow(order, s.focusedId, step, frameStart);
+    if (target) this.jumpToWindow(target);
+    return target;
+  }
+
+  private jumpAndFlash(id: WindowId): void {
+    this.flashWindow(id);
+    this.jumpToWindow(id);
+  }
+
+  private flashWindow(id: WindowId): void {
+    this.set((s) => ({ flash: { ...s.flash, [id]: (s.flash[id] ?? 0) + 1 } }));
   }
 
   togglePanel(): void {
@@ -774,8 +801,7 @@ export class BoardController {
       for (const [id, k] of this.reuseKeys) {
         if (k !== key || !this.windowById(id)) continue;
         this.updateData(id, req.data as object);
-        this.set((s) => ({ flash: { ...s.flash, [id]: (s.flash[id] ?? 0) + 1 } }));
-        this.jumpToWindow(id);
+        this.jumpAndFlash(id);
         return id;
       }
     }
@@ -1078,6 +1104,15 @@ export class BoardController {
         return true;
       case 'next-waiting':
         this.jumpToNextWaiting();
+        return true;
+      case 'prev-waiting':
+        this.jumpToPrevWaiting();
+        return true;
+      case 'next-window':
+        this.jumpToAdjacentWindow(1);
+        return true;
+      case 'prev-window':
+        this.jumpToAdjacentWindow(-1);
         return true;
       case 'toggle-panel':
         this.togglePanel();

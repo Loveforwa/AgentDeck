@@ -9,6 +9,9 @@ export type ShortcutId =
   | 'close-window' // ⌘W
   | 'toggle-maximize' // ⌘⇧↩
   | 'next-waiting' // ⌘J
+  | 'prev-waiting' // ⌘⇧J
+  | 'next-window' // ⌘⇧]
+  | 'prev-window' // ⌘⇧[
   | 'toggle-panel' // ⌘B
   | 'zoom-100' // ⌘0
   | 'show-all' // ⌘1
@@ -46,6 +49,10 @@ export function matchShortcut(e: KeyLike, mac = true): ShortcutId | null {
       if (key === 'n') return 'new-workspace';
       if (key === 'Enter') return 'toggle-maximize';
       if (key === '+' || e.code === 'Equal') return 'zoom-in';
+      if (key === 'j') return 'prev-waiting';
+      // 按住 ⇧ 时 key 是 } {（还随键盘布局变），按物理键认。不带 ⇧ 的 ⌘] ⌘[ 是网页窗口的前进后退，不碰
+      if (e.code === 'BracketRight' || key === '}') return 'next-window';
+      if (e.code === 'BracketLeft' || key === '{') return 'prev-window';
       return null;
     }
     switch (key) {
@@ -103,6 +110,9 @@ export const SHORTCUT_LABELS = {
   'close-window': '⌘W',
   'toggle-maximize': '⌘⇧↩',
   'next-waiting': '⌘J',
+  'prev-waiting': '⌘⇧J',
+  'next-window': '⌘⇧]',
+  'prev-window': '⌘⇧[',
   'toggle-panel': '⌘B',
   'zoom-100': '⌘0',
   'show-all': '⌘1',

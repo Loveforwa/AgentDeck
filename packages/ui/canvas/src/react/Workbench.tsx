@@ -8,7 +8,7 @@ import { ToastProvider, useToast, type MenuEntry } from '@agentdeck/ui-kit';
 import { Topbar } from '@agentdeck/ui-topbar';
 import { usePointerDrag } from '@agentdeck/ui-window-shell';
 import { BoardController, type BoardControllerOptions } from '../controller.ts';
-import { summarize } from '../model/attention.ts';
+import { summarize, waitingPosition } from '../model/attention.ts';
 import { Board } from './Board.tsx';
 import { BoardProvider, useBoardState, useController } from './context.tsx';
 import { useShortcuts } from './useShortcuts.ts';
@@ -80,6 +80,8 @@ function BoardTopbar({ boardName, onOpenSettings }: { boardName: string | undefi
   const terminals = useBoardState((s) => s.windows.filter((w) => w.type === 'terminal').length);
   const running = useBoardState((s) => summarize(s).running);
   const waiting = useBoardState((s) => summarize(s).waiting.length);
+  // 聚焦的窗口在 ⌘J 顺序里排第几，顶栏显示“2/3 waiting”
+  const position = useBoardState((s) => waitingPosition(summarize(s).waiting, s.focusedId));
   const projects = useBoardState((s) => s.projects);
   const menu = useMemo<MenuEntry[]>(
     () => [
@@ -100,6 +102,7 @@ function BoardTopbar({ boardName, onOpenSettings }: { boardName: string | undefi
       terminals={terminals}
       running={running}
       waiting={waiting}
+      {...(position ? { waitingPosition: position } : {})}
       projectsMenu={menu}
       onWaitingClick={() => c.jumpToNextWaiting()}
       {...(onOpenSettings ? { onSettings: onOpenSettings } : {})}

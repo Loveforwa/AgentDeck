@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { StatusSnapshot, TerminalId, WindowId, WindowNode, WorkspaceId } from '@agentdeck/contracts';
-import { isWaiting, nextWaiting, summarize, waitingLabel } from '../src/model/attention.ts';
+import { isWaiting, nextWaiting, prevWaiting, summarize, waitingLabel, waitingPosition } from '../src/model/attention.ts';
 
 const WS_A = 'ws-a' as WorkspaceId;
 const WS_B = 'ws-b' as WorkspaceId;
@@ -67,5 +67,24 @@ describe('attention (S3)', () => {
     expect(nextWaiting(list, 'w2' as WindowId)).toBe('w3');
     expect(nextWaiting(list, 'w1' as WindowId)).toBe('w3');
     expect(nextWaiting([], null)).toBeNull();
+  });
+
+  it('⌘⇧J goes the other way, starting from the newest', () => {
+    const list = ['w3', 'w2', 'w6'] as WindowId[];
+    expect(prevWaiting(list, null)).toBe('w6');
+    expect(prevWaiting(list, 'w1' as WindowId)).toBe('w6');
+    expect(prevWaiting(list, 'w6' as WindowId)).toBe('w2');
+    expect(prevWaiting(list, 'w2' as WindowId)).toBe('w3');
+    expect(prevWaiting(list, 'w3' as WindowId)).toBe('w6');
+    expect(prevWaiting(['w3'] as WindowId[], 'w3' as WindowId)).toBe('w3');
+    expect(prevWaiting([], null)).toBeNull();
+  });
+
+  it('position of the focused window in the ⌘J order', () => {
+    const list = ['w3', 'w2', 'w6'] as WindowId[];
+    expect(waitingPosition(list, 'w2' as WindowId)).toBe(2);
+    expect(waitingPosition(list, 'w3' as WindowId)).toBe(1);
+    expect(waitingPosition(list, 'w1' as WindowId)).toBeNull();
+    expect(waitingPosition(list, null)).toBeNull();
   });
 });

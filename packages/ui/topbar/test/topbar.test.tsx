@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { summaryText, Topbar } from '../src/index.ts';
+import { summaryText, Topbar, waitingText } from '../src/index.ts';
 
 describe('Topbar', () => {
   it('summary text pluralizes', () => {
@@ -17,6 +17,15 @@ describe('Topbar', () => {
     rerender(<Topbar workspaces={2} terminals={4} running={0} waiting={0} projectsMenu={[]} />);
     expect(screen.queryByText(/running/)).toBeNull();
     expect(screen.queryByText(/waiting/)).toBeNull();
+  });
+
+  it('shows the focused window position among the waiting ones', () => {
+    expect(waitingText(3)).toBe('3 waiting');
+    expect(waitingText(3, 2)).toBe('2/3 waiting');
+    expect(waitingText(1, 1)).toBe('1/1 waiting');
+    expect(waitingText(2, 5)).toBe('2 waiting');
+    render(<Topbar workspaces={1} terminals={3} running={0} waiting={3} waitingPosition={2} projectsMenu={[]} />);
+    expect(screen.getByRole('button', { name: '2/3 waiting' })).toBeTruthy();
   });
 
   it('waiting button and Projects menu', () => {

@@ -57,6 +57,19 @@ export function nextWaiting(waiting: readonly WindowId[], current: WindowId | nu
   return waiting[(i + 1) % waiting.length] ?? null;
 }
 
+/** ⌘⇧J：反过来，当前聚焦的是在等你的窗口就跳到它前面那个，否则跳到最后一个（最晚开始等的）。 */
+export function prevWaiting(waiting: readonly WindowId[], current: WindowId | null): WindowId | null {
+  if (waiting.length === 0) return null;
+  const i = current ? waiting.indexOf(current) : -1;
+  return waiting[(i < 0 ? waiting.length : i) - 1] ?? waiting[waiting.length - 1] ?? null;
+}
+
+/** 聚焦的窗口在 ⌘J 顺序里排第几（从 1 开始）；不在里面返回 null。顶栏显示“2/3 waiting”。 */
+export function waitingPosition(waiting: readonly WindowId[], current: WindowId | null): number | null {
+  const i = current ? waiting.indexOf(current) : -1;
+  return i < 0 ? null : i + 1;
+}
+
 /** 框标题栏右侧：“1 waiting”；没有时为空。 */
 export function waitingLabel(n: number | undefined): string {
   return n ? `${n} waiting` : '';

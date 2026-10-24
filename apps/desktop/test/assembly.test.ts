@@ -281,4 +281,14 @@ describe('menu', () => {
     for (const a of Object.values(MENU_ACCELERATORS)) expect(accels).toContain(a);
     expect(items.some((i) => i.role === 'paste')).toBe(true);
   });
+  it('Go menu: next / previous waiting terminal and next / previous window (S3)', () => {
+    const go = (template as (Item & { label?: string })[]).find((m) => m.label === 'Go')!;
+    const entries = (go.submenu as (Item & { label?: string })[]).filter((i) => i.label).map((i) => [i.label, i.accelerator]);
+    expect(entries).toEqual([
+      ['Next Waiting Terminal', 'CmdOrCtrl+J'],
+      ['Previous Waiting Terminal', 'Shift+CmdOrCtrl+J'],
+      ['Next Window', 'Shift+CmdOrCtrl+]'],
+      ['Previous Window', 'Shift+CmdOrCtrl+['],
+    ]);
+  });
 });

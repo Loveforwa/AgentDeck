@@ -7,6 +7,7 @@ export { Board } from './react/Board.tsx';
 export { BoardProvider, useBoardState, useController } from './react/context.tsx';
 export { useShortcuts } from './react/useShortcuts.ts';
 export { matchShortcut, resolveShortcut, shouldHandle, SHORTCUT_LABELS, type ShortcutId } from './model/shortcuts.ts';
-export { summarize, nextWaiting, isWaiting, type AttentionSummary } from './model/attention.ts';
+export { summarize, nextWaiting, prevWaiting, waitingPosition, isWaiting, type AttentionSummary } from './model/attention.ts';
+export { windowOrder, adjacentWindow } from './model/navigation.ts';
 export { createAutosave, type Autosave } from './model/autosave.ts';
 export { TERMINAL_TYPE, BROWSER_TYPE } from './model/windows.ts';

@@ -58,7 +58,7 @@ import '@agentdeck/ui-kit/base.css';
 | `src/registry.ts` | 窗口注册表（唯一对别的界面包开放的文件） |
 | `src/controller.ts` | `BoardController`：启动和事件、拖动、改大小、放大、新建、关闭、工作区、视口、快捷键 |
 | `src/store.ts` | zustand vanilla store：保存的部分（BoardState）+ 临时状态 |
-| `src/model/` | 纯函数：`geometry`（框跟着长、框的最小尺寸、视口）、`attention`（S3 计数和 ⌘J 顺序）、`autosave`（B5 防抖）、`shortcuts`（R1 按键表）、`drop`（W5 落点）、`windows`（终端相关的判断）、`branch`（分支名检查） |
+| `src/model/` | 纯函数：`geometry`（框跟着长、框的最小尺寸、视口）、`attention`（S3 计数、⌘J ⌘⇧J 顺序、顶栏的第几个）、`navigation`（S3 ⌘⇧] ⌘⇧[ 按位置切窗口的顺序）、`autosave`（B5 防抖）、`shortcuts`（R1 按键表）、`drop`（W5 落点）、`windows`（终端相关的判断）、`branch`（分支名检查） |
 | `src/react/` | `Workbench`、`Board`（React Flow）、`WindowNodeView`、`FrameNodeView`、`BoardMenu`（右键菜单）、`dialogs`（新建 / 删除工作区、W5、停止终端、改名）、`useShortcuts` |
 | `src/canvas.css` | 白板、框、面板、对话框字段的样式，只用 tokens |
 | `dev/` | dev 页面（Vite） |
@@ -88,11 +88,12 @@ import '@agentdeck/ui-kit/base.css';
 
 - `registry.test.ts`：注册、替换、订阅、尺寸校验、摘要判断。
 - `autosave.test.ts`：半秒防抖、flush、慢的保存按顺序、出错继续。
-- `attention.test.ts`：running / waiting 计数、按工作区、按开始等待的时间排序、badge 也算、⌘J 循环。
+- `attention.test.ts`：running / waiting 计数、按工作区、按开始等待的时间排序、badge 也算、⌘J 循环、⌘⇧J 反向、聚焦窗口排第几。
+- `navigation.test.ts`：⌘⇧] ⌘⇧[ 的顺序（框按位置、框里从上到下从左到右、散放的最后）、循环、没有聚焦时从选中的框开始。
 - `shortcuts.test.ts`：快捷键表、终端聚焦时不带 ⌘ 的键一个都不拿、输入框里不处理。
 - `drop-and-menu.test.ts`：W5 落点和弹回规则、各个右键菜单的项。
-- `controller.test.ts`（对着 `createFakeApi()`）：恢复布局、保存防抖和重启后一致、status.changed 驱动提醒和程序坞角标、⌘J、通知跳转、框里新建终端用工作区目录、⌘N、reuseKey、W5 弹回和 Open new、拖到框边框变大、网页换框、拖框带走窗口、框的最小尺寸、改大小松手才生效和摘要卡、放大还原、关闭确认、新建工作区和 setup、创建失败、删除工作区的 dirty 流程、Add project…。
-- `workbench.test.tsx`：整个 Workbench 在 jsdom 里渲染：顶栏数字随假事件变化、框标题“2 waiting”、终端聚焦时按键不被拦、⌘B ⌘J、Delete 打开删除对话框。
+- `controller.test.ts`（对着 `createFakeApi()`）：恢复布局、保存防抖和重启后一致、status.changed 驱动提醒和程序坞角标、⌘J ⌘⇧J 和闪一下、⌘⇧] ⌘⇧[ 切窗口（视口里看得见就不动）、通知跳转、框里新建终端用工作区目录、⌘N、reuseKey、W5 弹回和 Open new、拖到框边框变大、网页换框、拖框带走窗口、框的最小尺寸、改大小松手才生效和摘要卡、放大还原、关闭确认、新建工作区和 setup、创建失败、删除工作区的 dirty 流程、Add project…。
+- `workbench.test.tsx`：整个 Workbench 在 jsdom 里渲染：顶栏数字随假事件变化、框标题“2 waiting”、终端聚焦时按键不被拦、⌘B ⌘J、顶栏“1/2 waiting”、⌘⇧J ⌘⇧]（⌘] 不拦）、Delete 打开删除对话框。
 
 React Flow 的真实手势（拖动、滚轮）jsdom 测不了，在 dev 页面里手动试过；Playwright 用例留给第 3 波 R2。
 
