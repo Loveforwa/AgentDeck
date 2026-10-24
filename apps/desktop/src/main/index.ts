@@ -37,6 +37,7 @@ import {
   DEFAULT_DESTRUCTIVE_PATTERNS,
   defaultUsageRoots,
   findExecutable,
+  SkillsServiceImpl,
   UsageServiceImpl,
   type UsageTarget,
 } from '@agentdeck/agent-adapters';
@@ -53,6 +54,7 @@ import { installIpc, type IpcMainLike } from './ipc.ts';
 import { readLoginEnv, type Env } from './login-env.ts';
 import { buildMenuTemplate, type MenuShortcutId } from './menu.ts';
 import { startAppMcp, writeMcpPluginDir } from './mcp.ts';
+import { createRecentKills, skillSelectionFor, writeBuiltinSkills } from './skills.ts';
 import { resolvePaths } from './paths.ts';
 import { createScreenshotter } from './screenshot.ts';
 import { guardGitService, guardWorkspaceService } from './self-repo-guard.ts';
@@ -185,7 +187,35 @@ async function main(): Promise<void> {
     console.warn('[agentdeck] MCP plugin folder not written', e);
     return undefined;
   });
+  // N9 · Skills · MCP：库在数据目录下（skills/、mcp/），自带的 skill 每次启动重写到 builtin/skills；
+  // 启动终端时按白板上这个窗口的选择（TerminalWindowData.skills）算参数，写好的目录放 skill-sets/，每个终端带了什么记在 skills-state.json。
+  const builtinSkillsDir = await writeBuiltinSkills(join(paths.dataDir, 'builtin', 'skills')).catch((e: unknown) => {
+    console.warn('[agentdeck] built-in skills not written', e);
+    return join(paths.dataDir, 'builtin', 'skills');
+  });
+  const recentKills = createRecentKills();
+  const skills = new SkillsServiceImpl({
+    skillsDir: join(paths.dataDir, 'skills'),
+    mcpDir: join(paths.dataDir, 'mcp'),
+    builtinSkillsDir,
+    setsDir: join(paths.dataDir, 'skill-sets'),
+    stateFile: join(paths.dataDir, 'skills-state.json'),
+    lookup: (id) => {
+      const rec = store.terminals.get(id);
+      const agent = rt.status.get(id)?.agent ?? rec?.agent;
+      return agent && rec ? { agent, cwd: rec.cwd } : null;
+    },
+    mcpRunning: () => mcp !== null,
+    emit,
+    homeDir: homedir(),
+    env: () => loginEnv,
+  });
   const rt = createAgentRuntime({
+    skills: async (req) =>
+      skills.prepareLaunch({ agent: req.agent, cwd: req.cwd, selection: await skillSelectionFor(req, { board: store.board, recentKills }) }),
+    onStarted: (s) => {
+      if (s.skills) skills.noteLaunched(s.terminalId, s.skills.ids);
+    },
     tapHook: (h) =>
       usage?.noteHook({ terminalId: h.terminalId, agent: h.agent, hookName: h.hookName, payload: h.envelope.payload }) ?? false,
     env: () => loginEnv,
@@ -387,12 +417,14 @@ async function main(): Promise<void> {
   registry.register('projects', projects);
   registry.register('workspaces', guardWorkspaceService(workspaces, selfRoot));
   registry.register('git', guardGitService(git, selfRoot));
-  registry.register('terminals', terminals);
+  // 重启终端时窗口先 kill 旧的再 agents.start：记下刚关掉的，start 时照着它的窗口带上同样的 skill（N9）
+  registry.register('terminals', recentKills.wrap(terminals));
   registry.register('agents', agents);
   registry.register('status', rt.status);
   registry.register('approvals', rt.approvals);
   registry.register('board', store.board);
   registry.register('usage', usage);
+  registry.register('skills', skills);
   registerBrowserService(registry);
 
   // ---- 应用壳自己的 IPC（src/shared/desktop-bridge.ts）----
