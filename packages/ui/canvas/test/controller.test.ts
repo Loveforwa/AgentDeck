@@ -300,6 +300,10 @@ describe('window frame (B2)', () => {
     c.toggleMaximize(id('win-dev-server'));
     expect(win('win-dev-server').rect).toEqual(start);
     expect(win('win-dev-server').restoreRect).toBeNull();
+    // 还原后窗口在屏幕正中（视口 1200×800，缩放 1）
+    const vp = c.state.viewport;
+    expect(start.x + start.w / 2 + vp.x).toBe(600);
+    expect(start.y + start.h / 2 + vp.y).toBe(400);
   });
 
   it('focus raises the window above the others', () => {

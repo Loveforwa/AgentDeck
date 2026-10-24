@@ -522,6 +522,10 @@ export class BoardController {
       const back = w.restoreRect!;
       this.patchWindow(id, { rect: back, restoreRect: null });
       this.focusWindow(id);
+      // 还原后窗口回到原来的位置（不挪出它的框），视口平移过去让它停在屏幕中间；不然视口还停在放大时的左上角
+      const { pane, viewport } = this.state;
+      const zoom = viewport.zoom;
+      this.setViewport({ x: pane.w / 2 - (back.x + back.w / 2) * zoom, y: pane.h / 2 - (back.y + back.h / 2) * zoom, zoom }, 200);
       return;
     }
     const { pane } = this.state;
