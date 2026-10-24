@@ -138,15 +138,15 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
 <header>
   <span class="eyebrow">AgentDeck · MVP 验收报告 · 2026-10-24 · main e9b3673</span>
   <h1>AgentDeck MVP 验收报告</h1>
-  <p class="lede">第一个能打开、能用的版本已经组装好：白板、tmux 托管的真终端、工作区和 Git 面板、agent 状态提醒、网页窗口接在了一起。下面的端到端用例可以直接在这页上验收，问题清单可以直接改处理状态，填的内容会保存下来。2026-10-24 第一轮验收：22 条通过，0 条阻塞或不通过（在调研），6 条等你验收。</p>
+  <p class="lede">第一个能打开、能用的版本已经组装好：白板、tmux 托管的真终端、工作区和 Git 面板、agent 状态提醒、网页窗口接在了一起。下面的端到端用例可以直接在这页上验收，问题清单可以直接改处理状态，填的内容会保存下来。2026-10-24 第一轮验收：22 条通过，0 条阻塞或不通过（在调研），11 条等你验收。</p>
   <p class="rules">编号：<b>TC-xx</b> 端到端用例（TC-01 到 TC-14 是 14 条验收场景）· <b>IS-xx</b> 问题 · <b>DR-xx</b> 调研记录 · <b>F1、T2</b> 等是任务编号。</p>
   <div class="bars">
     <div class="barbox"><span class="t">39 项基础功能（P0 任务）</span><div class="bar"><span class="seg seg-auto" style="flex:33" title="完成，有自动测试 33"></span><span class="seg seg-manual" style="flex:2" title="完成，只有手动验证 2"></span><span class="seg seg-partial" style="flex:4" title="部分完成 / 未做 4"></span></div>
       <div class="legend"><span><i class="dot seg-auto"></i>有自动测试 <b>33</b></span><span><i class="dot seg-manual"></i>只有手动验证 <b>2</b></span><span><i class="dot seg-partial"></i>部分完成 / 未做 <b>4</b></span></div></div>
-    <div class="barbox"><span class="t">28 条端到端用例的现状</span><div class="bar"><span class="seg seg-part" style="flex:4"></span><span class="seg seg-ok" style="flex:24"></span></div>
-      <div class="legend"><span><i class="dot seg-prob"></i>当前有问题 <b>0</b></span><span><i class="dot seg-no"></i>未验证 <b>0</b></span><span><i class="dot seg-part"></i>部分验证 <b>4</b></span><span><i class="dot seg-ok"></i>已验证 <b>24</b></span><span><i class="dot seg-todo"></i>未实现 <b>0</b></span></div></div>
+    <div class="barbox"><span class="t">33 条端到端用例的现状</span><div class="bar"><span class="seg seg-part" style="flex:4"></span><span class="seg seg-ok" style="flex:24"></span><span class="seg seg-todo" style="flex:5"></span></div>
+      <div class="legend"><span><i class="dot seg-prob"></i>当前有问题 <b>0</b></span><span><i class="dot seg-no"></i>未验证 <b>0</b></span><span><i class="dot seg-part"></i>部分验证 <b>4</b></span><span><i class="dot seg-ok"></i>已验证 <b>24</b></span><span><i class="dot seg-todo"></i>未实现 <b>5</b></span></div></div>
     <div class="barbox"><span class="t">你的验收进度</span><div class="bar" id="acc-bar"></div>
-      <div class="legend"><span><i class="dot seg-pass"></i>通过 <b id="n-pass">0</b></span><span><i class="dot seg-fail"></i>不通过或阻塞 <b id="n-fail">0</b></span><span>还没验收 <b id="n-open">28</b></span><span>问题已解决 <b id="n-solved">16</b> / 60</span></div></div>
+      <div class="legend"><span><i class="dot seg-pass"></i>通过 <b id="n-pass">0</b></span><span><i class="dot seg-fail"></i>不通过或阻塞 <b id="n-fail">0</b></span><span>还没验收 <b id="n-open">33</b></span><span>问题已解决 <b id="n-solved">16</b> / 60</span></div></div>
   </div>
 </header>
 
@@ -159,7 +159,7 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
 </section>
 
 <section class="block">
-  <div class="head"><h2>端到端用例</h2><p>28 条，按你的验收结果分组：还没验收的在最上面，阻塞和不通过的其次，已通过的收起来。展开看前置要求、步骤和预期；在右边选验收结果（选完会挪到对应的组），下面写备注。</p><span class="save-state" id="save-state">正在连接保存…</span></div>
+  <div class="head"><h2>端到端用例</h2><p>33 条，按你的验收结果分组：还没验收的在最上面，阻塞和不通过的其次，已通过的收起来。展开看前置要求、步骤和预期；在右边选验收结果（选完会挪到对应的组），下面写备注。</p><span class="save-state" id="save-state">正在连接保存…</span></div>
   <div id="cases"><div class="case-group" data-group="todo"><h3 class="group-title">等你验收 <span class="gcount" data-gcount="todo"></span></h3><div class="cases" data-cases="todo"><article class="case c-part" id="tc-05" data-case="TC-05" data-status="part" data-result="">
   <div class="case-head">
     <span class="mono cid">TC-05</span><span class="pri pri-P0">P0</span><span class="st st-part">部分验证</span>
@@ -268,6 +268,96 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
   </details>
   
   <label class="field note"><span>验收备注</span><textarea id="note-TC-23" data-tc="TC-23" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
+</article><article class="case c-todo" id="tc-31" data-case="TC-31" data-status="todo" data-result="">
+  <div class="case-head">
+    <span class="mono cid">TC-31</span><span class="pri pri-P0">P0</span><span class="st st-todo">未实现</span>
+    <h4>窗口和工作区框互不遮挡，拖动有对齐线（V3）</h4>
+    <label class="field result"><span>验收结果</span><select id="res-TC-31" data-tc="TC-31" class="res"><option value="" selected>未验收</option><option>通过</option><option>不通过</option><option>阻塞</option><option>跳过</option></select></label>
+  </div>
+  <p class="now"><span class="label">当前情况</span>MVP v2 V3，还没做；先调研 DR-52</p>
+  <details>
+    <summary>前置要求、操作步骤和预期</summary>
+    <div class="spec">
+      <div><span class="label">前置要求</span><p>一个框里有两个终端；白板上有两个框</p></div>
+      <div><span class="label">操作步骤</span><ol><li>拖一个终端靠近另一个</li><li>把它拖到另一个终端上面松手</li><li>拖一个框到另一个框上</li><li>改一个终端的大小，让它和旁边的一样宽</li></ol></div>
+      <div class="wide-cell"><span class="label">UI / 后台预期表现</span><p>UI：靠近时吸附并出现蓝色对齐线；松手时滑到最近的空位，不叠在一起；框停在另一个框边上（相隔 20px）；同宽时吸住并标出尺寸；不再出现“要不要换框”的误判。</p><p>后台：避让只在松手时计算，不推动别的窗口。</p></div>
+      <div class="wide-cell"><span class="label">最终效果</span><p>白板越用越整齐，不会盖住内容</p></div>
+    </div>
+  </details>
+  <p class="links">关联问题 <a class="ref" href="#is-53">IS-53</a> <a class="ref" href="#is-54">IS-54</a></p>
+  <label class="field note"><span>验收备注</span><textarea id="note-TC-31" data-tc="TC-31" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
+</article><article class="case c-todo" id="tc-29" data-case="TC-29" data-status="todo" data-result="">
+  <div class="case-head">
+    <span class="mono cid">TC-29</span><span class="pri pri-P1">P1</span><span class="st st-todo">未实现</span>
+    <h4>顶栏只有一行，常用的东西在顺手的位置（V1）</h4>
+    <label class="field result"><span>验收结果</span><select id="res-TC-29" data-tc="TC-29" class="res"><option value="" selected>未验收</option><option>通过</option><option>不通过</option><option>阻塞</option><option>跳过</option></select></label>
+  </div>
+  <p class="now"><span class="label">当前情况</span>MVP v2 V1，还没做</p>
+  <details>
+    <summary>前置要求、操作步骤和预期</summary>
+    <div class="spec">
+      <div><span class="label">前置要求</span><p>MVP v2 合进 main 并重启 AgentDeck</p></div>
+      <div><span class="label">操作步骤</span><ol><li>看应用顶部</li><li>点左边的项目菜单</li><li>点右边的齿轮</li></ol></div>
+      <div class="wide-cell"><span class="label">UI / 后台预期表现</span><p>UI：系统的红黄绿按钮和顶栏在同一行；左边是项目菜单和当前工作区（例如 “main · 3 windows”），菜单里有各项目、New workspace…、Add project…；右边是状态灯和齿轮，齿轮打开 Settings；框、面板、窗口都是圆角。</p><p>后台：窗口用 hiddenInset 标题栏；圆角只在 design-tokens 里定义。</p></div>
+      <div class="wide-cell"><span class="label">最终效果</span><p>顶部只占一行，白板更大</p></div>
+    </div>
+  </details>
+  <p class="links">关联问题 <a class="ref" href="#is-51">IS-51</a></p>
+  <label class="field note"><span>验收备注</span><textarea id="note-TC-29" data-tc="TC-29" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
+</article><article class="case c-todo" id="tc-30" data-case="TC-30" data-status="todo" data-result="">
+  <div class="case-head">
+    <span class="mono cid">TC-30</span><span class="pri pri-P1">P1</span><span class="st st-todo">未实现</span>
+    <h4>一眼看出谁在干活、谁在等你（V2）</h4>
+    <label class="field result"><span>验收结果</span><select id="res-TC-30" data-tc="TC-30" class="res"><option value="" selected>未验收</option><option>通过</option><option>不通过</option><option>阻塞</option><option>跳过</option></select></label>
+  </div>
+  <p class="now"><span class="label">当前情况</span>MVP v2 V2，还没做</p>
+  <details>
+    <summary>前置要求、操作步骤和预期</summary>
+    <div class="spec">
+      <div><span class="label">前置要求</span><p>开一个正在运行的 claude，再让一个 codex 停在等批准</p></div>
+      <div><span class="label">操作步骤</span><ol><li>看顶栏右边</li><li>看两个终端的标题栏和所在框的标题</li></ol></div>
+      <div class="wide-cell"><span class="label">UI / 后台预期表现</span><p>UI：运行中的是绿灯 Running，等批准的是黄灯 Waiting（悬停看是批准还是回答），出错是红灯 Error，空闲是空心灰 Idle；顶栏写 “● 1 running ● 1 waiting”。</p><p>后台：状态色来自 design-tokens。</p></div>
+      <div class="wide-cell"><span class="label">最终效果</span><p>不用读文字也知道状态</p></div>
+    </div>
+  </details>
+  <p class="links">关联问题 <a class="ref" href="#is-52">IS-52</a></p>
+  <label class="field note"><span>验收备注</span><textarea id="note-TC-30" data-tc="TC-30" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
+</article><article class="case c-todo" id="tc-32" data-case="TC-32" data-status="todo" data-result="">
+  <div class="case-head">
+    <span class="mono cid">TC-32</span><span class="pri pri-P1">P1</span><span class="st st-todo">未实现</span>
+    <h4>右侧面板能收起再展开（V4）</h4>
+    <label class="field result"><span>验收结果</span><select id="res-TC-32" data-tc="TC-32" class="res"><option value="" selected>未验收</option><option>通过</option><option>不通过</option><option>阻塞</option><option>跳过</option></select></label>
+  </div>
+  <p class="now"><span class="label">当前情况</span>MVP v2 V4，还没做</p>
+  <details>
+    <summary>前置要求、操作步骤和预期</summary>
+    <div class="spec">
+      <div><span class="label">前置要求</span><p>白板上有一个工作区</p></div>
+      <div><span class="label">操作步骤</span><ol><li>点面板标题栏右边的 ⇥</li><li>点竖条上的 ⇤</li><li>收起后退出再打开应用</li></ol></div>
+      <div class="wide-cell"><span class="label">UI / 后台预期表现</span><p>UI：收起后只剩 28px 竖条（展开按钮、分支图标、有改动时一个点），白板变宽；展开恢复；重启后保持上次的状态；⌘B 也能切换。</p><p>后台：状态存在 BoardState.panel（contracts 0.1.6）。</p></div>
+      <div class="wide-cell"><span class="label">最终效果</span><p>需要时才看源代码管理</p></div>
+    </div>
+  </details>
+  <p class="links">关联问题 <a class="ref" href="#is-55">IS-55</a></p>
+  <label class="field note"><span>验收备注</span><textarea id="note-TC-32" data-tc="TC-32" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
+</article><article class="case c-todo" id="tc-33" data-case="TC-33" data-status="todo" data-result="">
+  <div class="case-head">
+    <span class="mono cid">TC-33</span><span class="pri pri-P1">P1</span><span class="st st-todo">未实现</span>
+    <h4>没选中任何窗口时，右侧面板是整块白板的目录（V5）</h4>
+    <label class="field result"><span>验收结果</span><select id="res-TC-33" data-tc="TC-33" class="res"><option value="" selected>未验收</option><option>通过</option><option>不通过</option><option>阻塞</option><option>跳过</option></select></label>
+  </div>
+  <p class="now"><span class="label">当前情况</span>MVP v2 V5，还没做</p>
+  <details>
+    <summary>前置要求、操作步骤和预期</summary>
+    <div class="spec">
+      <div><span class="label">前置要求</span><p>两个项目、三个工作区、几个终端和一个网页窗口；其中一个终端在等你</p></div>
+      <div><span class="label">操作步骤</span><ol><li>单击白板空白处</li><li>看右侧面板</li><li>单击列表里在等你的那个终端</li></ol></div>
+      <div class="wide-cell"><span class="label">UI / 后台预期表现</span><p>UI：面板按项目 → 工作区（分支）→ 窗口列出，每个窗口有状态灯、名字、对话主题；在等你的那行浅黄底；单击后白板平移过去、窗口闪一下并聚焦，面板回到这个工作区的源代码管理。</p><p>后台：对话主题来自 TerminalInfo.title。</p></div>
+      <div class="wide-cell"><span class="label">最终效果</span><p>不用满白板找窗口</p></div>
+    </div>
+  </details>
+  <p class="links">关联问题 <a class="ref" href="#is-56">IS-56</a></p>
+  <label class="field note"><span>验收备注</span><textarea id="note-TC-33" data-tc="TC-33" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
 </article></div><p class="muted empty-group">没有。</p></div><div class="case-group" data-group="stuck"><h3 class="group-title">阻塞 / 不通过 <span class="gcount" data-gcount="stuck"></span></h3><div class="cases" data-cases="stuck"></div><p class="muted empty-group">没有。</p></div><details class="case-group" data-group="done"><summary class="group-title">已通过 <span class="gcount" data-gcount="done"></span><span class="muted small">（已收起，点开看）</span></summary><div class="cases" data-cases="done"><article class="case c-ok" id="tc-01" data-case="TC-01" data-status="ok" data-result="通过">
   <div class="case-head">
     <span class="mono cid">TC-01</span><span class="pri pri-P0">P0</span><span class="st st-ok">已验证</span>
@@ -808,10 +898,10 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
     <div class="spec">
       <div><span class="label">怎么复现 / 验证</span><p>把一个窗口拖到另一个上面；把一个框拖到另一个框上</p></div>
       <div><span class="label">影响</span><p>内容被挡住，布局越用越乱</p></div>
-      <div class="wide-cell"><span class="label">建议处理</span><p>第二轮 V3：吸附和对齐线，松手时避让到空位，框之间至少 20px（先调研 DR-52）</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>v2 V3：吸附和对齐线，松手时避让到空位，框之间至少 20px（先调研 DR-52）</p></div>
     </div>
   </details>
-  <p class="links">相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-52" target="_blank" rel="noopener">DR-52</a></p>
+  <p class="links">关联用例 <a class="ref" href="#tc-31">TC-31</a> · 相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-52" target="_blank" rel="noopener">DR-52</a></p>
   <label class="field note"><span>处理备注</span><textarea id="isnote-IS-53" data-is="IS-53" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
 </article><article class="issue" id="is-54" data-issue="IS-54" data-state="待处理">
   <div class="case-head">
@@ -824,10 +914,10 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
     <div class="spec">
       <div><span class="label">怎么复现 / 验证</span><p>让两个框重叠，再拖重叠区域里的终端</p></div>
       <div><span class="label">影响</span><p>误操作、终端可能被重开到别的目录</p></div>
-      <div class="wide-cell"><span class="label">建议处理</span><p>第二轮 V3：框不允许重叠，误判自然消失</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>v2 V3：框不允许重叠，误判自然消失</p></div>
     </div>
   </details>
-  <p class="links">相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-52" target="_blank" rel="noopener">DR-52</a></p>
+  <p class="links">关联用例 <a class="ref" href="#tc-31">TC-31</a> · 相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-52" target="_blank" rel="noopener">DR-52</a></p>
   <label class="field note"><span>处理备注</span><textarea id="isnote-IS-54" data-is="IS-54" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
 </article></section><section class="pgroup"><h3><span class="pri pri-P1">P1</span>主要流程，交付前要处理<span class="muted"> · 22 条</span></h3><article class="issue" id="is-06" data-issue="IS-06" data-state="待处理">
   <div class="case-head">
@@ -1144,10 +1234,10 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
     <div class="spec">
       <div><span class="label">怎么复现 / 验证</span><p>看应用顶部</p></div>
       <div><span class="label">影响</span><p>占地方，常用的东西不在顺手的位置</p></div>
-      <div class="wide-cell"><span class="label">建议处理</span><p>第二轮 V1：一行顶栏，左边项目菜单和当前工作区，右边状态灯和齿轮；圆角</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>v2 V1：一行顶栏，左边项目菜单和当前工作区，右边状态灯和齿轮；圆角</p></div>
     </div>
   </details>
-  
+  <p class="links">关联用例 <a class="ref" href="#tc-29">TC-29</a></p>
   <label class="field note"><span>处理备注</span><textarea id="isnote-IS-51" data-is="IS-51" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
 </article><article class="issue" id="is-52" data-issue="IS-52" data-state="待处理">
   <div class="case-head">
@@ -1160,10 +1250,10 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
     <div class="spec">
       <div><span class="label">怎么复现 / 验证</span><p>开一个运行中的和一个等批准的 agent</p></div>
       <div><span class="label">影响</span><p>一眼看不出谁在干活、谁在等你</p></div>
-      <div class="wide-cell"><span class="label">建议处理</span><p>第二轮 V2：红绿灯（绿 Running、黄 Waiting、红 Error、空心灰 Idle）</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>v2 V2：红绿灯（绿 Running、黄 Waiting、红 Error、空心灰 Idle）</p></div>
     </div>
   </details>
-  
+  <p class="links">关联用例 <a class="ref" href="#tc-30">TC-30</a></p>
   <label class="field note"><span>处理备注</span><textarea id="isnote-IS-52" data-is="IS-52" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
 </article><article class="issue" id="is-55" data-issue="IS-55" data-state="待处理">
   <div class="case-head">
@@ -1176,10 +1266,10 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
     <div class="spec">
       <div><span class="label">怎么复现 / 验证</span><p>找面板的关闭按钮</p></div>
       <div><span class="label">影响</span><p>白板被挤窄</p></div>
-      <div class="wide-cell"><span class="label">建议处理</span><p>第二轮 V4：标题栏 ⇥ 收起成竖条，⇤ 展开</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>v2 V4：标题栏 ⇥ 收起成竖条，⇤ 展开</p></div>
     </div>
   </details>
-  
+  <p class="links">关联用例 <a class="ref" href="#tc-32">TC-32</a></p>
   <label class="field note"><span>处理备注</span><textarea id="isnote-IS-55" data-is="IS-55" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
 </article></section><section class="pgroup"><h3><span class="pri pri-P2">P2</span>次要体验、完整性、性能<span class="muted"> · 22 条</span></h3><article class="issue" id="is-08" data-issue="IS-08" data-state="待处理">
   <div class="case-head">
@@ -1480,10 +1570,10 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
     <div class="spec">
       <div><span class="label">怎么复现 / 验证</span><p>单击白板空白处</p></div>
       <div><span class="label">影响</span><p>这块地方白占着</p></div>
-      <div class="wide-cell"><span class="label">建议处理</span><p>第二轮 V5：变成项目 → 工作区 → 窗口的快速定位列表</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>v2 V5：变成项目 → 工作区 → 窗口的快速定位列表</p></div>
     </div>
   </details>
-  
+  <p class="links">关联用例 <a class="ref" href="#tc-33">TC-33</a></p>
   <label class="field note"><span>处理备注</span><textarea id="isnote-IS-56" data-is="IS-56" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
 </article><article class="issue" id="is-57" data-issue="IS-57" data-state="待处理">
   <div class="case-head">
@@ -1496,7 +1586,7 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
     <div class="spec">
       <div><span class="label">怎么复现 / 验证</span><p>在框里的 zsh 里 cd .. 后运行 claude</p></div>
       <div><span class="label">影响</span><p>“工作区”的意义被架空</p></div>
-      <div class="wide-cell"><span class="label">建议处理</span><p>下一阶段 N7：先定规则（建议：离开目录时提示 outside workspace，面板跟着实际目录）</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>v3 N7：先定规则（建议：离开目录时提示 outside workspace，面板跟着实际目录）</p></div>
     </div>
   </details>
   
@@ -1512,7 +1602,7 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
     <div class="spec">
       <div><span class="label">怎么复现 / 验证</span><p>看面板的 Repository 区</p></div>
       <div><span class="label">影响</span><p>找不到真正关心的分支</p></div>
-      <div class="wide-cell"><span class="label">建议处理</span><p>下一阶段 N5：换成提交图，已合并的旧分支折起来；IS-31 的清理也能缓解</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>v3 N5：换成提交图，已合并的旧分支折起来；IS-31 的清理也能缓解</p></div>
     </div>
   </details>
   
@@ -1528,7 +1618,7 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
     <div class="spec">
       <div><span class="label">怎么复现 / 验证</span><p>鼠标在终端上两指滑动</p></div>
       <div><span class="label">影响</span><p>想滚终端却挪了白板</p></div>
-      <div class="wide-cell"><span class="label">建议处理</span><p>下一阶段 N6：先调研（应用拿不到三指原始事件，DR-53）</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>v3 N6：先调研（应用拿不到三指原始事件，DR-53）</p></div>
     </div>
   </details>
   <p class="links">相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-53" target="_blank" rel="noopener">DR-53</a></p>
@@ -1624,7 +1714,7 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
     <div class="spec">
       <div><span class="label">怎么复现 / 验证</span><p>对照 MVP 任务表 X3 和现在的快捷键</p></div>
       <div><span class="label">影响</span><p>做 X3 时会冲突</p></div>
-      <div class="wide-cell"><span class="label">建议处理</span><p>下一阶段 N8：Approve all 另找按键（例如 ⌘⌥J）</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>v3 N8：Approve all 另找按键（例如 ⌘⌥J）</p></div>
     </div>
   </details>
   
@@ -1639,7 +1729,7 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
 
 <section class="block">
   <div class="head"><h2>建议的下一步</h2></div>
-  <ol class="list"><li>第二轮 MVP（M5）：V1 一行顶栏、V2 红绿灯状态、V3 窗口和框互不遮挡加对齐线、V4 面板能收起、V5 没选中时的快速定位列表。需求在设计画布画板 11，任务在 MVP 任务表 M5。</li><li>重新验收 2026-10-24 修好的 TC-05、TC-15、TC-17，以及合进来的 M1（白板上的 agent 自动连上 AgentDeck 的 MCP）。</li><li>写 R2：把 14 条验收场景做成 Playwright（Electron 模式）用例，先做能完全自动的 1、2、6、7、9、10、12。</li><li>修组装时记下的 9 条（IS-06～IS-10、IS-19～IS-22，多数是一两行的事），尤其是 tmux-host 的变量重名（IS-09）和“信任提示显示 Idle”（IS-06）。</li><li>整理 contracts 0.1.4，并让线 2–5 把 0.1.3 的新字段用起来。</li><li>补三项性能测量：30 个窗口平移、Electron 里 6 个终端打字延迟、空闲 CPU。</li><li>给 CI 装 tmux，推到 GitHub 跑一次（需要你给仓库名）。</li></ol>
+  <ol class="list"><li>MVP v2（M5）：V1 一行顶栏、V2 红绿灯状态、V3 窗口和框互不遮挡加对齐线、V4 面板能收起、V5 没选中时的快速定位列表。需求在设计画布画板 11，任务在 MVP 任务表 M5。</li><li>重新验收 2026-10-24 修好的 TC-05、TC-15、TC-17，以及合进来的 M1（白板上的 agent 自动连上 AgentDeck 的 MCP）。</li><li>写 R2：把 14 条验收场景做成 Playwright（Electron 模式）用例，先做能完全自动的 1、2、6、7、9、10、12。</li><li>修组装时记下的 9 条（IS-06～IS-10、IS-19～IS-22，多数是一两行的事），尤其是 tmux-host 的变量重名（IS-09）和“信任提示显示 Idle”（IS-06）。</li><li>整理 contracts 0.1.4，并让线 2–5 把 0.1.3 的新字段用起来。</li><li>补三项性能测量：30 个窗口平移、Electron 里 6 个终端打字延迟、空闲 CPU。</li><li>给 CI 装 tmux，推到 GitHub 跑一次（需要你给仓库名）。</li></ol>
 </section>
 
 <details class="block collapse">
@@ -1660,7 +1750,7 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
 </details>
 </div>
 
-<script type="application/json" id="meta">{"cases": ["TC-28", "TC-27", "TC-26", "TC-25", "TC-24", "TC-04", "TC-05", "TC-03", "TC-10", "TC-02", "TC-15", "TC-16", "TC-17", "TC-01", "TC-06", "TC-07", "TC-08", "TC-09", "TC-11", "TC-12", "TC-13", "TC-18", "TC-19", "TC-20", "TC-21", "TC-22", "TC-23", "TC-14"], "issues": ["IS-37", "IS-38", "IS-01", "IS-02", "IS-03", "IS-04", "IS-05", "IS-06", "IS-07", "IS-09", "IS-10", "IS-11", "IS-12", "IS-13", "IS-14", "IS-16", "IS-17", "IS-24", "IS-08", "IS-15", "IS-18", "IS-19", "IS-20", "IS-21", "IS-22", "IS-23", "IS-25", "IS-26", "IS-27", "IS-28", "IS-29", "IS-35", "IS-36", "IS-30", "IS-31", "IS-32", "IS-33", "IS-34", "IS-39", "IS-40", "IS-41", "IS-42", "IS-43", "IS-44", "IS-45", "IS-46", "IS-47", "IS-48", "IS-49", "IS-50", "IS-51", "IS-52", "IS-53", "IS-54", "IS-55", "IS-56", "IS-57", "IS-58", "IS-59", "IS-60"], "defaults": {"IS-50": {"status": "已解决", "note": "2026-10-24 已改：确认框画在终端窗口里，标题带对话主题；要重启 AgentDeck（tmux-host 在主进程里）"}, "IS-45": {"status": "已解决", "note": "2026-10-24 已修（S3，合进 main e9b3673）：⌘J 闪一下和 “2/3 waiting”，⌘⇧J 反向，⌘⇧] / ⌘⇧[ 切窗口"}, "IS-46": {"status": "已解决", "note": "2026-10-24 已修（X13，合进 main e9b3673）：已知 agent 表（pi、omp、kimi）和通用适配器，pi / omp 用 -e 加载自带扩展拿状态；Kimi 没真启动过"}, "IS-13": {"status": "已解决", "note": "2026-10-24 已做 Projects、General 两页（X12，合进 main e9b3673）；Agents、Approvals 两页以后再做"}, "IS-21": {"status": "已解决", "note": "2026-10-24 已修（X13）：菜单按名字显示，白板里藏掉 custom"}, "IS-49": {"status": "已解决", "note": "2026-10-24 已修：放大、还原、改大小后等页面排好版再量，加了测试；用户在自己的 AgentDeck 里试过，放大后铺满"}, "IS-47": {"status": "已解决", "note": "2026-10-24 已修：Settings 和 ⌘, 用 editorCommand（默认 code -g）打开 settings.json，PATH 里没有 code 时去 App 包里找（VS Code、Cursor、Zed、Sublime）；打不开就在 Finder 里显示并在界面上提示原因。顺带：手改 settings.json 不用重启就生效，也不会被应用盖掉。设置界面另做（IS-13）。要重启 AgentDeck"}, "IS-48": {"status": "已解决", "note": "2026-10-24 已恢复成 code -g"}, "IS-44": {"status": "已解决", "note": "2026-10-24 已做：外部网站自动用 webview（独立分区、UA 去掉 Electron、允许登录弹窗），出错页加 Show it here；在单独的 Electron 实例里验证 google、github、Google 登录页都能显示和缩放。要重启 AgentDeck，真正登录待用户试（TC-28）"}, "IS-43": {"status": "已解决", "note": "2026-10-24 已修：ping 改用 net.request，加了测试；真 Electron 里 google.com → 301、github.com/login → 200。要重启 AgentDeck 才生效"}, "IS-42": {"status": "已解决", "note": "2026-10-24 已修：claude 启动时主题设成 auto，深浅色切换时通知 tmux；独立 tmux 里模拟整条链路验证通过。要重启 AgentDeck；已经开着的 claude 用标题栏右键 › Restart and resume conversation 换上新参数（对话接着）"}, "IS-41": {"status": "已解决", "note": "2026-10-24 已修：缩放门槛 75% 改 50%；缩小时显示整屏文字快照，加了测试。正在运行的 AgentDeck 已热更新"}, "IS-39": {"status": "已解决", "note": "2026-10-24 已修（3ceabfb）：scrollback 改成 1000，固定种子的复现测试通过；正在运行的 AgentDeck 已热更新"}, "IS-40": {"status": "已解决", "note": "2026-10-24 已修（3ceabfb）：加 Unicode 11 宽度表，35 个常用符号和 tmux 实测宽度全部吻合，写成测试"}, "IS-37": {"status": "已解决", "note": "2026-10-24 已修（925c11f）：只要目录里有终端开着就确认，确认框列出这些终端；面板加了测试"}, "IS-38": {"status": "已解决", "note": "2026-10-24 已修（925c11f）：应用启动时找出自己运行的目录，界面对它切分支、建分支并切换、连目录删除都拒绝；真窗口里验证过"}}}</script>
+<script type="application/json" id="meta">{"cases": ["TC-29", "TC-30", "TC-31", "TC-32", "TC-33", "TC-28", "TC-27", "TC-26", "TC-25", "TC-24", "TC-04", "TC-05", "TC-03", "TC-10", "TC-02", "TC-15", "TC-16", "TC-17", "TC-01", "TC-06", "TC-07", "TC-08", "TC-09", "TC-11", "TC-12", "TC-13", "TC-18", "TC-19", "TC-20", "TC-21", "TC-22", "TC-23", "TC-14"], "issues": ["IS-37", "IS-38", "IS-01", "IS-02", "IS-03", "IS-04", "IS-05", "IS-06", "IS-07", "IS-09", "IS-10", "IS-11", "IS-12", "IS-13", "IS-14", "IS-16", "IS-17", "IS-24", "IS-08", "IS-15", "IS-18", "IS-19", "IS-20", "IS-21", "IS-22", "IS-23", "IS-25", "IS-26", "IS-27", "IS-28", "IS-29", "IS-35", "IS-36", "IS-30", "IS-31", "IS-32", "IS-33", "IS-34", "IS-39", "IS-40", "IS-41", "IS-42", "IS-43", "IS-44", "IS-45", "IS-46", "IS-47", "IS-48", "IS-49", "IS-50", "IS-51", "IS-52", "IS-53", "IS-54", "IS-55", "IS-56", "IS-57", "IS-58", "IS-59", "IS-60"], "defaults": {"IS-50": {"status": "已解决", "note": "2026-10-24 已改：确认框画在终端窗口里，标题带对话主题；要重启 AgentDeck（tmux-host 在主进程里）"}, "IS-45": {"status": "已解决", "note": "2026-10-24 已修（S3，合进 main e9b3673）：⌘J 闪一下和 “2/3 waiting”，⌘⇧J 反向，⌘⇧] / ⌘⇧[ 切窗口"}, "IS-46": {"status": "已解决", "note": "2026-10-24 已修（X13，合进 main e9b3673）：已知 agent 表（pi、omp、kimi）和通用适配器，pi / omp 用 -e 加载自带扩展拿状态；Kimi 没真启动过"}, "IS-13": {"status": "已解决", "note": "2026-10-24 已做 Projects、General 两页（X12，合进 main e9b3673）；Agents、Approvals 两页以后再做"}, "IS-21": {"status": "已解决", "note": "2026-10-24 已修（X13）：菜单按名字显示，白板里藏掉 custom"}, "IS-49": {"status": "已解决", "note": "2026-10-24 已修：放大、还原、改大小后等页面排好版再量，加了测试；用户在自己的 AgentDeck 里试过，放大后铺满"}, "IS-47": {"status": "已解决", "note": "2026-10-24 已修：Settings 和 ⌘, 用 editorCommand（默认 code -g）打开 settings.json，PATH 里没有 code 时去 App 包里找（VS Code、Cursor、Zed、Sublime）；打不开就在 Finder 里显示并在界面上提示原因。顺带：手改 settings.json 不用重启就生效，也不会被应用盖掉。设置界面另做（IS-13）。要重启 AgentDeck"}, "IS-48": {"status": "已解决", "note": "2026-10-24 已恢复成 code -g"}, "IS-44": {"status": "已解决", "note": "2026-10-24 已做：外部网站自动用 webview（独立分区、UA 去掉 Electron、允许登录弹窗），出错页加 Show it here；在单独的 Electron 实例里验证 google、github、Google 登录页都能显示和缩放。要重启 AgentDeck，真正登录待用户试（TC-28）"}, "IS-43": {"status": "已解决", "note": "2026-10-24 已修：ping 改用 net.request，加了测试；真 Electron 里 google.com → 301、github.com/login → 200。要重启 AgentDeck 才生效"}, "IS-42": {"status": "已解决", "note": "2026-10-24 已修：claude 启动时主题设成 auto，深浅色切换时通知 tmux；独立 tmux 里模拟整条链路验证通过。要重启 AgentDeck；已经开着的 claude 用标题栏右键 › Restart and resume conversation 换上新参数（对话接着）"}, "IS-41": {"status": "已解决", "note": "2026-10-24 已修：缩放门槛 75% 改 50%；缩小时显示整屏文字快照，加了测试。正在运行的 AgentDeck 已热更新"}, "IS-39": {"status": "已解决", "note": "2026-10-24 已修（3ceabfb）：scrollback 改成 1000，固定种子的复现测试通过；正在运行的 AgentDeck 已热更新"}, "IS-40": {"status": "已解决", "note": "2026-10-24 已修（3ceabfb）：加 Unicode 11 宽度表，35 个常用符号和 tmux 实测宽度全部吻合，写成测试"}, "IS-37": {"status": "已解决", "note": "2026-10-24 已修（925c11f）：只要目录里有终端开着就确认，确认框列出这些终端；面板加了测试"}, "IS-38": {"status": "已解决", "note": "2026-10-24 已修（925c11f）：应用启动时找出自己运行的目录，界面对它切分支、建分支并切换、连目录删除都拒绝；真窗口里验证过"}}}</script>
 <script>
 (function () {
   var META = JSON.parse(document.getElementById('meta').textContent);
