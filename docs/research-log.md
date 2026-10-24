@@ -3,7 +3,7 @@
 实现过程中和一开始设想不一样的地方：原来以为什么、实际是什么、怎么决定的、好处和代价。
 由 `docs/research/build.py` 从 `docs/research/entries.py` 生成，不要直接改这个文件。更新于 2026-10-24。
 
-共 48 条：已解决 27，进行中 13，推迟 5，待验证 3。
+共 51 条：已解决 27，进行中 13，推迟 5，待验证 6。
 
 编号规则（全项目统一）：DR-xx 调研记录 · TC-xx 端到端用例 · IS-xx 问题 · F1、T2、X3 等是 MVP 任务表的任务编号。用例和问题在 MVP 验收报告（docs/status/index.html）里；每条调研下面列出相关的用例和问题。
 
@@ -60,6 +60,9 @@
   - [DR-47 Electron 的 net.fetch 不支持 redirect: manual](#dr-47)（已解决）
   - [DR-48 外部网站用 webview，不再一律 Open in browser](#dr-48)（已解决）
 - **还没验证的**：已经有对策，但要等对应的线用真东西试过才算数
+  - [DR-49 多个窗口同时在等你时，⌘J 怎么跳](#dr-49)（待验证）
+  - [DR-50 Settings：用系统程序打开 settings.json 不可靠](#dr-50)（待验证）
+  - [DR-51 检测用户装的其他 agent（pi、omp）](#dr-51)（待验证）
   - [DR-42 claude 能不能把对话 fork 到另一个目录](#dr-42)（待验证）
   - [DR-43 Approve all 发的“允许一次”按键对不对](#dr-43)（待验证）
   - [DR-44 经过 tmux 后的手感，要人在真界面上确认](#dr-44)（待验证）
@@ -691,6 +694,42 @@
 ## 还没验证的
 
 已经有对策，但要等对应的线用真东西试过才算数
+
+<a id="dr-49"></a>
+
+### DR-49 多个窗口同时在等你时，⌘J 怎么跳
+
+状态：待验证 · 出处：待定：批准要不要排在回复前面、⌘⇧] 只切终端还是所有窗口、要不要“回到上一个窗口” · 旧编号 —
+
+相关：TC-05、IS-45
+
+- **原来以为**：⌘J 依次跳到在等你的窗口就够了（MVP 任务表 S3）。
+- **实际情况**：用户验收时问：多个窗口在等时按什么顺序跳？是不是该有在多个终端之间移动光标的快捷键？代码里是等得最久的在前、批准和回复不分、跨所有工作区循环，绕回第一个时没有提示，没有反向，也没有普通的“下一个窗口”快捷键（packages/ui/canvas/src/model/attention.ts、shortcuts.ts）。VS Code 的 F8 / ⇧F8、tmux 的 next-window -a 和 n / p 都把“要处理的队列”和“普通导航”分成两套键，并告诉你在第几个。
+- **怎么验证**：建议（待用户定）：⌘J 保持等得最久的在前，跳过去时闪一下，顶栏显示 “2/3 waiting”；加 ⌘⇧J 反向；加 ⌘⇧] / ⌘⇧[ 按位置在所有窗口之间切换（先框内、从上到下从左到右）。不改 contracts，约半天。
+
+<a id="dr-50"></a>
+
+### DR-50 Settings：用系统程序打开 settings.json 不可靠
+
+状态：待验证 · 出处：待定：放 canvas 还是单独的 settings 包、这次做几页、settings.json 用什么打开 · 旧编号 —
+
+相关：TC-15、IS-13、IS-47
+
+- **原来以为**：MVP 先不做设置界面，点 Settings 用系统程序打开 settings.json 让用户手改。
+- **实际情况**：用户验收时“打开出问题”：这台 Mac 上 .json 的默认程序是 Tor Browser；出错时界面没有任何提示。项目设置的字段（基础分支、worktree 位置、复制的文件、初始化命令）后端都已存好，projects.update 也在 IPC 里，新建工作区时都会用上，只是界面里没有地方能改。
+- **怎么验证**：建议（待用户定）：在白板（packages/ui/canvas）里做 Settings 对话框，先做 Projects 和 General 两页；顶栏 Settings、⌘, 和 Projects ▾ 里的 Project settings… 都打开它；底部保留 Open settings.json，改用 editorCommand 打开，失败在 Finder 里显示并用 Toast 提示。不改 contracts，约一天。
+
+<a id="dr-51"></a>
+
+### DR-51 检测用户装的其他 agent（pi、omp）
+
+状态：待验证 · 出处：待定：先做第一步还是两步一起、要不要用 -e 扩展、已知表登记哪些 agent · 旧编号 —
+
+相关：TC-17、IS-46、IS-21
+
+- **原来以为**：MVP 只支持 claude、codex 和 Shell，别的 agent 用 Shell 手动启动。
+- **实际情况**：用户本机装了 pi（@earendil-works/pi-coding-agent 0.83.0）和 omp（oh-my-pi 18.0.4，pi 的分支），都在登录 shell 的 PATH 里，--version 能取到版本，菜单里没有。适配器写死了 4 个，没有自动发现；没有钩子的 agent 状态只有 running / idle。pi 有 --session-id、--session、--fork；omp 有 --resume、--fork；两者都没有命令式钩子，但都有扩展事件（session_start、agent_end 等，omp 还有 tool_approval_requested），可以用 -e 临时加载。
+- **怎么验证**：建议（待用户定）：第一步加已知 agent 表和通用适配器（pi、omp，顺带本机有的 kimi），菜单能列出、能开、能接回，状态只有运行 / 空闲，约半天；第二步 AgentDeck 自带一个扩展用 -e 加载，把事件转成现有的钩子消息，拿到“轮到你”和 Needs approval，约 1–1.5 天；用户在设置里自己加 agent 以后再做（要改 contracts）。
 
 <a id="dr-42"></a>
 

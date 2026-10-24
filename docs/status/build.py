@@ -19,7 +19,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent / 'research'))
 import data as D  # noqa: E402
-from tracking import CASES, ISSUES, RESOLVED  # noqa: E402
+from tracking import ACCEPTED, CASES, ISSUES, RESOLVED  # noqa: E402
 from entries import ENTRIES as RESEARCH, STAGES  # noqa: E402
 
 ROOT = HERE.parent.parent
@@ -34,6 +34,14 @@ CASE_CLASS = {'⚠ 当前有问题': 'prob', '未验证': 'no', '部分验证': 
 P_ORDER = ['P0', 'P1', 'P2', 'P3']
 P_LABEL = {'P0': '阻塞 MVP 验收', 'P1': '主要流程，交付前要处理', 'P2': '次要体验、完整性、性能', 'P3': '清理'}
 RESULTS = ['通过', '不通过', '阻塞', '跳过']
+# 用例按验收结果分三组：没填的在最上面，阻塞和不通过其次，通过和跳过收起来
+GROUPS = [('todo', '等你验收'), ('stuck', '阻塞 / 不通过'), ('done', '已通过')]
+
+
+def group_of(result):
+    if not result:
+        return 'todo'
+    return 'stuck' if result in ('阻塞', '不通过') else 'done'
 ISSUE_STATES = ['待处理', '处理中', '已解决', '不处理']
 RS_STATUS = {'done': '已解决', 'partial': '进行中', 'deferred': '推迟', 'pending': '待验证'}
 
@@ -93,11 +101,12 @@ def case_html(k):
         links = '<p class="links">' + (f'关联问题 {ref_links(rel)}' if rel else '') + (' · ' if rel and dr else '') + (f'相关调研 {ref_links(dr)}' if dr else '') + '</p>'
     steps = ''.join(f'<li>{E(s.split(". ", 1)[-1])}</li>' for s in k['steps'].split('\n'))
     expect = ''.join(f'<p>{E(line)}</p>' for line in k['expect'].split('\n'))
-    return f'''<article class="case c-{cls}" id="{cid.lower()}" data-case="{cid}" data-status="{cls}" data-result="">
+    res = ACCEPTED.get(cid, '')
+    return f'''<article class="case c-{cls}" id="{cid.lower()}" data-case="{cid}" data-status="{cls}" data-result="{E(res)}">
   <div class="case-head">
     <span class="mono cid">{cid}</span><span class="pri pri-{k["p"]}">{k["p"]}</span>{chip(cls, k["status"].replace("⚠ ", ""))}
     <h4>{E(k["scene"])}</h4>
-    <label class="field result"><span>验收结果</span>{select("res-" + cid, f'data-tc="{cid}" class="res"', RESULTS, "", "未验收")}</label>
+    <label class="field result"><span>验收结果</span>{select("res-" + cid, f'data-tc="{cid}" class="res"', RESULTS, res, "未验收")}</label>
   </div>
   <p class="now"><span class="label">当前情况</span>{E(k["issue"])}</p>
   <details>
@@ -151,7 +160,15 @@ def page():
     p0 = ''.join(
         f'<tr><td class="mono b">{i}</td><td class="b">{E(t)}</td><td>{chip(s, P0_LABEL[s])}</td>'
         f'<td>{E(a)}</td><td>{E(m)}</td><td class="muted">{E(n)}</td></tr>' for i, t, s, a, m, n in D.P0)
-    case_list = ''.join(case_html(k) for k in cases)
+    def group_html(key, title):
+        body = ''.join(case_html(k) for k in cases if group_of(ACCEPTED.get(k['id'], '')) == key)
+        head = f'{E(title)} <span class="gcount" data-gcount="{key}"></span>'
+        if key == 'done':
+            return (f'<details class="case-group" data-group="{key}"><summary class="group-title">{head}'
+                    f'<span class="muted small">（已收起，点开看）</span></summary><div class="cases" data-cases="{key}">{body}</div></details>')
+        return (f'<div class="case-group" data-group="{key}"><h3 class="group-title">{head}</h3>'
+                f'<div class="cases" data-cases="{key}">{body}</div><p class="muted empty-group">没有。</p></div>')
+    case_list = ''.join(group_html(k, t) for k, t in GROUPS)
     issue_groups = ''.join(
         f'<section class="pgroup"><h3><span class="pri pri-{p}">{p}</span>{E(P_LABEL[p])}<span class="muted"> · {ISSUEC[p]} 条</span></h3>'
         + ''.join(issue_html(i) for i in issues if i[1] == p) + '</section>'
@@ -169,11 +186,11 @@ def page():
     case_bar = ''.join(
         f'<span class="seg seg-{CASE_CLASS[s]}" style="flex:{v}"></span>' for s, v in CASEC.items() if v)
     resolved0 = sum(1 for i in ISSUES if i[0] in RESOLVED)
+    acc = [group_of(ACCEPTED.get(k['id'], '')) for k in CASES]
+    acc_line = (f'2026-10-24 第一轮验收：{acc.count("done")} 条通过，{acc.count("stuck")} 条阻塞或不通过（在调研），'
+                f'{acc.count("todo")} 条等你验收。')
     meta = json.dumps({'cases': [k['id'] for k in CASES], 'issues': [i[0] for i in ISSUES],
                        'defaults': {iid: {'status': '已解决', 'note': n} for iid, n in RESOLVED.items()}}, ensure_ascii=False)
-    chips = ''.join(
-        f'<button type="button" class="chip" data-filter="{f}" aria-pressed="{"true" if f == "all" else "false"}">{E(t)} <span class="n" data-count="{f}"></span></button>'
-        for f, t in [('all', '全部'), ('prob', '当前有问题'), ('todo-acc', '还没验收'), ('fail', '不通过'), ('pass', '通过')])
 
     return f'''<title>AgentDeck MVP 验收报告</title>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -250,12 +267,16 @@ tr:first-child td {{ border-top: 0 }}
 .pri {{ font-family: var(--font-mono); font-size: 11px; font-weight: 600; padding: 1px 6px; border-radius: 4px; border: 1px solid var(--line); color: var(--muted) }}
 .pri-P0 {{ background: var(--attention); border-color: var(--attention); color: var(--surface) }}
 .pri-P1 {{ border-color: var(--attention); color: var(--attention) }}
-.chips {{ display: flex; flex-wrap: wrap; gap: 8px }}
-.chip {{ font: inherit; font-size: 12.5px; height: 30px; padding: 0 11px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; display: inline-flex; align-items: center; gap: 6px }}
-.chip .n {{ color: var(--muted); font-variant-numeric: tabular-nums }}
-.chip[aria-pressed="true"] {{ background: var(--ink); color: var(--ground); border-color: var(--ink) }}
-.chip[aria-pressed="true"] .n {{ color: inherit; opacity: .7 }}
 .cases, .pgroup {{ display: flex; flex-direction: column; gap: 10px }}
+.case-group {{ display: flex; flex-direction: column; gap: 10px; margin-top: 18px }}
+.case-group:first-child {{ margin-top: 0 }}
+.group-title {{ margin: 0; font-size: 15px; font-weight: 600; display: flex; align-items: baseline; gap: 8px }}
+details.case-group > summary {{ cursor: pointer; list-style: revert }}
+details.case-group > summary.group-title {{ display: list-item }}
+details.case-group[open] > summary {{ margin-bottom: 10px }}
+.gcount {{ color: var(--muted); font-weight: 400; font-variant-numeric: tabular-nums }}
+.case-group .empty-group {{ margin: 0 }}
+.case-group:not(.is-empty) .empty-group {{ display: none }}
 .pgroup h3 {{ display: flex; align-items: center; gap: 8px; margin-top: 8px }}
 .case, .issue {{ background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; scroll-margin-top: 16px }}
 .case:target, .issue:target {{ border-color: var(--ink) }}
@@ -274,7 +295,7 @@ tr:first-child td {{ border-top: 0 }}
 select, textarea {{ font: inherit; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px }}
 select {{ height: 30px }}
 textarea {{ flex: 1; min-width: 0; resize: vertical; min-height: 32px }}
-select:focus-visible, textarea:focus-visible, .chip:focus-visible, a:focus-visible, summary:focus-visible {{ outline: 2px solid var(--attention); outline-offset: 2px }}
+select:focus-visible, textarea:focus-visible, a:focus-visible, summary:focus-visible {{ outline: 2px solid var(--attention); outline-offset: 2px }}
 select:disabled, textarea:disabled {{ opacity: .6 }}
 .now, .desc {{ margin: 0; font-size: 13.5px }}
 .c-prob .now {{ color: var(--attention) }}
@@ -311,7 +332,7 @@ details summary {{ cursor: pointer; font-size: 12.5px; color: var(--muted) }}
 <header>
   <span class="eyebrow">AgentDeck · MVP 验收报告 · {D.DATE} · main {D.COMMIT}</span>
   <h1>AgentDeck MVP 验收报告</h1>
-  <p class="lede">第一个能打开、能用的版本已经组装好：白板、tmux 托管的真终端、工作区和 Git 面板、agent 状态提醒、网页窗口接在了一起。下面的端到端用例可以直接在这页上验收，问题清单可以直接改处理状态，填的内容会保存下来。</p>
+  <p class="lede">第一个能打开、能用的版本已经组装好：白板、tmux 托管的真终端、工作区和 Git 面板、agent 状态提醒、网页窗口接在了一起。下面的端到端用例可以直接在这页上验收，问题清单可以直接改处理状态，填的内容会保存下来。{acc_line}</p>
   <p class="rules">编号：<b>TC-xx</b> 端到端用例（TC-01 到 TC-14 是 14 条验收场景）· <b>IS-xx</b> 问题 · <b>DR-xx</b> 调研记录 · <b>F1、T2</b> 等是任务编号。</p>
   <div class="bars">
     <div class="barbox"><span class="t">39 项基础功能（P0 任务）</span><div class="bar">{bar}</div>
@@ -319,7 +340,7 @@ details summary {{ cursor: pointer; font-size: 12.5px; color: var(--muted) }}
     <div class="barbox"><span class="t">{len(CASES)} 条端到端用例的现状</span><div class="bar">{case_bar}</div>
       <div class="legend"><span><i class="dot seg-prob"></i>当前有问题 <b>{CASEC["⚠ 当前有问题"]}</b></span><span><i class="dot seg-no"></i>未验证 <b>{CASEC["未验证"]}</b></span><span><i class="dot seg-part"></i>部分验证 <b>{CASEC["部分验证"]}</b></span><span><i class="dot seg-ok"></i>已验证 <b>{CASEC["已验证"]}</b></span><span><i class="dot seg-todo"></i>未实现 <b>{CASEC["未实现"]}</b></span></div></div>
     <div class="barbox"><span class="t">你的验收进度</span><div class="bar" id="acc-bar"></div>
-      <div class="legend"><span><i class="dot seg-pass"></i>通过 <b id="n-pass">0</b></span><span><i class="dot seg-fail"></i>不通过 <b id="n-fail">0</b></span><span>还没验收 <b id="n-open">{len(CASES)}</b></span><span>问题已解决 <b id="n-solved">{resolved0}</b> / {len(ISSUES)}</span></div></div>
+      <div class="legend"><span><i class="dot seg-pass"></i>通过 <b id="n-pass">0</b></span><span><i class="dot seg-fail"></i>不通过或阻塞 <b id="n-fail">0</b></span><span>还没验收 <b id="n-open">{len(CASES)}</b></span><span>问题已解决 <b id="n-solved">{resolved0}</b> / {len(ISSUES)}</span></div></div>
   </div>
 </header>
 
@@ -332,10 +353,8 @@ details summary {{ cursor: pointer; font-size: 12.5px; color: var(--muted) }}
 </section>
 
 <section class="block">
-  <div class="head"><h2>端到端用例</h2><p>{len(CASES)} 条，当前有问题的排在最前面。展开看前置要求、步骤和预期；在右边选验收结果，下面写备注。</p><span class="save-state" id="save-state">正在连接保存…</span></div>
-  <div class="chips" role="group" aria-label="筛选用例">{chips}</div>
-  <div class="cases" id="cases">{case_list}</div>
-  <p class="muted" id="no-cases" hidden>没有符合筛选条件的用例。</p>
+  <div class="head"><h2>端到端用例</h2><p>{len(CASES)} 条，按你的验收结果分组：还没验收的在最上面，阻塞和不通过的其次，已通过的收起来。展开看前置要求、步骤和预期；在右边选验收结果（选完会挪到对应的组），下面写备注。</p><span class="save-state" id="save-state">正在连接保存…</span></div>
+  <div id="cases">{case_list}</div>
 </section>
 
 <section class="block">
@@ -376,25 +395,37 @@ details summary {{ cursor: pointer; font-size: 12.5px; color: var(--muted) }}
 (function () {{
   var META = JSON.parse(document.getElementById('meta').textContent);
   var saveState = document.getElementById('save-state');
-  var filter = 'all';
   function $all(sel) {{ return Array.prototype.slice.call(document.querySelectorAll(sel)); }}
+  // 卡片原来的顺序（生成时按状态、P 级、编号排好），挪组后保持这个顺序
+  var ORDER = {{}};
+  var allCases = $all('.case').sort(function (a, b) {{ return a.dataset.case < b.dataset.case ? -1 : 1; }});
+  $all('.case').forEach(function (el, i) {{ ORDER[el.dataset.case] = i; }});
+  function groupOf(r) {{ return !r ? 'todo' : (r === '阻塞' || r === '不通过') ? 'stuck' : 'done'; }}
+  function regroup() {{
+    var lists = {{}};
+    $all('[data-cases]').forEach(function (box) {{ lists[box.dataset.cases] = []; }});
+    allCases.forEach(function (el) {{ lists[groupOf(el.dataset.result)].push(el); }});
+    Object.keys(lists).forEach(function (k) {{
+      var box = document.querySelector('[data-cases="' + k + '"]');
+      lists[k].sort(function (a, b) {{ return ORDER[a.dataset.case] - ORDER[b.dataset.case]; }});
+      lists[k].forEach(function (el) {{ if (el.parentNode !== box || box.lastElementChild !== el) box.appendChild(el); }});
+      var g = box.closest('.case-group');
+      g.classList.toggle('is-empty', lists[k].length === 0);
+      g.querySelector('[data-gcount]').textContent = lists[k].length + ' 条';
+    }});
+  }}
 
   function refresh() {{
     var pass = 0, fail = 0, open = 0;
-    var counts = {{ all: 0, prob: 0, 'todo-acc': 0, fail: 0, pass: 0 }};
     $all('.case').forEach(function (el) {{
       var r = el.dataset.result;
-      if (r === '通过') pass++; else if (r === '不通过') fail++;
+      if (r === '通过') pass++; else if (r === '不通过' || r === '阻塞') fail++;
       if (!r) open++;
-      var m = {{ all: true, prob: el.dataset.status === 'prob', 'todo-acc': !r, fail: r === '不通过', pass: r === '通过' }};
-      Object.keys(m).forEach(function (k) {{ if (m[k]) counts[k]++; }});
-      el.hidden = !m[filter];
     }});
+    regroup();
     document.getElementById('n-pass').textContent = pass;
     document.getElementById('n-fail').textContent = fail;
     document.getElementById('n-open').textContent = open;
-    document.getElementById('no-cases').hidden = counts[filter] > 0;
-    $all('[data-count]').forEach(function (s) {{ s.textContent = counts[s.dataset.count]; }});
     var bar = document.getElementById('acc-bar');
     bar.innerHTML = '';
     [['pass', pass], ['fail', fail], ['todo', open]].forEach(function (p) {{
@@ -408,13 +439,6 @@ details summary {{ cursor: pointer; font-size: 12.5px; color: var(--muted) }}
     document.getElementById('n-solved').textContent = solved;
   }}
 
-  $all('.chip').forEach(function (b) {{
-    b.addEventListener('click', function () {{
-      filter = b.dataset.filter;
-      $all('.chip').forEach(function (x) {{ x.setAttribute('aria-pressed', String(x === b)); }});
-      refresh();
-    }});
-  }});
   // 修改时先在页面上生效（不管能不能保存）
   $all('select.res').forEach(function (s) {{
     s.addEventListener('change', function () {{ document.getElementById(s.dataset.tc.toLowerCase()).dataset.result = s.value; refresh(); }});
