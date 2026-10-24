@@ -154,6 +154,19 @@ export interface WindowStatusBadge {
   dot: 'filled' | 'hollow' | 'none';
   /** 悬停时的说明，例如 Waiting 时写 “Needs approval” 还是 “Needs reply”。0.1.6 加。 */
   detail?: string;
+  /**
+   * 状态文字后面的淡色小标签，例如终端 cd 到工作区外面时的 “outside workspace”（IS-57，MVP v3 · N7）。
+   * 只是提示，不影响状态灯和“在等你”。text 为空不画。白板判断 badge 有没有变时要连 tag 一起比。
+   */
+  tag?: WindowStatusTag;
+}
+
+/** WindowStatusBadge.tag。 */
+export interface WindowStatusTag {
+  /** 标签文字，英文小写，例如 “outside workspace”。 */
+  text: string;
+  /** 悬停说明，例如实际目录和工作区目录。 */
+  detail?: string;
 }
 
 /**
