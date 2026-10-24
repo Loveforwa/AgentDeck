@@ -11,12 +11,21 @@ import type { GitEvent, GitService } from './git.ts';
 import type { ProjectEvent, ProjectService } from './project.ts';
 import type { ApprovalService, StatusEvent, StatusService } from './status.ts';
 import type { TerminalDataMessage, TerminalEvent, TerminalHost } from './terminal.ts';
+import type { UsageEvent, UsageService } from './usage.ts';
 import type { WorkspaceEvent, WorkspaceService } from './workspace.ts';
 
 export const CONTRACTS_VERSION = '0.1.6';
 
 /** 所有从服务推给界面的事件。新增事件只能往这里加，不能改已有事件的形状。 */
-export type AgentDeckEvent = AppEvent | ProjectEvent | WorkspaceEvent | TerminalEvent | StatusEvent | GitEvent | BoardEvent;
+export type AgentDeckEvent =
+  | AppEvent
+  | ProjectEvent
+  | WorkspaceEvent
+  | TerminalEvent
+  | StatusEvent
+  | GitEvent
+  | BoardEvent
+  | UsageEvent;
 export type AgentDeckEventType = AgentDeckEvent['type'];
 export type EventOf<T extends AgentDeckEventType> = Extract<AgentDeckEvent, { type: T }>;
 
@@ -32,6 +41,8 @@ export interface Services {
   approvals: ApprovalService;
   board: BoardStore;
   browser: BrowserService;
+  /** 终端的 token 用量（插件 PL2）。 */
+  usage: UsageService;
 }
 
 export type ServiceName = keyof Services;

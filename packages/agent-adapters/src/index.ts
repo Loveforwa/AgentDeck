@@ -32,3 +32,24 @@ export type { ApprovalStrategy } from './status/support.ts';
 export { compilePatterns, DEFAULT_DESTRUCTIVE_PATTERNS, isDestructive } from './status/destructive.ts';
 export { backgroundAlerts, badgeCount, isWaiting } from './background-alerts.ts';
 export type { AlertInput, AlertOutput, SystemNotification } from './background-alerts.ts';
+export {
+  CLAUDE_WINDOWS,
+  ClaudeUsageParser,
+  claudeProjectDirName,
+  claudeWindow,
+  CodexUsageParser,
+  defaultUsageRoots,
+  JsonlTail,
+  KimiUsageParser,
+  locateClaude,
+  locateCodex,
+  locateKimi,
+  locatePi,
+  parseKimiConfig,
+  parseKimiIndex,
+  PiUsageParser,
+  USAGE_AGENTS,
+  USAGE_HOOK,
+  UsageServiceImpl,
+} from './usage/index.ts';
+export type { KimiQuery, Located, ParsedUsage, UsageParser, UsageRoots, UsageServiceOptions, UsageTarget } from './usage/index.ts';

@@ -50,6 +50,7 @@ export const SERVICE_METHODS = {
   approvals: ['approve', 'setAutoApprove', 'history', 'setTerminalAutoApprove', 'autoApproveState', 'autoApproveSupport', 'autoApproveNeedsYou'],
   board: ['load', 'save'],
   browser: ['prepare', 'fileUrl', 'openExternal', 'ping'],
+  usage: ['get', 'watch', 'unwatch'],
 } as const satisfies { readonly [S in ServiceName]: readonly MethodsOf<S>[] };
 
 // 穷尽检查：漏掉的方法名会出现在报错信息里。

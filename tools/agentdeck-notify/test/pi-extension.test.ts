@@ -109,9 +109,38 @@ describe('extension entry', () => {
 
   it('subscribes to every event and never returns a value (tool_call results would block the tool)', () => {
     const { handlers, sent } = load({ [ext.TERMINAL_ID_ENV]: 't1', [ext.NOTIFY_ENV]: '/x/notify', [ext.TURN_END_ENV]: 'agent_end' });
-    expect([...handlers.keys()]).toEqual(ext.EVENTS);
+    expect([...handlers.keys()]).toEqual([...new Set([...ext.EVENTS, ...ext.USAGE_EVENTS])]);
     for (const h of handlers.values()) expect(h({ toolName: 'bash', toolCallId: 'c', input: {} }, {})).toBeUndefined();
     expect(sent).toContainEqual({ hookName: 'Stop', payload: {} });
+  });
+
+  it('reports context usage after a turn, once per change', () => {
+    const { handlers, sent } = load({ [ext.TERMINAL_ID_ENV]: 't1', [ext.NOTIFY_ENV]: '/x/notify' });
+    let tokens = 1200;
+    const ctx = {
+      sessionManager: { getSessionId: () => 's1' },
+      model: { id: 'model-a', contextWindow: 128000 },
+      getContextUsage: () => ({ tokens, contextWindow: 128000, percent: (tokens / 128000) * 100 }),
+    };
+    handlers.get('turn_end')!({}, ctx);
+    handlers.get('agent_end')!({}, ctx); // 没变，不再发
+    tokens = 2400;
+    handlers.get('turn_end')!({}, ctx);
+    const usage = sent.filter((h) => (h as { hookName: string }).hookName === ext.USAGE_HOOK);
+    expect(usage).toEqual([
+      { hookName: 'AgentDeckUsage', payload: { session_id: 's1', tokens: 1200, contextWindow: 128000, percent: 0.9375, model: 'model-a' } },
+      { hookName: 'AgentDeckUsage', payload: { session_id: 's1', tokens: 2400, contextWindow: 128000, percent: 1.875, model: 'model-a' } },
+    ]);
+  });
+
+  it('usageReport: unknown tokens after compaction, nothing without getContextUsage', () => {
+    expect(ext.usageReport({ getContextUsage: () => ({ tokens: null, contextWindow: 200000, percent: null }) }, 's')).toEqual({
+      hookName: 'AgentDeckUsage',
+      payload: { session_id: 's', tokens: null, contextWindow: 200000, percent: null, model: null },
+    });
+    expect(ext.usageReport({}, 's')).toBeNull();
+    expect(ext.usageReport({ getContextUsage: () => undefined }, 's')).toBeNull();
+    expect(ext.usageReport({ getContextUsage: () => { throw new Error('x'); } }, 's')).toBeNull();
   });
 
   it('swallows errors from odd contexts', () => {

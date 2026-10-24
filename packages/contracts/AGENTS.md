@@ -15,6 +15,7 @@
 | status.ts | StatusService、ApprovalService | 线 4 · agent-adapters | 线 1 终端标题栏、线 2 框和顶栏、线 3 面板刷新 |
 | board.ts | BoardStore、窗口注册表 | M0 · store；线 2 · canvas | 线 2、各窗口 |
 | browser.ts | BrowserService | 线 5 · 主进程 browser 模块 | 线 5 网页窗口 |
+| usage.ts | UsageService（终端的 token 用量，插件 PL2） | 线 4 · agent-adapters 的 usage 模块 | 终端窗口上的用量条 |
 | app.ts | AppService、Settings | 组装（apps/desktop） | 所有界面 |
 | ipc.ts | AgentDeckApi、事件总表、线路约定 | M0 · F3 IPC 层 | 所有界面 |
 

@@ -71,6 +71,7 @@ Electron 45 第一次运行时才下载二进制（pnpm 10 不跑依赖的 posti
   重开应用接回终端时，“带不带钩子”按 `agents.list()` 里各 agent 的 `capabilities.hooks` 定。
   `custom` 照常交给界面，白板自己不列它（IS-21，见 `packages/ui/canvas/src/model/agents.ts`）。
 - **git**：git-service 的 `git.status` 事件同时交给 workspace-service 的 `noteStatus`（分支变了更新框标题）。
+- **token 用量**（PL2）：`UsageServiceImpl`（agent-adapters）注册成 `usage` 服务；`lookup` 用状态机的 agent / 会话 id 和 store 的 cwd，启动时间只记本次运行里 `agents.start` 的（kimi 推断用；重开应用接回的终端没有，退回取同目录最近活动的会话）；钩子经 `tapHook` 先给它；`status.changed` 时 `noteSession`；退出时 `close`。
 - **网页**：`registerBrowserService(registry)`。onHeadersReceived 每个 session 只能有一个，现在只有 browser 模块用；别的地方要改响应头，合进 `browser/index.ts` 的 `installOnSession`。
 - **菜单**：白板快捷键注册成 accelerator，点击时发给界面（`agentdeck-desktop:shortcut`），界面调 `runShortcut`；同一组合键白板页面刚处理过（500ms 内）就不再执行。编辑菜单是 copy / paste 必需的。
 - **关窗口和退出**：关窗口默认隐藏（后台继续），程序坞点回来；⌘Q、程序坞 Quit 先让界面存白板，再断开 tmux-host（会话留着）；Stop All Terminals and Quit 才 kill-server。

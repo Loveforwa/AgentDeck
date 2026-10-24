@@ -9,4 +9,5 @@ export * from './board.ts';
 export * from './browser.ts';
 export * from './app.ts';
 export * from './mcp.ts';
+export * from './usage.ts';
 export * from './ipc.ts';

@@ -1,0 +1,6 @@
+{"type":"title","title":"demo"}
+{"type":"session","version":3,"id":"01a16e05-44bd-7000-98ad-000000000003","timestamp":"2026-10-24T13:06:41.469Z","cwd":"/work/demo"}
+{"type":"model_change","id":"m1","parentId":null,"timestamp":"2026-10-24T13:06:41.470Z","provider":"test","modelId":"model-omp"}
+{"type":"custom","id":"c1","parentId":"m1","customType":"todo","data":{"items":[]}}
+{"type":"message","id":"e1","parentId":"c1","timestamp":"2026-10-24T13:06:50.000Z","message":{"role":"assistant","content":[],"provider":"test","model":"model-omp","usage":{"input":638,"output":291,"cacheRead":24818,"cacheWrite":0,"reasoningTokens":100,"totalTokens":25747,"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"total":0}},"stopReason":"toolUse","contextSnapshot":{"promptTokens":25456,"nonMessageTokens":23326,"compactionEpoch":0},"timestamp":1792847210000}}
+{"type":"compaction","id":"k1","parentId":"e1","timestamp":"2026-10-24T13:07:00.000Z","summary":"short"}

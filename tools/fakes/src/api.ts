@@ -25,6 +25,7 @@ import type { Recording } from './recording.ts';
 import { seedSample } from './sample.ts';
 import { FakeApprovalService, FakeStatusService } from './status-service.ts';
 import { FakeTerminalHost } from './terminal-host.ts';
+import { FakeUsageService } from './usage-service.ts';
 import { bindMethods, sleep } from './util.ts';
 import { FakeWorkspaceService } from './workspace-service.ts';
 
@@ -40,6 +41,7 @@ export interface FakeServices {
   approvals: FakeApprovalService;
   board: FakeBoardStore;
   browser: FakeBrowserService;
+  usage: FakeUsageService;
 }
 
 export interface CreateFakeApiOptions {
@@ -104,6 +106,7 @@ export function createFakeServices(opts: CreateFakeApiOptions = {}): { bus: Fake
     approvals,
     board: new FakeBoardStore(),
     browser: new FakeBrowserService(),
+    usage: new FakeUsageService({ bus }),
   };
   for (const f of Object.values(fakes)) bindMethods(f);
   return { bus, fakes };
@@ -129,6 +132,7 @@ export function createFakeApi(opts: CreateFakeApiOptions = {}): FakeApi {
     approvals: svc('approvals'),
     board: svc('board'),
     browser: svc('browser'),
+    usage: svc('usage'),
     on: (type, listener) => bus.on(type, listener),
     onTerminalData: (listener) => bus.onTerminalData(listener),
     contractsVersion: CONTRACTS_VERSION,

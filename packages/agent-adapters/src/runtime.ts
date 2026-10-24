@@ -11,7 +11,7 @@ import type { AgentAdapterExt } from './adapters/types.ts';
 import { AgentServiceImpl } from './agent-service.ts';
 import type { EnvSource } from './env.ts';
 import { hookHint } from './hook-payload.ts';
-import type { HookServerOptions } from './hook-server.ts';
+import type { HookServerOptions, ReceivedHook } from './hook-server.ts';
 import { HookServer } from './hook-server.ts';
 import { ApprovalServiceImpl } from './status/approval.ts';
 import type { ApprovalRecordStore, ApprovalTiming } from './status/approval.ts';
@@ -42,6 +42,11 @@ export interface AgentRuntimeOptions {
   /** 批准记录写到哪里（packages/store 的 approvals）。不给时只在内存里。 */
   approvalRecords?: ApprovalRecordStore;
   approvalTiming?: ApprovalTiming;
+  /**
+   * 每条钩子先给它看（用量模块：pi / omp 扩展报的上下文、claude 的 transcript_path）。
+   * 返回 true 表示这条只是给它的（USAGE_HOOK），不交给状态机。
+   */
+  tapHook?: (hook: ReceivedHook) => boolean;
   now?: () => Date;
 }
 
@@ -86,6 +91,11 @@ export function createAgentRuntime(opts: AgentRuntimeOptions) {
     ...(opts.socketPath ? { socketPath: opts.socketPath } : {}),
     adapterFor: (agent) => agents.adapter(agent),
     onHook: (h) => {
+      try {
+        if (opts.tapHook?.(h) === true) return;
+      } catch {
+        // 用量模块出错不影响状态
+      }
       // Auto-approve 已经用钩子放行：agent 不会显示确认框，终端也不进 needs-approval（书签上记一次）
       if (h.decision === 'allow' && h.event?.type === 'permission-request') {
         approvalService.noteAutoAllowed(h);

@@ -1,5 +1,8 @@
 // 只用于类型检查：确认接口能被实现、事件能按 type 收窄。不会被打包。
-import type { AgentDeckApi, ApproveResult, AutoApproveState, CommitInfo, EventOf, GitService, LogOptions, TerminalHost, TerminalId, WorkspaceId } from './index.ts';
+import type {
+  AgentDeckApi, ApproveResult, AutoApproveState, CommitInfo, EventOf, GitService, LogOptions, TerminalHost, TerminalId, TerminalUsage,
+  UsageService, WorkspaceId,
+} from './index.ts';
 import { FIRE_AND_FORGET, isAutoApproveOn } from './index.ts';
 
 declare const api: AgentDeckApi;
@@ -48,3 +51,14 @@ void api.approvals.setTerminalAutoApprove('t1' as TerminalId, null);
 void api.approvals.autoApproveSupport().then((s) => s.map((x) => x.method));
 const emptyState: AutoApproveState = { workspaces: [], terminals: [] };
 void emptyState;
+// PL2：终端的 token 用量。
+api.on('usage.changed', (e: EventOf<'usage.changed'>) => {
+  const u: TerminalUsage = e.usage;
+  if (u.state === 'ok' && u.context?.percent != null) void u.context.percent.toFixed(0);
+  if (u.rateLimits?.primary) void u.rateLimits.primary.usedPercent;
+});
+const noUsage: UsageService['get'] = async (terminalId) => ({
+  terminalId, agent: null, state: 'unsupported', reason: 'Not an agent', sessionId: null, match: null, file: null,
+  model: null, total: null, last: null, requests: 0, context: null, rateLimits: null, updatedAt: null,
+});
+void noUsage; void api.usage.watch;
