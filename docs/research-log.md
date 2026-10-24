@@ -3,7 +3,7 @@
 实现过程中和一开始设想不一样的地方：原来以为什么、实际是什么、怎么决定的、好处和代价。
 由 `docs/research/build.py` 从 `docs/research/entries.py` 生成，不要直接改这个文件。更新于 2026-10-25。
 
-共 55 条：已解决 31，进行中 13，推迟 5，待验证 6。
+共 56 条：已解决 35，进行中 13，推迟 5，待验证 3。
 
 编号规则（全项目统一）：DR-xx 调研记录 · TC-xx 端到端用例 · IS-xx 问题 · F1、T2、X3 等是 MVP 任务表的任务编号。用例和问题在 MVP 验收报告（docs/status/index.html）里；每条调研下面列出相关的用例和问题。
 
@@ -64,9 +64,10 @@
   - [DR-49 多个窗口同时在等你时，⌘J 怎么跳](#dr-49)（已解决）
   - [DR-50 Settings：用系统程序打开 settings.json 不可靠](#dr-50)（已解决）
   - [DR-51 检测用户装的其他 agent（pi、omp）](#dr-51)（已解决）
-  - [DR-53 白板平移能不能用三指](#dr-53)（待验证）
-  - [DR-54 子 agent 窗口组的附着菜单用什么形态](#dr-54)（待验证）
-  - [DR-55 从 cc-switch 读 token 消耗](#dr-55)（待验证）
+  - [DR-53 白板平移能不能用三指](#dr-53)（已解决）
+  - [DR-54 子 agent 窗口组的附着菜单用什么形态](#dr-54)（已解决）
+  - [DR-55 token 用量从哪读：CC Switch 还是自己读会话文件](#dr-55)（已解决）
+  - [DR-56 Auto-approve 怎么替各 agent 按“允许一次”](#dr-56)（已解决）
   - [DR-42 claude 能不能把对话 fork 到另一个目录](#dr-42)（待验证）
   - [DR-43 Approve all 发的“允许一次”按键对不对](#dr-43)（待验证）
   - [DR-44 经过 tmux 后的手感，要人在真界面上确认](#dr-44)（待验证）
@@ -759,33 +760,51 @@
 
 ### DR-53 白板平移能不能用三指
 
-状态：待验证 · 出处：v3 N6 · 设计画布画板 12 · 旧编号 —
+状态：已解决 · 出处：v3 N6 · 设计画布画板 12 · 旧编号 —
 
 相关：IS-59
 
 - **原来以为**：两指滑动在空白处平移白板、在窗口上滚窗口内容，够用。
 - **实际情况**：用户希望三指拖动平移白板，两指永远给终端。macOS 的三指拖移是系统辅助功能，应用收到的只是普通的按住拖动，拿不到几根手指。
-- **怎么验证**：v3 N6 先核对现在两指的分配；候选：空白处按住拖动（开了三指拖移的人就是三指平移）、空格拖动。
+- **决策**：2026-10-25 用户定：都要。两指在任何窗口上都给窗口（不论是否聚焦），空白处两指平移；打开捏合缩放；空格拖动平移。
+- **好处**：不再和终端滚动抢手势。
+- **代价**：鼠标停在窗口上时两指不能平移白板，要先移到空白处。
 
 <a id="dr-54"></a>
 
 ### DR-54 子 agent 窗口组的附着菜单用什么形态
 
-状态：待验证 · 出处：v3 N2 · 设计画布画板 12 · 旧编号 —
+状态：已解决 · 出处：v3 N2 · 设计画布画板 12 · 旧编号 —
 
 - **原来以为**：agent 开 subagent 是它自己的事，白板只管一个个终端。
 - **实际情况**：用户希望 agent 一次开 n 个子终端时白板上看得见、能在一个附着菜单里切换，这个菜单以后也是插件入口。
-- **怎么验证**：画板 12 画了两种：A 侧边栏（贴在主 agent 右边列出子窗口）、B 标签页（子终端叠成一个窗口）。v3 N2 开工前定稿。
+- **决策**：2026-10-25 用户定：侧边栏（形态 A）。主 agent 旁边一列列出子 agent，选中一个就在右边打开它的终端；关掉主 agent 时子终端留下。
+- **好处**：一眼看全一组的状态；和插件条、书签互不冲突。
+- **代价**：占一列宽度。
 
 <a id="dr-55"></a>
 
-### DR-55 从 cc-switch 读 token 消耗
+### DR-55 token 用量从哪读：CC Switch 还是自己读会话文件
 
-状态：待验证 · 出处：v3 N4 · 设计画布画板 12 · 旧编号 —
+状态：已解决 · 出处：插件 PL2 · 设计画布“插件能力”页 · docs/plugins.md · 旧编号 —
 
 - **原来以为**：（没考虑过 token）
-- **实际情况**：用户希望看到每个窗口、每个项目的 token 消耗，并能打开 cc-switch 的完整面板。
-- **怎么验证**：v3 N4 先调研 cc-switch 的数据在哪、格式、能不能按会话拆，再做成第一个插件（N3 的标题栏小标签和面板页签）。
+- **实际情况**：CC Switch（farion1231/cc-switch，本机 3.20.0，数据在 ~/.cc-switch/cc-switch.db）的用量是事后扫各 agent 的会话文件得到的，按会话能拆开（proxy_request_logs.session_id），但 3.20 每 60 秒扫一次、新版后台 10 分钟一次，没有上下文长度和窗口，omp 不统计，没有读数据的接口；“看 Codex 账号用量”是它查订阅额度（5 小时、每周的百分比），不是 token。各 agent 的会话文件里字段都有：claude message.usage（按 message.id 去重）、codex token_count（含 model_context_window）、pi/omp message.usage（扩展有 getContextUsage）、kimi wire.jsonl 的 usage.record。
+- **决策**：终端旁边的实时条由 AgentDeck 自己读会话文件：按终端的会话 id 定位文件，只读新增部分，每次请求后更新；pi/omp 的上下文占比由我们的扩展上报。CC Switch 只做可选的历史数据源（以后的项目、整台电脑用量）和“Open in CC Switch”（ccswitch://）。插件名仍叫 CC Switch（2026-10-25 用户定）。
+- **好处**：实时、有上下文长度、不依赖用户装没装 CC Switch、五种 agent 都覆盖。
+- **代价**：要为每种 agent 维护一个读取器，格式随版本变；kimi 新建会话没有 id，只能按目录和启动时间推断；claude 的窗口大小要按模型推断。
+
+<a id="dr-56"></a>
+
+### DR-56 Auto-approve 怎么替各 agent 按“允许一次”
+
+状态：已解决 · 出处：插件 PL1 · 设计画布“插件能力”页 · docs/plugins.md · 旧编号 —
+
+- **原来以为**：只有 claude、codex 有“允许一次”的按键，其他 agent 支持不了。
+- **实际情况**：claude 和 codex 都有 PermissionRequest 钩子，回 decision.behavior=allow 就是只允许这一次、不留规则，AgentDeck 启动它们时已经挂了钩子，开关可以在运行中随时生效；提问（AskUserQuestion、ExitPlanMode、codex 的 request_user_input）不会被误答。kimi 2.3.1 的钩子不能批准，只能看屏幕：选项是 Approve once / Approve for this session / Reject / Reject with feedback，按 1；计划确认和 Start a goal? 用同一个面板，不能答。omp 是 Approve / Deny 选择器，扩展能先报 PermissionRequest，按 ↑ 再 ↵（没在真终端核对）。pi 根本不弹确认框。各家自带的 yolo / auto 模式都只能在启动时定、而且不走我们的破坏性名单，不用。
+- **决策**：claude、codex 在 HookServer.decide 里回 allow（终端或它的框开着 Auto-approve、不是破坏性命令时）；开关前已经在等的补发按键（claude 1、codex y）。kimi 按屏幕规则匹配后发 1；omp 先核对 ↑ ↵ 再上；pi 不用按，书签照常显示。顺带修 hook-payload.ts 的 FILE_TOOLS 不认 omp 小写工具名的问题。
+- **好处**：五种 agent 都覆盖；claude、codex 不靠模拟按键，不会选错项。
+- **代价**：kimi、omp 靠看屏幕，版本一变就可能失效，要在 known.ts 记版本；kimi 本机已从 0.29 升到 2.3.1，旧的核对记录过时。
 
 <a id="dr-42"></a>
 

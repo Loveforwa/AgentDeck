@@ -5,7 +5,7 @@
 ## 先读这些
 
 - 需求（设计画布，带配图和操作流程，以它为准）：https://claude.ai/artifact/2GtB5izXeQSV3NecUYuLAo
-- 插件（Auto-approve、token 用量、Skills · MCP、子 agent 窗口组，以及怎么写插件）：设计画布的“插件能力”页，任务是 MVP 任务表的 M7（PL0–PL4）
+- 插件（Auto-approve、CC Switch 用量）：**做插件前先读 `docs/plugins.md`（插件手册：能贴在哪些东西上、登记表、决定记录）**；样子在设计画布的“插件能力”页，任务是 MVP 任务表的 M7（PL0–PL2）
 - 实施方案（技术选型、模块、风险）：https://claude.ai/artifact/QrjHF5gpT6zdHJr6wdFaWp ，本地副本 `docs/design/agentdeck-plan.html`
 - MVP 任务表（任务编号、依赖、完成标准）：https://claude.ai/artifact/8UAh7Quj23xxk7oEikgdEg ，本地副本 `docs/design/agentdeck-mvp-plan.html`
 - **MVP v2 和 v3（2026-10-24 第一轮验收后定的）**：需求在设计画布的“MVP v2 · v3”那一页（画板 11 · MVP v2、12 · MVP v3，带概念图）；任务在 MVP 任务表的 M5（V1–V5，MVP v2）和 M6（N1–N8，MVP v3）；对应的问题是 IS-51～IS-60，要先调研的是 DR-52～DR-55；v2 的分波和每条线的范围见 MVP 任务表的“MVP v2 实施安排”，验收用例是 TC-29～TC-33。v2 做完之前不开 v3。MVP 是分版本做的：M0–M4 是 MVP v1。
@@ -18,7 +18,7 @@
 
 全项目统一，写文档、提交说明、汇报时都用这几种：
 
-- `F1`、`T2`、`X3` 等：MVP 任务表的任务（分支名、提交信息里用）。插件任务用 `PL0`–`PL4`（不用 `P` 开头，免得和问题的 P 级混）。
+- `F1`、`T2`、`X3` 等：MVP 任务表的任务（分支名、提交信息里用）。插件任务用 `PL0`–`PL2`（不用 `P` 开头，免得和问题的 P 级混）。
 - `TC-xx`：端到端用例。`TC-01`–`TC-14` 就是设计画布「10 · 全局规则」的 14 条验收场景，`TC-15` 起是补充的。
 - `IS-xx`：问题清单里的问题，按登记顺序编号，轻重看 P 级（P0–P3）。
 - `DR-xx`：调研记录（`docs/research-log.md`）。
