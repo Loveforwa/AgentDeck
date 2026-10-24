@@ -16,7 +16,7 @@
 //  -- 有钩子的 agent（claude、codex） --
 //  5  | starting                       | session-start                 | idle（记下会话 id）
 //  6  | running 且这一轮没开始         | session-start                 | idle
-//  7  | 其他                           | session-start                 | 不变，只更新会话 id（例如 /clear、compact）
+//  7  | 其他                           | session-start                 | 不变，只更新会话 id（例如 /clear、compact）；id 变了也发 status.changed
 //  8  | 任何                           | prompt-submitted              | running；清掉 pending（批准、回答之后的 PostToolUse 也走这里）
 //  8b | needs-*                        | 另一个工具的 PostToolUse      | 不变（claude 会并行跑工具：读文件结束了，Bash 还在等批准）
 //  9  | 任何                           | permission-request            | needs-approval，生成 PendingRequest（kind approval，算 destructive）
@@ -117,7 +117,7 @@ export class StatusMachine implements StatusService {
       workspaceId: t.workspaceId,
       hooks: t.hooks,
       sessionId: t.sessionId ?? null,
-      snap: { terminalId, status, since: this.iso(), exitCode: null, pending: null },
+      snap: { terminalId, status, since: this.iso(), exitCode: null, pending: null, ...(t.sessionId ? { sessionId: t.sessionId } : {}) },
       turnActive: false,
       inputSinceHook: false,
     });
@@ -145,7 +145,12 @@ export class StatusMachine implements StatusService {
       case 'session-start':
         e.sessionId = event.sessionId;
         if (e.snap.status === 'starting' || (e.snap.status === 'running' && !e.turnActive)) this.set(terminalId, e, 'idle'); // 5 6
-        return; // 7
+        // 7：状态不变也要把新的会话 id 发出去（codex、omp 启动时不知道 id，/clear 之后 id 也会变）
+        if (e.snap.sessionId !== e.sessionId) {
+          e.snap = { ...e.snap, sessionId: e.sessionId };
+          this.emitStatus(terminalId);
+        }
+        return;
       case 'prompt-submitted': {
         const pending = e.snap.pending;
         if (pending && hint.afterTool != null && hint.afterTool !== pending.summary) return; // 8b
@@ -279,6 +284,7 @@ export class StatusMachine implements StatusService {
       since: prev.status === status && prev.pending?.id === pending?.id ? prev.since : this.iso(),
       exitCode,
       pending,
+      ...(e.sessionId ? { sessionId: e.sessionId } : {}),
     };
     this.emitStatus(terminalId);
   }
