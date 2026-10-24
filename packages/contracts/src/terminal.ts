@@ -27,6 +27,11 @@ export interface TerminalInfo {
   /** 进程已退出时的退出码。 */
   exitCode: number | null;
   lastActivityAt: IsoTime | null;
+  /**
+   * 程序自己设的终端标题（OSC 0/2，tmux 的 pane_title），多数 agent 拿它显示当前对话的主题，
+   * 例如 claude 的 “Check local git history”。去掉了开头的转圈符号；没设过（等于主机名）时为 null。0.1.5 加。
+   */
+  title?: string | null;
 }
 
 export interface TerminalHost {
