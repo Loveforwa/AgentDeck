@@ -4,7 +4,7 @@
 
 import type { AppEvent, AppService } from './app.ts';
 import type { AgentService } from './agent.ts';
-import type { BoardStore } from './board.ts';
+import type { BoardEvent, BoardStore } from './board.ts';
 import type { BrowserService } from './browser.ts';
 import type { Unsubscribe } from './common.ts';
 import type { GitEvent, GitService } from './git.ts';
@@ -13,10 +13,10 @@ import type { ApprovalService, StatusEvent, StatusService } from './status.ts';
 import type { TerminalDataMessage, TerminalEvent, TerminalHost } from './terminal.ts';
 import type { WorkspaceEvent, WorkspaceService } from './workspace.ts';
 
-export const CONTRACTS_VERSION = '0.1.3';
+export const CONTRACTS_VERSION = '0.1.4';
 
 /** 所有从服务推给界面的事件。新增事件只能往这里加，不能改已有事件的形状。 */
-export type AgentDeckEvent = AppEvent | ProjectEvent | WorkspaceEvent | TerminalEvent | StatusEvent | GitEvent;
+export type AgentDeckEvent = AppEvent | ProjectEvent | WorkspaceEvent | TerminalEvent | StatusEvent | GitEvent | BoardEvent;
 export type AgentDeckEventType = AgentDeckEvent['type'];
 export type EventOf<T extends AgentDeckEventType> = Extract<AgentDeckEvent, { type: T }>;
 

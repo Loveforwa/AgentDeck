@@ -2,6 +2,7 @@
 // 需求见「5 · 终端窗口」「6 · 终端状态与提醒」。实现：packages/agent-adapters（线 4）。
 
 import type { AbsPath, AgentKind, AgentSessionId, IsoTime, TermSize, TerminalId, WorkspaceId } from './common.ts';
+import type { McpEndpoint } from './mcp.ts';
 
 export interface AgentCapabilities {
   /** 有钩子，状态准确（claude、新版 codex）。没有时只能靠 tmux 的输出活动判断运行中和空闲。 */
@@ -30,6 +31,10 @@ export interface LaunchContext {
   notifyCommand: AbsPath;
   /** 用户在 Settings › Agents 里加的启动参数。 */
   extraArgs: string[];
+  /** 启动后当作第一条消息发给 agent（见 StartAgentRequest.prompt）。只在 mode 为 new 时有意义。 */
+  prompt?: string;
+  /** AgentDeck 的 MCP 服务（M1）。有值且适配器支持时挂到 agent 上；token 放进 LaunchSpec.env，不进命令行。 */
+  mcp?: McpEndpoint;
 }
 
 export interface LaunchSpec {
@@ -99,6 +104,8 @@ export interface StartAgentRequest {
   command?: string;
   /** 窗口当前能放下的行列数，原样传给 terminals.create，避免 TUI 先按 80×24 画、attach 后再跳一次。 */
   size?: TermSize;
+  /** agent 启动后的第一条消息（claude、codex 作为命令行参数传入）。shell / custom 忽略。 */
+  prompt?: string;
 }
 
 export interface StartAgentResult {
