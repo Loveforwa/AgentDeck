@@ -19,7 +19,8 @@ import type {
 } from '@agentdeck/contracts';
 import { isAgentDeckErrorData } from '@agentdeck/contracts';
 
-export type ScmApi = Pick<AgentDeckApi, 'git' | 'projects' | 'workspaces' | 'app' | 'on'>;
+/** skills（N9 的 SKILLS · MCP 小节）可以不给：没有时小节写 “Not available here.”。 */
+export type ScmApi = Pick<AgentDeckApi, 'git' | 'projects' | 'workspaces' | 'app' | 'on'> & Partial<Pick<AgentDeckApi, 'skills'>>;
 
 /** 多仓库时每个仓库的提交列表最多几条（需求：最近 20 个）。 */
 export const LOG_LIMIT = 20;

@@ -9,6 +9,7 @@ import { BranchPicker } from './BranchPicker.tsx';
 import { ChangeList, type ChangeActions } from './ChangeList.tsx';
 import { CommitGraph } from './CommitGraph.tsx';
 import { DiffView, type DiffTarget } from './DiffView.tsx';
+import { SkillsSection, type SkillsTarget } from './SkillsSection.tsx';
 import { CommitAllDialog, DiscardDialog, ErrorDetail, NewBranchDialog, SwitchDialog } from './dialogs.tsx';
 import { BranchIcon, CaretIcon, RefreshIcon } from './icons.tsx';
 import {
@@ -45,6 +46,11 @@ export interface ScmPanelProps {
   api?: ScmApi;
   /** 标题栏最右边、Refresh 后面的按钮，例如白板给的收起面板按钮（MVP v2 · V4）。 */
   headerActions?: ReactNode;
+  /**
+   * SKILLS · MCP 小节（N9）跟着的终端：白板上聚焦的终端窗口。null：聚焦的不是终端（小节里写怎么用）；
+   * 不传（undefined）就不显示这一节。
+   */
+  skills?: SkillsTarget | null;
 }
 
 const COMMIT_ALL_KEY = 'agentdeck.scm.commitAllConfirmed';
@@ -91,7 +97,7 @@ interface Picker {
   anchor: PopoverAnchor;
 }
 
-export function ScmPanel({ workspaceId, onGoToWorkspace, openTerminals, runningAgents, api: apiProp, headerActions }: ScmPanelProps) {
+export function ScmPanel({ workspaceId, onGoToWorkspace, openTerminals, runningAgents, api: apiProp, headerActions, skills }: ScmPanelProps) {
   const terminalsHere = openTerminals ?? runningAgents ?? NONE;
   const api = apiProp ?? window.agentdeck;
   const dir = useDirectory(api);
@@ -338,7 +344,10 @@ export function ScmPanel({ workspaceId, onGoToWorkspace, openTerminals, runningA
         </Button>
         {headerActions}
       </div>
-      <div className="scm-body">{body}</div>
+      <div className="scm-body">
+        {body}
+        {skills !== undefined && !diff && <SkillsSection api={api} target={skills} />}
+      </div>
 
       {picker && (
         <BranchPicker
