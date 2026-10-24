@@ -52,6 +52,54 @@ setTimeout(() => api.scenario.agentAsks(SAMPLE.terminals.shopClaude, 'Should the
 
 const T = SAMPLE.terminals;
 
+// N2：一个窗口组——feat/login 的 claude 用 open_terminals 开了 3 个子 agent，不用真的 agent 也能看到侧边栏。
+// 子终端的 id 固定，刷新后恢复的布局还能对上；白板上还没有组时（新的或 Reset 过的白板）自动开出来。
+const SUBAGENTS = [
+  { id: 'term-sub-1' as TerminalId, label: 'api', output: '⏺ Edit src/routes/user.ts\r\n⏺ Bash pnpm test user\r\n  18 passed\r\n' },
+  { id: 'term-sub-2' as TerminalId, label: 'ui', output: '⏺ Edit src/ui/LoginForm.tsx\r\n' },
+  { id: 'term-sub-3' as TerminalId, label: 'tests', output: '⏺ Read tests/login.spec.ts\r\n  Done for now.\r\n' },
+];
+for (const s of SUBAGENTS) {
+  api.fakes.terminals.createWith({ cmd: 'claude', args: [], cwd: SAMPLE.paths.agentdeckLogin }, { id: s.id, recording: null });
+  api.fakes.status.track(s.id, { agent: 'claude', workspaceId: SAMPLE.workspaces.agentdeckLogin }, 'running');
+  api.scenario.terminalOutput(s.id, s.output);
+}
+api.scenario.agentNeedsApproval(SUBAGENTS[1]!.id, { summary: 'Edit src/ui/LoginForm.tsx' });
+api.scenario.agentTurnEnd(SUBAGENTS[2]!.id);
+// sub-1 一直在输出，保持 running（停下来几秒假实现会把它记成 idle）
+let tick = 0;
+setInterval(() => api.scenario.terminalOutput(SUBAGENTS[0]!.id, `\r  Running pnpm test user… ${++tick}s`), 1000);
+
+function openSubagentGroup() {
+  api.bus.emit({
+    type: 'board.open-group',
+    lead: T.loginClaude,
+    highlight: true,
+    members: SUBAGENTS.map((s) => ({
+      label: s.label,
+      request: {
+        type: 'terminal',
+        workspaceId: SAMPLE.workspaces.agentdeckLogin,
+        data: { terminalId: s.id, agent: 'claude', cmd: 'claude', args: [], cwd: SAMPLE.paths.agentdeckLogin, sessionId: null, startCommand: null },
+      },
+    })),
+  });
+}
+
+const stopWaiting = controller.store.subscribe((s) => {
+  if (!s.loaded) return;
+  stopWaiting();
+  if (!s.windows.some((w) => w.group)) openSubagentGroup();
+  // #group：收起面板，100% 对准这个窗口组（截图用）
+  if (location.hash === '#group') {
+    setTimeout(() => {
+      if (controller.state.panel.open) controller.togglePanel();
+      const lead = controller.state.windows.find((w) => w.group?.role === 'lead');
+      if (lead) controller.viewportApi?.setViewport({ x: 32 - lead.rect.x, y: 104 - lead.rect.y, zoom: 1 });
+    }, 300);
+  }
+});
+
 function DemoPanel({ workspace }: PanelContext) {
   const pendingFor = (id: TerminalId) => api.fakes.status.pending().find((p) => p.terminalId === id);
   return (
@@ -117,6 +165,9 @@ function DemoPanel({ workspace }: PanelContext) {
         <Button size="sm" onClick={() => api.scenario.devServerStarts(T.devServer)}>
           Dev server prints its URL
         </Button>
+        <Button size="sm" onClick={() => api.scenario.agentNeedsApproval(SUBAGENTS[0]!.id, { summary: 'pnpm test user' })}>
+          sub-1 · api asks for approval
+        </Button>
         <Button
           size="sm"
           variant="ghost"
@@ -130,7 +181,7 @@ function DemoPanel({ workspace }: PanelContext) {
       </section>
       <section>
         <h2>Try</h2>
-        <p>Right-click the board or a frame. Drag a terminal into another frame. Drag a corner below 320×200. ⌘J / ⌘⇧J jump to the next / previous waiting window; ⌘⇧] / ⌘⇧[ step through windows; ⌘0 / ⌘1 zoom; ⌘B hides this panel.</p>
+        <p>Right-click the board or a frame. Drag a terminal into another frame. Drag a corner below 320×200. ⌘J / ⌘⇧J jump to the next / previous waiting window; ⌘⇧] / ⌘⇧[ step through windows; ⌘0 / ⌘1 zoom; ⌘B hides this panel. Next to claude in feat/login, the sidebar lists its 3 subagents: click a row to switch, Show all, Collapse group.</p>
       </section>
     </div>
   );

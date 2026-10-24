@@ -4,6 +4,7 @@ import type { OpenWindowRequest, WindowCommand, WindowComponentProps, WindowId, 
 import { WindowShell } from '@agentdeck/ui-window-shell';
 import { isWaiting } from '../model/attention.ts';
 import { defaultName } from '../model/windows.ts';
+import { groupTitle } from '../model/groups.ts';
 import { SUMMARY_ZOOM } from '../controller.ts';
 import { useBoardState, useController, useWindowType } from './context.tsx';
 import { WindowStopConfirm } from './dialogs.tsx';
@@ -31,6 +32,8 @@ export function WindowNodeView({ data }: NodeProps & { data: WindowNodeData }) {
   const workspace = useBoardState((s) => (node?.workspaceId ? (s.workspaces[node.workspaceId] ?? null) : null));
   const visible = useBoardState((s) => (node ? c.isVisible(node.rect, s) : false));
   const zoomedOut = useBoardState((s) => s.viewport.zoom < SUMMARY_ZOOM);
+  // N2：窗口组里的标题栏灰字是 “lead” / “sub-2 · ui”（用户没改名时）
+  const groupLabel = useBoardState((s) => (node?.group ? groupTitle(s.windows, node) : null));
 
   const actions = useMemo(
     () => ({
@@ -72,7 +75,7 @@ export function WindowNodeView({ data }: NodeProps & { data: WindowNodeData }) {
     <div className="ad-window-node" data-window-id={id} data-summary={summary || undefined}>
       <WindowShell
         name={defaultName(node, def?.label)}
-        label={node.title}
+        label={node.title ?? groupLabel}
         status={badge}
         focused={focused}
         attention={waiting}

@@ -30,7 +30,20 @@ import {
   zoomAroundCenter,
   type Point,
 } from './model/geometry.ts';
-import { dissolveGroups } from './model/groups.ts';
+import {
+  atSlot,
+  dissolveGroups,
+  dockSlot,
+  dockable,
+  groupOf,
+  groupView,
+  hiddenMembers,
+  listGroups,
+  setGroupView,
+  sidebarRect,
+  syncGroups,
+  type WindowGroup,
+} from './model/groups.ts';
 import { adjacentWindow, windowOrder } from './model/navigation.ts';
 import type { ShortcutId } from './model/shortcuts.ts';
 import { NEAR_FRAME_PX, SNAP_PX, snapMove, snapResize, type Guide } from './model/snap.ts';
@@ -165,7 +178,11 @@ export class BoardController {
   }
 
   private set(patch: Partial<BoardStoreState> | ((s: BoardStoreState) => Partial<BoardStoreState>)): void {
-    this.store.setState(patch);
+    this.store.setState((s) => {
+      const p = typeof patch === 'function' ? patch(s) : patch;
+      // N2：窗口组的停靠（收起的子终端、贴在侧边栏右边的那个）跟着 lead 走
+      return p.windows && p.windows !== s.windows ? { ...p, windows: syncGroups(s.windows, p.windows, (w) => this.footprint(w)) } : p;
+    });
   }
 
   private notifyHandler: ((message: string) => void) | null = null;
@@ -402,8 +419,9 @@ export class BoardController {
   /** 对齐线看的窗口：同一个框里别的窗口；散放的窗口看视口里别的散放窗口。 */
   private snapTargets(id: WindowId, ws: WorkspaceId | null): Rect[] {
     const s = this.state;
+    const skip = this.groupSkip(id);
     return s.windows
-      .filter((w) => w.id !== id && w.workspaceId === ws && (ws !== null || this.isVisible(w.rect, s)))
+      .filter((w) => w.id !== id && w.workspaceId === ws && !skip.has(w.id) && (ws !== null || this.isVisible(w.rect, s)))
       .map((w) => this.footprint(w));
   }
 
@@ -427,8 +445,15 @@ export class BoardController {
    * 由调用方让框跟着长。不推别的窗口。frameRect：框拖动前的位置。
    */
   private freeSpotFor(id: WindowId | null, ws: WorkspaceId | null, rect: Rect, frameRect: Rect | null): Rect {
-    const obstacles = this.state.windows.filter((w) => w.id !== id && w.workspaceId === ws).map((w) => this.footprint(w));
-    return findFreeSpot(rect, obstacles, { gap: GAP, area: frameRect ? innerArea(growFrame(frameRect, rect)) : null });
+    // N2：lead 连同侧边栏和停靠的子终端一起找空位；收起的子终端不挡，别的组的侧边栏挡
+    const ext = id ? this.withGroup(id, rect) : rect;
+    const skip = this.groupSkip(id);
+    const obstacles = [
+      ...this.state.windows.filter((w) => w.id !== id && w.workspaceId === ws && !skip.has(w.id)).map((w) => this.footprint(w)),
+      ...this.sidebarObstacles(ws, id),
+    ];
+    const spot = findFreeSpot(ext, obstacles, { gap: GAP, area: frameRect ? innerArea(growFrame(frameRect, ext)) : null });
+    return { ...rect, x: rect.x + spot.x - ext.x, y: rect.y + spot.y - ext.y };
   }
 
   private layoutBase(): LayoutBase {
@@ -574,7 +599,7 @@ export class BoardController {
       // 指针在别的框里时自己的框不跟着长（松手会弹回）；否则框跟着窗口变大
       frames:
         d.frameStart && w.workspaceId
-          ? s.frames.map((f) => (f.workspaceId === w.workspaceId ? { ...f, rect: target ? d.frameStart! : growFrame(d.frameStart!, rect) } : f))
+          ? s.frames.map((f) => (f.workspaceId === w.workspaceId ? { ...f, rect: target ? d.frameStart! : growFrame(d.frameStart!, this.withGroup(id, rect)) } : f))
           : s.frames,
     }));
   }
@@ -604,7 +629,7 @@ export class BoardController {
       // V3：盖住别的窗口就挪到最近的空位；框按挪好的位置重新长（拖动中是按松手的位置长的），挤到的框挪开
       const rect = this.freeSpotFor(id, w.workspaceId, w.rect, d.frameStart);
       if (!sameRect(rect, w.rect)) this.patchWindow(id, { rect });
-      if (w.workspaceId && d.frameStart) this.applyFrameChange(this.layoutBase(), w.workspaceId, d.frameStart, growFrame(d.frameStart, rect));
+      if (w.workspaceId && d.frameStart) this.applyFrameChange(this.layoutBase(), w.workspaceId, d.frameStart, growFrame(d.frameStart, this.withGroup(id, rect)));
     }
   }
 
@@ -635,7 +660,7 @@ export class BoardController {
       guides = res.guides;
     }
     this.set({ resizing: { id, rect }, guides });
-    if (d.frameStart && w.workspaceId) this.applyFrameChange(d.base, w.workspaceId, d.frameStart, growFrame(d.frameStart, rect));
+    if (d.frameStart && w.workspaceId) this.applyFrameChange(d.base, w.workspaceId, d.frameStart, growFrame(d.frameStart, this.withGroup(id, rect)));
   }
 
   /** 松手才把新大小写进窗口，组件这时才拿到新的 contentSize。 */
@@ -658,7 +683,7 @@ export class BoardController {
     // V3：改大以后盖住了别的窗口，就挪到最近放得下的地方
     const rect = this.isMaximized(w) ? live.rect : this.freeSpotFor(id, w.workspaceId, live.rect, d.frameStart);
     this.patchWindow(id, { rect, restoreRect });
-    if (d.frameStart && w.workspaceId) this.applyFrameChange(d.base, w.workspaceId, d.frameStart, growFrame(d.frameStart, rect));
+    if (d.frameStart && w.workspaceId) this.applyFrameChange(d.base, w.workspaceId, d.frameStart, growFrame(d.frameStart, this.withGroup(id, rect)));
   }
 
   /** 单击摘要卡：拉小的恢复原来的大小；因为白板缩得太小的，缩放到 100% 看它。都会聚焦。 */
@@ -862,6 +887,8 @@ export class BoardController {
 
   /** 跳到窗口并聚焦：已经完整看得见就不动视口，否则平移缩放让它完整显示（最大 100%）。 */
   jumpToWindow(id: WindowId): void {
+    // N2：收起的子终端（⌘J、通知、快速定位跳到它）先显示出来，贴在侧边栏右边
+    if (hiddenMembers(this.state.windows).has(id)) this.showGroupMember(id);
     const w = this.windowById(id);
     if (!w) return;
     const s = this.state;
@@ -942,10 +969,10 @@ export class BoardController {
   }
 
   /** 加一个窗口：放进框（框跟着变大），提到最上层并聚焦。 */
-  addWindow<TData>(init: { type: string; workspaceId: WorkspaceId | null; rect: Rect; data: TData; title?: string | null }): WindowId {
+  addWindow<TData>(init: { type: string; workspaceId: WorkspaceId | null; rect: Rect; data: TData; title?: string | null; exact?: boolean }): WindowId {
     const id = newWindowId();
-    // V3：放的位置盖住了别的窗口就挪到最近的空位
-    const rect = this.freeSpotFor(null, init.workspaceId, init.rect, this.frameOf(init.workspaceId)?.rect ?? null);
+    // V3：放的位置盖住了别的窗口就挪到最近的空位。exact（N2 停靠的子终端）：就放在那里，框不跟着长（由调用方处理）
+    const rect = init.exact ? init.rect : this.freeSpotFor(null, init.workspaceId, init.rect, this.frameOf(init.workspaceId)?.rect ?? null);
     const node: WindowNode = {
       id,
       type: init.type,
@@ -957,7 +984,7 @@ export class BoardController {
       data: init.data,
     };
     this.set((s) => ({ windows: [...s.windows, node] }));
-    this.fitFrameTo(init.workspaceId, rect);
+    if (!init.exact) this.fitFrameTo(init.workspaceId, rect);
     this.focusWindow(id);
     return id;
   }
@@ -1021,7 +1048,7 @@ export class BoardController {
    * 窗口组件调 props.openWindow：同 reuseKey 的已经开着就聚焦它并闪一下，否则开在发起窗口右边、同一个工作区。
    * quiet：不聚焦、不移动视口（服务开的窗口，见 openWindowFromService）。
    */
-  openWindow(fromId: WindowId | null, req: OpenWindowRequest, opts: { quiet?: boolean } = {}): WindowId | null {
+  openWindow(fromId: WindowId | null, req: OpenWindowRequest, opts: { quiet?: boolean; exact?: boolean } = {}): WindowId | null {
     const def = this.registry.get(req.type);
     if (!def) {
       this.notify(`Can’t open a ${req.type} window`);
@@ -1042,7 +1069,7 @@ export class BoardController {
     const placed = this.placeWindow(def.defaultSize, ws, { nextTo: from?.id ?? null });
     const rect = { ...placed, ...req.rect };
     const { focusedId, selectedFrame } = this.state;
-    const id = this.addWindow({ type: req.type, workspaceId: ws, rect, data: def.create(req.data as never) });
+    const id = this.addWindow({ type: req.type, workspaceId: ws, rect, data: def.create(req.data as never), ...(opts.exact ? { exact: true } : {}) });
     if (opts.quiet) this.set({ focusedId, selectedFrame });
     if (req.reuseKey) this.patchWindow(id, { reuseKey: req.reuseKey });
     return id;
@@ -1079,39 +1106,183 @@ export class BoardController {
    */
   openGroupFromService(lead: TerminalId | null, members: readonly WindowGroupMemberRequest[], highlight: boolean): WindowId[] {
     const leadWin = this.windowOfTerminal(lead);
+    // N2：侧边栏挂在组的 lead 旁边（调用者自己是子终端时是它那一组的 lead）。新组只显示第一个子终端，贴在侧边栏右边，
+    // 其余收起；已有的组照它现在的显示方式（Show all 时照 N1 平铺）
+    const current = leadWin?.group ?? null;
+    const existing = current ? listGroups(this.state.windows).find((g) => g.id === current.id) : undefined;
+    const anchor = existing?.lead ?? leadWin;
+    const docked = !!anchor && (!existing || groupView(existing).mode !== 'all');
     const cols = Math.max(1, Math.ceil(Math.sqrt(members.length)));
     const ids: WindowId[] = [];
     members.forEach((m, i) => {
       const workspaceId = this.onBoardWorkspace(m.request.workspaceId ?? null);
-      const beside = leadWin && leadWin.workspaceId === workspaceId ? leadWin : null;
+      const size = this.registry.get(m.request.type)?.defaultSize ?? FALLBACK_SIZE;
       let rect = m.request.rect;
+      let exact = false;
+      if (docked && anchor && anchor.workspaceId === workspaceId && !rect) {
+        // 停靠处：选中的那个显示在这里，收起的也停在这里（不占别处的地方，框不为看不见的窗口长大）
+        rect = { ...dockSlot(this.footprint(anchor)), ...size };
+        exact = true;
+      }
+      const beside = leadWin && leadWin.workspaceId === workspaceId ? leadWin : null;
       if (beside && !rect) {
-        const size = this.registry.get(m.request.type)?.defaultSize ?? FALLBACK_SIZE;
         const col = i % cols;
         const row = Math.floor(i / cols);
+        const left = beside.id === anchor?.id ? dockSlot(this.footprint(beside)).x : beside.rect.x + beside.rect.w + GAP;
         rect = {
-          x: beside.rect.x + beside.rect.w + GAP + col * (size.w + GAP),
+          x: left + col * (size.w + GAP),
           y: beside.rect.y + row * (size.h + GAP),
         };
       }
-      const id = this.openWindow(null, { ...m.request, workspaceId, ...(rect ? { rect } : {}) }, { quiet: true });
+      const id = this.openWindow(null, { ...m.request, workspaceId, ...(rect ? { rect } : {}) }, { quiet: true, exact });
       if (!id) return;
       ids.push(id);
       if (highlight) this.flashWindow(id);
     });
     if (leadWin && ids.length > 0) {
-      const current = this.windowById(leadWin.id)?.group;
       const groupId = current?.id ?? newGroupId();
       const labels = new Map(ids.map((id, i) => [id, members[i]?.label ?? null]));
       this.set((s) => ({
         windows: s.windows.map((w) => {
-          if (w.id === leadWin.id && !current) return { ...w, group: { id: groupId, role: 'lead', label: null } };
+          if (w.id === leadWin.id && !current) return { ...w, group: { id: groupId, role: 'lead', label: null, view: { mode: 'one', shown: ids[0]! } } };
           if (labels.has(w.id)) return { ...w, group: { id: groupId, role: 'member', label: labels.get(w.id) ?? null } };
           return w;
         }),
       }));
+      if (docked) this.settleGroup(groupId);
     }
     return ids;
+  }
+
+  // ---- 窗口组的侧边栏（N2） ----
+
+  /** 侧边栏单击一行：只显示这个子终端（贴在侧边栏右边），其余收起；跳过去并聚焦。 */
+  selectGroupMember(id: WindowId): void {
+    this.showGroupMember(id);
+    this.jumpToWindow(id);
+  }
+
+  /** 只显示这个子终端，贴在侧边栏右边，其余收起；挡住的窗口挪开，框跟着长。不动焦点和视口。 */
+  showGroupMember(id: WindowId): void {
+    const g = groupOf(this.state.windows, id);
+    const member = g?.members.find((m) => m.id === id);
+    if (!g || !member) return;
+    const slot = dockSlot(this.footprint(g.lead));
+    const dock = dockable(g.lead, member);
+    this.set((s) => {
+      const windows = setGroupView(s.windows, g.id, { mode: 'one', shown: id }).map((w) =>
+        w.id === id && dock ? { ...w, rect: { ...w.rect, x: slot.x, y: slot.y } } : w,
+      );
+      return { windows, focusedId: s.focusedId && s.focusedId !== id && hiddenMembers(windows).has(s.focusedId) ? null : s.focusedId };
+    });
+    this.settleGroup(g.id);
+  }
+
+  /** Show all：子终端都显示，平铺在侧边栏右边（列数 ⌈√n⌉），盖住别的窗口时挪到最近的空位；框跟着长。 */
+  showAllGroup(groupId: WindowGroupId): void {
+    const s = this.state;
+    const g = listGroups(s.windows).find((x) => x.id === groupId);
+    if (!g) return;
+    const ws = g.lead.workspaceId;
+    const anchor = this.footprint(g.lead);
+    const slot = dockSlot(anchor);
+    const dock = g.members.filter((m) => dockable(g.lead, m));
+    const cols = Math.max(1, Math.ceil(Math.sqrt(dock.length)));
+    const cellW = Math.max(0, ...dock.map((m) => m.rect.w)) + GAP;
+    const cellH = Math.max(0, ...dock.map((m) => m.rect.h)) + GAP;
+    const inGroup = new Set(g.members.map((m) => m.id));
+    const hidden = hiddenMembers(s.windows);
+    const fixed = [
+      ...s.windows.filter((w) => w.workspaceId === ws && w.id !== g.lead.id && !inGroup.has(w.id) && !hidden.has(w.id)).map((w) => this.footprint(w)),
+      union(anchor, sidebarRect(anchor)),
+      ...this.sidebarObstacles(ws, g.lead.id),
+    ];
+    const rects = new Map<WindowId, Rect>();
+    dock.forEach((m, i) => {
+      // 不限在框里：离网格的位置最近就行（框跟着长），平铺的样子不被框里别处的空位打乱
+      const want = { ...m.rect, x: slot.x + (i % cols) * cellW, y: slot.y + Math.floor(i / cols) * cellH };
+      const r = findFreeSpot(want, [...fixed, ...rects.values()], { gap: GAP });
+      rects.set(m.id, r);
+    });
+    this.set((st) => ({
+      windows: setGroupView(st.windows, groupId, { mode: 'all' }).map((w) => {
+        const r = rects.get(w.id);
+        return r ? { ...w, rect: r } : w;
+      }),
+    }));
+    const all = bounds([...rects.values(), this.withGroup(g.lead.id, anchor)]);
+    if (all) this.fitFrameTo(ws, all);
+  }
+
+  /** Collapse group：子终端都收起，只剩侧边栏。聚焦在子终端上时取消聚焦。 */
+  collapseGroup(groupId: WindowGroupId): void {
+    this.set((s) => {
+      const windows = setGroupView(s.windows, groupId, { mode: 'collapsed' });
+      return { windows, focusedId: s.focusedId && hiddenMembers(windows).has(s.focusedId) ? null : s.focusedId };
+    });
+  }
+
+  /** id 是组的 lead 时，那一组。 */
+  private leadGroup(id: WindowId): WindowGroup | undefined {
+    return listGroups(this.state.windows).find((g) => g.lead.id === id);
+  }
+
+  /** 选中的、正停在停靠处的子终端（lead 挪动时跟着走，算在 lead 占的地方里）。 */
+  private dockedMember(g: WindowGroup): WindowNode | null {
+    const v = groupView(g);
+    if (v.mode !== 'one') return null;
+    const m = g.members.find((x) => x.id === v.shown);
+    return m && dockable(g.lead, m) && atSlot(m.rect, dockSlot(this.footprint(g.lead))) ? m : null;
+  }
+
+  /** lead 在 rect 时，它连同侧边栏和停靠的子终端占的地方。不是 lead（或 lead 放大中）时就是 rect。 */
+  private withGroup(id: WindowId, rect: Rect): Rect {
+    const g = this.leadGroup(id);
+    if (!g || this.isMaximized(g.lead)) return rect;
+    let ext = union(rect, sidebarRect(rect));
+    const m = this.dockedMember(g);
+    if (m) ext = union(ext, { ...m.rect, ...dockSlot(rect) });
+    return ext;
+  }
+
+  /** 找空位、对齐线不看的窗口：收起的子终端；id 是 lead 时还有停靠在它旁边的子终端（算在 lead 占的地方里）。 */
+  private groupSkip(id: WindowId | null): Set<WindowId> {
+    const skip = hiddenMembers(this.state.windows);
+    const g = id ? this.leadGroup(id) : undefined;
+    const m = g ? this.dockedMember(g) : null;
+    if (m) skip.add(m.id);
+    return skip;
+  }
+
+  /** ws 里别的组的侧边栏（id 自己的组的不算），新放的窗口不盖住它们。 */
+  private sidebarObstacles(ws: WorkspaceId | null, id: WindowId | null): Rect[] {
+    return listGroups(this.state.windows)
+      .filter((g) => g.lead.workspaceId === ws && g.lead.id !== id && !g.members.some((m) => m.id === id) && !this.isMaximized(g.lead))
+      .map((g) => sidebarRect(g.lead.rect));
+  }
+
+  /** 侧边栏、停靠的子终端新出现在那里：框先长到装得下，盖住的别的窗口挪到最近的空位（新出现的东西让出地方）。 */
+  private settleGroup(groupId: WindowGroupId): void {
+    const g = listGroups(this.state.windows).find((x) => x.id === groupId);
+    if (!g || this.isMaximized(g.lead)) return;
+    const ws = g.lead.workspaceId;
+    const anchor = this.footprint(g.lead);
+    this.fitFrameTo(ws, this.withGroup(g.lead.id, anchor));
+    const docked = this.dockedMember(g);
+    const parts = [anchor, sidebarRect(anchor), ...(docked ? [docked.rect] : [])];
+    const inGroup = new Set([g.lead.id, ...g.members.map((m) => m.id)]);
+    const parked = hiddenMembers(this.state.windows);
+    for (const w of this.state.windows) {
+      if (w.workspaceId !== ws || inGroup.has(w.id) || parked.has(w.id) || this.isMaximized(w)) continue;
+      if (!parts.slice(1).some((p) => intersects(p, w.rect))) continue;
+      const s = this.state;
+      const hidden = hiddenMembers(s.windows);
+      const others = s.windows.filter((o) => o.id !== w.id && o.workspaceId === ws && !inGroup.has(o.id) && !hidden.has(o.id)).map((o) => this.footprint(o));
+      const frame = this.frameOf(ws)?.rect ?? null;
+      const r = findFreeSpot(w.rect, [...parts, ...others, ...this.sidebarObstacles(ws, w.id)], { gap: GAP, area: frame ? innerArea(frame) : null });
+      this.patchWindow(w.id, { rect: r });
+      this.fitFrameTo(ws, r);
+    }
   }
 
   /** board.focus-window（N1 focus_window）：跳过去、闪一下并聚焦；用户正在打字时只闪一下。 */
@@ -1188,6 +1359,11 @@ export class BoardController {
   }
 
   private removeWindows(ids: WindowId[]): void {
+    // N2：关掉 lead，子终端变回普通窗口：先照 Show all 平铺开（收起的都显示出来），再拆组
+    for (const id of ids) {
+      const g = this.leadGroup(id);
+      if (g && groupView(g).mode !== 'all') this.showAllGroup(g.id);
+    }
     const gone = new Set(ids);
     this.set((s) => {
       const badges = { ...s.badges };

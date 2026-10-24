@@ -21,6 +21,8 @@ import { BoardDialogs } from './dialogs.tsx';
 import { ApprovalDialogs } from './approvals.tsx';
 import { FrameNodeView, PendingFrameView } from './FrameNodeView.tsx';
 import { WindowNodeView } from './WindowNodeView.tsx';
+import { GROUP_SIDEBAR_TYPE, GroupSidebarNode, groupSidebarNodes } from './GroupSidebar.tsx';
+import { hiddenMembers } from '../model/groups.ts';
 import { useBoardState, useController } from './context.tsx';
 import { Clawd } from './Clawd.tsx';
 import { ShortcutHints } from './ShortcutHints.tsx';
@@ -33,6 +35,7 @@ const nodeTypes: NodeTypes = {
   window: WindowNodeView as NodeTypes[string],
   frame: FrameNodeView as NodeTypes[string],
   pending: PendingFrameView as NodeTypes[string],
+  [GROUP_SIDEBAR_TYPE]: GroupSidebarNode as NodeTypes[string],
 };
 
 /** 窗口永远在框上面。 */
@@ -79,6 +82,8 @@ export function Board() {
   const nodes = useMemo<Node[]>(() => {
     // 节点不可拖、不可选时 React Flow 会给它 pointer-events: none，这里自己处理手势，所以打开
     const base = { draggable: false, selectable: false, connectable: false, focusable: false } as const;
+    // N2：收起的子终端不画（进程照常运行）；每个窗口组在 lead 右边画侧边栏
+    const hidden = hiddenMembers(windows);
     return [
       ...pending.map((p) => ({
         ...base,
@@ -98,7 +103,7 @@ export function Board() {
         style: { width: f.rect.w, height: f.rect.h, pointerEvents: 'all' as const },
         zIndex: f.z,
       })),
-      ...windows.map((w) => {
+      ...windows.filter((w) => !hidden.has(w.id)).map((w) => {
         const r = resizing?.id === w.id ? resizing.rect : w.rect;
         return {
           ...base,
@@ -111,8 +116,9 @@ export function Board() {
           zIndex: WINDOW_Z + w.z,
         };
       }),
+      ...groupSidebarNodes(c, windows, resizing, WINDOW_Z),
     ];
-  }, [frames, windows, resizing, pending]);
+  }, [c, frames, windows, resizing, pending]);
 
   const openPaneMenu = (e: ReactMouseEvent | MouseEvent) => {
     e.preventDefault();
