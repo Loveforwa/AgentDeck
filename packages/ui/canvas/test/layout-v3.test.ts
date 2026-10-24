@@ -1,4 +1,4 @@
-// V3（TC-31、IS-53、IS-54）：拖动和改大小时吸附、画对齐线；松手时不叠在别的窗口上；框之间至少 20px。
+// V3（TC-31、IS-53、IS-54、IS-65、IS-66）：拖动和改大小时吸附、画对齐线；松手时不叠在别的窗口上；框之间至少 20px。
 // 对着 createFakeApi() 的示例白板：三个框 agentdeck · main、agentdeck · feat/login、shop · fix/cart-total。
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -122,6 +122,105 @@ describe('snapping while dragging and resizing (V3)', () => {
   });
 });
 
+describe('IS-65: windows also align to nearby frames; resizing a frame snaps', () => {
+  const main = W.agentdeckMain;
+  const login = W.agentdeckLogin;
+
+  it('a window aligns to the outer top edge of the frame next door, with a guide', () => {
+    layout(
+      [
+        [main, { x: 0, y: 0, w: 600, h: 400 }],
+        [login, { x: 620, y: 100, w: 400, h: 300 }],
+      ],
+      [browser('a', main, { x: 16, y: 36, w: 300, h: 200 })],
+    );
+    c.moveWindowStart(id('a'));
+    c.moveWindow(id('a'), 0, 62, pointerIn(main), { snap: true }); // 顶边 98，旁边的框顶边 100
+    expect(win('a').rect.y).toBe(100);
+    expect(c.state.guides).toContainEqual(expect.objectContaining({ kind: 'align', axis: 'y', at: 100 }));
+    c.moveWindow(id('a'), 0, 62, pointerIn(main), { snap: false }); // ⌘
+    expect(win('a').rect.y).toBe(98);
+    c.moveWindowEnd(id('a'));
+  });
+
+  it('a frame far away (more than 200 screen px from the window’s frame) is not a target', () => {
+    layout(
+      [
+        [main, { x: 0, y: 0, w: 600, h: 400 }],
+        [login, { x: 1000, y: 100, w: 150, h: 300 }],
+      ],
+      [browser('a', main, { x: 16, y: 36, w: 300, h: 200 })],
+    );
+    c.moveWindowStart(id('a'));
+    c.moveWindow(id('a'), 0, 62, pointerIn(main), { snap: true });
+    expect(win('a').rect.y).toBe(98);
+    expect(c.state.guides.filter((g) => g.axis === 'y')).toEqual([]);
+    c.moveWindowEnd(id('a'));
+  });
+
+  it('resizing a frame snaps 20px before the next frame without pushing it, and ⌘ turns it off', () => {
+    const loginRect = { x: 700, y: 0, w: 400, h: 300 };
+    layout(
+      [
+        [main, { x: 0, y: 0, w: 600, h: 400 }],
+        [login, loginRect],
+      ],
+      [browser('a', main, { x: 16, y: 36, w: 300, h: 200 })],
+    );
+    c.resizeFrameStart(main, 'e');
+    c.resizeFrame(main, 77, 0, { snap: true }); // 右边 677
+    expect(frame(main).rect.x + frame(main).rect.w).toBe(680);
+    expect(c.state.guides).toContainEqual(expect.objectContaining({ kind: 'gap', axis: 'x', size: 20 }));
+    expect(frame(login).rect).toEqual(loginRect);
+    // 贴着别的框的左边（700）会挤开它，不吸：停在拖到的 697，别的框照 V3 被挤开
+    c.resizeFrame(main, 97, 0, { snap: true });
+    expect(frame(main).rect.x + frame(main).rect.w).toBe(697);
+    expect(frame(login).rect.x).toBe(697 + 20);
+    c.resizeFrame(main, 77, 0, { snap: false });
+    expect(frame(main).rect.x + frame(main).rect.w).toBe(677);
+    expect(frame(login).rect).toEqual(loginRect);
+    expect(c.state.guides).toEqual([]);
+    c.resizeFrameEnd();
+  });
+
+  it('a frame’s bottom edge snaps to the next frame’s bottom and to just fit its windows', () => {
+    layout(
+      [
+        [main, { x: 0, y: 0, w: 600, h: 400 }],
+        [login, { x: 700, y: 0, w: 400, h: 300 }],
+      ],
+      [browser('a', main, { x: 16, y: 36, w: 300, h: 200 })],
+    );
+    c.resizeFrameStart(main, 's');
+    c.resizeFrame(main, 0, -98, { snap: true }); // 下边 302
+    expect(frame(main).rect.h).toBe(300);
+    expect(c.state.guides).toContainEqual(expect.objectContaining({ kind: 'align', axis: 'y', at: 300 }));
+    // 窗口下边 236，框正好装下是 252：线画在窗口的下边
+    c.resizeFrame(main, 0, -146, { snap: true }); // 下边 254
+    expect(frame(main).rect.h).toBe(252);
+    expect(c.state.guides).toContainEqual(expect.objectContaining({ kind: 'align', axis: 'y', at: 236 }));
+    c.resizeFrameEnd();
+    expect(c.state.guides).toEqual([]);
+    expect(frame(main).rect.h).toBe(252);
+  });
+});
+
+describe('IS-66: windows use the same 20px standard gap as frames', () => {
+  it('a window dragged next to another snaps 20px from it, and the gap is labelled 20', () => {
+    const main = W.agentdeckMain;
+    layout(
+      [[main, { x: 0, y: 0, w: 1000, h: 400 }]],
+      [browser('a', main, { x: 16, y: 36, w: 300, h: 200 }), browser('b', main, { x: 400, y: 36, w: 300, h: 200 })],
+    );
+    c.moveWindowStart(id('b'));
+    c.moveWindow(id('b'), -61, 0, pointerIn(main), { snap: true }); // 339，离 a 的右边 23
+    expect(win('b').rect.x).toBe(316 + 20);
+    expect(c.state.guides).toContainEqual(expect.objectContaining({ kind: 'gap', axis: 'x', size: 20 }));
+    c.moveWindowEnd(id('b'));
+    expect(win('b').rect.x).toBe(336);
+  });
+});
+
 describe('no overlapping windows on release (V3)', () => {
   it('a window dropped on another slides to the nearest free spot; the other does not move', () => {
     const claude = win('win-shop-claude').rect;
@@ -130,7 +229,7 @@ describe('no overlapping windows on release (V3)', () => {
     expect(intersects(win('win-shop-shell').rect, claude)).toBe(true); // 拖动中可以盖住
     c.moveWindowEnd(id('win-shop-shell'));
     expect(win('win-shop-claude').rect).toEqual(claude);
-    expect(tooClose(win('win-shop-shell').rect, claude, 16)).toBe(false);
+    expect(tooClose(win('win-shop-shell').rect, claude, 20)).toBe(false); // IS-66：挪开时留 20
     expect(win('win-shop-shell').workspaceId).toBe(W.shopCart);
     expect(c.state.dialog).toBeNull();
   });
@@ -152,12 +251,12 @@ describe('no overlapping windows on release (V3)', () => {
     c.resizeWindowStart(id('a'), 'e');
     c.resizeWindow(id('a'), 132, 0);
     c.resizeWindowEnd(id('a'));
-    // 框里放不下 500 宽的 a：最近的空位在 b 左边隔 16，框往左长，挡路的 feat/login 往左挪，里面的窗口跟着
-    expect(win('a').rect).toEqual({ x: -116, y: 36, w: 500, h: 248 });
+    // 框里放不下 500 宽的 a：最近的空位在 b 左边隔 20（IS-66），框往左长，挡路的 feat/login 往左挪，里面的窗口跟着
+    expect(win('a').rect).toEqual({ x: -120, y: 36, w: 500, h: 248 });
     expect(win('b').rect).toEqual({ x: 400, y: 36, w: 368, h: 248 });
-    expect(frame(main).rect.x).toBe(-132);
-    expect(frame(login).rect.x).toBe(-352);
-    expect(win('c').rect.x).toBe(-336);
+    expect(frame(main).rect.x).toBe(-136);
+    expect(frame(login).rect.x).toBe(-356);
+    expect(win('c').rect.x).toBe(-340);
   });
 
   it('a new window that would land on another goes to a free spot', async () => {

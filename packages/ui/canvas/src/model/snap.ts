@@ -1,13 +1,17 @@
 // 拖动和改大小时的吸附和对齐线（MVP v2 · V3，DR-52）。
 // 做法照 Figma / tldraw / Excalidraw：吸附距离按屏幕像素算（调用方传 6 / zoom），x、y 两个方向各自找最近的一个吸附点，
 // 吸住后把和它一样近的都画出来。吸附对象：边对边、中线对中线、框的内边、标准间距、等间距、同宽同高（只在改大小时）。
+// 拖窗口时附近的框的外边和中线也算（IS-65，alignTo）；框改大小时吸到别的框和里面窗口的外接范围（IS-65，fit）。
 // 只算位置，不管重叠；重叠在松手时由 avoid.ts 处理。
 
 import type { Rect, Size } from '@agentdeck/contracts';
 import type { ResizeEdge } from '@agentdeck/ui-window-shell';
+import { tooClose } from './avoid.ts';
 
 /** 屏幕上这么近就吸住（像素，调用方除以缩放比例换成白板坐标）。 */
 export const SNAP_PX = 6;
+/** 拖窗口时，离窗口所在的框不到这么远（屏幕像素）、又在视口里的框才算“附近的框”，参加对齐（IS-65）。远处的框不吸，免得跳过去。 */
+export const NEAR_FRAME_PX = 200;
 
 export type Axis = 'x' | 'y';
 
@@ -33,6 +37,21 @@ export interface SnapOptions {
   gap: number;
   /** 框的内边（窗口离框边留 FRAME_PAD 的那个区域）。散放的窗口、拖框时没有。 */
   area?: Rect | null;
+  /** 只对齐边和中线、不算间距和等间距的矩形（拖窗口时附近的框的外边，IS-65）。 */
+  alignTo?: readonly Rect[];
+}
+
+/** 改大小的选项。 */
+export interface ResizeSnapOptions extends SnapOptions {
+  /** 吸完不能小于这个大小。 */
+  min: Size;
+  /**
+   * 框改大小（IS-65）：content 是框里窗口的外接矩形，frame 是正好装下它的框（frameAround）。吸完的框不能比 frame 小；
+   * frame 的边也是吸附点，对齐线画在窗口的边上。
+   */
+  fit?: { content: Rect; frame: Rect } | null;
+  /** 吸附后离 targets 里的某个不到 keepApart、不吸时却不会，就不吸这个点（框改大小：吸附不去挤别的框）。 */
+  keepApart?: number;
 }
 
 export interface SnapResult {
@@ -90,7 +109,7 @@ function sizeGuide(axis: Axis, final: Rect, targets: readonly Rect[]): Guide {
 function moveCandidates(r: Rect, axis: Axis, targets: readonly Rect[], opts: SnapOptions): Candidate[] {
   const out: Candidate[] = [];
   const edges = [lo(r, axis), hi(r, axis)];
-  for (const t of targets) {
+  for (const t of [...targets, ...(opts.alignTo ?? [])]) {
     for (const tv of [lo(t, axis), hi(t, axis)]) {
       for (const sv of edges) out.push({ delta: tv - sv, guide: (f) => alignGuide(axis, tv, f, [t]) });
     }
@@ -164,7 +183,7 @@ function dedupe(guides: readonly Guide[]): Guide[] {
   return out;
 }
 
-/** 拖动窗口或框：targets 是同一个框里别的窗口（拖框时是别的框）。 */
+/** 拖动窗口或框：targets 是同一个框里别的窗口（拖框时是别的框），opts.alignTo 是只对齐边和中线的（附近的框）。 */
 export function snapMove(r: Rect, targets: readonly Rect[], opts: SnapOptions): SnapResult {
   const xs = pick(moveCandidates(r, 'x', targets, opts), opts.threshold);
   const ys = pick(moveCandidates(r, 'y', targets, opts), opts.threshold);
@@ -172,8 +191,15 @@ export function snapMove(r: Rect, targets: readonly Rect[], opts: SnapOptions): 
   return { rect, guides: dedupe([...xs, ...ys].map((c) => c.guide(rect))) };
 }
 
-/** 改大小：只吸正在动的边；同宽同高也算。吸完不能小于 min。 */
-export function snapResize(r: Rect, edge: ResizeEdge, targets: readonly Rect[], opts: SnapOptions & { min: Size }): SnapResult {
+/** 把 rect 在 axis 方向上 side 那条边挪 d。 */
+function moveEdge(rect: Rect, axis: Axis, side: 'lo' | 'hi', d: number): Rect {
+  if (d === 0) return rect;
+  if (axis === 'x') return side === 'hi' ? { ...rect, w: rect.w + d } : { ...rect, x: rect.x + d, w: rect.w - d };
+  return side === 'hi' ? { ...rect, h: rect.h + d } : { ...rect, y: rect.y + d, h: rect.h - d };
+}
+
+/** 改大小：只吸正在动的边；同宽同高也算。吸完不能小于 min（框还不能小于 fit.frame）。 */
+export function snapResize(r: Rect, edge: ResizeEdge, targets: readonly Rect[], opts: ResizeSnapOptions): SnapResult {
   let rect = { ...r };
   const chosen: Candidate[] = [];
   for (const axis of ['x', 'y'] as const) {
@@ -197,19 +223,24 @@ export function snapResize(r: Rect, edge: ResizeEdge, targets: readonly Rect[], 
       const tv = side === 'hi' ? hi(area, axis) : lo(area, axis);
       cands.push({ delta: tv - v, guide: (f) => alignGuide(axis, tv, f, [area]) });
     }
-    const ok = cands.filter((c) => (side === 'hi' ? len(rect, axis) + c.delta : len(rect, axis) - c.delta) >= minLen - EPS);
-    const got = pick(ok, opts.threshold);
-    const d = got[0]?.delta ?? 0;
-    if (d !== 0) {
-      rect =
-        axis === 'x'
-          ? side === 'hi'
-            ? { ...rect, w: rect.w + d }
-            : { ...rect, x: rect.x + d, w: rect.w - d }
-          : side === 'hi'
-            ? { ...rect, h: rect.h + d }
-            : { ...rect, y: rect.y + d, h: rect.h - d };
+    const fit = opts.fit;
+    if (fit) {
+      // 框正好装下里面的窗口：线画在窗口的边上
+      const tv = side === 'hi' ? hi(fit.frame, axis) : lo(fit.frame, axis);
+      const at = side === 'hi' ? hi(fit.content, axis) : lo(fit.content, axis);
+      cands.push({ delta: tv - v, guide: (f) => alignGuide(axis, at, f, [fit.content]) });
     }
+    const from = rect;
+    const apart = opts.keepApart;
+    const ok = cands.filter((c) => {
+      if ((side === 'hi' ? len(from, axis) + c.delta : len(from, axis) - c.delta) < minLen - EPS) return false;
+      if (fit && (side === 'hi' ? v + c.delta < hi(fit.frame, axis) - EPS : v + c.delta > lo(fit.frame, axis) + EPS)) return false;
+      if (apart === undefined) return true;
+      const next = moveEdge(from, axis, side, c.delta);
+      return !targets.some((t) => tooClose(t, next, apart) && !tooClose(t, from, apart));
+    });
+    const got = pick(ok, opts.threshold);
+    rect = moveEdge(rect, axis, side, got[0]?.delta ?? 0);
     chosen.push(...got);
   }
   return { rect, guides: dedupe(chosen.map((c) => c.guide(rect))) };

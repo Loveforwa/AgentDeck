@@ -136,6 +136,40 @@ describe('snapResize (V3)', () => {
   });
 });
 
+describe('IS-65: frames as align-only targets, frame resize', () => {
+  const min = { w: 110, h: 60 };
+
+  it('alignTo rects snap edges and centres but are not used for spacing', () => {
+    const f = R(0, 0, 100, 100);
+    // 边对边
+    expect(snapMove(R(300, 104, 50, 50), [], { ...opts, alignTo: [f] }).rect.y).toBe(100);
+    // 中线对中线
+    expect(snapMove(R(300, 27, 50, 50), [], { ...opts, alignTo: [f] }).rect.y).toBe(25);
+    // 并排、离它 14：作为窗口会吸到 16 的标准间距，作为框不吸
+    expect(snapMove(R(114, 300, 50, 50), [R(0, 290, 100, 100)], opts).rect.x).toBe(116);
+    expect(snapMove(R(114, 300, 50, 50), [], { ...opts, alignTo: [R(0, 290, 100, 100)] }).rect.x).toBe(114);
+  });
+
+  it('fit: the edge snaps to just fit the content and never goes inside it; the line is on the content edge', () => {
+    const content = R(16, 36, 300, 200);
+    const fit = { content, frame: R(0, 0, 332, 252) };
+    const res = snapResize(R(0, 0, 337, 400), 'e', [], { ...opts, min, fit });
+    expect(res.rect.w).toBe(332);
+    expect(res.guides).toEqual([{ kind: 'align', axis: 'x', at: 316, from: 0, to: 400 }]);
+    // 吸附点比 fit 小就不要（这里同宽 330 会挤进窗口）
+    expect(snapResize(R(0, 0, 334, 400), 'e', [R(0, 500, 330, 50)], { ...opts, min, fit }).rect.w).toBe(332);
+  });
+
+  it('keepApart: a snap that would bring the edge closer than keepApart to a target is skipped', () => {
+    const t = R(200, 0, 100, 100);
+    // 右边 179（离 t 21）：吸到隔 16 的 184 就离 t 不到 20 了，不吸
+    expect(snapResize(R(0, 0, 179, 100), 'e', [t], { ...opts, min, keepApart: 20 }).rect.w).toBe(179);
+    expect(snapResize(R(0, 0, 179, 100), 'e', [t], { ...opts, min }).rect.w).toBe(184);
+    // 隔 keepApart 正好的位置照吸（gap 和 keepApart 一样，框改大小就是这样）
+    expect(snapResize(R(0, 0, 177, 100), 'e', [t], { ...opts, gap: 20, min, keepApart: 20 }).rect.w).toBe(180);
+  });
+});
+
 describe('guide layout (screen coordinates)', () => {
   it('maps board coordinates through the viewport and keeps labels as whole numbers', () => {
     const { lines, labels } = layoutGuides(
