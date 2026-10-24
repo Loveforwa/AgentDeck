@@ -3,7 +3,7 @@
 实现过程中和一开始设想不一样的地方：原来以为什么、实际是什么、怎么决定的、好处和代价。
 由 `docs/research/build.py` 从 `docs/research/entries.py` 生成，不要直接改这个文件。更新于 2026-10-25。
 
-共 58 条：已解决 37，进行中 13，推迟 5，待验证 3。
+共 59 条：已解决 38，进行中 13，推迟 5，待验证 3。
 
 编号规则（全项目统一）：DR-xx 调研记录 · TC-xx 端到端用例 · IS-xx 问题 · F1、T2、X3 等是 MVP 任务表的任务编号。用例和问题在 MVP 验收报告（docs/status/index.html）里；每条调研下面列出相关的用例和问题。
 
@@ -70,6 +70,7 @@
   - [DR-56 Auto-approve 怎么替各 agent 按“允许一次”](#dr-56)（已解决）
   - [DR-57 React Flow 手势的两个坑](#dr-57)（已解决）
   - [DR-58 各 agent 怎么在启动时挂上 AgentDeck 的 MCP](#dr-58)（已解决）
+  - [DR-59 各 agent 怎么在启动时带上 skill](#dr-59)（已解决）
   - [DR-42 claude 能不能把对话 fork 到另一个目录](#dr-42)（待验证）
   - [DR-43 Approve all 发的“允许一次”按键对不对](#dr-43)（待验证）
   - [DR-44 经过 tmux 后的手感，要人在真界面上确认](#dr-44)（待验证）
@@ -833,6 +834,20 @@
 - **决策**：claude、codex、omp 挂上；pi、kimi 跳过并在 agent-adapters AGENTS.md 写明原因。需求里“自动装载 skill”先用 MCP 连接时附带的说明代替，不往用户配置里写 skill。
 - **好处**：不改用户配置，token 不进命令行。
 - **代价**：pi、kimi 用不了白板工具；omp 的连接没在真 TUI 里核对。
+
+<a id="dr-59"></a>
+
+### DR-59 各 agent 怎么在启动时带上 skill
+
+状态：已解决 · 出处：v3 N9 · packages/agent-adapters/src/skills · 旧编号 —
+
+相关：TC-39
+
+- **原来以为**：像 MCP 一样，每个 agent 都能用启动参数加 skill。
+- **实际情况**：claude 2.1.291 用 --plugin-dir 加载一个插件目录，里面的 skills/ 能被认出（plugin details 核对）；omp 18.0.4 同样用 --plugin-dir；pi 0.83 每个 skill 一个 --skill；kimi 2.3.1 有 --skills-dir，但会顶掉它自动发现的目录，要把那些目录一起传回去（没在真 kimi 里核对）；codex 0.164 的 skills.config 只能开关已经发现的 skill，加不进新的。
+- **决策**：claude、omp、pi、kimi 按上面带；codex 的 skill 行灰掉写 “Not supported for codex”。AgentDeck 在数据目录里按内容生成一套 skill 目录（skill-sets/），启动时指过去，不往用户配置和仓库里写东西。
+- **好处**：每个终端可以带不同的 skill，不影响用户全局配置。
+- **代价**：codex 加不了 skill；kimi 的做法没在真程序里核对；旧的 skill-sets 目录暂不清理。
 
 <a id="dr-42"></a>
 

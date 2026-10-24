@@ -2,8 +2,8 @@
 # 证据来自：各包测试、组装时记下的问题（已并进 tracking.py 的问题清单）、提交 c98a173 的说明、shots/ 下的截图，
 # 以及当晚在 main（24c44e5）上重跑的 pnpm check 和两次 Electron 启动。
 
-DATE = '2026-10-24'
-COMMIT = 'f95c6a7'
+DATE = '2026-10-25'
+COMMIT = '22373c2'
 
 # 已经实现的基础功能，按用户能看到的东西分组
 FEATURES = [
@@ -121,6 +121,8 @@ TRY = [
 ]
 
 NEXT = [
+    'MVP v3（N1、N2、N5、N6、N7、N9）和插件（PL0 入口、PL1 Auto-approve、PL2 Usage、X3 Approve all）都已合进 main，请按 TC-34～TC-42 在真应用里验收；这些都只在 dev 页面和测试里看过，没跑过真 agent。',
+    'v2 的五处缺口（IS-63～IS-67）已修，请顺便在真窗口里试：顶上 34px 能点到窗口、空白处能拖动应用窗口；拖窗口靠近别的框、改框大小时的对齐线。',
     'MVP v2（M5）五项都已合进 main（f95c6a7），请按 TC-29～TC-33 在真窗口里验收：红黄绿按钮的位置、拖动手感、单击 BOARD 列表跳转是截图看不到的。',
     '重新验收 2026-10-24 修好的 TC-05、TC-15、TC-17，以及合进来的 M1（白板上的 agent 自动连上 AgentDeck 的 MCP）。',
     '写 R2：把 14 条验收场景做成 Playwright（Electron 模式）用例，先做能完全自动的 1、2、6、7、9、10、12。',
