@@ -54,6 +54,7 @@
   --status-running: #1A7F37;
   --status-waiting: #BF8700;
   --status-error: #CF222E;
+  --guide: #2563EB;
   --focus: #1A1A1A;
   --scrim: rgba(26, 26, 26, 0.18);
   --shadow-float: 0 8px 24px rgba(0, 0, 0, 0.08);
@@ -81,6 +82,7 @@
   --status-running: #3FB950;
   --status-waiting: #E3B341;
   --status-error: #F85149;
+  --guide: #58A6FF;
   --focus: #EDEDEA;
   --scrim: rgba(0, 0, 0, 0.45);
   --shadow-float: 0 8px 24px rgba(0, 0, 0, 0.32);
@@ -110,6 +112,7 @@
     --status-running: #3FB950;
     --status-waiting: #E3B341;
     --status-error: #F85149;
+    --guide: #58A6FF;
     --focus: #EDEDEA;
     --scrim: rgba(0, 0, 0, 0.45);
     --shadow-float: 0 8px 24px rgba(0, 0, 0, 0.32);

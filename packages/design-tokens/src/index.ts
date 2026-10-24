@@ -1,5 +1,6 @@
 // AgentDeck 的样子只在这里定。tokens.css 由 scripts/gen-css.ts 从这个文件生成，不要手改 tokens.css。
 // 方向：暖灰加墨黑；颜色只用来表达状态（MVP v2 · V2 红绿灯）：运行中绿、等你黄（attention）、出错红，其他地方不用彩色；不用渐变、发光、毛玻璃。
+// 例外：拖动时临时出现的对齐线用蓝色（guide，MVP v2 · V3，照设计画布画板 11）。
 
 /** 一套主题里所有随明暗变化的值。键名转成 kebab-case 就是 CSS 变量名：lineStrong → --line-strong。 */
 export interface ThemeColors {
@@ -35,6 +36,8 @@ export interface ThemeColors {
   statusWaiting: string;
   /** 状态灯：出错。也用作 Error 的文字色 */
   statusError: string;
+  /** 白板的对齐线和间距、尺寸标注（MVP v2 · V3）。只在拖动、改大小时出现，不表示状态。也是标注数字的文字色 */
+  guide: string;
   /** 键盘焦点环 */
   focus: string;
   /** 对话框背后的遮罩 */
@@ -68,6 +71,7 @@ export const light: ThemeColors = {
   statusRunning: '#1A7F37',
   statusWaiting: '#BF8700',
   statusError: '#CF222E',
+  guide: '#2563EB',
   focus: '#1A1A1A',
   scrim: 'rgba(26, 26, 26, 0.18)',
   shadowFloat: '0 8px 24px rgba(0, 0, 0, 0.08)',
@@ -95,6 +99,7 @@ export const dark: ThemeColors = {
   statusRunning: '#3FB950',
   statusWaiting: '#E3B341',
   statusError: '#F85149',
+  guide: '#58A6FF',
   focus: '#EDEDEA',
   scrim: 'rgba(0, 0, 0, 0.45)',
   shadowFloat: '0 8px 24px rgba(0, 0, 0, 0.32)',
