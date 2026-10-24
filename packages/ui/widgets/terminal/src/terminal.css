@@ -110,6 +110,18 @@
   text-overflow: ellipsis;
 }
 
+/* 白板缩小时的整屏文字快照：和终端一样的字号、行高和留白，从上往下排 */
+.ad-terminal__summary--screen {
+  justify-content: flex-start;
+  padding: 4px 8px;
+  font-size: 13px;
+  line-height: 17px;
+}
+
+.ad-terminal__summary--screen .ad-terminal__summary-line {
+  text-overflow: clip;
+}
+
 .ad-terminal__summary[data-waiting] .ad-terminal__summary-line:last-child {
   color: var(--attention);
 }

@@ -68,8 +68,12 @@ export interface BoardControllerOptions {
 const FALLBACK_SIZE: Size = { w: 560, h: 360 };
 /** 新窗口和旁边窗口的间距。 */
 const GAP = 16;
-/** 低于这个缩放比例时，有 summaryBelow 的窗口都画成摘要卡（需求「3 · 白板」）。 */
-export const SUMMARY_ZOOM = 0.75;
+/**
+ * 低于这个缩放比例时，有 summaryBelow 的窗口都画成摘要卡（需求「3 · 白板」原定 75%）。
+ * 2026-10-24 验收时 ⌘− 缩一点点（73%）终端就不显示内容，太早了，改成 50%（IS-41）；
+ * 终端窗口在“缩小导致的摘要”里显示整屏文字快照，不只是 3 行。
+ */
+export const SUMMARY_ZOOM = 0.5;
 /** 窗口放大时离视口边的距离。 */
 const MAXIMIZE_MARGIN = 16;
 const STOPPED = new Set(['exited', 'error']);

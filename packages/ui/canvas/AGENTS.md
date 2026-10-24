@@ -18,7 +18,7 @@ registerWindow<TerminalWindowData>({
   label: 'Terminal',
   defaultSize: { w: 560, h: 360 },
   minSize: { w: 110, h: 60 },
-  summaryBelow: { w: 320, h: 200 }, // 宽或高小于它，或白板缩到 75% 以下时，props.summary 为 true
+  summaryBelow: { w: 320, h: 200 }, // 宽或高小于它，或白板缩到 50% 以下时，props.summary 为 true
   component: TerminalWindow, // props 是 contracts 的 WindowComponentProps<TerminalWindowData>
   create: (init) => ({ ...defaults, ...init }),
 });

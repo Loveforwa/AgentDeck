@@ -113,7 +113,7 @@ a:focus-visible { outline: 2px solid var(--attention); outline-offset: 2px }
   <header><span class="mono eid">DR-06</span><h4>白板不靠整体缩放放下更多窗口，而是拖小窗口、变摘要卡</h4><span class="st st-done">已解决</span></header>
   <div class="row two"><div><span class="label">原来以为</span><p>双指捏合缩放整块白板，缩小了就能看到所有终端。</p></div><div><span class="label">实际情况</span><p>xterm 用 canvas 画字，被 CSS 缩放后会糊，鼠标选区也会错位。</p></div></div>
   <div class="row one"><div><span class="label">决策</span><p>去掉双指捏合；靠拖边框把窗口改小，小于 320×200 时变成摘要卡（tmux capture-pane 取最后 3 行）；⌘ + 滚轮缩放只留作备用，低于 75% 同样变摘要卡。</p></div></div><div class="row two"><div class="pro"><span class="label">好处</span><p>真终端永远按 1:1 渲染，字清楚、选区准；摘要卡不用接上终端，不占资源。</p></div><div class="con"><span class="label">代价</span><p>不能像地图那样随手缩小看全部；摘要卡只有几行，看细节要点开。</p></div></div>
-  <p class="where">相关 <span class="ref">TC-09</span> <span class="ref">IS-23</span> · 出处：评论 4b8282c6；实施方案「风险 1」 · 旧编号 B3</p>
+  <p class="where">相关 <span class="ref">TC-09</span> <span class="ref">IS-23</span> <span class="ref">IS-41</span> · 出处：评论 4b8282c6；实施方案「风险 1」；2026-10-24 门槛从 75% 改成 50%，缩小时显示整屏文字快照（IS-41） · 旧编号 B3</p>
 </article><article id="dr-07" class="entry">
   <header><span class="mono eid">DR-07</span><h4>状态靠 agent 自己的钩子，不靠识别屏幕文字</h4><span class="st st-partial">进行中</span></header>
   <div class="row two"><div><span class="label">原来以为</span><p>用正则匹配终端输出，判断 agent 是在跑、在等批准还是说完了。</p></div><div><span class="label">实际情况</span><p>各家 TUI 一改版正则就失效；看不见的终端没有接上显示，也拿不到屏幕。</p></div></div>

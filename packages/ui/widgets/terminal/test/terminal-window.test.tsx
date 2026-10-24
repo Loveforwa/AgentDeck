@@ -295,9 +295,9 @@ describe('reopening the app (T6)', () => {
 });
 
 describe('summary card (T8)', () => {
-  it('does not attach; shows the last 3 lines and keeps them fresh', async () => {
+  it('dragged small: does not attach; shows the last 3 lines and keeps them fresh', async () => {
     makeTerminal({ history: 'one\r\ntwo\r\nthree\r\nfour\r\n' });
-    const h = mount({ terminalId: T, agent: 'claude', cmd: 'claude', cwd: '/repo' }, { summary: true });
+    const h = mount({ terminalId: T, agent: 'claude', cmd: 'claude', cwd: '/repo' }, { summary: true, contentSize: { w: 240, h: 110 } });
     expect(await screen.findByText('four')).toBeTruthy();
     expect(screen.getByText('two')).toBeTruthy();
     expect(screen.queryByText('one')).toBeNull();
@@ -307,6 +307,15 @@ describe('summary card (T8)', () => {
     // 恢复原大小：接上显示
     h.setProps({ summary: false });
     await waitFor(() => expect(api.fakes.terminals.views(T)).toHaveLength(1));
+  });
+
+  it('board zoomed out: a full-size window shows its whole screen as text, not just 3 lines (IS-41)', async () => {
+    makeTerminal({ history: 'one\r\ntwo\r\nthree\r\nfour\r\n' });
+    mount({ terminalId: T, agent: 'claude', cmd: 'claude', cwd: '/repo' }, { summary: true, contentSize: { w: 560, h: 332 } });
+    expect(await screen.findByText('one')).toBeTruthy();
+    expect(screen.getByText('four')).toBeTruthy();
+    expect(document.querySelector('.ad-terminal__summary--screen')).not.toBeNull();
+    expect(api.fakes.terminals.views(T)).toHaveLength(0);
   });
 });
 

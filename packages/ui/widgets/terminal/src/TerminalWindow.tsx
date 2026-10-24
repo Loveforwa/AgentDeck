@@ -5,7 +5,7 @@
 // - 重开应用（T6）：按保存的 terminalId 在 list() 里找；会话没了显示 “Previous session ended” + Restart ▾。
 // - 进程退出（T5）：内容保留，底部出现 “Process exited (code 1)” + Restart / Close。
 // - 命令找不到：“Command not found: claude” + Open Settings / Use Shell instead。
-// - 摘要卡（T8）：不 attach，用 lastLines 取最后 3 行。
+// - 摘要卡（T8）：不 attach，用 lastLines 取最后 3 行；窗口够大、只是白板缩小时取整屏行数，画成文字快照（IS-41）。
 // - 标题栏状态：status.changed 按 terminalId 对上；带 sessionId 时写回 data（恢复会话、Fork 用）。
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type DragEvent, type ReactNode } from 'react';
@@ -45,7 +45,10 @@ type Phase =
 export const OPEN_SETTINGS_EVENT = 'agentdeck:open-settings';
 
 const STATUS_TICK_MS = 30_000;
+/** 窗口被拉小成摘要卡时显示的行数。 */
 const SUMMARY_LINES = 3;
+/** 内容区至少这么大，才算“白板缩小导致的摘要”，显示整屏文字快照（IS-41）。 */
+const SNAPSHOT_MIN: { w: number; h: number } = { w: 320, h: 160 };
 const SUMMARY_REFRESH_MS = 1000;
 
 function api(): AgentDeckApi {
@@ -69,6 +72,9 @@ export function TerminalWindow(props: TerminalWindowProps): ReactNode {
   const [snapshot, setSnapshot] = useState<StatusSnapshot | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [summaryLines, setSummaryLines] = useState<string[]>([]);
+  // 窗口本身够大、只是白板缩小了：显示整屏文字（DOM 文字缩放后仍然清楚），而不是 3 行摘要
+  const screenSnapshot = summary && contentSize.w >= SNAPSHOT_MIN.w && contentSize.h >= SNAPSHOT_MIN.h;
+  const summaryRows = screenSnapshot ? termSizeFor(contentSize).rows : SUMMARY_LINES;
   const [restartMenu, setRestartMenu] = useState(false);
   const [dragOver, setDragOver] = useState(false);
 
@@ -330,7 +336,7 @@ export function TerminalWindow(props: TerminalWindowProps): ReactNode {
       timer = null;
       last = Date.now();
       a.terminals
-        .lastLines(terminalId, SUMMARY_LINES)
+        .lastLines(terminalId, summaryRows)
         .then((lines) => {
           if (!cancelled) setSummaryLines(lines);
         })
@@ -349,7 +355,7 @@ export function TerminalWindow(props: TerminalWindowProps): ReactNode {
       if (timer) clearTimeout(timer);
       offs.forEach((off) => off());
     };
-  }, [summary, terminalId, phase.kind]);
+  }, [summary, terminalId, phase.kind, summaryRows]);
 
   // ---- 从访达拖入文件：写入带引号的路径 ----
   const onDrop = (e: DragEvent) => {
@@ -385,7 +391,7 @@ export function TerminalWindow(props: TerminalWindowProps): ReactNode {
       </div>
 
       {summary && (
-        <div className="ad-terminal__summary" data-waiting={waiting || undefined}>
+        <div className={screenSnapshot ? 'ad-terminal__summary ad-terminal__summary--screen' : 'ad-terminal__summary'} data-waiting={(!screenSnapshot && waiting) || undefined}>
           {phase.kind === 'live' ? (
             summaryLines.length > 0 ? (
               summaryLines.map((l, i) => (
