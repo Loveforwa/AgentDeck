@@ -1,5 +1,5 @@
 # MVP 验收报告的数据（用例和问题在 tracking.py，调研在 ../research/entries.py）（2026-10-23 晚的快照）。改这里，然后运行 `python3 docs/status/build.py`。
-# 证据来自：各包测试、apps/desktop/ASSEMBLY_NOTES.md、提交 c98a173 的说明、.agentdeck-shots/ 下的截图，
+# 证据来自：各包测试、组装时记下的问题（已并进 tracking.py 的问题清单）、提交 c98a173 的说明、shots/ 下的截图，
 # 以及当晚在 main（24c44e5）上重跑的 pnpm check 和两次 Electron 启动。
 
 DATE = '2026-10-24'
@@ -122,7 +122,7 @@ TRY = [
 
 NEXT = [
     '写 R2：把 14 条验收场景做成 Playwright（Electron 模式）用例，先做能完全自动的 1、2、6、7、9、10、12。',
-    '修 ASSEMBLY_NOTES 里的 9 条（多数是一两行的事），尤其是 tmux-host 的变量重名和“信任提示显示 Idle”。',
+    '修组装时记下的 9 条（IS-06～IS-10、IS-19～IS-22，多数是一两行的事），尤其是 tmux-host 的变量重名（IS-09）和“信任提示显示 Idle”（IS-06）。',
     '整理 contracts 0.1.4，并让线 2–5 把 0.1.3 的新字段用起来。',
     '补三项性能测量：30 个窗口平移、Electron 里 6 个终端打字延迟、空闲 CPU。',
     '给 CI 装 tmux，推到 GitHub 跑一次（需要你给仓库名）。',

@@ -162,7 +162,7 @@ tr:target td { background: var(--soft) }
       <h3>线和线之间的接缝</h3>
       <p class="muted small">两边都按 contracts 写，开发时各自用假数据，组装时直接接上。</p>
       <ul class="notes"><li>终端的 activity / silence / exit → 线 4 的状态机</li><li>线 4 的 agent.turn-end → 线 3 的面板刷新</li><li>terminal.link（localhost）→ 线 2 在同一个框里开线 5 的网页窗口</li><li>workspaces.create 返回的 setup → 线 2 在框里开一个 Shell</li><li>线 2 的 New terminal ▸ → 线 4 的 agents.start → 线 1 的终端窗口</li><li>status.changed → 线 1 标题栏、线 2 框和顶栏</li></ul>
-      <p class="muted small">规矩：并发期间 contracts 只加不改；要改就单独提交、版本号加一、其他线 rebase。详细见仓库里的 docs/parallel.md 和 packages/contracts/AGENTS.md。</p>
+      <p class="muted small">规矩：并发期间 contracts 只加不改；要改就单独提交、版本号加一、其他线 rebase。详细见仓库里的 packages/contracts/AGENTS.md。</p>
     </div>
   </div>
 </section>

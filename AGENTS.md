@@ -7,12 +7,10 @@
 - 需求（设计画布，带配图和操作流程，以它为准）：https://claude.ai/artifact/2GtB5izXeQSV3NecUYuLAo
 - 实施方案（技术选型、模块、风险）：https://claude.ai/artifact/QrjHF5gpT6zdHJr6wdFaWp ，本地副本 `docs/design/agentdeck-plan.html`
 - MVP 任务表（任务编号、依赖、完成标准）：https://claude.ai/artifact/8UAh7Quj23xxk7oEikgdEg ，本地副本 `docs/design/agentdeck-mvp-plan.html`
-- 并发安排：`docs/parallel.md`
 - 已定的决策（平台、tmux、环境变量等）：`docs/decisions.md`
-- MVP 现状和验收证据：`docs/mvp-status.md`（由 `docs/status/build.py` 生成），网页版 https://claude.ai/artifact/FfnyWBeBAg1oPtyHieMbuu
+- MVP 验收报告（现状、验收证据、端到端用例、问题清单）：https://claude.ai/artifact/FfnyWBeBAg1oPtyHieMbuu ，本地 `docs/status/index.html`（由 `docs/status/build.py` 生成）
 - 调研记录（实现中和最初设想不一样的地方、怎么决定的、好处和代价）：`docs/research-log.md`，网页版 https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK 。各条线发现新的情况写进自己的汇报或 CONTRACT_NOTES.md，合并时由集成负责人加进 `docs/research/entries.py`，不要各自直接改它（避免并行冲突）。
 - 接口：`packages/contracts`，规则见 `packages/contracts/AGENTS.md`
-- `docs/design/agentdeck-mvp-spec.html` 是早期版本，已不维护。
 
 ## 编号规则
 
@@ -22,7 +20,7 @@
 - `TC-xx`：端到端用例。`TC-01`–`TC-14` 就是设计画布「10 · 全局规则」的 14 条验收场景，`TC-15` 起是补充的。
 - `IS-xx`：问题清单里的问题，按登记顺序编号，轻重看 P 级（P0–P3）。
 - `DR-xx`：调研记录（`docs/research-log.md`）。
-- 用例和问题的唯一来源是 `docs/status/tracking.py`，调研记录是 `docs/research/entries.py`，MVP 现状是 `docs/status/data.py`；改完运行 `python3 docs/status/build.py`（验收报告网页 + docs/mvp-status.md）。用户在网页上填的验收结果和处理状态存在网页的数据库里（集合 acceptance、issues），读写用 ArtifactData。xlsx 用 `docs/status/build_xlsx.py` 生成，用户不再用它。2026-10-24 之前的旧编号（E01、Q38、A1 这类）只在各表的“旧编号”列里保留。
+- 用例和问题的唯一来源是 `docs/status/tracking.py`，调研记录是 `docs/research/entries.py`，MVP 现状是 `docs/status/data.py`；改完运行 `python3 docs/status/build.py`（验收报告网页）。用户在网页上填的验收结果和处理状态存在网页的数据库里（集合 acceptance、issues），读写用 ArtifactData。2026-10-24 之前的旧编号（E01、Q38、A1 这类）只在各表的“旧编号”列里保留。
 
 ## 技术栈
 

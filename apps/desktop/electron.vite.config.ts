@@ -19,7 +19,7 @@ const bundleInternal = { exclude: internal };
 /**
  * electron-vite 给用到 require( 的 ESM 产物加一段 `const require = createRequire(import.meta.url)`（vite:esm-shim），
  * 而 packages/tmux-host/src/pty.ts 自己也在顶层声明了 `const require`，打进同一个 chunk 后变成重复声明（SyntaxError）。
- * 这里在打包前把这种模块自己的 require 改个名字。见 ASSEMBLY_NOTES.md「tmux-host：顶层 const require」。
+ * 这里在打包前把这种模块自己的 require 改个名字。见问题清单 IS-09（docs/status/tracking.py）。
  */
 function renameLocalRequire(): Plugin {
   return {

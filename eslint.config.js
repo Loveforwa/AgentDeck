@@ -27,7 +27,6 @@ export default defineConfig(
       '.claude/**',
       // 开发模式的数据目录：里面有新建的 worktree（IS-19），以及截图
       '.agentdeck-dev/**',
-      '.agentdeck-shots/**',
       // 故意违规的样例，由 tools/boundary-fixtures 的测试单独检查
       'tools/boundary-fixtures/cases/**',
       'tools/boundary-fixtures/eslint/**',

@@ -188,7 +188,7 @@ async function main(): Promise<void> {
   });
 
   // 白板的 New terminal ▸ 把 list() 里每个已安装的 agent 都列出来，但“自定义命令”要先问命令是什么（还没有这个对话框），
-  // 直接选会以没有命令启动失败。先不交给界面，见 ASSEMBLY_NOTES.md。
+  // 直接选会以没有命令启动失败。先不交给界面，见 IS-21。
   const visible = (list: Awaited<ReturnType<typeof rt.agents.list>>) => list.filter((a) => a.id !== 'custom');
   const agents = {
     list: () => rt.agents.list().then(visible),

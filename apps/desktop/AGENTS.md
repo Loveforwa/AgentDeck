@@ -26,7 +26,6 @@ src/preload/        window.agentdeck（contracts 的 AgentDeckApi）、window.ag
 src/shared/         方法名单、线路工具、主进程 ↔ utilityProcess 协议、应用壳自己的 IPC（desktop-bridge.ts）
 src/renderer/       顶栏 + 白板（ui-canvas）+ 源代码管理面板（scm-panel）；注册终端、网页两种窗口；演示模式（demo.ts）
 test/               Vitest：注册表、preload 代理、主进程接线、组装用到的纯逻辑（assembly.test.ts）、browser
-ASSEMBLY_NOTES.md   组装时发现的、要别的包改的问题
 ```
 
 ## 运行
@@ -78,5 +77,5 @@ Electron 45 第一次运行时才下载二进制（pnpm 10 不跑依赖的 posti
 
 ## 不许碰
 
-- `packages/contracts`：线路约定有问题写进 `CONTRACT_NOTES.md`；组装时发现的写进 `ASSEMBLY_NOTES.md`。
-- 其他包的目录（问题写进 `ASSEMBLY_NOTES.md`）。
+- `packages/contracts`：线路约定有问题写进 `CONTRACT_NOTES.md`；组装时发现的问题登记进 `docs/status/tracking.py`（IS-xx）。
+- 其他包的目录（问题登记进 `docs/status/tracking.py`）。

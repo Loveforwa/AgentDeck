@@ -523,7 +523,7 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
     <h4>深色白板上 claude 的字看得清，切换深浅色后跟着变</h4>
     <label class="field result"><span>验收结果</span><select id="res-TC-26" data-tc="TC-26" class="res"><option value="" selected>未验收</option><option>通过</option><option>不通过</option><option>阻塞</option><option>跳过</option></select></label>
   </div>
-  <p class="now"><span class="label">当前情况</span>已修：2026-10-24 用户在深色白板上看到 claude 的问题标题是黑字、输入框是白条（IS-42）。用独立 tmux 3.6a + claude 2.1.291 模拟整条链路验证过（深→浅→深都跟着变）；已经开着的 claude 要重开才生效</p>
+  <p class="now"><span class="label">当前情况</span>已修：2026-10-24 用户在深色白板上看到 claude 的问题标题是黑字、输入框是白条（IS-42）。用独立 tmux 3.6a + claude 2.1.291 模拟整条链路验证过（深→浅→深都跟着变）；已经开着的 claude 要重启才生效：标题栏右键 › Restart and resume conversation（2026-10-24 加，对话接着）</p>
   <details>
     <summary>前置要求、操作步骤和预期</summary>
     <div class="spec">
@@ -1018,7 +1018,7 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
     </div>
   </details>
   <p class="links">关联用例 <a class="ref" href="#tc-26">TC-26</a> · 相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-46" target="_blank" rel="noopener">DR-46</a></p>
-  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-42" data-is="IS-42" class="is-note" rows="1" placeholder="处理到哪了">2026-10-24 已修：claude 启动时主题设成 auto，深浅色切换时通知 tmux；独立 tmux 里模拟整条链路验证通过。要重启 AgentDeck、重开 claude 终端才生效</textarea></label>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-42" data-is="IS-42" class="is-note" rows="1" placeholder="处理到哪了">2026-10-24 已修：claude 启动时主题设成 auto，深浅色切换时通知 tmux；独立 tmux 里模拟整条链路验证通过。要重启 AgentDeck；已经开着的 claude 用标题栏右键 › Restart and resume conversation 换上新参数（对话接着）</textarea></label>
 </article><article class="issue" id="is-43" data-issue="IS-43" data-state="已解决">
   <div class="case-head">
     <span class="mono cid">IS-43</span><span class="pri pri-P1">P1</span><span class="tag">缺陷</span><span class="mod">网页窗口</span>
@@ -1381,7 +1381,7 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
 
 <section class="block">
   <div class="head"><h2>建议的下一步</h2></div>
-  <ol class="list"><li>写 R2：把 14 条验收场景做成 Playwright（Electron 模式）用例，先做能完全自动的 1、2、6、7、9、10、12。</li><li>修 ASSEMBLY_NOTES 里的 9 条（多数是一两行的事），尤其是 tmux-host 的变量重名和“信任提示显示 Idle”。</li><li>整理 contracts 0.1.4，并让线 2–5 把 0.1.3 的新字段用起来。</li><li>补三项性能测量：30 个窗口平移、Electron 里 6 个终端打字延迟、空闲 CPU。</li><li>给 CI 装 tmux，推到 GitHub 跑一次（需要你给仓库名）。</li></ol>
+  <ol class="list"><li>写 R2：把 14 条验收场景做成 Playwright（Electron 模式）用例，先做能完全自动的 1、2、6、7、9、10、12。</li><li>修组装时记下的 9 条（IS-06～IS-10、IS-19～IS-22，多数是一两行的事），尤其是 tmux-host 的变量重名（IS-09）和“信任提示显示 Idle”（IS-06）。</li><li>整理 contracts 0.1.4，并让线 2–5 把 0.1.3 的新字段用起来。</li><li>补三项性能测量：30 个窗口平移、Electron 里 6 个终端打字延迟、空闲 CPU。</li><li>给 CI 装 tmux，推到 GitHub 跑一次（需要你给仓库名）。</li></ol>
 </section>
 
 <details class="block collapse">
@@ -1402,7 +1402,7 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
 </details>
 </div>
 
-<script type="application/json" id="meta">{"cases": ["TC-28", "TC-27", "TC-26", "TC-25", "TC-24", "TC-04", "TC-05", "TC-03", "TC-10", "TC-02", "TC-15", "TC-16", "TC-17", "TC-01", "TC-06", "TC-07", "TC-08", "TC-09", "TC-11", "TC-12", "TC-13", "TC-18", "TC-19", "TC-20", "TC-21", "TC-22", "TC-23", "TC-14"], "issues": ["IS-37", "IS-38", "IS-01", "IS-02", "IS-03", "IS-04", "IS-05", "IS-06", "IS-07", "IS-09", "IS-10", "IS-11", "IS-12", "IS-13", "IS-14", "IS-16", "IS-17", "IS-24", "IS-08", "IS-15", "IS-18", "IS-19", "IS-20", "IS-21", "IS-22", "IS-23", "IS-25", "IS-26", "IS-27", "IS-28", "IS-29", "IS-35", "IS-36", "IS-30", "IS-31", "IS-32", "IS-33", "IS-34", "IS-39", "IS-40", "IS-41", "IS-42", "IS-43", "IS-44"], "defaults": {"IS-44": {"status": "已解决", "note": "2026-10-24 已做：外部网站自动用 webview（独立分区、UA 去掉 Electron、允许登录弹窗），出错页加 Show it here；在单独的 Electron 实例里验证 google、github、Google 登录页都能显示和缩放。要重启 AgentDeck，真正登录待用户试（TC-28）"}, "IS-43": {"status": "已解决", "note": "2026-10-24 已修：ping 改用 net.request，加了测试；真 Electron 里 google.com → 301、github.com/login → 200。要重启 AgentDeck 才生效"}, "IS-42": {"status": "已解决", "note": "2026-10-24 已修：claude 启动时主题设成 auto，深浅色切换时通知 tmux；独立 tmux 里模拟整条链路验证通过。要重启 AgentDeck、重开 claude 终端才生效"}, "IS-41": {"status": "已解决", "note": "2026-10-24 已修：缩放门槛 75% 改 50%；缩小时显示整屏文字快照，加了测试。正在运行的 AgentDeck 已热更新"}, "IS-39": {"status": "已解决", "note": "2026-10-24 已修（3ceabfb）：scrollback 改成 1000，固定种子的复现测试通过；正在运行的 AgentDeck 已热更新"}, "IS-40": {"status": "已解决", "note": "2026-10-24 已修（3ceabfb）：加 Unicode 11 宽度表，35 个常用符号和 tmux 实测宽度全部吻合，写成测试"}, "IS-37": {"status": "已解决", "note": "2026-10-24 已修（925c11f）：只要目录里有终端开着就确认，确认框列出这些终端；面板加了测试"}, "IS-38": {"status": "已解决", "note": "2026-10-24 已修（925c11f）：应用启动时找出自己运行的目录，界面对它切分支、建分支并切换、连目录删除都拒绝；真窗口里验证过"}}}</script>
+<script type="application/json" id="meta">{"cases": ["TC-28", "TC-27", "TC-26", "TC-25", "TC-24", "TC-04", "TC-05", "TC-03", "TC-10", "TC-02", "TC-15", "TC-16", "TC-17", "TC-01", "TC-06", "TC-07", "TC-08", "TC-09", "TC-11", "TC-12", "TC-13", "TC-18", "TC-19", "TC-20", "TC-21", "TC-22", "TC-23", "TC-14"], "issues": ["IS-37", "IS-38", "IS-01", "IS-02", "IS-03", "IS-04", "IS-05", "IS-06", "IS-07", "IS-09", "IS-10", "IS-11", "IS-12", "IS-13", "IS-14", "IS-16", "IS-17", "IS-24", "IS-08", "IS-15", "IS-18", "IS-19", "IS-20", "IS-21", "IS-22", "IS-23", "IS-25", "IS-26", "IS-27", "IS-28", "IS-29", "IS-35", "IS-36", "IS-30", "IS-31", "IS-32", "IS-33", "IS-34", "IS-39", "IS-40", "IS-41", "IS-42", "IS-43", "IS-44"], "defaults": {"IS-44": {"status": "已解决", "note": "2026-10-24 已做：外部网站自动用 webview（独立分区、UA 去掉 Electron、允许登录弹窗），出错页加 Show it here；在单独的 Electron 实例里验证 google、github、Google 登录页都能显示和缩放。要重启 AgentDeck，真正登录待用户试（TC-28）"}, "IS-43": {"status": "已解决", "note": "2026-10-24 已修：ping 改用 net.request，加了测试；真 Electron 里 google.com → 301、github.com/login → 200。要重启 AgentDeck 才生效"}, "IS-42": {"status": "已解决", "note": "2026-10-24 已修：claude 启动时主题设成 auto，深浅色切换时通知 tmux；独立 tmux 里模拟整条链路验证通过。要重启 AgentDeck；已经开着的 claude 用标题栏右键 › Restart and resume conversation 换上新参数（对话接着）"}, "IS-41": {"status": "已解决", "note": "2026-10-24 已修：缩放门槛 75% 改 50%；缩小时显示整屏文字快照，加了测试。正在运行的 AgentDeck 已热更新"}, "IS-39": {"status": "已解决", "note": "2026-10-24 已修（3ceabfb）：scrollback 改成 1000，固定种子的复现测试通过；正在运行的 AgentDeck 已热更新"}, "IS-40": {"status": "已解决", "note": "2026-10-24 已修（3ceabfb）：加 Unicode 11 宽度表，35 个常用符号和 tmux 实测宽度全部吻合，写成测试"}, "IS-37": {"status": "已解决", "note": "2026-10-24 已修（925c11f）：只要目录里有终端开着就确认，确认框列出这些终端；面板加了测试"}, "IS-38": {"status": "已解决", "note": "2026-10-24 已修（925c11f）：应用启动时找出自己运行的目录，界面对它切分支、建分支并切换、连目录删除都拒绝；真窗口里验证过"}}}</script>
 <script>
 (function () {
   var META = JSON.parse(document.getElementById('meta').textContent);

@@ -39,7 +39,7 @@ export async function runDemo(controller: BoardController, api: AgentDeckApi, re
   if (terminalsIn(controller, wsId).length === 0) {
     const shellWin = await controller.newTerminal({ agent: 'shell', workspaceId: wsId });
     // 终端窗口把 500ms 内的 terminals.list() 合成一次：紧接着建的第二个终端会在旧的列表里找不到自己，
-    // 显示 “Previous session ended”（ASSEMBLY_NOTES.md 第 9 条），所以隔开一点
+    // 显示 “Previous session ended”（IS-07），所以隔开一点
     await sleep(700);
     await controller.newTerminal({ agent: 'claude', workspaceId: wsId, nextTo: shellWin });
     if (shellWin) void typeIntoShell(controller, api, shellWin);

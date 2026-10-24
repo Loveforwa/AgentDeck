@@ -1,4 +1,4 @@
-"""生成验收报告：docs/status/index.html（网页版，截图在 shots/）和 docs/mvp-status.md。
+"""生成验收报告：docs/status/index.html（截图在 shots/）。
 
 数据来源：
 - data.py：功能清单、烟测、39 项 P0 的证据、14 条验收场景的现状、验货步骤、下一步
@@ -23,7 +23,6 @@ from tracking import CASES, ISSUES, RESOLVED  # noqa: E402
 from entries import ENTRIES as RESEARCH, STAGES  # noqa: E402
 
 ROOT = HERE.parent.parent
-MD_OUT = ROOT / 'docs' / 'mvp-status.md'
 HTML_OUT = HERE / 'index.html'
 RESEARCH_URL = 'https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK'
 E = html.escape
@@ -59,48 +58,6 @@ def refs_of(text):
 
 
 # ---------------- Markdown ----------------
-
-def md():
-    o = ['# AgentDeck MVP 验收报告', '',
-         f'{D.DATE} · main {D.COMMIT}。由 `docs/status/build.py` 生成（数据在 `docs/status/data.py`、`docs/status/tracking.py`）。'
-         f'验收结果和处理状态在网页版上填，这份 Markdown 只有用例和问题本身。', '',
-         '编号：TC-xx 端到端用例 · IS-xx 问题 · DR-xx 调研记录 · F1、T2 等是任务编号。', '',
-         '## 一句话', '',
-         f'第一个能打开、能用的版本已经组装好。39 项基础功能里 {P0C["auto"]} 项有自动测试，{P0C["manual"]} 项只有手动验证，{P0C["partial"]} 项没做完；'
-         f'{len(CASES)} 条端到端用例里 {CASEC["⚠ 当前有问题"]} 条当前有问题、{CASEC["已验证"]} 条在真窗口里验证过；'
-         f'问题清单 {len(ISSUES)} 条（P0 {ISSUEC["P0"]}、P1 {ISSUEC["P1"]}、P2 {ISSUEC["P2"]}、P3 {ISSUEC["P3"]}）。', '',
-         '## 已经实现的基础功能', '']
-    for g, items in D.FEATURES:
-        o.append(f'### {g}')
-        o += [f'- {x}' for x in items]
-        o.append('')
-    o += ['## 烟测', '', '| 项目 | 结果 | 说明 |', '| --- | --- | --- |']
-    o += [f'| {a} | {SMOKE_LABEL[b]} | {c} |' for a, b, c in D.SMOKE]
-    o += ['', '## 39 项基础功能（P0 任务）', '', '| 编号 | 功能 | 状态 | 自动测试 | 真窗口里验证 | 备注 |', '| --- | --- | --- | --- | --- | --- |']
-    o += [f'| {i} | {t} | {P0_LABEL[s]} | {a} | {m} | {n} |' for i, t, s, a, m, n in D.P0]
-    o += ['', f'## 端到端用例（{len(CASES)} 条，TC-01 到 TC-14 是 14 条验收场景）', '']
-    for k in cases:
-        o += [f'### {k["id"]} {k["scene"]}', '',
-              f'{k["p"]} · {k["status"]}' + (f' · 关联问题 {k["rel"]}' if k['rel'] else '') +
-              (f' · 相关调研 {" ".join(research_for(k["id"]))}' if research_for(k['id']) else ''), '',
-              f'- **前置要求**：{k["pre"]}',
-              '- **操作步骤**：' + k['steps'].replace('\n', '；'),
-              '- **UI / 后台预期表现**：' + k['expect'].replace('\n', ' '),
-              f'- **最终效果**：{k["result"]}',
-              f'- **当前情况**：{k["issue"]}', '']
-    o += [f'## 问题清单（{len(ISSUES)} 条）', '']
-    for p in P_ORDER:
-        o += [f'### {p} · {P_LABEL[p]}', '', '| 编号 | 类型 | 模块 | 问题 | 建议处理 | 关联用例 | 默认状态 |', '| --- | --- | --- | --- | --- | --- | --- |']
-        for i in issues:
-            if i[1] == p:
-                o.append(f'| {i[0]} | {i[2]} | {i[3]} | {i[4]} | {i[7]} | {i[8]} | {"已解决" if i[0] in RESOLVED else "待处理"} |')
-        o.append('')
-    o += ['## 怎么验收', '']
-    for k, (a, b, c) in enumerate(D.TRY, 1):
-        o += [f'{k}. **{a}**：`{b}`。{c}']
-    o += ['', '## 建议的下一步', ''] + [f'{k}. {x}' for k, x in enumerate(D.NEXT, 1)]
-    return '\n'.join(o) + '\n'
-
 
 # ---------------- 网页 ----------------
 
@@ -538,6 +495,5 @@ details summary {{ cursor: pointer; font-size: 12.5px; color: var(--muted) }}
 '''
 
 
-MD_OUT.write_text(md(), encoding='utf-8')
 HTML_OUT.write_text(page(), encoding='utf-8')
-print(f'P0 {P0C} · cases {CASEC} · issues {ISSUEC} → {MD_OUT.relative_to(ROOT)}, {HTML_OUT.relative_to(ROOT)}')
+print(f'P0 {P0C} · cases {CASEC} · issues {ISSUEC} → {HTML_OUT.relative_to(ROOT)}')

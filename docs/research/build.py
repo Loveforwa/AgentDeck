@@ -43,7 +43,7 @@ def build_md():
         '共 ' + str(len(ENTRIES)) + ' 条：' + '，'.join(f'{STATUS[k]} {v}' for k, v in c.items()) + '。',
         '',
         '编号规则（全项目统一）：DR-xx 调研记录 · TC-xx 端到端用例 · IS-xx 问题 · F1、T2、X3 等是 MVP 任务表的任务编号。'
-        '用例和问题在 docs/status/AgentDeck-端到端用例与问题清单-*.xlsx 里；每条调研下面列出相关的用例和问题。',
+        '用例和问题在 MVP 验收报告（docs/status/index.html）里；每条调研下面列出相关的用例和问题。',
         '',
         '## 目录',
         '',
@@ -191,7 +191,7 @@ a:focus-visible {{ outline: 2px solid var(--attention); outline-offset: 2px }}
   <h1>AgentDeck 调研记录</h1>
   <p>从画原型到写代码，哪些地方和一开始想的不一样：原来以为什么、实际是什么、怎么决定的、换来的好处和付出的代价。最后一组是已经有对策、还要等真东西试过的。</p>
   <div class="facts"><span>共 <b>{len(ENTRIES)}</b> 条</span>{facts}</div>
-  <p class="rules">编号全项目统一：<b>DR-xx</b> 调研记录 · <b>TC-xx</b> 端到端用例 · <b>IS-xx</b> 问题 · <b>F1、T2、X3</b> 等是 MVP 任务表的任务。用例和问题在《AgentDeck 端到端用例与问题清单》xlsx 里，每条调研下面列出相关的用例和问题。</p>
+  <p class="rules">编号全项目统一：<b>DR-xx</b> 调研记录 · <b>TC-xx</b> 端到端用例 · <b>IS-xx</b> 问题 · <b>F1、T2、X3</b> 等是 MVP 任务表的任务。用例和问题在 MVP 验收报告里，每条调研下面列出相关的用例和问题。</p>
 </header>
 
 <nav aria-label="目录"><div class="toc">{"".join(toc)}</div></nav>

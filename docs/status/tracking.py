@@ -1,5 +1,5 @@
 # 端到端用例（TC-xx）和问题清单（IS-xx）的唯一数据来源。
-# 用的地方：docs/status/build.py（验收报告网页和 docs/mvp-status.md）、docs/status/build_xlsx.py（xlsx，可选）。
+# 用的地方：docs/status/build.py（验收报告网页）、docs/research/build.py（调研记录里列出相关用例和问题）。
 # 编号规则见根目录 AGENTS.md。验收结果和处理状态由用户在网页上填，存在网页自己的数据库里；这里的 RESOLVED 是默认值。
 
 # ---------------- 端到端用例 ----------------
@@ -28,7 +28,7 @@ CASES = [
          steps='1. 白板切到深色，新开 claude，让它用提问的方式（AskUserQuestion）问一个问题\n2. 看问题标题、选项、输入框\n3. 不关终端，切到浅色，再切回深色',
          expect='UI：深色白板上问题标题和选项是浅色字，输入框背景是深灰；切到浅色后变成黑字，切回来又变浅。\n后台：启动参数 --settings 里有 "theme":"auto"；切深浅色时终端组件向 tmux 发 CSI ? 997 ; 1|2 n。',
          result='不用改自己的 claude 配置，在 AgentDeck 里不管深浅色字都看得清',
-         issue='已修：2026-10-24 用户在深色白板上看到 claude 的问题标题是黑字、输入框是白条（IS-42）。用独立 tmux 3.6a + claude 2.1.291 模拟整条链路验证过（深→浅→深都跟着变）；已经开着的 claude 要重开才生效',
+         issue='已修：2026-10-24 用户在深色白板上看到 claude 的问题标题是黑字、输入框是白条（IS-42）。用独立 tmux 3.6a + claude 2.1.291 模拟整条链路验证过（深→浅→深都跟着变）；已经开着的 claude 要重启才生效：标题栏右键 › Restart and resume conversation（2026-10-24 加，对话接着）',
          rel='IS-42'),
     dict(id='TC-25', p='P0', status='部分验证',
          scene='在终端里和 agent 对话，同时改窗口大小，字显示正常',
@@ -292,7 +292,7 @@ ISSUES = [
 RESOLVED = {
     'IS-44': '2026-10-24 已做：外部网站自动用 webview（独立分区、UA 去掉 Electron、允许登录弹窗），出错页加 Show it here；在单独的 Electron 实例里验证 google、github、Google 登录页都能显示和缩放。要重启 AgentDeck，真正登录待用户试（TC-28）',
     'IS-43': '2026-10-24 已修：ping 改用 net.request，加了测试；真 Electron 里 google.com → 301、github.com/login → 200。要重启 AgentDeck 才生效',
-    'IS-42': '2026-10-24 已修：claude 启动时主题设成 auto，深浅色切换时通知 tmux；独立 tmux 里模拟整条链路验证通过。要重启 AgentDeck、重开 claude 终端才生效',
+    'IS-42': '2026-10-24 已修：claude 启动时主题设成 auto，深浅色切换时通知 tmux；独立 tmux 里模拟整条链路验证通过。要重启 AgentDeck；已经开着的 claude 用标题栏右键 › Restart and resume conversation 换上新参数（对话接着）',
     'IS-41': '2026-10-24 已修：缩放门槛 75% 改 50%；缩小时显示整屏文字快照，加了测试。正在运行的 AgentDeck 已热更新',
     'IS-39': '2026-10-24 已修（3ceabfb）：scrollback 改成 1000，固定种子的复现测试通过；正在运行的 AgentDeck 已热更新',
     'IS-40': '2026-10-24 已修（3ceabfb）：加 Unicode 11 宽度表，35 个常用符号和 tmux 实测宽度全部吻合，写成测试',
