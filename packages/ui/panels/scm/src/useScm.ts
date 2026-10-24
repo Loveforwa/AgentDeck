@@ -7,7 +7,9 @@ import type {
   AbsPath,
   AgentDeckApi,
   AgentDeckErrorData,
+  BranchInfo,
   CommitInfo,
+  LogOptions,
   Project,
   RepoStatus,
   StashInfo,
@@ -19,8 +21,13 @@ import { isAgentDeckErrorData } from '@agentdeck/contracts';
 
 export type ScmApi = Pick<AgentDeckApi, 'git' | 'projects' | 'workspaces' | 'app' | 'on'>;
 
-/** 提交列表最多几条（需求：最近 20 个）。 */
+/** 多仓库时每个仓库的提交列表最多几条（需求：最近 20 个）。 */
 export const LOG_LIMIT = 20;
+/** 提交图（N5，单仓库）最多几条。 */
+export const GRAPH_LIMIT = 60;
+
+/** 提交图看哪些分支：This workspace = HEAD 加基础分支；All branches = 所有本地分支。 */
+export type GraphView = 'workspace' | 'all';
 /** 刷新超过这么久显示 Refreshing…。 */
 export const REFRESHING_AFTER_MS = 1000;
 
@@ -32,8 +39,10 @@ export interface RepoState {
   status: RepoStatus | null;
   log: CommitInfo[];
   stashes: StashInfo[];
-  /** 这个项目所有的工作目录（Repository 区），只在单仓库时取。 */
+  /** 这个项目所有的工作目录（提交图里分支对上白板上的框），只在单仓库时取。 */
   worktrees: WorktreeInfo[];
+  /** 本地分支，带 merged（相对基础分支），只在单仓库时取：提交图收起已合并的旧分支。 */
+  branches: BranchInfo[];
   error: AgentDeckErrorData | null;
 }
 
@@ -84,8 +93,15 @@ function upsert<T>(list: T[], item: T, same: (x: T) => boolean): T[] {
   return list.some(same) ? list.map((x) => (same(x) ? item : x)) : [...list, item];
 }
 
-/** 聚焦的工作区里每个仓库的 git 状态，以及刷新和操作。 */
-export function useRepos(api: ScmApi, workspace: Workspace | null, project: Project | null) {
+/** 单仓库取提交图（N5），多仓库照旧取最近几条。 */
+function fetchLog(api: ScmApi, path: AbsPath, baseBranch: string | undefined, single: boolean, view: GraphView): Promise<CommitInfo[]> {
+  const opts: LogOptions = baseBranch === undefined ? {} : { baseBranch };
+  if (!single) return api.git.log(path, LOG_LIMIT, opts);
+  return api.git.log(path, GRAPH_LIMIT, { ...opts, graph: view === 'all' ? {} : { branches: [] } });
+}
+
+/** 聚焦的工作区里每个仓库的 git 状态，以及刷新和操作。view：提交图看哪些分支，换了只重取提交图。 */
+export function useRepos(api: ScmApi, workspace: Workspace | null, project: Project | null, view: GraphView = 'all') {
   const [repos, setRepos] = useState<RepoState[]>([]);
   const [loading, setLoading] = useState(false);
   const [slow, setSlow] = useState(false);
@@ -108,6 +124,8 @@ export function useRepos(api: ScmApi, workspace: Workspace | null, project: Proj
   const targetKey = targets.map((t) => `${t.name}\0${t.path}\0${t.baseBranch ?? ''}`).join('\n');
   const targetsRef = useRef(targets);
   targetsRef.current = targets;
+  const viewRef = useRef(view);
+  viewRef.current = view;
 
   const refresh = useCallback(async () => {
     const list = targetsRef.current;
@@ -128,11 +146,19 @@ export function useRepos(api: ScmApi, workspace: Workspace | null, project: Proj
       const next = await Promise.all(
         list.map(async (t): Promise<RepoState> => {
           const opts = t.baseBranch === undefined ? {} : { baseBranch: t.baseBranch };
-          const [status, log, stashes, worktrees] = await Promise.allSettled([
-            api.git.status(t.path, opts),
-            api.git.log(t.path, LOG_LIMIT, opts),
+          const statusP = api.git.status(t.path, opts);
+          const [status, log, stashes, worktrees, branches] = await Promise.allSettled([
+            statusP,
+            fetchLog(api, t.path, t.baseBranch, single, viewRef.current),
             api.git.stashes(t.path),
             single ? api.git.worktrees(t.mainPath) : Promise.resolve([]),
+            // 已合并的分支要知道基础分支：项目没设就等 status 告诉我们
+            single
+              ? statusP.then((s) => {
+                  const into = t.baseBranch ?? s.baseBranch;
+                  return api.git.branches(t.path, into ? { mergedInto: into } : {});
+                })
+              : Promise.resolve([]),
           ]);
           return {
             name: t.name,
@@ -142,6 +168,7 @@ export function useRepos(api: ScmApi, workspace: Workspace | null, project: Proj
             log: log.status === 'fulfilled' ? log.value : [],
             stashes: stashes.status === 'fulfilled' ? stashes.value : [],
             worktrees: worktrees.status === 'fulfilled' ? worktrees.value : [],
+            branches: branches.status === 'fulfilled' ? branches.value : [],
             error: status.status === 'rejected' ? toErrorData(status.reason) : null,
           };
         }),
@@ -172,6 +199,28 @@ export function useRepos(api: ScmApi, workspace: Workspace | null, project: Proj
       if (e.workspaceId === workspaceId) void refresh();
     });
   }, [api, workspaceId, refresh]);
+
+  // 提交图换了视图（This workspace / All branches）：只重取提交图，不算一次刷新
+  const firstView = useRef(true);
+  useEffect(() => {
+    if (firstView.current) {
+      firstView.current = false;
+      return;
+    }
+    const list = targetsRef.current;
+    const t = list[0];
+    if (list.length !== 1 || !t) return;
+    let live = true;
+    void fetchLog(api, t.path, t.baseBranch, true, view).then(
+      (log) => {
+        if (live) setRepos((rs) => rs.map((r) => (r.path === t.path ? { ...r, log } : r)));
+      },
+      () => undefined,
+    );
+    return () => {
+      live = false;
+    };
+  }, [api, view]);
 
   // 服务推来的状态：直接换上，不算一次刷新
   useEffect(() => {
