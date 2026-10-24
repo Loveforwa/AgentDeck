@@ -1,0 +1,133 @@
+/* 窗口组的侧边栏（MVP v3 · N2）。只用 design-tokens 的变量；颜色只给状态灯和在等你的行。 */
+
+.ad-group-sidebar {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-window);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  line-height: var(--leading);
+}
+
+.ad-group-sidebar-head {
+  flex: none;
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--line-subtle);
+  font-weight: var(--weight-strong);
+  white-space: nowrap;
+}
+
+.ad-group-sidebar-rows {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 0;
+  margin: 0;
+  padding: var(--space-xs);
+  overflow: auto;
+  list-style: none;
+}
+
+.ad-group-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--row);
+  padding: var(--space-2xs) var(--space-sm);
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ad-group-row:hover {
+  background: var(--hover);
+}
+
+.ad-group-row:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+/* 选中的（右边显示的那个） */
+.ad-group-row--selected {
+  background: var(--hover);
+  font-weight: var(--weight-strong);
+}
+
+/* 在等你的行：浅黄底（和快速定位列表一样） */
+.ad-group-row--waiting,
+.ad-group-row--waiting:hover {
+  background: var(--attention-soft);
+}
+
+.ad-group-row-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 状态灯（和 V2 的标题栏、快速定位列表一套） */
+.ad-group-lamp {
+  flex: none;
+  box-sizing: border-box;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.ad-group-lamp--running {
+  background: var(--status-running);
+}
+
+.ad-group-lamp--waiting {
+  background: var(--status-waiting);
+}
+
+.ad-group-lamp--error {
+  background: var(--status-error);
+}
+
+.ad-group-lamp--idle {
+  border: 1px solid var(--muted);
+}
+
+.ad-group-lamp--exited {
+  height: 2px;
+  border-radius: 1px;
+  background: var(--muted);
+}
+
+.ad-group-sidebar-actions {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  padding: var(--space-xs);
+  border-top: 1px solid var(--line-subtle);
+}
+
+.ad-group-sidebar-actions .ad-button {
+  justify-content: flex-start;
+  color: var(--muted);
+}
+
+.ad-group-sidebar-actions .ad-button:hover:not(:disabled) {
+  color: var(--ink);
+}

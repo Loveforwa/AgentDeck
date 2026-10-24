@@ -4,7 +4,7 @@ import type { BrowserWindowData, Rect, TerminalId, TerminalWindowData, WindowCom
 import { createFakeApi, SAMPLE, type FakeApi } from '@agentdeck/fakes';
 import { BoardController } from '../src/controller.ts';
 import { GAP } from '../src/model/avoid.ts';
-import { dissolveGroups, listGroups } from '../src/model/groups.ts';
+import { dissolveGroups, dockSlot, hiddenMembers, listGroups, sidebarRect } from '../src/model/groups.ts';
 import { createWindowRegistry } from '../src/registry.ts';
 
 const W = SAMPLE.workspaces;
@@ -134,7 +134,7 @@ describe('open_browser beside the caller (board.open-window nearTerminal)', () =
 });
 
 describe('window groups (board.open-group)', () => {
-  it('puts the terminals next to the lead as a grid, records the group and keeps focus and view', () => {
+  it('puts the terminals next to the lead (N2: first one beside the sidebar, the rest collapsed), records the group and keeps focus and view', () => {
     c.focusWindow(byTerminal(T.shopClaude).id);
     const viewport = c.state.viewport;
     const lead = byTerminal(T.loginClaude);
@@ -142,20 +142,25 @@ describe('window groups (board.open-group)', () => {
     const subs = ['sub-1', 'sub-2', 'sub-3'].map(byTerminal);
     expect(c.state.focusedId).toBe(byTerminal(T.shopClaude).id);
     expect(c.state.viewport).toEqual(viewport);
+    const slot = dockSlot(lead.rect);
     for (const s of subs) {
       expect(s.workspaceId).toBe(W.agentdeckLogin);
-      expect(s.rect.x).toBeGreaterThanOrEqual(lead.rect.x + lead.rect.w);
+      expect(s.rect).toMatchObject(slot);
       expect(c.state.flash[s.id]).toBe(1);
     }
-    // 互不重叠，也不盖住框里原来的窗口
-    const inFrame = c.state.windows.filter((w) => w.workspaceId === W.agentdeckLogin);
+    // N2：只显示第一个，其余收起
+    expect([...hiddenMembers(c.state.windows)]).toEqual([subs[1]!.id, subs[2]!.id]);
+    // 看得见的互不重叠，侧边栏也不盖住框里原来的窗口（codex 让开了）
+    const hidden = hiddenMembers(c.state.windows);
+    const inFrame = c.state.windows.filter((w) => w.workspaceId === W.agentdeckLogin && !hidden.has(w.id));
     for (const a of inFrame) for (const b of inFrame) if (a.id !== b.id) expect(overlaps(a.rect, b.rect)).toBe(false);
-    // 框跟着长，装得下
+    for (const w of inFrame) expect(overlaps(sidebarRect(lead.rect), w.rect)).toBe(false);
+    // 框跟着长，装得下侧边栏和显示的那个
     const f = c.state.frames.find((x) => x.workspaceId === W.agentdeckLogin)!;
-    for (const s of subs) expect(s.rect.x + s.rect.w).toBeLessThanOrEqual(f.rect.x + f.rect.w);
+    for (const w of inFrame) expect(w.rect.x + w.rect.w).toBeLessThanOrEqual(f.rect.x + f.rect.w);
 
     const lead2 = byTerminal(T.loginClaude);
-    expect(lead2.group).toMatchObject({ role: 'lead', label: null });
+    expect(lead2.group).toMatchObject({ role: 'lead', label: null, view: { mode: 'one', shown: subs[0]!.id } });
     expect(subs.map((s) => s.group)).toEqual(['api', 'ui', 'tests'].map((label) => ({ id: lead2.group!.id, role: 'member', label })));
     const [g] = listGroups(c.state.windows);
     expect(g!.lead.id).toBe(lead.id);

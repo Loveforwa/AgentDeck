@@ -65,9 +65,10 @@ import '@agentdeck/ui-kit/base.css';
 | `src/registry.ts` | 窗口注册表（唯一对别的界面包开放的文件） |
 | `src/controller.ts` | `BoardController`：启动和事件、拖动、改大小、放大、新建、关闭、工作区、视口、快捷键 |
 | `src/store.ts` | zustand vanilla store：保存的部分（BoardState）+ 临时状态 |
-| `src/model/` | 纯函数：`groups`（N1 窗口组：`listGroups`、`dissolveGroups`）、`geometry`（框跟着长、框的最小尺寸、视口）、`attention`（S3 计数、⌘J ⌘⇧J 顺序、顶栏的第几个）、`navigation`（S3 ⌘⇧] ⌘⇧[ 按位置切窗口的顺序）、`autosave`（B5 防抖）、`shortcuts`（R1 按键表）、`drop`（W5 落点）、`snap`（V3 吸附和对齐线）、`avoid`（V3 松手避让、框之间 20px、挤开别的框）、`windows`（终端相关的判断）、`gestures`（N6 手势规则和 React Flow 参数）、`branch`（分支名检查）、`settings`（Settings 的草稿和补丁） |
-| `src/react/` | `Workbench`、`Board`（React Flow）、`WindowNodeView`、`FrameNodeView`、`Guides`（V3 对齐线，屏幕坐标画；跟踪 ⌘）、`BoardMenu`（右键菜单）、`dialogs`（新建 / 删除工作区、W5、停止终端、改名）、`SettingsDialog`、`useShortcuts`、`gestures`（N6：空格平移、窗口上的缩放滚轮、盖层把滚轮交给内容） |
+| `src/model/` | 纯函数：`groups`（N1 窗口组：`listGroups`、`dissolveGroups`；N2 侧边栏：`groupView`、`hiddenMembers`、`syncGroups` 停靠、`lampOf`、`memberName`）、`geometry`（框跟着长、框的最小尺寸、视口）、`attention`（S3 计数、⌘J ⌘⇧J 顺序、顶栏的第几个）、`navigation`（S3 ⌘⇧] ⌘⇧[ 按位置切窗口的顺序）、`autosave`（B5 防抖）、`shortcuts`（R1 按键表）、`drop`（W5 落点）、`snap`（V3 吸附和对齐线）、`avoid`（V3 松手避让、框之间 20px、挤开别的框）、`windows`（终端相关的判断）、`gestures`（N6 手势规则和 React Flow 参数）、`branch`（分支名检查）、`settings`（Settings 的草稿和补丁） |
+| `src/react/` | `Workbench`、`Board`（React Flow）、`WindowNodeView`、`FrameNodeView`、`GroupSidebar`（N2 窗口组的侧边栏节点）、`Guides`（V3 对齐线，屏幕坐标画；跟踪 ⌘）、`BoardMenu`（右键菜单）、`dialogs`（新建 / 删除工作区、W5、停止终端、改名）、`SettingsDialog`、`useShortcuts`、`gestures`（N6：空格平移、窗口上的缩放滚轮、盖层把滚轮交给内容） |
 | `src/canvas.css` | 白板、框、面板、对话框字段的样式，只用 tokens |
+| `src/group-sidebar.css` | N2 侧边栏的样式（单独一个文件，少和别的线在 canvas.css 里冲突） |
 | `dev/` | dev 页面（Vite） |
 
 ## 行为要点
@@ -91,10 +92,17 @@ import '@agentdeck/ui-kit/base.css';
 - 服务开的东西（M1，agent 通过 MCP）：`board.add-frame` 把已建好的工作区放到空位（`addFrameFromService`）；`board.open-window` 照 `openWindow` 放进框里，框不在白板上时散放（`openWindowFromService`）。都不抢键盘焦点、不动视口，`highlight` 时窗口闪一下。
 - N1（MVP v3）：
   - `board.open-window` 的 `nearTerminal`（open_browser 的调用者）：那个终端的窗口和网页在同一个框里时放在它右边，被占了照 V3 挪到最近的空位。
-  - `board.open-group`（open_terminals，`openGroupFromService`）：一组终端放在 lead 窗口右边，按网格排（列数 ⌈√n⌉），照常避让、框跟着长；然后记进窗口组 `WindowNode.group`（lead 的 role 为 `lead`，子终端 `member` + label），随白板保存。lead 已经在组里（它自己是子终端）时新开的加进同一个组。找不到 lead 的窗口时只开窗口、不成组。
+  - `board.open-group`（open_terminals，`openGroupFromService`）：一组终端放在 lead 窗口右边，按网格排（列数 ⌈√n⌉），照常避让、框跟着长；然后记进窗口组 `WindowNode.group`（lead 的 role 为 `lead`，子终端 `member` + label），随白板保存。lead 已经在组里（它自己是子终端）时新开的加进同一个组。找不到 lead 的窗口时只开窗口、不成组。N2 起新组只显示第一个子终端，其余收起（见下面 N2）。
   - 关窗口时 `dissolveGroups`：lead 没了，子终端去掉 group 变回普通窗口；子终端都没了，lead 也去掉。`listGroups(windows)`（从包里导出）给 N2 的侧边栏用：每组的 lead 和按打开先后排的子终端。
   - `board.focus-window`（`focusFromService`）：照 ⌘J 跳过去、闪一下、聚焦；`board.notify`（`notifyFromService`）：发通知的窗口闪一下，Toast 写 “claude · agentdeck · feat/login: Tests passed”。用户 2 秒内按过键（`TYPING_MS`，`window` 上捕获阶段的 keydown，网页 iframe 里的按键收不到）时两者都只闪一下：不抢焦点、不动视口、不弹 Toast。
   - `reuseKey` 改成存在窗口上（`WindowNode.reuseKey`，随白板保存），重启后 open_browser 同一个 origin 仍然复用那个窗口（以前是控制器里的 Map，重启就丢）。
+- N2（MVP v3，形态 A）窗口组的侧边栏（`src/react/GroupSidebar.tsx`，`src/model/groups.ts`）：
+  - lead 窗口右边隔 8px 一列（宽 168，和 lead 一样高），是一个单独的 React Flow 节点，位置由 lead 算，跟着 lead 走；lead 放大中不画。标题 “3 subagents”，每个子终端一行：状态灯（和 V5 一套：绿 running、黄 waiting、红 error、空心 idle、短线 exited）+ “sub-2 · ui”（第几个 · open_terminals 的 label）；在等你的行 `--attention-soft` 底，选中的行加粗。底下 Show all、Collapse group。标题栏的灰字：lead 是 “lead”，子终端是 “sub-2 · ui”（没改名时）。
+  - 显示方式存在 lead 的 `group.view`（contracts 0.1.7 加的可选字段，随白板保存）：`one`（只显示 shown，贴在侧边栏右边 = 停靠处，其余收起）、`all`（Show all：普通窗口，在侧边栏右边按网格排，盖住别人时挪到最近的空位，框跟着长）、`collapsed`（只剩侧边栏）。没有 view 的（N1 存下的组）按 `all`。新组默认 `one`，显示第一个子终端；已有的组再加子终端照它现在的方式。
+  - 收起的子终端不渲染（终端 detach，进程在 tmux 里照常跑），仍算进顶栏和框标题的 waiting、⌘J 顺序；`jumpToWindow` 跳到收起的子终端（⌘J、通知、快速定位、focus_window）时先把它显示出来（`showGroupMember`）。收起的停在停靠处。
+  - 停靠：控制器的 `set` 每次 windows 变了跑 `syncGroups`：收起的、和 lead 同框的子终端停在停靠处；显示的那个原来停靠着、这次没被别的操作挪过，就跟着 lead 到新的停靠处（拖 lead、改 lead 大小、拉回摘要卡）；用户把它拖走了就不再跟着。显示的子终端被关掉时换成它后面那个。和 lead 不在同一个框的子终端只收起 / 显示，不挪。
+  - 避让：找空位时（V3）lead 连同侧边栏和停靠的子终端算一块（`withGroup`），收起的子终端不挡，别的组的侧边栏挡；框按这一块长。侧边栏 / 停靠的子终端新出现时盖住了框里别的窗口，就把那些窗口挪到最近的空位（`settleGroup`，例外于“不推别的窗口”：是新出现的东西要地方）。
+  - 关 lead：先照 Show all 平铺开，再 `dissolveGroups`，子终端都是普通窗口，侧边栏消失。
 - 保存：保存的部分（视口、框、窗口、面板）引用一变就排进防抖，半秒后 `board.save`；`pagehide` 时立刻写。启动时 `board.load` 恢复。
 
 ## dev 页面
@@ -103,6 +111,7 @@ import '@agentdeck/ui-kit/base.css';
 
 - `window.agentdeck` 是 `createFakeApi({ latencyMs: 40 })` 的示例数据：3 个框、5 个终端、1 个网页窗口；codex 在等批准，1.5 秒后 shop 的 claude 提一个问题。
 - 终端和网页是只显示文字的假窗口（`dev/FakeWindows.tsx`）：假终端真的 attach 到 FakeTerminalHost，输出去掉转义序列后显示，用 `setStatus` 显示状态。
+- N2：feat/login 的 claude 开着一个窗口组（3 个子 agent，`term-sub-1..3`：api 一直在输出、ui 等批准、tests idle），白板上没有组时自动开（`board.open-group`）。`#group` 收起面板、100% 对准这一组（截图用）。
 - 右侧面板是演示按钮：请求批准、提问、全部批准、一轮结束、Reset the board。布局额外存进 localStorage，刷新能看到恢复。
 - 控制台里 `__board` 是 `BoardController`。
 
@@ -120,6 +129,7 @@ import '@agentdeck/ui-kit/base.css';
 - `layout-v3.test.ts`（对着 `createFakeApi()`）：拖动和改大小吸附、⌘ 不吸、阈值随缩放、松手滑到空位、框放不下就长并挤开别的框、放大的窗口例外、拖框停在边上、拖框边挤开再回来、IS-54 回归；IS-65 拖窗口对齐旁边的框、远的框不算、改框大小吸到隔 20 不挤开、吸到别的框的下边和正好装下窗口；IS-66 窗口间距 20。
 - `controller.test.ts`（对着 `createFakeApi()`）：恢复布局、保存防抖和重启后一致、status.changed 驱动提醒和程序坞角标、⌘J ⌘⇧J 和闪一下、⌘⇧] ⌘⇧[ 切窗口（视口里看得见就不动）、通知跳转、框里新建终端用工作区目录、⌘N、reuseKey、W5 弹回和 Open new、拖到框边框变大、网页换框、拖框带走窗口、框的最小尺寸、改大小松手才生效和摘要卡、放大还原、关闭确认、新建工作区和 setup、创建失败、删除工作区的 dirty 流程、Add project…。
 - `mcp-board.test.ts`（N1，对着 `createFakeApi()`）：网页开在调用者旁边（散放时正好在右边 20px、在框里挨着调用者不盖住别人、调用者在别的框时不拉出框）、reuseKey 重启后仍复用；窗口组的位置（在 lead 右边、互不重叠、框跟着长）、不抢焦点、保存和重启后恢复、第二次加进同一组、子终端再开也进同一组、关 lead 子终端变普通窗口、子终端关完 lead 不再是组、没有 lead 时不成组；focus-window 跳过去 / 打字时只闪；keydown 算打字；notify 的 Toast 文字 / 打字时只闪。
+- `group-sidebar.test.tsx`（N2）：新组只显示第一个且不盖住别人、单击一行切换显示的子终端并聚焦、Show all 不重叠 / Collapse group 取消聚焦、拖 lead 停靠的和收起的跟着走、⌘J 跳到收起的在等你的子终端把它显示出来（仍算 waiting）、关掉显示的换下一个、关 lead 平铺开变普通窗口、view 保存和恢复；纯函数（没有 view 按 all、名字、syncGroups 停靠 / 拖走后不跟、状态灯）；Workbench 里的行和灯、waiting 行的底色、标题栏灰字、点行 / Show all / Collapse group 改变渲染的节点、侧边栏的位置、关 lead 后侧边栏消失。
 - `settings.test.tsx`：Settings 对话框的入口（顶栏、Projects ▾、⌘,）、保存只发改了的字段、改完后新建 worktree 用新的基础分支 / 复制文件 / 初始化命令、多仓库、换页保留草稿和 Cancel、General、保存失败的提示、Open settings.json、Locate…、草稿函数。
 - `gestures.test.tsx`（N6）：React Flow 的手势参数、所有窗口节点和内容都是 `nowheel`（聚焦前后）、没聚焦的终端上滚轮转给终端且白板不动（单击仍只聚焦）、聚焦的终端滚动不平移（对照：空白处平移）、不自己处理滚轮的内容滚最近的 overflow 盒子、网页上盖层暂时让开、窗口上捏合和 ⌘ + 滚轮以指针为不动点缩放、空格在白板上拿、在终端和输入框里（含 Shift / Ctrl + 空格）不拿、失焦松开；纯函数 `zoomAtPoint` `wheelZoomDelta` `spaceBelongsTo`。
 - `workbench.test.tsx`：整个 Workbench 在 jsdom 里渲染：顶栏数字随假事件变化、框标题“1 running”绿灯和“2 waiting”黄灯（为 0 不显示）、终端聚焦时按键不被拦、⌘B ⌘J、顶栏“1/2 waiting”、⌘⇧J ⌘⇧]（⌘] 不拦）、Delete 打开删除对话框。
