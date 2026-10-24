@@ -7,10 +7,11 @@ import './dev.css';
 
 import { StrictMode, useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import type { GitService, LogOptions, TerminalId, Workspace, WorkspaceId } from '@agentdeck/contracts';
+import { effectiveSkillSelection } from '@agentdeck/contracts';
+import type { AgentKind, GitService, LogOptions, SkillItemId, TerminalId, Workspace, WorkspaceId } from '@agentdeck/contracts';
 import { SAMPLE, createFakeApi } from '@agentdeck/fakes';
 import { Button } from '@agentdeck/ui-kit';
-import { ScmPanel, type ScmApi } from '../src/index.ts';
+import { ScmPanel, type ScmApi, type SkillsTarget } from '../src/index.ts';
 import { demoBranches, demoLog } from './demo-graph.ts';
 
 const fake = createFakeApi({ latencyMs: 60 });
@@ -52,6 +53,13 @@ const api: ScmApi = { ...fake, git: slowGit };
 
 let edits = 0;
 
+/** SKILLS · MCP 小节（N9）跟着的终端：白板上聚焦的终端窗口。 */
+const SKILL_TERMINALS: { id: TerminalId; agent: AgentKind; title: string }[] = [
+  { id: SAMPLE.terminals.loginClaude, agent: 'claude', title: 'Fix the login bug' },
+  { id: SAMPLE.terminals.loginCodex, agent: 'codex', title: 'Review' },
+  { id: SAMPLE.terminals.devServer, agent: 'shell', title: 'pnpm dev' },
+];
+
 function App() {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [focus, setFocus] = useState<WorkspaceId | null>(W.agentdeckLogin);
@@ -62,6 +70,9 @@ function App() {
   const [log, setLog] = useState<string[]>([]);
   const [gitCalls, setGitCalls] = useState(0);
   const note = (s: string) => setLog((l) => [s, ...l].slice(0, 8));
+  // 每个终端存的选择（白板上的 TerminalWindowData.skills）
+  const [skillTerm, setSkillTerm] = useState<TerminalId | null>(SAMPLE.terminals.loginClaude);
+  const [selections, setSelections] = useState<Record<string, SkillItemId[] | null>>({});
 
   // 主题放在 <html> 上：菜单、对话框渲染到 body 里，也要跟着变
   useEffect(() => {
@@ -82,6 +93,27 @@ function App() {
   }, []);
 
   const ws = workspaces.find((w) => w.id === focus) ?? null;
+  const skillDef = SKILL_TERMINALS.find((t) => t.id === skillTerm) ?? null;
+  const skillsTarget: SkillsTarget | null = skillDef
+    ? {
+        terminalId: skillDef.id,
+        agent: skillDef.agent,
+        label: `${skillDef.agent} · ${skillDef.title}`,
+        selection: selections[skillDef.id] ?? null,
+        onChange: (sel) => {
+          setSelections((m) => ({ ...m, [skillDef.id]: sel }));
+          note(`skills saved for ${skillDef.agent}: ${sel.length} ticked`);
+        },
+        onRestart: () => {
+          // 演示：重启后 running 就是现在的选择（真应用里终端 id 会换，面板自己重取）
+          void fake.skills.forTerminal(skillDef.id).then((t) => {
+            fake.fakes.skills.setRunning(skillDef.id, effectiveSkillSelection(t.items, selections[skillDef.id] ?? null));
+            fake.bus.emit({ type: 'skills.library-changed', items: [] });
+            note(`restart-resume sent to ${skillDef.agent}`);
+          });
+        },
+      }
+    : null;
   const agent = focus ? AGENT_OF[focus] : undefined;
   const firstRepo = ws?.repos[0]?.path ?? null;
 
@@ -188,6 +220,25 @@ function App() {
         </section>
 
         <section className="dev-card">
+          <h2>Focused terminal (Skills · MCP)</h2>
+          <div className="dev-focus" role="radiogroup" aria-label="Focused terminal">
+            {SKILL_TERMINALS.map((t) => (
+              <label key={t.id} className="dev-radio">
+                <input type="radio" name="skill-term" checked={skillTerm === t.id} onChange={() => setSkillTerm(t.id)} />
+                <span>
+                  {t.agent}
+                  <span className="dev-muted"> · {t.title}</span>
+                </span>
+              </label>
+            ))}
+            <label className="dev-radio">
+              <input type="radio" name="skill-term" checked={skillTerm === null} onChange={() => setSkillTerm(null)} />
+              <span>Not a terminal (a browser window)</span>
+            </label>
+          </div>
+        </section>
+
+        <section className="dev-card">
           <h2>Simulate</h2>
           <div className="dev-actions">
             {actions.map((a) => (
@@ -244,6 +295,7 @@ function App() {
           api={api}
           workspaceId={focus}
           openTerminals={agentRunning && agent ? [agent.agent === 'shell' ? 'claude' : agent.agent] : []}
+          skills={skillsTarget}
           onGoToWorkspace={(id) => {
             setFocus(id);
             note(`Board pans to ${workspaces.find((w) => w.id === id)?.name ?? id}`);

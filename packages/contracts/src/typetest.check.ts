@@ -1,9 +1,9 @@
 // 只用于类型检查：确认接口能被实现、事件能按 type 收窄。不会被打包。
 import type {
-  AgentDeckApi, ApproveResult, AutoApproveState, CommitInfo, EventOf, GitService, LogOptions, TerminalHost, TerminalId, TerminalUsage,
-  TerminalWindowData, UsageService, WindowGroupId, WindowId, WindowNode, WorkspaceId,
+  AgentDeckApi, ApproveResult, AutoApproveState, CommitInfo, EventOf, GitService, LogOptions, SkillItemId, TerminalHost, TerminalId,
+  TerminalSkills, TerminalUsage, TerminalWindowData, UsageService, WindowGroupId, WindowId, WindowNode, WorkspaceId,
 } from './index.ts';
-import { FIRE_AND_FORGET, isAutoApproveOn } from './index.ts';
+import { effectiveSkillSelection, FIRE_AND_FORGET, isAutoApproveOn, skillsRestartNeeded } from './index.ts';
 
 declare const api: AgentDeckApi;
 api.on('status.changed', (e) => {
@@ -86,3 +86,15 @@ void noUsage; void api.usage.watch;
 // PL2：用量条的设置随白板保存，是可选字段，老数据没有它
 const strip: TerminalWindowData['usage'] = { on: true, position: 'bottom' };
 void strip;
+// N9：Skills · MCP。选择随白板保存在 TerminalWindowData.skills。
+void api.skills.forTerminal('t1' as TerminalId).then((s: TerminalSkills) => {
+  const chosen: SkillItemId[] = effectiveSkillSelection(s.items, null);
+  const restart: boolean = skillsRestartNeeded(s.items, chosen, s.running);
+  void restart;
+});
+void api.skills.addMcp({ name: 'github', command: 'npx -y @modelcontextprotocol/server-github' }).then((i) => i.kind === 'mcp');
+api.on('skills.library-changed', (e) => void e.items.map((i) => i.source));
+const termData: TerminalWindowData = {
+  terminalId: null, agent: 'claude', cmd: 'claude', args: [], cwd: '/r', sessionId: null, startCommand: null, skills: ['skill:library:xlsx'],
+};
+void termData;

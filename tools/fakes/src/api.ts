@@ -24,6 +24,7 @@ import { recordings } from './recording.ts';
 import type { Recording } from './recording.ts';
 import { seedSample } from './sample.ts';
 import { FakeApprovalService, FakeStatusService } from './status-service.ts';
+import { FakeSkillsService } from './skills-service.ts';
 import { FakeTerminalHost } from './terminal-host.ts';
 import { FakeUsageService } from './usage-service.ts';
 import { bindMethods, sleep } from './util.ts';
@@ -42,6 +43,7 @@ export interface FakeServices {
   board: FakeBoardStore;
   browser: FakeBrowserService;
   usage: FakeUsageService;
+  skills: FakeSkillsService;
 }
 
 export interface CreateFakeApiOptions {
@@ -107,6 +109,14 @@ export function createFakeServices(opts: CreateFakeApiOptions = {}): { bus: Fake
     board: new FakeBoardStore(),
     browser: new FakeBrowserService(),
     usage: new FakeUsageService({ bus }),
+    // 终端的 agent 看状态机里 track 的，目录看建终端时的 cwd
+    skills: new FakeSkillsService({
+      bus,
+      lookup: (id) => {
+        const agent = status.info(id)?.agent;
+        return agent && terminals.has(id) ? { agent, cwd: terminals.get(id).request.cwd } : null;
+      },
+    }),
   };
   for (const f of Object.values(fakes)) bindMethods(f);
   return { bus, fakes };
@@ -133,6 +143,7 @@ export function createFakeApi(opts: CreateFakeApiOptions = {}): FakeApi {
     board: svc('board'),
     browser: svc('browser'),
     usage: svc('usage'),
+    skills: svc('skills'),
     on: (type, listener) => bus.on(type, listener),
     onTerminalData: (listener) => bus.onTerminalData(listener),
     contractsVersion: CONTRACTS_VERSION,

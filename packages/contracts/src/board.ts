@@ -14,6 +14,7 @@ import type {
   WindowId,
   WorkspaceId,
 } from './common.ts';
+import type { SkillItemId } from './skills.ts';
 import type { Workspace } from './workspace.ts';
 
 export interface Viewport {
@@ -98,6 +99,11 @@ export interface TerminalWindowData {
    * 不填或 null 是没开过（开的时候默认贴在上边）；on 为 false 是关着，但记得上次贴在哪边。
    */
   usage?: UsageStripSettings | null;
+  /**
+   * N9：这个终端选的 skill 和 MCP（SkillItemId，只存 built-in 和 library 的，repo 的跟着仓库）。
+   * 不填或 null 用默认（built-in 勾、library 不勾，见 effectiveSkillSelection）。下次启动（Restart and resume）时生效。
+   */
+  skills?: SkillItemId[] | null;
 }
 
 /** PL2：用量条开没开、贴在终端哪一边。 */

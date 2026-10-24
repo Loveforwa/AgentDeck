@@ -28,6 +28,8 @@ export { FakeApprovalService, FakeStatusService } from './status-service.ts';
 export type { FakeApprovalServiceOptions, FakeStatusServiceOptions, TrackedTerminal } from './status-service.ts';
 export { FakeUsageService, emptyUsage } from './usage-service.ts';
 export type { FakeUsageServiceOptions } from './usage-service.ts';
+export { FAKE_BUILTIN, FakeSkillsService } from './skills-service.ts';
+export type { FakeSkillsServiceOptions } from './skills-service.ts';
 export { Scenario, createFakeApi, createFakeServices, defaultRecordingFor } from './api.ts';
 export type { CreateFakeApiOptions, FakeApi, FakeServices } from './api.ts';
 export { SAMPLE, seedSample } from './sample.ts';

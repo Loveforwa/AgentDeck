@@ -3,9 +3,9 @@
 // AGENTDECK_DEMO=1 时自动把本仓库加成项目、建主目录工作区、开一个 Shell 和一个 claude（见 demo.ts）。
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import type { AgentDeckErrorData, TerminalWindowData, Workspace, WorkspaceId } from '@agentdeck/contracts';
+import type { AgentDeckErrorData, SkillItemId, TerminalWindowData, WindowNode, Workspace, WorkspaceId } from '@agentdeck/contracts';
 import { BoardNav } from '@agentdeck/board-nav-panel';
-import { ScmPanel } from '@agentdeck/scm-panel';
+import { ScmPanel, type SkillsTarget } from '@agentdeck/scm-panel';
 import { useBoardState, Workbench, type BoardController } from '@agentdeck/ui-canvas';
 import { Button } from '@agentdeck/ui-kit';
 import { OPEN_SETTINGS_EVENT } from '@agentdeck/ui-widget-terminal';
@@ -45,6 +45,33 @@ function BoardNavPanel({ controller, headerActions }: { controller: BoardControl
   );
 }
 
+/**
+ * SKILLS · MCP 小节（N9）跟着聚焦的终端窗口：勾选存进这个窗口的 TerminalWindowData.skills（随白板保存），
+ * 主进程下次启动它时按这个选择算启动参数。Restart and resume 先把白板存下来，再给窗口发 restart-resume。
+ * 聚焦的不是终端时为 null（小节里写怎么用）。
+ */
+function useSkillsTarget(controller: BoardController, workspace: Workspace | null): SkillsTarget | null {
+  const focused = useBoardState((s) => {
+    const w = s.focusedId ? s.windows.find((x) => x.id === s.focusedId) : undefined;
+    return w && w.type === 'terminal' ? (w as WindowNode<TerminalWindowData>) : null;
+  });
+  return useMemo(() => {
+    if (!focused) return null;
+    const data = focused.data;
+    const name = focused.title ?? workspace?.name ?? null;
+    return {
+      terminalId: data.terminalId,
+      agent: data.agent,
+      label: name ? `${terminalLabel(data)} · ${name}` : terminalLabel(data),
+      selection: data.skills ?? null,
+      onChange: (skills: SkillItemId[]) => controller.updateData(focused.id, { skills } satisfies Partial<TerminalWindowData>),
+      onRestart: () => {
+        void controller.flush().finally(() => controller.sendWindowCommand(focused.id, 'restart-resume'));
+      },
+    };
+  }, [focused, workspace?.name, controller]);
+}
+
 /** 右侧面板：跟着聚焦的窗口（或选中的框）所在的工作区；什么都没选中时是快速定位列表。 */
 function SidePanel({ workspace, controller, headerActions }: { workspace: Workspace | null; controller: BoardController; headerActions?: ReactNode }) {
   const nothingSelected = useBoardState((s) => s.focusedId === null && s.selectedFrame === null);
@@ -65,12 +92,13 @@ function SidePanel({ workspace, controller, headerActions }: { workspace: Worksp
     return [...names].sort().join(',');
   });
   const openTerminals = useMemo(() => (open ? open.split(',') : []), [open]);
+  const skills = useSkillsTarget(controller, workspace);
   const goTo = (id: WorkspaceId) => {
     controller.selectFrame(id);
     controller.fitFrame(id);
   };
   if (nothingSelected) return <BoardNavPanel controller={controller} headerActions={headerActions} />;
-  return <ScmPanel workspaceId={wsId} onGoToWorkspace={goTo} openTerminals={openTerminals} headerActions={headerActions} />;
+  return <ScmPanel workspaceId={wsId} onGoToWorkspace={goTo} openTerminals={openTerminals} headerActions={headerActions} skills={skills} />;
 }
 
 function TmuxMissing({ error, onRetry }: { error: AgentDeckErrorData; onRetry: () => void }) {

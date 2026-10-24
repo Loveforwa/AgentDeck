@@ -22,6 +22,7 @@ src/main/
   services.ts / registry.ts / ipc.ts / events.ts   注册表、IPC 路由、事件广播（F3）
   browser/          网页窗口的主进程部分（线 5）：BrowserService、响应头改写、agentdeck-file://、iframe 小桥
   mcp.ts            AgentDeck 的 MCP 服务（M1，packages/mcp-server）：工具通过注册表调服务
+  skills.ts         Skills · MCP（N9）：写自带 skill、记下刚 kill 的终端、启动时按白板找这个终端的选择
 src/utility/
   tmux-host.ts      utilityProcess 入口：startTmuxHost + port-watch，输出按 viewId 写进窗口端口
 src/preload/        window.agentdeck（contracts 的 AgentDeckApi）、window.agentdeckDesktop、window.agentdeckFiles
@@ -42,6 +43,20 @@ N1（MVP v3）：
 - codex 启动时也挂（`-c mcp_servers.agentdeck.*`，agent-adapters 自己算）；omp 用 `--plugin-dir`：启动时 `writeMcpPluginDir(<dataDir>/mcp-plugin)` 写一次固定内容的插件目录，传给 `createAgentRuntime({ mcpPluginDir })`。pi、kimi 挂不上，原因见 agent-adapters/AGENTS.md。
 - `startAppMcp` 另给 `board`（`viaRegistry(registry, 'board')`，list_windows、focus_window 读保存的白板）、`confirm`（open_terminals 超过 6 个时系统对话框，默认按钮 Cancel）、`onNotify`（notify 工具：应用不在前台、通知开着时发系统通知，标题和状态提醒一样是 “claude · 工作区”，点了跳到那个终端）。
 - 新的白板事件 `board.open-group`、`board.focus-window`、`board.notify` 同样走 `emit` 广播，白板（ui/canvas）处理。
+
+## Skills · MCP（N9）
+
+源代码管理面板里的 SKILLS · MCP 小节，跟着聚焦的终端。规则见 agent-adapters/AGENTS.md「Skills · MCP」。组装：
+
+- 数据目录下：`skills/<name>/`（库里的 skill，Add skill… 复制进来）、`mcp/<name>.json`（库里的 MCP，Add MCP…）、
+  `builtin/skills/agentdeck/`（自带 skill，每次启动用 `writeBuiltinSkills` 重写）、`skill-sets/<agent>-<哈希>/`（启动时写的那套目录，内容一样就复用）、
+  `skills-state.json`（每个终端启动时带了什么，面板的 running）。都不碰用户自己的 ~/.claude*、~/.codex、~/.pi、~/.omp、~/.kimi-code 和仓库。
+- `SkillsServiceImpl` 注册成 `skills`；lookup 用状态机的 agent 和库里终端记录的 cwd；`mcpRunning` 是 MCP 服务起来了没有（agentdeck 那一行的状态点）。
+- `createAgentRuntime({ skills, onStarted })`：启动前 `skills.prepareLaunch({ agent, cwd, selection })`，起来后 `noteLaunched(终端, ids)`。
+- 选择存在白板上（`TerminalWindowData.skills`，界面勾选时 `controller.updateData`）。主进程启动时读保存的白板找（`skillSelectionFor`）：
+  15 秒内刚 `terminals.kill` 的、agent 和目录一样的终端所在的窗口（终端窗口重启都是先 kill 再 start；注册表里的 terminals 包了一层记 kill）；
+  否则 resume 时 sessionId 一样的窗口；都没有用默认。面板上的 Restart and resume 先 `controller.flush()` 存白板，再给窗口发 `restart-resume`。
+- 界面：`App.tsx` 的 `useSkillsTarget` 把聚焦的终端窗口交给 `ScmPanel` 的 `skills`；聚焦的不是终端时传 null。
 
 ## 运行
 

@@ -5,8 +5,16 @@ export type { AgentRuntime, AgentRuntimeOptions } from './runtime.ts';
 export { AgentServiceImpl, PENDING_TERMINAL_ID } from './agent-service.ts';
 export type { AgentServiceOptions, StartedAgent } from './agent-service.ts';
 export { createDefaultAdapters } from './adapters/index.ts';
-export { ClaudeAdapter, claudeHookEvents, claudeHookSettings } from './adapters/claude.ts';
-export { CODEX_HOOK_EVENTS, CodexAdapter, codexHookOverrides, codexMcpOverrides, parseHooksList, queryTrustViaAppServer } from './adapters/codex.ts';
+export { ClaudeAdapter, claudeHookEvents, claudeHookSettings, claudeMcpConfig } from './adapters/claude.ts';
+export {
+  CODEX_HOOK_EVENTS,
+  CodexAdapter,
+  codexHookOverrides,
+  codexLibraryMcpOverrides,
+  codexMcpOverrides,
+  parseHooksList,
+  queryTrustViaAppServer,
+} from './adapters/codex.ts';
 export { MCP_URL_ENV, mcpPluginFiles } from './adapters/mcp-plugin.ts';
 export type { CodexAdapterOptions, CodexHookTrust, CodexTrustQuery } from './adapters/codex.ts';
 export { KnownAgentAdapter } from './adapters/generic.ts';
@@ -15,7 +23,7 @@ export { EXTENSION_ENV, KNOWN_AGENTS } from './adapters/known.ts';
 export type { KnownAgent } from './adapters/known.ts';
 export { CustomCommandAdapter, ShellAdapter } from './adapters/shell.ts';
 export type { CommandLaunchContext } from './adapters/shell.ts';
-export type { AdapterDeps, AgentAdapterExt } from './adapters/types.ts';
+export type { AdapterDeps, AdapterLaunchContext, AgentAdapterExt } from './adapters/types.ts';
 export { compareVersions, findExecutable, readVersion, shellQuote, splitCommand } from './env.ts';
 export type { Env, EnvSource } from './env.ts';
 export { hookHint, parseCommonHook, parsePermissionRequest } from './hook-payload.ts';
@@ -54,3 +62,34 @@ export {
   UsageServiceImpl,
 } from './usage/index.ts';
 export type { KimiQuery, Located, ParsedUsage, UsageParser, UsageRoots, UsageServiceOptions, UsageTarget } from './usage/index.ts';
+export {
+  AGENTDECK_MCP_ID,
+  agentdeckMcpItem,
+  builtinSkillFiles,
+  findRepoRoot,
+  listSkillFolders,
+  mcpDetail,
+  mcpItemId,
+  notSupportedNote,
+  parseMcpFile,
+  parseSkillFrontmatter,
+  readSkillFolder,
+  scanRepoSkills,
+  setManifest,
+  SKILL_SET_PLUGIN_NAME,
+  SkillLibrary,
+  skillItemId,
+  SkillsServiceImpl,
+  skillsSupport,
+} from './skills/index.ts';
+export type {
+  LaunchSkills,
+  McpMethod,
+  McpServerDef,
+  PrepareLaunchRequest,
+  SkillFrontmatter,
+  SkillLibraryDirs,
+  SkillsMethod,
+  SkillsServiceOptions,
+  SkillsSupport,
+} from './skills/index.ts';

@@ -224,6 +224,12 @@ export function seedSample(f: FakeServices): void {
   f.status.track(T.shopShell, { agent: 'shell', workspaceId: W.shopCart }, 'starting');
   f.status.exited(T.shopShell, 2);
 
+  // ---- Skills · MCP（N9）：库里一个 skill、一个 MCP；feat/login 的仓库里有一个 repo skill；claude 带着默认的启动 ----
+  f.skills.addLibrary({ id: 'skill:library:xlsx', kind: 'skill', name: 'xlsx', description: 'Read and write spreadsheets.', source: 'library', path: '/Users/me/.agentdeck/skills/xlsx', detail: null });
+  f.skills.addLibrary({ id: 'mcp:library:github', kind: 'mcp', name: 'github', description: null, source: 'library', path: null, detail: 'npx -y @modelcontextprotocol/server-github' });
+  f.skills.setRepoSkills(P.agentdeckLogin, ['release-notes']);
+  f.skills.setRunning(T.loginClaude, ['skill:built-in:agentdeck', 'mcp:built-in:agentdeck']);
+
   // ---- 白板 ----
   const windows: WindowNode[] = [
     terminalWindow('win-dev-server', W.agentdeckMain, { x: 64, y: 96, w: 560, h: 340 }, 1, {

@@ -3,11 +3,20 @@
 import { AgentDeckError } from '@agentdeck/contracts';
 import type { AgentAdapter, AgentCapabilities, LaunchContext, LaunchMode } from '@agentdeck/contracts';
 import type { EnvSource } from '../env.ts';
+import type { LaunchSkills } from '../skills/types.ts';
 import { findExecutable, readVersion } from '../env.ts';
 
 export interface AdapterDeps {
   /** 登录 shell 的环境（apps/desktop 读出后传入）。 */
   env: EnvSource;
+}
+
+/**
+ * 适配器 launch 实际拿到的上下文：contracts 的 LaunchContext 加本包自己的字段。
+ * skills（N9）：这次要带的 skill 和库里的 MCP（SkillsServiceImpl.prepareLaunch 算好的）；没有就和以前一样。
+ */
+export interface AdapterLaunchContext extends LaunchContext {
+  skills?: LaunchSkills;
 }
 
 export interface AgentAdapterExt extends AgentAdapter {

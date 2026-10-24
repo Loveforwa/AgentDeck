@@ -3,10 +3,11 @@
 
 import { randomUUID } from 'node:crypto';
 import { MCP_SERVER_NAME, MCP_TERMINAL_HEADER, MCP_TOKEN_ENV, TERMINAL_ID_ENV } from '@agentdeck/contracts';
-import type { AgentCapabilities, AgentHookEvent, AgentSessionId, LaunchContext, LaunchSpec, McpEndpoint } from '@agentdeck/contracts';
+import type { AgentCapabilities, AgentHookEvent, AgentSessionId, LaunchSpec, McpEndpoint } from '@agentdeck/contracts';
 import { atLeast, shellQuote } from '../env.ts';
 import { parseClaudeNotification, parseCommonHook } from '../hook-payload.ts';
-import type { AdapterDeps, AgentAdapterExt, DetectResult } from './types.ts';
+import type { McpServerDef } from '../skills/types.ts';
+import type { AdapterDeps, AdapterLaunchContext, AgentAdapterExt, DetectResult } from './types.ts';
 import { detectCommand, NO_CAPABILITIES } from './types.ts';
 
 /** PermissionRequest 钩子在 2.0 里才稳定；更老的版本只能靠输出活动判断。粗略下限，待有旧版本时再核对。 */
@@ -48,7 +49,7 @@ export class ClaudeAdapter implements AgentAdapterExt {
     return { hooks: true, resume: true, fork: true, askTool: true };
   }
 
-  launch(ctx: LaunchContext): LaunchSpec {
+  launch(ctx: AdapterLaunchContext): LaunchSpec {
     const args: string[] = [];
     let sessionId: string;
     switch (ctx.mode.kind) {
@@ -71,9 +72,13 @@ export class ClaudeAdapter implements AgentAdapterExt {
     }
     // claude 在 tmux 里检测到 $TMUX 会自己降到 256 色（docs/decisions.md）。
     const env: Record<string, string> = { CLAUDE_CODE_TMUX_TRUECOLOR: '1' };
-    if (ctx.mcp) {
-      args.push('--mcp-config', JSON.stringify(claudeMcpConfig(ctx.mcp)));
-      env[MCP_TOKEN_ENV] = ctx.mcp.token;
+    // N9：选中的 skill 在那套目录的 skills/ 里，--plugin-dir 只对这次会话有效（2.1.291 实测），不写 ~/.claude
+    const skills = ctx.skills;
+    if (skills?.setDir && skills.skills.length > 0) args.push('--plugin-dir', skills.setDir);
+    const library = skills?.mcp ?? [];
+    if (ctx.mcp || library.length > 0) {
+      args.push('--mcp-config', JSON.stringify(claudeMcpConfig(ctx.mcp ?? null, library)));
+      if (ctx.mcp) env[MCP_TOKEN_ENV] = ctx.mcp.token;
     }
     args.push(...ctx.extraArgs);
     // --mcp-config 和不少用户参数后面能跟多个值，提示词放在 -- 之后才不会被吃掉（2.1.291 实测）。
@@ -128,18 +133,22 @@ export function claudeHookSettings(notifyCommand: string, version: string | null
 /**
  * `--mcp-config` 的内容。token 和终端 id 写成 `${…}`，由 claude 从环境里展开（2.1.291 实测），不出现在命令行上。
  * 和用户自己配的 MCP 合并，不用 --strict-mcp-config。
+ * library（N9）：AgentDeck 库里选中的 MCP 服务，写在同一份配置里。mcp 为 null 时（服务没起来、或这个终端没勾 agentdeck）只有它们。
  */
-export function claudeMcpConfig(mcp: McpEndpoint): { mcpServers: Record<string, unknown> } {
-  return {
-    mcpServers: {
-      [MCP_SERVER_NAME]: {
-        type: 'http',
-        url: mcp.url,
-        headers: {
-          Authorization: `Bearer \${${MCP_TOKEN_ENV}}`,
-          [MCP_TERMINAL_HEADER]: `\${${TERMINAL_ID_ENV}}`,
-        },
+export function claudeMcpConfig(mcp: McpEndpoint | null, library: readonly McpServerDef[] = []): { mcpServers: Record<string, unknown> } {
+  const servers: Record<string, unknown> = {};
+  if (mcp) {
+    servers[MCP_SERVER_NAME] = {
+      type: 'http',
+      url: mcp.url,
+      headers: {
+        Authorization: `Bearer \${${MCP_TOKEN_ENV}}`,
+        [MCP_TERMINAL_HEADER]: `\${${TERMINAL_ID_ENV}}`,
       },
-    },
-  };
+    };
+  }
+  for (const d of library) {
+    servers[d.name] = d.transport === 'http' ? { type: 'http', url: d.url } : { type: 'stdio', command: d.command, args: d.args };
+  }
+  return { mcpServers: servers };
 }
