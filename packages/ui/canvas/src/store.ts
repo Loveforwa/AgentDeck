@@ -18,6 +18,7 @@ import type {
   WorkspaceId,
 } from '@agentdeck/contracts';
 import type { Point } from './model/geometry.ts';
+import type { Guide } from './model/snap.ts';
 
 /** 正在创建的工作区：框先出现，后台建 worktree（需求「4 · 工作区框 · 新建工作区」）。 */
 export interface PendingFrame {
@@ -87,6 +88,8 @@ export interface BoardStoreState extends SavedBoard {
   lifted: WindowId | null;
   /** 拖动中指针所在的别的框。 */
   dropTarget: WorkspaceId | null;
+  /** 拖动、改大小时的对齐线（V3），白板坐标。松手清空。 */
+  guides: Guide[];
   pending: PendingFrame[];
   dialog: DialogState | null;
   menu: MenuState | null;
@@ -113,6 +116,7 @@ export function initialState(): BoardStoreState {
     resizing: null,
     lifted: null,
     dropTarget: null,
+    guides: [],
     pending: [],
     dialog: null,
     menu: null,

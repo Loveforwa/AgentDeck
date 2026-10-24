@@ -23,7 +23,7 @@ export function FrameNodeView({ data }: NodeProps & { data: FrameNodeData }) {
 
   const onTitlePointerDown = usePointerDrag({
     onStart: () => c.moveFrameStart(ws),
-    onMove: (dx, dy) => c.moveFrame(ws, dx / zoom(), dy / zoom()),
+    onMove: (dx, dy, e) => c.moveFrame(ws, dx / zoom(), dy / zoom(), { snap: !e.metaKey }),
     onEnd: (moved) => {
       if (moved) c.moveFrameEnd();
       else c.selectFrame(ws);

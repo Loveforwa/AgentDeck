@@ -7,6 +7,7 @@ import { defaultName } from '../model/windows.ts';
 import { SUMMARY_ZOOM } from '../controller.ts';
 import { useBoardState, useController, useWindowType } from './context.tsx';
 import { WindowStopConfirm } from './dialogs.tsx';
+import { metaHeld } from './Guides.tsx';
 
 export type WindowNodeData = { id: WindowId };
 
@@ -84,12 +85,12 @@ export function WindowNodeView({ data }: NodeProps & { data: WindowNodeData }) {
           if (!focused && !summary) c.focusWindow(id);
         }}
         onMoveStart={() => c.moveWindowStart(id)}
-        onMove={(dx, dy, e) => c.moveWindow(id, dx / zoom(), dy / zoom(), flowPoint(e))}
+        onMove={(dx, dy, e) => c.moveWindow(id, dx / zoom(), dy / zoom(), flowPoint(e), { snap: !e.metaKey })}
         onMoveEnd={(moved) => {
           if (moved) c.moveWindowEnd(id);
         }}
         onResizeStart={(edge) => c.resizeWindowStart(id, edge)}
-        onResize={(_edge, dx, dy) => c.resizeWindow(id, dx / zoom(), dy / zoom())}
+        onResize={(_edge, dx, dy) => c.resizeWindow(id, dx / zoom(), dy / zoom(), { snap: !metaHeld() })}
         onResizeEnd={() => c.resizeWindowEnd(id)}
         onTitleDoubleClick={() => c.toggleMaximize(id)}
         onTitleContextMenu={onTitleContextMenu}

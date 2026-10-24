@@ -32,6 +32,13 @@ describe('drop target (W5)', () => {
     expect(dropTargetAt({ x: 500, y: 500 }, frames, null)).toBeNull();
   });
 
+  it('IS-54: while the pointer is still inside the own frame, an overlapping frame is not a target', () => {
+    // A 和 B 在 (50..100, 50..100) 重叠；从 A 里拖窗口，指针在重叠处不算进了 B
+    expect(dropTargetAt({ x: 75, y: 75 }, frames, A, frames[0]!.rect)).toBeNull();
+    // 指针出了自己的框、进了 B 才算
+    expect(dropTargetAt({ x: 120, y: 120 }, frames, A, frames[0]!.rect)).toBe(B);
+  });
+
   it('terminals spring back, other windows move', () => {
     expect(decideDrop(node('terminal', A), B)).toEqual({ kind: 'bounce', from: A, to: B });
     expect(decideDrop(node('terminal', null), B)).toEqual({ kind: 'bounce', from: null, to: B });

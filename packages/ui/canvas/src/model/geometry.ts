@@ -54,6 +54,11 @@ export function frameAround(win: Rect): Rect {
   };
 }
 
+/** 框里放窗口的区域：四周留 FRAME_PAD，上面留标题栏。对齐线吸附的“框的内边”就是它的边。 */
+export function innerArea(frame: Rect): Rect {
+  return { x: frame.x + FRAME_PAD, y: frame.y + FRAME_HEADER, w: frame.w - FRAME_PAD * 2, h: frame.h - FRAME_HEADER - FRAME_PAD };
+}
+
 /** 框跟着窗口变大（只变大，不变小）。拖窗口到框边时用：窗口出不去，框跟着长。 */
 export function growFrame(frame: Rect, win: Rect): Rect {
   return union(frame, frameAround(win));

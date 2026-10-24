@@ -120,6 +120,46 @@
   color: inherit;
 }
 
+/* ---- 对齐线（V3）：拖动、改大小时画在窗口上面，不挡指针 ---- */
+
+.ad-guides {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.ad-guides-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.ad-guide-line {
+  stroke: var(--guide);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+
+.ad-guide-line--dashed {
+  stroke-dasharray: 4 3;
+}
+
+.ad-guide-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  padding: 0 var(--space-xs);
+  border-radius: var(--radius-inset);
+  background: var(--surface);
+  color: var(--guide);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
 /* ---- 左下角的吉祥物 Clawd：缩放按钮右边那一段里冒出来，只是装饰 ---- */
 
 .ad-board {

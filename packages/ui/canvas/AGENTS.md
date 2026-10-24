@@ -61,8 +61,8 @@ import '@agentdeck/ui-kit/base.css';
 | `src/registry.ts` | 窗口注册表（唯一对别的界面包开放的文件） |
 | `src/controller.ts` | `BoardController`：启动和事件、拖动、改大小、放大、新建、关闭、工作区、视口、快捷键 |
 | `src/store.ts` | zustand vanilla store：保存的部分（BoardState）+ 临时状态 |
-| `src/model/` | 纯函数：`geometry`（框跟着长、框的最小尺寸、视口）、`attention`（S3 计数、⌘J ⌘⇧J 顺序、顶栏的第几个）、`navigation`（S3 ⌘⇧] ⌘⇧[ 按位置切窗口的顺序）、`autosave`（B5 防抖）、`shortcuts`（R1 按键表）、`drop`（W5 落点）、`windows`（终端相关的判断）、`branch`（分支名检查）、`settings`（Settings 的草稿和补丁） |
-| `src/react/` | `Workbench`、`Board`（React Flow）、`WindowNodeView`、`FrameNodeView`、`BoardMenu`（右键菜单）、`dialogs`（新建 / 删除工作区、W5、停止终端、改名）、`SettingsDialog`、`useShortcuts` |
+| `src/model/` | 纯函数：`geometry`（框跟着长、框的最小尺寸、视口）、`attention`（S3 计数、⌘J ⌘⇧J 顺序、顶栏的第几个）、`navigation`（S3 ⌘⇧] ⌘⇧[ 按位置切窗口的顺序）、`autosave`（B5 防抖）、`shortcuts`（R1 按键表）、`drop`（W5 落点）、`snap`（V3 吸附和对齐线）、`avoid`（V3 松手避让、框之间 20px、挤开别的框）、`windows`（终端相关的判断）、`branch`（分支名检查）、`settings`（Settings 的草稿和补丁） |
+| `src/react/` | `Workbench`、`Board`（React Flow）、`WindowNodeView`、`FrameNodeView`、`Guides`（V3 对齐线，屏幕坐标画；跟踪 ⌘）、`BoardMenu`（右键菜单）、`dialogs`（新建 / 删除工作区、W5、停止终端、改名）、`SettingsDialog`、`useShortcuts` |
 | `src/canvas.css` | 白板、框、面板、对话框字段的样式，只用 tokens |
 | `dev/` | dev 页面（Vite） |
 
@@ -71,6 +71,11 @@ import '@agentdeck/ui-kit/base.css';
 - 平移：两指滚动、拖空白处（左键或中键）；缩放：⌘ + 滚轮（25%–200%），⌘0 100%，⌘1 Show all（最大 100%），⌘= ⌘−，左下角比例菜单。不响应双指捏合。点阵 20px，缩到 50% 以下隐藏。
 - 框和窗口是不可拖的 React Flow 节点，移动和改大小走 window-shell 的手势（只能拖标题栏），所以节点要显式 `pointer-events: all`。屏幕坐标换算用 store 里的视口（`controller.clientToFlow`），不用 React Flow 的 `screenToFlowPosition`（受控视口动画后它会落后）。
 - 框里的窗口拖向框外：框跟着长（W3）；指针进了别的框：那个框虚线，松手时终端弹回原处并问“Open new”（W5），网页直接换框。
+- 吸附和不重叠（V3，TC-31，调研见 DR-52）：
+  - 拖窗口、改窗口大小、拖框时屏幕 6px 内吸附（`SNAP_PX / zoom`）：同一个框里别的窗口（散放的：视口里的散放窗口）和框的内边；边对边、中线、标准间距 16、等间距、照别人的间距再排一个，改大小时还有同宽同高。画 `--guide` 蓝色虚线，间距和尺寸标数字。按住 ⌘ 不吸。控制器的 `moveWindow` / `resizeWindow` / `moveFrame` 带 `{ snap }`，不给就不吸（测试、程序调用）。
+  - 松手时（也包括新放上来的窗口）盖住了同一个框里别的窗口：挪到离松手位置最近、隔 16 的空位，优先在框里，放不下就放到框外让框长。不推别的窗口。放大中的窗口不挪，别人按它还原后的位置避让。
+  - 框之间至少 20px：拖框碰到别的框停在边上（可以沿边滑，不会穿过去）；框变大（窗口拖到边上松手、改窗口大小、拖框边、新窗口）挤到别的框，别的框连同窗口往外挪，拖动中拉回来它也回去。原来就挨得近但没重叠的框不动。
+  - IS-54：指针还在自己的框（拖动前的位置）里就不算进了别的框；启动时老布局里重叠的框被分开。
 - 新建的东西放在右键的位置；⌘N / ⌘T 放在聚焦窗口右边、同一个工作区；没有聚焦时在视口中心。新工作区没给位置时放在空的地方。
 - 关闭运行中的终端要确认（Stop and close，调 `terminals.kill`）；已退出的终端和网页直接关。
 - 删除工作区：Remove from board / Also delete the worktree folder；服务抛 `dirty-worktree` 后要勾“I understand these changes will be lost”再带 `force: true`。成功后结束框里的终端。
@@ -95,7 +100,9 @@ import '@agentdeck/ui-kit/base.css';
 - `attention.test.ts`：running / waiting 计数、按工作区、按开始等待的时间排序、badge 也算、⌘J 循环、⌘⇧J 反向、聚焦窗口排第几。
 - `navigation.test.ts`：⌘⇧] ⌘⇧[ 的顺序（框按位置、框里从上到下从左到右、散放的最后）、循环、没有聚焦时从选中的框开始。
 - `shortcuts.test.ts`：快捷键表、终端聚焦时不带 ⌘ 的键一个都不拿、输入框里不处理。
-- `drop-and-menu.test.ts`：W5 落点和弹回规则、各个右键菜单的项。
+- `drop-and-menu.test.ts`：W5 落点和弹回规则（含 IS-54 的重叠框）、各个右键菜单的项。
+- `snap.test.ts`、`avoid.test.ts`：V3 的纯函数（吸附的各种对象、阈值、最小尺寸、对齐线换成屏幕坐标；空位、优先框内、框停在 20px、沿边滑、挤开和连锁、启动时分开）。
+- `layout-v3.test.ts`（对着 `createFakeApi()`）：拖动和改大小吸附、⌘ 不吸、阈值随缩放、松手滑到空位、框放不下就长并挤开别的框、放大的窗口例外、拖框停在边上、拖框边挤开再回来、IS-54 回归。
 - `controller.test.ts`（对着 `createFakeApi()`）：恢复布局、保存防抖和重启后一致、status.changed 驱动提醒和程序坞角标、⌘J ⌘⇧J 和闪一下、⌘⇧] ⌘⇧[ 切窗口（视口里看得见就不动）、通知跳转、框里新建终端用工作区目录、⌘N、reuseKey、W5 弹回和 Open new、拖到框边框变大、网页换框、拖框带走窗口、框的最小尺寸、改大小松手才生效和摘要卡、放大还原、关闭确认、新建工作区和 setup、创建失败、删除工作区的 dirty 流程、Add project…。
 - `settings.test.tsx`：Settings 对话框的入口（顶栏、Projects ▾、⌘,）、保存只发改了的字段、改完后新建 worktree 用新的基础分支 / 复制文件 / 初始化命令、多仓库、换页保留草稿和 Cancel、General、保存失败的提示、Open settings.json、Locate…、草稿函数。
 - `workbench.test.tsx`：整个 Workbench 在 jsdom 里渲染：顶栏数字随假事件变化、框标题“2 waiting”、终端聚焦时按键不被拦、⌘B ⌘J、顶栏“1/2 waiting”、⌘⇧J ⌘⇧]（⌘] 不拦）、Delete 打开删除对话框。

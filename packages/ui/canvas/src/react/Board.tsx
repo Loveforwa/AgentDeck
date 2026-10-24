@@ -22,6 +22,7 @@ import { WindowNodeView } from './WindowNodeView.tsx';
 import { useBoardState, useController } from './context.tsx';
 import { Clawd } from './Clawd.tsx';
 import { ShortcutHints } from './ShortcutHints.tsx';
+import { Guides, useTrackMeta } from './Guides.tsx';
 import '../canvas.css';
 
 const nodeTypes: NodeTypes = {
@@ -43,6 +44,7 @@ export function Board() {
   const pending = useBoardState((s) => s.pending);
   const viewport = useBoardState((s) => s.viewport);
   const loaded = useBoardState((s) => s.loaded);
+  useTrackMeta();
 
   // 让控制器能做带动画的平移缩放（⌘J、⌘1、放大窗口）
   useEffect(() => {
@@ -158,6 +160,7 @@ export function Board() {
           {viewport.zoom >= 0.5 ? <Background variant={BackgroundVariant.Dots} gap={20} size={2} color="var(--line-strong)" /> : null}
         </ReactFlow>
       ) : null}
+      <Guides />
       <EmptyState />
       <ZoomControl />
       <ShortcutHints />

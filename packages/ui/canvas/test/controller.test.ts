@@ -307,10 +307,11 @@ describe('moving windows between frames (W3, W5)', () => {
   it('dragging a frame title moves the windows inside', () => {
     const before = c.state.windows.filter((w) => w.workspaceId === W.shopCart).map((w) => w.rect);
     c.moveFrameStart(W.shopCart);
-    c.moveFrame(W.shopCart, 50, -30);
+    // 往下拖（往上会碰到 agentdeck · feat/login，见 V3 的用例）
+    c.moveFrame(W.shopCart, 50, 30);
     c.moveFrameEnd();
     const after = c.state.windows.filter((w) => w.workspaceId === W.shopCart).map((w) => w.rect);
-    after.forEach((r, i) => expect(r).toEqual({ ...before[i]!, x: before[i]!.x + 50, y: before[i]!.y - 30 }));
+    after.forEach((r, i) => expect(r).toEqual({ ...before[i]!, x: before[i]!.x + 50, y: before[i]!.y + 30 }));
     expect(win('win-dev-server').rect.x).toBe(64); // 别的框里的不动
   });
 

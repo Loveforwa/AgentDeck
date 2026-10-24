@@ -7,6 +7,7 @@ import { isSummarySize, windowRegistry, type WindowDefinition, type WindowRegist
 import { startableAgents } from './model/agents.ts';
 import { nextWaiting, prevWaiting, summarize, statusOf, type AttentionSummary } from './model/attention.ts';
 import { createAutosave, type Autosave } from './model/autosave.ts';
+import { FRAME_GAP, clampFrameMove, findFreeSpot, pushFrames, separateFrames, tooClose } from './model/avoid.ts';
 import { decideDrop, dropTargetAt } from './model/drop.ts';
 import {
   FRAME_HEADER,
@@ -16,8 +17,10 @@ import {
   containsPoint,
   fitViewport,
   growFrame,
+  innerArea,
   intersects,
   resizeFrame,
+  sameRect,
   toFlow,
   visibleRect,
   zoomAroundCenter,
@@ -25,6 +28,7 @@ import {
 } from './model/geometry.ts';
 import { adjacentWindow, windowOrder } from './model/navigation.ts';
 import type { ShortcutId } from './model/shortcuts.ts';
+import { SNAP_PX, snapMove, snapResize, type Guide } from './model/snap.ts';
 import {
   BROWSER_TYPE,
   TERMINAL_TYPE,
@@ -81,11 +85,22 @@ export const SUMMARY_ZOOM = 0.5;
 const MAXIMIZE_MARGIN = 16;
 const STOPPED = new Set(['exited', 'error']);
 
+/** 挪框之前各框、各框里窗口的位置（V3：框变大时把挤到的框挪开，拖动中每次都从这里重新算）。 */
+interface LayoutBase {
+  frames: Map<WorkspaceId, Rect>;
+  windows: Map<WindowId, { ws: WorkspaceId; rect: Rect; restore: Rect | null }>;
+}
+
 type DragSession =
   | { kind: 'move-window'; id: WindowId; start: Rect; frameStart: Rect | null }
-  | { kind: 'resize-window'; id: WindowId; edge: ResizeEdge; start: Rect; frameStart: Rect | null }
-  | { kind: 'move-frame'; ws: WorkspaceId; start: Rect; windows: Map<WindowId, Rect> }
-  | { kind: 'resize-frame'; ws: WorkspaceId; edge: ResizeEdge; start: Rect; content: Rect | null };
+  | { kind: 'resize-window'; id: WindowId; edge: ResizeEdge; start: Rect; frameStart: Rect | null; base: LayoutBase }
+  | { kind: 'move-frame'; ws: WorkspaceId; start: Rect; windows: Map<WindowId, Rect>; last: Rect }
+  | { kind: 'resize-frame'; ws: WorkspaceId; edge: ResizeEdge; start: Rect; content: Rect | null; base: LayoutBase };
+
+/** 拖动和改大小的选项。snap：吸附到对齐线（界面上按住 ⌘ 时为 false）；不给时不吸，测试和程序调用照原样移动。 */
+export interface DragOptions {
+  snap?: boolean;
+}
 
 let idSeq = 0;
 function newWindowId(): WindowId {
@@ -206,6 +221,28 @@ export class BoardController {
       statuses: { ...Object.fromEntries(statuses.map((st) => [st.terminalId, st])), ...s.statuses },
       loaded: true,
     }));
+    this.separateOverlappingFrames();
+  }
+
+  /** 老布局里互相盖住的框（IS-53、IS-54）启动时分开，框里的窗口跟着走；没有重叠时什么都不改。 */
+  private separateOverlappingFrames(): void {
+    const s = this.state;
+    const moved = separateFrames(new Map(s.frames.map((f) => [f.workspaceId, f.rect])), FRAME_GAP);
+    if (moved.size === 0) return;
+    const shift = new Map<WorkspaceId, { dx: number; dy: number }>();
+    for (const f of s.frames) {
+      const r = moved.get(f.workspaceId);
+      if (r) shift.set(f.workspaceId, { dx: r.x - f.rect.x, dy: r.y - f.rect.y });
+    }
+    this.set({
+      frames: s.frames.map((f) => (moved.has(f.workspaceId) ? { ...f, rect: moved.get(f.workspaceId)! } : f)),
+      windows: s.windows.map((w) => {
+        const d = w.workspaceId ? shift.get(w.workspaceId) : undefined;
+        if (!d) return w;
+        const mv = (r: Rect) => ({ ...r, x: r.x + d.dx, y: r.y + d.dy });
+        return { ...w, rect: mv(w.rect), restoreRect: w.restoreRect ? mv(w.restoreRect) : null };
+      }),
+    });
   }
 
   /** 取消订阅、写入没保存的改动。之后可以再 start()（React StrictMode 会这样）。 */
@@ -322,12 +359,80 @@ export class BoardController {
     this.set((s) => ({ frames: s.frames.map((f) => (f.workspaceId === ws ? { ...f, ...patch } : f)) }));
   }
 
-  /** 让框装下这个窗口（只变大）。 */
+  /** 让框装下这个窗口（只变大）；挤到的框挪开（V3）。 */
   private fitFrameTo(ws: WorkspaceId | null, rect: Rect): void {
     const f = this.frameOf(ws);
     if (!f || !ws) return;
     const grown = growFrame(f.rect, rect);
-    if (grown.w !== f.rect.w || grown.h !== f.rect.h || grown.x !== f.rect.x || grown.y !== f.rect.y) this.patchFrame(ws, { rect: grown });
+    if (!sameRect(grown, f.rect)) this.applyFrameChange(this.layoutBase(), ws, f.rect, grown);
+  }
+
+  // ---- 不重叠和对齐线（V3） ----
+
+  /** 窗口占的地方：放大中的窗口按还原后的位置算（放大的窗口可以盖住同一个框里的别的窗口）。 */
+  private footprint(w: WindowNode): Rect {
+    return this.isMaximized(w) && w.restoreRect ? w.restoreRect : w.rect;
+  }
+
+  /** 对齐线看的窗口：同一个框里别的窗口；散放的窗口看视口里别的散放窗口。 */
+  private snapTargets(id: WindowId, ws: WorkspaceId | null): Rect[] {
+    const s = this.state;
+    return s.windows
+      .filter((w) => w.id !== id && w.workspaceId === ws && (ws !== null || this.isVisible(w.rect, s)))
+      .map((w) => this.footprint(w));
+  }
+
+  /** 吸附距离：屏幕上 SNAP_PX，换成白板坐标。 */
+  private snapThreshold(): number {
+    return SNAP_PX / this.state.viewport.zoom;
+  }
+
+  /**
+   * 松手或新放上来时：盖住同一个框里（散放的：别的散放窗口）别的窗口，就挪到最近的空位，优先在框里；放不下就放到框外，
+   * 由调用方让框跟着长。不推别的窗口。frameRect：框拖动前的位置。
+   */
+  private freeSpotFor(id: WindowId | null, ws: WorkspaceId | null, rect: Rect, frameRect: Rect | null): Rect {
+    const obstacles = this.state.windows.filter((w) => w.id !== id && w.workspaceId === ws).map((w) => this.footprint(w));
+    return findFreeSpot(rect, obstacles, { gap: GAP, area: frameRect ? innerArea(growFrame(frameRect, rect)) : null });
+  }
+
+  private layoutBase(): LayoutBase {
+    const s = this.state;
+    const windows: LayoutBase['windows'] = new Map();
+    for (const w of s.windows) if (w.workspaceId) windows.set(w.id, { ws: w.workspaceId, rect: w.rect, restore: w.restoreRect });
+    return { frames: new Map(s.frames.map((f) => [f.workspaceId, f.rect])), windows };
+  }
+
+  /**
+   * ws 的框从 before 变成 after：挤到的框连同里面的窗口挪开（框之间至少 FRAME_GAP）。别的框都按 base 的位置算，
+   * 拖动中每次从 base 重新算，所以框又变小时被挪开的框会回到原处。
+   */
+  private applyFrameChange(base: LayoutBase, ws: WorkspaceId, before: Rect | null, after: Rect): void {
+    const pushed = pushFrames(base.frames, { id: ws, before, after }, FRAME_GAP);
+    const s = this.state;
+    let framesChanged = false;
+    const frames = s.frames.map((f) => {
+      const b = base.frames.get(f.workspaceId);
+      const r = f.workspaceId === ws ? after : b ? (pushed.get(f.workspaceId) ?? b) : f.rect;
+      if (sameRect(r, f.rect)) return f;
+      framesChanged = true;
+      return { ...f, rect: r };
+    });
+    let windowsChanged = false;
+    const windows = s.windows.map((w) => {
+      const b = base.windows.get(w.id);
+      if (!b || b.ws === ws) return w;
+      const from = base.frames.get(b.ws);
+      const to = pushed.get(b.ws) ?? from;
+      if (!from || !to) return w;
+      const mv = (r: Rect) => ({ ...r, x: r.x + to.x - from.x, y: r.y + to.y - from.y });
+      const rect = mv(b.rect);
+      const restoreRect = b.restore ? mv(b.restore) : null;
+      if (sameRect(rect, w.rect) && sameRect(restoreRect, w.restoreRect)) return w;
+      windowsChanged = true;
+      return { ...w, rect, restoreRect };
+    });
+    if (framesChanged || windowsChanged) this.set({ ...(framesChanged ? { frames } : {}), ...(windowsChanged ? { windows } : {}) });
   }
 
   focusWindow(id: WindowId | null): void {
@@ -400,16 +505,31 @@ export class BoardController {
     this.set({ lifted: id });
   }
 
-  /** dx、dy：白板坐标的总位移；pointer：指针的白板坐标。 */
-  moveWindow(id: WindowId, dx: number, dy: number, pointer: Point): void {
+  /**
+   * dx、dy：白板坐标的总位移；pointer：指针的白板坐标。snap 时吸到同一个框里别的窗口和框的内边（指针进了别的框就看那个框），
+   * 画对齐线。重叠不在这里管，松手时再挪。
+   */
+  moveWindow(id: WindowId, dx: number, dy: number, pointer: Point, opts: DragOptions = {}): void {
     const d = this.drag;
     if (d?.kind !== 'move-window' || d.id !== id) return;
     const w = this.windowById(id);
     if (!w) return;
-    const rect = { ...d.start, x: d.start.x + dx, y: d.start.y + dy };
-    const target = dropTargetAt(pointer, this.state.frames, w.workspaceId);
+    let rect = { ...d.start, x: d.start.x + dx, y: d.start.y + dy };
+    const target = dropTargetAt(pointer, this.state.frames, w.workspaceId, d.frameStart);
+    let guides: Guide[] = [];
+    if (opts.snap && !this.isMaximized(w)) {
+      const area = target ? (this.frameOf(target)?.rect ?? null) : d.frameStart;
+      const res = snapMove(rect, this.snapTargets(id, target ?? w.workspaceId), {
+        threshold: this.snapThreshold(),
+        gap: GAP,
+        area: area ? innerArea(area) : null,
+      });
+      rect = res.rect;
+      guides = res.guides;
+    }
     this.set((s) => ({
       dropTarget: target,
+      guides,
       windows: s.windows.map((n) => (n.id === id ? { ...n, rect } : n)),
       // 指针在别的框里时自己的框不跟着长（松手会弹回）；否则框跟着窗口变大
       frames:
@@ -423,11 +543,12 @@ export class BoardController {
     const d = this.drag;
     this.drag = null;
     const target = this.state.dropTarget;
-    this.set({ lifted: null, dropTarget: null });
+    this.set({ lifted: null, dropTarget: null, guides: [] });
     if (d?.kind !== 'move-window' || d.id !== id) return;
     const w = this.windowById(id);
     if (!w) return;
     const decision = decideDrop(w, target);
+    const maximized = this.isMaximized(w);
     if (decision.kind === 'bounce') {
       const at = { x: w.rect.x, y: w.rect.y };
       this.patchWindow(id, { rect: d.start });
@@ -435,32 +556,46 @@ export class BoardController {
       this.set({ dialog: { kind: 'move-terminal', windowId: id, to: decision.to, at } });
     } else if (decision.kind === 'adopt') {
       if (w.workspaceId && d.frameStart) this.patchFrame(w.workspaceId, { rect: d.frameStart });
-      this.patchWindow(id, { workspaceId: decision.workspaceId });
-      this.fitFrameTo(decision.workspaceId, w.rect);
+      const to = this.frameOf(decision.workspaceId);
+      const rect = maximized ? w.rect : this.freeSpotFor(id, decision.workspaceId, w.rect, to?.rect ?? null);
+      this.patchWindow(id, { workspaceId: decision.workspaceId, rect });
+      this.fitFrameTo(decision.workspaceId, rect);
+    } else if (!maximized) {
+      // V3：盖住别的窗口就挪到最近的空位；框按挪好的位置重新长（拖动中是按松手的位置长的），挤到的框挪开
+      const rect = this.freeSpotFor(id, w.workspaceId, w.rect, d.frameStart);
+      if (!sameRect(rect, w.rect)) this.patchWindow(id, { rect });
+      if (w.workspaceId && d.frameStart) this.applyFrameChange(this.layoutBase(), w.workspaceId, d.frameStart, growFrame(d.frameStart, rect));
     }
   }
 
   resizeWindowStart(id: WindowId, edge: ResizeEdge): void {
     const w = this.windowById(id);
     if (!w) return;
-    this.drag = { kind: 'resize-window', id, edge, start: w.rect, frameStart: this.frameOf(w.workspaceId)?.rect ?? null };
+    this.drag = { kind: 'resize-window', id, edge, start: w.rect, frameStart: this.frameOf(w.workspaceId)?.rect ?? null, base: this.layoutBase() };
     this.set({ resizing: { id, rect: w.rect } });
   }
 
-  resizeWindow(id: WindowId, dx: number, dy: number): void {
+  /** snap 时动的边吸到对齐线、标准间距，宽高吸到同一个框里别的窗口的宽高。框跟着长，挤到的框挪开。 */
+  resizeWindow(id: WindowId, dx: number, dy: number, opts: DragOptions = {}): void {
     const d = this.drag;
     if (d?.kind !== 'resize-window' || d.id !== id) return;
     const w = this.windowById(id);
     if (!w) return;
     const min = this.definitionOf(w)?.minSize ?? { w: 160, h: 80 };
-    const rect = resizeRect(d.start, d.edge, dx, dy, min);
-    this.set((s) => ({
-      resizing: { id, rect },
-      frames:
-        d.frameStart && w.workspaceId
-          ? s.frames.map((f) => (f.workspaceId === w.workspaceId ? { ...f, rect: growFrame(d.frameStart!, rect) } : f))
-          : s.frames,
-    }));
+    let rect = resizeRect(d.start, d.edge, dx, dy, min);
+    let guides: Guide[] = [];
+    if (opts.snap) {
+      const res = snapResize(rect, d.edge, this.snapTargets(id, w.workspaceId), {
+        threshold: this.snapThreshold(),
+        gap: GAP,
+        area: d.frameStart ? innerArea(d.frameStart) : null,
+        min,
+      });
+      rect = res.rect;
+      guides = res.guides;
+    }
+    this.set({ resizing: { id, rect }, guides });
+    if (d.frameStart && w.workspaceId) this.applyFrameChange(d.base, w.workspaceId, d.frameStart, growFrame(d.frameStart, rect));
   }
 
   /** 松手才把新大小写进窗口，组件这时才拿到新的 contentSize。 */
@@ -468,7 +603,7 @@ export class BoardController {
     const d = this.drag;
     const live = this.state.resizing;
     this.drag = null;
-    this.set({ resizing: null });
+    this.set({ resizing: null, guides: [] });
     if (d?.kind !== 'resize-window' || d.id !== id || !live) return;
     const w = this.windowById(id);
     if (!w) return;
@@ -480,7 +615,10 @@ export class BoardController {
     } else {
       restoreRect = null;
     }
-    this.patchWindow(id, { rect: live.rect, restoreRect });
+    // V3：改大以后盖住了别的窗口，就挪到最近放得下的地方
+    const rect = this.isMaximized(w) ? live.rect : this.freeSpotFor(id, w.workspaceId, live.rect, d.frameStart);
+    this.patchWindow(id, { rect, restoreRect });
+    if (d.frameStart && w.workspaceId) this.applyFrameChange(d.base, w.workspaceId, d.frameStart, growFrame(d.frameStart, rect));
   }
 
   /** 单击摘要卡：拉小的恢复原来的大小；因为白板缩得太小的，缩放到 100% 看它。都会聚焦。 */
@@ -551,35 +689,57 @@ export class BoardController {
   moveFrameStart(ws: WorkspaceId): void {
     const f = this.frameOf(ws);
     if (!f) return;
-    this.drag = { kind: 'move-frame', ws, start: f.rect, windows: new Map(this.windowsIn(ws).map((w) => [w.id, w.rect])) };
+    this.drag = {
+      kind: 'move-frame',
+      ws,
+      start: f.rect,
+      windows: new Map(this.windowsIn(ws).map((w) => [w.id, w.rect])),
+      last: f.rect,
+    };
   }
 
-  moveFrame(ws: WorkspaceId, dx: number, dy: number): void {
+  /** 拖框：碰到别的框就停在边上（隔 FRAME_GAP），可以沿着边滑（V3）。snap 时吸到别的框的边、中线和 FRAME_GAP 的间距。 */
+  moveFrame(ws: WorkspaceId, dx: number, dy: number, opts: DragOptions = {}): void {
     const d = this.drag;
     if (d?.kind !== 'move-frame' || d.ws !== ws) return;
+    const others = this.state.frames.filter((f) => f.workspaceId !== ws).map((f) => f.rect);
+    let rect = { ...d.start, x: d.start.x + dx, y: d.start.y + dy };
+    if (opts.snap) rect = snapMove(rect, others, { threshold: this.snapThreshold(), gap: FRAME_GAP }).rect;
+    rect = clampFrameMove(d.last, rect, others, FRAME_GAP);
+    d.last = rect;
+    // 线按停下来的位置画：停在别的框边上时也标出间距
+    const guides = opts.snap ? snapMove(rect, others, { threshold: 1e-3, gap: FRAME_GAP }).guides : [];
+    const mx = rect.x - d.start.x;
+    const my = rect.y - d.start.y;
     this.set((s) => ({
-      frames: s.frames.map((f) => (f.workspaceId === ws ? { ...f, rect: { ...d.start, x: d.start.x + dx, y: d.start.y + dy } } : f)),
+      guides,
+      frames: s.frames.map((f) => (f.workspaceId === ws ? { ...f, rect } : f)),
       windows: s.windows.map((w) => {
         const r = d.windows.get(w.id);
-        return r ? { ...w, rect: { ...r, x: r.x + dx, y: r.y + dy } } : w;
+        if (!r) return w;
+        const rect2 = { ...r, x: r.x + mx, y: r.y + my };
+        const restoreRect = w.restoreRect ? { ...w.restoreRect, x: w.restoreRect.x + rect2.x - w.rect.x, y: w.restoreRect.y + rect2.y - w.rect.y } : null;
+        return { ...w, rect: rect2, restoreRect };
       }),
     }));
   }
 
   moveFrameEnd(): void {
     this.drag = null;
+    if (this.state.guides.length > 0) this.set({ guides: [] });
   }
 
   resizeFrameStart(ws: WorkspaceId, edge: ResizeEdge): void {
     const f = this.frameOf(ws);
     if (!f) return;
-    this.drag = { kind: 'resize-frame', ws, edge, start: f.rect, content: this.contentBounds(ws) };
+    this.drag = { kind: 'resize-frame', ws, edge, start: f.rect, content: this.contentBounds(ws), base: this.layoutBase() };
   }
 
+  /** 拖框的边：挤到的框挪开，再拉小时回到原处（V3）。 */
   resizeFrame(ws: WorkspaceId, dx: number, dy: number): void {
     const d = this.drag;
     if (d?.kind !== 'resize-frame' || d.ws !== ws) return;
-    this.patchFrame(ws, { rect: resizeFrame(d.start, d.edge, dx, dy, d.content) });
+    this.applyFrameChange(d.base, ws, d.start, resizeFrame(d.start, d.edge, dx, dy, d.content));
   }
 
   resizeFrameEnd(): void {
@@ -722,18 +882,20 @@ export class BoardController {
   /** 加一个窗口：放进框（框跟着变大），提到最上层并聚焦。 */
   addWindow<TData>(init: { type: string; workspaceId: WorkspaceId | null; rect: Rect; data: TData; title?: string | null }): WindowId {
     const id = newWindowId();
+    // V3：放的位置盖住了别的窗口就挪到最近的空位
+    const rect = this.freeSpotFor(null, init.workspaceId, init.rect, this.frameOf(init.workspaceId)?.rect ?? null);
     const node: WindowNode = {
       id,
       type: init.type,
       workspaceId: init.workspaceId,
-      rect: init.rect,
+      rect,
       z: this.maxWindowZ() + 1,
       title: init.title ?? null,
       restoreRect: null,
       data: init.data,
     };
     this.set((s) => ({ windows: [...s.windows, node] }));
-    this.fitFrameTo(init.workspaceId, init.rect);
+    this.fitFrameTo(init.workspaceId, rect);
     this.focusWindow(id);
     return id;
   }
@@ -977,7 +1139,7 @@ export class BoardController {
     const centered = { x: Math.round(c.x - size.w / 2), y: Math.round(c.y - size.h / 2), ...size };
     const s = this.state;
     const taken = [...s.frames.map((f) => f.rect), ...s.windows.map((w) => w.rect), ...s.pending.map((p) => p.rect)];
-    if (!taken.some((r) => intersects(r, centered))) return centered;
+    if (!taken.some((r) => tooClose(r, centered, FRAME_GAP))) return centered;
     const all = bounds(taken)!;
     return { x: all.x + all.w + GAP * 3, y: all.y, ...size };
   }
