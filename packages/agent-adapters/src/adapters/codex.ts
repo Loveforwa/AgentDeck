@@ -17,7 +17,8 @@ import { MCP_SERVER_NAME, MCP_TERMINAL_HEADER, MCP_TOKEN_ENV, TERMINAL_ID_ENV } 
 import type { AgentCapabilities, AgentHookEvent, AgentSessionId, LaunchContext, LaunchSpec, McpEndpoint } from '@agentdeck/contracts';
 import { atLeast, findExecutable, shellQuote } from '../env.ts';
 import { parseCommonHook } from '../hook-payload.ts';
-import type { AdapterDeps, AgentAdapterExt, DetectResult } from './types.ts';
+import type { McpServerDef } from '../skills/types.ts';
+import type { AdapterDeps, AdapterLaunchContext, AgentAdapterExt, DetectResult } from './types.ts';
 import { detectCommand, NO_CAPABILITIES } from './types.ts';
 
 /** 本机实测有 hooks 和 hooks/list 的版本。更早的版本可能也有，没验证过就按没有处理。 */
@@ -115,7 +116,7 @@ export class CodexAdapter implements AgentAdapterExt {
     }
   }
 
-  launch(ctx: LaunchContext): LaunchSpec {
+  launch(ctx: AdapterLaunchContext): LaunchSpec {
     const head: string[] = [];
     let sessionId: string | null = null;
     if (ctx.mode.kind === 'resume') {
@@ -132,7 +133,10 @@ export class CodexAdapter implements AgentAdapterExt {
     } else if (!this.capabilities(this.lastVersion).hooks) {
       hookArgs = ['-c', `notify=[${toml(ctx.notifyCommand)},"codex","notify"]`];
     }
-    const mcp = ctx.mcp && atLeast(this.lastVersion, MIN_MCP_VERSION) ? ctx.mcp : null;
+    const mcpOk = atLeast(this.lastVersion, MIN_MCP_VERSION);
+    const mcp = ctx.mcp && mcpOk ? ctx.mcp : null;
+    // N9：库里选中的 MCP 服务同样用 -c 加（skill 带不了，见 skills/support.ts）
+    const library = mcpOk ? (ctx.skills?.mcp ?? []) : [];
     return {
       cmd: this.command,
       // codex [PROMPT]：位置参数是第一条消息。
@@ -140,6 +144,7 @@ export class CodexAdapter implements AgentAdapterExt {
         ...head,
         ...hookArgs,
         ...(mcp ? codexMcpOverrides(mcp) : []),
+        ...library.flatMap(codexLibraryMcpOverrides),
         ...ctx.extraArgs,
         ...(ctx.prompt && ctx.mode.kind === 'new' ? ['--', ctx.prompt] : []),
       ],
@@ -179,6 +184,16 @@ export function codexMcpOverrides(mcp: McpEndpoint): string[] {
     '-c',
     `${key}.env_http_headers={${toml(MCP_TERMINAL_HEADER)}=${toml(TERMINAL_ID_ENV)}}`,
   ];
+}
+
+/**
+ * 库里的一个 MCP 服务（N9）：`-c mcp_servers.<名>.command=…`、`.args=[…]`，或 `.url=…`（streamable HTTP）。
+ * 名字只有字母、数字、- 和 _（库里登记时查过），可以直接当 TOML 的键。
+ */
+export function codexLibraryMcpOverrides(def: McpServerDef): string[] {
+  const key = `mcp_servers.${def.name}`;
+  if (def.transport === 'http') return ['-c', `${key}.url=${toml(def.url)}`];
+  return ['-c', `${key}.command=${toml(def.command)}`, '-c', `${key}.args=[${def.args.map(toml).join(',')}]`];
 }
 
 function hookCommand(notifyCommand: string, event: string): string {

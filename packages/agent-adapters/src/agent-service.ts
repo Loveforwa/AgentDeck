@@ -15,7 +15,8 @@ import type {
   WorkspaceId,
 } from '@agentdeck/contracts';
 import type { CommandLaunchContext } from './adapters/shell.ts';
-import type { AgentAdapterExt } from './adapters/types.ts';
+import type { AdapterLaunchContext, AgentAdapterExt } from './adapters/types.ts';
+import type { LaunchSkills } from './skills/types.ts';
 import type { EnvSource } from './env.ts';
 import { findExecutable } from './env.ts';
 
@@ -33,6 +34,8 @@ export interface StartedAgent {
   /** 这次启动是否真的带上了钩子。没有时状态靠输出活动判断。 */
   hooks: boolean;
   sessionId: AgentSessionId | null;
+  /** N9：这次带上的 skill 和 MCP（没有 skills 选项、或 shell 时为 null）。组装方据此记下 running。 */
+  skills: LaunchSkills | null;
 }
 
 export interface AgentServiceOptions {
@@ -46,6 +49,11 @@ export interface AgentServiceOptions {
   extraArgs?: (agent: AgentKind) => string[];
   /** AgentDeck 的 MCP 服务（M1）。返回 null 表示没起来，这次启动不挂。 */
   mcp?: () => McpEndpoint | null;
+  /**
+   * N9：这次启动带哪些 skill 和 MCP（按白板上存的选择，SkillsServiceImpl.prepareLaunch）。不给、返回 null 时和以前一样：
+   * 有 mcp 就挂 AgentDeck 的 MCP，不带别的。出错时当作 null（skill 带不上不能让终端起不来）。
+   */
+  skills?: (req: StartAgentRequest) => Promise<LaunchSkills | null>;
   onStarted?: (started: StartedAgent) => void;
 }
 
@@ -81,7 +89,8 @@ export class AgentServiceImpl implements AgentService {
       throw new AgentDeckError({ code: 'unsupported', message: `${adapter.label} can't fork a conversation` });
     }
 
-    const ctx: CommandLaunchContext = {
+    const skills = (await this.opts.skills?.(req).catch(() => null)) ?? null;
+    const ctx: CommandLaunchContext & AdapterLaunchContext = {
       cwd: req.cwd,
       terminalId: PENDING_TERMINAL_ID,
       mode: req.mode,
@@ -91,7 +100,9 @@ export class AgentServiceImpl implements AgentService {
       ...(req.prompt ? { prompt: req.prompt } : {}),
     };
     const mcp = this.opts.mcp?.();
-    if (mcp) ctx.mcp = mcp;
+    // N9：这个终端没勾 built-in 的 agentdeck 时不挂
+    if (mcp && (skills?.agentdeckMcp ?? true)) ctx.mcp = mcp;
+    if (skills) ctx.skills = skills;
     const prepared = info.capabilities.hooks ? await adapter.prepare?.(ctx) : undefined;
     const spec = adapter.launch(ctx);
     if (req.agent === 'custom' && !(await findExecutable(spec.cmd, this.opts.env()))) {
@@ -111,6 +122,7 @@ export class AgentServiceImpl implements AgentService {
       workspaceId: req.workspaceId,
       hooks: info.capabilities.hooks && (prepared?.hooks ?? true),
       sessionId: spec.sessionId,
+      skills,
     });
     return { terminalId: id, sessionId: spec.sessionId, cmd: spec.cmd, args: spec.args };
   }

@@ -98,7 +98,7 @@ describe('AgentServiceImpl', () => {
     expect(res.args).toContain('--settings');
     expect(res.args.slice(-2)).toEqual(['--model', 'opus']);
     expect(res.sessionId).toMatch(/^[0-9a-f-]{36}$/);
-    expect(started).toEqual([{ terminalId: res.terminalId, agent: 'claude', workspaceId: 'ws', hooks: true, sessionId: res.sessionId }]);
+    expect(started).toEqual([{ terminalId: res.terminalId, agent: 'claude', workspaceId: 'ws', hooks: true, sessionId: res.sessionId, skills: null }]);
   });
 
   it('start: passes the prompt and the MCP endpoint to the adapter', async () => {

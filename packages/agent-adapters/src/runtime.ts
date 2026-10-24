@@ -9,6 +9,7 @@ import type { AbsPath, AgentKind, McpEndpoint, StatusEvent, TerminalEvent, Termi
 import { createDefaultAdapters } from './adapters/index.ts';
 import type { AgentAdapterExt } from './adapters/types.ts';
 import { AgentServiceImpl } from './agent-service.ts';
+import type { AgentServiceOptions, StartedAgent } from './agent-service.ts';
 import type { EnvSource } from './env.ts';
 import { hookHint } from './hook-payload.ts';
 import type { HookServerOptions, ReceivedHook } from './hook-server.ts';
@@ -35,6 +36,10 @@ export interface AgentRuntimeOptions {
   extraArgs?: (agent: AgentKind) => string[];
   /** AgentDeck 的 MCP 服务（M1），见 AgentServiceOptions.mcp。 */
   mcp?: () => McpEndpoint | null;
+  /** N9：这次启动带哪些 skill 和 MCP，见 AgentServiceOptions.skills。 */
+  skills?: AgentServiceOptions['skills'];
+  /** 一个 agent 终端起来之后（状态机 track 之后）再告诉组装方，例如记下它带了哪些 skill（N9）。 */
+  onStarted?: (started: StartedAgent) => void;
   /** 默认 ~/.agentdeck/run/hooks.sock。 */
   socketPath?: string;
   /** 默认 createDefaultAdapters。 */
@@ -77,8 +82,11 @@ export function createAgentRuntime(opts: AgentRuntimeOptions) {
     notifyCommand: opts.notifyCommand,
     ...(opts.extraArgs ? { extraArgs: opts.extraArgs } : {}),
     ...(opts.mcp ? { mcp: opts.mcp } : {}),
-    onStarted: (s) =>
-      status.track(s.terminalId, { agent: s.agent, workspaceId: s.workspaceId, hooks: s.hooks, sessionId: s.sessionId }),
+    ...(opts.skills ? { skills: opts.skills } : {}),
+    onStarted: (s) => {
+      status.track(s.terminalId, { agent: s.agent, workspaceId: s.workspaceId, hooks: s.hooks, sessionId: s.sessionId });
+      opts.onStarted?.(s);
+    },
   });
   const approvalService = new ApprovalServiceImpl({
     status,

@@ -68,6 +68,13 @@ export interface KnownAgent {
    * 插件清单里的 url、token、终端 id 都写成 `${环境变量}`，由 agent 自己展开。null = 启动时挂不上（原因见 AGENTS.md）。
    */
   mcp: { kind: 'plugin-dir'; flag: string; minVersion: string } | null;
+  /**
+   * 怎么带 AgentDeck 库里的 skill（N9，src/skills/）。plugin-dir：`<flag> <目录>`，目录里 skills/<name>/（omp，同 mcp 的插件目录格式）；
+   * skill-flag：每个 skill 文件夹一个 `<flag> <文件夹>`（pi）；skills-dir：`<flag> <目录>` 指一个放 skill 文件夹的目录（kimi，
+   * 会顶掉它自己发现的目录，见 LaunchSkills.keepSkillRoots）。null = 启动时带不了。
+   * repoDirs：仓库里它自己会读的 skill 目录（相对目录，从 cwd 往上找到仓库根），面板上列成 repo，只显示、不开关。
+   */
+  skills: { kind: 'plugin-dir' | 'skill-flag' | 'skills-dir'; flag: string; minVersion: string | null; repoDirs: string[] } | null;
 }
 
 export const KNOWN_AGENTS: readonly KnownAgent[] = [
@@ -85,6 +92,9 @@ export const KNOWN_AGENTS: readonly KnownAgent[] = [
     approveOnceKeys: null,
     // pi 不内置 MCP（README “No MCP.”、docs/usage.md），要靠扩展自己实现 MCP 客户端，见 AGENTS.md「AgentDeck 的 MCP」。
     mcp: null,
+    // N9：--skill <文件夹>，可重复，和自己发现的叠加（README「Resource Options」、docs/skills.md；0.83.0 用 rpc 的 get_commands 实测列出）。
+    // 仓库里读 .pi/skills、.agents/skills（从 cwd 往上，README「Skills」）。
+    skills: { kind: 'skill-flag', flag: '--skill', minVersion: null, repoDirs: ['.pi/skills', '.agents/skills'] },
   },
   {
     id: 'omp',
@@ -99,6 +109,9 @@ export const KNOWN_AGENTS: readonly KnownAgent[] = [
     // --plugin-dir 加载 Claude 插件格式的目录（.claude-plugin/plugin.json 里内联 mcpServers），url 和 headers 展开 ${VAR}。
     // 18.0.4 实测（源码 discovery/helpers.ts injectPluginDirRoots、discovery/claude-plugins.ts loadMCPServers），见 AGENTS.md。
     mcp: { kind: 'plugin-dir', flag: '--plugin-dir', minVersion: '18.0.4' },
+    // N9：同一个 --plugin-dir（可重复）的目录里 skills/<name>/ 也会被发现（18.0.4 源码 discovery/claude-plugins.ts loadSkills；
+    // 用 bun 跑 omp 自己的 injectPluginDirRoots + loadCapability('skills') 实测列出）。仓库里读 .omp、.claude、.codex、.agent(s) 的 skills/。
+    skills: { kind: 'plugin-dir', flag: '--plugin-dir', minVersion: '18.0.4', repoDirs: ['.omp/skills', '.claude/skills', '.codex/skills', '.agents/skills', '.agent/skills'] },
   },
   {
     id: 'kimi',
@@ -110,5 +123,8 @@ export const KNOWN_AGENTS: readonly KnownAgent[] = [
     approveOnceKeys: null,
     // 2.3.1 没有挂 MCP 的启动参数，只读 KIMI_CODE_HOME、仓库根的 .mcp.json、<cwd>/.kimi-code/mcp.json，见 AGENTS.md。
     mcp: null,
+    // N9：--skills-dir <目录>，可重复（2.3.1 --help）。给了它就不再自动发现用户和项目目录（读打包的源码 extraFileSkillSource.ts），
+    // 所以 LaunchSkills.keepSkillRoots 把那几个目录一起传回去。仓库里读 <仓库根>/.kimi-code/skills、.agents/skills。
+    skills: { kind: 'skills-dir', flag: '--skills-dir', minVersion: null, repoDirs: ['.kimi-code/skills', '.agents/skills'] },
   },
 ];

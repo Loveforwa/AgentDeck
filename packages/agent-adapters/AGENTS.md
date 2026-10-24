@@ -11,6 +11,7 @@
 - **批准**（PL1 Auto-approve、X3 Approve all）：`ApprovalServiceImpl` 实现 `ApprovalService`，见下面「Auto-approve 和 Approve all」。
 - **后台通知规则**（S4）：`backgroundAlerts()` / `badgeCount()`，纯函数；真正发通知、设角标在 apps/desktop。
 - **token 用量**（PL2 · Usage 插件，DR-55）：`src/usage/`，`UsageServiceImpl` 实现 contracts 的 `UsageService`，读各 agent 自己的会话文件。见下面「token 用量」。
+- **Skills · MCP**（MVP v3 · N9）：`src/skills/`，`SkillsServiceImpl` 实现 contracts 的 `SkillsService`（库、仓库里的 skill、每种 agent 怎么带），启动前算出这次带什么交给适配器。见下面「Skills · MCP」。
 
 不许碰：`packages/contracts`（不够用写进本目录的 `CONTRACT_NOTES.md`）、`apps/desktop`、其他包。
 本包不读环境、不写死路径：登录 shell 的环境、notify 的路径、socket 路径、破坏性名单都由构造参数传入。
@@ -60,6 +61,7 @@ tmuxHostEvents.on((e) => rt.onTerminalEvent(e));  // terminal.activity / silence
 | `matchOmpApproval` | omp 的 Approve / Deny 确认框认屏规则（`src/status/screens.ts`） |
 | `backgroundAlerts` / `badgeCount` | S4 规则 |
 | `UsageServiceImpl` / `defaultUsageRoots` / `USAGE_HOOK` | token 用量（见「token 用量」）；各 agent 的读取器 `ClaudeUsageParser` 等也导出 |
+| `SkillsServiceImpl` / `SkillLibrary` / `skillsSupport` / `builtinSkillFiles` / `scanRepoSkills` | N9，见「Skills · MCP」；`codexLibraryMcpOverrides`、`claudeMcpConfig(mcp, library)` 是库里 MCP 的启动参数 |
 | `DEFAULT_DESTRUCTIVE_PATTERNS` | 建议的 Settings 默认值，在整段命令里找：rm -r/-f、sudo rm、find -delete、git push -f/--force/+refspec、reset --hard、clean -f、checkout -- / .、restore、stash drop/clear、DROP/TRUNCATE/DELETE FROM 无 WHERE、FLUSHDB/ALL、mkfs、dd of=、写 /dev/sd*、chmod -R 777、kubectl delete、terraform destroy、.env |
 
 ## 各 agent 怎么启动
@@ -197,6 +199,33 @@ token 本身只放进 `LaunchSpec.env`，不进命令行。和用户自己配的
 - omp 在 tmux 里有没有真的连上、工具名在 omp 里显示成什么，没有在真 TUI 里核对（只核对了配置解析）。
 
 `StartAgentRequest.prompt`（第一条消息）：claude、codex 都放在参数最后、`--` 之后（`--mcp-config` 和不少用户参数后面能跟多个值，不隔开会被吃掉）。只在新会话时带。
+
+## Skills · MCP（N9，2026-10-25 核对）
+
+源代码管理面板的 SKILLS · MCP 小节（不是插件，docs/plugins.md）。规则：**只用启动参数和环境变量**，不写用户自己的配置
+（`~/.claude*`、`~/.codex`、`~/.pi`、`~/.omp`、`~/.kimi-code`），不往用户的仓库里放文件；只写 AgentDeck 自己的数据目录。
+
+- 来源：built in（AgentDeck 自带：`agentdeck` skill，内容在 `builtinSkillFiles()`，组装方写到 `<数据目录>/builtin/skills`；`agentdeck` MCP 就是 M1 的服务）、
+  repo（agent 自己会从仓库读的目录，从 cwd 往上到仓库根；只列出来，跟着仓库，不能开关）、library（`<数据目录>/skills/<name>/`、`<数据目录>/mcp/<name>.json`）。
+- 默认（白板上没存选择）：built in 勾、library 不勾。规则在 contracts 的 `effectiveSkillSelection` / `skillsRestartNeeded`，界面和启动共用。
+- `SkillsServiceImpl.prepareLaunch({ agent, cwd, selection })` → `LaunchSkills`（ids、agentdeckMcp、skills、mcp、setDir、keepSkillRoots），
+  经 `createAgentRuntime({ skills })` → `AgentServiceImpl` → `AdapterLaunchContext.skills` 给适配器。没勾 built-in 的 agentdeck MCP 时不给 `LaunchContext.mcp`。
+  出错时当作没有（照常启动，不带）。`onStarted` 报回 `StartedAgent.skills`，组装方 `noteLaunched` 记成 running（`stateFile`，重开应用后还在）。
+- setDir：claude、omp、kimi 要一个目录：`<setsDir>/<agent>-<内容哈希>/`，`skills/<name>/` 是选中 skill 的副本，`.claude-plugin/plugin.json` 是清单
+  （名字 `agentdeck-skills`；omp 的清单里还有库里的 MCP）。目录名按内容（含 skill 文件的大小、修改时间）算，一样就复用，不改正在用的目录；旧目录目前不清理。
+
+| agent | skill（built in + library） | MCP（agentdeck + library） | repo 里它自己读的 | 核对 |
+| --- | --- | --- | --- | --- |
+| claude 2.1.291 | `--plugin-dir <setDir>`（只对这次会话）；skill 显示成 `agentdeck-skills:<name>` | `--mcp-config <json>`，agentdeck 和库里的写在同一份里，和用户自己的合并 | `.claude/skills` | `claude --plugin-dir <setDir> plugin details agentdeck-skills` 列出 Skills (2) agentdeck, e2e-demo（用本模块写出的目录） |
+| codex 0.164.0 | **不支持**（面板写 Not supported for codex） | `-c mcp_servers.<name>.command=… -c ….args=[…]` 或 `.url=…`（`codexLibraryMcpOverrides`）；版本低于 0.164.0 不加 | `.agents/skills`、`.codex/skills` | 临时 CODEX_HOME 里 `codex -c … mcp list` 列出 e2edemo（npx -y …）；skill：`skills.config=[{path,enabled}]` 只开关已经发现的（app-server `skills/list` 实测加不进新的），加目录只有 app-server 的 `skills/extraRoots/set`，TUI 用不上；repo 两个目录 `skills/list` 实测都是 scope repo |
+| omp 18.0.4 | 同一个 `--plugin-dir <setDir>`（可重复，排在 N1 的 mcp-plugin 后面） | agentdeck 照 N1；库里的写进 setDir 的清单 `mcpServers`，服务名 `agentdeck-skills:<name>` | `.omp/skills`、`.claude/skills`、`.codex/skills`、`.agents/skills`、`.agent/skills` | bun 跑 omp 自己的 `injectPluginDirRoots` + `loadCapability('skills' / 'mcps')`：列出 agentdeck、e2e-demo 和 `agentdeck-skills:e2edemo` |
+| pi 0.83.0 | 每个 skill 一个 `--skill <文件夹>`（和自己发现的叠加） | **不支持**（No MCP） | `.pi/skills`、`.agents/skills` | `pi --mode rpc --no-session --skill <文件夹>` 的 `get_commands`（不发提示词）列出 `skill:e2e-demo`、`skill:agentdeck` |
+| kimi 2.3.1 | `--skills-dir <setDir>/skills`；它会顶掉自动发现，所以把存在的 `$KIMI_CODE_HOME/skills`（默认 ~/.kimi-code/skills）、`~/.agents/skills`、`<仓库根>/.kimi-code/skills`、`<仓库根>/.agents/skills` 排在前面一起传；没选 skill 时不加 | **不支持** | `.kimi-code/skills`、`.agents/skills`（仓库根） | 只看了 `--help` 和打包的源码（`extraFileSkillSource.ts`：有 explicit 目录时 user、project 两组不再发现），**没在真 kimi 里核对**；传回去的项目目录按 user 来源加载，可能绕过 kimi 对项目目录的信任检查 |
+| shell、custom | — | — | — | 小节写 “Skills and MCP servers are for agents” |
+
+- 面板的状态点：只有 built in 的 agentdeck（AgentDeck 的 MCP 服务起来了是绿、没起来是红）；库里的 MCP 连没连上不知道，不画。
+- 版本门槛：codex 的库里 MCP 同 N1（0.164.0），omp 的 setDir 同 N1（18.0.4）。版本取不到时按够新处理。running 记的是选中的 id，版本太低被适配器跳过的也算在里面（只影响 “Changes apply after restart” 的提示）。
+- 测试：`test/skills.test.ts`（临时目录里的库、repo、每种 agent 列出什么、prepareLaunch 写的目录、每种 agent 的启动参数、running 存档、选择规则）。
 
 ## agentdeck-notify 怎么打包（组装阶段）
 

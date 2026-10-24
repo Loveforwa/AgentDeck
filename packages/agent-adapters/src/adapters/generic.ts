@@ -9,14 +9,15 @@
 // 插件清单里写成 ${…} 由 agent 自己展开（mcp-plugin.ts）。pi、kimi 启动时挂不上，见 AGENTS.md。
 
 import { randomUUID } from 'node:crypto';
+import { join } from 'node:path';
 import { MCP_TOKEN_ENV } from '@agentdeck/contracts';
-import type { AbsPath, AgentCapabilities, AgentHookEvent, AgentSessionId, LaunchContext, LaunchSpec } from '@agentdeck/contracts';
+import type { AbsPath, AgentCapabilities, AgentHookEvent, AgentSessionId, LaunchSpec } from '@agentdeck/contracts';
 import { atLeast } from '../env.ts';
 import { parseCommonHook } from '../hook-payload.ts';
 import type { KnownAgent } from './known.ts';
 import { EXTENSION_ENV } from './known.ts';
 import { MCP_URL_ENV } from './mcp-plugin.ts';
-import type { AdapterDeps, AgentAdapterExt, DetectResult } from './types.ts';
+import type { AdapterDeps, AdapterLaunchContext, AgentAdapterExt, DetectResult } from './types.ts';
 import { detectCommand, unsupported } from './types.ts';
 
 export interface KnownAgentAdapterOptions extends AdapterDeps {
@@ -73,7 +74,7 @@ export class KnownAgentAdapter implements AgentAdapterExt {
     };
   }
 
-  launch(ctx: LaunchContext): LaunchSpec {
+  launch(ctx: AdapterLaunchContext): LaunchSpec {
     let template: string[];
     let id = '';
     switch (ctx.mode.kind) {
@@ -110,6 +111,7 @@ export class KnownAgentAdapter implements AgentAdapterExt {
       args.push(mcp.flag, this.deps.mcpPluginDir);
       env = { ...env, [MCP_URL_ENV]: ctx.mcp.url, [MCP_TOKEN_ENV]: ctx.mcp.token };
     }
+    args.push(...this.skillArgs(ctx));
     args.push(...ctx.extraArgs);
     return { cmd: this.command, args, ...(env ? { env } : {}), sessionId: sessionId as AgentSessionId | null };
   }
@@ -121,6 +123,25 @@ export class KnownAgentAdapter implements AgentAdapterExt {
       return { type: 'question', summary: q || 'Question' };
     }
     return parseCommonHook(hookName, payload);
+  }
+
+  /**
+   * N9：这次要带的 skill（和 omp 的库里 MCP），按表里的 skills 一列：
+   * plugin-dir（omp）`--plugin-dir <那套目录>`；skill-flag（pi）每个 skill 一个 `--skill <文件夹>`；
+   * skills-dir（kimi）`--skills-dir <那套目录>/skills`，再把它自己的目录（keepSkillRoots）一起传回去。
+   */
+  private skillArgs(ctx: AdapterLaunchContext): string[] {
+    const s = ctx.skills;
+    const how = this.def.skills;
+    if (!s || !how || (how.minVersion && !atLeast(this.lastVersion, how.minVersion))) return [];
+    switch (how.kind) {
+      case 'plugin-dir':
+        return s.setDir ? [how.flag, s.setDir] : [];
+      case 'skill-flag':
+        return s.skills.flatMap((k) => [how.flag, k.path]);
+      case 'skills-dir':
+        return s.setDir && s.skills.length > 0 ? [...s.keepSkillRoots, join(s.setDir, 'skills')].flatMap((d) => [how.flag, d]) : [];
+    }
   }
 
   private hooksFor(version: string | null): boolean {
