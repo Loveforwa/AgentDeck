@@ -522,6 +522,11 @@
   color: var(--muted);
 }
 
+/* 没有聚焦的工作区（IS-67）：图标照样在，更淡一些 */
+.ad-panel-rail-branch--idle {
+  opacity: var(--opacity-disabled);
+}
+
 /* 有未提交的改动：分支图标右上角一个小黄点 */
 .ad-panel-rail-dot {
   position: absolute;

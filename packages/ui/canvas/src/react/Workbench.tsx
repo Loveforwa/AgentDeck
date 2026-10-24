@@ -161,21 +161,23 @@ function Panel({ renderPanel }: { renderPanel: WorkbenchProps['renderPanel'] }) 
   );
 }
 
-/** 收起后的竖条（MVP v2 · V4）：展开按钮、分支图标，聚焦的工作区有未提交的改动时分支图标旁一个点。 */
+/**
+ * 收起后的竖条（MVP v2 · V4）：展开按钮、分支图标，聚焦的工作区有未提交的改动时分支图标旁一个点。
+ * 没有聚焦的工作区时分支图标也在，颜色更淡（IS-67）；点只跟着聚焦的工作区。
+ */
 function PanelRail({ workspace, onExpand }: { workspace: Workspace | null; onExpand(): void }) {
   const dirty = useUncommitted(workspace);
   const branch = workspace ? (workspace.branch ?? workspace.name) : null;
+  const title = branch === null ? 'No workspace in focus' : dirty ? `${branch} · uncommitted changes` : branch;
   return (
     <aside className="ad-panel-rail" aria-label="Side panel (collapsed)">
       <button type="button" className="ad-panel-toggle" aria-label="Expand panel" title="Expand panel (⌘B)" onClick={onExpand}>
         <ExpandIcon />
       </button>
-      {branch !== null ? (
-        <span className="ad-panel-rail-branch" title={dirty ? `${branch} · uncommitted changes` : branch}>
-          <BranchIcon />
-          {dirty ? <span className="ad-panel-rail-dot" role="img" aria-label="Uncommitted changes" /> : null}
-        </span>
-      ) : null}
+      <span className={`ad-panel-rail-branch${branch === null ? ' ad-panel-rail-branch--idle' : ''}`} title={title}>
+        <BranchIcon />
+        {dirty ? <span className="ad-panel-rail-dot" role="img" aria-label="Uncommitted changes" /> : null}
+      </span>
     </aside>
   );
 }

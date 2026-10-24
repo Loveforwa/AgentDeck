@@ -213,6 +213,28 @@ describe('Workbench', () => {
     expect(await within(rail).findByRole('img', { name: 'Uncommitted changes' })).toBeTruthy();
   });
 
+  it('the rail shows the branch icon even with nothing in focus, muted and without a dot (IS-67)', async () => {
+    const { api, c } = setup({ renderPanel: () => <div>panel</div> });
+    await waitFor(() => expect(c.state.loaded).toBe(true));
+    act(() => c.togglePanel());
+    expect(c.activeWorkspaceId(c.state)).toBeNull();
+    const rail = screen.getByRole('complementary', { name: 'Side panel (collapsed)' });
+    const branch = rail.querySelector('.ad-panel-rail-branch');
+    expect(branch?.querySelector('svg')).toBeTruthy();
+    expect(branch?.classList.contains('ad-panel-rail-branch--idle')).toBe(true);
+    expect(branch?.getAttribute('title')).toBe('No workspace in focus');
+    // 有未提交改动的仓库也不出点：点只跟着聚焦的工作区
+    act(() => api.scenario.gitChanged(SAMPLE.paths.agentdeck, [{ path: 'README.md', unstaged: 'modified' }]));
+    await act(() => new Promise((r) => setTimeout(r, 20)));
+    expect(within(rail).queryByRole('img', { name: 'Uncommitted changes' })).toBeNull();
+
+    // 聚焦一个窗口：图标变回正常，标题是分支名
+    act(() => c.focusWindow('win-login-claude' as WindowId));
+    const focused = screen.getByRole('complementary', { name: 'Side panel (collapsed)' }).querySelector('.ad-panel-rail-branch');
+    expect(focused?.classList.contains('ad-panel-rail-branch--idle')).toBe(false);
+    expect(await within(rail).findByRole('img', { name: 'Uncommitted changes' })).toBeTruthy();
+  });
+
   it('without renderPanel there is neither a panel nor a rail', async () => {
     const { c } = setup();
     await waitFor(() => expect(c.state.loaded).toBe(true));
