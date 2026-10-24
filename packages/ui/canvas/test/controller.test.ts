@@ -94,6 +94,17 @@ describe('autosave (B5)', () => {
     expect(api.fakes.board.saves).toBe(0);
   });
 
+  it('setBadge updates when only the tag or detail changes', () => {
+    const w = id('win-dev-server');
+    c.setBadge(w, { text: 'Running', tone: 'default', dot: 'filled' });
+    c.setBadge(w, { text: 'Running', tone: 'default', dot: 'filled', tag: { text: 'outside workspace' } });
+    expect(c.state.badges[w]?.tag?.text).toBe('outside workspace');
+    c.setBadge(w, { text: 'Running', tone: 'default', dot: 'filled', tag: { text: 'outside workspace' }, detail: 'Needs reply' });
+    expect(c.state.badges[w]?.detail).toBe('Needs reply');
+    c.setBadge(w, { text: 'Running', tone: 'default', dot: 'filled' });
+    expect(c.state.badges[w]?.tag).toBeUndefined();
+  });
+
   it('a restarted controller gets back the same layout', async () => {
     c.renameWindow(id('win-shop-shell'), 'build');
     await c.flush();

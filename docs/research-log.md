@@ -3,7 +3,7 @@
 实现过程中和一开始设想不一样的地方：原来以为什么、实际是什么、怎么决定的、好处和代价。
 由 `docs/research/build.py` 从 `docs/research/entries.py` 生成，不要直接改这个文件。更新于 2026-10-25。
 
-共 56 条：已解决 35，进行中 13，推迟 5，待验证 3。
+共 57 条：已解决 36，进行中 13，推迟 5，待验证 3。
 
 编号规则（全项目统一）：DR-xx 调研记录 · TC-xx 端到端用例 · IS-xx 问题 · F1、T2、X3 等是 MVP 任务表的任务编号。用例和问题在 MVP 验收报告（docs/status/index.html）里；每条调研下面列出相关的用例和问题。
 
@@ -68,6 +68,7 @@
   - [DR-54 子 agent 窗口组的附着菜单用什么形态](#dr-54)（已解决）
   - [DR-55 token 用量从哪读：CC Switch 还是自己读会话文件](#dr-55)（已解决）
   - [DR-56 Auto-approve 怎么替各 agent 按“允许一次”](#dr-56)（已解决）
+  - [DR-57 React Flow 手势的两个坑](#dr-57)（已解决）
   - [DR-42 claude 能不能把对话 fork 到另一个目录](#dr-42)（待验证）
   - [DR-43 Approve all 发的“允许一次”按键对不对](#dr-43)（待验证）
   - [DR-44 经过 tmux 后的手感，要人在真界面上确认](#dr-44)（待验证）
@@ -805,6 +806,20 @@
 - **决策**：claude、codex 在 HookServer.decide 里回 allow（终端或它的框开着 Auto-approve、不是破坏性命令时）；开关前已经在等的补发按键（claude 1、codex y）。omp 先核对 ↑ ↵ 再上；pi 不用按，书签照常显示。kimi 2026-10-25 用户定先不做（只能看屏幕）。顺带修 hook-payload.ts 的 FILE_TOOLS 不认 omp 小写工具名的问题。
 - **好处**：五种 agent 都覆盖；claude、codex 不靠模拟按键，不会选错项。
 - **代价**：kimi、omp 靠看屏幕，版本一变就可能失效，要在 known.ts 记版本；kimi 本机已从 0.29 升到 2.3.1，旧的核对记录过时。
+
+<a id="dr-57"></a>
+
+### DR-57 React Flow 手势的两个坑
+
+状态：已解决 · 出处：v3 N6 · packages/ui/canvas/src/react/Board.tsx、gestures.ts · 旧编号 —
+
+相关：IS-59
+
+- **原来以为**：窗口节点标了 nopan，两指滚动就不会平移白板；React Flow 默认的空格平移不影响终端打字。
+- **实际情况**：两指滚动模式（panOnScroll）下 React Flow 只看 nowheel，不看 nopan，所以没聚焦的窗口上两指滚动会平移白板（IS-59 的原因）。它默认的空格平移键在带修饰键时不跳过输入框，会 preventDefault，吞掉终端里的 Shift+空格。
+- **决策**：窗口节点和内容一律 nowheel，没聚焦时盖层把滚轮转给内容（终端再派发给 xterm，网页让盖层暂时不接指针）；panActivationKeyCode 设为 null，空格平移自己实现，焦点在终端、输入框、可编辑区时不拿空格。
+- **好处**：两指滚动永远给窗口；终端里空格、Shift+空格正常。
+- **代价**：缩得很小时窗口变成摘要卡，在卡上也不能两指平移白板；刚点过按钮时焦点在按钮上，空格先给按钮。
 
 <a id="dr-42"></a>
 

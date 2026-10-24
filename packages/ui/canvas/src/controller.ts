@@ -487,7 +487,10 @@ export class BoardController {
         const { [id]: _, ...rest } = s.badges;
         return { badges: rest };
       }
-      if (cur && cur.text === badge.text && cur.tone === badge.tone && cur.dot === badge.dot) return {};
+      if (
+        cur && cur.text === badge.text && cur.tone === badge.tone && cur.dot === badge.dot && cur.detail === badge.detail
+        && cur.tag?.text === badge.tag?.text && cur.tag?.detail === badge.tag?.detail
+      ) return {};
       return { badges: { ...s.badges, [id]: badge } };
     });
   }

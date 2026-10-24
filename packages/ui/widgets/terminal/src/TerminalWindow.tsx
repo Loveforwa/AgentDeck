@@ -202,10 +202,6 @@ export function TerminalWindow(props: TerminalWindowProps): ReactNode {
   const sentRef = useRef<WindowStatusBadge | null>(null);
   useEffect(() => {
     const next = badgeRef.current;
-    const prev = sentRef.current;
-    // 白板的 setBadge 只比 text / tone / dot，一样就不更新（canvas/src/controller.ts）。只有标签或悬停说明变了时
-    // 先清掉再给，标签才会出现、消失。白板改成连 tag、detail 一起比之后可以去掉（见本包 AGENTS.md）
-    if (prev && next && prev.text === next.text && prev.tone === next.tone && prev.dot === next.dot) propsRef.current.setStatus(null);
     propsRef.current.setStatus(next);
     sentRef.current = next;
   }, [badgeKey]);

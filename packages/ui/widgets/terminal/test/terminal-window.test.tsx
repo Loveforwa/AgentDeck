@@ -414,7 +414,7 @@ describe('outside workspace hint (IS-57, N7)', () => {
     expect(h.status()?.tag).toBeUndefined();
   });
 
-  it('pushes the badge again when only the tag changed (the board ignores same text / tone / dot)', async () => {
+  it('pushes the badge again when only the tag changed', async () => {
     makeTerminal({ history: 'x' });
     const sh = fakeCwd(ws.path);
     const h = mount({ terminalId: T, agent: 'shell', cmd: 'zsh', cwd: ws.path }, { workspace: ws });
@@ -423,8 +423,8 @@ describe('outside workspace hint (IS-57, N7)', () => {
     const before = h.statusLog.length;
     sh.cd('/tmp');
     await waitFor(() => expect(h.status()?.tag?.text).toBe('outside workspace'));
-    // canvas 的 setBadge 只比 text / tone / dot：先清掉再给，标签才会出现
-    expect(h.statusLog.slice(before)).toEqual([null, expect.objectContaining({ text: 'Running · now', tag: expect.objectContaining({ text: 'outside workspace' }) })]);
+    // 白板的 setBadge 连 tag 一起比，直接给新的就行
+    expect(h.statusLog.slice(before)).toEqual([expect.objectContaining({ text: 'Running · now', tag: expect.objectContaining({ text: 'outside workspace' }) })]);
   });
 });
 
