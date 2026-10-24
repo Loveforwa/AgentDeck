@@ -16,6 +16,12 @@ agentdeck-notify <agent> <hookName> [payload]
 谁写钩子配置：`packages/agent-adapters`（claude 用 `--settings`，codex 用 `-c hooks.…`），命令形如 `'<notify 绝对路径>' claude Stop`。
 服务端：`packages/agent-adapters` 的 `HookServer`。
 
+## pi / omp 的扩展（X13）
+
+`bin/agentdeck-pi-extension.mjs`：pi、omp 启动时用 `-e` 加载的扩展（default export 工厂函数），在 agent 自己的进程里跑（pi 是 node，omp 是 bun）。
+把扩展事件转成和 claude 同名的钩子，再运行 `$AGENTDECK_NOTIFY <agent> <钩子名>`（负载走 stdin），一条一条按顺序发，每条最多 3 秒。
+没有 `AGENTDECK_TERM` 或 `AGENTDECK_NOTIFY` 时什么也不注册。事件对照表见 `packages/agent-adapters/AGENTS.md`「pi / omp 的扩展」。
+
 ## 文件
 
 - `bin/agentdeck-notify.mjs`：纯 JS，只用 node 内置模块，不 import contracts（运行时没有 TypeScript）。常量和 contracts 保持一致，测试会核对。
@@ -28,6 +34,8 @@ agentdeck-notify <agent> <hookName> [payload]
 pnpm --filter @agentdeck/agentdeck-notify test       # 起真的子进程，对着临时 socket
 pnpm --filter @agentdeck/agentdeck-notify typecheck
 ```
+
+`test/pi-extension.test.ts`：事件转换表、不在 AgentDeck 终端里不注册、处理函数不返回值、按顺序起 notify。端到端（扩展 → notify → HookServer → 状态机）在 `packages/agent-adapters/test/known-agents.test.ts`。
 
 覆盖：发出的 envelope、默认 socket 路径、allow / none / 2 秒超时、没有服务端时快速退出 0、没有 AGENTDECK_TERM、legacy notify 参数、非 JSON 负载、常量和 contracts 一致。
 

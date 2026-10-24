@@ -3,6 +3,7 @@
 线 4（Agent 和状态），任务 T4 S1 S2 S4。只在**主进程**里用。
 
 - **适配器**（T4）：claude、codex、Shell、自定义命令，实现 contracts 的 `AgentAdapter`。检测安装、算启动命令、解析钩子。
+- **已知 agent 表**（X13）：`src/adapters/known.ts` 登记 pi、omp、kimi（id、label、命令名、启动参数模板、扩展、能力），由通用适配器 `KnownAgentAdapter`（`generic.ts`）读。加 agent 只加一行，参数要先用真程序核对。
 - **AgentService**（T4）：`list` / `refresh` / `start`。start 用适配器算 LaunchSpec，再调注入的 `TerminalHost.create`。
 - **钩子 socket 服务端**（S1）：`HookServer`，收 `agentdeck-notify` 发来的 HookEnvelope，交给适配器的 `parseHook`。
   小命令本身在 `tools/agentdeck-notify`。
@@ -21,6 +22,7 @@ const rt = createAgentRuntime({
   env: () => loginShellEnv,                       // docs/decisions.md：$SHELL -ilc env 读一次
   terminals: tmuxHost,                            // 只用 create
   notifyCommand: '/…/agentdeck-notify',           // 绝对路径，见下面「agentdeck-notify 怎么打包」
+  agentExtension: '/…/agentdeck-pi-extension.mjs', // pi、omp 用 -e 加载；不给时它们没有钩子
   emit: (e) => sendToRenderer(e),                 // status.changed、agent.turn-end
   destructivePatterns: () => settings.approvals.destructivePatterns,
   extraArgs: (agent) => settings.agents[agent]?.extraArgs ?? [],
@@ -42,7 +44,8 @@ tmuxHostEvents.on((e) => rt.onTerminalEvent(e));  // terminal.activity / silence
 | --- | --- |
 | `createAgentRuntime(opts)` | 把下面几块接好：`agents`、`status`、`approvals`、`hookServer`、`onTerminalEvent`、`noteInput`、`start`、`close` |
 | `AgentServiceImpl` | `AgentService`。`onStarted` 回调告诉状态机这次启动是否真的带上了钩子 |
-| `createDefaultAdapters({ env })` | `[ClaudeAdapter, CodexAdapter, ShellAdapter, CustomCommandAdapter]` |
+| `createDefaultAdapters({ env, agentExtension? })` | `[ClaudeAdapter, CodexAdapter, …已知表里的每一行（KnownAgentAdapter）, ShellAdapter, CustomCommandAdapter]` |
+| `KNOWN_AGENTS` / `KnownAgentAdapter` / `EXTENSION_ENV` | 已知 agent 表、通用适配器、扩展读的环境变量名 |
 | `AgentAdapterExt` | `AgentAdapter` + 可选的 `prepare(ctx)`（launch 前的异步准备，codex 用） |
 | `HookServer` | `start()` / `close()`；`decide` 回调决定 PermissionRequest 回 allow 还是 none（P0 一律 none） |
 | `StatusMachine` | `StatusService` + `track` / `forget` / `onHook` / `onTerminalEvent` / `noteInput` / `get` / `pendingRequests` |
@@ -58,6 +61,9 @@ tmuxHostEvents.on((e) => rt.onTerminalEvent(e));  // terminal.activity / silence
 | codex | `codex -c hooks.…（7 条）-c hooks.state={…}` | `codex resume <id> …` | `codex fork <id> …` | `-c` 覆盖 + 信任哈希 | `y` |
 | shell | `$SHELL -l`；带命令时 `$SHELL -l -c <命令>` | 不支持 | 不支持 | 无 | 无 |
 | custom | 按 shell 规则拆开的命令 | 不支持 | 不支持 | 无 | 无 |
+| pi | `pi --session-id <新 uuid>` | `--session <id>` | `--fork <id> --session-id <新 uuid>` | `-e agentdeck-pi-extension.mjs`（0.80.4 起） | 无（pi 没有批准确认框） |
+| omp | `omp`（会话 id 等扩展报） | `--resume <id>` | `--fork <id>`（新 id 等扩展报） | `-e agentdeck-pi-extension.mjs`（18.0 起，更早没验证） | 无（Approve / Deny 选择列表，按键没核对） |
+| kimi | `kimi` | `-S <id>` | 不支持 | 无 | 无 |
 
 - 用户在 Settings 里加的启动参数放在最后。claude 的 LaunchSpec.env 带 `CLAUDE_CODE_TMUX_TRUECOLOR=1`。
 - `--settings` 的值是一整段 JSON，**线 1 的 tmux-host 建会话时要按参数数组传**（`new-session … -- cmd arg1 arg2`），不要拼成一行 shell 命令，否则要自己转义。
@@ -102,9 +108,34 @@ tmuxHostEvents.on((e) => rt.onTerminalEvent(e));  // terminal.activity / silence
 - 准备失败（app-server 不通、超时 10 秒、没列出我们的钩子）：这次启动不加钩子，`onStarted` 报 `hooks: false`，状态按输出活动判断。
 - 0.159 之前的版本：用 legacy `-c notify=[notify路径,"codex","notify"]`，只知道一轮结束；**会顶掉用户自己的 notify 设置**。
 
+## pi / omp 的扩展（X13）
+
+pi、omp 没有命令式钩子，但有扩展事件。`tools/agentdeck-notify/bin/agentdeck-pi-extension.mjs` 启动时用 `-e` 临时加载（不写进 `~/.pi`、`~/.omp`），
+LaunchSpec.env 带 `AGENTDECK_NOTIFY`（notify 路径）、`AGENTDECK_AGENT`（id）、`AGENTDECK_TURN_END`（pi `agent_settled`，omp `agent_end`）。
+扩展把事件转成和 claude 同名的钩子，再运行 agentdeck-notify，所以 `KnownAgentAdapter.parseHook` 基本就是 `parseCommonHook`：
+
+| 扩展事件 | 钩子 | 状态 |
+| --- | --- | --- |
+| session_start / session_switch / session_branch | SessionStart（`ctx.sessionManager.getSessionId()`） | idle，记下会话 id（omp 的新会话靠它） |
+| agent_start | UserPromptSubmit | running |
+| tool_call，工具是 ask（omp） | Question | needs-reply |
+| tool_result，工具是 ask | UserPromptSubmit | running |
+| tool_approval_requested（omp；参数从之前的 tool_call 记下） | PermissionRequest | needs-approval |
+| tool_approval_resolved（omp） | UserPromptSubmit | running |
+| agent_settled（pi）/ agent_end 且 willContinue 不为 true（omp） | Stop | idle，发 agent.turn-end |
+| session_shutdown | SessionEnd | 不变 |
+
+实测（2026-10-24，pi 0.83.0、omp 18.0.4）：临时 HOME、本地假的 OpenAI 兼容服务（不用账号、不花钱），`--mode rpc`（omp 的提问要 `--mode rpc-ui`）。
+pi：SessionStart（就是 `--session-id` 给的 id）→ UserPromptSubmit → Stop → SessionEnd；`--session <id>` 接回、`--fork <id> --session-id <新>` 都报对了 id。
+omp：`--approval-mode always-ask` 跑 bash，PermissionRequest 带上了 `command`，批准后 UserPromptSubmit、Stop；ask 工具 → Question（问题文字）→ 回答后 UserPromptSubmit → Stop；
+`--resume <id>` 报原 id，`--fork <id>` 报新 id。没在真 TUI 里核对：omp 确认框“允许一次”的按键（所以没有 Approve all）。
+真窗口（单独的 AgentDeck 实例、临时 HOME、同一个假模型）：菜单列出 Pi、Oh My Pi；pi 一轮 running → idle → turn-end；omp 的 bash 批准显示 needs-approval（summary 是命令），
+在确认框按 Enter 批准后 running → idle → turn-end；omp 新会话的 id 由 SessionStart 报上来存进库，`--resume <id>` 能接回（omp 只在第一条消息后才写会话文件，没说过话的会话接不回）。
+
 ## agentdeck-notify 怎么打包（组装阶段）
 
 现在是 `tools/agentdeck-notify/bin/agentdeck-notify.mjs`，开头 `#!/usr/bin/env node`，要求 tmux 会话的 PATH 里有 node。
+pi 扩展 `agentdeck-pi-extension.mjs` 也要一起放进 Resources（它在 agent 自己的进程里跑，不需要 node）。
 用户机器上不一定有 node，打包时二选一：放一个 sh 包装脚本 `exec env ELECTRON_RUN_AS_NODE=1 "<AgentDeck 可执行文件>" "<…>/agentdeck-notify.mjs" "$@"`，
 或者编译成单文件可执行程序。`notifyCommand` 传这个包装脚本的绝对路径；路径里有空格没关系（钩子命令里会加引号）。
 
@@ -118,6 +149,7 @@ tmuxHostEvents.on((e) => rt.onTerminalEvent(e));  // terminal.activity / silence
 - 退出码 0 是 exited，非 0 是 error；tmux 没了（host-lost）全部 error。
 - 破坏性：有命令看命令，没有命令（Edit 这类）看 summary（“Edit /repo/.env”）。名单每次判断时现取，改设置立即生效。
 - 还没 track 就到的钩子留 10 秒，track 时补上（SessionStart 可能比 `TerminalHost.create` 返回还早）。
+- `StatusSnapshot.sessionId` 带着当前会话 id；session-start 换了 id 时即使状态不变也发一次 status.changed（codex、omp 启动时不知道 id，靠它存进库和窗口数据）。
 
 ## 测试
 

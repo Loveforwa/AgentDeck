@@ -62,6 +62,9 @@ describe('AgentServiceImpl', () => {
     expect(list.map((a) => [a.id, a.installed, a.version])).toEqual([
       ['claude', true, '2.1.291'],
       ['codex', false, null],
+      ['pi', false, null],
+      ['omp', false, null],
+      ['kimi', false, null],
       ['shell', true, null],
       ['custom', true, null],
     ]);
