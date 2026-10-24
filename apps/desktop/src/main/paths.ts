@@ -34,6 +34,8 @@ export interface AppPaths {
   tmuxConf: string;
   /** agentdeck-notify.mjs 的绝对路径。 */
   notifyScript: string;
+  /** agentdeck-pi-extension.mjs 的绝对路径：pi、omp 启动时用 -e 加载，把扩展事件转成钩子。 */
+  agentExtension: string;
 }
 
 /** macOS 的 sockaddr_un.sun_path 是 104 字节（含结尾 0）。 */
@@ -72,5 +74,8 @@ export function resolvePaths(input: PathsInput): AppPaths {
     notifyScript: repoRoot
       ? join(root, 'tools/agentdeck-notify/bin/agentdeck-notify.mjs')
       : join(res, 'agentdeck-notify.mjs'),
+    agentExtension: repoRoot
+      ? join(root, 'tools/agentdeck-notify/bin/agentdeck-pi-extension.mjs')
+      : join(res, 'agentdeck-pi-extension.mjs'),
   };
 }

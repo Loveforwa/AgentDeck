@@ -21,6 +21,8 @@ export interface AgentRuntimeOptions {
   terminals: Pick<TerminalHost, 'create'>;
   /** agentdeck-notify 的绝对路径。 */
   notifyCommand: AbsPath;
+  /** agentdeck-pi-extension.mjs 的绝对路径（pi、omp 用 -e 加载它拿状态）。不给时它们没有钩子。 */
+  agentExtension?: AbsPath;
   emit: (event: StatusEvent) => void;
   /** Settings › Approvals › destructivePatterns。 */
   destructivePatterns: () => readonly string[];
@@ -35,7 +37,8 @@ export interface AgentRuntimeOptions {
 }
 
 export function createAgentRuntime(opts: AgentRuntimeOptions) {
-  const adapters = opts.adapters ?? createDefaultAdapters({ env: opts.env });
+  const adapters =
+    opts.adapters ?? createDefaultAdapters({ env: opts.env, ...(opts.agentExtension ? { agentExtension: opts.agentExtension } : {}) });
   const status = new StatusMachine({
     emit: opts.emit,
     destructivePatterns: opts.destructivePatterns,

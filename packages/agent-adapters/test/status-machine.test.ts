@@ -149,6 +149,20 @@ describe('agents with hooks (rows 5-16)', () => {
     expect(m.get(T)!.sessionId).toBe('s-2');
   });
 
+  it('5/7: the session id goes out in status.changed, even when the status stays the same', () => {
+    track(true);
+    hook({ type: 'session-start', sessionId: 's-1' as AgentSessionId });
+    expect(changes().at(-1)).toMatchObject({ snapshot: { status: 'idle', sessionId: 's-1' } });
+    hook({ type: 'prompt-submitted' });
+    expect(changes().at(-1)).toMatchObject({ snapshot: { status: 'running', sessionId: 's-1' } });
+    const before = changes().length;
+    hook({ type: 'session-start', sessionId: 's-1' as AgentSessionId });
+    expect(changes()).toHaveLength(before); // 没变不重复发
+    hook({ type: 'session-start', sessionId: 's-2' as AgentSessionId });
+    expect(changes()).toHaveLength(before + 1);
+    expect(changes().at(-1)).toMatchObject({ snapshot: { status: 'running', sessionId: 's-2' } });
+  });
+
   it('8: prompt-submitted -> running', () => {
     track(true, 'idle');
     hook({ type: 'prompt-submitted' });
