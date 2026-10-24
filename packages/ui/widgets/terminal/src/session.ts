@@ -9,6 +9,7 @@
 
 import { ClipboardAddon } from '@xterm/addon-clipboard';
 import { FitAddon } from '@xterm/addon-fit';
+import { Unicode11Addon } from '@xterm/addon-unicode11';
 import { WebglAddon } from '@xterm/addon-webgl';
 import { Terminal, type IDisposable, type ILink, type ILinkProvider } from '@xterm/xterm';
 import type { AgentDeckApi, TermSize, TerminalId, TerminalLink, Unsubscribe, ViewId } from '@agentdeck/contracts';
@@ -60,8 +61,10 @@ export class TerminalSession {
       fontFamily: getComputedStyle(opts.container).getPropertyValue('--font-mono').trim() || 'monospace',
       fontSize: FONT_SIZE,
       lineHeight: LINE_HEIGHT,
-      // 回滚历史在 tmux 里（tmux 用外层的备用屏，xterm 自己的回滚用不上）
-      scrollback: 0,
+      // 回滚历史在 tmux 里（tmux 用外层的备用屏，xterm 自己的回滚基本用不上）。但不能设成 0：
+      // xterm 6 在 scrollback 为 0 时，改大小后缓冲区的行数可能少于屏幕行数，渲染器读到不存在的行就抛
+      // “reading 'loadCell'”、写入时抛 “setting 'isWrapped'”，整个终端停止刷新（IS-39，test/xterm-buffer.test.ts 复现）
+      scrollback: 1000,
       cursorBlink: false,
       macOptionIsMeta: true,
       macOptionClickForcesSelection: true,
@@ -73,6 +76,11 @@ export class TerminalSession {
     });
     this.size = { cols: this.term.cols, rows: this.term.rows };
     this.term.loadAddon(this.fit);
+    // 字符宽度按 Unicode 11 算，和 tmux 一致（2026-10-24 对 tmux 3.6a 实测 35 个 claude 常用符号，全部吻合）。
+    // xterm 默认是 Unicode 6：✅ ❌ ⚡ ⏳ 🙂 🤖 这类 emoji 在 tmux 里占两格、在 xterm 里占一格，
+    // 后面的字整体错一列，看起来就是重叠、断开（IS-40）
+    this.term.loadAddon(new Unicode11Addon());
+    this.term.unicode.activeVersion = '11';
     // OSC 52：tmux 回滚里拖选、claude 的 /copy 都经它写系统剪贴板；不许程序读剪贴板
     this.term.loadAddon(
       new ClipboardAddon(undefined, {
