@@ -14,13 +14,13 @@ CASES = [
          result='顶部只占一行，白板更大',
          issue='MVP v2 V1，还没做',
          rel='IS-51'),
-    dict(id='TC-30', p='P1', status='未实现',
+    dict(id='TC-30', p='P1', status='未验证',
          scene='一眼看出谁在干活、谁在等你（V2）',
          pre='开一个正在运行的 claude，再让一个 codex 停在等批准',
          steps='1. 看顶栏右边\n2. 看两个终端的标题栏和所在框的标题',
          expect='UI：运行中的是绿灯 Running，等批准的是黄灯 Waiting（悬停看是批准还是回答），出错是红灯 Error，空闲是空心灰 Idle；顶栏写 “● 1 running ● 1 waiting”。\n后台：状态色来自 design-tokens。',
          result='不用读文字也知道状态',
-         issue='MVP v2 V2，还没做',
+         issue='MVP v2 V2 已做（第 0 波）：design-tokens 加了 status-running / status-waiting / status-error，窗口标题栏、顶栏、框标题都用上了；Needs approval / Needs reply 合成 Waiting，悬停看是哪种。单元测试和对比度测试通过，真窗口里还没看',
          rel='IS-52'),
     dict(id='TC-31', p='P0', status='未实现',
          scene='窗口和工作区框互不遮挡，拖动有对齐线（V3）',
@@ -375,6 +375,7 @@ ACCEPTED = {
 
 # 已经处理的问题：处理状态和备注
 RESOLVED = {
+    'IS-52': '2026-10-24 已做（MVP v2 V2，第 0 波）：红绿灯状态，contracts 0.1.6 加 running 色调和悬停说明',
     'IS-50': '2026-10-24 已改：确认框画在终端窗口里，标题带对话主题；要重启 AgentDeck（tmux-host 在主进程里）',
     'IS-45': '2026-10-24 已修（S3，合进 main e9b3673）：⌘J 闪一下和 “2/3 waiting”，⌘⇧J 反向，⌘⇧] / ⌘⇧[ 切窗口',
     'IS-46': '2026-10-24 已修（X13，合进 main e9b3673）：已知 agent 表（pi、omp、kimi）和通用适配器，pi / omp 用 -e 加载自带扩展拿状态；Kimi 没真启动过',

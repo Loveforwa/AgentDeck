@@ -315,9 +315,21 @@
 }
 
 .ad-frame-waiting {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
   color: var(--attention);
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
+}
+
+/* 框标题“1 waiting”前面的黄灯（MVP v2 · V2） */
+.ad-frame-waiting:not(:empty)::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--status-waiting);
 }
 
 .ad-frame-note {

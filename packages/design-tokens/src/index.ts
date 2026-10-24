@@ -1,5 +1,5 @@
 // AgentDeck 的样子只在这里定。tokens.css 由 scripts/gen-css.ts 从这个文件生成，不要手改 tokens.css。
-// 方向：暖灰加墨黑，只有“需要你处理”用橙色（attention）；不用渐变、发光、毛玻璃。
+// 方向：暖灰加墨黑；颜色只用来表达状态（MVP v2 · V2 红绿灯）：运行中绿、等你黄（attention）、出错红，其他地方不用彩色；不用渐变、发光、毛玻璃。
 
 /** 一套主题里所有随明暗变化的值。键名转成 kebab-case 就是 CSS 变量名：lineStrong → --line-strong。 */
 export interface ThemeColors {
@@ -25,10 +25,16 @@ export interface ThemeColors {
   lineStrong: string;
   /** 菜单里的分隔线 */
   lineSubtle: string;
-  /** 只用于“需要你处理”：等批准、等你回复、需要确认的风险 */
+  /** 只用于“需要你处理”：等批准、等你回复、需要确认的风险。黄色系，也是 Waiting 的文字色 */
   attention: string;
   /** attention 底上的字 */
   onAttention: string;
+  /** 状态灯（MVP v2 · V2）：运行中。也用作 Running 的文字色 */
+  statusRunning: string;
+  /** 状态灯：等你（点和窗口边框用；文字用 attention） */
+  statusWaiting: string;
+  /** 状态灯：出错。也用作 Error 的文字色 */
+  statusError: string;
   /** 键盘焦点环 */
   focus: string;
   /** 对话框背后的遮罩 */
@@ -57,8 +63,11 @@ export const light: ThemeColors = {
   line: '#E3E3E0',
   lineStrong: '#D6D6D2',
   lineSubtle: '#EEEEEB',
-  attention: '#C2410C',
+  attention: '#B45309',
   onAttention: '#FFFFFF',
+  statusRunning: '#1A7F37',
+  statusWaiting: '#BF8700',
+  statusError: '#CF222E',
   focus: '#1A1A1A',
   scrim: 'rgba(26, 26, 26, 0.18)',
   shadowFloat: '0 8px 24px rgba(0, 0, 0, 0.08)',
@@ -81,8 +90,11 @@ export const dark: ThemeColors = {
   line: '#2F2F2C',
   lineStrong: '#3E3E3A',
   lineSubtle: '#353531',
-  attention: '#E8793A',
+  attention: '#E3B341',
   onAttention: '#1A1A1A',
+  statusRunning: '#3FB950',
+  statusWaiting: '#E3B341',
+  statusError: '#F85149',
   focus: '#EDEDEA',
   scrim: 'rgba(0, 0, 0, 0.45)',
   shadowFloat: '0 8px 24px rgba(0, 0, 0, 0.32)',

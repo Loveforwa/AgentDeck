@@ -24,14 +24,37 @@
   color: var(--muted);
 }
 
+/* 状态灯（MVP v2 · V2） */
+.ad-topbar-count--running {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  color: var(--status-running);
+}
+
+.ad-topbar-lamp {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--status-running);
+}
+
+.ad-topbar-lamp--waiting {
+  background: var(--status-waiting);
+}
+
 .ad-topbar-spacer {
   flex: 1;
 }
 
 .ad-topbar-waiting {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
   height: var(--control-sm);
   padding: 0 var(--space-sm);
-  border: 1px solid var(--attention);
+  border: 1px solid transparent;
   border-radius: var(--radius-control);
   background: transparent;
   color: var(--attention);

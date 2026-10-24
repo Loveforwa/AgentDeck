@@ -12,11 +12,11 @@
 | `TITLE_BAR_HEIGHT` | 28，白板据此算 `contentSize` |
 | `resizeRect(start, edge, dx, dy, min)` / `moveRect` | 纯函数：拖左边、上边时对边不动，停在最小尺寸 |
 | `usePointerDrag` | 左键拖动（pointer capture，3px 以内算单击） |
-| `StatusDot` | 标题栏的状态点：filled / hollow / none，`attention` 时橙色 |
+| `StatusDot` | 标题栏的状态点：filled / hollow / none；颜色按 tone：`running` 绿、`attention` 黄、`error` 红（MVP v2 · V2） |
 
 ## 规矩
 
-- 颜色只用 tokens 变量；橙色只在 `attention`（在等你）时出现，出错用墨色文字。
+- 颜色只用 tokens 变量：状态灯和状态文字按 tone 用 `--status-running` / `--status-waiting`（文字 `--attention`）/ `--status-error`；`status.detail` 是悬停说明（Waiting 时写 Needs approval / Needs reply）。
 - 界面文字英文（按钮的 aria-label：Maximize、Restore、Close）。
 
 ## 测试

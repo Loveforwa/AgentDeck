@@ -9,6 +9,14 @@ describe('Topbar', () => {
     expect(summaryText(0, 0)).toBe('0 workspaces · 0 terminals');
   });
 
+  it('status lamps: a green dot before running, a yellow one before waiting (MVP v2 · V2)', () => {
+    render(<Topbar workspaces={1} terminals={2} running={1} waiting={1} projectsMenu={[]} />);
+    const running = screen.getByText('1 running');
+    expect(running.className).toContain('ad-topbar-count--running');
+    expect(running.querySelector('.ad-topbar-lamp')).toBeTruthy();
+    expect(screen.getByRole('button', { name: '1 waiting' }).querySelector('.ad-topbar-lamp--waiting')).toBeTruthy();
+  });
+
   it('shows counts and hides zero running / waiting', () => {
     const { rerender } = render(<Topbar workspaces={2} terminals={4} running={3} waiting={1} projectsMenu={[]} />);
     expect(screen.getByText('My Board')).toBeTruthy();

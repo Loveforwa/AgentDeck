@@ -171,7 +171,7 @@ export function TerminalWindow(props: TerminalWindowProps): ReactNode {
       : phase.kind === 'starting'
         ? { text: 'Starting', tone: 'muted', dot: 'hollow' }
         : phase.kind === 'failed'
-          ? { text: 'Error', tone: 'error', dot: 'none' }
+          ? { text: 'Error', tone: 'error', dot: 'filled' }
           : snapshot
             ? badgeFor(snapshot, now)
             : exitCode !== null

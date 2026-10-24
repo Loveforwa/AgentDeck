@@ -90,7 +90,11 @@ export function WindowShell(props: WindowShellProps) {
         <StatusDot status={status ?? null} />
         <span className="ad-window-name">{name}</span>
         <span className="ad-window-label">{label}</span>
-        {status?.text ? <span className={`ad-window-status ad-window-status--${status.tone}`}>{status.text}</span> : null}
+        {status?.text ? (
+          <span className={`ad-window-status ad-window-status--${status.tone}`} title={status.detail}>
+            {status.text}
+          </span>
+        ) : null}
         <span className="ad-window-actions">
           <button
             type="button"

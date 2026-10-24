@@ -19,7 +19,7 @@
 }
 
 .ad-window--attention {
-  border-color: var(--attention);
+  border-color: var(--status-waiting);
 }
 
 .ad-window--focused {
@@ -70,8 +70,13 @@
   color: var(--attention);
 }
 
+/* 状态灯（MVP v2 · V2）：绿 Running、黄 Waiting、红 Error */
+.ad-window-status--running {
+  color: var(--status-running);
+}
+
 .ad-window-status--error {
-  color: var(--ink);
+  color: var(--status-error);
 }
 
 .ad-window-actions {
@@ -140,11 +145,19 @@
 }
 
 .ad-window-dot--filled.ad-window-dot--attention {
-  background: var(--attention);
+  background: var(--status-waiting);
 }
 
 .ad-window-dot--hollow.ad-window-dot--attention {
-  border-color: var(--attention);
+  border-color: var(--status-waiting);
+}
+
+.ad-window-dot--filled.ad-window-dot--running {
+  background: var(--status-running);
+}
+
+.ad-window-dot--filled.ad-window-dot--error {
+  background: var(--status-error);
 }
 
 .ad-window-content {

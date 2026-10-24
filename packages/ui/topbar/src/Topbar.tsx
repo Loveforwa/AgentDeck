@@ -56,7 +56,13 @@ export function Topbar(props: TopbarProps) {
       <Popover open={projectsOpen} anchor={projectsRef} chrome={false} autoFocus={false} onClose={() => setProjectsOpen(false)}>
         <Menu items={projectsMenu} aria-label="Projects" onClose={() => setProjectsOpen(false)} />
       </Popover>
-      {running > 0 ? <span className="ad-topbar-count">{running} running</span> : null}
+      {/* 状态灯（MVP v2 · V2）：前面一个彩色的点，后面 running / waiting */}
+      {running > 0 ? (
+        <span className="ad-topbar-count ad-topbar-count--running">
+          <span className="ad-topbar-lamp" aria-hidden="true" />
+          {running} running
+        </span>
+      ) : null}
       {waiting > 0 ? (
         <button
           type="button"
@@ -64,6 +70,7 @@ export function Topbar(props: TopbarProps) {
           title="Jump to the next window waiting for you (⌘J, previous ⌘⇧J)"
           onClick={() => props.onWaitingClick?.()}
         >
+          <span className="ad-topbar-lamp ad-topbar-lamp--waiting" aria-hidden="true" />
           {waitingText(waiting, props.waitingPosition)}
         </button>
       ) : null}

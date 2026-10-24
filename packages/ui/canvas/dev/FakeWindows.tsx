@@ -36,17 +36,17 @@ export function badgeFor(s: StatusSnapshot | null): WindowStatusBadge | null {
     case 'starting':
       return { text: 'Starting', tone: 'muted', dot: 'hollow' };
     case 'running':
-      return { text: `Running · ${since(s.since)}`, tone: 'default', dot: 'filled' };
+      return { text: `Running · ${since(s.since)}`, tone: 'running', dot: 'filled' };
     case 'needs-approval':
-      return { text: `Needs approval · ${since(s.since)}`, tone: 'attention', dot: 'filled' };
+      return { text: `Waiting · ${since(s.since)}`, tone: 'attention', dot: 'filled', detail: 'Needs approval' };
     case 'needs-reply':
-      return { text: `Needs reply · ${since(s.since)}`, tone: 'attention', dot: 'filled' };
+      return { text: `Waiting · ${since(s.since)}`, tone: 'attention', dot: 'filled', detail: 'Needs reply' };
     case 'idle':
       return { text: `Idle · ${since(s.since)}`, tone: 'muted', dot: 'hollow' };
     case 'exited':
       return { text: 'Exited', tone: 'muted', dot: 'none' };
     case 'error':
-      return { text: `Error · exit ${s.exitCode ?? 1}`, tone: 'error', dot: 'none' };
+      return { text: `Error · exit ${s.exitCode ?? 1}`, tone: 'error', dot: 'filled' };
   }
 }
 

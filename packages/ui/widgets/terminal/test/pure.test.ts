@@ -65,12 +65,12 @@ describe('status badge', () => {
   it('maps statuses', () => {
     const b = (status: Parameters<typeof badgeFor>[0]['status'], exitCode: number | null = null) => badgeFor({ status, since: ago(300), exitCode }, now);
     expect(b('starting')).toEqual({ text: 'Starting', tone: 'muted', dot: 'hollow' });
-    expect(b('running')).toEqual({ text: 'Running · 5m', tone: 'default', dot: 'filled' });
-    expect(b('needs-approval')).toEqual({ text: 'Needs approval · 5m', tone: 'attention', dot: 'filled' });
-    expect(b('needs-reply')).toEqual({ text: 'Needs reply · 5m', tone: 'attention', dot: 'filled' });
+    expect(b('running')).toEqual({ text: 'Running · 5m', tone: 'running', dot: 'filled' });
+    expect(b('needs-approval')).toEqual({ text: 'Waiting · 5m', tone: 'attention', dot: 'filled', detail: 'Needs approval' });
+    expect(b('needs-reply')).toEqual({ text: 'Waiting · 5m', tone: 'attention', dot: 'filled', detail: 'Needs reply' });
     expect(b('idle')).toEqual({ text: 'Idle · 5m', tone: 'muted', dot: 'hollow' });
     expect(b('exited', 0)).toEqual({ text: 'Exited', tone: 'muted', dot: 'none' });
-    expect(b('error', 1)).toEqual({ text: 'Error · exit 1', tone: 'error', dot: 'none' });
+    expect(b('error', 1)).toEqual({ text: 'Error · exit 1', tone: 'error', dot: 'filled' });
   });
 });
 

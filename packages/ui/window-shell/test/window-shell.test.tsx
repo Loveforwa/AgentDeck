@@ -31,10 +31,12 @@ function drag(el: Element, from: [number, number], to: [number, number]) {
 
 describe('WindowShell', () => {
   it('shows name, label and status', () => {
-    render(<WindowShell name="claude" label="lead" status={{ text: 'Needs approval', tone: 'attention', dot: 'filled' }} />);
+    render(<WindowShell name="claude" label="lead" status={{ text: 'Waiting', tone: 'attention', dot: 'filled', detail: 'Needs approval' }} />);
     expect(screen.getByText('claude')).toBeTruthy();
     expect(screen.getByText('lead')).toBeTruthy();
-    expect(screen.getByText('Needs approval').className).toContain('attention');
+    expect(screen.getByText('Waiting').className).toContain('attention');
+    // 悬停说明是批准还是回答（MVP v2 · V2）
+    expect(screen.getByText('Waiting').getAttribute('title')).toBe('Needs approval');
   });
 
   it('reports title drags as total screen deltas', () => {

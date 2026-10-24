@@ -335,7 +335,7 @@ describe('title bar status', () => {
     };
     act(() => api.bus.emit({ type: 'status.changed', snapshot: { ...snap, terminalId: 'other' as TerminalId, status: 'idle' } }));
     act(() => api.bus.emit({ type: 'status.changed', snapshot: snap }));
-    await waitFor(() => expect(h.status()).toEqual({ text: 'Needs approval · 3m', tone: 'attention', dot: 'filled' }));
+    await waitFor(() => expect(h.status()).toEqual({ text: 'Waiting · 3m', tone: 'attention', dot: 'filled', detail: 'Needs approval' }));
     expect(h.data().sessionId).toBe('codex-thread-1');
   });
 });

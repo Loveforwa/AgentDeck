@@ -22,24 +22,25 @@ export function badgeFor(snap: Pick<StatusSnapshot, 'status' | 'since' | 'exitCo
   switch (snap.status) {
     case 'starting':
       return { text: 'Starting', tone: 'muted', dot: 'hollow' };
+    // MVP v2 · V2 红绿灯：等批准、等回答都写 Waiting（黄），悬停看是哪一种
     case 'running':
-      return { text: withTime('Running'), tone: 'default', dot: 'filled' };
+      return { text: withTime('Running'), tone: 'running', dot: 'filled' };
     case 'needs-approval':
-      return { text: withTime('Needs approval'), tone: 'attention', dot: 'filled' };
+      return { text: withTime('Waiting'), tone: 'attention', dot: 'filled', detail: 'Needs approval' };
     case 'needs-reply':
-      return { text: withTime('Needs reply'), tone: 'attention', dot: 'filled' };
+      return { text: withTime('Waiting'), tone: 'attention', dot: 'filled', detail: 'Needs reply' };
     case 'idle':
       return { text: withTime('Idle'), tone: 'muted', dot: 'hollow' };
     case 'exited':
       return { text: 'Exited', tone: 'muted', dot: 'none' };
     case 'error':
-      return { text: snap.exitCode === null ? 'Error' : `Error · exit ${snap.exitCode}`, tone: 'error', dot: 'none' };
+      return { text: snap.exitCode === null ? 'Error' : `Error · exit ${snap.exitCode}`, tone: 'error', dot: 'filled' };
   }
 }
 
 /** 进程退出时（没有状态机的情况下也要有）标题栏的状态。 */
 export function exitBadge(code: number): WindowStatusBadge {
-  return code === 0 ? { text: 'Exited', tone: 'muted', dot: 'none' } : { text: `Error · exit ${code}`, tone: 'error', dot: 'none' };
+  return code === 0 ? { text: 'Exited', tone: 'muted', dot: 'none' } : { text: `Error · exit ${code}`, tone: 'error', dot: 'filled' };
 }
 
 /** 退出提示条的文字。 */

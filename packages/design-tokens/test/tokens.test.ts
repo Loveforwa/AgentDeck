@@ -55,8 +55,19 @@ describe.each([
     ['onInk', 'ink'],
     ['onInk', 'inkHover'],
     ['onAttention', 'attention'],
+    ['statusRunning', 'surface'],
+    ['statusRunning', 'raised'],
+    ['statusError', 'surface'],
+    ['statusError', 'raised'],
   ];
   it.each(textPairs)('%s on %s >= 4.5', (fg, bg) => {
     expect(contrast(t[fg], t[bg])).toBeGreaterThanOrEqual(4.5);
   });
+  // 状态灯是图形，不是文字：3:1（WCAG 1.4.11）
+  it.each([['statusWaiting', 'surface'], ['statusWaiting', 'raised'], ['statusRunning', 'surface'], ['statusError', 'surface']] as [keyof ThemeColors, keyof ThemeColors][])(
+    'lamp %s on %s >= 3',
+    (fg, bg) => {
+      expect(contrast(t[fg], t[bg])).toBeGreaterThanOrEqual(3);
+    },
+  );
 });
