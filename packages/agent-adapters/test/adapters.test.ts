@@ -5,7 +5,7 @@ import { AgentDeckError } from '@agentdeck/contracts';
 import type { AgentSessionId, LaunchContext, TerminalId } from '@agentdeck/contracts';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { ClaudeAdapter, claudeHookSettings, claudeMcpConfig } from '../src/adapters/claude.ts';
-import { CODEX_HOOK_EVENTS, CodexAdapter, codexHookOverrides, parseHooksList } from '../src/adapters/codex.ts';
+import { CODEX_HOOK_EVENTS, CodexAdapter, codexHookOverrides, codexMcpOverrides, parseHooksList } from '../src/adapters/codex.ts';
 import type { CodexTrustQuery } from '../src/adapters/codex.ts';
 import { CustomCommandAdapter, ShellAdapter } from '../src/adapters/shell.ts';
 import { hookHint } from '../src/hook-payload.ts';
@@ -240,11 +240,46 @@ describe('CodexAdapter', () => {
     expect(f.sessionId).toBeNull();
   });
 
-  it('prompt: positional after --; codex gets no MCP', () => {
+  it('prompt: positional after --, after the MCP overrides and the user’s args', () => {
     const codex = new CodexAdapter({ env, queryTrust: allTrusted });
-    const spec = codex.launch(ctx({ prompt: 'review this', mcp: { url: 'http://x/mcp', token: 't' } }));
-    expect(spec.args.slice(-2)).toEqual(['--', 'review this']);
-    expect(spec.args.join(' ')).not.toContain('mcp');
+    const spec = codex.launch(ctx({ prompt: 'review this', extraArgs: ['--full-auto'], mcp: { url: 'http://x/mcp', token: 't' } }));
+    expect(spec.args.slice(-3)).toEqual(['--full-auto', '--', 'review this']);
+  });
+
+  it('mcp (N1): -c mcp_servers.agentdeck with env var names only; the token goes into env', () => {
+    const mcp = { url: 'http://127.0.0.1:47621/mcp', token: 'secret-token' };
+    const codex = new CodexAdapter({ env, queryTrust: allTrusted });
+    const spec = codex.launch(ctx({ mcp }));
+    const overrides = codexMcpOverrides(mcp);
+    // 0.164.0 用临时 CODEX_HOME 实测 `codex mcp get agentdeck --json` 认出的就是这三条
+    expect(overrides).toEqual([
+      '-c',
+      'mcp_servers.agentdeck.url="http://127.0.0.1:47621/mcp"',
+      '-c',
+      'mcp_servers.agentdeck.bearer_token_env_var="AGENTDECK_MCP_TOKEN"',
+      '-c',
+      'mcp_servers.agentdeck.env_http_headers={"x-agentdeck-terminal"="AGENTDECK_TERM"}',
+    ]);
+    const at = spec.args.indexOf(overrides[1]!);
+    expect(spec.args.slice(at - 1, at + 5)).toEqual(overrides);
+    expect(spec.args.join(' ')).not.toContain('secret-token');
+    expect(spec.env).toEqual({ AGENTDECK_MCP_TOKEN: 'secret-token' });
+    // 没有 MCP 时不加
+    const plain = codex.launch(ctx());
+    expect(plain.args.join(' ')).not.toContain('mcp_servers');
+    expect(plain.env).toBeUndefined();
+    // resume 也挂
+    const resumed = codex.launch(ctx({ mcp, mode: { kind: 'resume', sessionId: 'th-1' as AgentSessionId } }));
+    expect(resumed.args.slice(0, 2)).toEqual(['resume', 'th-1']);
+    expect(resumed.args).toContain(overrides[1]);
+  });
+
+  it('mcp: codex older than the checked version gets none (unknown fields could break its config)', async () => {
+    const old = new CodexAdapter({ env: () => ({ PATH: bin }), queryTrust: allTrusted });
+    await old.detect(); // 0.150.0
+    const spec = old.launch(ctx({ mcp: { url: 'http://x/mcp', token: 't' } }));
+    expect(spec.args.join(' ')).not.toContain('mcp_servers');
+    expect(spec.env).toBeUndefined();
   });
 
   it('falls back to no hooks when codex does not list them', async () => {

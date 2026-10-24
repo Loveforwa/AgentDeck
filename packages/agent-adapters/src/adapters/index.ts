@@ -10,7 +10,7 @@ import { KNOWN_AGENTS } from './known.ts';
 import { CustomCommandAdapter, ShellAdapter } from './shell.ts';
 
 export function createDefaultAdapters(
-  deps: AdapterDeps & Pick<CodexAdapterOptions, 'queryTrust'> & Pick<KnownAgentAdapterOptions, 'agentExtension'>,
+  deps: AdapterDeps & Pick<CodexAdapterOptions, 'queryTrust'> & Pick<KnownAgentAdapterOptions, 'agentExtension' | 'mcpPluginDir'>,
 ): AgentAdapterExt[] {
   return [
     new ClaudeAdapter(deps),

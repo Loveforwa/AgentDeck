@@ -27,6 +27,7 @@ const rt = createAgentRuntime({
   destructivePatterns: () => settings.approvals.destructivePatterns,
   extraArgs: (agent) => settings.agents[agent]?.extraArgs ?? [],
   mcp: () => mcpServer.endpoint,                  // M1：AgentDeck 的 MCP 服务（packages/mcp-server），没起来返回 null
+  mcpPluginDir: '/…/mcp-plugin',                  // N1：写好 mcpPluginFiles() 的目录，omp 用 --plugin-dir 加载；不给时 omp 不挂
 });
 await rt.start();                                 // 监听 ~/.agentdeck/run/hooks.sock
 tmuxHostEvents.on((e) => rt.onTerminalEvent(e));  // terminal.activity / silence / exit / host-lost
@@ -47,6 +48,7 @@ tmuxHostEvents.on((e) => rt.onTerminalEvent(e));  // terminal.activity / silence
 | `AgentServiceImpl` | `AgentService`。`onStarted` 回调告诉状态机这次启动是否真的带上了钩子 |
 | `createDefaultAdapters({ env, agentExtension? })` | `[ClaudeAdapter, CodexAdapter, …已知表里的每一行（KnownAgentAdapter）, ShellAdapter, CustomCommandAdapter]` |
 | `KNOWN_AGENTS` / `KnownAgentAdapter` / `EXTENSION_ENV` | 已知 agent 表、通用适配器、扩展读的环境变量名 |
+| `codexMcpOverrides` / `mcpPluginFiles` / `MCP_URL_ENV` | N1：codex 挂 MCP 的 `-c` 参数；omp 的插件目录内容（相对路径 → 文本）和清单里 url 读的环境变量 |
 | `AgentAdapterExt` | `AgentAdapter` + 可选的 `prepare(ctx)`（launch 前的异步准备，codex 用） |
 | `HookServer` | `start()` / `close()`；`decide` 回调决定 PermissionRequest 回 allow 还是 none（P0 一律 none） |
 | `StatusMachine` | `StatusService` + `track` / `forget` / `onHook` / `onTerminalEvent` / `noteInput` / `get` / `pendingRequests` |
@@ -137,7 +139,23 @@ omp：`--approval-mode always-ask` 跑 bash，PermissionRequest 带上了 `comma
 
 `LaunchContext.mcp` 有值时 claude 适配器加 `--mcp-config <json>`：一个叫 `agentdeck` 的 http 服务，
 `Authorization: Bearer ${AGENTDECK_MCP_TOKEN}`、`x-agentdeck-terminal: ${AGENTDECK_TERM}`，由 claude 从环境里展开（2.1.291 实测），
-token 本身只放进 `LaunchSpec.env`，不进命令行。和用户自己配的 MCP 合并（不用 `--strict-mcp-config`）。codex 暂时不挂。
+token 本身只放进 `LaunchSpec.env`，不进命令行。和用户自己配的 MCP 合并（不用 `--strict-mcp-config`）。
+
+### N1：别的 agent 也挂（2026-10-25 核对）
+
+规则：只用启动参数和环境变量，**不写用户自己的配置**（`~/.codex`、`~/.pi`、`~/.omp`、`~/.kimi-code`），也不往用户的仓库里放文件；token 不进命令行。
+新建、resume、fork 都挂（服务没起来时 `LaunchContext.mcp` 为空，不挂）。
+
+| agent | 支持 | 怎么挂 | 合并还是替换 | 依据 |
+| --- | --- | --- | --- | --- |
+| claude 2.1.291 | 是 | `--mcp-config <json>`，headers 里写 `${…}` | 合并 | M1 实测 |
+| codex 0.164.0 | 是 | `-c mcp_servers.agentdeck.url="…"`、`-c …bearer_token_env_var="AGENTDECK_MCP_TOKEN"`、`-c …env_http_headers={"x-agentdeck-terminal"="AGENTDECK_TERM"}`（`codexMcpOverrides`）；`LaunchSpec.env` 带 token。命令行上只有环境变量的名字 | 合并（session flags 层按字段合并进用户配置） | 临时 `CODEX_HOME` 里 `codex mcp list` 用户的和 agentdeck 都在；`mcp get agentdeck --json` 是 streamable_http；mcp-server 的 real-codex 用 `codex app-server` 真的列出工具、调通 list_workspaces（调用者对） |
+| omp 18.0.4 | 是 | `--plugin-dir <目录>`：目录是 `mcpPluginFiles()`（`.claude-plugin/plugin.json`，清单里内联 `mcpServers`，url、token、终端 id 都写成 `${AGENTDECK_MCP_URL}` 这类），组装时写一次（apps/desktop 写到 `<dataDir>/mcp-plugin`），经 `createAgentRuntime({ mcpPluginDir })` 传进来；`LaunchSpec.env` 带 `AGENTDECK_MCP_URL`、`AGENTDECK_MCP_TOKEN` | 合并（插件来源排最前，用户自己的、从 claude / codex 配置发现的照常在） | 源码：`cli/flag-tables.ts` 的 `--plugin-dir` → `discovery/helpers.ts` `injectPluginDirRoots` → `discovery/claude-plugins.ts` `loadMCPServers`（url、headers 走 `expandEnvVarsDeep`）。用 bun 调 omp 自己的 `injectPluginDirRoots` + `loadAllMCPConfigs`（XDG 目录指到临时目录）：得到 `agentdeck:agentdeck`，url 和两个 header 都展开了，用户原有的 3 个 MCP 也在。服务名是 `插件名:服务名` |
+| pi 0.83.0 | 否 | — | — | pi 不内置 MCP：README 写 “No MCP.”、`docs/usage.md` 说故意不做，要用扩展自己实现。我们的 `agentdeck-pi-extension.mjs` 可以加一个 MCP 客户端（initialize + tools/list，用 `pi.registerTool` 注册代理工具），留到以后 |
+| kimi 2.3.1 | 否 | — | — | `--help` 没有 MCP 参数，也没有 `mcp` 子命令。它只从 `$KIMI_CODE_HOME/mcp.json`、仓库根的 `.mcp.json`、`<cwd>/.kimi-code/mcp.json` 读；改 `KIMI_CODE_HOME` 会连账号和设置一起换掉，项目里的两个文件要写进用户的仓库，而且只在用户信任过这个目录时才读（`~/.kimi-code/workspace-trust/`），每个新 worktree 都要点一次。按会话加 MCP 只有 ACP（`kimi acp` 的 `session/new mcpServers`），TUI 用不上 |
+
+- 版本：codex 低于 0.164.0 不挂（`-c` 里不认识的字段可能让整份配置加载失败、codex 起不来）；omp 低于 18.0.4 不挂。版本取不到时按够新处理（同钩子）。
+- omp 在 tmux 里有没有真的连上、工具名在 omp 里显示成什么，没有在真 TUI 里核对（只核对了配置解析）。
 
 `StartAgentRequest.prompt`（第一条消息）：claude、codex 都放在参数最后、`--` 之后（`--mcp-config` 和不少用户参数后面能跟多个值，不隔开会被吃掉）。只在新会话时带。
 
