@@ -146,9 +146,14 @@ export interface WindowComponentProps<TData = unknown> {
 
 export interface WindowStatusBadge {
   text: string;
-  /** 'attention' 只用于需要你处理。 */
-  tone: 'default' | 'muted' | 'attention' | 'error';
+  /**
+   * 状态灯的颜色（MVP v2 · V2）：'running' 绿，'attention' 黄（只用于需要你处理），'error' 红，
+   * 'muted' 灰，'default' 墨色。'running' 是 0.1.6 加的。
+   */
+  tone: 'default' | 'muted' | 'running' | 'attention' | 'error';
   dot: 'filled' | 'hollow' | 'none';
+  /** 悬停时的说明，例如 Waiting 时写 “Needs approval” 还是 “Needs reply”。0.1.6 加。 */
+  detail?: string;
 }
 
 /**
