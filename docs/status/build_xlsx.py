@@ -13,6 +13,14 @@ FONT = 'Arial'
 # 状态：⚠ 当前有问题 / 未验证 / 部分验证 / 已验证 / 未实现
 CASES = [
     # ---- 当前有问题 ----
+    dict(id='E24', p='P0', status='⚠ 当前有问题',
+         scene='在面板里给“主目录工作区”切换分支',
+         pre='主目录工作区的框里开着终端（空闲也算）；项目是一个普通测试仓库，不要用 agenduck 本身',
+         steps='1. 聚焦框里的终端\n2. 面板里单击分支按钮\n3. 单击另一个分支',
+         expect='UI：只要这个目录里有终端开着（不管 Running 还是 Idle），先弹确认，写明哪些终端在这个目录里、它们看到的文件会变；确认后才切换，框标题更新为新分支。\n后台：确认后才执行 git switch；切换后 workspace-service 更新记录并发 workspace.changed。',
+         result='不会因为点错一下就把正在用的目录切到别的分支',
+         issue='2026-10-24 实际发生：在 agenduck 自己的主目录工作区里单击分支，没有任何确认就把仓库从 main 切到了一个遗留分支（终端都是 Idle，面板只在有改动或有 Running 的 agent 时才确认）；而 AgentDeck 正是从这个目录运行的，开发服务器立刻加载了旧代码，界面变成早期自检页并报错（Q38、Q39）',
+         rel='Q38 Q39 Q31'),
     dict(id='E04', p='P0', status='⚠ 当前有问题',
          scene='agent 停下来请求批准时，用户一眼看出是谁在等',
          pre='框里有一个已信任文件夹的 claude；应用分别在前台、后台各试一次',
@@ -208,6 +216,8 @@ CASES = [
 # ---------------- 问题清单 ----------------
 # 类型：缺陷 / 未验证 / 缺失 / 需求不一致 / 技术债 / 清理
 ISSUES = [
+    ('Q38', 'P0', '缺陷', '源代码管理面板 · 白板', '在面板里单击分支会立刻切换，不确认：只有在有未提交改动或有 Running 的 agent 时才弹框；框里的终端是 Idle 时直接切。空闲的 agent 和 Shell 也在这个目录里，切分支会改掉它们眼前的文件', '主目录工作区里开一个 Idle 的终端，在面板里单击另一个分支', '误点一下就切走正在用的目录；2026-10-24 验收时实际发生', '只要这个目录里有任何终端开着就先确认（白板把框里所有活着的终端传给面板，不只 Running 的）；确认框写清会受影响的终端', 'E24'),
+    ('Q39', 'P0', '开发风险', 'apps/desktop · 开发流程', '用 AgentDeck 管理 agenduck 仓库自己时，切换主目录的分支会改掉正在运行的 AgentDeck 的源代码，开发服务器热更新成旧代码，界面直接坏掉', '在 agenduck 自己的主目录工作区里切到任何旧分支', '验收和自举开发时很容易误伤；恢复要手动 git switch main 再重启', '短期：验收用别的测试仓库，或在独立 worktree 里跑 pnpm dev；长期：应用检测到要切的目录就是自己运行的目录时拒绝并提示', 'E24'),
     ('Q01', 'P0', '未验证', 'agent-adapters · 整体', '真 claude 的完整一轮从没在应用里跑通：信任提示之后的 SessionStart → 输入 → PermissionRequest → 批准 → Stop',
      '在 claude 窗口选 Yes, I trust this folder，按 E04、E05 走一遍', '“谁在等你”这个核心能力还没被真实验证', '先手动验收 E04/E05；之后写进端到端测试', 'E04 E05'),
     ('Q02', 'P0', '未验证', 'workspace-service · 白板', '从界面新建 worktree 工作区、在框里开终端，从没在真窗口里走过', '按 E01、E02 走一遍', '多分支并行的基础，没走过就不能说 MVP 可用', '手动验收 E01/E02', 'E01 E02'),
@@ -241,7 +251,7 @@ ISSUES = [
     ('Q36', 'P2', '缺失', '整体', '重启电脑后恢复会话（验收场景 14）还没做', '—', '属于 MVP 完整版', '按计划在 M4 做', 'E14'),
     ('Q37', 'P2', '缺失', 'apps/desktop', '没有打包流程：better-sqlite3 的 asarUnpack、node-pty spawn-helper 权限、tmux.conf 和 agentdeck-notify 的资源路径都还没进打包配置', '—', '现在只能从源码 pnpm dev 启动，不能放进程序坞', '加 electron-builder 配置，产出 .app', 'E20'),
     ('Q30', 'P3', '清理', '白板', '右下角有 React Flow 的水印', '看截图右下角', '外观', '关掉水印', ''),
-    ('Q31', 'P3', '清理', 'git', '开发期间留下十几个已合并的分支和 worktree，面板 Repository 区全列出来了', 'git worktree list', '列表很乱', '确认后删掉已合并的 claude/* 分支和对应 worktree', ''),
+    ('Q31', 'P2', '清理', 'git', '开发期间留下十几个已合并的分支和 worktree，面板 Repository 区和分支下拉里全列出来了（Q38 就是点到了其中一个）', 'git worktree list', '列表很乱', '确认后删掉已合并的 claude/* 分支和对应 worktree', ''),
     ('Q32', 'P3', '清理', '开发环境', 'Electron 二进制要手动下载一次（pnpm 10 不跑依赖的 postinstall）', '新克隆后 pnpm dev 报 Electron uninstall', '新环境第一次启动会失败', '在 pnpm 配置里允许 electron 的安装脚本，或在根目录加 setup 脚本', ''),
     ('Q33', 'P3', '清理', '开发环境', 'dev 的 tmux 实例里留着 4 个演示会话，其中 2 个来自组装用的 worktree', 'tmux -L agentdeck-desktop-dev ls', '无害，占一点资源', '验收完后 tmux -L agentdeck-desktop-dev kill-server', ''),
     ('Q34', 'P3', '技术债', 'agent-adapters 测试', '真 agent 测试会自动回答 codex 的“信任这个文件夹”，往用户的 codex 配置里写记录', '看 real-agents.test.ts', '跑测试会改用户配置', '测试里用临时 CODEX_HOME 和 CLAUDE_CONFIG_DIR', ''),
@@ -279,7 +289,7 @@ ws = wb.active
 ws.title = '说明'
 rows = [
     ('AgentDeck MVP 端到端用例与问题清单', None),
-    ('生成时间', '2026-10-24，基于 main 5dfcbe3。证据来自各包测试、apps/desktop/ASSEMBLY_NOTES.md、2026-10-23 的组装和两次启动截图。'),
+    ('生成时间', '2026-10-24，基于 main 01947e0（下午补了 E24、Q38、Q39）。证据来自各包测试、apps/desktop/ASSEMBLY_NOTES.md、2026-10-23 的组装和两次启动截图。'),
     ('', None),
     ('怎么用', None),
     ('1', '先看「端到端用例」：排在最前面、标着“⚠ 当前有问题”的是已知会出问题的用例，问题写在“当前问题”列。'),

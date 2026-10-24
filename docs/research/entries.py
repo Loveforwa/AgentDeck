@@ -304,6 +304,14 @@ ENTRIES = [
          cons='worktree 本身也被挪走的情况仍然修不了，只能重新 locate。',
          status='done', where='提交 1aa89fe'),
 
+    dict(id='E21', stage='E', title='在 AgentDeck 里管理它自己的仓库，切一下分支应用就坏了',
+         assumed='面板切分支只影响那个工作区里的 agent；空闲的终端不会受影响，所以不用确认。',
+         found='2026-10-24 验收时，在 agenduck 自己的主目录工作区里单击了一个遗留分支：终端都是 Idle，面板没确认就切了。AgentDeck 正是从这个目录用 pnpm dev 跑的，开发服务器立刻热更新成旧代码，界面变成早期的自检页并报错。',
+         decision='立刻 git switch main 并重启恢复。之后：只要目录里有任何终端开着就先确认（Q38）；应用发现要切的目录就是自己运行的目录时拒绝并提示（Q39）；验收改用别的测试仓库，或在独立 worktree 里跑 pnpm dev。',
+         pros='自举开发不会再被一次误点打断。',
+         cons='切分支多一次确认；开发 AgentDeck 自己时要多维护一个 worktree。',
+         status='partial', where='问题清单 Q38、Q39；用例 E24'),
+
     # ---- F 待验证 ----
     dict(id='F1', stage='F', title='claude 能不能把对话 fork 到另一个目录',
          assumed='claude --resume <id> --fork-session 在任何目录都能用。',
