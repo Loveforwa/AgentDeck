@@ -49,7 +49,12 @@ describe('Workbench', () => {
     const hints = document.querySelector<HTMLElement>('.ad-shortcut-hints');
     expect(hints?.getAttribute('aria-label')).toBe('Keyboard shortcuts');
     const items = [...(hints?.querySelectorAll('.ad-shortcut-hint') ?? [])].map((el) => el.textContent);
-    expect(items.slice(0, 3)).toEqual(['⌘J next waiting', '⌘⇧] ⌘⇧[ switch window', '⌘⇧↩ maximize']);
+    expect(items.slice(0, 4)).toEqual([
+      '⌘J ⌘⇧J jump to the terminal waiting for you',
+      '⌘⇧] ⌘⇧[ next / previous window by position',
+      '⌘⇧↩ maximize / restore window',
+      '⌘N new terminal',
+    ]);
   });
 
   it('closing a running terminal asks inside that window, with the conversation topic; Esc cancels', async () => {

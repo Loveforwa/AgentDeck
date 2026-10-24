@@ -6,13 +6,13 @@ import { SHORTCUT_LABELS } from '../model/shortcuts.ts';
 
 /** 显示的顺序也是重要程度：放不下时先藏后面的。 */
 export const SHORTCUT_HINTS: readonly { keys: string; label: string }[] = [
-  { keys: SHORTCUT_LABELS['next-waiting'], label: 'next waiting' },
-  { keys: `${SHORTCUT_LABELS['next-window']} ${SHORTCUT_LABELS['prev-window']}`, label: 'switch window' },
-  { keys: SHORTCUT_LABELS['toggle-maximize'], label: 'maximize' },
-  { keys: SHORTCUT_LABELS['new-terminal'], label: 'terminal' },
-  { keys: SHORTCUT_LABELS['new-browser'], label: 'browser' },
-  { keys: SHORTCUT_LABELS['toggle-panel'], label: 'panel' },
-  { keys: SHORTCUT_LABELS['show-all'], label: 'show all' },
+  { keys: `${SHORTCUT_LABELS['next-waiting']} ${SHORTCUT_LABELS['prev-waiting']}`, label: 'jump to the terminal waiting for you' },
+  { keys: `${SHORTCUT_LABELS['next-window']} ${SHORTCUT_LABELS['prev-window']}`, label: 'next / previous window by position' },
+  { keys: SHORTCUT_LABELS['toggle-maximize'], label: 'maximize / restore window' },
+  { keys: SHORTCUT_LABELS['new-terminal'], label: 'new terminal' },
+  { keys: SHORTCUT_LABELS['new-browser'], label: 'new browser window' },
+  { keys: SHORTCUT_LABELS['toggle-panel'], label: 'show / hide side panel' },
+  { keys: SHORTCUT_LABELS['show-all'], label: 'fit the whole board' },
   { keys: SHORTCUT_LABELS['open-settings'], label: 'settings' },
 ];
 
