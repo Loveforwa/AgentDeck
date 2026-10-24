@@ -97,8 +97,14 @@ export function claudeHookEvents(version: string | null): string[] {
   return events;
 }
 
-/** `--settings` 的内容：每个事件一条不带 matcher 的命令钩子，运行 `agentdeck-notify claude <事件名>`。 */
-export function claudeHookSettings(notifyCommand: string, version: string | null): { hooks: Record<string, unknown[]> } {
+/**
+ * `--settings` 的内容：每个事件一条不带 matcher 的命令钩子，运行 `agentdeck-notify claude <事件名>`。
+ * 另外把主题设成 auto（IS-42）：用户在 ~/.claude.json 里的主题是给他平时的终端选的，在 AgentDeck 里背景跟着
+ * 白板的深浅色走。设成 light 的用户在深色白板上会看到黑字（问题标题、选项都看不清）。auto 时 claude 用 OSC 11
+ * 问背景色（终端组件替 xterm 回答），深浅色切换时收到 tmux 转来的 CSI ? 997 n 再问一次。
+ * 实测（2.1.291）这里的 theme 盖过 ~/.claude.json 的 theme，不改配置文件；色弱、ANSI 变体会被换成普通的深浅色。
+ */
+export function claudeHookSettings(notifyCommand: string, version: string | null): { hooks: Record<string, unknown[]>; theme: 'auto' } {
   const hooks: Record<string, unknown[]> = {};
   for (const event of claudeHookEvents(version)) {
     hooks[event] = [
@@ -113,5 +119,5 @@ export function claudeHookSettings(notifyCommand: string, version: string | null
       },
     ];
   }
-  return { hooks };
+  return { hooks, theme: 'auto' };
 }

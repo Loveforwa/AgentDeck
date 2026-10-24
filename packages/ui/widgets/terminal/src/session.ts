@@ -16,7 +16,7 @@ import type { AgentDeckApi, TermSize, TerminalId, TerminalLink, Unsubscribe, Vie
 import { decideKey } from './keys.ts';
 import { findLinkMatches } from './links.ts';
 import { FONT_SIZE, LINE_HEIGHT, termSizeFor } from './metrics.ts';
-import { installQueryAnswers } from './queries.ts';
+import { installQueryAnswers, type QueryAnswers } from './queries.ts';
 import { routerFor } from './router.ts';
 import { readColors, type TermColors } from './theme.ts';
 
@@ -40,6 +40,7 @@ export class TerminalSession {
   private readonly fit = new FitAddon();
   private webgl: WebglAddon | null = null;
   private colors: TermColors;
+  private readonly queries: QueryAnswers;
   private readonly disposables: IDisposable[] = [];
   private readonly isMac: boolean;
 
@@ -92,8 +93,9 @@ export class TerminalSession {
     // 调试和端到端测试用：从 DOM 拿到这个终端（document.querySelector('.ad-terminal__xterm').agentdeckSession）
     Object.defineProperty(opts.container, 'agentdeckSession', { value: this, configurable: true });
 
+    this.queries = installQueryAnswers(this.term.parser, (d) => this.send(d), () => this.colors);
     this.disposables.push(
-      installQueryAnswers(this.term.parser, (d) => this.send(d), () => this.colors),
+      this.queries,
       this.term.onData((d) => this.send(d)),
       this.term.onBinary((d) => this.send(d)),
       this.term.registerLinkProvider(this.linkProvider()),
@@ -208,10 +210,12 @@ export class TerminalSession {
     this.term.clear();
   }
 
-  /** 深浅色切换后重新读 tokens。 */
+  /** 深浅色切换后重新读 tokens；深浅变了就告诉 tmux（再转给 claude，IS-42）。 */
   refreshTheme(): void {
+    const wasDark = this.colors.dark;
     this.colors = readColors(this.opts.container);
     this.term.options.theme = this.colors.theme;
+    if (this.colors.dark !== wasDark) this.queries.themeChanged();
   }
 
   dispose(): void {

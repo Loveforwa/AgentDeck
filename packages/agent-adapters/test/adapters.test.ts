@@ -64,6 +64,8 @@ describe('ClaudeAdapter', () => {
     expect(spec.args.slice(0, 2)).toEqual(['--session-id', 'new-uuid']);
     expect(spec.args[2]).toBe('--settings');
     expect(JSON.parse(spec.args[3]!)).toEqual(claudeHookSettings(NOTIFY, '2.1.291'));
+    // 主题跟着终端背景走，不用 ~/.claude.json 里给别的终端选的（IS-42）
+    expect(JSON.parse(spec.args[3]!).theme).toBe('auto');
     expect(spec.args.slice(4)).toEqual(['--model', 'opus']);
     expect(spec.env).toEqual({ CLAUDE_CODE_TMUX_TRUECOLOR: '1' });
   });

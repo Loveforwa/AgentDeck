@@ -321,6 +321,13 @@ ENTRIES = [
          pros='终端不会因为改大小崩掉；emoji 和中文的排版和系统终端一致。',
          cons='每个终端多占一点内存（1000 行回滚）；以后 tmux 或 xterm 升级改了宽度表，要重新对一遍（测试会提醒）。',
          status='done', where='提交 3ceabfb；packages/ui/widgets/terminal/test/xterm-buffer.test.ts'),
+    dict(id='DR-46', old='—', cases=['TC-26'], issues=['IS-42'], stage='E', title='claude 的颜色主题不能用用户的全局设置',
+         assumed='终端背景色交给 AgentDeck，claude 自己会配合；用户的 claude 配置不用管。',
+         found='claude 的 theme 默认不是 auto：用户 ~/.claude.json 里是 light，claude 就不看背景色，在深色白板上用黑字。实测（2.1.291）：--settings 里的 theme 能盖过全局配置；auto 时 claude 发 OSC 11 问背景色，并订阅深浅色变化。tmux 3.6a attach 时对外层终端开 ?2031，收到 CSI ? 997 n 会转给程序。',
+         decision='启动 claude 时 --settings 加 "theme":"auto"；终端组件记下 ?2031 的开关，白板换深浅色时主动发 CSI ? 997 ; 1|2 n。用一个假装成 xterm 的脚本 attach 真 tmux、跑真 claude，深→浅→深都跟着变。',
+         pros='不改用户的配置文件；深浅色切换时开着的 claude 也跟着变。',
+         cons='用户选的色弱（daltonized）、ANSI 主题在 AgentDeck 里会换成普通深浅色；codex 等其他 agent 还没看；已经开着的 claude 要重开才拿到新参数。',
+         status='done', where='packages/agent-adapters/src/adapters/claude.ts、packages/ui/widgets/terminal/src/queries.ts'),
 
     # ---- F 待验证 ----
     dict(id='DR-42', old='F1', cases=[], issues=[], stage='F', title='claude 能不能把对话 fork 到另一个目录',

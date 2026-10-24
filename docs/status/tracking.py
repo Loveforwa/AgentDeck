@@ -6,6 +6,14 @@
 # 状态：⚠ 当前有问题 / 未验证 / 部分验证 / 已验证 / 未实现
 CASES = [
     # ---- 当前有问题 ----
+    dict(id='TC-26', p='P1', status='部分验证',
+         scene='深色白板上 claude 的字看得清，切换深浅色后跟着变',
+         pre='自己的 ~/.claude.json 里 theme 是 light（或 dark）；AgentDeck 重启过（启动参数在主进程里）；新开一个 claude 终端',
+         steps='1. 白板切到深色，新开 claude，让它用提问的方式（AskUserQuestion）问一个问题\n2. 看问题标题、选项、输入框\n3. 不关终端，切到浅色，再切回深色',
+         expect='UI：深色白板上问题标题和选项是浅色字，输入框背景是深灰；切到浅色后变成黑字，切回来又变浅。\n后台：启动参数 --settings 里有 "theme":"auto"；切深浅色时终端组件向 tmux 发 CSI ? 997 ; 1|2 n。',
+         result='不用改自己的 claude 配置，在 AgentDeck 里不管深浅色字都看得清',
+         issue='已修：2026-10-24 用户在深色白板上看到 claude 的问题标题是黑字、输入框是白条（IS-42）。用独立 tmux 3.6a + claude 2.1.291 模拟整条链路验证过（深→浅→深都跟着变）；已经开着的 claude 要重开才生效',
+         rel='IS-42'),
     dict(id='TC-25', p='P0', status='部分验证',
          scene='在终端里和 agent 对话，同时改窗口大小，字显示正常',
          pre='框里有一个在跑的 claude，让它的回答里带几个 emoji（例如让它“用 ✅ ❌ 列一下优缺点”）',
@@ -259,10 +267,12 @@ ISSUES = [
     ('IS-39', 'P0', '缺陷', '终端窗口', '和 agent 对话时终端突然变空白、不再刷新，控制台报 “Cannot read properties of undefined (reading \'loadCell\')” 和 “setting \'isWrapped\'”：xterm 6 在 scrollback 为 0 时改大小，缓冲区行数可能少于屏幕行数', '改终端大小的同时让它持续输出；test/xterm-buffer.test.ts 用固定种子复现', '终端彻底坏掉，只能重开窗口', '把 scrollback 改成大于 0（1000）', 'TC-25'),
     ('IS-40', 'P1', '缺陷', '终端窗口', 'agent 输出里的 emoji（✅ ❌ ⚡ ⏳ 🙂 🤖 等）后面的字错位、重叠：xterm 默认按 Unicode 6 算宽度，emoji 算一格，tmux 算两格', '让 claude 回答里带 emoji，对比系统终端', '回答看不清', '加载 @xterm/addon-unicode11 并切到 Unicode 11（实测和 tmux 3.6a 全部吻合）', 'TC-25'),
     ('IS-41', 'P1', '缺陷', '白板 · 终端窗口', '⌘− 稍微缩小一点（低于 75%）所有终端就只剩最下面 3 行、上面一大片空白，看起来像不渲染了：原设计低于 75% 一律变摘要卡，太早；而且窗口很大时也只显示 3 行', '⌘− 缩到 73% 左右看终端', '缩小看全局时什么都看不清', '缩放门槛改成 50%；窗口本身够大、只是白板缩小时，显示整屏文字快照（每秒刷新），拖小的窗口仍然是 3 行摘要卡', 'TC-09'),
+    ('IS-42', 'P1', '缺陷', '终端窗口 · agent 适配', '深色白板上 claude 的问题标题、选项是黑字，输入框是一条白底：用户 ~/.claude.json 里 theme 是 light（给平时的浅色终端选的），claude 在 AgentDeck 里照样用浅色主题', '全局 theme 设成 light，在深色白板上开 claude，让它用 AskUserQuestion 提问', '深色模式下 agent 的问题几乎看不清', '启动 claude 时 --settings 里加 "theme":"auto"（盖过全局配置、不改文件），claude 用 OSC 11 问背景色；白板切深浅色时终端组件发 CSI ? 997 n，tmux 转给 claude 重新判断', 'TC-26'),
 ]
 
 # 已经处理的问题：处理状态和备注
 RESOLVED = {
+    'IS-42': '2026-10-24 已修：claude 启动时主题设成 auto，深浅色切换时通知 tmux；独立 tmux 里模拟整条链路验证通过。要重启 AgentDeck、重开 claude 终端才生效',
     'IS-41': '2026-10-24 已修：缩放门槛 75% 改 50%；缩小时显示整屏文字快照，加了测试。正在运行的 AgentDeck 已热更新',
     'IS-39': '2026-10-24 已修（3ceabfb）：scrollback 改成 1000，固定种子的复现测试通过；正在运行的 AgentDeck 已热更新',
     'IS-40': '2026-10-24 已修（3ceabfb）：加 Unicode 11 宽度表，35 个常用符号和 tmux 实测宽度全部吻合，写成测试',

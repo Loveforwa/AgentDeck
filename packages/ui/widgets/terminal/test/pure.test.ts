@@ -103,4 +103,26 @@ describe('query answers on a real xterm parser', () => {
     await new Promise<void>((r) => term.write('\x1b[>q\x1b]10;?\x1b\\\x1b]11;?\x07\x1b[?996n\x1b]10;rgb:0/0/0\x1b\\', r));
     expect(out).toEqual(['\x1bP>|xterm.js\x1b\\', '\x1b]10;rgb:1a1a/1a1a/1a1a\x1b\\', '\x1b]11;rgb:ffff/ffff/ffff\x1b\\', '\x1b[?997;2n']);
   });
+
+  it('reports a dark/light switch only while tmux has asked for it with ?2031 (IS-42)', async () => {
+    const term = new Terminal({ allowProposedApi: true });
+    const out: string[] = [];
+    let dark = false;
+    const q = installQueryAnswers(term.parser, (d) => out.push(d), () => ({ fg: '', bg: '', dark }));
+    const write = (d: string) => new Promise<void>((r) => term.write(d, r));
+    dark = true;
+    q.themeChanged();
+    expect(out).toEqual([]);
+    // tmux 3.6a attach 时发的就是单独一条 ?2031h；和别的模式写在一起也要认
+    await write('\x1b[?1004;2031h');
+    q.themeChanged();
+    dark = false;
+    q.themeChanged();
+    expect(out).toEqual(['\x1b[?997;1n', '\x1b[?997;2n']);
+    // 其他模式照常生效
+    expect(term.modes.sendFocusMode).toBe(true);
+    await write('\x1b[?2031l');
+    q.themeChanged();
+    expect(out).toHaveLength(2);
+  });
 });

@@ -3,7 +3,7 @@
 实现过程中和一开始设想不一样的地方：原来以为什么、实际是什么、怎么决定的、好处和代价。
 由 `docs/research/build.py` 从 `docs/research/entries.py` 生成，不要直接改这个文件。更新于 2026-10-24。
 
-共 45 条：已解决 24，进行中 13，推迟 5，待验证 3。
+共 46 条：已解决 25，进行中 13，推迟 5，待验证 3。
 
 编号规则（全项目统一）：DR-xx 调研记录 · TC-xx 端到端用例 · IS-xx 问题 · F1、T2、X3 等是 MVP 任务表的任务编号。用例和问题在 docs/status/AgentDeck-端到端用例与问题清单-*.xlsx 里；每条调研下面列出相关的用例和问题。
 
@@ -56,6 +56,7 @@
   - [DR-40 主仓库搬家后，修 worktree 要把每个路径传给 git](#dr-40)（已解决）
   - [DR-41 在 AgentDeck 里管理它自己的仓库，切一下分支应用就坏了](#dr-41)（进行中）
   - [DR-45 xterm 的两个默认值和 tmux 不合：回滚为 0 会崩，Unicode 6 宽度会错位](#dr-45)（已解决）
+  - [DR-46 claude 的颜色主题不能用用户的全局设置](#dr-46)（已解决）
 - **还没验证的**：已经有对策，但要等对应的线用真东西试过才算数
   - [DR-42 claude 能不能把对话 fork 到另一个目录](#dr-42)（待验证）
   - [DR-43 Approve all 发的“允许一次”按键对不对](#dr-43)（待验证）
@@ -642,6 +643,20 @@
 - **决策**：scrollback 改成 1000（固定种子 1、18、37 在 0 时出事、在 1000 时不出事）；加 @xterm/addon-unicode11 并切到 Unicode 11，对 tmux 实测 35 个 claude 常用符号的宽度，全部吻合。两件事都写成了回归测试。
 - **好处**：终端不会因为改大小崩掉；emoji 和中文的排版和系统终端一致。
 - **代价**：每个终端多占一点内存（1000 行回滚）；以后 tmux 或 xterm 升级改了宽度表，要重新对一遍（测试会提醒）。
+
+<a id="dr-46"></a>
+
+### DR-46 claude 的颜色主题不能用用户的全局设置
+
+状态：已解决 · 出处：packages/agent-adapters/src/adapters/claude.ts、packages/ui/widgets/terminal/src/queries.ts · 旧编号 —
+
+相关：TC-26、IS-42
+
+- **原来以为**：终端背景色交给 AgentDeck，claude 自己会配合；用户的 claude 配置不用管。
+- **实际情况**：claude 的 theme 默认不是 auto：用户 ~/.claude.json 里是 light，claude 就不看背景色，在深色白板上用黑字。实测（2.1.291）：--settings 里的 theme 能盖过全局配置；auto 时 claude 发 OSC 11 问背景色，并订阅深浅色变化。tmux 3.6a attach 时对外层终端开 ?2031，收到 CSI ? 997 n 会转给程序。
+- **决策**：启动 claude 时 --settings 加 "theme":"auto"；终端组件记下 ?2031 的开关，白板换深浅色时主动发 CSI ? 997 ; 1|2 n。用一个假装成 xterm 的脚本 attach 真 tmux、跑真 claude，深→浅→深都跟着变。
+- **好处**：不改用户的配置文件；深浅色切换时开着的 claude 也跟着变。
+- **代价**：用户选的色弱（daltonized）、ANSI 主题在 AgentDeck 里会换成普通深浅色；codex 等其他 agent 还没看；已经开着的 claude 要重开才拿到新参数。
 
 ## 还没验证的
 
