@@ -73,7 +73,7 @@ import '@agentdeck/ui-kit/base.css';
 ## 行为要点
 
 - 手势（N6，IS-59，调研 DR-53；代码 `src/model/gestures.ts` + `src/react/gestures.ts`）：
-  - 两指滚动：在任何窗口上（聚焦不聚焦、标题栏、摘要卡都一样）给窗口内容，**不平移白板**；在空白处（含框里的空白、框标题）平移白板。窗口节点都带 `nopan nowheel`（`WINDOW_NODE_CLASS`），React Flow 不管窗口上的滚轮。没聚焦的窗口盖着一层：滚轮落在盖层上时，下面是普通 DOM（终端）就照原样再派发一个 wheel 给它（xterm 的回滚和鼠标模式都是 JS 处理的，认这个事件；盖层不动，第一下单击还是只聚焦）；下面是 iframe / webview 就让盖层 `COVER_PASS_MS`（600ms）不接指针，后面的滚动原生地进网页（这段时间里单击会直接点进网页）。
+  - 两指滚动：在任何窗口上（聚焦不聚焦、标题栏、摘要卡都一样）给窗口内容，**不平移白板**；在空白处（含框里的空白、框标题）平移白板。窗口节点都带 `nopan nowheel`（`WINDOW_NODE_CLASS`），React Flow 不管窗口上的滚轮。没聚焦的窗口盖着一层：滚轮落在盖层上时，下面是普通 DOM（终端）就照原样再派发一个 wheel 给它（xterm 的回滚和鼠标模式都是 JS 处理的，认这个事件；没人 preventDefault 时滚最近的 overflow 可滚动的祖先，合成事件不会触发原生滚动；盖层不动，第一下单击还是只聚焦）；下面是 iframe / webview 就让盖层 `COVER_PASS_MS`（600ms）不接指针，后面的滚动原生地进网页（这段时间里单击会直接点进网页）。
   - 缩放：双指捏合（`zoomOnPinch`，macOS 给 ctrlKey）和 ⌘ + 滚轮，25%–200%，以指针为不动点。空白处由 React Flow 做；窗口上由 `useWindowZoomWheel` 在捕获阶段先拿走、按 React Flow 同样的换算做（终端收不到）。焦点在网页里时，网页上的捏合进网页（事件到不了白板）。还有 ⌘0 100%，⌘1 Show all（最大 100%），⌘= ⌘−，左下角比例菜单。
   - 按住空格拖动平移（`useSpacePan`，React Flow 自带的 `panActivationKeyCode` 关掉了：它会在终端里吞掉 Shift+空格，而且窗口上拖不动）：按住时白板加 `ad-board--space-pan`，框和窗口都不接指针，拖哪里都平移，光标是手。单独的空格才算（不带修饰键、不在输入法组字中）；焦点在终端（`.xterm`）、输入框、contenteditable、按钮和链接、菜单、对话框、`.nokey` 里时空格照常给它们，网页里的按键本来到不了白板。松开空格、窗口失焦、页面隐藏时结束。
   - 左键或中键拖空白处平移（`panOnDrag={[0, 1]}`）。不响应双击缩放。
@@ -114,7 +114,7 @@ import '@agentdeck/ui-kit/base.css';
 - `layout-v3.test.ts`（对着 `createFakeApi()`）：拖动和改大小吸附、⌘ 不吸、阈值随缩放、松手滑到空位、框放不下就长并挤开别的框、放大的窗口例外、拖框停在边上、拖框边挤开再回来、IS-54 回归；IS-65 拖窗口对齐旁边的框、远的框不算、改框大小吸到隔 20 不挤开、吸到别的框的下边和正好装下窗口；IS-66 窗口间距 20。
 - `controller.test.ts`（对着 `createFakeApi()`）：恢复布局、保存防抖和重启后一致、status.changed 驱动提醒和程序坞角标、⌘J ⌘⇧J 和闪一下、⌘⇧] ⌘⇧[ 切窗口（视口里看得见就不动）、通知跳转、框里新建终端用工作区目录、⌘N、reuseKey、W5 弹回和 Open new、拖到框边框变大、网页换框、拖框带走窗口、框的最小尺寸、改大小松手才生效和摘要卡、放大还原、关闭确认、新建工作区和 setup、创建失败、删除工作区的 dirty 流程、Add project…。
 - `settings.test.tsx`：Settings 对话框的入口（顶栏、Projects ▾、⌘,）、保存只发改了的字段、改完后新建 worktree 用新的基础分支 / 复制文件 / 初始化命令、多仓库、换页保留草稿和 Cancel、General、保存失败的提示、Open settings.json、Locate…、草稿函数。
-- `gestures.test.tsx`（N6）：React Flow 的手势参数、所有窗口节点和内容都是 `nowheel`（聚焦前后）、没聚焦的终端上滚轮转给终端且白板不动（单击仍只聚焦）、聚焦的终端滚动不平移（对照：空白处平移）、网页上盖层暂时让开、窗口上捏合和 ⌘ + 滚轮以指针为不动点缩放、空格在白板上拿、在终端和输入框里（含 Shift / Ctrl + 空格）不拿、失焦松开；纯函数 `zoomAtPoint` `wheelZoomDelta` `spaceBelongsTo`。
+- `gestures.test.tsx`（N6）：React Flow 的手势参数、所有窗口节点和内容都是 `nowheel`（聚焦前后）、没聚焦的终端上滚轮转给终端且白板不动（单击仍只聚焦）、聚焦的终端滚动不平移（对照：空白处平移）、不自己处理滚轮的内容滚最近的 overflow 盒子、网页上盖层暂时让开、窗口上捏合和 ⌘ + 滚轮以指针为不动点缩放、空格在白板上拿、在终端和输入框里（含 Shift / Ctrl + 空格）不拿、失焦松开；纯函数 `zoomAtPoint` `wheelZoomDelta` `spaceBelongsTo`。
 - `workbench.test.tsx`：整个 Workbench 在 jsdom 里渲染：顶栏数字随假事件变化、框标题“1 running”绿灯和“2 waiting”黄灯（为 0 不显示）、终端聚焦时按键不被拦、⌘B ⌘J、顶栏“1/2 waiting”、⌘⇧J ⌘⇧]（⌘] 不拦）、Delete 打开删除对话框。
 
 React Flow 的真实拖动 jsdom 测不了（滚轮能测，见 `gestures.test.tsx`），在 dev 页面里手动试过；触控板的手感（捏合速度、惯性滚动进终端和网页）要在应用里手动试；Playwright 用例留给第 3 波 R2。

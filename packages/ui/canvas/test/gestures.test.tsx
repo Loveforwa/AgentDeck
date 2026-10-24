@@ -147,6 +147,31 @@ describe('two-finger scroll over windows', () => {
     expect(c.state.focusedId).toBe(CLAUDE);
   });
 
+  it('content that does not handle the wheel itself (no preventDefault) is scrolled by its nearest overflow box', async () => {
+    const { c } = setup();
+    await waitFor(() => expect(c.state.loaded).toBe(true));
+    const content = node(CLAUDE).querySelector<HTMLElement>('.ad-window-content')!;
+    const cover = content.querySelector<HTMLElement>('.ad-window-cover')!;
+    const box = document.createElement('div');
+    box.style.overflowY = 'auto';
+    const line = document.createElement('p');
+    box.append(line);
+    content.prepend(box);
+    let top = 0;
+    Object.defineProperty(box, 'scrollHeight', { value: 1000 });
+    Object.defineProperty(box, 'clientHeight', { value: 100 });
+    Object.defineProperty(box, 'scrollTop', { get: () => top, set: (v: number) => (top = v) });
+    document.elementFromPoint = vi.fn(() => line);
+    fireEvent.wheel(cover, { deltaY: 40 });
+    expect(top).toBe(40);
+    fireEvent.wheel(cover, { deltaY: 2, deltaMode: 1 });
+    expect(top).toBe(72);
+    // 处理了的（像 xterm 那样 preventDefault）就不再滚
+    line.addEventListener('wheel', (e) => e.preventDefault());
+    fireEvent.wheel(cover, { deltaY: 40 });
+    expect(top).toBe(72);
+  });
+
   it('a wheel on a focused terminal scrolls it and leaves the board alone', async () => {
     const { c } = setup();
     await waitFor(() => expect(c.state.loaded).toBe(true));

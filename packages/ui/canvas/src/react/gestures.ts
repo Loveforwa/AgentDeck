@@ -81,6 +81,7 @@ const passTimers = new WeakMap<HTMLElement, ReturnType<typeof setTimeout>>();
 /**
  * 没聚焦的窗口上盖着一层（第一下单击只聚焦）。滚轮落在盖层上时交给下面的内容（DR-53）：
  * - 下面是普通 DOM（终端）：照原样再派发一个 wheel 给它，xterm 的滚轮处理是 JS 做的，回滚、鼠标模式都认；盖层不动，单击还是只聚焦。
+ *   没有人 preventDefault 时（不是 xterm 那样自己滚的内容），滚最近的 overflow 可滚动的祖先。
  * - 下面是 iframe / webview（网页）：事件进不去，盖层暂时不接指针（COVER_PASS_MS），接下来的滚动原生地进网页。
  */
 export function passWheelToContent(cover: HTMLElement, e: WheelEvent): void {
@@ -102,7 +103,7 @@ export function passWheelToContent(cover: HTMLElement, e: WheelEvent): void {
     return;
   }
   cover.style.pointerEvents = prev;
-  if (!inside) return;
+  if (!inside || !scope) return;
   const legacy = e as WheelEvent & { wheelDeltaX?: number; wheelDeltaY?: number };
   const init: WheelEventInit & { wheelDeltaX?: number; wheelDeltaY?: number } = {
     bubbles: true,
@@ -124,5 +125,25 @@ export function passWheelToContent(cover: HTMLElement, e: WheelEvent): void {
   // Chromium 的非标准字段，xterm（VS Code 的 StandardWheelEvent）优先读它们
   if (typeof legacy.wheelDeltaX === 'number') init.wheelDeltaX = legacy.wheelDeltaX;
   if (typeof legacy.wheelDeltaY === 'number') init.wheelDeltaY = legacy.wheelDeltaY;
-  inside.dispatchEvent(new WheelEvent('wheel', init));
+  // 没人处理（没有 preventDefault）：合成事件不会触发浏览器原生滚动，自己滚最近的可滚动的祖先（摘要卡、只用 overflow 的内容）
+  if (inside.dispatchEvent(new WheelEvent('wheel', init))) scrollNearest(inside, scope, e);
+}
+
+/** 从 el 往上到 scope（含）找能在这个方向滚的元素，按滚轮的量滚它。 */
+function scrollNearest(el: Element, scope: Element, e: WheelEvent): void {
+  const unit = e.deltaMode === 1 ? 16 : 1;
+  for (let cur: Element | null = el; cur; cur = cur === scope ? null : cur.parentElement) {
+    if (!(cur instanceof HTMLElement)) continue;
+    const page = e.deltaMode === 2;
+    const dx = e.deltaX * (page ? cur.clientWidth : unit);
+    const dy = e.deltaY * (page ? cur.clientHeight : unit);
+    const style = getComputedStyle(cur);
+    const canY = dy !== 0 && /(auto|scroll|overlay)/.test(style.overflowY) && cur.scrollHeight > cur.clientHeight;
+    const canX = dx !== 0 && /(auto|scroll|overlay)/.test(style.overflowX) && cur.scrollWidth > cur.clientWidth;
+    if (canY || canX) {
+      if (canY) cur.scrollTop += dy;
+      if (canX) cur.scrollLeft += dx;
+      return;
+    }
+  }
 }
