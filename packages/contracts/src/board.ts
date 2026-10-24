@@ -93,6 +93,17 @@ export interface TerminalWindowData {
    * true 单独开，false 框开着但它单独关；不填或 null 跟着框（FrameNode.autoApprove）。
    */
   autoApprove?: boolean | null;
+  /**
+   * PL2：Usage 插件在这个终端上的设置（贴在终端上边或下边的用量条）。随白板保存。
+   * 不填或 null 是没开过（开的时候默认贴在上边）；on 为 false 是关着，但记得上次贴在哪边。
+   */
+  usage?: UsageStripSettings | null;
+}
+
+/** PL2：用量条开没开、贴在终端哪一边。 */
+export interface UsageStripSettings {
+  on: boolean;
+  position: 'top' | 'bottom';
 }
 
 export interface BrowserWindowData {

@@ -5,6 +5,7 @@ import type { AgentDeckApi, AgentDeckErrorData, AgentKind, BoardState, CreateWor
 import { TITLE_BAR_HEIGHT, resizeRect, type ResizeEdge } from '@agentdeck/ui-window-shell';
 import { isSummarySize, windowRegistry, type WindowDefinition, type WindowRegistry } from './registry.ts';
 import { ApprovalsModel } from './approvals/model.ts';
+import { usageOutset } from './plugins/usage-model.ts';
 import { startableAgents } from './model/agents.ts';
 import { nextWaiting, prevWaiting, summarize, statusOf, type AttentionSummary } from './model/attention.ts';
 import { createAutosave, type Autosave } from './model/autosave.ts';
@@ -737,15 +738,17 @@ export class BoardController {
       return;
     }
     const { pane } = this.state;
+    // PL2：开着 Usage 的终端给上边或下边的用量条留出位置
+    const out = usageOutset(w);
     const rect = {
       x: w.rect.x,
       y: w.rect.y,
       w: Math.max(w.rect.w, pane.w - MAXIMIZE_MARGIN * 2),
-      h: Math.max(w.rect.h, pane.h - MAXIMIZE_MARGIN * 2),
+      h: Math.max(w.rect.h, pane.h - MAXIMIZE_MARGIN * 2 - out.top - out.bottom),
     };
     this.patchWindow(id, { rect, restoreRect: w.rect });
     this.focusWindow(id);
-    this.setViewport({ x: -rect.x + MAXIMIZE_MARGIN, y: -rect.y + MAXIMIZE_MARGIN, zoom: 1 }, 200);
+    this.setViewport({ x: -rect.x + MAXIMIZE_MARGIN, y: -rect.y + MAXIMIZE_MARGIN + out.top, zoom: 1 }, 200);
   }
 
   // ---- 拖动：框 ----

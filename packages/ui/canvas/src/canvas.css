@@ -438,6 +438,242 @@
   flex: 1;
 }
 
+/*
+  Usage 的用量条（PL2）：终端上边（或下边）一条 24px 高的圆角长条，和终端一样宽、隔 6px。
+  相对 .ad-window-node 绝对定位，跟着窗口移动、改大小、放大；在外框外面，不挡窗口的点击。
+*/
+.ad-usage-strip {
+  position: absolute;
+  right: 0;
+  left: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: var(--plugin-strip-height);
+  padding: 0 var(--space-xs) 0 var(--space-sm);
+  border: 1px solid var(--line-strong);
+  border-radius: calc(var(--plugin-strip-height) / 2);
+  background: var(--surface);
+  box-shadow: var(--shadow-mark);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: all;
+}
+
+.ad-usage-strip[data-position='top'] {
+  bottom: calc(100% + var(--plugin-strip-gap));
+}
+
+.ad-usage-strip[data-position='bottom'] {
+  top: calc(100% + var(--plugin-strip-gap));
+}
+
+/* 下边同时挂着 Auto-approve 的书签时，条放在书签下面 */
+.ad-window-node:has(.ad-auto-approve-mark) > .ad-usage-strip[data-position='bottom'],
+.ad-window-node:has(.ad-auto-approve-mark) > .ad-usage-drop[data-position='bottom'] {
+  top: calc(100% + var(--plugin-mark-height) + var(--plugin-strip-gap));
+}
+
+/* 拖动中：条跟着指针上下走，蓝边；落点线标出松手后贴到哪一边 */
+.ad-usage-strip--dragging {
+  z-index: 3;
+  border-color: var(--guide);
+  box-shadow: var(--shadow-float);
+}
+
+.ad-usage-grip {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  margin-right: var(--space-sm);
+  background-image: radial-gradient(circle, var(--muted) 1px, transparent 1.2px);
+  background-size: 4px 4px;
+  cursor: grab;
+  touch-action: none;
+}
+
+.ad-usage-strip--dragging .ad-usage-grip {
+  cursor: grabbing;
+}
+
+.ad-usage-body {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  height: 100%;
+  padding: 0 var(--space-2xs) 0 0;
+  overflow: hidden;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: default;
+}
+
+.ad-usage-body:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: calc(var(--plugin-strip-height) / 2);
+}
+
+.ad-usage-k {
+  color: var(--muted);
+}
+
+.ad-usage-field {
+  flex: none;
+}
+
+.ad-usage-ctx {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.ad-usage-meter {
+  position: relative;
+  flex: none;
+  width: 46px;
+  height: 5px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--line);
+}
+
+.ad-usage-meter > i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: 3px;
+  background: var(--ink);
+}
+
+/* 上下文到 85%：数字和进度条变黄（需要你处理：该压缩或开新对话了） */
+.ad-usage-ctx[data-attention] {
+  color: var(--attention);
+}
+
+.ad-usage-ctx[data-attention] .ad-usage-meter > i {
+  background: var(--attention);
+}
+
+.ad-usage-empty {
+  color: var(--muted);
+}
+
+.ad-usage-drop {
+  position: absolute;
+  right: 0;
+  left: 0;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--guide);
+  pointer-events: none;
+}
+
+.ad-usage-drop[data-position='top'] {
+  bottom: calc(100% + var(--plugin-strip-gap) + var(--plugin-strip-height) / 2 - 1px);
+}
+
+.ad-usage-drop[data-position='bottom'] {
+  top: calc(100% + var(--plugin-strip-gap) + var(--plugin-strip-height) / 2 - 1px);
+}
+
+/* 点条弹出的小卡片 */
+.ad-popover.ad-usage-card {
+  width: 340px;
+  max-width: 340px;
+}
+
+.ad-usage-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  font-size: var(--text-sm);
+}
+
+.ad-usage-card-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  padding-bottom: var(--space-2xs);
+}
+
+.ad-usage-card-model {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: var(--weight-strong);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ad-usage-card-muted {
+  flex: none;
+  color: var(--muted);
+}
+
+.ad-usage-card-rows {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-2xs) var(--space-md);
+}
+
+.ad-usage-card-row {
+  display: contents;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.ad-usage-card-row > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ad-usage-card-note {
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.ad-usage-card-sep {
+  height: 1px;
+  margin: var(--space-2xs) 0;
+  background: var(--line-subtle);
+}
+
+.ad-usage-card-action {
+  display: flex;
+  align-items: center;
+  height: var(--row);
+  padding: 0 var(--space-sm);
+  margin: 0 calc(var(--space-sm) * -1);
+  border: 0;
+  border-radius: var(--radius-inset);
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+}
+
+.ad-usage-card-action:hover,
+.ad-usage-card-action:focus-visible {
+  background: var(--hover);
+  outline: none;
+}
+
 /* Approval history */
 .ad-approval-history {
   width: 100%;

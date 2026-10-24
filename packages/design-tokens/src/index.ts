@@ -53,6 +53,8 @@ export interface ThemeColors {
   scrim: string;
   /** 只给浮起来的东西：菜单、弹出框、对话框、提示、拖动中的窗口 */
   shadowFloat: string;
+  /** 贴在窗口边上、不浮起来的插件标记（PL2 Usage 的用量条）的浅阴影，比 shadowFloat 轻得多 */
+  shadowMark: string;
   /** 左下角的小吉祥物 Clawd 的身体。不是 attention，不表示任何状态 */
   mascot: string;
   /** Clawd 的眼睛，明暗主题都是深色（橙色身体上要看得见） */
@@ -87,6 +89,7 @@ export const light: ThemeColors = {
   focus: '#1A1A1A',
   scrim: 'rgba(26, 26, 26, 0.18)',
   shadowFloat: '0 8px 24px rgba(0, 0, 0, 0.08)',
+  shadowMark: '0 2px 6px rgba(0, 0, 0, 0.05)',
   mascot: '#D97757',
   mascotEye: '#1A1A1A',
   mascotProp: '#383836',
@@ -119,6 +122,7 @@ export const dark: ThemeColors = {
   focus: '#EDEDEA',
   scrim: 'rgba(0, 0, 0, 0.45)',
   shadowFloat: '0 8px 24px rgba(0, 0, 0, 0.32)',
+  shadowMark: '0 2px 6px rgba(0, 0, 0, 0.24)',
   mascot: '#D97757',
   mascotEye: '#1A1A1A',
   mascotProp: '#A3A39E',
@@ -195,6 +199,9 @@ export const plugin = {
   markHeight: '16px',
   markText: '9.5px',
   markRadius: '4px',
+  /** PL2 Usage 的用量条：24px 高的圆角长条，和终端外框隔 6px。 */
+  stripHeight: '24px',
+  stripGap: '6px',
 } as const;
 
 export const opacity = {

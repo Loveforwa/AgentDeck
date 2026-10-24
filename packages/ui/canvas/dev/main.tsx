@@ -100,6 +100,53 @@ const stopWaiting = controller.store.subscribe((s) => {
   }
 });
 
+// PL2 Usage 的示例数据：右键终端 › PLUGINS › Usage 打开用量条。shop 的 claude 没有会话文件（No usage data）
+const now = () => new Date().toISOString();
+api.fakes.usage.set(T.loginClaude, {
+  agent: 'claude',
+  state: 'ok',
+  reason: null,
+  match: 'exact',
+  model: 'claude-opus-5-5',
+  total: { input: 312_000, output: 18_400, cacheRead: 1_400_000, cacheWrite: 86_000, reasoning: null },
+  last: { input: 2_100, output: 640, cacheRead: 94_000, cacheWrite: 0, reasoning: null },
+  requests: 37,
+  context: { tokens: 96_000, window: 200_000, percent: 48, windowSource: 'model-table' },
+  updatedAt: now(),
+});
+api.fakes.usage.set(T.loginCodex, {
+  agent: 'codex',
+  state: 'ok',
+  reason: null,
+  match: 'exact',
+  model: 'gpt-5.5-codex',
+  total: { input: 1_230_000, output: 64_200, cacheRead: 5_800_000, cacheWrite: null, reasoning: 41_000 },
+  last: { input: 8_400, output: 1_200, cacheRead: 228_000, cacheWrite: null, reasoning: 800 },
+  requests: 112,
+  context: { tokens: 248_000, window: 272_000, percent: 91, windowSource: 'agent' },
+  rateLimits: {
+    primary: { usedPercent: 23, windowMinutes: 300, resetsAt: new Date(Date.now() + 2 * 3600_000).toISOString() },
+    secondary: { usedPercent: 41, windowMinutes: 10080, resetsAt: new Date(Date.now() + 3 * 86400_000).toISOString() },
+  },
+  updatedAt: now(),
+});
+
+function bumpUsage(id: TerminalId) {
+  const cur = api.fakes.usage.get(id);
+  void cur.then((u) => {
+    if (u.state !== 'ok' || !u.total || !u.context) return;
+    const last = { input: 1_800, output: 900, cacheRead: (u.context.tokens ?? 0) + 2_000, cacheWrite: 2_700, reasoning: null };
+    const tokens = Math.min(u.context.window ?? Infinity, (u.context.tokens ?? 0) + 14_000);
+    api.fakes.usage.set(id, {
+      total: { ...u.total, input: u.total.input + last.input, output: u.total.output + last.output, cacheRead: u.total.cacheRead + last.cacheRead },
+      last,
+      requests: u.requests + 1,
+      context: { ...u.context, tokens, percent: u.context.window ? (tokens / u.context.window) * 100 : null },
+      updatedAt: now(),
+    });
+  });
+}
+
 function DemoPanel({ workspace }: PanelContext) {
   const pendingFor = (id: TerminalId) => api.fakes.status.pending().find((p) => p.terminalId === id);
   return (
@@ -161,6 +208,9 @@ function DemoPanel({ workspace }: PanelContext) {
           }}
         >
           Handle it (bookmark back to red)
+        </Button>
+        <Button size="sm" onClick={() => bumpUsage(T.loginClaude)}>
+          claude in feat/login makes a request (Usage)
         </Button>
         <Button size="sm" onClick={() => api.scenario.devServerStarts(T.devServer)}>
           Dev server prints its URL

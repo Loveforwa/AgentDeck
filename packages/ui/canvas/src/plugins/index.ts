@@ -3,10 +3,11 @@
 
 import { autoApprovePlugin } from './auto-approve.tsx';
 import type { PluginDefinition } from './types.ts';
+import { usagePlugin } from './usage.tsx';
 
 export const PLUGINS: readonly PluginDefinition[] = [
   autoApprovePlugin,
-  // PL2 Usage 放在这里
+  usagePlugin,
 ];
 
 export { pluginMenuSection, pluginsFor, thingOf, type PluginDefinition, type PluginTarget, type PluginThing } from './types.ts';
