@@ -2,7 +2,7 @@
 // tmux 起不来时显示说明页和 Retry；读登录 shell 环境失败等提示显示在左下角。
 // AGENTDECK_DEMO=1 时自动把本仓库加成项目、建主目录工作区、开一个 Shell 和一个 claude（见 demo.ts）。
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { AgentDeckErrorData, TerminalWindowData, Workspace, WorkspaceId } from '@agentdeck/contracts';
 import { ScmPanel } from '@agentdeck/scm-panel';
 import { useBoardState, Workbench, type BoardController } from '@agentdeck/ui-canvas';
@@ -23,7 +23,7 @@ function terminalLabel(data: TerminalWindowData): string {
 
 
 /** 右侧面板：跟着聚焦的窗口（或选中的框）所在的工作区。 */
-function SidePanel({ workspace, controller }: { workspace: Workspace | null; controller: BoardController }) {
+function SidePanel({ workspace, controller, headerActions }: { workspace: Workspace | null; controller: BoardController; headerActions?: ReactNode }) {
   const wsId = workspace?.id ?? null;
   // 这个工作区目录里开着的终端，不管在跑还是空闲（Q38：切分支前只要有一个就确认）。
   // 用字符串做选择结果，避免每次渲染都是新数组。
@@ -45,7 +45,7 @@ function SidePanel({ workspace, controller }: { workspace: Workspace | null; con
     controller.selectFrame(id);
     controller.fitFrame(id);
   };
-  return <ScmPanel workspaceId={wsId} onGoToWorkspace={goTo} openTerminals={openTerminals} />;
+  return <ScmPanel workspaceId={wsId} onGoToWorkspace={goTo} openTerminals={openTerminals} headerActions={headerActions} />;
 }
 
 function TmuxMissing({ error, onRetry }: { error: AgentDeckErrorData; onRetry: () => void }) {
@@ -118,7 +118,7 @@ export function App({ controller, loaded, startup }: { controller: BoardControll
         controller={controller}
         onOpenSettingsFile={openSettingsFile}
         trafficLights={startup.trafficLights === true}
-        renderPanel={({ workspace }) => <SidePanel workspace={workspace} controller={controller} />}
+        renderPanel={({ workspace, collapseButton }) => <SidePanel workspace={workspace} controller={controller} headerActions={collapseButton} />}
       />
       {notices.length > 0 ? (
         <div className="app-notices" role="status">

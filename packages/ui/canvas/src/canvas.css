@@ -435,14 +435,75 @@
 
 /* ---- 右侧面板 ---- */
 
-.ad-panel {
+/* 四边都离窗口边缘一点，圆角才看得见（MVP v2 · V1）。内容在 .ad-panel-body 里裁成圆角，拖宽度的把手露在外面。 */
+.ad-panel,
+.ad-panel-rail {
   position: relative;
   flex: none;
   box-sizing: border-box;
   min-width: 0;
-  border-left: 1px solid var(--line);
+  margin: var(--space-xs) var(--space-xs) var(--space-xs) 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
   background: var(--surface);
+}
+
+.ad-panel-body {
+  height: 100%;
   overflow: hidden;
+  border-radius: inherit;
+}
+
+/* 收起后的竖条（MVP v2 · V4） */
+.ad-panel-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 28px;
+  padding: var(--space-xs) 0;
+}
+
+.ad-panel-rail-branch {
+  position: relative;
+  display: inline-flex;
+  color: var(--muted);
+}
+
+/* 有未提交的改动：分支图标右上角一个小黄点 */
+.ad-panel-rail-dot {
+  position: absolute;
+  top: -2px;
+  right: -3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--status-waiting);
+}
+
+/* 展开 / 收起按钮（竖条上和面板标题栏里共用） */
+.ad-panel-toggle {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-sm);
+  height: var(--control-sm);
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--muted);
+}
+
+.ad-panel-toggle:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+
+.ad-panel-toggle:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
 }
 
 .ad-panel-resizer {

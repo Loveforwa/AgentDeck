@@ -14,6 +14,7 @@ import { ScmPanel } from '@agentdeck/scm-panel';
   onGoToWorkspace={(id) => board.focusFrame(id)} // 单击被占用的分支 / Repository 区的一行
   runningAgents={['claude']}               // 这个工作区里正在跑的 agent，切分支前提示
   // api={...}                              // 默认 window.agentdeck；dev 页面和测试传假实现
+  // headerActions={collapseButton}        // 标题栏 Refresh 后面的按钮：白板 renderPanel 给的收起面板按钮（MVP v2 · V4）
 />
 ```
 

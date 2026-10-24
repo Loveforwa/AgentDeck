@@ -1,5 +1,5 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import type { WindowComponentProps, WindowId } from '@agentdeck/contracts';
 import { createFakeApi, SAMPLE } from '@agentdeck/fakes';
 import { BoardController } from '../src/controller.ts';
@@ -157,5 +157,66 @@ describe('Workbench', () => {
     const { c } = setup({ trafficLights: true });
     await waitFor(() => expect(c.state.loaded).toBe(true));
     expect(document.querySelector('.ad-topbar')?.classList.contains('ad-topbar--traffic-lights')).toBe(true);
+  });
+
+  it('the panel collapses to a 28px rail and expands again; ⌘B toggles; the state is saved (MVP v2 · V4)', async () => {
+    const { api, c } = setup({
+      renderPanel: ({ workspace, collapseButton }) => (
+        <div>
+          <header>
+            <span>Panel for {workspace?.name ?? 'nothing'}</span>
+            {collapseButton}
+          </header>
+        </div>
+      ),
+    });
+    await waitFor(() => expect(c.state.loaded).toBe(true));
+    act(() => c.focusWindow('win-login-claude' as WindowId));
+    expect(c.state.panel.open).toBe(true);
+    expect(screen.getByRole('complementary', { name: 'Side panel' })).toBeTruthy();
+    expect(screen.getByText(/Panel for/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Collapse panel' }));
+    expect(c.state.panel.open).toBe(false);
+    expect(screen.queryByText(/Panel for/)).toBeNull();
+    const rail = screen.getByRole('complementary', { name: 'Side panel (collapsed)' });
+    expect(rail.classList.contains('ad-panel-rail')).toBe(true);
+    // feat/login 有未提交的改动：分支图标旁一个点
+    expect(await within(rail).findByRole('img', { name: 'Uncommitted changes' })).toBeTruthy();
+
+    // 保存的布局里 panel.open 为 false
+    const save = vi.spyOn(api.board, 'save');
+    await act(() => c.flush());
+    expect(save.mock.calls.at(-1)?.[0].panel.open).toBe(false);
+
+    fireEvent.click(within(rail).getByRole('button', { name: 'Expand panel' }));
+    expect(c.state.panel.open).toBe(true);
+    expect(screen.getByText(/Panel for/)).toBeTruthy();
+
+    fireEvent.keyDown(window, { key: 'b', metaKey: true });
+    expect(c.state.panel.open).toBe(false);
+    expect(screen.getByRole('button', { name: 'Expand panel' })).toBeTruthy();
+    fireEvent.keyDown(window, { key: 'b', metaKey: true });
+    expect(screen.getByRole('button', { name: 'Collapse panel' })).toBeTruthy();
+  });
+
+  it('the rail dot follows git.status: none for a clean workspace, appears when files change', async () => {
+    const { api, c } = setup({ renderPanel: () => <div>panel</div> });
+    await waitFor(() => expect(c.state.loaded).toBe(true));
+    act(() => c.focusWindow('win-dev-server' as WindowId));
+    act(() => c.togglePanel());
+    const rail = screen.getByRole('complementary', { name: 'Side panel (collapsed)' });
+    expect(rail.querySelector('.ad-panel-rail-branch')?.getAttribute('title')).toBe('main');
+    await act(() => new Promise((r) => setTimeout(r, 20)));
+    expect(within(rail).queryByRole('img', { name: 'Uncommitted changes' })).toBeNull();
+    act(() => api.scenario.gitChanged(SAMPLE.paths.agentdeck, [{ path: 'README.md', unstaged: 'modified' }]));
+    expect(await within(rail).findByRole('img', { name: 'Uncommitted changes' })).toBeTruthy();
+  });
+
+  it('without renderPanel there is neither a panel nor a rail', async () => {
+    const { c } = setup();
+    await waitFor(() => expect(c.state.loaded).toBe(true));
+    act(() => c.togglePanel());
+    expect(screen.queryByRole('complementary', { name: /Side panel/ })).toBeNull();
   });
 });

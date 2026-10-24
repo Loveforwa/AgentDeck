@@ -42,6 +42,13 @@ describe('ScmPanel', () => {
     expect(screen.getByText('This window isn’t in a workspace.')).toBeTruthy();
   });
 
+  it('puts headerActions (the board’s Collapse panel button) right after Refresh (MVP v2 · V4)', () => {
+    const { api } = setup();
+    render(<ScmPanel api={api} workspaceId={null} headerActions={<button type="button">Collapse panel</button>} />);
+    const refresh = screen.getByRole('button', { name: 'Refresh' });
+    expect(refresh.nextElementSibling).toBe(screen.getByRole('button', { name: 'Collapse panel' }));
+  });
+
   it('shows the workspace, branch and changes as a folder tree', async () => {
     const { api } = setup();
     render(<ScmPanel api={api} workspaceId={W.agentdeckLogin} />);

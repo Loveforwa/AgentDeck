@@ -44,6 +44,8 @@ export interface ScmPanelProps {
   runningAgents?: readonly string[];
   /** 默认 window.agentdeck。dev 页面和测试传假实现。 */
   api?: ScmApi;
+  /** 标题栏最右边、Refresh 后面的按钮，例如白板给的收起面板按钮（MVP v2 · V4）。 */
+  headerActions?: ReactNode;
 }
 
 const COMMIT_ALL_KEY = 'agentdeck.scm.commitAllConfirmed';
@@ -75,7 +77,7 @@ interface Picker {
   anchor: PopoverAnchor;
 }
 
-export function ScmPanel({ workspaceId, onGoToWorkspace, openTerminals, runningAgents, api: apiProp }: ScmPanelProps) {
+export function ScmPanel({ workspaceId, onGoToWorkspace, openTerminals, runningAgents, api: apiProp, headerActions }: ScmPanelProps) {
   const terminalsHere = openTerminals ?? runningAgents ?? NONE;
   const api = apiProp ?? window.agentdeck;
   const dir = useDirectory(api);
@@ -307,6 +309,7 @@ export function ScmPanel({ workspaceId, onGoToWorkspace, openTerminals, runningA
         >
           <RefreshIcon />
         </Button>
+        {headerActions}
       </div>
       <div className="scm-body">{body}</div>
 
