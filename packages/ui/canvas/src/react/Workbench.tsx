@@ -1,9 +1,9 @@
 // 整体布局（需求「1 · 整体布局」）：顶栏、白板、右侧面板。面板的内容由组装方给（线 3 的源代码管理面板），
-// 宽度和开关属于白板状态，跟着布局一起保存。
+// 宽度和开关属于白板状态，跟着布局一起保存。收起时（MVP v2 · V4）面板变成 28px 的竖条。
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
-import type { AgentDeckApi, Workspace } from '@agentdeck/contracts';
+import type { AgentDeckApi, AbsPath, Workspace } from '@agentdeck/contracts';
 import { ToastProvider, useToast, type MenuEntry } from '@agentdeck/ui-kit';
 import { Topbar } from '@agentdeck/ui-topbar';
 import { usePointerDrag } from '@agentdeck/ui-window-shell';
@@ -17,6 +17,10 @@ import { useShortcuts } from './useShortcuts.ts';
 export interface PanelContext {
   /** 聚焦的窗口所在的工作区，或选中的框；都没有时为 null。 */
   workspace: Workspace | null;
+  /** 收起面板的按钮（aria-label “Collapse panel”，MVP v2 · V4）。面板内容把它放在自己标题栏的右边。 */
+  collapseButton: ReactNode;
+  /** 收起面板（和 ⌘B 相同）。 */
+  collapse(): void;
 }
 
 export interface WorkbenchProps extends Omit<BoardControllerOptions, 'api' | 'notify'> {
@@ -141,11 +145,113 @@ function Panel({ renderPanel }: { renderPanel: WorkbenchProps['renderPanel'] }) 
     },
     onMove: (dx) => c.setPanelWidth(startWidth.current - dx),
   });
-  if (!open || !renderPanel) return null;
+  if (!renderPanel) return null;
+  if (!open) return <PanelRail workspace={workspace} onExpand={() => c.togglePanel()} />;
+  const collapse = () => c.togglePanel();
+  const collapseButton = (
+    <button type="button" className="ad-panel-toggle" aria-label="Collapse panel" title="Collapse panel (⌘B)" onClick={collapse}>
+      <CollapseIcon />
+    </button>
+  );
   return (
     <aside className="ad-panel" style={{ width }} aria-label="Side panel">
       <div className="ad-panel-resizer" onPointerDown={onPointerDown} role="separator" aria-orientation="vertical" aria-label="Resize panel" />
-      {renderPanel({ workspace })}
+      <div className="ad-panel-body">{renderPanel({ workspace, collapseButton, collapse })}</div>
     </aside>
   );
 }
+
+/** 收起后的竖条（MVP v2 · V4）：展开按钮、分支图标，聚焦的工作区有未提交的改动时分支图标旁一个点。 */
+function PanelRail({ workspace, onExpand }: { workspace: Workspace | null; onExpand(): void }) {
+  const dirty = useUncommitted(workspace);
+  const branch = workspace ? (workspace.branch ?? workspace.name) : null;
+  return (
+    <aside className="ad-panel-rail" aria-label="Side panel (collapsed)">
+      <button type="button" className="ad-panel-toggle" aria-label="Expand panel" title="Expand panel (⌘B)" onClick={onExpand}>
+        <ExpandIcon />
+      </button>
+      {branch !== null ? (
+        <span className="ad-panel-rail-branch" title={dirty ? `${branch} · uncommitted changes` : branch}>
+          <BranchIcon />
+          {dirty ? <span className="ad-panel-rail-dot" role="img" aria-label="Uncommitted changes" /> : null}
+        </span>
+      ) : null}
+    </aside>
+  );
+}
+
+/** 工作区的仓库里有没有未提交的改动：先问一次 git.status，之后跟着 git.status 事件更新。 */
+function useUncommitted(workspace: Workspace | null): boolean {
+  const c = useController();
+  const [dirty, setDirty] = useState<ReadonlyMap<AbsPath, boolean>>(new Map());
+  const key = workspace ? repoPaths(workspace).join('\n') : '';
+  useEffect(() => {
+    setDirty(new Map());
+    if (!key) return;
+    const paths = new Set(key.split('\n') as AbsPath[]);
+    let alive = true;
+    const note = (repo: AbsPath, files: number) => {
+      if (alive && paths.has(repo)) setDirty((m) => new Map(m).set(repo, files > 0));
+    };
+    const off = c.api.on('git.status', (e) => note(e.status.repo, e.status.files.length));
+    for (const repo of paths) {
+      c.api.git.status(repo).then(
+        (st) => note(repo, st.files.length),
+        () => undefined, // 读不到就不显示点，展开面板时那边会报错
+      );
+    }
+    return () => {
+      alive = false;
+      off();
+    };
+  }, [c, key]);
+  return [...dirty.values()].some(Boolean);
+}
+
+function repoPaths(w: Workspace): AbsPath[] {
+  // 刚初始化仓库的主目录工作区，repos 可能还是空的（和源代码管理面板一样用工作区目录本身）
+  if (w.repos.length === 0) return w.mode === 'main-folder' ? [w.path] : [];
+  return w.repos.map((r) => r.path);
+}
+
+function Icon({ children }: { children: ReactNode }) {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      {children}
+    </svg>
+  );
+}
+
+/** ⇥：向右的箭头顶着一道竖线 */
+const CollapseIcon = () => (
+  <Icon>
+    <path d="M2.5 8h8M7.5 5l3 3-3 3M13.5 3.5v9" />
+  </Icon>
+);
+
+/** ⇤：向左的箭头顶着一道竖线 */
+const ExpandIcon = () => (
+  <Icon>
+    <path d="M13.5 8h-8M8.5 5l-3 3 3 3M2.5 3.5v9" />
+  </Icon>
+);
+
+const BranchIcon = () => (
+  <Icon>
+    <circle cx="5" cy="3.5" r="1.5" />
+    <circle cx="5" cy="12.5" r="1.5" />
+    <circle cx="11" cy="5.5" r="1.5" />
+    <path d="M5 5v6M11 7c0 2.5-6 1.5-6 4" />
+  </Icon>
+);

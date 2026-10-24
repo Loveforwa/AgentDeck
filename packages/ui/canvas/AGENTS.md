@@ -48,6 +48,8 @@ import '@agentdeck/ui-kit/base.css';
 ```
 
 - `Workbench` = 顶栏 + 白板 + 右侧面板（宽 280–480、⌘B 开关，跟布局一起保存），外面包好 ToastProvider 和 ReactFlowProvider。
+  - 面板收起（MVP v2 · V4，`BoardState.panel.open` 为 false）时是 28px 竖条：展开按钮（Expand panel）、分支图标、聚焦的工作区有未提交改动时一个黄点（竖条自己问 `git.status`、听 `git.status` 事件）。
+  - `renderPanel` 的参数里有 `collapseButton`（Collapse panel 按钮）和 `collapse()`：面板内容把按钮放进自己的标题栏（源代码管理面板放在 Refresh 后面，`ScmPanel` 的 `headerActions`）。
   - `trafficLights`：macOS 的 hiddenInset 标题栏，顶栏左边给红黄绿按钮留位置（MVP v2 · V1）。
 - `BoardController`：白板的全部行为，不依赖 React，测试里直接用。`Workbench` 可以传自己建的 `controller`。`runShortcut(id)` 可以接到应用菜单的快捷键上（焦点在网页窗口的 iframe 里时按键到不了白板）。
 - `addProject` 选项可以换掉默认的 Add project… 流程（线 3 的 W1 做好后接上）。
