@@ -417,6 +417,12 @@ export class BoardController {
     return this.isMaximized(w) && w.restoreRect ? w.restoreRect : w.rect;
   }
 
+  /** 避让时窗口占的地方：footprint 再加上开着的 Usage 用量条（PL2，贴在上边或下边）。对齐线仍然只看窗口本身。 */
+  private obstacleRect(w: WindowNode, rect: Rect = this.footprint(w)): Rect {
+    const out = usageOutset(w);
+    return out.top || out.bottom ? { ...rect, y: rect.y - out.top, h: rect.h + out.top + out.bottom } : rect;
+  }
+
   /** 对齐线看的窗口：同一个框里别的窗口；散放的窗口看视口里别的散放窗口。 */
   private snapTargets(id: WindowId, ws: WorkspaceId | null): Rect[] {
     const s = this.state;
@@ -447,10 +453,11 @@ export class BoardController {
    */
   private freeSpotFor(id: WindowId | null, ws: WorkspaceId | null, rect: Rect, frameRect: Rect | null): Rect {
     // N2：lead 连同侧边栏和停靠的子终端一起找空位；收起的子终端不挡，别的组的侧边栏挡
-    const ext = id ? this.withGroup(id, rect) : rect;
+    const self = id ? this.windowById(id) : undefined;
+    const ext = id ? union(this.withGroup(id, rect), self ? this.obstacleRect(self, rect) : rect) : rect;
     const skip = this.groupSkip(id);
     const obstacles = [
-      ...this.state.windows.filter((w) => w.id !== id && w.workspaceId === ws && !skip.has(w.id)).map((w) => this.footprint(w)),
+      ...this.state.windows.filter((w) => w.id !== id && w.workspaceId === ws && !skip.has(w.id)).map((w) => this.obstacleRect(w)),
       ...this.sidebarObstacles(ws, id),
     ];
     const spot = findFreeSpot(ext, obstacles, { gap: GAP, area: frameRect ? innerArea(growFrame(frameRect, ext)) : null });

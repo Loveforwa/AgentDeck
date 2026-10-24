@@ -234,6 +234,23 @@ describe('no overlapping windows on release (V3)', () => {
     expect(c.state.dialog).toBeNull();
   });
 
+  it('a Usage strip (PL2) counts as part of its window: a window dropped onto the strip slides clear of it', () => {
+    const claudeNode = win('win-shop-claude');
+    c.store.setState({
+      windows: c.state.windows.map((w) => (w.id === claudeNode.id ? { ...w, data: { ...(w.data as object), usage: { on: true, position: 'top' } } } : w)),
+    });
+    const claude = win('win-shop-claude').rect;
+    const strip = { x: claude.x, y: claude.y - 30, w: claude.w, h: 30 };
+    const shell = win('win-shop-shell');
+    // 放到只盖住用量条、不盖住 claude 窗口本身的地方
+    c.moveWindowStart(shell.id);
+    c.moveWindow(shell.id, claude.x - shell.rect.x, claude.y - 10 - (shell.rect.y + shell.rect.h), pointerIn(W.shopCart));
+    expect(intersects(win('win-shop-shell').rect, strip)).toBe(true);
+    c.moveWindowEnd(shell.id);
+    expect(intersects(win('win-shop-shell').rect, strip)).toBe(false);
+    expect(intersects(win('win-shop-shell').rect, claude)).toBe(false);
+  });
+
   it('when the frame has no room, the window goes outside and the frame grows; a frame in the way moves off', () => {
     const main = W.agentdeckMain;
     const login = W.agentdeckLogin;
