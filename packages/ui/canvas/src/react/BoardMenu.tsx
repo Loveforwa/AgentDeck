@@ -7,8 +7,9 @@ import type { BoardController } from '../controller.ts';
 import { startableAgents } from '../model/agents.ts';
 import { SHORTCUT_LABELS } from '../model/shortcuts.ts';
 import { BROWSER_TYPE, TERMINAL_TYPE, isTerminal } from '../model/windows.ts';
+import { PLUGINS, pluginMenuSection, type PluginTarget } from '../plugins/index.ts';
 import type { MenuState } from '../store.ts';
-import { useBoardState, useController, useWindowTypes } from './context.tsx';
+import { useApprovals, useBoardState, useController, useWindowTypes } from './context.tsx';
 
 export function BoardMenu() {
   const c = useController();
@@ -16,6 +17,9 @@ export function BoardMenu() {
   // 菜单开着时才需要这些；它们变了菜单跟着更新
   useBoardState((s) => s.agents);
   useBoardState((s) => s.frames);
+  // 插件项的勾和灰掉的原因
+  useApprovals((s) => s.auto);
+  useApprovals((s) => s.support);
   const types = useWindowTypes();
   if (!menu) return null;
   const has = (type: string) => types.some((t) => t.type === type);
@@ -44,6 +48,11 @@ export function terminalItems(agents: readonly AgentInfo[], onPick: (agent: Agen
 export function menuItems(c: BoardController, menu: MenuState, available: { terminal: boolean; browser: boolean }): MenuEntry[] {
   const { target, flow } = menu;
   const s = c.state;
+  // PLUGINS 一组（PL0）：前面加一道分隔线；没有能贴的插件时什么都不加
+  const plugins = (t: PluginTarget): MenuEntry[] => {
+    const section = pluginMenuSection(c, t, PLUGINS);
+    return section.length ? [{ type: 'separator' }, ...section] : [];
+  };
   const create = (ws: WorkspaceId | null, at: typeof flow | null): MenuEntry[] => [
     {
       id: 'new-terminal',
@@ -68,6 +77,7 @@ export function menuItems(c: BoardController, menu: MenuState, available: { term
         ...create(ws, flow),
         { id: 'new-workspace', label: 'New workspace…', shortcut: SHORTCUT_LABELS['new-workspace'], onSelect: () => c.openNewWorkspace({ at: flow }) },
         { id: 'add-project', label: 'Add project…', onSelect: () => void c.addProject(flow) },
+        ...(ws ? plugins({ kind: 'frame', workspaceId: ws }) : []),
         { type: 'separator' },
         { id: 'show-all', label: 'Show all', shortcut: SHORTCUT_LABELS['show-all'], onSelect: () => c.showAll() },
       ];
@@ -82,6 +92,7 @@ export function menuItems(c: BoardController, menu: MenuState, available: { term
         { id: 'open-editor', label: 'Open in editor', disabled: !path, onSelect: () => path && void c.api.app.openInEditor(path) },
         { id: 'reveal', label: 'Reveal in Finder', disabled: !path, onSelect: () => path && void c.api.app.revealInFinder(path) },
         { id: 'copy-path', label: 'Copy path', disabled: !path, onSelect: () => path && copyText(path) },
+        ...plugins({ kind: 'frame', workspaceId: ws }),
         { type: 'separator' },
         { id: 'rename', label: 'Rename…', onSelect: () => c.openDialog({ kind: 'rename-workspace', workspaceId: ws }) },
         { id: 'delete', label: 'Delete workspace…', onSelect: () => c.askRemoveWorkspace(ws) },
@@ -114,6 +125,7 @@ export function menuItems(c: BoardController, menu: MenuState, available: { term
           })),
         );
       }
+      items.push(...plugins({ kind: 'window', windowId: id }));
       if (isTerminal(w)) {
         const data = w.data as Partial<TerminalWindowData>;
         const others = s.frames.filter((f) => f.workspaceId !== w.workspaceId);

@@ -5,6 +5,7 @@ import { Button } from '@agentdeck/ui-kit';
 import { RESIZE_EDGES, usePointerDrag, type ResizeEdge } from '@agentdeck/ui-window-shell';
 import { runningLabel, waitingLabel, summarize } from '../model/attention.ts';
 import { useBoardState, useController } from './context.tsx';
+import { FramePluginMarks } from './PluginMarks.tsx';
 
 export type FrameNodeData = { workspaceId: WorkspaceId };
 export type PendingNodeData = { pendingId: string };
@@ -56,6 +57,7 @@ export function FrameNodeView({ data }: NodeProps & { data: FrameNodeData }) {
         <span className="ad-frame-project">{project?.name ?? 'Loading…'}</span>
         <span className="ad-frame-branch">{branch ?? name}</span>
         {branch && name && name !== branch ? <span className="ad-frame-name">{name}</span> : null}
+        <FramePluginMarks workspaceId={ws} />
         <span className="ad-frame-spacer" />
         {workspace?.missing ? <span className="ad-frame-note">Folder not found</span> : null}
         {/* 状态灯和顶栏一样：前面一个彩色的点；标题太长时截标题，灯不缩 */}

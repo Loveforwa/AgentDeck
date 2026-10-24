@@ -64,7 +64,7 @@ describe('context menus (B3)', () => {
     );
     expect(items.map((i) => (i.type === 'separator' ? '-' : i.label))).toEqual(['Claude Code', 'Oh My Pi', '-', 'Shell']);
     const omp = items[1]!;
-    if (omp.type !== 'separator') omp.onSelect?.();
+    if (omp.type !== 'separator' && omp.type !== 'heading') omp.onSelect?.();
     expect(picked).toEqual(['omp']);
   });
 
@@ -91,12 +91,19 @@ describe('context menus (B3)', () => {
       'Reveal in Finder',
       'Copy path',
       '-',
+      'PLUGINS',
+      'Auto-approve',
+      'Approval history…',
+      '-',
       'Rename…',
       'Delete workspace…',
     ]);
     expect(labels({ kind: 'window', windowId: 'win-login-claude' as WindowId })).toEqual([
       'Rename…',
       'Maximize',
+      '-',
+      'PLUGINS',
+      'Auto-approve',
       '-',
       'Copy folder path',
       'Open in system terminal',
@@ -137,6 +144,9 @@ describe('context menus (B3)', () => {
       'Restart',
       'Restart and resume conversation',
       '-',
+      'PLUGINS',
+      'Auto-approve',
+      '-',
       'Copy folder path',
       'Open in system terminal',
       'Open in another workspace',
@@ -144,7 +154,7 @@ describe('context menus (B3)', () => {
       'Close',
     ]);
     const resume = items.find((i) => i.type !== 'separator' && i.label === 'Restart and resume conversation');
-    if (resume && resume.type !== 'separator') resume.onSelect?.();
+    if (resume && resume.type !== 'separator' && resume.type !== 'heading') resume.onSelect?.();
     expect(got).toEqual(['restart-resume']);
     c.dispose();
   });

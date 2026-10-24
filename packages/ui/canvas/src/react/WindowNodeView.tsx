@@ -9,6 +9,7 @@ import { useBoardState, useController, useWindowType } from './context.tsx';
 import { WindowStopConfirm } from './dialogs.tsx';
 import { metaHeld } from './Guides.tsx';
 import { passWheelToContent } from './gestures.ts';
+import { WindowPluginMarks } from './PluginMarks.tsx';
 
 export type WindowNodeData = { id: WindowId };
 
@@ -110,6 +111,8 @@ export function WindowNodeView({ data }: NodeProps & { data: WindowNodeData }) {
           />
         ) : null}
       </WindowShell>
+      {/* 插件的标记（PL0）：贴在外框外面（Auto-approve 的书签在底边左侧），不盖住内容 */}
+      <WindowPluginMarks windowId={id} />
     </div>
   );
 }

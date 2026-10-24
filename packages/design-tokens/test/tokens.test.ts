@@ -64,12 +64,14 @@ describe.each([
     ['statusError', 'raised'],
     // 对齐线的数字标注（V3）：画在 surface 底上
     ['guide', 'surface'],
+    // 插件标记（PL1 书签 “Auto-approve”，9.5px 字）
+    ['pluginAutoApproveFg', 'pluginAutoApprove'],
   ];
   it.each(textPairs)('%s on %s >= 4.5', (fg, bg) => {
     expect(contrast(t[fg], t[bg])).toBeGreaterThanOrEqual(4.5);
   });
   // 状态灯是图形，不是文字：3:1（WCAG 1.4.11）
-  it.each([['statusWaiting', 'surface'], ['statusWaiting', 'raised'], ['statusRunning', 'surface'], ['statusError', 'surface'], ['guide', 'ground'], ['guide', 'surface']] as [keyof ThemeColors, keyof ThemeColors][])(
+  it.each([['statusWaiting', 'surface'], ['statusWaiting', 'raised'], ['statusRunning', 'surface'], ['statusError', 'surface'], ['guide', 'ground'], ['guide', 'surface'], ['pluginAutoApprove', 'ground'], ['pluginAutoApprove', 'surface']] as [keyof ThemeColors, keyof ThemeColors][])(
     'lamp %s on %s >= 3',
     (fg, bg) => {
       expect(contrast(t[fg], t[bg])).toBeGreaterThanOrEqual(3);

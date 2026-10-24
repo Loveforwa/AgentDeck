@@ -109,6 +109,19 @@ describe('Topbar', () => {
     expect(screen.getByRole('menuitem', { name: /Add project/ })).toBeTruthy();
   });
 
+  it('X3: "Approve all…" only while something waits for approval, no shortcut; click asks the board', () => {
+    const onApproveAll = vi.fn();
+    const { rerender } = render(<Topbar {...base} waiting={1} approvable={0} onApproveAll={onApproveAll} />);
+    expect(screen.queryByRole('button', { name: 'Approve all…' })).toBeNull();
+    rerender(<Topbar {...base} waiting={2} approvable={1} onApproveAll={onApproveAll} />);
+    const btn = screen.getByRole('button', { name: 'Approve all…' });
+    expect(btn.getAttribute('title')).toBe('Review and approve 1 waiting permission request');
+    // 紧跟在 waiting 后面，齿轮前面
+    expect(btn.previousElementSibling?.className).toBe('ad-topbar-waiting');
+    fireEvent.click(btn);
+    expect(onApproveAll).toHaveBeenCalledTimes(1);
+  });
+
   it('floats over the board (IS-63): the bar takes no pointer and is no drag region, its controls do and are no-drag', () => {
     const bar = declarations('.ad-topbar');
     expect(bar).toMatch(/pointer-events:\s*none/);

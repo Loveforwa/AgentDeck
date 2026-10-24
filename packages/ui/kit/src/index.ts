@@ -1,5 +1,5 @@
 export { Button, type ButtonProps, type ButtonSize, type ButtonVariant } from './Button.tsx';
-export { Menu, type MenuEntry, type MenuItem, type MenuProps, type MenuSeparator } from './Menu.tsx';
+export { Menu, type MenuEntry, type MenuHeading, type MenuItem, type MenuProps, type MenuSeparator } from './Menu.tsx';
 export {
   Dialog,
   DialogPanel,

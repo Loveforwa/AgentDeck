@@ -55,6 +55,26 @@
   text-overflow: ellipsis;
 }
 
+.ad-menu-hint {
+  flex: none;
+  max-width: 220px;
+  margin-left: var(--space-md);
+  overflow: hidden;
+  color: var(--muted);
+  font-size: var(--text-xs);
+  text-overflow: ellipsis;
+}
+
+/* 一组项的小标题，例如 PLUGINS */
+.ad-menu-heading {
+  padding: var(--space-xs) var(--space-sm) var(--space-2xs);
+  color: var(--muted);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-strong);
+  letter-spacing: 0.04em;
+  cursor: default;
+}
+
 .ad-menu-shortcut {
   flex: none;
   margin-left: var(--space-lg);

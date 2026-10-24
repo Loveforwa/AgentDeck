@@ -86,6 +86,34 @@ function DemoPanel({ workspace }: PanelContext) {
         >
           Answer the questions (turn ends)
         </Button>
+        <Button
+          size="sm"
+          onClick={() => {
+            // 假服务不发 approval.needs-you（真服务会）：开着 Auto-approve 的终端碰到破坏性命令时，这里替它发
+            const p = api.scenario.agentNeedsApproval(T.loginClaude, { command: 'rm -rf dist node_modules' });
+            if (p) api.bus.emit({ type: 'approval.needs-you', terminalId: T.loginClaude, reason: 'destructive', request: p });
+          }}
+        >
+          claude in feat/login wants rm -rf (Needs you)
+        </Button>
+        <Button
+          size="sm"
+          onClick={() => {
+            const p = api.scenario.agentAsks(T.loginClaude, 'Which database should I use?');
+            api.bus.emit({ type: 'approval.needs-you', terminalId: T.loginClaude, reason: 'question', request: p });
+          }}
+        >
+          claude in feat/login asks (Needs you)
+        </Button>
+        <Button
+          size="sm"
+          onClick={() => {
+            api.scenario.agentTurnEnd(T.loginClaude);
+            api.bus.emit({ type: 'approval.needs-you', terminalId: T.loginClaude, reason: null, request: null });
+          }}
+        >
+          Handle it (bookmark back to red)
+        </Button>
         <Button size="sm" onClick={() => api.scenario.devServerStarts(T.devServer)}>
           Dev server prints its URL
         </Button>

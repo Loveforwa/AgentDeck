@@ -25,6 +25,10 @@ export interface TopbarProps {
   projectsMenu: readonly MenuEntry[];
   /** 单击“n waiting”：跳到下一个在等你的窗口（和 ⌘J 相同）。 */
   onWaitingClick?(): void;
+  /** 在等“允许一次”的请求数（X3）。大于 0 时在 waiting 后面显示 “Approve all…”（不设快捷键）。 */
+  approvable?: number;
+  /** 单击 “Approve all…”：白板弹出确认列表。 */
+  onApproveAll?(): void;
   onSettings?(): void;
   /**
    * macOS 的 hiddenInset 标题栏：系统的红黄绿按钮画在顶栏左边，顶栏左边留出它们的位置（MVP v2 · V1）。
@@ -61,6 +65,7 @@ export function Topbar(props: TopbarProps) {
   const projectsRef = useRef<HTMLButtonElement>(null);
   const [projectsOpen, setProjectsOpen] = useState(false);
   const title = props.projectName ?? boardName;
+  const approvable = props.approvable ?? 0;
   const context = props.workspace ? workspaceText(props.workspace) : summaryText(workspaces, windows);
 
   return (
@@ -100,6 +105,16 @@ export function Topbar(props: TopbarProps) {
           <span className="ad-topbar-lamp ad-topbar-lamp--waiting" aria-hidden="true" />
           {waitingText(waiting, props.waitingPosition)}
         </button>
+      ) : null}
+      {approvable > 0 && props.onApproveAll ? (
+        <Button
+          size="sm"
+          className="ad-topbar-approve-all"
+          title={`Review and approve ${approvable} waiting permission request${approvable === 1 ? '' : 's'}`}
+          onClick={() => props.onApproveAll?.()}
+        >
+          Approve all…
+        </Button>
       ) : null}
       <Button
         size="sm"

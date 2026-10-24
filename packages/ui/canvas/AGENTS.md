@@ -66,7 +66,9 @@ import '@agentdeck/ui-kit/base.css';
 | `src/controller.ts` | `BoardController`：启动和事件、拖动、改大小、放大、新建、关闭、工作区、视口、快捷键 |
 | `src/store.ts` | zustand vanilla store：保存的部分（BoardState）+ 临时状态 |
 | `src/model/` | 纯函数：`groups`（N1 窗口组：`listGroups`、`dissolveGroups`）、`geometry`（框跟着长、框的最小尺寸、视口）、`attention`（S3 计数、⌘J ⌘⇧J 顺序、顶栏的第几个）、`navigation`（S3 ⌘⇧] ⌘⇧[ 按位置切窗口的顺序）、`autosave`（B5 防抖）、`shortcuts`（R1 按键表）、`drop`（W5 落点）、`snap`（V3 吸附和对齐线）、`avoid`（V3 松手避让、框之间 20px、挤开别的框）、`windows`（终端相关的判断）、`gestures`（N6 手势规则和 React Flow 参数）、`branch`（分支名检查）、`settings`（Settings 的草稿和补丁） |
-| `src/react/` | `Workbench`、`Board`（React Flow）、`WindowNodeView`、`FrameNodeView`、`Guides`（V3 对齐线，屏幕坐标画；跟踪 ⌘）、`BoardMenu`（右键菜单）、`dialogs`（新建 / 删除工作区、W5、停止终端、改名）、`SettingsDialog`、`useShortcuts`、`gestures`（N6：空格平移、窗口上的缩放滚轮、盖层把滚轮交给内容） |
+| `src/react/` | `Workbench`、`Board`（React Flow）、`WindowNodeView`、`FrameNodeView`、`Guides`（V3 对齐线，屏幕坐标画；跟踪 ⌘）、`BoardMenu`（右键菜单，含 PLUGINS 一组）、`PluginMarks`（把登记表里插件的标记放到窗口节点和框标题上）、`approvals`（第一次开 Auto-approve 的确认、Approval history、Approve all 对话框）、`dialogs`（新建 / 删除工作区、W5、停止终端、改名）、`SettingsDialog`、`useShortcuts`、`gestures`（N6：空格平移、窗口上的缩放滚轮、盖层把滚轮交给内容） |
+| `src/plugins/` | 插件（PL0，规则见 docs/plugins.md）：`types.ts`（`PluginDefinition`：能贴在 terminal / browser / frame / board 哪几种上、支持哪些 agent、能不能开和原因、开没开、开关、额外菜单项、窗口和框上的标记组件；`pluginMenuSection` 生成右键菜单的 PLUGINS 一组）、`index.ts`（登记表 `PLUGINS`，加插件就是加一行）、`auto-approve.tsx`（PL1：书签、小卡片、框标题的小标签） |
+| `src/approvals/` | 批准在界面这边的状态（PL1、X3）：`model.ts` 的 `ApprovalsModel`（`controller.approvals`，zustand vanilla store：服务报的开关、每种 agent 能不能开、needs-you、这次运行收到的自动批准、书签闪的次数、小卡片、Approval history、Approve all 的列表；开关、把开关写进白板、终端换 terminalId 时补推）、`text.ts`（原因、谁批的、时间、在等批准的请求） |
 | `src/canvas.css` | 白板、框、面板、对话框字段的样式，只用 tokens |
 | `dev/` | dev 页面（Vite） |
 
@@ -95,6 +97,11 @@ import '@agentdeck/ui-kit/base.css';
   - 关窗口时 `dissolveGroups`：lead 没了，子终端去掉 group 变回普通窗口；子终端都没了，lead 也去掉。`listGroups(windows)`（从包里导出）给 N2 的侧边栏用：每组的 lead 和按打开先后排的子终端。
   - `board.focus-window`（`focusFromService`）：照 ⌘J 跳过去、闪一下、聚焦；`board.notify`（`notifyFromService`）：发通知的窗口闪一下，Toast 写 “claude · agentdeck · feat/login: Tests passed”。用户 2 秒内按过键（`TYPING_MS`，`window` 上捕获阶段的 keydown，网页 iframe 里的按键收不到）时两者都只闪一下：不抢焦点、不动视口、不弹 Toast。
   - `reuseKey` 改成存在窗口上（`WindowNode.reuseKey`，随白板保存），重启后 open_browser 同一个 origin 仍然复用那个窗口（以前是控制器里的 Map，重启就丢）。
+- 插件（PL0，docs/plugins.md）：右键终端标题栏、右键框（标题和框里的空白）时菜单中间有一组 PLUGINS（`{ type: 'heading' }`），直接列出能贴在它上面的插件（不套子菜单），开着打钩，再点关掉；用不了的灰掉，原因写在后面（`MenuItem.hint`，例如服务报的 “Not supported for kimi yet”、“Not supported for shell”）。网页窗口目前没有插件，不出这一组。插件的标记由插件自己画：`WindowMark` 放在 `.ad-window-node` 里（相对节点绝对定位，跟着移动、改大小、放大），`FrameMark` 放在框标题里。
+- Auto-approve（PL1）：开关以主进程的 `ApprovalService` 为准。界面启动时取 `autoApproveState` / `autoApproveSupport` / `autoApproveNeedsYou`，之后听 `approval.auto-approve-changed` / `approval.needs-you` / `approval.auto-approved`。点开关调 `setTerminalAutoApprove`（框开着时单独关传 false、再开传 null；框关着时单独开传 true、再关传 null）或 `setAutoApprove`，收到 `approval.auto-approve-changed` 再写进白板（`FrameNode.autoApprove`、`TerminalWindowData.autoApprove`）随白板保存。重开应用由 apps/desktop 在终端接回状态机后按白板恢复一次，界面不再推；只有终端换了 terminalId（重启后新开）时界面把它单独的设置补推。第一次打开时问一句（记在 localStorage 的 `agentdeck.auto-approve.confirmed`）。
+  - 书签：终端底边左侧、贴着下边框外沿（`top: 100%`），16px 高、9.5px 半粗体，红底白字（`--plugin-auto-approve` / `-fg`），不挡内容；服务报 needs-you 且终端还在等时变橙 “Needs you”（`--attention`），悬停写原因（Destructive command / Question for you / Couldn’t approve / Not supported）和请求；每次 `approval.auto-approved` 闪一下；单击弹小卡片：Auto-approve、since HH:MM、最近几条批准、Approval history…、Turn off。框上开着时框标题里一个红色小标签 “Auto-approve”。
+  - Approval history：右键框 › Approval history…（这个工作区），或小卡片里（这个终端）。服务的 `history(workspaceId)` 加上这次运行收到的事件，新的在前：时间、终端、请求、谁批的（You / Approve all / Auto-approve）。散放的终端只有这次运行的记录。
+- Approve all（X3，不设快捷键）：有请求在等“允许一次”时顶栏出现 “Approve all…”，单击弹出 “Approve these requests?” 列表（agent · 项目 · 分支、要运行的命令；看起来有破坏性的默认不勾，写 “Unchecked: this looks destructive.”；提问不在列表里，底下说一句）。“Approve n” 调 `approve(ids, { by: 'approve-all', includeDestructive })`（勾了破坏性的才传 true）；批成的去掉，没批成的（couldnt-approve 等）那一行写 “Couldn’t approve”、不勾、留给你，全批成了就关掉并提示 “Approved 1 request · 2 still need you”。
 - 保存：保存的部分（视口、框、窗口、面板）引用一变就排进防抖，半秒后 `board.save`；`pagehide` 时立刻写。启动时 `board.load` 恢复。
 
 ## dev 页面
@@ -103,7 +110,7 @@ import '@agentdeck/ui-kit/base.css';
 
 - `window.agentdeck` 是 `createFakeApi({ latencyMs: 40 })` 的示例数据：3 个框、5 个终端、1 个网页窗口；codex 在等批准，1.5 秒后 shop 的 claude 提一个问题。
 - 终端和网页是只显示文字的假窗口（`dev/FakeWindows.tsx`）：假终端真的 attach 到 FakeTerminalHost，输出去掉转义序列后显示，用 `setStatus` 显示状态。
-- 右侧面板是演示按钮：请求批准、提问、全部批准、一轮结束、Reset the board。布局额外存进 localStorage，刷新能看到恢复。
+- 右侧面板是演示按钮：请求批准、提问、全部批准、一轮结束、Reset the board；PL1 的演示：右键 feat/login 的 claude › PLUGINS › Auto-approve 打开后，“wants rm -rf (Needs you)” / “asks (Needs you)” 让书签变橙（假服务不发 `approval.needs-you`，按钮替它发），“Handle it” 变回红色。布局额外存进 localStorage，刷新能看到恢复。
 - 控制台里 `__board` 是 `BoardController`。
 
 ## 测试
@@ -122,10 +129,11 @@ import '@agentdeck/ui-kit/base.css';
 - `mcp-board.test.ts`（N1，对着 `createFakeApi()`）：网页开在调用者旁边（散放时正好在右边 20px、在框里挨着调用者不盖住别人、调用者在别的框时不拉出框）、reuseKey 重启后仍复用；窗口组的位置（在 lead 右边、互不重叠、框跟着长）、不抢焦点、保存和重启后恢复、第二次加进同一组、子终端再开也进同一组、关 lead 子终端变普通窗口、子终端关完 lead 不再是组、没有 lead 时不成组；focus-window 跳过去 / 打字时只闪；keydown 算打字；notify 的 Toast 文字 / 打字时只闪。
 - `settings.test.tsx`：Settings 对话框的入口（顶栏、Projects ▾、⌘,）、保存只发改了的字段、改完后新建 worktree 用新的基础分支 / 复制文件 / 初始化命令、多仓库、换页保留草稿和 Cancel、General、保存失败的提示、Open settings.json、Locate…、草稿函数。
 - `gestures.test.tsx`（N6）：React Flow 的手势参数、所有窗口节点和内容都是 `nowheel`（聚焦前后）、没聚焦的终端上滚轮转给终端且白板不动（单击仍只聚焦）、聚焦的终端滚动不平移（对照：空白处平移）、不自己处理滚轮的内容滚最近的 overflow 盒子、网页上盖层暂时让开、窗口上捏合和 ⌘ + 滚轮以指针为不动点缩放、空格在白板上拿、在终端和输入框里（含 Shift / Ctrl + 空格）不拿、失焦松开；纯函数 `zoomAtPoint` `wheelZoomDelta` `spaceBelongsTo`。
+- `auto-approve.test.tsx`（PL0、PL1、X3）：终端和框的 PLUGINS 一组（不套子菜单、打钩跟着服务、开关调的方法和参数、写进白板）、第一次开先问、kimi / shell 灰掉写原因、网页没有这一组、登记表加一项就出现在对应菜单里（Usage 的样子）；书签只在开着时出现、在外框外面、位置和颜色的 CSS、needs-you 变橙和悬停原因、终端不在等了变回红、每次自动批准闪、小卡片和 Turn off；框标题的小标签和框里每个终端的书签；Approval history 的列和顺序；顶栏 Approve all…、破坏性的默认不勾、couldnt-approve 那一行留下、勾上破坏性的再批、全批成后的提示；启动时不重复推、换 terminalId 补推。
 - `workbench.test.tsx`：整个 Workbench 在 jsdom 里渲染：顶栏数字随假事件变化、框标题“1 running”绿灯和“2 waiting”黄灯（为 0 不显示）、终端聚焦时按键不被拦、⌘B ⌘J、顶栏“1/2 waiting”、⌘⇧J ⌘⇧]（⌘] 不拦）、Delete 打开删除对话框。
 
 React Flow 的真实拖动 jsdom 测不了（滚轮能测，见 `gestures.test.tsx`），在 dev 页面里手动试过；触控板的手感（捏合速度、惯性滚动进终端和网页）要在应用里手动试；Playwright 用例留给第 3 波 R2。
 
 ## 不许碰
 
-只改 `packages/ui/canvas`、`packages/ui/window-shell`、`packages/ui/topbar`。不改 contracts（意见写 CONTRACT_NOTES.md）、不改 apps/desktop。
+只改 `packages/ui/canvas`、`packages/ui/window-shell`、`packages/ui/topbar`（插件需要的通用菜单零件在 ui-kit：`Menu` 的 heading 和 hint）。不改 contracts（意见写 CONTRACT_NOTES.md）、不改 apps/desktop。
