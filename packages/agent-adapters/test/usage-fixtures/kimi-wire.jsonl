@@ -1,0 +1,7 @@
+{"type":"metadata","protocol_version":"1.4","created_at":1792847231000}
+{"type":"config.update","profileName":"agent","systemPrompt":"You are a test.","time":1792847231000}
+{"type":"llm.request","kind":"loop","provider":"openai","model":"model-a","modelAlias":"test/model-a","maxTokens":131072,"messageCount":1,"turnStep":"0.1","time":1792847232000}
+{"type":"usage.record","model":"test/model-a","usage":{"inputOther":19800,"output":292,"inputCacheRead":2560,"inputCacheCreation":0},"usageScope":"turn","time":1792847233000}
+{"type":"context.append_loop_event","event":{"type":"step.end"},"time":1792847233001}
+{"type":"usage.record","model":"test/model-a","usage":{"inputOther":500,"output":100,"inputCacheRead":22000,"inputCacheCreation":40},"usageScope":"turn","time":1792847240000}
+{"type":"token_counting.measured","agentId":"main","length":5,"tokens":23990,"time":1792847240100}

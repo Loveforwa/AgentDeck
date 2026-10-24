@@ -10,6 +10,7 @@
 - **状态机**（S2）：`StatusMachine` 实现 `StatusService`，发 `status.changed`、`agent.turn-end`。
 - **批准**（PL1 Auto-approve、X3 Approve all）：`ApprovalServiceImpl` 实现 `ApprovalService`，见下面「Auto-approve 和 Approve all」。
 - **后台通知规则**（S4）：`backgroundAlerts()` / `badgeCount()`，纯函数；真正发通知、设角标在 apps/desktop。
+- **token 用量**（PL2 · Usage 插件，DR-55）：`src/usage/`，`UsageServiceImpl` 实现 contracts 的 `UsageService`，读各 agent 自己的会话文件。见下面「token 用量」。
 
 不许碰：`packages/contracts`（不够用写进本目录的 `CONTRACT_NOTES.md`）、`apps/desktop`、其他包。
 本包不读环境、不写死路径：登录 shell 的环境、notify 的路径、socket 路径、破坏性名单都由构造参数传入。
@@ -56,6 +57,7 @@ tmuxHostEvents.on((e) => rt.onTerminalEvent(e));  // terminal.activity / silence
 | `autoApproveSupport` / `approvalStrategy` | 每种 agent 的做法（`src/status/support.ts`） |
 | `matchOmpApproval` | omp 的 Approve / Deny 确认框认屏规则（`src/status/screens.ts`） |
 | `backgroundAlerts` / `badgeCount` | S4 规则 |
+| `UsageServiceImpl` / `defaultUsageRoots` / `USAGE_HOOK` | token 用量（见「token 用量」）；各 agent 的读取器 `ClaudeUsageParser` 等也导出 |
 | `DEFAULT_DESTRUCTIVE_PATTERNS` | 建议的 Settings 默认值，在整段命令里找：rm -r/-f、sudo rm、find -delete、git push -f/--force/+refspec、reset --hard、clean -f、checkout -- / .、restore、stash drop/clear、DROP/TRUNCATE/DELETE FROM 无 WHERE、FLUSHDB/ALL、mkfs、dd of=、写 /dev/sd*、chmod -R 777、kubectl delete、terraform destroy、.env |
 
 ## 各 agent 怎么启动
@@ -129,6 +131,7 @@ LaunchSpec.env 带 `AGENTDECK_NOTIFY`（notify 路径）、`AGENTDECK_AGENT`（i
 | tool_approval_resolved（omp） | UserPromptSubmit | running |
 | agent_settled（pi）/ agent_end 且 willContinue 不为 true（omp） | Stop | idle，发 agent.turn-end |
 | session_shutdown | SessionEnd | 不变 |
+| session_start / turn_end / agent_end / session_compact / model_select 等（PL2） | AgentDeckUsage（`ctx.getContextUsage()` 的 tokens、contextWindow、percent，变了才发） | 不交给状态机，给用量模块 |
 
 实测（2026-10-24，pi 0.83.0、omp 18.0.4）：临时 HOME、本地假的 OpenAI 兼容服务（不用账号、不花钱），`--mode rpc`（omp 的提问要 `--mode rpc-ui`）。
 pi：SessionStart（就是 `--session-id` 给的 id）→ UserPromptSubmit → Stop → SessionEnd；`--session <id>` 接回、`--fork <id> --session-id <新>` 都报对了 id。
@@ -136,6 +139,38 @@ omp：`--approval-mode always-ask` 跑 bash，PermissionRequest 带上了 `comma
 `--resume <id>` 报原 id，`--fork <id>` 报新 id。没在真 TUI 里核对：omp 确认框“允许一次”的按键（PL1 按源码定为 Up Enter，发前先认屏，见下面）。
 真窗口（单独的 AgentDeck 实例、临时 HOME、同一个假模型）：菜单列出 Pi、Oh My Pi；pi 一轮 running → idle → turn-end；omp 的 bash 批准显示 needs-approval（summary 是命令），
 在确认框按 Enter 批准后 running → idle → turn-end；omp 新会话的 id 由 SessionStart 报上来存进库，`--resume <id>` 能接回（omp 只在第一条消息后才写会话文件，没说过话的会话接不回）。
+
+## token 用量（PL2 · Usage 插件）
+
+`src/usage/`：按终端找到 agent 自己的会话文件，只读新增部分（`JsonlTail` 记 offset，文件变短或换了就从头读），
+每种 agent 一个读取器（`UsageParser.feed(line)` / `snapshot()`），认不出的行一律跳过，agent 不报的项是 null，不估。
+**只读**：不写、不改 `~/.claude*`、`~/.codex`、`~/.pi`、`~/.omp`、`~/.kimi-code`。
+
+```ts
+const usage = new UsageServiceImpl({
+  lookup: (id) => ({ terminalId: id, agent, sessionId, cwd, startedAt }), // 状态机的 agent / sessionId + store 的 cwd + 本次启动时间
+  targets: () => [...],                     // 所有终端（kimi 推断时看同目录的其他 kimi 终端）
+  emit,                                     // usage.changed
+  roots: defaultUsageRoots(homedir(), loginEnv), // 认 CLAUDE_CONFIG_DIR、CODEX_HOME、PI_CODING_AGENT_DIR
+});
+createAgentRuntime({ ..., tapHook: (h) => usage.noteHook({ terminalId: h.terminalId, agent: h.agent, hookName: h.hookName, payload: h.envelope.payload }) });
+// status.changed 时 usage.noteSession(id)（会话 id 变了，比如 codex 第一次输入、claude /clear）；退出时 usage.close()
+```
+
+- `get(id)` 读一次不留状态；`watch(id)` 之后每次有变化发 `usage.changed`（fs.watch 立即触发，节流 100ms；另有 1 秒一次的兜底轮询；
+  还没找到文件时每 3 秒重找一次）；`unwatch(id)` 关掉监听、忘掉这个终端。
+- 状态：`ok`；`no-data`（`Waiting for the session id` / `No session file yet` / `No usage recorded yet` / `Unknown terminal`）；`unsupported`（shell、自定义命令）。
+- `USAGE_HOOK`（`AgentDeckUsage`）是 pi / omp 扩展报上下文用的钩子名，`tapHook` 返回 true，不交给状态机（免得清掉状态机的“输入后没有钩子”标记）。
+
+| agent | 文件 | 累计 / 最近一次 | 上下文 | 窗口 | 对上终端 |
+| --- | --- | --- | --- | --- | --- |
+| claude | `projects/<cwd 非字母数字换成 ->/<id>.jsonl`，找不到时扫所有项目目录；钩子的 `transcript_path` 优先 | assistant 的 `message.usage`，按 `message.id` 去重（后来的行覆盖），`<synthetic>` 跳过；思考 = `output_tokens_details.thinking_tokens` | 最后一条主线回答的 input + cache_read + cache_creation；`compact_boundary` 后未知 | `CLAUDE_WINDOWS` 模型表（2.1.291 自带表）；上下文超过表里的值时按 1M（observed） | 会话 id（`--session-id` / SessionStart） |
+| codex | `sessions/YYYY/MM/DD/rollout-*-<id>.jsonl`，从新往旧找 | `token_count` 的 total / last；input 减去 cached；请求数按 total_tokens 变化次数 | `last_token_usage.total_tokens`；`compacted` 后未知 | `model_context_window`（agent） | 会话 id（resume 的 id 或 SessionStart） |
+| pi / omp | `sessions/*/<时间>_<id>.jsonl` | assistant 的 `message.usage`，0 用量（中断）不算；思考 = `reasoning` / `reasoningTokens` | 扩展报的 `getContextUsage()`；没报时最后一条的 totalTokens（窗口 null） | 扩展报的 `contextWindow` | 会话 id |
+| kimi | `session_index.jsonl` → `<sessionDir>/agents/main/wire.jsonl` | `usage.record`（inputOther、output、inputCacheRead、inputCacheCreation），没有思考数 | 最新的 `token_counting.measured.tokens`，否则最后一次请求的输入 + 输出 | `config.toml` 的 `[models."<别名>"] max_context_size` | 有 id 时 exact；否则同目录、启动后创建的会话里最近活动的（inferred），更晚启动的同目录 kimi 终端拿走它启动之后建的会话 |
+
+子 agent 的用量（claude 的 `<id>/subagents/`、kimi 的 `agents/<别的>/`）不算进去，只算主对话。
+测试：`test/usage.test.ts`，样例在 `test/usage-fixtures/`（手写的小文件，不是真对话）。
 
 ## AgentDeck 的 MCP（M1）
 

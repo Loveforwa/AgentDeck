@@ -12,6 +12,9 @@
 //   agent_settled（pi）/ agent_end 且 willContinue 不为 true（omp） → Stop
 //   session_shutdown                                → SessionEnd
 //
+// 另外报上下文用量（插件 PL2 · Usage，DR-55）：会话文件里没有上下文窗口，在下面 USAGE_EVENTS 时调 ctx.getContextUsage()
+// （pi、omp 都有），发钩子 AgentDeckUsage { session_id, tokens, contextWindow, percent, model }。和上次一样就不发。
+//
 // 用哪个事件当“一轮结束”由环境变量 AGENTDECK_TURN_END 指定（适配器按已知 agent 表设）：pi 的 agent_end 之后
 // 还可能自动重试、压缩上下文，agent_settled 才是真的停了；omp 没有 agent_settled，它的 agent_end 带 willContinue。
 //
@@ -34,6 +37,21 @@ export const SEND_TIMEOUT_MS = 3000;
 const QUESTION_TOOLS = new Set(['ask']);
 /** 记住的工具参数最多这么多条（批准前的 tool_call 到 tool_result 之间用）。 */
 const MAX_REMEMBERED = 64;
+
+/** 上报上下文用量的钩子名。和 packages/agent-adapters 的 USAGE_HOOK 一致，测试会核对。 */
+export const USAGE_HOOK = 'AgentDeckUsage';
+
+/** 这些事件之后上下文可能变了，报一次用量。turn_end 是每次请求（加工具结果）之后。 */
+export const USAGE_EVENTS = [
+  'session_start',
+  'session_switch',
+  'session_branch',
+  'session_tree',
+  'turn_end',
+  'agent_end',
+  'session_compact',
+  'model_select',
+];
 
 /** 订阅的事件。pi 没有的（tool_approval_*）、omp 没有的（agent_settled）注册了也不会来。 */
 export const EVENTS = [
@@ -132,6 +150,41 @@ export function translate(name, event, state, sessionId) {
   }
 }
 
+/** @param {unknown} v */
+function count(v) {
+  return typeof v === 'number' && Number.isFinite(v) && v >= 0 ? v : null;
+}
+
+/**
+ * 当前上下文用量 → 要发的 AgentDeckUsage 钩子。ctx.getContextUsage() 不可用或没有结果时返回 null。
+ * tokens 可能是 null（刚压缩完、下一次请求之前 pi 自己也不知道）。
+ * @param {unknown} ctx
+ * @param {string | null} sessionId
+ * @returns {Hook | null}
+ */
+export function usageReport(ctx, sessionId) {
+  const c = obj(ctx);
+  let usage;
+  try {
+    usage = typeof c.getContextUsage === 'function' ? obj(c.getContextUsage()) : {};
+  } catch {
+    return null;
+  }
+  const contextWindow = count(usage.contextWindow);
+  if (contextWindow === null) return null;
+  const model = obj(c.model);
+  return {
+    hookName: USAGE_HOOK,
+    payload: {
+      session_id: sessionId,
+      tokens: count(usage.tokens),
+      contextWindow,
+      percent: count(usage.percent),
+      model: typeof model.id === 'string' ? model.id : null,
+    },
+  };
+}
+
 /**
  * 按顺序一个个起 notify 子进程发出去（SessionStart 要比 UserPromptSubmit 先到）。
  * @param {string} notify
@@ -182,11 +235,21 @@ export default function agentdeckExtension(api, env = process.env, sendOverride)
   const send = sendOverride ?? createSender(notify, env[AGENT_ENV] || 'pi', env);
   /** @type {TranslateState} */
   const state = { turnEnd: env[TURN_END_ENV] || 'agent_settled', toolInputs: new Map() };
-  for (const name of EVENTS) {
+  let lastUsage = '';
+  for (const name of new Set([...EVENTS, ...USAGE_EVENTS])) {
     api.on(name, (event, ctx) => {
       try {
-        const hook = translate(name, event, state, sessionIdOf(ctx));
+        const sessionId = sessionIdOf(ctx);
+        const hook = EVENTS.includes(name) ? translate(name, event, state, sessionId) : null;
         if (hook) void send(hook);
+        if (USAGE_EVENTS.includes(name)) {
+          const report = usageReport(ctx, sessionId);
+          const key = report ? JSON.stringify(report.payload) : '';
+          if (report && key !== lastUsage) {
+            lastUsage = key;
+            void send(report);
+          }
+        }
       } catch {
         // 扩展出错不能影响 agent
       }

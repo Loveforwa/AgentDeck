@@ -1,0 +1,17 @@
+default_model = "test/model-a"
+
+[providers.test]
+type = "openai"
+base_url = "http://127.0.0.1:9/v1"
+
+[models."test/model-a"]
+provider = "test"
+model = "model-a"
+max_context_size = 262144 # comment
+
+[models."test/model-b"]
+provider = "test"
+max_context_size = 1_000_000
+
+[thinking]
+max_context_size = 5
