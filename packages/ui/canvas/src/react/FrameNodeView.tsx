@@ -3,13 +3,13 @@ import type { NodeProps } from '@xyflow/react';
 import type { WorkspaceId } from '@agentdeck/contracts';
 import { Button } from '@agentdeck/ui-kit';
 import { RESIZE_EDGES, usePointerDrag, type ResizeEdge } from '@agentdeck/ui-window-shell';
-import { waitingLabel, summarize } from '../model/attention.ts';
+import { runningLabel, waitingLabel, summarize } from '../model/attention.ts';
 import { useBoardState, useController } from './context.tsx';
 
 export type FrameNodeData = { workspaceId: WorkspaceId };
 export type PendingNodeData = { pendingId: string };
 
-/** 工作区框（任务 W3）：标题“项目 · 分支”，拖标题带走里面的窗口，拖边改大小，有窗口在等你时写“1 waiting”。 */
+/** 工作区框（任务 W3）：标题“项目 · 分支”，拖标题带走里面的窗口，拖边改大小，右边是状态灯：绿“2 running”、黄“1 waiting”，为 0 时不显示（MVP v2 · V2，IS-64）。 */
 export function FrameNodeView({ data }: NodeProps & { data: FrameNodeData }) {
   const ws = data.workspaceId;
   const c = useController();
@@ -19,6 +19,7 @@ export function FrameNodeView({ data }: NodeProps & { data: FrameNodeData }) {
   const dropTarget = useBoardState((s) => s.dropTarget === ws);
   const empty = useBoardState((s) => !s.windows.some((w) => w.workspaceId === ws));
   const waiting = useBoardState((s) => summarize(s).waitingByWorkspace[ws]);
+  const running = useBoardState((s) => summarize(s).runningByWorkspace[ws]);
   const zoom = () => c.state.viewport.zoom;
 
   const onTitlePointerDown = usePointerDrag({
@@ -57,7 +58,19 @@ export function FrameNodeView({ data }: NodeProps & { data: FrameNodeData }) {
         {branch && name && name !== branch ? <span className="ad-frame-name">{name}</span> : null}
         <span className="ad-frame-spacer" />
         {workspace?.missing ? <span className="ad-frame-note">Folder not found</span> : null}
-        <span className="ad-frame-waiting">{waitingLabel(waiting)}</span>
+        {/* 状态灯和顶栏一样：前面一个彩色的点；标题太长时截标题，灯不缩 */}
+        {running ? (
+          <span className="ad-frame-count ad-frame-running">
+            <span className="ad-frame-lamp" aria-hidden="true" />
+            {runningLabel(running)}
+          </span>
+        ) : null}
+        {waiting ? (
+          <span className="ad-frame-count ad-frame-waiting">
+            <span className="ad-frame-lamp ad-frame-lamp--waiting" aria-hidden="true" />
+            {waitingLabel(waiting)}
+          </span>
+        ) : null}
       </div>
       {empty ? <div className="ad-frame-empty">Right-click to add a terminal</div> : null}
       {RESIZE_EDGES.map((edge) => (

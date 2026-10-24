@@ -346,10 +346,17 @@
 }
 
 .ad-frame-project {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
   font-weight: var(--weight-strong);
+  text-overflow: ellipsis;
 }
 
+/* 标题太长时先截分支，再截项目名；右边的状态灯不缩（IS-64） */
 .ad-frame-branch {
+  flex: 0 100 auto;
+  min-width: 0;
   overflow: hidden;
   color: var(--muted);
   font-family: var(--font-mono);
@@ -358,32 +365,49 @@
 }
 
 .ad-frame-name {
+  flex: 0 100 auto;
+  min-width: 0;
+  overflow: hidden;
   color: var(--muted);
+  text-overflow: ellipsis;
 }
 
 .ad-frame-spacer {
   flex: 1;
 }
 
-.ad-frame-waiting {
+/* 框标题右侧的状态灯（MVP v2 · V2）：绿 running、黄 waiting，样子同顶栏 */
+.ad-frame-count {
   display: inline-flex;
+  flex: none;
   align-items: center;
   gap: var(--space-xs);
-  color: var(--attention);
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
 }
 
-/* 框标题“1 waiting”前面的黄灯（MVP v2 · V2） */
-.ad-frame-waiting:not(:empty)::before {
-  content: '';
+.ad-frame-running {
+  color: var(--status-running);
+}
+
+.ad-frame-waiting {
+  color: var(--attention);
+}
+
+.ad-frame-lamp {
+  flex: none;
   width: 7px;
   height: 7px;
   border-radius: 50%;
+  background: var(--status-running);
+}
+
+.ad-frame-lamp--waiting {
   background: var(--status-waiting);
 }
 
 .ad-frame-note {
+  flex: none;
   color: var(--muted);
   font-size: var(--text-sm);
 }

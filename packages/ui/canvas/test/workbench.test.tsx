@@ -89,6 +89,35 @@ describe('Workbench', () => {
     expect(screen.getByText('2 waiting', { selector: '.ad-frame-waiting' })).toBeTruthy();
   });
 
+  it('frame titles show a green running lamp next to the waiting count; zero counts are hidden (IS-64)', async () => {
+    const { api, c } = setup();
+    await waitFor(() => expect(c.state.loaded).toBe(true));
+    const frame = (id: string) => {
+      const el = document.querySelector<HTMLElement>(`.react-flow__node[data-id="${id}"] .ad-frame-header`);
+      if (!el) throw new Error(`no frame ${id}`);
+      return el;
+    };
+    const login = frame(`frame:${SAMPLE.workspaces.agentdeckLogin}`);
+    const running = login.querySelector<HTMLElement>('.ad-frame-running');
+    expect(running?.textContent).toBe('1 running');
+    expect(running?.querySelector('.ad-frame-lamp:not(.ad-frame-lamp--waiting)')?.getAttribute('aria-hidden')).toBe('true');
+    expect(login.querySelector('.ad-frame-waiting')?.textContent).toBe('1 waiting');
+    expect(login.querySelector('.ad-frame-waiting .ad-frame-lamp--waiting')).toBeTruthy();
+    // 顶栏的总数和各框加起来一致
+    const total = c.attention().running;
+    expect(screen.getByText(`${total} running`, { selector: '.ad-topbar-count--running' })).toBeTruthy();
+    const inFrames = [...document.querySelectorAll('.ad-frame-running')].reduce((n, el) => n + parseInt(el.textContent ?? '0', 10), 0);
+    expect(inFrames).toBe(total);
+    // 没有 running / waiting 的框两个都不显示
+    const shop = frame(`frame:${SAMPLE.workspaces.shopCart}`);
+    expect(shop.querySelector('.ad-frame-running')).toBeNull();
+    expect(shop.querySelector('.ad-frame-waiting')).toBeNull();
+    // 状态变了跟着变：login 里的 claude 也去等你了，running 没了
+    act(() => void api.scenario.agentNeedsApproval(SAMPLE.terminals.loginClaude));
+    expect(frame(`frame:${SAMPLE.workspaces.agentdeckLogin}`).querySelector('.ad-frame-running')).toBeNull();
+    expect(frame(`frame:${SAMPLE.workspaces.agentdeckLogin}`).querySelector('.ad-frame-waiting')?.textContent).toBe('2 waiting');
+  });
+
   it('keys typed in a focused terminal are left alone; ⌘ shortcuts are handled', async () => {
     const { c } = setup();
     await waitFor(() => expect(c.state.loaded).toBe(true));
