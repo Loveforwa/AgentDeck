@@ -3,19 +3,19 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&display=swap">
 <style>
-/* Layout: a status report — summary and two progress bars on top, screenshots, then what works, smoke results, the two evidence tables, issues and tomorrow's checklist. */
+/* Layout: an acceptance workbook as a page — summary and live progress on top, then evidence, the 24 end-to-end cases (fill results inline), the issue list by P level (fill status inline), the research index and the how-to. */
 :root {
   --ground: #F7F7F5; --surface: #FFFFFF; --ink: #1A1A1A; --muted: #6B6B66; --line: #E3E3DF; --soft: #F0F0EC;
-  --attention: #C2410C; --good: #2F6B45; --partial: #8A6D1F;
+  --attention: #C2410C; --attention-soft: #FBE9DF; --good: #2F6B45; --good-soft: #E3EFE7; --partial: #8A6D1F; --bad: #A3271B; --bad-soft: #F7E1DE;
   --font-ui: "IBM Plex Sans", "Noto Sans SC", "PingFang SC", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --ground: #161615; --surface: #1E1E1C; --ink: #ECECE8; --muted: #9C9C95; --line: #34342F; --soft: #262623;
-  --attention: #F08A4B; --good: #7DBB92; --partial: #D8B65A; color-scheme: dark } }
+  --attention: #F08A4B; --attention-soft: #3A271C; --good: #7DBB92; --good-soft: #1F2D24; --partial: #D8B65A; --bad: #EF8A7E; --bad-soft: #3A2220; color-scheme: dark } }
 :root[data-theme="dark"] {
   --ground: #161615; --surface: #1E1E1C; --ink: #ECECE8; --muted: #9C9C95; --line: #34342F; --soft: #262623;
-  --attention: #F08A4B; --good: #7DBB92; --partial: #D8B65A; color-scheme: dark }
+  --attention: #F08A4B; --attention-soft: #3A271C; --good: #7DBB92; --good-soft: #1F2D24; --partial: #D8B65A; --bad: #EF8A7E; --bad-soft: #3A2220; color-scheme: dark }
 * { box-sizing: border-box }
 body { background: var(--ground); color: var(--ink); font-family: var(--font-ui); font-size: 14px; line-height: 1.65;
   padding-block: 40px 80px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) }
@@ -28,21 +28,27 @@ header { display: flex; flex-direction: column; gap: 12px }
 h1 { margin: 0; font-size: 30px; font-weight: 600; text-wrap: balance }
 h2 { margin: 0; font-size: 19px; font-weight: 600 }
 h3 { margin: 0; font-size: 15px; font-weight: 600 }
+h4 { margin: 0; font-size: 14.5px; font-weight: 600; flex: 1 1 260px; min-width: 0; text-wrap: balance }
 .lede { margin: 0; font-size: 15.5px; max-width: 72ch }
-.bars { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px 32px; margin-top: 6px }
+.rules { margin: 0; font-size: 13px; color: var(--muted) }
+.rules b { font-family: var(--font-mono); color: var(--ink); font-weight: 500 }
+.bars { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 28px; margin-top: 6px }
 .barbox { display: flex; flex-direction: column; gap: 8px; min-width: 0 }
 .barbox .t { font-size: 13px; color: var(--muted) }
 .bar { display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: var(--soft); gap: 2px }
-.seg-auto, .seg-ok { background: var(--good) }
+.seg-auto, .seg-ok, .seg-pass { background: var(--good) }
 .seg-manual, .seg-part { background: var(--partial) }
 .seg-partial, .seg-no { background: var(--muted) }
 .seg-todo { background: var(--line) }
+.seg-prob, .seg-fail { background: var(--attention) }
 .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--muted) }
 .legend b { color: var(--ink); font-variant-numeric: tabular-nums }
 .dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 5px; vertical-align: 0 }
 section.block { display: flex; flex-direction: column; gap: 14px }
 .head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px }
 .head p { margin: 0; color: var(--muted); font-size: 13px }
+.save-state { font-size: 12.5px; color: var(--muted) }
+.save-state.bad { color: var(--bad) }
 .shots { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px }
 figure { margin: 0; display: flex; flex-direction: column; gap: 6px; min-width: 0 }
 figure img { width: 100%; height: auto; border: 1px solid var(--line); border-radius: 8px; display: block }
@@ -63,7 +69,48 @@ tr:first-child td { border-top: 0 }
 .st-manual, .st-part, .st-skip { border-color: var(--partial); color: var(--partial) }
 .st-partial, .st-no, .st-none { border: 1px dashed var(--muted); color: var(--muted) }
 .st-todo { border: 1px dashed var(--line); color: var(--muted) }
-.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px }
+.st-prob { background: var(--attention); color: var(--surface) }
+.pri { font-family: var(--font-mono); font-size: 11px; font-weight: 600; padding: 1px 6px; border-radius: 4px; border: 1px solid var(--line); color: var(--muted) }
+.pri-P0 { background: var(--attention); border-color: var(--attention); color: var(--surface) }
+.pri-P1 { border-color: var(--attention); color: var(--attention) }
+.chips { display: flex; flex-wrap: wrap; gap: 8px }
+.chip { font: inherit; font-size: 12.5px; height: 30px; padding: 0 11px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; display: inline-flex; align-items: center; gap: 6px }
+.chip .n { color: var(--muted); font-variant-numeric: tabular-nums }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--ground); border-color: var(--ink) }
+.chip[aria-pressed="true"] .n { color: inherit; opacity: .7 }
+.cases, .pgroup { display: flex; flex-direction: column; gap: 10px }
+.pgroup h3 { display: flex; align-items: center; gap: 8px; margin-top: 8px }
+.case, .issue { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; scroll-margin-top: 16px }
+.case:target, .issue:target { border-color: var(--ink) }
+.case.c-prob { border-left: 3px solid var(--attention) }
+.case[data-result="不通过"] { background: var(--bad-soft) }
+.case[data-result="通过"] { background: var(--good-soft) }
+.issue[data-state="已解决"] { opacity: .72 }
+.case-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px }
+.cid { font-size: 13px; min-width: 44px }
+.tag { font-size: 11.5px; border: 1px solid var(--line); border-radius: 4px; padding: 0 6px; color: var(--muted) }
+.mod { font-size: 12.5px; color: var(--muted); flex: 1 1 200px; min-width: 0 }
+.field { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted) }
+.field.result { margin-left: auto }
+.field.note { display: flex; align-items: flex-start }
+.field.note span { padding-top: 6px; white-space: nowrap }
+select, textarea { font: inherit; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px }
+select { height: 30px }
+textarea { flex: 1; min-width: 0; resize: vertical; min-height: 32px }
+select:focus-visible, textarea:focus-visible, .chip:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid var(--attention); outline-offset: 2px }
+select:disabled, textarea:disabled { opacity: .6 }
+.now, .desc { margin: 0; font-size: 13.5px }
+.c-prob .now { color: var(--attention) }
+.label { display: block; font-size: 11.5px; letter-spacing: .04em; color: var(--muted) }
+.now .label { display: inline; margin-right: 8px }
+details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
+.spec { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px 24px; margin-top: 10px; font-size: 13px }
+.spec p { margin: 2px 0 0 }
+.spec ol { margin: 2px 0 0; padding-left: 1.2em }
+.wide-cell { grid-column: 1 / -1 }
+.links { margin: 0; font-size: 12.5px; color: var(--muted) }
+.ref { font-family: var(--font-mono); font-size: 11.5px; color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; text-decoration: none }
+.ref:hover { border-color: var(--ink) }
 .list { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 7px; font-size: 13.5px }
 .try { list-style: none; margin: 0; padding: 0; counter-reset: s; display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 10px; background: var(--surface) }
 .try li { counter-increment: s; padding: 12px 16px 12px 48px; border-top: 1px solid var(--line); position: relative }
@@ -71,63 +118,1240 @@ tr:first-child td { border-top: 0 }
 .try li::before { content: counter(s); position: absolute; left: 16px; top: 12px; font-family: var(--font-mono); font-size: 12px; color: var(--muted) }
 .try code { display: inline-block; margin-top: 4px; font-family: var(--font-mono); font-size: 12.5px; background: var(--soft); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere }
 .try p { margin: 4px 0 0; font-size: 13px; color: var(--muted) }
+.collapse > summary { font-size: 19px; font-weight: 600; color: var(--ink); list-style: none }
+.collapse > summary::after { content: "  展开"; font-size: 12.5px; font-weight: 400; color: var(--muted) }
+.collapse[open] > summary::after { content: "  收起" }
 @media (max-width: 900px) {
-  .bars, .shots, .two { grid-template-columns: minmax(0, 1fr) }
+  .bars, .shots, .spec { grid-template-columns: minmax(0, 1fr) }
   .feats { grid-template-columns: minmax(0, 1fr) }
   .feat { border-left: 0 !important; border-top: 1px solid var(--line) !important }
   .feat:first-child { border-top: 0 !important }
+  .field.result { margin-left: 0 }
 }
 </style>
 
 <div class="wrap">
 <header>
-  <span class="eyebrow">AgentDeck · MVP 验收报告 · 2026-10-23 · main 24c44e5</span>
+  <span class="eyebrow">AgentDeck · MVP 验收报告 · 2026-10-24 · main 6d44acb</span>
   <h1>AgentDeck MVP 验收报告</h1>
-  <p class="lede">第一个能打开、能用的版本已经组装好：白板、tmux 托管的真终端、工作区和 Git 面板、agent 状态提醒、网页窗口接在了一起，在 main 上启动、退出再打开都正常。自动测试覆盖了绝大部分基础功能，但 14 条验收场景还没有一条用端到端测试从头跑过，不少环节只在真窗口里手动试过一次或还没试。</p>
+  <p class="lede">第一个能打开、能用的版本已经组装好：白板、tmux 托管的真终端、工作区和 Git 面板、agent 状态提醒、网页窗口接在了一起。下面的端到端用例可以直接在这页上验收，问题清单可以直接改处理状态，填的内容会保存下来。</p>
+  <p class="rules">编号：<b>TC-xx</b> 端到端用例（TC-01 到 TC-14 是 14 条验收场景）· <b>IS-xx</b> 问题 · <b>DR-xx</b> 调研记录 · <b>F1、T2</b> 等是任务编号。</p>
   <div class="bars">
-    <div class="barbox"><span class="t">39 项基础功能（P0）</span><div class="bar"><span class="seg seg-auto" style="flex:33" title="完成，有自动测试 33"></span><span class="seg seg-manual" style="flex:2" title="完成，只有手动验证 2"></span><span class="seg seg-partial" style="flex:4" title="部分完成 / 未做 4"></span></div>
+    <div class="barbox"><span class="t">39 项基础功能（P0 任务）</span><div class="bar"><span class="seg seg-auto" style="flex:33" title="完成，有自动测试 33"></span><span class="seg seg-manual" style="flex:2" title="完成，只有手动验证 2"></span><span class="seg seg-partial" style="flex:4" title="部分完成 / 未做 4"></span></div>
       <div class="legend"><span><i class="dot seg-auto"></i>有自动测试 <b>33</b></span><span><i class="dot seg-manual"></i>只有手动验证 <b>2</b></span><span><i class="dot seg-partial"></i>部分完成 / 未做 <b>4</b></span></div></div>
-    <div class="barbox"><span class="t">14 条验收场景（真窗口里）</span><div class="bar"><span class="seg seg-ok" style="flex:1" title="基本可以 1"></span><span class="seg seg-part" style="flex:6" title="部分验证 6"></span><span class="seg seg-no" style="flex:6" title="还没验证 6"></span><span class="seg seg-todo" style="flex:1" title="没做（P1） 1"></span></div>
-      <div class="legend"><span><i class="dot seg-ok"></i>基本可以 <b>1</b></span><span><i class="dot seg-part"></i>部分验证 <b>6</b></span><span><i class="dot seg-no"></i>还没验证 <b>6</b></span><span><i class="dot seg-todo"></i>P1 没做 <b>1</b></span></div></div>
+    <div class="barbox"><span class="t">24 条端到端用例的现状</span><div class="bar"><span class="seg seg-prob" style="flex:8"></span><span class="seg seg-no" style="flex:5"></span><span class="seg seg-part" style="flex:7"></span><span class="seg seg-ok" style="flex:3"></span><span class="seg seg-todo" style="flex:1"></span></div>
+      <div class="legend"><span><i class="dot seg-prob"></i>当前有问题 <b>8</b></span><span><i class="dot seg-no"></i>未验证 <b>5</b></span><span><i class="dot seg-part"></i>部分验证 <b>7</b></span><span><i class="dot seg-ok"></i>已验证 <b>3</b></span><span><i class="dot seg-todo"></i>未实现 <b>1</b></span></div></div>
+    <div class="barbox"><span class="t">你的验收进度</span><div class="bar" id="acc-bar"></div>
+      <div class="legend"><span><i class="dot seg-pass"></i>通过 <b id="n-pass">0</b></span><span><i class="dot seg-fail"></i>不通过 <b id="n-fail">0</b></span><span>还没验收 <b id="n-open">24</b></span><span>问题已解决 <b id="n-solved">2</b> / 38</span></div></div>
   </div>
 </header>
 
 <section class="block">
-  <div class="head"><h2>启动后的样子</h2><p>都是在 main 上启动 Electron 后由应用自己截的整窗图（深色跟随系统）。</p></div>
+  <div class="head"><h2>启动后的样子</h2><p>在 main 上启动 Electron 后由应用自己截的整窗图（深色跟随系统）。</p></div>
   <div class="shots">
     <figure><img src="shots/demo.png" alt="AgentDeck 演示模式：顶栏、agenduck 工作区框里的 zsh 和 claude 终端、右侧源代码管理面板"><figcaption>演示模式：本仓库作为项目，框里两个真终端（zsh 跑了 git status 和 git log；claude 停在它的信任提示），右侧面板显示 main 的状态、所有 worktree 和提交记录。</figcaption></figure>
-    <figure><img src="shots/reopen.png" alt="退出后重开：同样的框和两个终端，输出完整"><figcaption>退出后重开：框和窗口位置不变，tmux 里的会话接回，历史输出都在。右侧提示“isn’t in a workspace”是因为还没有聚焦窗口（已知问题 7）。</figcaption></figure>
+    <figure><img src="shots/reopen.png" alt="退出后重开：同样的框和两个终端，输出完整"><figcaption>退出后重开：框和窗口位置不变，tmux 里的会话接回，历史输出都在。右侧提示“isn’t in a workspace”是因为还没有聚焦窗口（IS-22）。</figcaption></figure>
   </div>
 </section>
 
 <section class="block">
-  <div class="head"><h2>已经实现的基础功能</h2></div>
-  <div class="feats"><section class="feat"><h3>白板和窗口</h3><ul><li>一整块可平移、⌘ + 滚轮缩放的白板，点阵背景；⌘0 / ⌘1 缩放到 100% / 显示全部</li><li>窗口外框：拖标题栏移动、拖边和角改大小、放大还原、关闭、聚焦描边、层级</li><li>右键菜单：New terminal ▸（列出已安装的 agent）、New browser、New workspace…、Add project…</li><li>顶栏：白板名、“n running · n waiting”、Projects ▾、在等你的按钮</li><li>布局改动后半秒自动保存，重开应用原样恢复</li><li>终端拉小到 320×200 以下变摘要卡（最后 3 行和状态），单击恢复</li></ul></section><section class="feat"><h3>终端（tmux 托管）</h3><ul><li>所有终端跑在 AgentDeck 自己的 tmux 实例里，关掉或退出应用后继续运行，重开自动接回，历史输出都在</li><li>只为视口里的终端接上显示，移出就断开</li><li>按键直通：不带 ⌘ 的按键全部交给终端；Shift+Enter、多行粘贴、拖入文件路径</li><li>进程退出显示 Exited / Error 和 Restart；命令找不到有提示</li><li>输出里的 localhost 地址和“文件:行号”可以点</li><li>agent 用登录 shell 的环境启动（拿得到 PATH 和代理变量），claude 在 tmux 里保持真彩色</li></ul></section><section class="feat"><h3>项目、工作区和 Git</h3><ul><li>添加项目（自动用仓库根目录、识别基础分支），项目可以是一个仓库、多个仓库或没有 git 的文件夹</li><li>新建工作区：新 worktree + 新分支或已有分支，或主目录工作区；复制 .env；自动运行初始化命令；失败回滚</li><li>工作区框：标题是“项目 · 分支”，拖标题带走里面的窗口；框里新开的终端在工作区目录</li><li>删除工作区：只从白板移除，或连目录一起删；有未提交的改动要再确认</li><li>右侧源代码管理面板跟随聚焦的窗口：树形更改、暂存 / 取消暂存、提交（⌘↩）、切换分支（被占用的灰显）、stash 往返、提交记录</li><li>Git 不监听文件，只在切换聚焦、agent 一轮结束、自己操作之后刷新</li></ul></section><section class="feat"><h3>agent 状态和提醒</h3><ul><li>claude、codex 的状态来自它们自己的钩子（启动时临时注入，不改你的配置），其他程序看输出活动</li><li>标题栏状态点和文字：Running · 4m、Needs approval、Needs reply、Idle、Exited、Error</li><li>在等你的窗口：橙色边框、框标题和顶栏显示“1 waiting”，⌘J 依次跳过去</li><li>应用在后台时：系统通知和程序坞角标</li></ul></section><section class="feat"><h3>网页窗口</h3><ul><li>在白板上打开网页，地址栏、后退、刷新、在系统浏览器打开</li><li>单击终端里的 localhost 链接，网页窗口出现在终端旁边、同一个框里；同一地址已开着就聚焦它</li><li>本地页面能嵌进来（主进程改响应头），服务端写的登录 cookie 能用；服务没起来时显示出错页和 Retry</li></ul></section><section class="feat"><h3>工程基础</h3><ul><li>pnpm check：类型检查、代码规范、界面不许写颜色、15 条模块边界规则、所有测试</li><li>所有服务都有假实现，各条线可以单独开发和演示</li><li>contracts 0.1.3：模块之间唯一的约定，并行开发期间只加不改</li><li>演示和截图模式：AGENTDECK_DEMO=1、AGENTDECK_SCREENSHOT=&lt;路径&gt;</li></ul></section></div>
+  <div class="head"><h2>端到端用例</h2><p>24 条，当前有问题的排在最前面。展开看前置要求、步骤和预期；在右边选验收结果，下面写备注。</p><span class="save-state" id="save-state">正在连接保存…</span></div>
+  <div class="chips" role="group" aria-label="筛选用例"><button type="button" class="chip" data-filter="all" aria-pressed="true">全部 <span class="n" data-count="all"></span></button><button type="button" class="chip" data-filter="prob" aria-pressed="false">当前有问题 <span class="n" data-count="prob"></span></button><button type="button" class="chip" data-filter="todo-acc" aria-pressed="false">还没验收 <span class="n" data-count="todo-acc"></span></button><button type="button" class="chip" data-filter="fail" aria-pressed="false">不通过 <span class="n" data-count="fail"></span></button><button type="button" class="chip" data-filter="pass" aria-pressed="false">通过 <span class="n" data-count="pass"></span></button></div>
+  <div class="cases" id="cases"><article class="case c-prob" id="tc-02" data-case="TC-02" data-status="prob" data-result="">
+  <div class="case-head">
+    <span class="mono cid">TC-02</span><span class="pri pri-P0">P0</span><span class="st st-prob">当前有问题</span>
+    <h4>基于 main 新建一个分支工作区，开箱即用</h4>
+    <label class="field result"><span>验收结果</span><select id="res-TC-02" data-tc="TC-02" class="res"><option value="" selected>未验收</option><option>通过</option><option>不通过</option><option>阻塞</option><option>跳过</option></select></label>
+  </div>
+  <p class="now"><span class="label">当前情况</span>从界面新建 worktree 在真窗口里从没走过（IS-02）；开发模式下 worktree 放在 .agentdeck-dev 里借用的假主目录下，路径和正式版不同（IS-19）</p>
+  <details>
+    <summary>前置要求、操作步骤和预期</summary>
+    <div class="spec">
+      <div><span class="label">前置要求</span><p>已添加项目（TC-01）；项目里有 .env；设置了初始化命令（例如 pnpm install）</p></div>
+      <div><span class="label">操作步骤</span><ol><li>右键 › New workspace…</li><li>选 New worktree、New branch，名字 feat/oauth，from main</li><li>Create</li></ol></div>
+      <div class="wide-cell"><span class="label">UI / 后台预期表现</span><p>UI：框出现在右键的位置，标题 “项目 · feat/oauth”；框里自动开一个 Shell 运行初始化命令；右侧面板显示 feat/oauth。</p><p>后台：git worktree add 建好目录并新建分支；.env 被复制过去；失败时已建的 worktree 和分支回滚。</p></div>
+      <div class="wide-cell"><span class="label">最终效果</span><p>一个新分支的独立工作目录准备好了，agent 可以直接进去干活</p></div>
+    </div>
+  </details>
+  <p class="links">关联问题 <a class="ref" href="#is-02">IS-02</a> <a class="ref" href="#is-19">IS-19</a> · 相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-10" target="_blank" rel="noopener">DR-10</a></p>
+  <label class="field note"><span>验收备注</span><textarea id="note-TC-02" data-tc="TC-02" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
+</article><article class="case c-prob" id="tc-03" data-case="TC-03" data-status="prob" data-result="">
+  <div class="case-head">
+    <span class="mono cid">TC-03</span><span class="pri pri-P0">P0</span><span class="st st-prob">当前有问题</span>
+    <h4>同一个仓库开两个工作区，两个 claude 并行改代码互不影响</h4>
+    <label class="field result"><span>验收结果</span><select id="res-TC-03" data-tc="TC-03" class="res"><option value="" selected>未验收</option><option>通过</option><option>不通过</option><option>阻塞</option><option>跳过</option></select></label>
+  </div>
+  <p class="now"><span class="label">当前情况</span>连着新建两个终端时，第二个可能误显示 “Previous session ended”（IS-07）；两个真 claude 并行从没试过（IS-03）</p>
+  <details>
+    <summary>前置要求、操作步骤和预期</summary>
+    <div class="spec">
+      <div><span class="label">前置要求</span><p>已有项目，已建好 feat/oauth 工作区（TC-02）</p></div>
+      <div><span class="label">操作步骤</span><ol><li>再建一个 fix/rate-limit 工作区</li><li>两个框里各新开一个 claude，紧接着连续开</li><li>各让它改一个不同的文件</li></ol></div>
+      <div class="wide-cell"><span class="label">UI / 后台预期表现</span><p>UI：两个框各自显示自己的分支，两个 claude 都正常启动；右侧面板随聚焦切换，只显示各自 worktree 的改动。</p><p>后台：两个 worktree 各有自己的 HEAD 和暂存区；两个 tmux 会话的工作目录分别是两个 worktree。</p></div>
+      <div class="wide-cell"><span class="label">最终效果</span><p>多个 agent 在同一仓库的不同分支上同时工作，改动不串</p></div>
+    </div>
+  </details>
+  <p class="links">关联问题 <a class="ref" href="#is-03">IS-03</a> <a class="ref" href="#is-07">IS-07</a> · 相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-08" target="_blank" rel="noopener">DR-08</a></p>
+  <label class="field note"><span>验收备注</span><textarea id="note-TC-03" data-tc="TC-03" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
+</article><article class="case c-prob" id="tc-04" data-case="TC-04" data-status="prob" data-result="">
+  <div class="case-head">
+    <span class="mono cid">TC-04</span><span class="pri pri-P0">P0</span><span class="st st-prob">当前有问题</span>
+    <h4>agent 停下来请求批准时，用户一眼看出是谁在等</h4>
+    <label class="field result"><span>验收结果</span><select id="res-TC-04" data-tc="TC-04" class="res"><option value="" selected>未验收</option><option>通过</option><option>不通过</option><option>阻塞</option><option>跳过</option></select></label>
+  </div>
+  <p class="now"><span class="label">当前情况</span>claude 还停在“信任这个文件夹”提示时，状态显示 Idle，不变橙（IS-06）；真 claude 的批准请求从没端到端跑过（IS-01）；系统通知没真弹过（IS-14）</p>
+  <details>
+    <summary>前置要求、操作步骤和预期</summary>
+    <div class="spec">
+      <div><span class="label">前置要求</span><p>框里有一个已信任文件夹的 claude；应用分别在前台、后台各试一次</p></div>
+      <div><span class="label">操作步骤</span><ol><li>让 claude 执行一个需要批准的命令（例如 “run ls in a new shell”）</li><li>不点任何东西，观察 2 秒</li><li>切到别的应用，再触发一次</li></ol></div>
+      <div class="wide-cell"><span class="label">UI / 后台预期表现</span><p>UI：2 秒内窗口出现橙色边框，标题栏状态 Needs approval，框标题和顶栏显示 “1 waiting”，程序坞角标 1；应用在后台时弹系统通知 “claude in … needs approval”。</p><p>后台：claude 的 PermissionRequest 钩子经 agentdeck-notify 送到钩子 socket，状态机进入 needs-approval 并广播 status.changed。</p></div>
+      <div class="wide-cell"><span class="label">最终效果</span><p>不用盯着每个终端，也知道哪个 agent 在等你</p></div>
+    </div>
+  </details>
+  <p class="links">关联问题 <a class="ref" href="#is-01">IS-01</a> <a class="ref" href="#is-06">IS-06</a> <a class="ref" href="#is-14">IS-14</a> · 相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-07" target="_blank" rel="noopener">DR-07</a> <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-12" target="_blank" rel="noopener">DR-12</a> <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-30" target="_blank" rel="noopener">DR-30</a> <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-31" target="_blank" rel="noopener">DR-31</a> <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-33" target="_blank" rel="noopener">DR-33</a> <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-37" target="_blank" rel="noopener">DR-37</a></p>
+  <label class="field note"><span>验收备注</span><textarea id="note-TC-04" data-tc="TC-04" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
+</article><article class="case c-prob" id="tc-05" data-case="TC-05" data-status="prob" data-result="">
+  <div class="case-head">
+    <span class="mono cid">TC-05</span><span class="pri pri-P0">P0</span><span class="st st-prob">当前有问题</span>
+    <h4>跳到在等你的窗口，直接批准，agent 继续干活</h4>
+    <label class="field result"><span>验收结果</span><select id="res-TC-05" data-tc="TC-05" class="res"><option value="" selected>未验收</option><option>通过</option><option>不通过</option><option>阻塞</option><option>跳过</option></select></label>
+  </div>
+  <p class="now"><span class="label">当前情况</span>需求写的是“直接按 y”，但 claude 实测“允许一次”是 1 或回车（线 1 核对），y 不确定能用，需要定需求（IS-12）；批准后回到运行中没测过（IS-01）</p>
+  <details>
+    <summary>前置要求、操作步骤和预期</summary>
+    <div class="spec">
+      <div><span class="label">前置要求</span><p>TC-04 的状态：有一个 claude 在 Needs approval</p></div>
+      <div><span class="label">操作步骤</span><ol><li>按 ⌘J</li><li>在终端里按 claude 的“允许一次”键</li><li>观察状态</li></ol></div>
+      <div class="wide-cell"><span class="label">UI / 后台预期表现</span><p>UI：白板平移到那个窗口并聚焦，橙色边框消失（状态点仍橙）；批准后状态变 Running，“1 waiting” 消失。</p><p>后台：输入经 tmux-host 送进 claude；PostToolUse / 新输出让状态机回到 running。</p></div>
+      <div class="wide-cell"><span class="label">最终效果</span><p>从发现到批准一气呵成，不用找窗口</p></div>
+    </div>
+  </details>
+  <p class="links">关联问题 <a class="ref" href="#is-01">IS-01</a> <a class="ref" href="#is-12">IS-12</a> · 相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-07" target="_blank" rel="noopener">DR-07</a> <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-13" target="_blank" rel="noopener">DR-13</a> <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-32" target="_blank" rel="noopener">DR-32</a> <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-43" target="_blank" rel="noopener">DR-43</a></p>
+  <label class="field note"><span>验收备注</span><textarea id="note-TC-05" data-tc="TC-05" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
+</article><article class="case c-prob" id="tc-10" data-case="TC-10" data-status="prob" data-result="">
+  <div class="case-head">
+    <span class="mono cid">TC-10</span><span class="pri pri-P0">P0</span><span class="st st-prob">当前有问题</span>
+    <h4>退出应用再打开，所有东西都还在</h4>
+    <label class="field result"><span>验收结果</span><select id="res-TC-10" data-tc="TC-10" class="res"><option value="" selected>未验收</option><option>通过</option><option>不通过</option><option>阻塞</option><option>跳过</option></select></label>
+  </div>
+  <p class="now"><span class="label">当前情况</span>接回后状态都显示 “Idle · now”，开始时间没接上（IS-08）；强杀进程（不是 ⌘Q）后恢复没测过（IS-27）。位置和输出 2026-10-23 已验证</p>
+  <details>
+    <summary>前置要求、操作步骤和预期</summary>
+    <div class="spec">
+      <div><span class="label">前置要求</span><p>白板上有框和至少两个终端，其中一个在跑</p></div>
+      <div><span class="label">操作步骤</span><ol><li>⌘Q 退出</li><li>再打开（pnpm dev）</li></ol></div>
+      <div class="wide-cell"><span class="label">UI / 后台预期表现</span><p>UI：框和窗口的位置、大小不变；终端接回，历史输出都在；状态和计时正确。</p><p>后台：tmux 里的会话在应用退出期间一直在跑；重开时按保存的 terminalId 接回，状态机重新登记这些终端。</p></div>
+      <div class="wide-cell"><span class="label">最终效果</span><p>关应用不打断 agent 的工作</p></div>
+    </div>
+  </details>
+  <p class="links">关联问题 <a class="ref" href="#is-08">IS-08</a> <a class="ref" href="#is-27">IS-27</a> · 相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-04" target="_blank" rel="noopener">DR-04</a> <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-14" target="_blank" rel="noopener">DR-14</a></p>
+  <label class="field note"><span>验收备注</span><textarea id="note-TC-10" data-tc="TC-10" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
+</article><article class="case c-prob" id="tc-15" data-case="TC-15" data-status="prob" data-result="">
+  <div class="case-head">
+    <span class="mono cid">TC-15</span><span class="pri pri-P1">P1</span><span class="st st-prob">当前有问题</span>
+    <h4>修改项目设置：基础分支、复制的文件、初始化命令</h4>
+    <label class="field result"><span>验收结果</span><select id="res-TC-15" data-tc="TC-15" class="res"><option value="" selected>未验收</option><option>通过</option><option>不通过</option><option>阻塞</option><option>跳过</option></select></label>
+  </div>
+  <p class="now"><span class="label">当前情况</span>没有 Settings 界面：点 Settings 只是用系统程序打开 settings.json，Settings › Projects 不存在（IS-13）</p>
+  <details>
+    <summary>前置要求、操作步骤和预期</summary>
+    <div class="spec">
+      <div><span class="label">前置要求</span><p>已添加项目</p></div>
+      <div><span class="label">操作步骤</span><ol><li>顶栏 Projects ▾ › Manage projects…（或 Settings › Projects）</li><li>改基础分支和初始化命令</li><li>新建一个工作区验证</li></ol></div>
+      <div class="wide-cell"><span class="label">UI / 后台预期表现</span><p>UI：有项目设置页，能看到并修改名称、路径、基础分支、worktree 位置、复制的文件、初始化命令。</p><p>后台：设置写进 store，新建工作区时生效。</p></div>
+      <div class="wide-cell"><span class="label">最终效果</span><p>每个项目按自己的习惯建工作区</p></div>
+    </div>
+  </details>
+  <p class="links">关联问题 <a class="ref" href="#is-13">IS-13</a></p>
+  <label class="field note"><span>验收备注</span><textarea id="note-TC-15" data-tc="TC-15" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
+</article><article class="case c-prob" id="tc-16" data-case="TC-16" data-status="prob" data-result="">
+  <div class="case-head">
+    <span class="mono cid">TC-16</span><span class="pri pri-P2">P2</span><span class="st st-prob">当前有问题</span>
+    <h4>刚打开应用，右侧面板给出有用的信息</h4>
+    <label class="field result"><span>验收结果</span><select id="res-TC-16" data-tc="TC-16" class="res"><option value="" selected>未验收</option><option>通过</option><option>不通过</option><option>阻塞</option><option>跳过</option></select></label>
+  </div>
+  <p class="now"><span class="label">当前情况</span>没聚焦任何窗口时也显示 “This window isn’t in a workspace.”（IS-22，见重开截图）</p>
+  <details>
+    <summary>前置要求、操作步骤和预期</summary>
+    <div class="spec">
+      <div><span class="label">前置要求</span><p>白板上有一个工作区框，还没有聚焦任何窗口</p></div>
+      <div><span class="label">操作步骤</span><ol><li>打开应用，不点任何东西</li><li>单击框里的一个终端</li></ol></div>
+      <div class="wide-cell"><span class="label">UI / 后台预期表现</span><p>UI：没聚焦时提示怎么开始（例如 “Select a window to see its changes”）；聚焦后显示那个工作区的 git 状态。</p><p>后台：面板只在聚焦变化时刷新一次。</p></div>
+      <div class="wide-cell"><span class="label">最终效果</span><p>面板不说让人困惑的话</p></div>
+    </div>
+  </details>
+  <p class="links">关联问题 <a class="ref" href="#is-22">IS-22</a></p>
+  <label class="field note"><span>验收备注</span><textarea id="note-TC-16" data-tc="TC-16" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
+</article><article class="case c-prob" id="tc-17" data-case="TC-17" data-status="prob" data-result="">
+  <div class="case-head">
+    <span class="mono cid">TC-17</span><span class="pri pri-P2">P2</span><span class="st st-prob">当前有问题</span>
+    <h4>右键新建终端，菜单只列出能用的 agent</h4>
+    <label class="field result"><span>验收结果</span><select id="res-TC-17" data-tc="TC-17" class="res"><option value="" selected>未验收</option><option>通过</option><option>不通过</option><option>阻塞</option><option>跳过</option></select></label>
+  </div>
+  <p class="now"><span class="label">当前情况</span>白板按 agent id 而不是名字显示，并且会列出用不了的 custom；应用里先把 custom 藏掉了，白板包本身没改（IS-21）</p>
+  <details>
+    <summary>前置要求、操作步骤和预期</summary>
+    <div class="spec">
+      <div><span class="label">前置要求</span><p>本机装了 claude 和 codex</p></div>
+      <div><span class="label">操作步骤</span><ol><li>在白板空白处右键 › New terminal ▸</li></ol></div>
+      <div class="wide-cell"><span class="label">UI / 后台预期表现</span><p>UI：列出 Claude、Codex、Shell，用适配器的名字显示；没装的不出现；选中后在点击的位置开终端。</p><p>后台：agents.list() 返回已安装的 agent。</p></div>
+      <div class="wide-cell"><span class="label">最终效果</span><p>菜单里每一项都能用</p></div>
+    </div>
+  </details>
+  <p class="links">关联问题 <a class="ref" href="#is-21">IS-21</a></p>
+  <label class="field note"><span>验收备注</span><textarea id="note-TC-17" data-tc="TC-17" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
+</article><article class="case c-no" id="tc-01" data-case="TC-01" data-status="no" data-result="">
+  <div class="case-head">
+    <span class="mono cid">TC-01</span><span class="pri pri-P0">P0</span><span class="st st-no">未验证</span>
+    <h4>第一次打开应用，添加一个项目</h4>
+    <label class="field result"><span>验收结果</span><select id="res-TC-01" data-tc="TC-01" class="res"><option value="" selected>未验收</option><option>通过</option><option>不通过</option><option>阻塞</option><option>跳过</option></select></label>
+  </div>
+  <p class="now"><span class="label">当前情况</span>流程有单测；组装时用的是演示模式自动加项目，真窗口里没点过</p>
+  <details>
+    <summary>前置要求、操作步骤和预期</summary>
+    <div class="spec">
+      <div><span class="label">前置要求</span><p>干净的数据目录（删掉 .agentdeck-dev 或设 AGENTDECK_DATA_DIR 到新目录）；有一个本地 git 仓库</p></div>
+      <div><span class="label">操作步骤</span><ol><li>在白板空白处右键 › Add project…</li><li>在系统的选文件夹窗口里选仓库（试一次选它的子文件夹）</li></ol></div>
+      <div class="wide-cell"><span class="label">UI / 后台预期表现</span><p>UI：系统选文件夹窗口出现；选完直接进入 New workspace 对话框，项目已选好；选子文件夹时提示用了仓库根目录。</p><p>后台：projects 表多一条；基础分支自动识别为远端默认分支或 main。</p></div>
+      <div class="wide-cell"><span class="label">最终效果</span><p>加项目一步到位，直接进入建工作区</p></div>
+    </div>
+  </details>
+  <p class="links">关联问题 <a class="ref" href="#is-02">IS-02</a> · 相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-09" target="_blank" rel="noopener">DR-09</a> <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-10" target="_blank" rel="noopener">DR-10</a></p>
+  <label class="field note"><span>验收备注</span><textarea id="note-TC-01" data-tc="TC-01" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
+</article><article class="case c-no" id="tc-19" data-case="TC-19" data-status="no" data-result="">
+  <div class="case-head">
+    <span class="mono cid">TC-19</span><span class="pri pri-P1">P1</span><span class="st st-no">未验证</span>
+    <h4>没装 tmux 或版本太低时给出明确的指引</h4>
+    <label class="field result"><span>验收结果</span><select id="res-TC-19" data-tc="TC-19" class="res"><option value="" selected>未验收</option><option>通过</option><option>不通过</option><option>阻塞</option><option>跳过</option></select></label>
+  </div>
+  <p class="now"><span class="label">当前情况</span>版本检查有单测；说明页在真窗口里没看过</p>
+  <details>
+    <summary>前置要求、操作步骤和预期</summary>
+    <div class="spec">
+      <div><span class="label">前置要求</span><p>临时把 PATH 里的 tmux 去掉，或用一个低于 3.5 的 tmux</p></div>
+      <div><span class="label">操作步骤</span><ol><li>启动应用</li><li>按提示安装后点 Retry</li></ol></div>
+      <div class="wide-cell"><span class="label">UI / 后台预期表现</span><p>UI：显示说明页，写明需要 tmux ≥ 3.5 和 brew install tmux，有 Retry；装好后 Retry 能起来。</p><p>后台：启动时检查 tmux -V；低于 3.5 抛 tmux-unavailable。</p></div>
+      <div class="wide-cell"><span class="label">最终效果</span><p>第一次用的人知道该做什么</p></div>
+    </div>
+  </details>
+  <p class="links">相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-04" target="_blank" rel="noopener">DR-04</a> <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-25" target="_blank" rel="noopener">DR-25</a></p>
+  <label class="field note"><span>验收备注</span><textarea id="note-TC-19" data-tc="TC-19" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
+</article><article class="case c-no" id="tc-20" data-case="TC-20" data-status="no" data-result="">
+  <div class="case-head">
+    <span class="mono cid">TC-20</span><span class="pri pri-P1">P1</span><span class="st st-no">未验证</span>
+    <h4>从程序坞打开应用，agent 照样能联网、能登录</h4>
+    <label class="field result"><span>验收结果</span><select id="res-TC-20" data-tc="TC-20" class="res"><option value="" selected>未验收</option><option>通过</option><option>不通过</option><option>阻塞</option><option>跳过</option></select></label>
+  </div>
+  <p class="now"><span class="label">当前情况</span>只从终端里 pnpm dev 启动过，那时环境本来就是全的；从程序坞启动要等有打包版本（IS-11、IS-36）</p>
+  <details>
+    <summary>前置要求、操作步骤和预期</summary>
+    <div class="spec">
+      <div><span class="label">前置要求</span><p>需要打包好的应用（现在还没有打包流程）</p></div>
+      <div><span class="label">操作步骤</span><ol><li>从程序坞或访达打开 AgentDeck</li><li>新开一个 claude，发一句话</li></ol></div>
+      <div class="wide-cell"><span class="label">UI / 后台预期表现</span><p>UI：claude 正常回答，不出现 403 或找不到命令。</p><p>后台：启动时读登录 shell 的环境（PATH、代理变量），传给 tmux-host 和适配器。</p></div>
+      <div class="wide-cell"><span class="label">最终效果</span><p>不管从哪里打开，体验都和终端里一样</p></div>
+    </div>
+  </details>
+  <p class="links">关联问题 <a class="ref" href="#is-11">IS-11</a> <a class="ref" href="#is-36">IS-36</a> · 相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-23" target="_blank" rel="noopener">DR-23</a> <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-27" target="_blank" rel="noopener">DR-27</a></p>
+  <label class="field note"><span>验收备注</span><textarea id="note-TC-20" data-tc="TC-20" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
+</article><article class="case c-no" id="tc-08" data-case="TC-08" data-status="no" data-result="">
+  <div class="case-head">
+    <span class="mono cid">TC-08</span><span class="pri pri-P2">P2</span><span class="st st-no">未验证</span>
+    <h4>想切到已被别的工作区占用的分支时，直接跳过去</h4>
+    <label class="field result"><span>验收结果</span><select id="res-TC-08" data-tc="TC-08" class="res"><option value="" selected>未验收</option><option>通过</option><option>不通过</option><option>阻塞</option><option>跳过</option></select></label>
+  </div>
+  <p class="now"><span class="label">当前情况</span>面板有单测；需要第二个 worktree，组装时没试</p>
+  <details>
+    <summary>前置要求、操作步骤和预期</summary>
+    <div class="spec">
+      <div><span class="label">前置要求</span><p>同一仓库有 feat/oauth 和 fix/rate-limit 两个工作区（TC-03）</p></div>
+      <div><span class="label">操作步骤</span><ol><li>聚焦 feat/oauth 里的终端</li><li>面板里单击分支按钮</li><li>单击灰显的 fix/rate-limit</li></ol></div>
+      <div class="wide-cell"><span class="label">UI / 后台预期表现</span><p>UI：fix/rate-limit 灰显并写着 “in fix/rate-limit”；单击后白板平移到那个框并聚焦。</p><p>后台：分支列表来自 git worktree list；不执行任何 git 操作。</p></div>
+      <div class="wide-cell"><span class="label">最终效果</span><p>不会因为分支被占用而切换失败</p></div>
+    </div>
+  </details>
+  <p class="links">关联问题 <a class="ref" href="#is-25">IS-25</a></p>
+  <label class="field note"><span>验收备注</span><textarea id="note-TC-08" data-tc="TC-08" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
+</article><article class="case c-no" id="tc-11" data-case="TC-11" data-status="no" data-result="">
+  <div class="case-head">
+    <span class="mono cid">TC-11</span><span class="pri pri-P2">P2</span><span class="st st-no">未验证</span>
+    <h4>在系统终端里接上同一个 agent 会话</h4>
+    <label class="field result"><span>验收结果</span><select id="res-TC-11" data-tc="TC-11" class="res"><option value="" selected>未验收</option><option>通过</option><option>不通过</option><option>阻塞</option><option>跳过</option></select></label>
+  </div>
+  <p class="now"><span class="label">当前情况</span>命令拼装有单测；组装时没真点（会打开别的应用）</p>
+  <details>
+    <summary>前置要求、操作步骤和预期</summary>
+    <div class="spec">
+      <div><span class="label">前置要求</span><p>有一个在跑的 claude 终端</p></div>
+      <div><span class="label">操作步骤</span><ol><li>标题栏右键 › Open in system terminal</li><li>在两边各输入几个字</li></ol></div>
+      <div class="wide-cell"><span class="label">UI / 后台预期表现</span><p>UI：系统终端打开并显示同一个会话；两边的输入和输出同步。</p><p>后台：执行 tmux -L agentdeck attach-session -t &lt;id&gt;。</p></div>
+      <div class="wide-cell"><span class="label">最终效果</span><p>需要时可以用自己习惯的终端接着干</p></div>
+    </div>
+  </details>
+  <p class="links">关联问题 <a class="ref" href="#is-15">IS-15</a> · 相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-04" target="_blank" rel="noopener">DR-04</a></p>
+  <label class="field note"><span>验收备注</span><textarea id="note-TC-11" data-tc="TC-11" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
+</article><article class="case c-part" id="tc-07" data-case="TC-07" data-status="part" data-result="">
+  <div class="case-head">
+    <span class="mono cid">TC-07</span><span class="pri pri-P0">P0</span><span class="st st-part">部分验证</span>
+    <h4>在右侧面板里提交 agent 改的代码</h4>
+    <label class="field result"><span>验收结果</span><select id="res-TC-07" data-tc="TC-07" class="res"><option value="" selected>未验收</option><option>通过</option><option>不通过</option><option>阻塞</option><option>跳过</option></select></label>
+  </div>
+  <p class="now"><span class="label">当前情况</span>暂存和取消暂存在真窗口里试过；真的提交没做（为了不改 main）</p>
+  <details>
+    <summary>前置要求、操作步骤和预期</summary>
+    <div class="spec">
+      <div><span class="label">前置要求</span><p>某个工作区里有几个改动的文件；用一个测试分支，不要在 main 上提交</p></div>
+      <div><span class="label">操作步骤</span><ol><li>聚焦那个工作区里的终端</li><li>悬停文件单击 + 暂存两个</li><li>写提交信息，按 ⌘↩</li></ol></div>
+      <div class="wide-cell"><span class="label">UI / 后台预期表现</span><p>UI：面板显示这个分支的更改，按文件夹树形排列；暂存后进 Staged Changes；提交后列表清空一部分，提交记录顶部出现这一条。</p><p>后台：git add / git commit 在这个 worktree 里执行；提交后面板再刷新一次 status。</p></div>
+      <div class="wide-cell"><span class="label">最终效果</span><p>不离开白板完成提交</p></div>
+    </div>
+  </details>
+  <p class="links">相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-05" target="_blank" rel="noopener">DR-05</a></p>
+  <label class="field note"><span>验收备注</span><textarea id="note-TC-07" data-tc="TC-07" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
+</article><article class="case c-part" id="tc-24" data-case="TC-24" data-status="part" data-result="">
+  <div class="case-head">
+    <span class="mono cid">TC-24</span><span class="pri pri-P0">P0</span><span class="st st-part">部分验证</span>
+    <h4>在面板里给“主目录工作区”切换分支</h4>
+    <label class="field result"><span>验收结果</span><select id="res-TC-24" data-tc="TC-24" class="res"><option value="" selected>未验收</option><option>通过</option><option>不通过</option><option>阻塞</option><option>跳过</option></select></label>
+  </div>
+  <p class="now"><span class="label">当前情况</span>已修（925c11f）：只要目录里有终端开着就确认（IS-37）；切 AgentDeck 自己运行的目录（agenduck）会被拒绝并提示（IS-38）。在真窗口里用调试端口调用切分支已确认被拒绝；确认框请在一个测试仓库上点一遍验收。起因：2026-10-24 在 agenduck 的主目录工作区里单击分支，没确认就切到遗留分支，正在运行的 AgentDeck 热更新成旧代码</p>
+  <details>
+    <summary>前置要求、操作步骤和预期</summary>
+    <div class="spec">
+      <div><span class="label">前置要求</span><p>主目录工作区的框里开着终端（空闲也算）；项目是一个普通测试仓库，不要用 agenduck 本身</p></div>
+      <div><span class="label">操作步骤</span><ol><li>聚焦框里的终端</li><li>面板里单击分支按钮</li><li>单击另一个分支</li></ol></div>
+      <div class="wide-cell"><span class="label">UI / 后台预期表现</span><p>UI：只要这个目录里有终端开着（不管 Running 还是 Idle），先弹确认，写明哪些终端在这个目录里、它们看到的文件会变；确认后才切换，框标题更新为新分支。</p><p>后台：确认后才执行 git switch；切换后 workspace-service 更新记录并发 workspace.changed。</p></div>
+      <div class="wide-cell"><span class="label">最终效果</span><p>不会因为点错一下就把正在用的目录切到别的分支</p></div>
+    </div>
+  </details>
+  <p class="links">关联问题 <a class="ref" href="#is-37">IS-37</a> <a class="ref" href="#is-38">IS-38</a> <a class="ref" href="#is-31">IS-31</a> · 相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-41" target="_blank" rel="noopener">DR-41</a></p>
+  <label class="field note"><span>验收备注</span><textarea id="note-TC-24" data-tc="TC-24" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
+</article><article class="case c-part" id="tc-06" data-case="TC-06" data-status="part" data-result="">
+  <div class="case-head">
+    <span class="mono cid">TC-06</span><span class="pri pri-P1">P1</span><span class="st st-part">部分验证</span>
+    <h4>在框里跑 dev server，点链接就在白板上看效果</h4>
+    <label class="field result"><span>验收结果</span><select id="res-TC-06" data-tc="TC-06" class="res"><option value="" selected>未验收</option><option>通过</option><option>不通过</option><option>阻塞</option><option>跳过</option></select></label>
+  </div>
+  <p class="now"><span class="label">当前情况</span>组装时用 python http.server 点开过网页窗口；真 pnpm dev 和“第二次点击复用”没在真窗口里试</p>
+  <details>
+    <summary>前置要求、操作步骤和预期</summary>
+    <div class="spec">
+      <div><span class="label">前置要求</span><p>框里有一个 Shell 终端；项目能跑 pnpm dev（或用 python3 -m http.server 8765 代替）</p></div>
+      <div><span class="label">操作步骤</span><ol><li>在终端里运行 dev server</li><li>单击输出里的 localhost 地址</li><li>再单击一次同一个地址</li></ol></div>
+      <div class="wide-cell"><span class="label">UI / 后台预期表现</span><p>UI：网页窗口出现在终端右边、同一个框里，页面正常显示；第二次单击聚焦并刷新已开的窗口，不新开。</p><p>后台：port-watch 从输出里识别出地址；主进程把这个来源加入响应头改写名单。</p></div>
+      <div class="wide-cell"><span class="label">最终效果</span><p>写代码和看效果在同一个框里</p></div>
+    </div>
+  </details>
+  <p class="links">相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-35" target="_blank" rel="noopener">DR-35</a></p>
+  <label class="field note"><span>验收备注</span><textarea id="note-TC-06" data-tc="TC-06" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
+</article><article class="case c-part" id="tc-12" data-case="TC-12" data-status="part" data-result="">
+  <div class="case-head">
+    <span class="mono cid">TC-12</span><span class="pri pri-P1">P1</span><span class="st st-part">部分验证</span>
+    <h4>删除工作区，连目录一起删</h4>
+    <label class="field result"><span>验收结果</span><select id="res-TC-12" data-tc="TC-12" class="res"><option value="" selected>未验收</option><option>通过</option><option>不通过</option><option>阻塞</option><option>跳过</option></select></label>
+  </div>
+  <p class="now"><span class="label">当前情况</span>服务层有真 git 测试；真窗口里没走过。会删目录，要在测试仓库上试</p>
+  <details>
+    <summary>前置要求、操作步骤和预期</summary>
+    <div class="spec">
+      <div><span class="label">前置要求</span><p>一个 worktree 工作区，里面有一个未提交的改动；用测试分支</p></div>
+      <div><span class="label">操作步骤</span><ol><li>右键框 › Delete workspace…</li><li>选 Also delete the worktree folder</li><li>确认；看到“有未提交的更改”再确认一次</li></ol></div>
+      <div class="wide-cell"><span class="label">UI / 后台预期表现</span><p>UI：第一次确认后提示有未提交的更改，必须再确认；完成后框从白板消失。</p><p>后台：git worktree remove --force；目录从磁盘消失，分支保留。</p></div>
+      <div class="wide-cell"><span class="label">最终效果</span><p>清理干净，又不会误删还没提交的工作</p></div>
+    </div>
+  </details>
+  <p class="links">关联问题 <a class="ref" href="#is-24">IS-24</a></p>
+  <label class="field note"><span>验收备注</span><textarea id="note-TC-12" data-tc="TC-12" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
+</article><article class="case c-part" id="tc-13" data-case="TC-13" data-status="part" data-result="">
+  <div class="case-head">
+    <span class="mono cid">TC-13</span><span class="pri pri-P1">P1</span><span class="st st-part">部分验证</span>
+    <h4>关掉窗口，agent 在后台继续，需要时通知你</h4>
+    <label class="field result"><span>验收结果</span><select id="res-TC-13" data-tc="TC-13" class="res"><option value="" selected>未验收</option><option>通过</option><option>不通过</option><option>阻塞</option><option>跳过</option></select></label>
+  </div>
+  <p class="now"><span class="label">当前情况</span>关窗口后台继续、点程序坞图标回来在真窗口里试过；点系统通知没试</p>
+  <details>
+    <summary>前置要求、操作步骤和预期</summary>
+    <div class="spec">
+      <div><span class="label">前置要求</span><p>有一个在跑的 claude</p></div>
+      <div><span class="label">操作步骤</span><ol><li>单击窗口的关闭按钮（不是 ⌘Q）</li><li>等 claude 请求批准</li><li>单击系统通知</li></ol></div>
+      <div class="wide-cell"><span class="label">UI / 后台预期表现</span><p>UI：窗口消失，应用留在程序坞；有批准请求时弹系统通知、角标变 1；单击通知窗口回来并跳到那个终端。</p><p>后台：界面销毁但主进程和 tmux 连接还在；钩子照常到达。</p></div>
+      <div class="wide-cell"><span class="label">最终效果</span><p>关窗口不等于停工</p></div>
+    </div>
+  </details>
+  <p class="links">关联问题 <a class="ref" href="#is-14">IS-14</a> · 相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-14" target="_blank" rel="noopener">DR-14</a></p>
+  <label class="field note"><span>验收备注</span><textarea id="note-TC-13" data-tc="TC-13" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
+</article><article class="case c-part" id="tc-18" data-case="TC-18" data-status="part" data-result="">
+  <div class="case-head">
+    <span class="mono cid">TC-18</span><span class="pri pri-P1">P1</span><span class="st st-part">部分验证</span>
+    <h4>焦点在网页窗口里时，应用快捷键照样能用</h4>
+    <label class="field result"><span>验收结果</span><select id="res-TC-18" data-tc="TC-18" class="res"><option value="" selected>未验收</option><option>通过</option><option>不通过</option><option>阻塞</option><option>跳过</option></select></label>
+  </div>
+  <p class="now"><span class="label">当前情况</span>只用菜单项触发过 ⌘B、⌘W；真键盘没试</p>
+  <details>
+    <summary>前置要求、操作步骤和预期</summary>
+    <div class="spec">
+      <div><span class="label">前置要求</span><p>白板上有一个网页窗口和一个终端</p></div>
+      <div><span class="label">操作步骤</span><ol><li>单击网页内容</li><li>用真键盘按 ⌘J、⌘B、⌘W、⌘0、⌘1</li><li>在网页里按 ⌘R</li></ol></div>
+      <div class="wide-cell"><span class="label">UI / 后台预期表现</span><p>UI：⌘J / ⌘B / ⌘W / ⌘0 / ⌘1 照常生效；⌘R 只刷新这个网页，不重载整个应用。</p><p>后台：快捷键注册成应用菜单的 accelerator。</p></div>
+      <div class="wide-cell"><span class="label">最终效果</span><p>不管焦点在哪，快捷键行为一致</p></div>
+    </div>
+  </details>
+  <p class="links">关联问题 <a class="ref" href="#is-16">IS-16</a></p>
+  <label class="field note"><span>验收备注</span><textarea id="note-TC-18" data-tc="TC-18" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
+</article><article class="case c-part" id="tc-09" data-case="TC-09" data-status="part" data-result="">
+  <div class="case-head">
+    <span class="mono cid">TC-09</span><span class="pri pri-P2">P2</span><span class="st st-part">部分验证</span>
+    <h4>把终端拉小成摘要卡，腾出地方</h4>
+    <label class="field result"><span>验收结果</span><select id="res-TC-09" data-tc="TC-09" class="res"><option value="" selected>未验收</option><option>通过</option><option>不通过</option><option>阻塞</option><option>跳过</option></select></label>
+  </div>
+  <p class="now"><span class="label">当前情况</span>白板和终端窗口都有单测；真窗口里没拉过</p>
+  <details>
+    <summary>前置要求、操作步骤和预期</summary>
+    <div class="spec">
+      <div><span class="label">前置要求</span><p>框里有两个在跑的终端</p></div>
+      <div><span class="label">操作步骤</span><ol><li>把两个终端的右下角往里拉到很小</li><li>单击其中一个摘要卡</li></ol></div>
+      <div class="wide-cell"><span class="label">UI / 后台预期表现</span><p>UI：小于 320×200 时变成摘要卡，显示最后 3 行和状态，在等你的仍是橙色；单击恢复到拉小之前的大小并聚焦，画面不乱。</p><p>后台：摘要卡用 capture-pane 取最后几行，不 attach；恢复时重新 attach。</p></div>
+      <div class="wide-cell"><span class="label">最终效果</span><p>一屏放下更多 agent，又不丢信息</p></div>
+    </div>
+  </details>
+  <p class="links">关联问题 <a class="ref" href="#is-23">IS-23</a> · 相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-06" target="_blank" rel="noopener">DR-06</a></p>
+  <label class="field note"><span>验收备注</span><textarea id="note-TC-09" data-tc="TC-09" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
+</article><article class="case c-ok" id="tc-21" data-case="TC-21" data-status="ok" data-result="">
+  <div class="case-head">
+    <span class="mono cid">TC-21</span><span class="pri pri-P0">P0</span><span class="st st-ok">已验证</span>
+    <h4>右键在白板上开一个终端并使用</h4>
+    <label class="field result"><span>验收结果</span><select id="res-TC-21" data-tc="TC-21" class="res"><option value="" selected>未验收</option><option>通过</option><option>不通过</option><option>阻塞</option><option>跳过</option></select></label>
+  </div>
+  <p class="now"><span class="label">当前情况</span>2026-10-23 组装时验证</p>
+  <details>
+    <summary>前置要求、操作步骤和预期</summary>
+    <div class="spec">
+      <div><span class="label">前置要求</span><p>应用已打开</p></div>
+      <div><span class="label">操作步骤</span><ol><li>空白处右键 › New terminal ▸ Shell</li><li>输入 git status</li></ol></div>
+      <div class="wide-cell"><span class="label">UI / 后台预期表现</span><p>UI：在点击的位置出现终端，散放的终端在 ~ 运行；输出正常显示，状态 Running 后变 Idle。</p><p>后台：tmux 里新建会话，窗格带 AGENTDECK_TERM；输出经 MessagePort 直达界面。</p></div>
+      <div class="wide-cell"><span class="label">最终效果</span><p>白板上直接用真终端</p></div>
+    </div>
+  </details>
+  <p class="links">相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-01" target="_blank" rel="noopener">DR-01</a></p>
+  <label class="field note"><span>验收备注</span><textarea id="note-TC-21" data-tc="TC-21" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
+</article><article class="case c-ok" id="tc-22" data-case="TC-22" data-status="ok" data-result="">
+  <div class="case-head">
+    <span class="mono cid">TC-22</span><span class="pri pri-P1">P1</span><span class="st st-ok">已验证</span>
+    <h4>关闭运行中的终端会结束进程</h4>
+    <label class="field result"><span>验收结果</span><select id="res-TC-22" data-tc="TC-22" class="res"><option value="" selected>未验收</option><option>通过</option><option>不通过</option><option>阻塞</option><option>跳过</option></select></label>
+  </div>
+  <p class="now"><span class="label">当前情况</span>2026-10-23 组装时验证</p>
+  <details>
+    <summary>前置要求、操作步骤和预期</summary>
+    <div class="spec">
+      <div><span class="label">前置要求</span><p>有一个在跑的终端</p></div>
+      <div><span class="label">操作步骤</span><ol><li>单击标题栏的关闭</li><li>在确认框里选结束并关闭</li></ol></div>
+      <div class="wide-cell"><span class="label">UI / 后台预期表现</span><p>UI：先弹确认；确认后窗口消失。</p><p>后台：tmux 会话被结束。</p></div>
+      <div class="wide-cell"><span class="label">最终效果</span><p>关窗口不会留下看不见的进程</p></div>
+    </div>
+  </details>
+  
+  <label class="field note"><span>验收备注</span><textarea id="note-TC-22" data-tc="TC-22" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
+</article><article class="case c-ok" id="tc-23" data-case="TC-23" data-status="ok" data-result="">
+  <div class="case-head">
+    <span class="mono cid">TC-23</span><span class="pri pri-P1">P1</span><span class="st st-ok">已验证</span>
+    <h4>在面板里暂存再取消暂存一个文件</h4>
+    <label class="field result"><span>验收结果</span><select id="res-TC-23" data-tc="TC-23" class="res"><option value="" selected>未验收</option><option>通过</option><option>不通过</option><option>阻塞</option><option>跳过</option></select></label>
+  </div>
+  <p class="now"><span class="label">当前情况</span>2026-10-23 组装时验证（两次都对照了 git status）</p>
+  <details>
+    <summary>前置要求、操作步骤和预期</summary>
+    <div class="spec">
+      <div><span class="label">前置要求</span><p>工作区里有一个改动</p></div>
+      <div><span class="label">操作步骤</span><ol><li>单击文件旁的 +</li><li>再单击 −</li></ol></div>
+      <div class="wide-cell"><span class="label">UI / 后台预期表现</span><p>UI：文件在 Changes 和 Staged Changes 之间移动。</p><p>后台：git add / git restore --staged；git status 和界面一致。</p></div>
+      <div class="wide-cell"><span class="label">最终效果</span><p>暂存操作和命令行一致</p></div>
+    </div>
+  </details>
+  
+  <label class="field note"><span>验收备注</span><textarea id="note-TC-23" data-tc="TC-23" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
+</article><article class="case c-todo" id="tc-14" data-case="TC-14" data-status="todo" data-result="">
+  <div class="case-head">
+    <span class="mono cid">TC-14</span><span class="pri pri-P2">P2</span><span class="st st-todo">未实现</span>
+    <h4>重启电脑后恢复上次的工作区和 agent 对话</h4>
+    <label class="field result"><span>验收结果</span><select id="res-TC-14" data-tc="TC-14" class="res"><option value="" selected>未验收</option><option>通过</option><option>不通过</option><option>阻塞</option><option>跳过</option></select></label>
+  </div>
+  <p class="now"><span class="label">当前情况</span>属于 MVP 完整版（M4 · X6），还没做</p>
+  <details>
+    <summary>前置要求、操作步骤和预期</summary>
+    <div class="spec">
+      <div><span class="label">前置要求</span><p>电脑重启过（或 tmux kill-server 模拟）</p></div>
+      <div><span class="label">操作步骤</span><ol><li>打开应用</li><li>在 “Restore your last session?” 里选 Restore all</li></ol></div>
+      <div class="wide-cell"><span class="label">UI / 后台预期表现</span><p>UI：弹出恢复提示；恢复后工作区和窗口在原位，claude 接回原来的对话，Shell 在原目录打开并填好命令。</p><p>后台：按记录的会话 id 运行 claude --resume &lt;id&gt;、codex resume &lt;id&gt;。</p></div>
+      <div class="wide-cell"><span class="label">最终效果</span><p>重启不丢上下文</p></div>
+    </div>
+  </details>
+  <p class="links">关联问题 <a class="ref" href="#is-35">IS-35</a> · 相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-14" target="_blank" rel="noopener">DR-14</a> <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-34" target="_blank" rel="noopener">DR-34</a></p>
+  <label class="field note"><span>验收备注</span><textarea id="note-TC-14" data-tc="TC-14" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
+</article></div>
+  <p class="muted" id="no-cases" hidden>没有符合筛选条件的用例。</p>
 </section>
 
 <section class="block">
-  <div class="head"><h2>今晚的烟测</h2><p>在 main（24c44e5）上重跑。</p></div>
-  <div class="tbl"><table><thead><tr><th>项目</th><th>结果</th><th>说明</th></tr></thead><tbody><tr><td class="b">pnpm check（main，24c44e5）</td><td><span class="st st-ok">通过</span></td><td>类型检查、ESLint、颜色检查、模块边界全部通过；Vitest 719 个通过、4 个跳过（需要真 agent 的那 4 个）。其中约 15 个用真 tmux、约 68 个用真 git 临时仓库。</td></tr><tr><td class="b">演示模式启动（AGENTDECK_DEMO=1）</td><td><span class="st st-ok">通过</span></td><td>在 main 上启动 Electron：自动加本仓库为项目、建主目录工作区、开 zsh 和 claude 两个真终端，2 个终端都有输出后截图并正常退出。</td></tr><tr><td class="b">退出后重开</td><td><span class="st st-ok">通过</span></td><td>不带演示模式再启动一次：框、两个窗口位置不变，tmux 里的会话还在，历史输出完整接回。</td></tr><tr><td class="b">真 claude / codex 测试（AGENTDECK_REAL_AGENTS=1）</td><td><span class="st st-skip">没跑</span></td><td>今晚没跑：它会自动回答 codex 的“信任这个文件夹”，往你的 codex 配置里写记录，需要你同意。线 4 开发时跑过两次，都通过。</td></tr><tr><td class="b">端到端（Playwright）</td><td><span class="st st-none">没有</span></td><td>还没有写。14 条验收场景都没有自动化的端到端测试。</td></tr><tr><td class="b">GitHub Actions</td><td><span class="st st-none">没有</span></td><td>仓库没推送，没跑过；而且工作流里没装 tmux，真 tmux 的测试在 CI 上会被跳过。</td></tr></tbody></table></div>
+  <div class="head"><h2>问题清单</h2><p>38 条，按 P 级排列。解决一条就把处理状态改成“已解决”。</p></div>
+  <section class="pgroup"><h3><span class="pri pri-P0">P0</span>阻塞 MVP 验收<span class="muted"> · 7 条</span></h3><article class="issue" id="is-01" data-issue="IS-01" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-01</span><span class="pri pri-P0">P0</span><span class="tag">未验证</span><span class="mod">agent-adapters · 整体</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-01" data-is="IS-01" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">真 claude 的完整一轮从没在应用里跑通：信任提示之后的 SessionStart → 输入 → PermissionRequest → 批准 → Stop</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>在 claude 窗口选 Yes, I trust this folder，按 TC-04、TC-05 走一遍</p></div>
+      <div><span class="label">影响</span><p>“谁在等你”这个核心能力还没被真实验证</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>先手动验收 TC-04/TC-05；之后写进端到端测试</p></div>
+    </div>
+  </details>
+  <p class="links">关联用例 <a class="ref" href="#tc-04">TC-04</a> <a class="ref" href="#tc-05">TC-05</a> · 相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-07" target="_blank" rel="noopener">DR-07</a> <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-32" target="_blank" rel="noopener">DR-32</a></p>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-01" data-is="IS-01" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article><article class="issue" id="is-02" data-issue="IS-02" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-02</span><span class="pri pri-P0">P0</span><span class="tag">未验证</span><span class="mod">workspace-service · 白板</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-02" data-is="IS-02" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">从界面新建 worktree 工作区、在框里开终端，从没在真窗口里走过</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>按 TC-01、TC-02 走一遍</p></div>
+      <div><span class="label">影响</span><p>多分支并行的基础，没走过就不能说 MVP 可用</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>手动验收 TC-01/TC-02</p></div>
+    </div>
+  </details>
+  <p class="links">关联用例 <a class="ref" href="#tc-01">TC-01</a> <a class="ref" href="#tc-02">TC-02</a></p>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-02" data-is="IS-02" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article><article class="issue" id="is-03" data-issue="IS-03" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-03</span><span class="pri pri-P0">P0</span><span class="tag">未验证</span><span class="mod">整体</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-03" data-is="IS-03" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">同一仓库两个工作区、两个 claude 并行改代码，从没试过</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>按 TC-03 走一遍</p></div>
+      <div><span class="label">影响</span><p>这是产品的核心卖点</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>手动验收 TC-03</p></div>
+    </div>
+  </details>
+  <p class="links">关联用例 <a class="ref" href="#tc-03">TC-03</a></p>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-03" data-is="IS-03" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article><article class="issue" id="is-04" data-issue="IS-04" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-04</span><span class="pri pri-P0">P0</span><span class="tag">缺失</span><span class="mod">e2e</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-04" data-is="IS-04" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">没有端到端自动测试（任务 R2）：仓库里没有 Playwright、没有 e2e 目录；14 条验收场景都没自动化</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>—</p></div>
+      <div><span class="label">影响</span><p>以后每次改动都要靠人工回归</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>用 Playwright 的 Electron 模式，先做能完全自动的 TC-01 TC-02 TC-06 TC-07 TC-09 TC-10 TC-12</p></div>
+    </div>
+  </details>
+  
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-04" data-is="IS-04" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article><article class="issue" id="is-05" data-issue="IS-05" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-05</span><span class="pri pri-P0">P0</span><span class="tag">未验证</span><span class="mod">tmux-host · 终端窗口</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-05" data-is="IS-05" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">F7 列的 9 项终端手感只能人看，都还没确认：颜色和框线字符、Esc / Shift+Enter / 多行粘贴、触控板滚动和回滚、拖选复制、和系统终端同时接上、claude 完成提醒等</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>照 packages/tmux-host/AGENTS.md「需要人工确认」逐项试</p></div>
+      <div><span class="label">影响</span><p>终端是天天用的东西，手感不对很快就不想用</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>验收时逐项打勾，有问题记成新的 Q</p></div>
+    </div>
+  </details>
+  <p class="links">相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-01" target="_blank" rel="noopener">DR-01</a> <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-04" target="_blank" rel="noopener">DR-04</a> <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-22" target="_blank" rel="noopener">DR-22</a> <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-24" target="_blank" rel="noopener">DR-24</a> <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-36" target="_blank" rel="noopener">DR-36</a> <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-44" target="_blank" rel="noopener">DR-44</a></p>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-05" data-is="IS-05" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article><article class="issue" id="is-37" data-issue="IS-37" data-state="已解决">
+  <div class="case-head">
+    <span class="mono cid">IS-37</span><span class="pri pri-P0">P0</span><span class="tag">缺陷</span><span class="mod">源代码管理面板 · 白板</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-37" data-is="IS-37" class="ist"><option>待处理</option><option>处理中</option><option selected>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">在面板里单击分支会立刻切换，不确认：只有在有未提交改动或有 Running 的 agent 时才弹框；框里的终端是 Idle 时直接切。空闲的 agent 和 Shell 也在这个目录里，切分支会改掉它们眼前的文件</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>主目录工作区里开一个 Idle 的终端，在面板里单击另一个分支</p></div>
+      <div><span class="label">影响</span><p>误点一下就切走正在用的目录；2026-10-24 验收时实际发生</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>只要这个目录里有任何终端开着就先确认（白板把框里所有活着的终端传给面板，不只 Running 的）；确认框写清会受影响的终端</p></div>
+    </div>
+  </details>
+  <p class="links">关联用例 <a class="ref" href="#tc-24">TC-24</a> · 相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-41" target="_blank" rel="noopener">DR-41</a></p>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-37" data-is="IS-37" class="is-note" rows="1" placeholder="处理到哪了">2026-10-24 已修（925c11f）：只要目录里有终端开着就确认，确认框列出这些终端；面板加了测试</textarea></label>
+</article><article class="issue" id="is-38" data-issue="IS-38" data-state="已解决">
+  <div class="case-head">
+    <span class="mono cid">IS-38</span><span class="pri pri-P0">P0</span><span class="tag">开发风险</span><span class="mod">apps/desktop · 开发流程</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-38" data-is="IS-38" class="ist"><option>待处理</option><option>处理中</option><option selected>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">用 AgentDeck 管理 agenduck 仓库自己时，切换主目录的分支会改掉正在运行的 AgentDeck 的源代码，开发服务器热更新成旧代码，界面直接坏掉</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>在 agenduck 自己的主目录工作区里切到任何旧分支</p></div>
+      <div><span class="label">影响</span><p>验收和自举开发时很容易误伤；恢复要手动 git switch main 再重启</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>短期：验收用别的测试仓库，或在独立 worktree 里跑 pnpm dev；长期：应用检测到要切的目录就是自己运行的目录时拒绝并提示</p></div>
+    </div>
+  </details>
+  <p class="links">关联用例 <a class="ref" href="#tc-24">TC-24</a> · 相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-41" target="_blank" rel="noopener">DR-41</a></p>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-38" data-is="IS-38" class="is-note" rows="1" placeholder="处理到哪了">2026-10-24 已修（925c11f）：应用启动时找出自己运行的目录，界面对它切分支、建分支并切换、连目录删除都拒绝；真窗口里验证过</textarea></label>
+</article></section><section class="pgroup"><h3><span class="pri pri-P1">P1</span>主要流程，交付前要处理<span class="muted"> · 11 条</span></h3><article class="issue" id="is-06" data-issue="IS-06" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-06</span><span class="pri pri-P1">P1</span><span class="tag">缺陷</span><span class="mod">agent-adapters</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-06" data-is="IS-06" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">claude 停在“信任这个文件夹”提示时，状态显示 Idle，应该算在等你</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>打开一个没信任过的目录里的 claude</p></div>
+      <div><span class="label">影响</span><p>用户以为 claude 在空闲，其实它卡着等你</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>状态机把启动后迟迟没有 SessionStart、且屏幕停住的情况算 needs-reply，或识别信任提示</p></div>
+    </div>
+  </details>
+  <p class="links">关联用例 <a class="ref" href="#tc-04">TC-04</a> · 相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-07" target="_blank" rel="noopener">DR-07</a> <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-12" target="_blank" rel="noopener">DR-12</a></p>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-06" data-is="IS-06" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article><article class="issue" id="is-07" data-issue="IS-07" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-07</span><span class="pri pri-P1">P1</span><span class="tag">缺陷</span><span class="mod">终端窗口</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-07" data-is="IS-07" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">连着新建两个终端时，第二个可能误显示 “Previous session ended”（它复用了 500 毫秒内的 terminals.list() 结果）</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>快速连开两个终端</p></div>
+      <div><span class="label">影响</span><p>用户以为终端没起来</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>新建后强制刷新列表，或按 terminalId 精确查询</p></div>
+    </div>
+  </details>
+  <p class="links">关联用例 <a class="ref" href="#tc-03">TC-03</a></p>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-07" data-is="IS-07" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article><article class="issue" id="is-09" data-issue="IS-09" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-09</span><span class="pri pri-P1">P1</span><span class="tag">技术债</span><span class="mod">tmux-host</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-09" data-is="IS-09" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">pty.ts 自己声明了顶层 const require，和 electron-vite 注入的重名，终端进程一启动就崩；组装时在构建配置里绕过</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>去掉桌面构建配置里的绕过插件后启动</p></div>
+      <div><span class="label">影响</span><p>换构建工具或打包时会再炸</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>在 tmux-host 里改名，去掉绕过</p></div>
+    </div>
+  </details>
+  <p class="links">相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-04" target="_blank" rel="noopener">DR-04</a></p>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-09" data-is="IS-09" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article><article class="issue" id="is-10" data-issue="IS-10" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-10</span><span class="pri pri-P1">P1</span><span class="tag">技术债</span><span class="mod">tmux-host</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-10" data-is="IS-10" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">打包后默认的 tmux.conf 路径不对，应用现在总是显式传路径</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>打包后不传路径启动</p></div>
+      <div><span class="label">影响</span><p>打包时容易漏</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>默认路径按打包后的资源目录算</p></div>
+    </div>
+  </details>
+  <p class="links">相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-04" target="_blank" rel="noopener">DR-04</a></p>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-10" data-is="IS-10" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article><article class="issue" id="is-11" data-issue="IS-11" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-11</span><span class="pri pri-P1">P1</span><span class="tag">未验证</span><span class="mod">apps/desktop</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-11" data-is="IS-11" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">从程序坞打开时读登录 shell 环境（PATH、代理）没验证过：只从终端 pnpm dev 启动过，那时环境本来就全</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>有打包版本后从程序坞打开，开 claude 发一句话</p></div>
+      <div><span class="label">影响</span><p>之前 403 就是缺代理变量导致的</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>和 IS-36 一起做</p></div>
+    </div>
+  </details>
+  <p class="links">关联用例 <a class="ref" href="#tc-20">TC-20</a> · 相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-23" target="_blank" rel="noopener">DR-23</a></p>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-11" data-is="IS-11" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article><article class="issue" id="is-12" data-issue="IS-12" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-12</span><span class="pri pri-P1">P1</span><span class="tag">需求不一致</span><span class="mod">需求 · agent-adapters</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-12" data-is="IS-12" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">验收场景 5 写“直接按 y 批准”，claude 实测“允许一次”是 1 或回车，y 能不能用不确定</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>在 claude 的批准提示里按 y 试一次</p></div>
+      <div><span class="label">影响</span><p>按错键可能选到别的选项</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>改需求写法为“按 agent 的允许一次键（claude 是 1）”，或实测 y 后定下</p></div>
+    </div>
+  </details>
+  <p class="links">关联用例 <a class="ref" href="#tc-05">TC-05</a> · 相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-13" target="_blank" rel="noopener">DR-13</a> <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-43" target="_blank" rel="noopener">DR-43</a></p>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-12" data-is="IS-12" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article><article class="issue" id="is-13" data-issue="IS-13" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-13</span><span class="pri pri-P1">P1</span><span class="tag">缺失</span><span class="mod">白板 · apps/desktop</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-13" data-is="IS-13" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">没有 Settings 界面：设置存在 settings.json，点 Settings 用系统程序打开它；需求里的 Settings › Projects、Settings › Agents 都没有</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>点顶栏 Settings</p></div>
+      <div><span class="label">影响</span><p>项目设置、agent 启动参数、破坏性命令名单都只能手改 JSON</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>先做 Projects 和 Agents 两页</p></div>
+    </div>
+  </details>
+  <p class="links">关联用例 <a class="ref" href="#tc-15">TC-15</a></p>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-13" data-is="IS-13" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article><article class="issue" id="is-14" data-issue="IS-14" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-14</span><span class="pri pri-P1">P1</span><span class="tag">未验证</span><span class="mod">apps/desktop</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-14" data-is="IS-14" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">系统通知真弹出、单击后窗口回来并跳到终端，没验证</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>按 TC-13 走一遍</p></div>
+      <div><span class="label">影响</span><p>后台提醒是“不用盯着”的关键</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>手动验收 TC-13</p></div>
+    </div>
+  </details>
+  <p class="links">关联用例 <a class="ref" href="#tc-04">TC-04</a> <a class="ref" href="#tc-13">TC-13</a> · 相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-14" target="_blank" rel="noopener">DR-14</a></p>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-14" data-is="IS-14" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article><article class="issue" id="is-16" data-issue="IS-16" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-16</span><span class="pri pri-P1">P1</span><span class="tag">未验证</span><span class="mod">apps/desktop · 白板</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-16" data-is="IS-16" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">焦点在网页窗口里时，用真键盘按应用快捷键没验证过（只用菜单项触发过）</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>按 TC-18 走一遍</p></div>
+      <div><span class="label">影响</span><p>快捷键失灵会很烦</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>手动验收 TC-18</p></div>
+    </div>
+  </details>
+  <p class="links">关联用例 <a class="ref" href="#tc-18">TC-18</a></p>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-16" data-is="IS-16" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article><article class="issue" id="is-17" data-issue="IS-17" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-17</span><span class="pri pri-P1">P1</span><span class="tag">技术债</span><span class="mod">contracts</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-17" data-is="IS-17" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">线 1 的 13 条接口意见没整理成 0.1.4：关闭确认不知道进程在不在跑、⌘K 只发 Ctrl+L 没清历史、拖入文件拿不到路径、没有打开外部链接、没有终端配色 token 等</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>看 packages/tmux-host/CONTRACT_NOTES.md</p></div>
+      <div><span class="label">影响</span><p>这些地方现在是各包自己临时处理</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>出 contracts 0.1.4 并跟进实现</p></div>
+    </div>
+  </details>
+  <p class="links">相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-20" target="_blank" rel="noopener">DR-20</a></p>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-17" data-is="IS-17" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article><article class="issue" id="is-24" data-issue="IS-24" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-24</span><span class="pri pri-P1">P1</span><span class="tag">未验证</span><span class="mod">白板 · workspace-service</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-24" data-is="IS-24" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">在真窗口里删除工作区并删目录没走过（会真删磁盘目录）</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>在测试仓库上按 TC-12 走一遍</p></div>
+      <div><span class="label">影响</span><p>删除是不可逆操作，必须先验证</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>手动验收 TC-12</p></div>
+    </div>
+  </details>
+  <p class="links">关联用例 <a class="ref" href="#tc-12">TC-12</a></p>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-24" data-is="IS-24" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article></section><section class="pgroup"><h3><span class="pri pri-P2">P2</span>次要体验、完整性、性能<span class="muted"> · 16 条</span></h3><article class="issue" id="is-08" data-issue="IS-08" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-08</span><span class="pri pri-P2">P2</span><span class="tag">缺陷</span><span class="mod">agent-adapters · contracts</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-08" data-is="IS-08" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">重开应用后终端状态都显示 “Idle · now”，开始时间没接上</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>有终端在跑时 ⌘Q 再打开</p></div>
+      <div><span class="label">影响</span><p>计时不准，但不影响使用</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>状态机接受恢复时的真实开始时间</p></div>
+    </div>
+  </details>
+  <p class="links">关联用例 <a class="ref" href="#tc-10">TC-10</a></p>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-08" data-is="IS-08" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article><article class="issue" id="is-15" data-issue="IS-15" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-15</span><span class="pri pri-P2">P2</span><span class="tag">未验证</span><span class="mod">终端窗口 · apps/desktop</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-15" data-is="IS-15" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">Open in system terminal 没真点过</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>按 TC-11 走一遍</p></div>
+      <div><span class="label">影响</span><p>辅助功能</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>手动验收 TC-11</p></div>
+    </div>
+  </details>
+  <p class="links">关联用例 <a class="ref" href="#tc-11">TC-11</a></p>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-15" data-is="IS-15" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article><article class="issue" id="is-18" data-issue="IS-18" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-18</span><span class="pri pri-P2">P2</span><span class="tag">技术债</span><span class="mod">白板 · 网页窗口 · git · agent</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-18" data-is="IS-18" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">线 2–5 还没把 contracts 0.1.3 的新字段用进代码：白板仍按 type === &quot;terminal&quot; 写特例、reuseKey 不随白板保存、网页窗口用本地的 reloadToken、远端分支和接回已有 worktree 没实现等</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>看各包 CONTRACT_NOTES.md 开头的“待跟进”</p></div>
+      <div><span class="label">影响</span><p>加新窗口类型时要改白板</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>各包跟进一轮</p></div>
+    </div>
+  </details>
+  <p class="links">相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-20" target="_blank" rel="noopener">DR-20</a></p>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-18" data-is="IS-18" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article><article class="issue" id="is-19" data-issue="IS-19" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-19</span><span class="pri pri-P2">P2</span><span class="tag">缺失</span><span class="mod">workspace-service</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-19" data-is="IS-19" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">没有“worktree 放在哪”的选项，开发模式下借用 .agentdeck-dev 里的假主目录</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>开发模式下新建 worktree，看它的路径</p></div>
+      <div><span class="label">影响</span><p>开发和正式版路径不一致</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>给 workspace-service 加 worktreeRoot 参数</p></div>
+    </div>
+  </details>
+  <p class="links">关联用例 <a class="ref" href="#tc-02">TC-02</a> · 相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-10" target="_blank" rel="noopener">DR-10</a></p>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-19" data-is="IS-19" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article><article class="issue" id="is-20" data-issue="IS-20" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-20</span><span class="pri pri-P2">P2</span><span class="tag">缺陷</span><span class="mod">白板</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-20" data-is="IS-20" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">第二次调用 start() 在白板加载完之前就返回</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>连续调用两次 controller.start()</p></div>
+      <div><span class="label">影响</span><p>应用里已绕过（先 start 再渲染）</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>让 start() 返回同一个 Promise</p></div>
+    </div>
+  </details>
+  
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-20" data-is="IS-20" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article><article class="issue" id="is-21" data-issue="IS-21" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-21</span><span class="pri pri-P2">P2</span><span class="tag">缺陷</span><span class="mod">白板</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-21" data-is="IS-21" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">新建终端菜单会列出用不了的 custom，并按 agent id 而不是名字显示</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>右键 › New terminal ▸</p></div>
+      <div><span class="label">影响</span><p>应用里先藏了 custom</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>按 AgentInfo.label 显示，过滤 custom</p></div>
+    </div>
+  </details>
+  <p class="links">关联用例 <a class="ref" href="#tc-17">TC-17</a></p>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-21" data-is="IS-21" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article><article class="issue" id="is-22" data-issue="IS-22" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-22</span><span class="pri pri-P2">P2</span><span class="tag">缺陷</span><span class="mod">源代码管理面板</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-22" data-is="IS-22" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">没有聚焦任何窗口时也显示 “This window isn’t in a workspace.”</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>打开应用不点任何东西</p></div>
+      <div><span class="label">影响</span><p>文案让人困惑</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>区分“没聚焦”和“聚焦的是散放窗口”</p></div>
+    </div>
+  </details>
+  <p class="links">关联用例 <a class="ref" href="#tc-16">TC-16</a></p>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-22" data-is="IS-22" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article><article class="issue" id="is-23" data-issue="IS-23" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-23</span><span class="pri pri-P2">P2</span><span class="tag">未验证</span><span class="mod">白板 · 终端窗口</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-23" data-is="IS-23" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">在真窗口里拉小成摘要卡、再恢复，画面会不会乱没验证</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>按 TC-09 走一遍</p></div>
+      <div><span class="label">影响</span><p>摘要卡是放下更多窗口的办法</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>手动验收 TC-09</p></div>
+    </div>
+  </details>
+  <p class="links">关联用例 <a class="ref" href="#tc-09">TC-09</a> · 相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-06" target="_blank" rel="noopener">DR-06</a></p>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-23" data-is="IS-23" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article><article class="issue" id="is-25" data-issue="IS-25" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-25</span><span class="pri pri-P2">P2</span><span class="tag">未验证</span><span class="mod">源代码管理面板</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-25" data-is="IS-25" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">单击被别的工作区占用的分支跳到那个框，没在真窗口里试</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>按 TC-08 走一遍</p></div>
+      <div><span class="label">影响</span><p>辅助功能</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>手动验收 TC-08</p></div>
+    </div>
+  </details>
+  <p class="links">关联用例 <a class="ref" href="#tc-08">TC-08</a></p>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-25" data-is="IS-25" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article><article class="issue" id="is-26" data-issue="IS-26" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-26</span><span class="pri pri-P2">P2</span><span class="tag">未验证</span><span class="mod">性能</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-26" data-is="IS-26" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">三项完成标准没测量：30 个窗口平移不掉帧（B1）、Electron 里 6 个终端打字延迟（T2，只量到 tmux-host 层）、空闲时 CPU 接近 0（G4）</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>写测量脚本</p></div>
+      <div><span class="label">影响</span><p>流畅是一开始的要求之一</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>用组装好的应用加调试端口测</p></div>
+    </div>
+  </details>
+  <p class="links">相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-05" target="_blank" rel="noopener">DR-05</a></p>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-26" data-is="IS-26" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article><article class="issue" id="is-27" data-issue="IS-27" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-27</span><span class="pri pri-P2">P2</span><span class="tag">未验证</span><span class="mod">apps/desktop · store</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-27" data-is="IS-27" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">强杀应用进程（不是 ⌘Q）后再打开，布局和终端恢复没测过</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>kill -9 主进程后再打开</p></div>
+      <div><span class="label">影响</span><p>崩溃后能不能恢复</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>手动试一次，再写进端到端</p></div>
+    </div>
+  </details>
+  <p class="links">关联用例 <a class="ref" href="#tc-10">TC-10</a></p>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-27" data-is="IS-27" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article><article class="issue" id="is-28" data-issue="IS-28" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-28</span><span class="pri pri-P2">P2</span><span class="tag">缺失</span><span class="mod">apps/desktop</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-28" data-is="IS-28" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">IPC 层的“统一超时包装”没找到，只有错误码透传</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>看 apps/desktop/src/main/ipc.ts</p></div>
+      <div><span class="label">影响</span><p>某个服务卡住时界面会一直等</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>给 invoke 加默认超时</p></div>
+    </div>
+  </details>
+  
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-28" data-is="IS-28" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article><article class="issue" id="is-29" data-issue="IS-29" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-29</span><span class="pri pri-P2">P2</span><span class="tag">未验证</span><span class="mod">CI</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-29" data-is="IS-29" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">GitHub Actions 从没跑过；工作流里也没装 tmux，真 tmux 的测试在 CI 上会被跳过</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>—</p></div>
+      <div><span class="label">影响</span><p>只能靠本机跑 pnpm check</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>给出仓库名后推送；工作流里 brew/apt 装 tmux 3.5+</p></div>
+    </div>
+  </details>
+  <p class="links">相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-29" target="_blank" rel="noopener">DR-29</a></p>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-29" data-is="IS-29" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article><article class="issue" id="is-31" data-issue="IS-31" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-31</span><span class="pri pri-P2">P2</span><span class="tag">清理</span><span class="mod">git</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-31" data-is="IS-31" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">开发期间留下十几个已合并的分支和 worktree，面板 Repository 区和分支下拉里全列出来了（IS-37 就是点到了其中一个）</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>git worktree list</p></div>
+      <div><span class="label">影响</span><p>列表很乱</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>确认后删掉已合并的 claude/* 分支和对应 worktree</p></div>
+    </div>
+  </details>
+  <p class="links">相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-41" target="_blank" rel="noopener">DR-41</a></p>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-31" data-is="IS-31" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article><article class="issue" id="is-35" data-issue="IS-35" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-35</span><span class="pri pri-P2">P2</span><span class="tag">缺失</span><span class="mod">整体</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-35" data-is="IS-35" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">重启电脑后恢复会话（验收场景 14）还没做</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>—</p></div>
+      <div><span class="label">影响</span><p>属于 MVP 完整版</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>按计划在 M4 做</p></div>
+    </div>
+  </details>
+  <p class="links">关联用例 <a class="ref" href="#tc-14">TC-14</a> · 相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-14" target="_blank" rel="noopener">DR-14</a></p>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-35" data-is="IS-35" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article><article class="issue" id="is-36" data-issue="IS-36" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-36</span><span class="pri pri-P2">P2</span><span class="tag">缺失</span><span class="mod">apps/desktop</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-36" data-is="IS-36" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">没有打包流程：better-sqlite3 的 asarUnpack、node-pty spawn-helper 权限、tmux.conf 和 agentdeck-notify 的资源路径都还没进打包配置</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>—</p></div>
+      <div><span class="label">影响</span><p>现在只能从源码 pnpm dev 启动，不能放进程序坞</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>加 electron-builder 配置，产出 .app</p></div>
+    </div>
+  </details>
+  <p class="links">关联用例 <a class="ref" href="#tc-20">TC-20</a> · 相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-27" target="_blank" rel="noopener">DR-27</a></p>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-36" data-is="IS-36" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article></section><section class="pgroup"><h3><span class="pri pri-P3">P3</span>清理<span class="muted"> · 4 条</span></h3><article class="issue" id="is-30" data-issue="IS-30" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-30</span><span class="pri pri-P3">P3</span><span class="tag">清理</span><span class="mod">白板</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-30" data-is="IS-30" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">右下角有 React Flow 的水印</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>看截图右下角</p></div>
+      <div><span class="label">影响</span><p>外观</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>关掉水印</p></div>
+    </div>
+  </details>
+  
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-30" data-is="IS-30" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article><article class="issue" id="is-32" data-issue="IS-32" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-32</span><span class="pri pri-P3">P3</span><span class="tag">清理</span><span class="mod">开发环境</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-32" data-is="IS-32" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">Electron 二进制要手动下载一次（pnpm 10 不跑依赖的 postinstall）</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>新克隆后 pnpm dev 报 Electron uninstall</p></div>
+      <div><span class="label">影响</span><p>新环境第一次启动会失败</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>在 pnpm 配置里允许 electron 的安装脚本，或在根目录加 setup 脚本</p></div>
+    </div>
+  </details>
+  
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-32" data-is="IS-32" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article><article class="issue" id="is-33" data-issue="IS-33" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-33</span><span class="pri pri-P3">P3</span><span class="tag">清理</span><span class="mod">开发环境</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-33" data-is="IS-33" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">dev 的 tmux 实例里留着 4 个演示会话，其中 2 个来自组装用的 worktree</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>tmux -L agentdeck-desktop-dev ls</p></div>
+      <div><span class="label">影响</span><p>无害，占一点资源</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>验收完后 tmux -L agentdeck-desktop-dev kill-server</p></div>
+    </div>
+  </details>
+  
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-33" data-is="IS-33" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article><article class="issue" id="is-34" data-issue="IS-34" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-34</span><span class="pri pri-P3">P3</span><span class="tag">技术债</span><span class="mod">agent-adapters 测试</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-34" data-is="IS-34" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">真 agent 测试会自动回答 codex 的“信任这个文件夹”，往用户的 codex 配置里写记录</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>看 real-agents.test.ts</p></div>
+      <div><span class="label">影响</span><p>跑测试会改用户配置</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>测试里用临时 CODEX_HOME 和 CLAUDE_CONFIG_DIR</p></div>
+    </div>
+  </details>
+  <p class="links">相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-31" target="_blank" rel="noopener">DR-31</a> <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-38" target="_blank" rel="noopener">DR-38</a></p>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-34" data-is="IS-34" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article></section>
 </section>
 
 <section class="block">
-  <div class="head"><h2>39 项基础功能的证据</h2><p>“真窗口里验证”指在组装好的 Electron 应用里实际操作过；数字是粗数，it.each 展开前。</p></div>
-  <div class="tbl"><table class="wide"><thead><tr><th>编号</th><th>功能</th><th>状态</th><th>自动测试</th><th>真窗口里验证</th><th>备注</th></tr></thead><tbody><tr><td class="mono b">F1</td><td class="b">单仓骨架</td><td><span class="st st-manual">完成，只有手动验证</span></td><td>只有 pnpm check</td><td>pnpm dev 能打开窗口</td><td class="muted"></td></tr><tr><td class="mono b">F2</td><td class="b">contracts</td><td><span class="st st-auto">完成，有自动测试</span></td><td>类型检查 + 假实现的接口测试</td><td>各包接进应用后编译通过</td><td class="muted">当前 0.1.3</td></tr><tr><td class="mono b">F3</td><td class="b">IPC 层</td><td><span class="st st-auto">完成，有自动测试</span></td><td>34 例（路由、错误还原、preload）</td><td>真 IPC 在用</td><td class="muted">“统一超时包装”没找到</td></tr><tr><td class="mono b">F4</td><td class="b">tokens 和零件</td><td><span class="st st-auto">完成，有自动测试</span></td><td>46 例（含禁止写死颜色）</td><td>有演示页</td><td class="muted"></td></tr><tr><td class="mono b">F5</td><td class="b">CI 和模块边界</td><td><span class="st st-auto">完成，有自动测试</span></td><td>每条规则有违规样例</td><td>—</td><td class="muted">CI 没在云端跑过</td></tr><tr><td class="mono b">F6</td><td class="b">假实现</td><td><span class="st st-auto">完成，有自动测试</span></td><td>74 例</td><td>各演示页都用它</td><td class="muted"></td></tr><tr><td class="mono b">F7</td><td class="b">tmux 配置试验</td><td><span class="st st-manual">完成，只有手动验证</span></td><td>真 tmux 测试加载了这份配置</td><td>试验脚本 + 测量数据</td><td class="muted">9 项需要人工确认，都还没勾</td></tr><tr><td class="mono b">F8</td><td class="b">本地存储</td><td><span class="st st-auto">完成，有自动测试</span></td><td>38 例（真 SQLite）</td><td>开发数据库已生成</td><td class="muted"></td></tr><tr><td class="mono b">B1</td><td class="b">白板画布</td><td><span class="st st-partial">部分完成 / 未做</span></td><td>没有手势测试（jsdom 测不了）</td><td>dev 页手动试过</td><td class="muted">“30 个窗口平移不掉帧”没测量</td></tr><tr><td class="mono b">B2</td><td class="b">窗口外框</td><td><span class="st st-partial">部分完成 / 未做</span></td><td>16 例</td><td>截图里外框正常</td><td class="muted">完成标准要的 Playwright 用例没有</td></tr><tr><td class="mono b">B3</td><td class="b">窗口注册表和右键菜单</td><td><span class="st st-auto">完成，有自动测试</span></td><td>9 例</td><td>右键菜单出现</td><td class="muted">菜单里多一个 custom，应用里先藏了</td></tr><tr><td class="mono b">B4</td><td class="b">顶栏</td><td><span class="st st-auto">完成，有自动测试</span></td><td>数字随事件变</td><td>“1 waiting”出现过</td><td class="muted"></td></tr><tr><td class="mono b">B5</td><td class="b">布局自动保存</td><td><span class="st st-auto">完成，有自动测试</span></td><td>自动保存、重启恢复、存储往返</td><td>⌘Q 后重开一样</td><td class="muted">没测强杀进程</td></tr><tr><td class="mono b">T1</td><td class="b">tmux-host 服务</td><td><span class="st st-auto">完成，有自动测试</span></td><td>25 例，15 例真 tmux</td><td>跑在 utilityProcess，退出后会话还在</td><td class="muted"></td></tr><tr><td class="mono b">T2</td><td class="b">终端窗口显示</td><td><span class="st st-auto">完成，有自动测试</span></td><td>30 例（含真 xterm 解析）</td><td>两个真终端正常显示</td><td class="muted">在 Electron 里的打字延迟没测（tmux-host 层 p99 &lt; 50ms）</td></tr><tr><td class="mono b">T3</td><td class="b">输入、复制、粘贴</td><td><span class="st st-auto">完成，有自动测试</span></td><td>按键决策、Shift+Enter、拖入路径</td><td>—</td><td class="muted">真键盘在 Electron 里没试</td></tr><tr><td class="mono b">T4</td><td class="b">agent 适配器</td><td><span class="st st-auto">完成，有自动测试</span></td><td>30 例 + 4 例真 agent</td><td>检测到 claude 和 codex</td><td class="muted"></td></tr><tr><td class="mono b">T5</td><td class="b">退出、出错、重启</td><td><span class="st st-auto">完成，有自动测试</span></td><td>退出、关闭确认、系统终端命令</td><td>—</td><td class="muted">Open in system terminal 没真点</td></tr><tr><td class="mono b">T6</td><td class="b">重开应用自动接上</td><td><span class="st st-auto">完成，有自动测试</span></td><td>真 tmux 接管 + 窗口重连</td><td>重开截图，输出都在</td><td class="muted">重开后状态时间从“现在”算</td></tr><tr><td class="mono b">T7</td><td class="b">链接识别</td><td><span class="st st-auto">完成，有自动测试</span></td><td>12 组用例</td><td>组装时点 http.server 的链接开了网页窗口</td><td class="muted"></td></tr><tr><td class="mono b">T8</td><td class="b">摘要卡</td><td><span class="st st-auto">完成，有自动测试</span></td><td>变摘要卡、恢复并聚焦、真 tmux 取最后几行</td><td>—</td><td class="muted">Electron 里拉小再恢复没验证</td></tr><tr><td class="mono b">W1</td><td class="b">项目</td><td><span class="st st-partial">部分完成 / 未做</span></td><td>9 例真 git + 选文件夹流程</td><td>只用演示模式加过项目</td><td class="muted">没有 Settings › Projects 界面，Settings 打开的是 settings.json</td></tr><tr><td class="mono b">W2</td><td class="b">新建工作区</td><td><span class="st st-auto">完成，有自动测试</span></td><td>8 例真 git（新分支、复制 .env、回滚、分支被占用）</td><td>—</td><td class="muted">Electron 里没建过 worktree</td></tr><tr><td class="mono b">W3</td><td class="b">工作区框</td><td><span class="st st-auto">完成，有自动测试</span></td><td>框里终端目录、拖框带窗口</td><td>主目录工作区的框正常</td><td class="muted">worktree 框没在 Electron 里看过</td></tr><tr><td class="mono b">W4</td><td class="b">删除工作区</td><td><span class="st st-auto">完成，有自动测试</span></td><td>6 例真 git（有改动要强删、分支保留）</td><td>—</td><td class="muted"></td></tr><tr><td class="mono b">W5</td><td class="b">终端换框的限制</td><td><span class="st st-auto">完成，有自动测试</span></td><td>弹回和 Open new</td><td>—</td><td class="muted"></td></tr><tr><td class="mono b">G1</td><td class="b">git-service</td><td><span class="st st-auto">完成，有自动测试</span></td><td>49 例，41 例真 git</td><td>面板显示真实状态</td><td class="muted"></td></tr><tr><td class="mono b">G2</td><td class="b">源代码管理面板</td><td><span class="st st-auto">完成，有自动测试</span></td><td>18 例</td><td>暂存和取消暂存试过</td><td class="muted">Electron 里没真提交</td></tr><tr><td class="mono b">G3</td><td class="b">切换分支</td><td><span class="st st-auto">完成，有自动测试</span></td><td>灰显、跳转、stash；9 例真 git</td><td>—</td><td class="muted">跳到别的框没试</td></tr><tr><td class="mono b">G4</td><td class="b">刷新时机</td><td><span class="st st-auto">完成，有自动测试</span></td><td>数刷新次数</td><td>—</td><td class="muted">“空闲 CPU 接近 0”没测量</td></tr><tr><td class="mono b">S1</td><td class="b">钩子接收</td><td><span class="st st-auto">完成，有自动测试</span></td><td>18 例（100ms 内到达）+ 真 agent</td><td>手动发批准请求和 Stop，一路到标题栏</td><td class="muted"></td></tr><tr><td class="mono b">S2</td><td class="b">状态机</td><td><span class="st st-auto">完成，有自动测试</span></td><td>40 例，状态表每行一例</td><td>Idle、Needs approval 都显示过</td><td class="muted">claude 停在信任提示时显示 Idle</td></tr><tr><td class="mono b">S3</td><td class="b">界面提醒</td><td><span class="st st-auto">完成，有自动测试</span></td><td>橙色、计数、⌘J</td><td>橙色、“1 waiting”、角标都出现了</td><td class="muted">“2 秒内”没计时</td></tr><tr><td class="mono b">S4</td><td class="b">后台通知</td><td><span class="st st-auto">完成，有自动测试</span></td><td>通知规则 6 例</td><td>角标出现</td><td class="muted">点系统通知没试</td></tr><tr><td class="mono b">U1</td><td class="b">网页窗口</td><td><span class="st st-auto">完成，有自动测试</span></td><td>73 例（响应头改写、服务、组件）</td><td>组装时开过</td><td class="muted"></td></tr><tr><td class="mono b">U2</td><td class="b">从终端打开网页</td><td><span class="st st-auto">完成，有自动测试</span></td><td>复用和打开位置</td><td>组装时开过</td><td class="muted"></td></tr><tr><td class="mono b">U3</td><td class="b">出错页和本地文件</td><td><span class="st st-auto">完成，有自动测试</span></td><td>15 例</td><td>试验脚本</td><td class="muted"></td></tr><tr><td class="mono b">R1</td><td class="b">快捷键</td><td><span class="st st-auto">完成，有自动测试</span></td><td>快捷键分发 + 菜单</td><td>菜单项触发 ⌘B ⌘W</td><td class="muted">真键盘在网页里没试</td></tr><tr><td class="mono b">R2</td><td class="b">端到端验收</td><td><span class="st st-partial">部分完成 / 未做</span></td><td>没有</td><td>没有</td><td class="muted">没有 Playwright，14 条验收场景都没自动化</td></tr></tbody></table></div>
-</section>
-
-<section class="block">
-  <div class="head"><h2>14 条验收场景</h2><p>来自设计画布「10 · 全局规则」，编号就是端到端用例 TC-01 到 TC-14（详细步骤在 xlsx 里）。</p></div>
-  <div class="tbl"><table class="wide"><thead><tr><th>用例</th><th>场景</th><th>状态</th><th>依据</th></tr></thead><tbody><tr><td class="mono b">TC-01</td><td>右键 › Add project… 选文件夹，直接进入新建工作区对话框</td><td><span class="st st-no">还没验证</span></td><td class="muted">流程有单测（假的选文件夹）；Electron 里没点过，组装用的是演示模式</td></tr><tr><td class="mono b">TC-02</td><td>基于 main 新建 feat/oauth：框出现、worktree 建好、.env 已复制、初始化命令自动运行</td><td><span class="st st-no">还没验证</span></td><td class="muted">服务层有真 git 测试；Electron 里没建过 worktree</td></tr><tr><td class="mono b">TC-03</td><td>同一仓库再建 fix/rate-limit，两个框各开一个 claude 同时改代码</td><td><span class="st st-no">还没验证</span></td><td class="muted">服务层支持多 worktree；两个真 claude 并行没试过</td></tr><tr><td class="mono b">TC-04</td><td>claude 请求批准：2 秒内变橙，框和顶栏“1 waiting”，后台时有系统通知</td><td><span class="st st-part">部分验证</span></td><td class="muted">手动发一个批准请求，橙色、计数、角标都出现了；真 claude 还停在信任提示，系统通知没真弹</td></tr><tr><td class="mono b">TC-05</td><td>⌘J 跳过去，直接批准，状态回到运行中</td><td><span class="st st-no">还没验证</span></td><td class="muted">⌘J 有单测；真 claude 批准后回到运行中没测。场景写“按 y”，claude 实测是 1 或回车</td></tr><tr><td class="mono b">TC-06</td><td>框里跑 dev server，点 localhost 链接，网页窗口出现在右边同一个框里</td><td><span class="st st-part">部分验证</span></td><td class="muted">组装时用 python http.server 点开过网页窗口；pnpm dev 没试</td></tr><tr><td class="mono b">TC-07</td><td>聚焦 claude，面板显示更改，暂存、写信息、⌘↩ 提交，提交记录里出现</td><td><span class="st st-part">部分验证</span></td><td class="muted">暂存和取消暂存在 Electron 里试过；真提交没做（避免改 main）</td></tr><tr><td class="mono b">TC-08</td><td>切到 fix/rate-limit 时显示“in fix/rate-limit”，单击跳到那个框</td><td><span class="st st-no">还没验证</span></td><td class="muted">面板有单测；要第二个 worktree，组装时没试</td></tr><tr><td class="mono b">TC-09</td><td>两个终端拉小成摘要卡，单击恢复原大小并聚焦</td><td><span class="st st-part">部分验证</span></td><td class="muted">白板和终端窗口都有单测；Electron 里没拉过</td></tr><tr><td class="mono b">TC-10</td><td>退出再打开：位置不变，终端还在运行，历史都在</td><td><span class="st st-ok">基本可以</span></td><td class="muted">今晚在 main 上重开过一次，截图为证；没测强杀进程</td></tr><tr><td class="mono b">TC-11</td><td>标题栏右键 › Open in system terminal，两边输入同步</td><td><span class="st st-no">还没验证</span></td><td class="muted">命令拼装有单测；没真点</td></tr><tr><td class="mono b">TC-12</td><td>删除 fix/rate-limit 并删目录：有改动要先确认；目录消失、分支还在</td><td><span class="st st-part">部分验证</span></td><td class="muted">服务层有真 git 测试；Electron 里没走过</td></tr><tr><td class="mono b">TC-13</td><td>关掉窗口 claude 继续跑，批准请求来通知，点通知回来并跳到它</td><td><span class="st st-part">部分验证</span></td><td class="muted">关窗口后台继续在 Electron 里试过；点通知没试</td></tr><tr><td class="mono b">TC-14</td><td>重启电脑后 Restore all，接回原来的对话</td><td><span class="st st-todo">没做（P1）</span></td><td class="muted">属于 P1（MVP 完整版），还没做</td></tr></tbody></table></div>
-</section>
-
-<div class="two">
-  <section class="block"><div class="head"><h2>已知问题</h2><p>apps/desktop/ASSEMBLY_NOTES.md，都不会让程序崩</p></div><ul class="list"><li><span class="mono">IS-09</span> <b>tmux-host</b>：变量重名导致终端进程一启动就崩，组装时在构建配置里绕过了，根子没改</li><li><span class="mono">IS-10</span> <b>tmux-host</b>：打包后默认的 tmux.conf 路径不对，应用现在总是显式传路径</li><li><span class="mono">IS-19</span> <b>workspace-service</b>：没有“worktree 放哪”的选项，开发模式下借一个假的主目录</li><li><span class="mono">IS-20</span> <b>白板</b>：第二次 start() 在白板加载完之前就返回</li><li><span class="mono">IS-21</span> <b>白板</b>：新建终端菜单里有用不了的 custom，按 agent id 而不是名字显示</li><li><span class="mono">IS-06</span> <b>agent-adapters</b>：claude 停在信任提示时状态显示 Idle，应该算在等你</li><li><span class="mono">IS-22</span> <b>源代码管理面板</b>：没有聚焦任何窗口时也显示“This window isn’t in a workspace.”</li><li><span class="mono">IS-08</span> <b>agent-adapters</b>：重开应用后状态都显示“Idle · now”，开始时间没接上</li><li><span class="mono">IS-07</span> <b>终端窗口</b>：连着建两个终端时第二个可能误显示“Previous session ended”</li></ul></section>
-  <section class="block"><div class="head"><h2>还没处理的</h2></div><ul class="list"><li>线 1 的 13 条接口意见还没整理成 contracts 0.1.4（关闭确认要知道进程在不在跑、⌘K 清历史、拖入文件的路径、打开外部链接等）。</li><li>线 2–5 还没把 contracts 0.1.3 的新字段用进各自的代码（白板仍按 type 写特例，网页窗口仍用本地的 reloadToken 等）。</li><li>没有 Settings 界面：设置存在 settings.json，点 Settings 用系统程序打开它。</li><li>右下角有 React Flow 的水印，可以关掉。</li><li>面板的 Repository 区列出了开发期间留下的十几个已合并分支，可以清理。</li></ul>
-    <div class="head" style="margin-top:12px"><h2>建议的下一步</h2></div><ol class="list"><li>写 R2：把 14 条验收场景做成 Playwright（Electron 模式）用例，先做能完全自动的 1、2、6、7、9、10、12。</li><li>修 ASSEMBLY_NOTES 里的 9 条（多数是一两行的事），尤其是 tmux-host 的变量重名和“信任提示显示 Idle”。</li><li>整理 contracts 0.1.4，并让线 2–5 把 0.1.3 的新字段用起来。</li><li>补三项性能测量：30 个窗口平移、Electron 里 6 个终端打字延迟、空闲 CPU。</li><li>给 CI 装 tmux，推到 GitHub 跑一次（需要你给仓库名）。</li></ol></section>
-</div>
-
-<section class="block">
-  <div class="head"><h2>明天验货</h2><p>按顺序试，大约 15 分钟。</p></div>
+  <div class="head"><h2>怎么验收</h2><p>按顺序试，大约 15 分钟。</p></div>
   <ol class="try"><li><div class="try-h"><b>启动</b></div><code>cd /Users/liu/2026/agenduck &amp;&amp; pnpm dev</code><p>开发数据在 .agentdeck-dev/，不碰你真实的 ~/.agentdeck。上次的演示终端还在 dev 的 tmux 里，会直接接回。</p></li><li><div class="try-h"><b>让 claude 真的跑起来</b></div><code>在 claude 窗口里选 “Yes, I trust this folder”</code><p>这一步会写进你的 ~/.claude.json，所以我没替你点。之后发一句话，看标题栏从 Idle 变 Running 再回到 Idle。</p></li><li><div class="try-h"><b>看批准提醒</b></div><code>让 claude 运行一个需要批准的命令（例如 “run ls in a new shell”）</code><p>应该 2 秒内变橙，框和顶栏出现“1 waiting”；切到别的应用会收到系统通知。按 1 批准。</p></li><li><div class="try-h"><b>新建一个工作区</b></div><code>右键 › New workspace…，基于 main 新建一个分支</code><p>框出现，里面开的终端在新 worktree 里；右侧面板显示这个分支。用完可以右键框删除，选连目录一起删。</p></li><li><div class="try-h"><b>网页窗口</b></div><code>在 Shell 里运行 python3 -m http.server 8765，点输出里的地址</code><p>网页窗口出现在终端右边、同一个框里。</p></li><li><div class="try-h"><b>摘要卡和快捷键</b></div><code>把终端右下角往里拉到很小；试 ⌘J、⌘B、⌘0、⌘1</code><p>变摘要卡，单击恢复；快捷键在网页窗口里也要有效。</p></li><li><div class="try-h"><b>退出再打开</b></div><code>⌘Q，再 pnpm dev</code><p>框和窗口位置不变，终端输出都在。</p></li><li><div class="try-h"><b>清理开发数据（可选）</b></div><code>tmux -L agentdeck-desktop-dev kill-server &amp;&amp; rm -rf .agentdeck-dev</code><p>先退出应用再执行。</p></li></ol>
 </section>
+
+<section class="block">
+  <div class="head"><h2>建议的下一步</h2></div>
+  <ol class="list"><li>写 R2：把 14 条验收场景做成 Playwright（Electron 模式）用例，先做能完全自动的 1、2、6、7、9、10、12。</li><li>修 ASSEMBLY_NOTES 里的 9 条（多数是一两行的事），尤其是 tmux-host 的变量重名和“信任提示显示 Idle”。</li><li>整理 contracts 0.1.4，并让线 2–5 把 0.1.3 的新字段用起来。</li><li>补三项性能测量：30 个窗口平移、Electron 里 6 个终端打字延迟、空闲 CPU。</li><li>给 CI 装 tmux，推到 GitHub 跑一次（需要你给仓库名）。</li></ol>
+</section>
+
+<details class="block collapse">
+  <summary>已经实现的基础功能</summary>
+  <div class="feats" style="margin-top:14px"><section class="feat"><h3>白板和窗口</h3><ul><li>一整块可平移、⌘ + 滚轮缩放的白板，点阵背景；⌘0 / ⌘1 缩放到 100% / 显示全部</li><li>窗口外框：拖标题栏移动、拖边和角改大小、放大还原、关闭、聚焦描边、层级</li><li>右键菜单：New terminal ▸（列出已安装的 agent）、New browser、New workspace…、Add project…</li><li>顶栏：白板名、“n running · n waiting”、Projects ▾、在等你的按钮</li><li>布局改动后半秒自动保存，重开应用原样恢复</li><li>终端拉小到 320×200 以下变摘要卡（最后 3 行和状态），单击恢复</li></ul></section><section class="feat"><h3>终端（tmux 托管）</h3><ul><li>所有终端跑在 AgentDeck 自己的 tmux 实例里，关掉或退出应用后继续运行，重开自动接回，历史输出都在</li><li>只为视口里的终端接上显示，移出就断开</li><li>按键直通：不带 ⌘ 的按键全部交给终端；Shift+Enter、多行粘贴、拖入文件路径</li><li>进程退出显示 Exited / Error 和 Restart；命令找不到有提示</li><li>输出里的 localhost 地址和“文件:行号”可以点</li><li>agent 用登录 shell 的环境启动（拿得到 PATH 和代理变量），claude 在 tmux 里保持真彩色</li></ul></section><section class="feat"><h3>项目、工作区和 Git</h3><ul><li>添加项目（自动用仓库根目录、识别基础分支），项目可以是一个仓库、多个仓库或没有 git 的文件夹</li><li>新建工作区：新 worktree + 新分支或已有分支，或主目录工作区；复制 .env；自动运行初始化命令；失败回滚</li><li>工作区框：标题是“项目 · 分支”，拖标题带走里面的窗口；框里新开的终端在工作区目录</li><li>删除工作区：只从白板移除，或连目录一起删；有未提交的改动要再确认</li><li>右侧源代码管理面板跟随聚焦的窗口：树形更改、暂存 / 取消暂存、提交（⌘↩）、切换分支（被占用的灰显）、stash 往返、提交记录</li><li>Git 不监听文件，只在切换聚焦、agent 一轮结束、自己操作之后刷新</li></ul></section><section class="feat"><h3>agent 状态和提醒</h3><ul><li>claude、codex 的状态来自它们自己的钩子（启动时临时注入，不改你的配置），其他程序看输出活动</li><li>标题栏状态点和文字：Running · 4m、Needs approval、Needs reply、Idle、Exited、Error</li><li>在等你的窗口：橙色边框、框标题和顶栏显示“1 waiting”，⌘J 依次跳过去</li><li>应用在后台时：系统通知和程序坞角标</li></ul></section><section class="feat"><h3>网页窗口</h3><ul><li>在白板上打开网页，地址栏、后退、刷新、在系统浏览器打开</li><li>单击终端里的 localhost 链接，网页窗口出现在终端旁边、同一个框里；同一地址已开着就聚焦它</li><li>本地页面能嵌进来（主进程改响应头），服务端写的登录 cookie 能用；服务没起来时显示出错页和 Retry</li></ul></section><section class="feat"><h3>工程基础</h3><ul><li>pnpm check：类型检查、代码规范、界面不许写颜色、15 条模块边界规则、所有测试</li><li>所有服务都有假实现，各条线可以单独开发和演示</li><li>contracts 0.1.3：模块之间唯一的约定，并行开发期间只加不改</li><li>演示和截图模式：AGENTDECK_DEMO=1、AGENTDECK_SCREENSHOT=&lt;路径&gt;</li></ul></section></div>
+</details>
+
+<details class="block collapse">
+  <summary>烟测和 39 项基础功能的证据</summary>
+  <div class="tbl" style="margin-top:14px"><table><thead><tr><th>烟测</th><th>结果</th><th>说明</th></tr></thead><tbody><tr><td class="b">pnpm check（main，24c44e5）</td><td><span class="st st-ok">通过</span></td><td>类型检查、ESLint、颜色检查、模块边界全部通过；Vitest 719 个通过、4 个跳过（需要真 agent 的那 4 个）。其中约 15 个用真 tmux、约 68 个用真 git 临时仓库。</td></tr><tr><td class="b">演示模式启动（AGENTDECK_DEMO=1）</td><td><span class="st st-ok">通过</span></td><td>在 main 上启动 Electron：自动加本仓库为项目、建主目录工作区、开 zsh 和 claude 两个真终端，2 个终端都有输出后截图并正常退出。</td></tr><tr><td class="b">退出后重开</td><td><span class="st st-ok">通过</span></td><td>不带演示模式再启动一次：框、两个窗口位置不变，tmux 里的会话还在，历史输出完整接回。</td></tr><tr><td class="b">真 claude / codex 测试（AGENTDECK_REAL_AGENTS=1）</td><td><span class="st st-skip">没跑</span></td><td>今晚没跑：它会自动回答 codex 的“信任这个文件夹”，往你的 codex 配置里写记录，需要你同意。线 4 开发时跑过两次，都通过。</td></tr><tr><td class="b">端到端（Playwright）</td><td><span class="st st-none">没有</span></td><td>还没有写。14 条验收场景都没有自动化的端到端测试。</td></tr><tr><td class="b">GitHub Actions</td><td><span class="st st-none">没有</span></td><td>仓库没推送，没跑过；而且工作流里没装 tmux，真 tmux 的测试在 CI 上会被跳过。</td></tr></tbody></table></div>
+  <div class="tbl" style="margin-top:14px"><table class="wide"><thead><tr><th>编号</th><th>功能</th><th>状态</th><th>自动测试</th><th>真窗口里验证</th><th>备注</th></tr></thead><tbody><tr><td class="mono b">F1</td><td class="b">单仓骨架</td><td><span class="st st-manual">完成，只有手动验证</span></td><td>只有 pnpm check</td><td>pnpm dev 能打开窗口</td><td class="muted"></td></tr><tr><td class="mono b">F2</td><td class="b">contracts</td><td><span class="st st-auto">完成，有自动测试</span></td><td>类型检查 + 假实现的接口测试</td><td>各包接进应用后编译通过</td><td class="muted">当前 0.1.3</td></tr><tr><td class="mono b">F3</td><td class="b">IPC 层</td><td><span class="st st-auto">完成，有自动测试</span></td><td>34 例（路由、错误还原、preload）</td><td>真 IPC 在用</td><td class="muted">“统一超时包装”没找到</td></tr><tr><td class="mono b">F4</td><td class="b">tokens 和零件</td><td><span class="st st-auto">完成，有自动测试</span></td><td>46 例（含禁止写死颜色）</td><td>有演示页</td><td class="muted"></td></tr><tr><td class="mono b">F5</td><td class="b">CI 和模块边界</td><td><span class="st st-auto">完成，有自动测试</span></td><td>每条规则有违规样例</td><td>—</td><td class="muted">CI 没在云端跑过</td></tr><tr><td class="mono b">F6</td><td class="b">假实现</td><td><span class="st st-auto">完成，有自动测试</span></td><td>74 例</td><td>各演示页都用它</td><td class="muted"></td></tr><tr><td class="mono b">F7</td><td class="b">tmux 配置试验</td><td><span class="st st-manual">完成，只有手动验证</span></td><td>真 tmux 测试加载了这份配置</td><td>试验脚本 + 测量数据</td><td class="muted">9 项需要人工确认，都还没勾</td></tr><tr><td class="mono b">F8</td><td class="b">本地存储</td><td><span class="st st-auto">完成，有自动测试</span></td><td>38 例（真 SQLite）</td><td>开发数据库已生成</td><td class="muted"></td></tr><tr><td class="mono b">B1</td><td class="b">白板画布</td><td><span class="st st-partial">部分完成 / 未做</span></td><td>没有手势测试（jsdom 测不了）</td><td>dev 页手动试过</td><td class="muted">“30 个窗口平移不掉帧”没测量</td></tr><tr><td class="mono b">B2</td><td class="b">窗口外框</td><td><span class="st st-partial">部分完成 / 未做</span></td><td>16 例</td><td>截图里外框正常</td><td class="muted">完成标准要的 Playwright 用例没有</td></tr><tr><td class="mono b">B3</td><td class="b">窗口注册表和右键菜单</td><td><span class="st st-auto">完成，有自动测试</span></td><td>9 例</td><td>右键菜单出现</td><td class="muted">菜单里多一个 custom，应用里先藏了</td></tr><tr><td class="mono b">B4</td><td class="b">顶栏</td><td><span class="st st-auto">完成，有自动测试</span></td><td>数字随事件变</td><td>“1 waiting”出现过</td><td class="muted"></td></tr><tr><td class="mono b">B5</td><td class="b">布局自动保存</td><td><span class="st st-auto">完成，有自动测试</span></td><td>自动保存、重启恢复、存储往返</td><td>⌘Q 后重开一样</td><td class="muted">没测强杀进程</td></tr><tr><td class="mono b">T1</td><td class="b">tmux-host 服务</td><td><span class="st st-auto">完成，有自动测试</span></td><td>25 例，15 例真 tmux</td><td>跑在 utilityProcess，退出后会话还在</td><td class="muted"></td></tr><tr><td class="mono b">T2</td><td class="b">终端窗口显示</td><td><span class="st st-auto">完成，有自动测试</span></td><td>30 例（含真 xterm 解析）</td><td>两个真终端正常显示</td><td class="muted">在 Electron 里的打字延迟没测（tmux-host 层 p99 &lt; 50ms）</td></tr><tr><td class="mono b">T3</td><td class="b">输入、复制、粘贴</td><td><span class="st st-auto">完成，有自动测试</span></td><td>按键决策、Shift+Enter、拖入路径</td><td>—</td><td class="muted">真键盘在 Electron 里没试</td></tr><tr><td class="mono b">T4</td><td class="b">agent 适配器</td><td><span class="st st-auto">完成，有自动测试</span></td><td>30 例 + 4 例真 agent</td><td>检测到 claude 和 codex</td><td class="muted"></td></tr><tr><td class="mono b">T5</td><td class="b">退出、出错、重启</td><td><span class="st st-auto">完成，有自动测试</span></td><td>退出、关闭确认、系统终端命令</td><td>—</td><td class="muted">Open in system terminal 没真点</td></tr><tr><td class="mono b">T6</td><td class="b">重开应用自动接上</td><td><span class="st st-auto">完成，有自动测试</span></td><td>真 tmux 接管 + 窗口重连</td><td>重开截图，输出都在</td><td class="muted">重开后状态时间从“现在”算</td></tr><tr><td class="mono b">T7</td><td class="b">链接识别</td><td><span class="st st-auto">完成，有自动测试</span></td><td>12 组用例</td><td>组装时点 http.server 的链接开了网页窗口</td><td class="muted"></td></tr><tr><td class="mono b">T8</td><td class="b">摘要卡</td><td><span class="st st-auto">完成，有自动测试</span></td><td>变摘要卡、恢复并聚焦、真 tmux 取最后几行</td><td>—</td><td class="muted">Electron 里拉小再恢复没验证</td></tr><tr><td class="mono b">W1</td><td class="b">项目</td><td><span class="st st-partial">部分完成 / 未做</span></td><td>9 例真 git + 选文件夹流程</td><td>只用演示模式加过项目</td><td class="muted">没有 Settings › Projects 界面，Settings 打开的是 settings.json</td></tr><tr><td class="mono b">W2</td><td class="b">新建工作区</td><td><span class="st st-auto">完成，有自动测试</span></td><td>8 例真 git（新分支、复制 .env、回滚、分支被占用）</td><td>—</td><td class="muted">Electron 里没建过 worktree</td></tr><tr><td class="mono b">W3</td><td class="b">工作区框</td><td><span class="st st-auto">完成，有自动测试</span></td><td>框里终端目录、拖框带窗口</td><td>主目录工作区的框正常</td><td class="muted">worktree 框没在 Electron 里看过</td></tr><tr><td class="mono b">W4</td><td class="b">删除工作区</td><td><span class="st st-auto">完成，有自动测试</span></td><td>6 例真 git（有改动要强删、分支保留）</td><td>—</td><td class="muted"></td></tr><tr><td class="mono b">W5</td><td class="b">终端换框的限制</td><td><span class="st st-auto">完成，有自动测试</span></td><td>弹回和 Open new</td><td>—</td><td class="muted"></td></tr><tr><td class="mono b">G1</td><td class="b">git-service</td><td><span class="st st-auto">完成，有自动测试</span></td><td>49 例，41 例真 git</td><td>面板显示真实状态</td><td class="muted"></td></tr><tr><td class="mono b">G2</td><td class="b">源代码管理面板</td><td><span class="st st-auto">完成，有自动测试</span></td><td>18 例</td><td>暂存和取消暂存试过</td><td class="muted">Electron 里没真提交</td></tr><tr><td class="mono b">G3</td><td class="b">切换分支</td><td><span class="st st-auto">完成，有自动测试</span></td><td>灰显、跳转、stash；9 例真 git</td><td>—</td><td class="muted">跳到别的框没试</td></tr><tr><td class="mono b">G4</td><td class="b">刷新时机</td><td><span class="st st-auto">完成，有自动测试</span></td><td>数刷新次数</td><td>—</td><td class="muted">“空闲 CPU 接近 0”没测量</td></tr><tr><td class="mono b">S1</td><td class="b">钩子接收</td><td><span class="st st-auto">完成，有自动测试</span></td><td>18 例（100ms 内到达）+ 真 agent</td><td>手动发批准请求和 Stop，一路到标题栏</td><td class="muted"></td></tr><tr><td class="mono b">S2</td><td class="b">状态机</td><td><span class="st st-auto">完成，有自动测试</span></td><td>40 例，状态表每行一例</td><td>Idle、Needs approval 都显示过</td><td class="muted">claude 停在信任提示时显示 Idle</td></tr><tr><td class="mono b">S3</td><td class="b">界面提醒</td><td><span class="st st-auto">完成，有自动测试</span></td><td>橙色、计数、⌘J</td><td>橙色、“1 waiting”、角标都出现了</td><td class="muted">“2 秒内”没计时</td></tr><tr><td class="mono b">S4</td><td class="b">后台通知</td><td><span class="st st-auto">完成，有自动测试</span></td><td>通知规则 6 例</td><td>角标出现</td><td class="muted">点系统通知没试</td></tr><tr><td class="mono b">U1</td><td class="b">网页窗口</td><td><span class="st st-auto">完成，有自动测试</span></td><td>73 例（响应头改写、服务、组件）</td><td>组装时开过</td><td class="muted"></td></tr><tr><td class="mono b">U2</td><td class="b">从终端打开网页</td><td><span class="st st-auto">完成，有自动测试</span></td><td>复用和打开位置</td><td>组装时开过</td><td class="muted"></td></tr><tr><td class="mono b">U3</td><td class="b">出错页和本地文件</td><td><span class="st st-auto">完成，有自动测试</span></td><td>15 例</td><td>试验脚本</td><td class="muted"></td></tr><tr><td class="mono b">R1</td><td class="b">快捷键</td><td><span class="st st-auto">完成，有自动测试</span></td><td>快捷键分发 + 菜单</td><td>菜单项触发 ⌘B ⌘W</td><td class="muted">真键盘在网页里没试</td></tr><tr><td class="mono b">R2</td><td class="b">端到端验收</td><td><span class="st st-partial">部分完成 / 未做</span></td><td>没有</td><td>没有</td><td class="muted">没有 Playwright，14 条验收场景都没自动化</td></tr></tbody></table></div>
+</details>
+
+<details class="block collapse">
+  <summary>调研记录索引（44 条）</summary>
+  <p class="muted" style="margin:10px 0 0;font-size:13px">每条的原来以为、实际情况、决策、好处和代价在《AgentDeck 调研记录》里，单击编号打开。</p>
+  <div class="tbl" style="margin-top:10px"><table class="wide"><thead><tr><th>编号</th><th>分组</th><th>标题</th><th>状态</th><th>相关用例和问题</th></tr></thead><tbody><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-01" target="_blank" rel="noopener">DR-01</a></td><td class="muted">产品形态</td><td>agent 的对话是在白板上的真终端里，不是我们自己画的界面</td><td>已解决</td><td><a class="ref" href="#tc-21">TC-21</a> <a class="ref" href="#is-05">IS-05</a></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-02" target="_blank" rel="noopener">DR-02</a></td><td class="muted">产品形态</td><td>不要左侧栏，也不要每个框上的 +/− 改动数</td><td>已解决</td><td></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-03" target="_blank" rel="noopener">DR-03</a></td><td class="muted">产品形态</td><td>界面全英文，文档用中文</td><td>已解决</td><td></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-04" target="_blank" rel="noopener">DR-04</a></td><td class="muted">技术方案</td><td>终端进程交给 tmux，AgentDeck 只负责显示</td><td>进行中</td><td><a class="ref" href="#tc-10">TC-10</a> <a class="ref" href="#tc-11">TC-11</a> <a class="ref" href="#tc-19">TC-19</a> <a class="ref" href="#is-05">IS-05</a> <a class="ref" href="#is-09">IS-09</a> <a class="ref" href="#is-10">IS-10</a></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-05" target="_blank" rel="noopener">DR-05</a></td><td class="muted">技术方案</td><td>Git 不监听文件，只在三个时机刷新</td><td>已解决</td><td><a class="ref" href="#tc-07">TC-07</a> <a class="ref" href="#is-26">IS-26</a></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-06" target="_blank" rel="noopener">DR-06</a></td><td class="muted">技术方案</td><td>白板不靠整体缩放放下更多窗口，而是拖小窗口、变摘要卡</td><td>已解决</td><td><a class="ref" href="#tc-09">TC-09</a> <a class="ref" href="#is-23">IS-23</a></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-07" target="_blank" rel="noopener">DR-07</a></td><td class="muted">技术方案</td><td>状态靠 agent 自己的钩子，不靠识别屏幕文字</td><td>进行中</td><td><a class="ref" href="#tc-04">TC-04</a> <a class="ref" href="#tc-05">TC-05</a> <a class="ref" href="#is-01">IS-01</a> <a class="ref" href="#is-06">IS-06</a></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-08" target="_blank" rel="noopener">DR-08</a></td><td class="muted">需求细节</td><td>运行中的终端换不了目录，拖进别的框只能新开或 Fork</td><td>进行中</td><td><a class="ref" href="#tc-03">TC-03</a></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-09" target="_blank" rel="noopener">DR-09</a></td><td class="muted">需求细节</td><td>添加项目不用从访达拖，改成固定入口</td><td>已解决</td><td><a class="ref" href="#tc-01">TC-01</a></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-10" target="_blank" rel="noopener">DR-10</a></td><td class="muted">需求细节</td><td>项目不一定是 git 仓库，也可以是多个仓库</td><td>进行中</td><td><a class="ref" href="#tc-01">TC-01</a> <a class="ref" href="#tc-02">TC-02</a> <a class="ref" href="#is-19">IS-19</a></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-11" target="_blank" rel="noopener">DR-11</a></td><td class="muted">需求细节</td><td>“主力”是用户起的名字，应用不判断</td><td>已解决</td><td></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-12" target="_blank" rel="noopener">DR-12</a></td><td class="muted">需求细节</td><td>“等你回复”的定义收窄</td><td>已解决</td><td><a class="ref" href="#tc-04">TC-04</a> <a class="ref" href="#is-06">IS-06</a></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-13" target="_blank" rel="noopener">DR-13</a></td><td class="muted">需求细节</td><td>“全部选 yes”改成先列清单的 Approve all</td><td>推迟</td><td><a class="ref" href="#tc-05">TC-05</a> <a class="ref" href="#is-12">IS-12</a></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-14" target="_blank" rel="noopener">DR-14</a></td><td class="muted">需求细节</td><td>“关闭”分三种，重开能接回原来的对话</td><td>推迟</td><td><a class="ref" href="#tc-10">TC-10</a> <a class="ref" href="#tc-13">TC-13</a> <a class="ref" href="#tc-14">TC-14</a> <a class="ref" href="#is-14">IS-14</a> <a class="ref" href="#is-35">IS-35</a></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-15" target="_blank" rel="noopener">DR-15</a></td><td class="muted">接口与并发</td><td>先定接口再并发，接口第一版不够用</td><td>已解决</td><td></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-16" target="_blank" rel="noopener">DR-16</a></td><td class="muted">接口与并发</td><td>窗口组件的 props 漏在接口外面</td><td>已解决</td><td></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-17" target="_blank" rel="noopener">DR-17</a></td><td class="muted">接口与并发</td><td>每次合并 pnpm-lock.yaml 都冲突</td><td>已解决</td><td></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-18" target="_blank" rel="noopener">DR-18</a></td><td class="muted">接口与并发</td><td>检查规则比部分代码晚到</td><td>已解决</td><td></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-19" target="_blank" rel="noopener">DR-19</a></td><td class="muted">接口与并发</td><td>并行开发需要正式的仓库目录</td><td>已解决</td><td></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-20" target="_blank" rel="noopener">DR-20</a></td><td class="muted">接口与并发</td><td>第 2 波又收到约 30 条接口意见</td><td>进行中</td><td><a class="ref" href="#is-17">IS-17</a> <a class="ref" href="#is-18">IS-18</a></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-21" target="_blank" rel="noopener">DR-21</a></td><td class="muted">实现中的技术问题</td><td>跨 contextBridge 的错误会丢掉 code</td><td>已解决</td><td></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-22" target="_blank" rel="noopener">DR-22</a></td><td class="muted">实现中的技术问题</td><td>claude 在 tmux 里自己降到 256 色</td><td>进行中</td><td><a class="ref" href="#is-05">IS-05</a></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-23" target="_blank" rel="noopener">DR-23</a></td><td class="muted">实现中的技术问题</td><td>从程序坞打开的应用拿不到 shell 里的环境</td><td>进行中</td><td><a class="ref" href="#tc-20">TC-20</a> <a class="ref" href="#is-11">IS-11</a></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-24" target="_blank" rel="noopener">DR-24</a></td><td class="muted">实现中的技术问题</td><td>经过 tmux 后按键手感</td><td>进行中</td><td><a class="ref" href="#is-05">IS-05</a></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-25" target="_blank" rel="noopener">DR-25</a></td><td class="muted">实现中的技术问题</td><td>tmux 先要求用户自己装，不随应用打包</td><td>推迟</td><td><a class="ref" href="#tc-19">TC-19</a></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-26" target="_blank" rel="noopener">DR-26</a></td><td class="muted">实现中的技术问题</td><td>dependency-cruiser 命令行拒绝在 Node 25 上运行</td><td>已解决</td><td></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-27" target="_blank" rel="noopener">DR-27</a></td><td class="muted">实现中的技术问题</td><td>SQLite 原生模块要按 Electron 重新编译</td><td>推迟</td><td><a class="ref" href="#tc-20">TC-20</a> <a class="ref" href="#is-36">IS-36</a></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-28" target="_blank" rel="noopener">DR-28</a></td><td class="muted">实现中的技术问题</td><td>MVP 先只做 macOS</td><td>已解决</td><td></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-29" target="_blank" rel="noopener">DR-29</a></td><td class="muted">实现中的技术问题</td><td>代码还没推到 GitHub</td><td>推迟</td><td><a class="ref" href="#is-29">IS-29</a></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-30" target="_blank" rel="noopener">DR-30</a></td><td class="muted">实现中的技术问题</td><td>claude 的 --settings 钩子和用户自己的钩子是合并的</td><td>已解决</td><td><a class="ref" href="#tc-04">TC-04</a></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-31" target="_blank" rel="noopener">DR-31</a></td><td class="muted">实现中的技术问题</td><td>codex 的钩子能临时注入，但要处理“信任”</td><td>已解决</td><td><a class="ref" href="#tc-04">TC-04</a> <a class="ref" href="#is-34">IS-34</a></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-32" target="_blank" rel="noopener">DR-32</a></td><td class="muted">实现中的技术问题</td><td>拒绝批准、按 Esc 打断时 claude 不发任何钩子</td><td>进行中</td><td><a class="ref" href="#tc-05">TC-05</a> <a class="ref" href="#is-01">IS-01</a></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-33" target="_blank" rel="noopener">DR-33</a></td><td class="muted">实现中的技术问题</td><td>claude 的提问是从“权限请求”钩子来的</td><td>已解决</td><td><a class="ref" href="#tc-04">TC-04</a></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-34" target="_blank" rel="noopener">DR-34</a></td><td class="muted">实现中的技术问题</td><td>codex 的会话 id 要等第一次输入之后才知道</td><td>进行中</td><td><a class="ref" href="#tc-14">TC-14</a></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-35" target="_blank" rel="noopener">DR-35</a></td><td class="muted">实现中的技术问题</td><td>打包后嵌入的 localhost 页面算跨站，登录 cookie 存不进</td><td>已解决</td><td><a class="ref" href="#tc-06">TC-06</a></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-36" target="_blank" rel="noopener">DR-36</a></td><td class="muted">实现中的技术问题</td><td>刚接上终端时要替 xterm 回答终端查询</td><td>进行中</td><td><a class="ref" href="#is-05">IS-05</a></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-37" target="_blank" rel="noopener">DR-37</a></td><td class="muted">实现中的技术问题</td><td>tmux 自带的活动提醒不能用</td><td>进行中</td><td><a class="ref" href="#tc-04">TC-04</a></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-38" target="_blank" rel="noopener">DR-38</a></td><td class="muted">实现中的技术问题</td><td>codex 退出后还会留下常驻进程，并自己下载更新</td><td>已解决</td><td><a class="ref" href="#is-34">IS-34</a></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-39" target="_blank" rel="noopener">DR-39</a></td><td class="muted">实现中的技术问题</td><td>Claude Code 里配的 codex MCP 坏了，每个新 session 都提示重连</td><td>已解决</td><td></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-40" target="_blank" rel="noopener">DR-40</a></td><td class="muted">实现中的技术问题</td><td>主仓库搬家后，修 worktree 要把每个路径传给 git</td><td>已解决</td><td></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-41" target="_blank" rel="noopener">DR-41</a></td><td class="muted">实现中的技术问题</td><td>在 AgentDeck 里管理它自己的仓库，切一下分支应用就坏了</td><td>进行中</td><td><a class="ref" href="#tc-24">TC-24</a> <a class="ref" href="#is-37">IS-37</a> <a class="ref" href="#is-38">IS-38</a> <a class="ref" href="#is-31">IS-31</a></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-42" target="_blank" rel="noopener">DR-42</a></td><td class="muted">还没验证的</td><td>claude 能不能把对话 fork 到另一个目录</td><td>待验证</td><td></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-43" target="_blank" rel="noopener">DR-43</a></td><td class="muted">还没验证的</td><td>Approve all 发的“允许一次”按键对不对</td><td>待验证</td><td><a class="ref" href="#tc-05">TC-05</a> <a class="ref" href="#is-12">IS-12</a></td></tr><tr><td><a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-44" target="_blank" rel="noopener">DR-44</a></td><td class="muted">还没验证的</td><td>经过 tmux 后的手感，要人在真界面上确认</td><td>待验证</td><td><a class="ref" href="#is-05">IS-05</a></td></tr></tbody></table></div>
+</details>
 </div>
+
+<script type="application/json" id="meta">{"cases": ["TC-24", "TC-04", "TC-05", "TC-03", "TC-10", "TC-02", "TC-15", "TC-16", "TC-17", "TC-01", "TC-06", "TC-07", "TC-08", "TC-09", "TC-11", "TC-12", "TC-13", "TC-18", "TC-19", "TC-20", "TC-21", "TC-22", "TC-23", "TC-14"], "issues": ["IS-37", "IS-38", "IS-01", "IS-02", "IS-03", "IS-04", "IS-05", "IS-06", "IS-07", "IS-09", "IS-10", "IS-11", "IS-12", "IS-13", "IS-14", "IS-16", "IS-17", "IS-24", "IS-08", "IS-15", "IS-18", "IS-19", "IS-20", "IS-21", "IS-22", "IS-23", "IS-25", "IS-26", "IS-27", "IS-28", "IS-29", "IS-35", "IS-36", "IS-30", "IS-31", "IS-32", "IS-33", "IS-34"], "defaults": {"IS-37": {"status": "已解决", "note": "2026-10-24 已修（925c11f）：只要目录里有终端开着就确认，确认框列出这些终端；面板加了测试"}, "IS-38": {"status": "已解决", "note": "2026-10-24 已修（925c11f）：应用启动时找出自己运行的目录，界面对它切分支、建分支并切换、连目录删除都拒绝；真窗口里验证过"}}}</script>
+<script>
+(function () {
+  var META = JSON.parse(document.getElementById('meta').textContent);
+  var saveState = document.getElementById('save-state');
+  var filter = 'all';
+  function $all(sel) { return Array.prototype.slice.call(document.querySelectorAll(sel)); }
+
+  function refresh() {
+    var pass = 0, fail = 0, open = 0;
+    var counts = { all: 0, prob: 0, 'todo-acc': 0, fail: 0, pass: 0 };
+    $all('.case').forEach(function (el) {
+      var r = el.dataset.result;
+      if (r === '通过') pass++; else if (r === '不通过') fail++;
+      if (!r) open++;
+      var m = { all: true, prob: el.dataset.status === 'prob', 'todo-acc': !r, fail: r === '不通过', pass: r === '通过' };
+      Object.keys(m).forEach(function (k) { if (m[k]) counts[k]++; });
+      el.hidden = !m[filter];
+    });
+    document.getElementById('n-pass').textContent = pass;
+    document.getElementById('n-fail').textContent = fail;
+    document.getElementById('n-open').textContent = open;
+    document.getElementById('no-cases').hidden = counts[filter] > 0;
+    $all('[data-count]').forEach(function (s) { s.textContent = counts[s.dataset.count]; });
+    var bar = document.getElementById('acc-bar');
+    bar.innerHTML = '';
+    [['pass', pass], ['fail', fail], ['todo', open]].forEach(function (p) {
+      if (!p[1]) return;
+      var seg = document.createElement('span');
+      seg.className = 'seg seg-' + p[0];
+      seg.style.flex = p[1];
+      bar.appendChild(seg);
+    });
+    var solved = $all('.issue').filter(function (el) { return el.dataset.state === '已解决'; }).length;
+    document.getElementById('n-solved').textContent = solved;
+  }
+
+  $all('.chip').forEach(function (b) {
+    b.addEventListener('click', function () {
+      filter = b.dataset.filter;
+      $all('.chip').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+      refresh();
+    });
+  });
+  // 修改时先在页面上生效（不管能不能保存）
+  $all('select.res').forEach(function (s) {
+    s.addEventListener('change', function () { document.getElementById(s.dataset.tc.toLowerCase()).dataset.result = s.value; refresh(); });
+  });
+  $all('select.ist').forEach(function (s) {
+    s.addEventListener('change', function () { document.getElementById(s.dataset.is.toLowerCase()).dataset.state = s.value; refresh(); });
+  });
+  refresh();
+
+  function setState(text, bad) { saveState.textContent = text; saveState.classList.toggle('bad', !!bad); }
+  function readOnly(why) {
+    $all('select.res, select.ist, textarea').forEach(function (el) { el.disabled = true; });
+    setState(why, true);
+  }
+
+  if (!window.claude || typeof window.claude.use !== 'function') { readOnly('这个视图保存不了验收结果（只能看）'); return; }
+  window.claude.use('db').then(function (db) {
+    if (!db) { readOnly('这个视图保存不了验收结果（只能看）'); return; }
+    setState('验收结果会自动保存');
+    var busy = {}, next = {};
+    function write(col, id, body) {
+      var key = col + '/' + id;
+      if (busy[key]) { next[key] = body; return; }
+      busy[key] = true;
+      setState('正在保存…');
+      db.collection(col).doc(id).set(body).then(function () {
+        setState('已保存');
+      }, function (e) {
+        if (e && e.code === 'invalid_argument') readOnly('你没有保存权限，只能看');
+        else setState('保存失败，稍后再改一次试试', true);
+      }).then(function () {
+        busy[key] = false;
+        if (next[key]) { var b = next[key]; delete next[key]; write(col, id, b); }
+      });
+    }
+    function saveCase(id) {
+      write('acceptance', id, { result: document.getElementById('res-' + id).value, note: document.getElementById('note-' + id).value, at: new Date().toISOString() });
+    }
+    function saveIssue(id) {
+      write('issues', id, { status: document.getElementById('st-' + id).value, note: document.getElementById('isnote-' + id).value, at: new Date().toISOString() });
+    }
+    var timers = {};
+    function debounce(key, fn) { clearTimeout(timers[key]); timers[key] = setTimeout(fn, 800); }
+    $all('select.res').forEach(function (s) { s.addEventListener('change', function () { saveCase(s.dataset.tc); }); });
+    $all('textarea.tc-note').forEach(function (t) {
+      t.addEventListener('input', function () { debounce('c' + t.dataset.tc, function () { saveCase(t.dataset.tc); }); });
+    });
+    $all('select.ist').forEach(function (s) { s.addEventListener('change', function () { saveIssue(s.dataset.is); }); });
+    $all('textarea.is-note').forEach(function (t) {
+      t.addEventListener('input', function () { debounce('i' + t.dataset.is, function () { saveIssue(t.dataset.is); }); });
+    });
+
+    function apply(snap, kind) {
+      snap.docs.forEach(function (d) {
+        var v = d.data() || {};
+        if (kind === 'case') {
+          var sel = document.getElementById('res-' + d.id), note = document.getElementById('note-' + d.id);
+          if (!sel) return;
+          if (document.activeElement !== sel) sel.value = v.result || '';
+          if (document.activeElement !== note) note.value = v.note || '';
+          document.getElementById(d.id.toLowerCase()).dataset.result = sel.value;
+        } else {
+          var st = document.getElementById('st-' + d.id), n2 = document.getElementById('isnote-' + d.id);
+          if (!st) return;
+          if (document.activeElement !== st && v.status) st.value = v.status;
+          if (document.activeElement !== n2 && typeof v.note === 'string') n2.value = v.note;
+          document.getElementById(d.id.toLowerCase()).dataset.state = st.value;
+        }
+      });
+      refresh();
+    }
+    function onErr() { setState('读取保存的结果失败，刷新页面再试', true); }
+    db.collection('acceptance').onSnapshot(function (s) { apply(s, 'case'); }, onErr);
+    db.collection('issues').onSnapshot(function (s) { apply(s, 'issue'); }, onErr);
+  }, function () { readOnly('这个视图保存不了验收结果（只能看）'); });
+})();
+</script>

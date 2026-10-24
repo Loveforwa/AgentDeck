@@ -1,9 +1,9 @@
-# MVP 验收报告的数据（2026-10-23 晚的快照）。改这里，然后运行 `python3 docs/status/build.py`。
+# MVP 验收报告的数据（用例和问题在 tracking.py，调研在 ../research/entries.py）（2026-10-23 晚的快照）。改这里，然后运行 `python3 docs/status/build.py`。
 # 证据来自：各包测试、apps/desktop/ASSEMBLY_NOTES.md、提交 c98a173 的说明、.agentdeck-shots/ 下的截图，
 # 以及当晚在 main（24c44e5）上重跑的 pnpm check 和两次 Electron 启动。
 
-DATE = '2026-10-23'
-COMMIT = '24c44e5'
+DATE = '2026-10-24'
+COMMIT = '6d44acb'
 
 # 已经实现的基础功能，按用户能看到的东西分组
 FEATURES = [
@@ -105,44 +105,8 @@ P0 = [
 ]
 
 # 14 条验收场景（来自设计画布「10 · 全局规则」），编号就是端到端用例 TC-01 到 TC-14
-# status: ok 基本可以 / part 部分验证 / no 还没验证 / todo 没做
-ACCEPT = [
-    (1, '右键 › Add project… 选文件夹，直接进入新建工作区对话框', 'no', '流程有单测（假的选文件夹）；Electron 里没点过，组装用的是演示模式'),
-    (2, '基于 main 新建 feat/oauth：框出现、worktree 建好、.env 已复制、初始化命令自动运行', 'no', '服务层有真 git 测试；Electron 里没建过 worktree'),
-    (3, '同一仓库再建 fix/rate-limit，两个框各开一个 claude 同时改代码', 'no', '服务层支持多 worktree；两个真 claude 并行没试过'),
-    (4, 'claude 请求批准：2 秒内变橙，框和顶栏“1 waiting”，后台时有系统通知', 'part', '手动发一个批准请求，橙色、计数、角标都出现了；真 claude 还停在信任提示，系统通知没真弹'),
-    (5, '⌘J 跳过去，直接批准，状态回到运行中', 'no', '⌘J 有单测；真 claude 批准后回到运行中没测。场景写“按 y”，claude 实测是 1 或回车'),
-    (6, '框里跑 dev server，点 localhost 链接，网页窗口出现在右边同一个框里', 'part', '组装时用 python http.server 点开过网页窗口；pnpm dev 没试'),
-    (7, '聚焦 claude，面板显示更改，暂存、写信息、⌘↩ 提交，提交记录里出现', 'part', '暂存和取消暂存在 Electron 里试过；真提交没做（避免改 main）'),
-    (8, '切到 fix/rate-limit 时显示“in fix/rate-limit”，单击跳到那个框', 'no', '面板有单测；要第二个 worktree，组装时没试'),
-    (9, '两个终端拉小成摘要卡，单击恢复原大小并聚焦', 'part', '白板和终端窗口都有单测；Electron 里没拉过'),
-    (10, '退出再打开：位置不变，终端还在运行，历史都在', 'ok', '今晚在 main 上重开过一次，截图为证；没测强杀进程'),
-    (11, '标题栏右键 › Open in system terminal，两边输入同步', 'no', '命令拼装有单测；没真点'),
-    (12, '删除 fix/rate-limit 并删目录：有改动要先确认；目录消失、分支还在', 'part', '服务层有真 git 测试；Electron 里没走过'),
-    (13, '关掉窗口 claude 继续跑，批准请求来通知，点通知回来并跳到它', 'part', '关窗口后台继续在 Electron 里试过；点通知没试'),
-    (14, '重启电脑后 Restore all，接回原来的对话', 'todo', '属于 P1（MVP 完整版），还没做'),
-]
 
-# 已知问题（apps/desktop/ASSEMBLY_NOTES.md），都不会让程序崩；编号是问题清单里的 IS-xx
-ISSUES = [
-    ('IS-09', 'tmux-host', '变量重名导致终端进程一启动就崩，组装时在构建配置里绕过了，根子没改'),
-    ('IS-10', 'tmux-host', '打包后默认的 tmux.conf 路径不对，应用现在总是显式传路径'),
-    ('IS-19', 'workspace-service', '没有“worktree 放哪”的选项，开发模式下借一个假的主目录'),
-    ('IS-20', '白板', '第二次 start() 在白板加载完之前就返回'),
-    ('IS-21', '白板', '新建终端菜单里有用不了的 custom，按 agent id 而不是名字显示'),
-    ('IS-06', 'agent-adapters', 'claude 停在信任提示时状态显示 Idle，应该算在等你'),
-    ('IS-22', '源代码管理面板', '没有聚焦任何窗口时也显示“This window isn’t in a workspace.”'),
-    ('IS-08', 'agent-adapters', '重开应用后状态都显示“Idle · now”，开始时间没接上'),
-    ('IS-07', '终端窗口', '连着建两个终端时第二个可能误显示“Previous session ended”'),
-]
 
-PENDING = [
-    '线 1 的 13 条接口意见还没整理成 contracts 0.1.4（关闭确认要知道进程在不在跑、⌘K 清历史、拖入文件的路径、打开外部链接等）。',
-    '线 2–5 还没把 contracts 0.1.3 的新字段用进各自的代码（白板仍按 type 写特例，网页窗口仍用本地的 reloadToken 等）。',
-    '没有 Settings 界面：设置存在 settings.json，点 Settings 用系统程序打开它。',
-    '右下角有 React Flow 的水印，可以关掉。',
-    '面板的 Repository 区列出了开发期间留下的十几个已合并分支，可以清理。',
-]
 
 # 明天验货的步骤
 TRY = [
