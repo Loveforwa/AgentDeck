@@ -402,3 +402,60 @@ describe('Add project…', () => {
     expect(c.state.dialog).toBeNull();
   });
 });
+
+describe('windows and frames from services (M1: agents through MCP)', () => {
+  const terminalData = (terminalId: string): TerminalWindowData => ({
+    terminalId: terminalId as TerminalWindowData['terminalId'],
+    agent: 'claude',
+    cmd: 'claude',
+    args: [],
+    cwd: SAMPLE.paths.agentdeckLogin,
+    sessionId: null,
+    startCommand: null,
+  });
+
+  it('board.open-window puts the window in the frame without taking focus or moving the view, and flashes it', () => {
+    c.focusWindow(id('win-shop-claude'));
+    const viewport = c.state.viewport;
+    api.bus.emit({ type: 'board.open-window', request: { type: 'terminal', data: terminalData('term-new'), workspaceId: W.agentdeckLogin }, highlight: true });
+    const w = c.state.windows.find((n) => (n.data as TerminalWindowData).terminalId === 'term-new')!;
+    expect(w.workspaceId).toBe(W.agentdeckLogin);
+    expect(c.state.focusedId).toBe('win-shop-claude');
+    expect(c.state.viewport).toEqual(viewport);
+    expect(c.state.flash[w.id]).toBe(1);
+  });
+
+  it('reusing a browser window by origin updates it quietly', () => {
+    c.focusWindow(id('win-shop-claude'));
+    const req = { type: 'browser', data: { url: 'http://localhost:5173/a', mode: 'frame' }, workspaceId: W.agentdeckMain, reuseKey: 'http://localhost:5173' } as const;
+    const a = c.openWindowFromService(req, true)!;
+    const viewport = c.state.viewport;
+    const b = c.openWindowFromService({ ...req, data: { url: 'http://localhost:5173/b', mode: 'frame' } }, true);
+    expect(b).toBe(a);
+    expect((win(a).data as BrowserWindowData).url).toBe('http://localhost:5173/b');
+    expect(c.state.focusedId).toBe('win-shop-claude');
+    expect(c.state.viewport).toEqual(viewport);
+  });
+
+  it('a window for a workspace that is not on the board is loose', () => {
+    const wid = c.openWindowFromService({ type: 'terminal', data: terminalData('term-x'), workspaceId: 'ws-gone' as never }, false)!;
+    expect(win(wid).workspaceId).toBeNull();
+    expect(c.state.flash[wid]).toBeUndefined();
+  });
+
+  it('board.add-frame adds the workspace and a frame in a free spot, once', async () => {
+    const { workspace } = await api.workspaces.create({ projectId: SAMPLE.projects.agentdeck, mode: 'worktree', branch: { kind: 'new', name: 'feat/mcp' } });
+    const before = c.state.frames.length;
+    api.bus.emit({ type: 'board.add-frame', workspace });
+    api.bus.emit({ type: 'board.add-frame', workspace });
+    expect(c.state.frames).toHaveLength(before + 1);
+    expect(c.state.workspaces[workspace.id]?.branch).toBe('feat/mcp');
+    const rect = frame(workspace.id).rect;
+    for (const f of c.state.frames.filter((x) => x.workspaceId !== workspace.id)) {
+      const overlap = rect.x < f.rect.x + f.rect.w && f.rect.x < rect.x + rect.w && rect.y < f.rect.y + f.rect.h && f.rect.y < rect.y + rect.h;
+      expect(overlap).toBe(false);
+    }
+    api.bus.emit({ type: 'board.open-window', request: { type: 'terminal', data: terminalData('term-y'), workspaceId: workspace.id }, highlight: true });
+    expect(c.state.windows.find((n) => (n.data as TerminalWindowData).terminalId === 'term-y')!.workspaceId).toBe(workspace.id);
+  });
+});
