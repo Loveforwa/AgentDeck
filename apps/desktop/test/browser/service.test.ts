@@ -53,10 +53,18 @@ describe('prepare', () => {
     expect(core.allowedOrigins.list()).toEqual(['http://localhost:3000']);
   });
 
-  it('does not allow-list other sites', async () => {
+  it('opens other sites in a webview and does not allow-list them (IS-44)', async () => {
     const { core } = service();
-    expect(await core.prepare('https://example.com/')).toEqual({ src: 'https://example.com/', mode: 'frame' });
+    expect(await core.prepare('https://example.com/')).toEqual({ src: 'https://example.com/', mode: 'webview' });
+    expect(await core.prepare('http://192.168.1.5:8080/')).toEqual({ src: 'http://192.168.1.5:8080/', mode: 'webview' });
     expect(core.allowedOrigins.list()).toEqual([]);
+  });
+
+  it('a local address can be asked for as a webview; local files are always frames', async () => {
+    const { core } = service();
+    expect(await core.prepare('http://localhost:3000/', { mode: 'webview' })).toEqual({ src: 'http://localhost:3000/', mode: 'webview' });
+    expect(core.allowedOrigins.list()).toEqual([]);
+    expect((await core.prepare('/tmp/report.html', { mode: 'webview' })).mode).toBe('frame');
   });
 
   it('maps local files to agentdeck-file:// and keeps ? and #', async () => {

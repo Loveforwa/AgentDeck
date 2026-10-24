@@ -3,7 +3,7 @@
 实现过程中和一开始设想不一样的地方：原来以为什么、实际是什么、怎么决定的、好处和代价。
 由 `docs/research/build.py` 从 `docs/research/entries.py` 生成，不要直接改这个文件。更新于 2026-10-24。
 
-共 47 条：已解决 26，进行中 13，推迟 5，待验证 3。
+共 48 条：已解决 27，进行中 13，推迟 5，待验证 3。
 
 编号规则（全项目统一）：DR-xx 调研记录 · TC-xx 端到端用例 · IS-xx 问题 · F1、T2、X3 等是 MVP 任务表的任务编号。用例和问题在 docs/status/AgentDeck-端到端用例与问题清单-*.xlsx 里；每条调研下面列出相关的用例和问题。
 
@@ -58,6 +58,7 @@
   - [DR-45 xterm 的两个默认值和 tmux 不合：回滚为 0 会崩，Unicode 6 宽度会错位](#dr-45)（已解决）
   - [DR-46 claude 的颜色主题不能用用户的全局设置](#dr-46)（已解决）
   - [DR-47 Electron 的 net.fetch 不支持 redirect: manual](#dr-47)（已解决）
+  - [DR-48 外部网站用 webview，不再一律 Open in browser](#dr-48)（已解决）
 - **还没验证的**：已经有对策，但要等对应的线用真东西试过才算数
   - [DR-42 claude 能不能把对话 fork 到另一个目录](#dr-42)（待验证）
   - [DR-43 Approve all 发的“允许一次”按键对不对](#dr-43)（待验证）
@@ -672,6 +673,20 @@
 - **决策**：ping 改用 net.request（redirect: manual）：收到 redirect 或 response 事件就记下状态码、abort，不读正文；不是 manual 的请求仍用 net.fetch。外部网站能不能在白板里显示另外决定（IS-44）。
 - **好处**：会跳转的地址判断正确；仍走 session 的网络栈和系统代理；有单测，也在真 Electron 里跑过。
 - **代价**：多了一层自己写的请求代码；外部网站在 MVP 里仍然只能 Open in browser。
+
+<a id="dr-48"></a>
+
+### DR-48 外部网站用 webview，不再一律 Open in browser
+
+状态：已解决 · 出处：apps/desktop/src/main/browser/webview.ts、packages/ui/widgets/browser/src/BrowserWindow.tsx · 旧编号 —
+
+相关：TC-28、IS-44
+
+- **原来以为**：MVP 的网页窗口只给本地 dev server 用，外部网站交给系统浏览器；webview 留到 P1、要用户手动切换。
+- **实际情况**：用户直接在网页窗口里打开 google.com，期望能看、能登录。google、github 都带 X-Frame-Options，iframe 嵌不进；第三方登录还要 SameSite cookie 和弹窗。风险 3 试验早就证明 webview 能登录、能跟着缩放。
+- **决策**：prepare 按地址决定：本地地址用 iframe（改写响应头、小桥），外部网站自动用 <webview partition=persist:agentdeck-web>，不用手动切；iframe 出错页加 Show it here 切到 webview。主进程锁住 webview（去掉 preload 和 node、只认这个分区和 http(s)），分区 UA 去掉 Electron（Google 登录看到 Electron 会拒绝），权限只给剪贴板写入和全屏，window.open 开成同一分区的弹窗，⌘[ ⌘] ⌘R 在主进程里处理。
+- **好处**：外部网站在白板里能显示、能登录，登录态重启后还在；和白板页面的 session 分开，不改外部网站的响应头。
+- **代价**：应用窗口要开 webviewTag（靠 will-attach-webview 把关）；每个外部网页是单独的渲染进程，内存更多；webview 里 ⌘L 到不了地址栏；Google 可能以后换别的方式识别嵌入式浏览器。
 
 ## 还没验证的
 

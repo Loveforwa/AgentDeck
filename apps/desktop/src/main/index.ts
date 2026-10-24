@@ -389,6 +389,8 @@ async function main(): Promise<void> {
         nodeIntegration: false,
         sandbox: true,
         webSecurity: true,
+        // 网页窗口的 webview 模式（外部网站，IS-44）；挂上去的 webview 由 browser/index.ts 锁住
+        webviewTag: true,
       },
     });
     win.once('ready-to-show', () => (screenshotPath ? win.showInactive() : win.show()));

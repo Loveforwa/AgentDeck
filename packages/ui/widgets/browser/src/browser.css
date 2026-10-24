@@ -90,6 +90,17 @@
   display: none;
 }
 
+/* 外部网站的 webview（IS-44）。webview 内部是 display: flex，不要改成 none：出错时只藏起来，保留它的历史。 */
+.ad-browser__webview {
+  width: 100%;
+  height: 100%;
+  background: var(--surface);
+}
+
+.ad-browser__webview--hidden {
+  visibility: hidden;
+}
+
 .ad-browser__message {
   position: absolute;
   inset: 0;
@@ -111,6 +122,11 @@
 .ad-browser__message-title {
   color: var(--ink);
   font-size: var(--text-md);
+}
+
+.ad-browser__message-actions {
+  display: flex;
+  gap: var(--space-xs);
 }
 
 .ad-browser__message-detail {

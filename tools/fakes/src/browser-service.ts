@@ -22,7 +22,8 @@ export class FakeBrowserService implements BrowserService {
   readonly opened: string[] = [];
   private readonly reachability = new Map<string, { ok: boolean; status: number | null }>();
 
-  async prepare(url: string): Promise<PreparedPage> {
+  /** 和真实现一样：本地地址用 iframe，外部网站用 webview；opts.mode 为 webview 时本地地址也用 webview。 */
+  async prepare(url: string, opts?: { mode?: 'frame' | 'webview' }): Promise<PreparedPage> {
     if (url.startsWith('/')) return { src: await this.fileUrl(url), mode: 'frame' };
     if (url.startsWith('file://')) return { src: await this.fileUrl(decodeURI(new URL(url).pathname)), mode: 'frame' };
     let parsed: URL;
@@ -31,7 +32,8 @@ export class FakeBrowserService implements BrowserService {
     } catch {
       fail('invalid-argument', `Not a valid address: ${url}`);
     }
-    if (isLocalhostUrl(url)) this.allowedOrigins.add(parsed.origin);
+    if (!isLocalhostUrl(url) || opts?.mode === 'webview') return { src: url, mode: 'webview' };
+    this.allowedOrigins.add(parsed.origin);
     return { src: url, mode: 'frame' };
   }
 

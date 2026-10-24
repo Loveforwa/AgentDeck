@@ -1,7 +1,10 @@
 // 网页窗口（需求「7 · 网页窗口」，任务 U1 U2 U3）。
 // 白板给的 props 是 contracts 的 WindowComponentProps<BrowserWindowData>，服务只走 window.agentdeck.browser。
 //
-// - 内容是 iframe，跟着白板的 transform 一起缩放；主进程负责去掉 localhost 的 X-Frame-Options 等（BrowserService.prepare）。
+// - 本地地址的内容是 iframe，跟着白板的 transform 一起缩放；主进程负责去掉 localhost 的 X-Frame-Options 等（BrowserService.prepare）。
+// - 外部网站（google、github……）用 <webview>（IS-44）：它们拒绝被嵌进 iframe，登录也要顶层页面。
+//   用哪种由 prepare 返回的 mode 决定；data.mode 为 webview 时本地地址也用 webview（出错页上的 Show it here）。
+//   webview 同样跟着白板缩放；地址、能不能后退前进从它自己的事件读，没有小桥。
 // - 地址栏：单击或 ⌘L 编辑，↩ 打开，Esc 取消；后退 ⌘[、前进 ⌘]、刷新 ⌘R；“Open in browser” 用系统浏览器打开。
 // - 打开或刷新前先 ping：服务没起来时显示出错页（“… isn’t responding.” + Retry），不让 iframe 显示 Chromium 的出错页。
 // - data.url 被白板改了（终端里又点了同一个 origin 的链接，U2）就跳过去；iframe 里自己跳转时把新地址写回 data.url。
@@ -18,7 +21,7 @@ import {
 } from 'react';
 import type { BrowserService, BrowserWindowData, WindowComponentProps } from '@agentdeck/contracts';
 import { Button } from '@agentdeck/ui-kit';
-import { addressFromHref, displayAddress, isFileAddress, normalizeAddress } from './address.ts';
+import { addressFromHref, displayAddress, isFileAddress, isLocalAddress, normalizeAddress } from './address.ts';
 import {
   BOARD_FRAME_NAME_PREFIX,
   ERROR_PAGE_PREFIX,
@@ -46,6 +49,38 @@ type View =
   | { kind: 'page' }
   | { kind: 'error'; reason: ErrorReason; url: string; message?: string };
 
+/** 用到的 Electron <webview> 元素的方法（界面不能 import electron，只列用到的）。 */
+interface WebviewElement extends HTMLElement {
+  loadURL(url: string): Promise<void>;
+  reload(): void;
+  goBack(): void;
+  goForward(): void;
+  canGoBack(): boolean;
+  canGoForward(): boolean;
+}
+
+/** webview 事件带的字段（Electron 挂在 Event 上）。 */
+interface WebviewEvent extends Event {
+  url?: string;
+  isMainFrame?: boolean;
+  errorCode?: number;
+  errorDescription?: string;
+}
+
+/** 网页窗口 webview 的分区，和主进程 apps/desktop/src/main/browser/webview.ts 的 WEB_PARTITION 一致。 */
+const WEB_PARTITION = 'persist:agentdeck-web';
+/** did-fail-load 的 ERR_ABORTED：跳转被新的跳转顶掉，不算出错。 */
+const ERR_ABORTED = -3;
+
+/** webview 还没 dom-ready 时调它的方法会抛错：当作做不到。 */
+function tryCall<T>(fn: () => T, fallback: T): T {
+  try {
+    return fn();
+  } catch {
+    return fallback;
+  }
+}
+
 const LOADING = { text: 'Loading…', tone: 'muted', dot: 'hollow' } as const;
 const NOT_RESPONDING = { text: 'Not responding', tone: 'error', dot: 'filled' } as const;
 /** iframe 这么久还没有 load 事件，就 ping 一次看看服务还在不在。 */
@@ -65,6 +100,7 @@ export function BrowserWindow(props: BrowserWindowProps): ReactNode {
 
   const [view, setView] = useState<View>(() => (data.url === '' ? { kind: 'empty' } : { kind: 'loading' }));
   const [src, setSrc] = useState<string | null>(null);
+  const [mode, setMode] = useState<'frame' | 'webview'>('frame');
   /** 换 key 会重建 iframe：没有小桥时只能这样强制刷新。 */
   const [frameKey, setFrameKey] = useState(0);
   const [address, setAddress] = useState('');
@@ -74,6 +110,10 @@ export function BrowserWindow(props: BrowserWindowProps): ReactNode {
   const [stack, setStack] = useState<NavStack>(EMPTY_STACK);
 
   const frameRef = useRef<HTMLIFrameElement>(null);
+  const webviewRef = useRef<WebviewElement | null>(null);
+  const modeRef = useRef<'frame' | 'webview'>('frame');
+  const dataModeRef = useRef(data.mode);
+  dataModeRef.current = data.mode;
   const inputRef = useRef<HTMLInputElement>(null);
   const selectOnMouseUpRef = useRef(false);
   /** 网页窗口认为当前显示的地址（data.url 的形式）。 */
@@ -108,7 +148,7 @@ export function BrowserWindow(props: BrowserWindowProps): ReactNode {
 
   /** 打开 url（data.url 的形式：http(s) 地址或绝对路径）。 */
   const navigate = useCallback(
-    async (url: string, options: { record?: boolean; force?: boolean } = {}) => {
+    async (url: string, options: { record?: boolean; force?: boolean; webview?: boolean } = {}) => {
       const seq = ++seqRef.current;
       const api = browserApi();
       setDraft(null);
@@ -118,9 +158,10 @@ export function BrowserWindow(props: BrowserWindowProps): ReactNode {
       setView({ kind: 'loading' });
       propsRef.current.setStatus(LOADING);
 
-      let prepared: { src: string };
+      let prepared: { src: string; mode: 'frame' | 'webview' };
       try {
-        prepared = await api.prepare(url);
+        const wantWebview = options.webview === true || dataModeRef.current === 'webview';
+        prepared = await api.prepare(url, wantWebview ? { mode: 'webview' } : undefined);
       } catch (err) {
         if (seq === seqRef.current) showError('invalid', url, errorText(err));
         return;
@@ -143,8 +184,27 @@ export function BrowserWindow(props: BrowserWindowProps): ReactNode {
       if (options.record !== false) setStack((s) => pushEntry(s, url));
       bridgedRef.current = false;
       setFrameNav(null);
-      const frame = frameRef.current;
-      if (srcRef.current !== prepared.src) {
+      if (prepared.mode === 'webview') {
+        const webview = webviewRef.current;
+        if (modeRef.current === 'webview' && webview !== null && srcRef.current !== null) {
+          // webview 已经在：让它自己跳，保留它的历史
+          srcRef.current = prepared.src;
+          void webview.loadURL(prepared.src).catch(() => {});
+        } else {
+          modeRef.current = 'webview';
+          setMode('webview');
+          srcRef.current = prepared.src;
+          setSrc(prepared.src);
+        }
+        return;
+      }
+      const frame = modeRef.current === 'frame' ? frameRef.current : null;
+      if (modeRef.current !== 'frame') {
+        modeRef.current = 'frame';
+        setMode('frame');
+        srcRef.current = prepared.src;
+        setSrc(prepared.src);
+      } else if (srcRef.current !== prepared.src) {
         srcRef.current = prepared.src;
         setSrc(prepared.src);
       } else if (options.force === true || frame?.contentWindow == null) {
@@ -164,6 +224,11 @@ export function BrowserWindow(props: BrowserWindowProps): ReactNode {
   const reload = useCallback(async () => {
     const url = currentRef.current ?? dataUrlRef.current;
     if (url === '') return;
+    const webview = modeRef.current === 'webview' ? webviewRef.current : null;
+    if (webview !== null && view.kind !== 'error' && view.kind !== 'empty') {
+      webview.reload();
+      return;
+    }
     if (view.kind === 'error' || view.kind === 'empty' || !bridgedRef.current) {
       await navigate(url, { record: false, force: true });
       return;
@@ -188,6 +253,12 @@ export function BrowserWindow(props: BrowserWindowProps): ReactNode {
 
   const go = useCallback(
     (delta: -1 | 1) => {
+      const webview = modeRef.current === 'webview' ? webviewRef.current : null;
+      if (webview !== null && view.kind !== 'error') {
+        if (delta === -1) tryCall(() => webview.goBack(), undefined);
+        else tryCall(() => webview.goForward(), undefined);
+        return;
+      }
       if (bridgedRef.current && view.kind !== 'error') {
         post(delta === -1 ? 'back' : 'forward');
         return;
@@ -284,6 +355,48 @@ export function BrowserWindow(props: BrowserWindowProps): ReactNode {
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
   }, [editAddress, go, reload, showError, writeUrl]);
+
+  // webview 的事件：地址、能不能后退前进、加载状态、出错。
+  const hasWebview = mode === 'webview' && src !== null;
+  useEffect(() => {
+    const webview = webviewRef.current;
+    if (!hasWebview || webview === null) return;
+    const syncNav = () =>
+      setFrameNav({ back: tryCall(() => webview.canGoBack(), false), forward: tryCall(() => webview.canGoForward(), false) });
+    const onNavigate = (event: Event) => {
+      const e = event as WebviewEvent;
+      if (e.isMainFrame === false || e.url === undefined || !/^https?:/i.test(e.url)) return;
+      setAddress(e.url);
+      writeUrl(e.url);
+      syncNav();
+    };
+    const onStart = () => {
+      setView((v) => (v.kind === 'page' ? { kind: 'loading' } : v));
+      propsRef.current.setStatus(LOADING);
+    };
+    const onStop = () => {
+      setView((v) => (v.kind === 'loading' ? { kind: 'page' } : v));
+      propsRef.current.setStatus(null);
+      syncNav();
+    };
+    const onFail = (event: Event) => {
+      const e = event as WebviewEvent;
+      if (e.isMainFrame === false || e.errorCode === ERR_ABORTED) return;
+      const url = currentRef.current ?? dataUrlRef.current;
+      showError('unreachable', url, e.errorDescription);
+    };
+    const events: [string, (e: Event) => void][] = [
+      ['did-navigate', onNavigate],
+      ['did-navigate-in-page', onNavigate],
+      ['did-start-loading', onStart],
+      ['did-stop-loading', onStop],
+      ['did-fail-load', onFail],
+    ];
+    for (const [name, fn] of events) webview.addEventListener(name, fn);
+    return () => {
+      for (const [name, fn] of events) webview.removeEventListener(name, fn);
+    };
+  }, [hasWebview, showError, writeUrl]);
 
   // 加载太久（或者 load 事件被错过，例如窗口在后台）时 ping 一次：不通就显示出错页，通就当作已加载。
   useEffect(() => {
@@ -393,7 +506,7 @@ export function BrowserWindow(props: BrowserWindowProps): ReactNode {
           aria-describedby={draftError !== null ? `${node.id}-address-error` : undefined}
           spellCheck={false}
           autoComplete="off"
-          placeholder="Enter a local address or file path"
+          placeholder="Enter an address or file path"
           value={draft ?? displayAddress(address)}
           onMouseDown={(e) => {
             // 第一次点进地址栏时全选；不然 mouseup 会把光标放到点的位置，选区就没了。
@@ -439,7 +552,20 @@ export function BrowserWindow(props: BrowserWindowProps): ReactNode {
         </div>
       )}
       <div className="ad-browser__content">
-        {src !== null && (
+        {src !== null && mode === 'webview' && (
+          <webview
+            ref={(el: HTMLElement | null) => {
+              webviewRef.current = el as WebviewElement | null;
+            }}
+            className={view.kind === 'error' ? 'ad-browser__webview ad-browser__webview--hidden' : 'ad-browser__webview'}
+            title={`Web page: ${displayAddress(shownUrl)}`}
+            src={src}
+            partition={WEB_PARTITION}
+            // 第三方登录常用 window.open 弹窗；主进程只放行 http(s)。React 不认这个布尔属性，按字符串传。
+            {...({ allowpopups: 'true' } as object)}
+          />
+        )}
+        {src !== null && mode === 'frame' && (
           <iframe
             key={frameKey}
             ref={frameRef}
@@ -460,7 +586,16 @@ export function BrowserWindow(props: BrowserWindowProps): ReactNode {
           </div>
         )}
         {view.kind === 'error' && (
-          <ErrorPage view={view} onRetry={() => void navigate(view.url, { record: false, force: true })} onOpenExternal={openExternal} />
+          <ErrorPage
+            view={view}
+            onRetry={() => void navigate(view.url, { record: false, force: true })}
+            onOpenExternal={openExternal}
+            onShowHere={() => {
+              // iframe 里登录跳到第三方网站（不在改写名单里）：这个窗口改用 webview，记进 data，重启后也是
+              propsRef.current.updateData({ mode: 'webview' });
+              void navigate(view.url, { record: false, force: true, webview: true });
+            }}
+          />
         )}
         {!focused && (
           <div
@@ -481,15 +616,18 @@ function ErrorPage(props: {
   view: Extract<View, { kind: 'error' }>;
   onRetry: () => void;
   onOpenExternal: () => void;
+  onShowHere: () => void;
 }): ReactNode {
-  const { view, onRetry, onOpenExternal } = props;
+  const { view, onRetry, onOpenExternal, onShowHere } = props;
   let title: string;
   let detail: string | null = null;
   let action: ReactNode;
   switch (view.reason) {
     case 'unreachable':
       title = `${displayAddress(view.url)} isn’t responding.`;
-      detail = 'The dev server may not have started yet, or it stopped.';
+      detail = isLocalAddress(view.url)
+        ? 'The dev server may not have started yet, or it stopped.'
+        : 'Check the address and your network connection.';
       action = <Button size="sm" onClick={onRetry}>Retry</Button>;
       break;
     case 'missing':
@@ -499,7 +637,17 @@ function ErrorPage(props: {
       break;
     case 'refused':
       title = 'This page can’t be shown on the board.';
-      action = <Button size="sm" onClick={onOpenExternal}>Open in browser</Button>;
+      detail = 'It refuses to be embedded. Show it here as a separate web view, or open it in your browser.';
+      action = (
+        <div className="ad-browser__message-actions">
+          <Button size="sm" onClick={onShowHere}>
+            Show it here
+          </Button>
+          <Button size="sm" variant="ghost" onClick={onOpenExternal}>
+            Open in browser
+          </Button>
+        </div>
+      );
       break;
     case 'invalid':
       title = view.message ?? 'This address can’t be opened.';

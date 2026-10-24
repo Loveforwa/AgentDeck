@@ -52,6 +52,16 @@ export function pathFromFileHref(href: string): string | null {
   }
 }
 
+/** 本地文件，或 localhost / 127.0.0.1 / [::1] / *.localhost 的地址。 */
+export function isLocalAddress(url: string): boolean {
+  if (isFileAddress(url)) return true;
+  try {
+    return LOCAL_HOST.test(new URL(url).hostname);
+  } catch {
+    return false;
+  }
+}
+
 export function isFileAddress(url: string): boolean {
   return url.startsWith('/');
 }

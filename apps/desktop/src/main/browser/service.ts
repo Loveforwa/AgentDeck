@@ -7,7 +7,7 @@ import { pathToFileURL } from 'node:url';
 import { AgentDeckError, type AbsPath, type BrowserService, type PreparedPage } from '@agentdeck/contracts';
 import { relaxSetCookies, stripFrameBlockingHeaders, type ResponseHeaders } from './headers.ts';
 import { FileRoots, isLocalFileUrl, pathFromFileUrl, toLocalFileUrl } from './local-files.ts';
-import { FrameOriginAllowList, parseUrl } from './origins.ts';
+import { FrameOriginAllowList, isLocalHttpUrl, parseUrl } from './origins.ts';
 
 export interface FileStat {
   isFile(): boolean;
@@ -98,7 +98,11 @@ export function createBrowserService(deps: BrowserServiceDeps): BrowserCore {
     allowedOrigins,
     fileRoots,
 
-    async prepare(raw: string): Promise<PreparedPage> {
+    /**
+     * 本地地址（localhost 等、本地文件）用 iframe，来源加进响应头改写名单；外部网站用 webview（IS-44），
+     * 响应头不动。opts.mode 为 webview 时本地地址也用 webview（iframe 里登录跳到第三方时用）；本地文件只能用 iframe。
+     */
+    async prepare(raw: string, opts?: { mode?: 'frame' | 'webview' }): Promise<PreparedPage> {
       const url = raw.trim();
       const file = localFileTarget(url);
       if (file !== null) return { src: (await service.fileUrl(file.path)) + file.suffix, mode: 'frame' };
@@ -106,6 +110,7 @@ export function createBrowserService(deps: BrowserServiceDeps): BrowserCore {
       if (parsed === null || (parsed.protocol !== 'http:' && parsed.protocol !== 'https:')) {
         invalid(`Only http, https and local files can be opened: ${url}`);
       }
+      if (!isLocalHttpUrl(parsed) || opts?.mode === 'webview') return { src: parsed.href, mode: 'webview' };
       allowedOrigins.add(parsed);
       return { src: parsed.href, mode: 'frame' };
     },
@@ -169,7 +174,7 @@ export function createBrowserService(deps: BrowserServiceDeps): BrowserCore {
 /** 只留 contracts 里的四个方法，注册到 IPC 上。rewriteHeaders、resolveFile 不能让界面调到。 */
 export function publicBrowserService(core: BrowserCore): BrowserService {
   return {
-    prepare: (url) => core.prepare(url),
+    prepare: (url, opts) => core.prepare(url, opts),
     fileUrl: (path) => core.fileUrl(path),
     openExternal: (url) => core.openExternal(url),
     ping: (url) => core.ping(url),

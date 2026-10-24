@@ -17,6 +17,7 @@ interface Harness {
   boardSets(patch: Partial<Data>): void;
   setFocused(focused: boolean): void;
   frame(): HTMLIFrameElement | null;
+  webview(): HTMLElement | null;
   address(): HTMLInputElement;
 }
 
@@ -75,6 +76,7 @@ function setup(data: Partial<Data> = {}, options: { focused?: boolean } = {}): H
     boardSets: (patch) => act(() => setDataOutside(patch)),
     setFocused: (focused) => act(() => setFocusedOutside(focused)),
     frame: () => document.querySelector('iframe'),
+    webview: () => document.querySelector<HTMLElement>('webview'),
     address: () => screen.getByRole('textbox', { name: 'Address' }) as HTMLInputElement,
   };
 }
@@ -182,18 +184,115 @@ describe('error page (U3)', () => {
   });
 
   it('chrome error page in the frame: refused when the server answers, unreachable when not', async () => {
-    const h = setup({ url: 'https://example.com/' });
+    // 例如本地页面的登录跳到了第三方网站，第三方拒绝被嵌入
+    const h = setup({ url: 'http://localhost:4000/login' });
     let frame = await loaded(h);
     fromFrame(frame, location('chrome-error://chromewebdata/'));
     expect(await screen.findByText('This page can’t be shown on the board.')).toBeTruthy();
     await userEvent.click(within(screen.getByRole('status')).getByRole('button', { name: 'Open in browser' }));
-    expect(h.api.fakes.browser.opened).toEqual(['https://example.com/']);
+    expect(h.api.fakes.browser.opened).toEqual(['http://localhost:4000/login']);
 
     h.boardSets({ url: 'http://localhost:3000/' });
     frame = await loaded(h);
     h.api.fakes.browser.setReachable('http://localhost:3000', false);
     fromFrame(frame, location('chrome-error://chromewebdata/'));
     expect(await screen.findByText('localhost:3000 isn’t responding.')).toBeTruthy();
+  });
+});
+
+/** 等 webview 出现，给它装上 Electron 才有的方法（jsdom 里没有）。 */
+async function webviewOf(h: Harness) {
+  const el = await waitFor(() => {
+    const w = h.webview();
+    if (w === null) throw new Error('no webview yet');
+    return w;
+  });
+  const nav = { back: false, forward: false };
+  const methods = {
+    loadURL: vi.fn(async () => {}),
+    reload: vi.fn(),
+    goBack: vi.fn(),
+    goForward: vi.fn(),
+    canGoBack: () => nav.back,
+    canGoForward: () => nav.forward,
+  };
+  Object.assign(el, methods);
+  const fire = (name: string, fields: Record<string, unknown> = {}) =>
+    act(() => {
+      el.dispatchEvent(Object.assign(new Event(name), fields));
+    });
+  return { el, nav, ...methods, fire };
+}
+
+describe('external sites in a webview (IS-44)', () => {
+  it('opens google in a webview in our partition, follows its navigation and loading state', async () => {
+    const h = setup({ url: 'https://google.com/' });
+    const w = await webviewOf(h);
+    expect(h.frame()).toBeNull();
+    expect(w.el.getAttribute('src')).toBe('https://google.com/');
+    expect(w.el.getAttribute('partition')).toBe('persist:agentdeck-web');
+    expect(w.el.getAttribute('allowpopups')).toBe('true');
+
+    w.fire('did-start-loading');
+    // 跳到 www：地址栏和 data.url 跟上，不触发重新加载
+    w.nav.back = true;
+    w.fire('did-navigate', { url: 'https://www.google.com/' });
+    w.fire('did-stop-loading');
+    expect(h.updateData).toHaveBeenLastCalledWith({ url: 'https://www.google.com/' });
+    expect(h.setStatus).toHaveBeenLastCalledWith(null);
+    expect(w.loadURL).not.toHaveBeenCalled();
+
+    const back = screen.getByRole('button', { name: 'Back' });
+    expect((back as HTMLButtonElement).disabled).toBe(false);
+    await userEvent.click(back);
+    expect(w.goBack).toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: 'Reload' }));
+    expect(w.reload).toHaveBeenCalled();
+
+    // 子框架的跳转不算
+    w.fire('did-navigate-in-page', { url: 'https://ads.example/', isMainFrame: false });
+    expect(h.address().value).toBe('https://www.google.com/');
+  });
+
+  it('typing another address loads it in the same webview; a local address switches back to an iframe', async () => {
+    const user = userEvent.setup();
+    const h = setup({ url: 'https://github.com/' });
+    const w = await webviewOf(h);
+    await user.click(h.address());
+    await user.clear(h.address());
+    await user.type(h.address(), 'github.com/login{Enter}');
+    await waitFor(() => expect(w.loadURL).toHaveBeenCalledWith('https://github.com/login'));
+
+    await user.click(h.address());
+    await user.clear(h.address());
+    await user.type(h.address(), 'localhost:3000{Enter}');
+    await loaded(h);
+    expect(h.webview()).toBeNull();
+  });
+
+  it('a failed main-frame load shows the error page; aborted and sub-frame failures do not', async () => {
+    const h = setup({ url: 'https://example.invalid/' });
+    const w = await webviewOf(h);
+    w.fire('did-fail-load', { errorCode: -3, isMainFrame: true });
+    w.fire('did-fail-load', { errorCode: -105, isMainFrame: false });
+    expect(screen.queryByText(/isn’t responding/)).toBeNull();
+    w.fire('did-fail-load', { errorCode: -105, errorDescription: 'ERR_NAME_NOT_RESOLVED', isMainFrame: true });
+    expect(await screen.findByText('https://example.invalid/ isn’t responding.')).toBeTruthy();
+    expect(screen.getByText('Check the address and your network connection.')).toBeTruthy();
+    // 出错时只藏起来，不卸载（保留历史）
+    expect(w.el.isConnected).toBe(true);
+    expect(w.el.className).toContain('ad-browser__webview--hidden');
+  });
+
+  it('“Show it here” on a refused page switches this window to a webview and remembers it', async () => {
+    const h = setup({ url: 'http://localhost:4000/login' });
+    const frame = await loaded(h);
+    fromFrame(frame, location('chrome-error://chromewebdata/'));
+    await userEvent.click(await screen.findByRole('button', { name: 'Show it here' }));
+    expect(h.updateData).toHaveBeenCalledWith({ mode: 'webview' });
+    const w = await webviewOf(h);
+    expect(w.el.getAttribute('src')).toBe('http://localhost:4000/login');
+    expect(h.frame()).toBeNull();
   });
 });
 
@@ -259,7 +358,7 @@ describe('opened again from the terminal (U2)', () => {
     const prepare = vi.spyOn(h.api.browser, 'prepare');
     h.boardSets({ url: 'http://localhost:5173/about' });
     await waitFor(() => expect(h.frame()?.getAttribute('src')).toBe('http://localhost:5173/about'));
-    expect(prepare).toHaveBeenCalledWith('http://localhost:5173/about');
+    expect(prepare).toHaveBeenCalledWith('http://localhost:5173/about', undefined);
   });
 
   it('reloads when the board passes a new reloadToken for the same address', async () => {

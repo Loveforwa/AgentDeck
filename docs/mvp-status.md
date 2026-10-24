@@ -6,7 +6,7 @@
 
 ## 一句话
 
-第一个能打开、能用的版本已经组装好。39 项基础功能里 33 项有自动测试，2 项只有手动验证，4 项没做完；27 条端到端用例里 8 条当前有问题、3 条在真窗口里验证过；问题清单 44 条（P0 8、P1 15、P2 17、P3 4）。
+第一个能打开、能用的版本已经组装好。39 项基础功能里 33 项有自动测试，2 项只有手动验证，4 项没做完；28 条端到端用例里 8 条当前有问题、3 条在真窗口里验证过；问题清单 44 条（P0 8、P1 15、P2 17、P3 4）。
 
 ## 已经实现的基础功能
 
@@ -106,7 +106,7 @@
 | R1 | 快捷键 | 完成，有自动测试 | 快捷键分发 + 菜单 | 菜单项触发 ⌘B ⌘W | 真键盘在网页里没试 |
 | R2 | 端到端验收 | 部分完成 / 未做 | 没有 | 没有 | 没有 Playwright，14 条验收场景都没自动化 |
 
-## 端到端用例（27 条，TC-01 到 TC-14 是 14 条验收场景）
+## 端到端用例（28 条，TC-01 到 TC-14 是 14 条验收场景）
 
 ### TC-02 基于 main 新建一个分支工作区，开箱即用
 
@@ -324,9 +324,19 @@ P1 · 部分验证 · 关联问题 IS-43 IS-44 · 相关调研 DR-47
 
 - **前置要求**：AgentDeck 重启过（ping 在主进程里）；一个会把 / 跳到别处的地址：https://google.com/（跳到 www），或 dev server 里把 / 跳到 /login 的项目
 - **操作步骤**：1. 网页窗口地址栏输入 https://google.com/ 回车；2. 再打开一个会把 / 跳到 /login 的本地地址
-- **UI / 后台预期表现**：UI：不出现 “isn’t responding”。google 这类拒绝被嵌入的外部网站显示 “This page can’t be shown on the board.” 和 Open in browser；本地地址跟着跳到 /login 并正常显示。 后台：ping 收到 301/302 就算有响应，不跟过去。
+- **UI / 后台预期表现**：UI：不出现 “isn’t responding”。google 跳到 www.google.com 并显示首页（webview）；本地地址跟着跳到 /login 并正常显示。 后台：ping 收到 301/302 就算有响应，不跟过去。
 - **最终效果**：会跳转的网站和本地服务都能正常判断
-- **当前情况**：已修：2026-10-24 用户打开 google.com 显示 “isn’t responding”（IS-43）：Electron 的 net.fetch 在 redirect: manual 时遇到跳转就抛错。改用 net.request 后，在真 Electron 里 google.com → 301、github.com/login → 200；外部网站嵌进白板本身还没做（见 IS-44）
+- **当前情况**：已修：2026-10-24 用户打开 google.com 显示 “isn’t responding”（IS-43）：Electron 的 net.fetch 在 redirect: manual 时遇到跳转就抛错。改用 net.request 后用户重启确认不再误报；外部网站当时还嵌不进白板，后来做了 webview 模式（IS-44，TC-28）
+
+### TC-28 在白板里打开外部网站并登录（google、github）
+
+P1 · 部分验证 · 关联问题 IS-44 · 相关调研 DR-48
+
+- **前置要求**：AgentDeck 重启过（主进程有改动）；有自己的 GitHub 或 Google 账号
+- **操作步骤**：1. 网页窗口地址栏输入 github.com/login 回车，登录；2. 关掉 AgentDeck 再打开，看 github.com 是否还是登录状态；3. 地址栏输入 google.com，点右上角登录；4. 在网页里按 ⌘[ ⌘] ⌘R；缩小白板
+- **UI / 后台预期表现**：UI：网页直接显示在窗口里（不再是 “can’t be shown on the board”）；能登录，重启后还在；Google 登录不提示 “This browser or app may not be secure”；⌘[ ⌘] ⌘R 后退前进刷新；缩小白板时网页跟着缩放。 后台：外部网站用 <webview partition=persist:agentdeck-web>；UA 不带 Electron；登录弹窗用同一个分区。
+- **最终效果**：查资料、看文档、登录第三方网站都不用离开白板
+- **当前情况**：2026-10-24 做了 webview 模式（IS-44）。在单独的 Electron 实例里验证过 google.com、github.com/login、accounts.google.com 都能显示、能跟着缩放；没有真的登录（要用户自己的账号）
 
 ### TC-09 把终端拉小成摘要卡，腾出地方；缩小白板时终端仍看得清
 
@@ -433,7 +443,7 @@ P2 · 未实现 · 关联问题 IS-35 · 相关调研 DR-14 DR-34
 | IS-31 | 清理 | git | 开发期间留下十几个已合并的分支和 worktree，面板 Repository 区和分支下拉里全列出来了（IS-37 就是点到了其中一个） | 确认后删掉已合并的 claude/* 分支和对应 worktree |  | 待处理 |
 | IS-35 | 缺失 | 整体 | 重启电脑后恢复会话（验收场景 14）还没做 | 按计划在 M4 做 | TC-14 | 待处理 |
 | IS-36 | 缺失 | apps/desktop | 没有打包流程：better-sqlite3 的 asarUnpack、node-pty spawn-helper 权限、tmux.conf 和 agentdeck-notify 的资源路径都还没进打包配置 | 加 electron-builder 配置，产出 .app | TC-20 | 待处理 |
-| IS-44 | 缺口 | 网页窗口 | google、github 这类外部网站带 X-Frame-Options（SAMEORIGIN / deny），在白板的 iframe 里只能显示 “This page can’t be shown on the board.” + Open in browser；MVP 只给本地来源去掉这些头 | P1 的 <webview partition> 模式（DR 里实测过能登录、能跟着白板缩放）；或者对外部网站也去掉 X-Frame-Options，但 SameSite 的登录 cookie 仍然带不上 | TC-27 | 待处理 |
+| IS-44 | 缺口 | 网页窗口 | google、github 这类外部网站带 X-Frame-Options（SAMEORIGIN / deny），在白板的 iframe 里只能显示 “This page can’t be shown on the board.” + Open in browser；MVP 只给本地来源去掉这些头 | P1 的 <webview partition> 模式（DR 里实测过能登录、能跟着白板缩放）；或者对外部网站也去掉 X-Frame-Options，但 SameSite 的登录 cookie 仍然带不上 | TC-27 TC-28 | 已解决 |
 
 ### P3 · 清理
 

@@ -4,9 +4,9 @@
 
 ## 职责
 
-- 在白板上显示 dev server 页面或本地 HTML 文件。内容是 iframe，跟着白板的 `transform: scale()` 一起缩放。
+- 在白板上显示 dev server 页面、本地 HTML 文件和外部网站。本地的内容是 iframe，外部网站（google、github……）是 `<webview>`（IS-44），都跟着白板的 `transform: scale()` 一起缩放。用哪种由 `browser.prepare` 返回的 `mode` 决定。
 - 工具栏：后退 ⌘[、前进 ⌘]、刷新 ⌘R、地址栏（单击或 ⌘L 编辑，↩ 打开，Esc 取消；只接受 http、https 和本地文件）、Open in browser。
-- 打开、刷新、Retry 之前先 `browser.ping`：服务没起来显示 “… isn’t responding.” + Retry；文件不存在显示 “File not found” 和路径；页面拒绝被嵌入显示 “This page can’t be shown on the board.” + Open in browser。
+- 打开、刷新、Retry 之前先 `browser.ping`：服务没起来显示 “… isn’t responding.” + Retry；文件不存在显示 “File not found” 和路径；iframe 里的页面拒绝被嵌入（例如本地页面的登录跳到第三方）显示 “This page can’t be shown on the board.” + Show it here（这个窗口改用 webview，写进 `data.mode`）+ Open in browser。
 - 标题栏状态：加载中 `Loading…`（muted、空心点），服务没响应 `Not responding`（error）；其他时候清掉。
 - 没聚焦时内容区盖一层透明罩：第一次单击只 `requestFocus()`，不传给网页；滚轮交给白板。
 - iframe 里自己跳转（点链接、pushState）时，地址栏跟上并把新地址写回 `data.url`（白板负责保存，重启后打开的是最后看的页面）。
@@ -41,6 +41,15 @@ registerWindow(browserWindowType); // 组装时调用；registerWindow 由 packa
 - 小桥报上来的地址只认 http(s)；本地文件地址只在本来就开着本地文件时才认，防止网页把本地路径塞进 `data.url`。
 - iframe 的 sandbox 不给 `allow-top-navigation`：嵌进来的页面不能把白板页面跳走。
 
+## webview 模式（IS-44，2026-10-24）
+
+- 外部网站（不是 localhost / 127.0.0.1 / [::1] / *.localhost 的 http(s)）一律用 webview；`data.mode === 'webview'` 时本地地址也用 webview。本地文件只用 iframe。
+- `<webview partition="persist:agentdeck-web" allowpopups>`：独立分区，登录态重启后还在；响应头不改写。
+- 主进程（`apps/desktop/src/main/browser/webview.ts`、`index.ts`）：应用窗口开 `webviewTag`；`will-attach-webview` 去掉 preload 和 node，只允许这个分区和 http(s) 地址；分区的 UA 去掉 Electron 和应用名（否则 Google 登录会拒绝）；权限只给剪贴板写入和全屏；`window.open` 的 http(s) 地址开成弹窗（第三方登录），同一个分区；页面里的 ⌘[ ⌘] ⌘R 在主进程里直接让 webview 后退、前进、刷新。
+- 界面从 webview 的事件读地址（`did-navigate`、`did-navigate-in-page`）、加载状态（`did-start-loading` / `did-stop-loading`）和出错（`did-fail-load`，忽略 ERR_ABORTED 和子框架），后退前进刷新调它自己的方法。出错时 webview 只藏起来（`visibility: hidden`），不卸载，保留历史。
+- 还没做：webview 里按 ⌘L 聚焦不到地址栏（按键到不了白板页面）；下载。
+- 2026-10-24 在真 Electron（单独的数据目录和用户目录）里验证：google.com → www.google.com 正常显示，UA 不带 Electron；github.com/login、accounts.google.com 登录页正常加载；白板缩到 60% 时 webview 跟着缩放。真正登录要用户自己试（TC-28）。
+
 ## 风险 3 的结论：需要登录的网页
 
 试验：`apps/desktop/src/main/browser/trial/risk3.ts`（Electron 45 / Chromium 156，2026-10-23）。登录页用 `SameSite=Lax`、`HttpOnly` 的 cookie，同时带 `X-Frame-Options: DENY` 和 `frame-ancestors 'none'`（来自 `dev/login-app.ts`）。
@@ -61,7 +70,7 @@ registerWindow(browserWindowType); // 组装时调用；registerWindow 由 packa
 1. **风险是真的，而且开发时看不出来。** electron-vite dev 下白板页面是 `http://localhost:5173`，和 dev server 同站，Lax cookie 照常；打包后白板页面是 `file://`，iframe 里的 localhost 算跨站，Lax（以及没写 SameSite、默认按 Lax 的）cookie 存不进，登录态全丢。
 2. **MVP 已经补上大部分：** 主进程对改写名单里的本地来源，把所有响应的 `Set-Cookie` 改成 `SameSite=None; Secure`（`headers.ts` 的 `relaxSetCookies`）。服务端设 cookie 的登录（绝大多数 session 登录）在 iframe 里能用。影响只在 AgentDeck 自己的 session 里，不改用户的服务。
 3. **还不行的：** 页面自己用 `document.cookie` 写的 Lax cookie；跳到第三方登录页（GitHub、Google 的 OAuth 页面本身拒绝被嵌入，而且不在改写名单里）；`window.open` 弹出的登录窗口（应用禁止开新窗口）。这些 MVP 里用 Open in browser。
-4. **P1（X11）用 `<webview>`：** 窗口菜单里加 “Open as separate window”（或出错页上的按钮），把 `data.mode` 改成 `'webview'`，同一个窗口改用 `<webview partition="persist:agentdeck-web">` 显示。webview 是真正的顶层页面，上面三种情况都能登录，而且实测能跟着白板缩放，所以不需要开系统窗口。代价：应用窗口要开 `webviewTag: true`（并在 `will-attach-webview` 里锁住 preload 和 webPreferences），每个 webview 是单独的 webContents，后退前进用 webview 自己的 API，不走小桥。
+4. **P1（X11）用 `<webview>`（2026-10-24 已做，见上一节；外部网站自动用，不用菜单切换）：** 窗口菜单里加 “Open as separate window”（或出错页上的按钮），把 `data.mode` 改成 `'webview'`，同一个窗口改用 `<webview partition="persist:agentdeck-web">` 显示。webview 是真正的顶层页面，上面三种情况都能登录，而且实测能跟着白板缩放，所以不需要开系统窗口。代价：应用窗口要开 `webviewTag: true`（并在 `will-attach-webview` 里锁住 preload 和 webPreferences），每个 webview 是单独的 webContents，后退前进用 webview 自己的 API，不走小桥。
 
 ## 跑起来
 

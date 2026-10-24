@@ -335,6 +335,13 @@ ENTRIES = [
          pros='会跳转的地址判断正确；仍走 session 的网络栈和系统代理；有单测，也在真 Electron 里跑过。',
          cons='多了一层自己写的请求代码；外部网站在 MVP 里仍然只能 Open in browser。',
          status='done', where='apps/desktop/src/main/browser/ping-fetch.ts'),
+    dict(id='DR-48', old='—', cases=['TC-28'], issues=['IS-44'], stage='E', title='外部网站用 webview，不再一律 Open in browser',
+         assumed='MVP 的网页窗口只给本地 dev server 用，外部网站交给系统浏览器；webview 留到 P1、要用户手动切换。',
+         found='用户直接在网页窗口里打开 google.com，期望能看、能登录。google、github 都带 X-Frame-Options，iframe 嵌不进；第三方登录还要 SameSite cookie 和弹窗。风险 3 试验早就证明 webview 能登录、能跟着缩放。',
+         decision='prepare 按地址决定：本地地址用 iframe（改写响应头、小桥），外部网站自动用 <webview partition=persist:agentdeck-web>，不用手动切；iframe 出错页加 Show it here 切到 webview。主进程锁住 webview（去掉 preload 和 node、只认这个分区和 http(s)），分区 UA 去掉 Electron（Google 登录看到 Electron 会拒绝），权限只给剪贴板写入和全屏，window.open 开成同一分区的弹窗，⌘[ ⌘] ⌘R 在主进程里处理。',
+         pros='外部网站在白板里能显示、能登录，登录态重启后还在；和白板页面的 session 分开，不改外部网站的响应头。',
+         cons='应用窗口要开 webviewTag（靠 will-attach-webview 把关）；每个外部网页是单独的渲染进程，内存更多；webview 里 ⌘L 到不了地址栏；Google 可能以后换别的方式识别嵌入式浏览器。',
+         status='done', where='apps/desktop/src/main/browser/webview.ts、packages/ui/widgets/browser/src/BrowserWindow.tsx'),
 
     # ---- F 待验证 ----
     dict(id='DR-42', old='F1', cases=[], issues=[], stage='F', title='claude 能不能把对话 fork 到另一个目录',
