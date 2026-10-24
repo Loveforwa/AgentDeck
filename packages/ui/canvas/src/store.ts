@@ -39,7 +39,12 @@ export type DialogState =
   | { kind: 'move-terminal'; windowId: WindowId; to: WorkspaceId; at: Point }
   | { kind: 'stop-terminal'; windowId: WindowId }
   | { kind: 'rename-window'; windowId: WindowId }
-  | { kind: 'rename-workspace'; workspaceId: WorkspaceId };
+  | { kind: 'rename-workspace'; workspaceId: WorkspaceId }
+  /** Settings（TC-15）：左边项目列表和 General，右边那一页。section 为 projects 时 projectId 是选中的项目。 */
+  | { kind: 'settings'; section: SettingsSection; projectId?: ProjectId };
+
+/** Settings 的页面。Agents、Approvals 以后再加。 */
+export type SettingsSection = 'projects' | 'general';
 
 export type MenuTarget =
   | { kind: 'pane' }

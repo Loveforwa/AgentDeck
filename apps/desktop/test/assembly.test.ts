@@ -269,7 +269,7 @@ describe('alerts', () => {
 describe('menu', () => {
   type Item = { accelerator?: string; submenu?: Item[]; role?: string };
   const all = (items: Item[]): Item[] => items.flatMap((i) => [i, ...all(i.submenu ?? [])]);
-  const template = buildMenuTemplate('AgentDeck', { shortcut: vi.fn(), openSettings: vi.fn(), quit: vi.fn(), dev: { reload: vi.fn(), toggleDevTools: vi.fn() } });
+  const template = buildMenuTemplate('AgentDeck', { shortcut: vi.fn(), quit: vi.fn(), dev: { reload: vi.fn(), toggleDevTools: vi.fn() } });
   const items = all(template as Item[]);
   it('never takes ⌘R ⌘[ ⌘] ⌘L and has no close-window role', () => {
     const accels = items.map((i) => i.accelerator).filter(Boolean);
@@ -290,5 +290,13 @@ describe('menu', () => {
       ['Next Window', 'Shift+CmdOrCtrl+]'],
       ['Previous Window', 'Shift+CmdOrCtrl+['],
     ]);
+  });
+  it('Settings… ⌘, opens the settings dialog in the board instead of the file', () => {
+    const shortcut = vi.fn();
+    const menu = all(buildMenuTemplate('AgentDeck', { shortcut, quit: vi.fn(), dev: null }) as Item[]) as (Item & { label?: string; click?: () => void })[];
+    const settings = menu.find((i) => i.label === 'Settings…')!;
+    expect(settings.accelerator).toBe('CmdOrCtrl+,');
+    settings.click!();
+    expect(shortcut).toHaveBeenCalledWith('open-settings');
   });
 });

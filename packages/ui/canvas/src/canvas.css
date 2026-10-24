@@ -376,3 +376,132 @@
   margin: 0;
   accent-color: var(--ink);
 }
+
+.ad-textarea {
+  height: auto;
+  padding: var(--space-xs) var(--space-sm);
+  line-height: var(--leading);
+  resize: vertical;
+}
+
+/* ---- Settings ---- */
+
+.ad-settings {
+  display: grid;
+  grid-template-columns: 168px minmax(0, 1fr);
+  gap: var(--space-xl);
+  min-height: 320px;
+}
+
+.ad-settings-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  min-width: 0;
+  max-height: 56vh;
+  overflow-y: auto;
+  padding-right: var(--space-md);
+  border-right: 1px solid var(--line-subtle);
+}
+
+.ad-settings-nav-heading {
+  padding: 0 var(--space-sm) var(--space-xs);
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.ad-settings-nav-empty {
+  padding: 0 var(--space-sm);
+  color: var(--muted);
+}
+
+.ad-settings-nav-item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  min-width: 0;
+  height: var(--control-md);
+  padding: 0 var(--space-sm);
+  border: 0;
+  border-radius: var(--radius-control);
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  line-height: var(--control-md);
+  text-align: left;
+  cursor: default;
+}
+
+.ad-settings-nav-item:hover {
+  background: var(--hover);
+}
+
+.ad-settings-nav-item[aria-current='page'] {
+  background: var(--hover);
+  font-weight: var(--weight-medium);
+}
+
+.ad-settings-nav-item:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.ad-settings-nav-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ad-settings-nav-hint {
+  flex: none;
+  margin-left: auto;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.ad-settings-nav-rule {
+  margin: var(--space-sm) 0;
+  border-top: 1px solid var(--line-subtle);
+}
+
+.ad-settings-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  min-width: 0;
+  max-height: 56vh;
+  overflow-y: auto;
+}
+
+.ad-settings-page .ad-field {
+  grid-template-columns: 128px minmax(0, 1fr);
+}
+
+.ad-settings-page .ad-field-control {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-xs);
+}
+
+.ad-settings-page .ad-field-row {
+  align-self: stretch;
+}
+
+.ad-settings-path {
+  overflow: hidden;
+  min-width: 0;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ad-settings-hint {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.ad-settings-file {
+  margin-right: auto;
+}

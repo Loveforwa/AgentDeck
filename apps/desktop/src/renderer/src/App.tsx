@@ -68,8 +68,8 @@ export function App({ controller, loaded, startup }: { controller: BoardControll
   const [notices, setNotices] = useState(startup.warnings);
 
   const addNotice = useCallback((message: string) => setNotices((all) => (all.includes(message) ? all : [...all, message])), []);
-  // 用编辑器打开 settings.json；打不开时主进程在 Finder 里显示它，这里把原因告诉用户（IS-47）
-  const openSettings = useCallback(() => {
+  // Settings 对话框底部的 Open settings.json：用编辑器打开；打不开时主进程在 Finder 里显示它，这里把原因告诉用户（IS-47）
+  const openSettingsFile = useCallback(() => {
     void window.agentdeckDesktop
       ?.openSettings()
       .then((res) => {
@@ -80,11 +80,12 @@ export function App({ controller, loaded, startup }: { controller: BoardControll
 
   useEffect(() => window.agentdeckDesktop?.onNotice(addNotice), [addNotice]);
 
+  // 终端窗口里的设置链接（detail.section 是 'agents'，那一页还没有，先到 General，默认 agent 在那里）
   useEffect(() => {
-    const onOpen = () => openSettings();
+    const onOpen = () => controller.openSettings({ section: 'general' });
     document.addEventListener(OPEN_SETTINGS_EVENT, onOpen);
     return () => document.removeEventListener(OPEN_SETTINGS_EVENT, onOpen);
-  }, [openSettings]);
+  }, [controller]);
 
   useEffect(() => {
     let cancelled = false;
@@ -115,7 +116,7 @@ export function App({ controller, loaded, startup }: { controller: BoardControll
       <Workbench
         api={window.agentdeck}
         controller={controller}
-        onOpenSettings={openSettings}
+        onOpenSettingsFile={openSettingsFile}
         renderPanel={({ workspace }) => <SidePanel workspace={workspace} controller={controller} />}
       />
       {notices.length > 0 ? (

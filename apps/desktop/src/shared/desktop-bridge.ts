@@ -20,7 +20,8 @@ export type MenuShortcutId =
   | 'show-all'
   | 'zoom-in'
   | 'zoom-out'
-  | 'clear-terminal';
+  | 'clear-terminal'
+  | 'open-settings';
 
 export const DESKTOP_IPC = {
   startup: 'agentdeck-desktop:startup',
@@ -52,7 +53,6 @@ export interface DesktopBridge {
   startup(): Promise<StartupInfo>;
   /** 再起一次 tmux-host。返回新的错误，成功为 null。 */
   retryTmux(): Promise<AgentDeckErrorData | null>;
-  /** 用编辑器打开 settings.json（还没有设置界面）。 */
   /** 用编辑器打开 settings.json；打不开时在 Finder 里显示，返回要给用户看的提示。 */
   openSettings(): Promise<{ opened: 'editor' } | { opened: 'finder'; message: string } | null>;
   /** 主进程发来的提示。 */

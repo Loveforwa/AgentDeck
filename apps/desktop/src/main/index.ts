@@ -365,13 +365,6 @@ async function main(): Promise<void> {
     Menu.buildFromTemplate(
       buildMenuTemplate(app.getName(), {
         shortcut: sendShortcut,
-        openSettings: () =>
-          void openSettings().then(
-            (res) => {
-              if (res.opened === 'finder') mainWindow?.webContents.send(DESKTOP_IPC.notice, res.message);
-            },
-            (e: unknown) => console.error(e),
-          ),
         quit: (stop) => void quit(stop),
         dev: isDev
           ? {
