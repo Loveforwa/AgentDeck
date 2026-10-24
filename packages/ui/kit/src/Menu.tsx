@@ -18,6 +18,8 @@ export interface MenuItem {
   /** 设了（true 或 false）就是勾选项，左边留出勾的位置。 */
   checked?: boolean;
   disabled?: boolean;
+  /** 标签后面的一句灰字，例如灰掉的原因（“Not supported for kimi yet”）。也是悬停提示。 */
+  hint?: string;
   /** 子菜单。有子菜单的项右边显示 ▸，选中时打开子菜单而不是触发 onSelect。 */
   items?: readonly MenuEntry[];
   onSelect?: () => void;
@@ -28,7 +30,14 @@ export interface MenuSeparator {
   id?: string;
 }
 
-export type MenuEntry = MenuItem | MenuSeparator;
+/** 一组项的小标题（例如右键菜单里的 “PLUGINS”）。不能选中，键盘跳过。 */
+export interface MenuHeading {
+  type: 'heading';
+  id?: string;
+  label: string;
+}
+
+export type MenuEntry = MenuItem | MenuSeparator | MenuHeading;
 
 export interface MenuProps {
   items: readonly MenuEntry[];
@@ -46,7 +55,7 @@ export interface MenuProps {
   className?: string;
 }
 
-const isItem = (e: MenuEntry): e is MenuItem => e.type !== 'separator';
+const isItem = (e: MenuEntry): e is MenuItem => e.type === undefined || e.type === 'item';
 const enabled = (e: MenuEntry | undefined): e is MenuItem => !!e && isItem(e) && !e.disabled;
 
 function step(items: readonly MenuEntry[], from: number, dir: 1 | -1): number {
@@ -226,6 +235,13 @@ function MenuList(props: MenuListProps) {
       onKeyDown={onKeyDown}
     >
       {items.map((entry, i) => {
+        if (entry.type === 'heading') {
+          return (
+            <div key={entry.id ?? `heading-${i}`} role="presentation" className="ad-menu-heading">
+              {entry.label}
+            </div>
+          );
+        }
         if (!isItem(entry)) {
           return <div key={entry.id ?? `sep-${i}`} role="separator" className="ad-menu-separator" />;
         }
@@ -264,11 +280,13 @@ function MenuList(props: MenuListProps) {
               tabIndex={isActive ? 0 : -1}
               data-active={isActive || isOpen || undefined}
               className="ad-menu-item"
+              title={entry.hint}
               onMouseEnter={onMouseEnter}
               onClick={onClick}
             >
               {hasChecks && <span className="ad-menu-check">{entry.checked && <CheckIcon />}</span>}
               <span className="ad-menu-label">{entry.label}</span>
+              {entry.hint && <span className="ad-menu-hint">{entry.hint}</span>}
               {entry.shortcut && <span className="ad-menu-shortcut">{entry.shortcut}</span>}
               {hasSubmenus && <span className="ad-menu-arrow">{entry.items && <ArrowIcon />}</span>}
             </div>

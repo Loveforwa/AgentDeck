@@ -169,3 +169,31 @@ describe('Menu rendering', () => {
     expect(screen.queryByRole('menu', { name: 'New terminal' })).toBeNull();
   });
 });
+
+describe('Menu headings and hints', () => {
+  const grouped: MenuEntry[] = [
+    { id: 'rename', label: 'Rename…' },
+    { type: 'separator' },
+    { type: 'heading', label: 'PLUGINS' },
+    { id: 'auto', label: 'Auto-approve', checked: true },
+    { id: 'usage', label: 'Usage', checked: false, disabled: true, hint: 'Not supported for kimi yet' },
+    { type: 'separator' },
+    { id: 'close', label: 'Close' },
+  ];
+
+  it('draws a heading that keyboard navigation skips, and a disabled item with its reason', async () => {
+    const user = userEvent.setup();
+    render(<Menu items={grouped} aria-label="Window" defaultActive="first" />);
+    const heading = screen.getByText('PLUGINS');
+    expect(heading.className).toBe('ad-menu-heading');
+    expect(heading.getAttribute('role')).toBe('presentation');
+    await user.keyboard('{ArrowDown}');
+    expect(focused().textContent).toBe('Auto-approve');
+    await user.keyboard('{ArrowDown}');
+    expect(focused().textContent).toBe('Close');
+    const usage = screen.getByRole('menuitemcheckbox', { name: /Usage/ });
+    expect(usage.getAttribute('aria-disabled')).toBe('true');
+    expect(usage.getAttribute('title')).toBe('Not supported for kimi yet');
+    expect(usage.querySelector('.ad-menu-hint')?.textContent).toBe('Not supported for kimi yet');
+  });
+});

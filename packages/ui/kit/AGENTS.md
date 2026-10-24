@@ -15,7 +15,7 @@ import { Button, Menu, Popover, Dialog, RadioGroup, ToastProvider, useToast } fr
 | 零件 | 要点 |
 | --- | --- |
 | `Button` | `variant`: `default`（白底细边）/ `primary`（墨色底，一组里最多一个）/ `ghost`（无边框，工具栏、标题栏）；`size`: `md` 26px / `sm` 22px；原生 `disabled` |
-| `Menu` | 数据驱动：`items` 里放 `{ id, label, shortcut?, checked?, disabled?, items?, onSelect? }` 或 `{ type: 'separator' }`。`checked` 设了就是勾选项；有 `items` 就是子菜单（右边 ▸）。键盘：↑↓ Home End 移动并跳过禁用项和分隔线、Enter/Space 选中、→ 打开子菜单、← 和 Esc 关子菜单、根菜单 Esc 调 `onClose`、Tab 关闭、首字母跳转。键盘打开时传 `defaultActive="first"`。Menu 本身不定位，放进 `Popover chrome={false}` |
+| `Menu` | 数据驱动：`items` 里放 `{ id, label, shortcut?, checked?, disabled?, hint?, items?, onSelect? }`、`{ type: 'separator' }` 或 `{ type: 'heading', label }`（一组项的小标题，如 PLUGINS，键盘跳过）。`checked` 设了就是勾选项；`hint` 是标签后的灰字（例如灰掉的原因），也是悬停提示；有 `items` 就是子菜单（右边 ▸）。键盘：↑↓ Home End 移动并跳过禁用项和分隔线、Enter/Space 选中、→ 打开子菜单、← 和 Esc 关子菜单、根菜单 Esc 调 `onClose`、Tab 关闭、首字母跳转。键盘打开时传 `defaultActive="first"`。Menu 本身不定位，放进 `Popover chrome={false}` |
 | `Popover` | `anchor` 可以是元素、ref 或 `{ x, y }`（右键菜单）。`placement` 默认 `bottom-start`，放不下翻到对面并夹在视口里。Esc、点外面调 `onClose`；关闭后焦点回到打开前的元素 |
 | `Dialog` | 模态。`title`、正文 children、`actions` 按钮行（次要在前，主要在最右）。Esc 调 `onClose`；打开时聚焦 `initialFocus` → `[data-autofocus]` → 正文第一个可聚焦元素 → 第一个按钮；Tab 不出对话框；关闭后焦点还原。默认点遮罩不关闭 |
 | `RadioGroup` | 原生 radio，方向键切换。用在对话框正文里 |
