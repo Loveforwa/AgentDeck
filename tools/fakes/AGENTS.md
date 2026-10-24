@@ -20,6 +20,7 @@ contracts 里每个服务的内存假实现（任务 F6）。第 2 波各条线�
 | `FakeBoardStore` | BoardStore | `saves`、`current()` |
 | `FakeBrowserService` | BrowserService | `setReachable(url, ok)`、`allowedOrigins`、`opened` |
 | `FakeUsageService` | UsageService | `set(id, patch)`（预置用量，watch 着时发 usage.changed）、`watching`；没预置的终端是 no-data |
+| `FakeSkillsService` | SkillsService（N9） | `addLibrary(item)`（发 skills.library-changed）、`setRepoSkills(cwd, names)`、`setRunning(id, ids)`、`mcpStatus`、`addedFolders`；支持情况同 agent-adapters 的 skills/support.ts |
 | `FakeAppService` | AppService | `queuePickFolder(...)`、`defaultPick`、`calls`、`trashed`、`badge`、`quitRequest`、`windowShown()`、`focusTerminal(id)` |
 | `FakeEventBus` | `on` / `onTerminalData` 背后的总线 | `emit`、`emitTerminalData`、`log`、`eventsOf(type)`、`clearLog()` |
 | `createFakeApi()` | AgentDeckApi | 返回值多了 `fakes`（上面这些实例）、`bus`、`scenario`、`dispose()` |
@@ -56,6 +57,7 @@ api.scenario.agentNeedsApproval(SAMPLE.terminals.loginClaude, { command: 'pnpm t
   - `shopClaude`：claude，idle，有一段历史输出。
   - `shopShell`：`pnpm build` 失败退出，error，退出码 2。
 - 白板：3 个框、5 个终端窗口和 1 个网页窗口（localhost:5173）。
+- Skills · MCP：库里有 skill `xlsx` 和 MCP `github`；`agentdeckLogin` 的目录里有 repo skill `release-notes`；`loginClaude` 启动时带的是默认（agentdeck skill 和 MCP）。
 - 还有一个没添加的 git 仓库 `SAMPLE.paths.blog`；`app.pickFolder` 默认返回没有 git 的 `SAMPLE.paths.notes`。
 
 ### scenario
