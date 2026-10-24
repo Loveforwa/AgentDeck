@@ -2,7 +2,7 @@
 // tmux 起不来时显示说明页和 Retry；读登录 shell 环境失败等提示显示在左下角。
 // AGENTDECK_DEMO=1 时自动把本仓库加成项目、建主目录工作区、开一个 Shell 和一个 claude（见 demo.ts）。
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { AgentDeckErrorData, TerminalWindowData, Workspace, WorkspaceId } from '@agentdeck/contracts';
 import { ScmPanel } from '@agentdeck/scm-panel';
 import { useBoardState, Workbench, type BoardController } from '@agentdeck/ui-canvas';
@@ -21,9 +21,6 @@ function terminalLabel(data: TerminalWindowData): string {
   return cmd === '' ? 'shell' : cmd;
 }
 
-function openSettings(): void {
-  void window.agentdeckDesktop?.openSettings().catch((e: unknown) => console.error(e));
-}
 
 /** 右侧面板：跟着聚焦的窗口（或选中的框）所在的工作区。 */
 function SidePanel({ workspace, controller }: { workspace: Workspace | null; controller: BoardController }) {
@@ -70,11 +67,24 @@ export function App({ controller, loaded, startup }: { controller: BoardControll
   const [tmuxError, setTmuxError] = useState(startup.tmuxError);
   const [notices, setNotices] = useState(startup.warnings);
 
+  const addNotice = useCallback((message: string) => setNotices((all) => (all.includes(message) ? all : [...all, message])), []);
+  // 用编辑器打开 settings.json；打不开时主进程在 Finder 里显示它，这里把原因告诉用户（IS-47）
+  const openSettings = useCallback(() => {
+    void window.agentdeckDesktop
+      ?.openSettings()
+      .then((res) => {
+        if (res?.opened === 'finder') addNotice(res.message);
+      })
+      .catch((e: unknown) => addNotice(`Couldn’t open settings: ${e instanceof Error ? e.message : String(e)}`));
+  }, [addNotice]);
+
+  useEffect(() => window.agentdeckDesktop?.onNotice(addNotice), [addNotice]);
+
   useEffect(() => {
     const onOpen = () => openSettings();
     document.addEventListener(OPEN_SETTINGS_EVENT, onOpen);
     return () => document.removeEventListener(OPEN_SETTINGS_EVENT, onOpen);
-  }, []);
+  }, [openSettings]);
 
   useEffect(() => {
     let cancelled = false;

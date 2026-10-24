@@ -146,7 +146,7 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
     <div class="barbox"><span class="t">28 条端到端用例的现状</span><div class="bar"><span class="seg seg-prob" style="flex:3"></span><span class="seg seg-part" style="flex:1"></span><span class="seg seg-ok" style="flex:24"></span></div>
       <div class="legend"><span><i class="dot seg-prob"></i>当前有问题 <b>3</b></span><span><i class="dot seg-no"></i>未验证 <b>0</b></span><span><i class="dot seg-part"></i>部分验证 <b>1</b></span><span><i class="dot seg-ok"></i>已验证 <b>24</b></span><span><i class="dot seg-todo"></i>未实现 <b>0</b></span></div></div>
     <div class="barbox"><span class="t">你的验收进度</span><div class="bar" id="acc-bar"></div>
-      <div class="legend"><span><i class="dot seg-pass"></i>通过 <b id="n-pass">0</b></span><span><i class="dot seg-fail"></i>不通过或阻塞 <b id="n-fail">0</b></span><span>还没验收 <b id="n-open">28</b></span><span>问题已解决 <b id="n-solved">8</b> / 48</span></div></div>
+      <div class="legend"><span><i class="dot seg-pass"></i>通过 <b id="n-pass">0</b></span><span><i class="dot seg-fail"></i>不通过或阻塞 <b id="n-fail">0</b></span><span>还没验收 <b id="n-open">28</b></span><span>问题已解决 <b id="n-solved">10</b> / 48</span></div></div>
   </div>
 </header>
 
@@ -1069,10 +1069,10 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
   </details>
   <p class="links">关联用例 <a class="ref" href="#tc-17">TC-17</a> · 相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-51" target="_blank" rel="noopener">DR-51</a></p>
   <label class="field note"><span>处理备注</span><textarea id="isnote-IS-46" data-is="IS-46" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
-</article><article class="issue" id="is-47" data-issue="IS-47" data-state="待处理">
+</article><article class="issue" id="is-47" data-issue="IS-47" data-state="已解决">
   <div class="case-head">
     <span class="mono cid">IS-47</span><span class="pri pri-P1">P1</span><span class="tag">缺陷</span><span class="mod">apps/desktop</span>
-    <label class="field result"><span>处理状态</span><select id="st-IS-47" data-is="IS-47" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+    <label class="field result"><span>处理状态</span><select id="st-IS-47" data-is="IS-47" class="ist"><option>待处理</option><option>处理中</option><option selected>已解决</option><option>不处理</option></select></label>
   </div>
   <p class="desc">点 Settings 用系统默认程序打开 settings.json，这台 Mac 上 .json 默认是 Tor Browser；打开失败或程序起来慢时界面没有任何提示（渲染进程和菜单都只写 console.error）</p>
   <details>
@@ -1084,7 +1084,7 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
     </div>
   </details>
   <p class="links">关联用例 <a class="ref" href="#tc-15">TC-15</a> · 相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-50" target="_blank" rel="noopener">DR-50</a></p>
-  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-47" data-is="IS-47" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-47" data-is="IS-47" class="is-note" rows="1" placeholder="处理到哪了">2026-10-24 已修：Settings 和 ⌘, 用 editorCommand（默认 code -g）打开 settings.json，PATH 里没有 code 时去 App 包里找（VS Code、Cursor、Zed、Sublime）；打不开就在 Finder 里显示并在界面上提示原因。顺带：手改 settings.json 不用重启就生效，也不会被应用盖掉。设置界面另做（IS-13）。要重启 AgentDeck</textarea></label>
 </article></section><section class="pgroup"><h3><span class="pri pri-P2">P2</span>次要体验、完整性、性能<span class="muted"> · 17 条</span></h3><article class="issue" id="is-08" data-issue="IS-08" data-state="待处理">
   <div class="case-head">
     <span class="mono cid">IS-08</span><span class="pri pri-P2">P2</span><span class="tag">缺陷</span><span class="mod">agent-adapters · contracts</span>
@@ -1421,10 +1421,10 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
   </details>
   <p class="links">相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-31" target="_blank" rel="noopener">DR-31</a> <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-38" target="_blank" rel="noopener">DR-38</a></p>
   <label class="field note"><span>处理备注</span><textarea id="isnote-IS-34" data-is="IS-34" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
-</article><article class="issue" id="is-48" data-issue="IS-48" data-state="待处理">
+</article><article class="issue" id="is-48" data-issue="IS-48" data-state="已解决">
   <div class="case-head">
     <span class="mono cid">IS-48</span><span class="pri pri-P3">P3</span><span class="tag">缺陷</span><span class="mod">开发环境</span>
-    <label class="field result"><span>处理状态</span><select id="st-IS-48" data-is="IS-48" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+    <label class="field result"><span>处理状态</span><select id="st-IS-48" data-is="IS-48" class="ist"><option>待处理</option><option>处理中</option><option selected>已解决</option><option>不处理</option></select></label>
   </div>
   <p class="desc">dev 数据目录的 settings.json 里 editorCommand 被改成了 &quot;echo-1792834415023&quot;（大概是之前的验收脚本留下的），Open in editor 会失效</p>
   <details>
@@ -1436,7 +1436,7 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
     </div>
   </details>
   
-  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-48" data-is="IS-48" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-48" data-is="IS-48" class="is-note" rows="1" placeholder="处理到哪了">2026-10-24 已恢复成 code -g</textarea></label>
 </article></section>
 </section>
 
@@ -1468,7 +1468,7 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
 </details>
 </div>
 
-<script type="application/json" id="meta">{"cases": ["TC-28", "TC-27", "TC-26", "TC-25", "TC-24", "TC-04", "TC-05", "TC-03", "TC-10", "TC-02", "TC-15", "TC-16", "TC-17", "TC-01", "TC-06", "TC-07", "TC-08", "TC-09", "TC-11", "TC-12", "TC-13", "TC-18", "TC-19", "TC-20", "TC-21", "TC-22", "TC-23", "TC-14"], "issues": ["IS-37", "IS-38", "IS-01", "IS-02", "IS-03", "IS-04", "IS-05", "IS-06", "IS-07", "IS-09", "IS-10", "IS-11", "IS-12", "IS-13", "IS-14", "IS-16", "IS-17", "IS-24", "IS-08", "IS-15", "IS-18", "IS-19", "IS-20", "IS-21", "IS-22", "IS-23", "IS-25", "IS-26", "IS-27", "IS-28", "IS-29", "IS-35", "IS-36", "IS-30", "IS-31", "IS-32", "IS-33", "IS-34", "IS-39", "IS-40", "IS-41", "IS-42", "IS-43", "IS-44", "IS-45", "IS-46", "IS-47", "IS-48"], "defaults": {"IS-44": {"status": "已解决", "note": "2026-10-24 已做：外部网站自动用 webview（独立分区、UA 去掉 Electron、允许登录弹窗），出错页加 Show it here；在单独的 Electron 实例里验证 google、github、Google 登录页都能显示和缩放。要重启 AgentDeck，真正登录待用户试（TC-28）"}, "IS-43": {"status": "已解决", "note": "2026-10-24 已修：ping 改用 net.request，加了测试；真 Electron 里 google.com → 301、github.com/login → 200。要重启 AgentDeck 才生效"}, "IS-42": {"status": "已解决", "note": "2026-10-24 已修：claude 启动时主题设成 auto，深浅色切换时通知 tmux；独立 tmux 里模拟整条链路验证通过。要重启 AgentDeck；已经开着的 claude 用标题栏右键 › Restart and resume conversation 换上新参数（对话接着）"}, "IS-41": {"status": "已解决", "note": "2026-10-24 已修：缩放门槛 75% 改 50%；缩小时显示整屏文字快照，加了测试。正在运行的 AgentDeck 已热更新"}, "IS-39": {"status": "已解决", "note": "2026-10-24 已修（3ceabfb）：scrollback 改成 1000，固定种子的复现测试通过；正在运行的 AgentDeck 已热更新"}, "IS-40": {"status": "已解决", "note": "2026-10-24 已修（3ceabfb）：加 Unicode 11 宽度表，35 个常用符号和 tmux 实测宽度全部吻合，写成测试"}, "IS-37": {"status": "已解决", "note": "2026-10-24 已修（925c11f）：只要目录里有终端开着就确认，确认框列出这些终端；面板加了测试"}, "IS-38": {"status": "已解决", "note": "2026-10-24 已修（925c11f）：应用启动时找出自己运行的目录，界面对它切分支、建分支并切换、连目录删除都拒绝；真窗口里验证过"}}}</script>
+<script type="application/json" id="meta">{"cases": ["TC-28", "TC-27", "TC-26", "TC-25", "TC-24", "TC-04", "TC-05", "TC-03", "TC-10", "TC-02", "TC-15", "TC-16", "TC-17", "TC-01", "TC-06", "TC-07", "TC-08", "TC-09", "TC-11", "TC-12", "TC-13", "TC-18", "TC-19", "TC-20", "TC-21", "TC-22", "TC-23", "TC-14"], "issues": ["IS-37", "IS-38", "IS-01", "IS-02", "IS-03", "IS-04", "IS-05", "IS-06", "IS-07", "IS-09", "IS-10", "IS-11", "IS-12", "IS-13", "IS-14", "IS-16", "IS-17", "IS-24", "IS-08", "IS-15", "IS-18", "IS-19", "IS-20", "IS-21", "IS-22", "IS-23", "IS-25", "IS-26", "IS-27", "IS-28", "IS-29", "IS-35", "IS-36", "IS-30", "IS-31", "IS-32", "IS-33", "IS-34", "IS-39", "IS-40", "IS-41", "IS-42", "IS-43", "IS-44", "IS-45", "IS-46", "IS-47", "IS-48"], "defaults": {"IS-47": {"status": "已解决", "note": "2026-10-24 已修：Settings 和 ⌘, 用 editorCommand（默认 code -g）打开 settings.json，PATH 里没有 code 时去 App 包里找（VS Code、Cursor、Zed、Sublime）；打不开就在 Finder 里显示并在界面上提示原因。顺带：手改 settings.json 不用重启就生效，也不会被应用盖掉。设置界面另做（IS-13）。要重启 AgentDeck"}, "IS-48": {"status": "已解决", "note": "2026-10-24 已恢复成 code -g"}, "IS-44": {"status": "已解决", "note": "2026-10-24 已做：外部网站自动用 webview（独立分区、UA 去掉 Electron、允许登录弹窗），出错页加 Show it here；在单独的 Electron 实例里验证 google、github、Google 登录页都能显示和缩放。要重启 AgentDeck，真正登录待用户试（TC-28）"}, "IS-43": {"status": "已解决", "note": "2026-10-24 已修：ping 改用 net.request，加了测试；真 Electron 里 google.com → 301、github.com/login → 200。要重启 AgentDeck 才生效"}, "IS-42": {"status": "已解决", "note": "2026-10-24 已修：claude 启动时主题设成 auto，深浅色切换时通知 tmux；独立 tmux 里模拟整条链路验证通过。要重启 AgentDeck；已经开着的 claude 用标题栏右键 › Restart and resume conversation 换上新参数（对话接着）"}, "IS-41": {"status": "已解决", "note": "2026-10-24 已修：缩放门槛 75% 改 50%；缩小时显示整屏文字快照，加了测试。正在运行的 AgentDeck 已热更新"}, "IS-39": {"status": "已解决", "note": "2026-10-24 已修（3ceabfb）：scrollback 改成 1000，固定种子的复现测试通过；正在运行的 AgentDeck 已热更新"}, "IS-40": {"status": "已解决", "note": "2026-10-24 已修（3ceabfb）：加 Unicode 11 宽度表，35 个常用符号和 tmux 实测宽度全部吻合，写成测试"}, "IS-37": {"status": "已解决", "note": "2026-10-24 已修（925c11f）：只要目录里有终端开着就确认，确认框列出这些终端；面板加了测试"}, "IS-38": {"status": "已解决", "note": "2026-10-24 已修（925c11f）：应用启动时找出自己运行的目录，界面对它切分支、建分支并切换、连目录删除都拒绝；真窗口里验证过"}}}</script>
 <script>
 (function () {
   var META = JSON.parse(document.getElementById('meta').textContent);

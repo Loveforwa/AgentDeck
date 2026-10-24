@@ -45,6 +45,9 @@ const desktop: DesktopBridge = {
   startup: () => ipcRenderer.invoke(DESKTOP_IPC.startup),
   retryTmux: () => ipcRenderer.invoke(DESKTOP_IPC.retryTmux),
   openSettings: () => ipcRenderer.invoke(DESKTOP_IPC.openSettings),
+  onNotice: (listener) => {
+    ipcRenderer.on(DESKTOP_IPC.notice, (_event, message: string) => listener(message));
+  },
   boardReady: (info) => ipcRenderer.send(DESKTOP_IPC.boardReady, info),
   onShortcut: (listener) => {
     ipcRenderer.on(DESKTOP_IPC.shortcut, (_event, id: MenuShortcutId) => listener(id));

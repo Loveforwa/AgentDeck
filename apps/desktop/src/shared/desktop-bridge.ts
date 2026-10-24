@@ -23,6 +23,8 @@ export const DESKTOP_IPC = {
   startup: 'agentdeck-desktop:startup',
   retryTmux: 'agentdeck-desktop:retry-tmux',
   openSettings: 'agentdeck-desktop:open-settings',
+  /** 主进程 → 界面：一句提示（例如 ⌘, 打不开 settings.json 时）。 */
+  notice: 'agentdeck-desktop:notice',
   boardReady: 'agentdeck-desktop:board-ready',
   shortcut: 'agentdeck-desktop:shortcut',
 } as const;
@@ -48,7 +50,10 @@ export interface DesktopBridge {
   /** 再起一次 tmux-host。返回新的错误，成功为 null。 */
   retryTmux(): Promise<AgentDeckErrorData | null>;
   /** 用编辑器打开 settings.json（还没有设置界面）。 */
-  openSettings(): Promise<void>;
+  /** 用编辑器打开 settings.json；打不开时在 Finder 里显示，返回要给用户看的提示。 */
+  openSettings(): Promise<{ opened: 'editor' } | { opened: 'finder'; message: string } | null>;
+  /** 主进程发来的提示。 */
+  onNotice(listener: (message: string) => void): void;
   boardReady(info: BoardReadyInfo): void;
   onShortcut(listener: (id: MenuShortcutId) => void): void;
 }

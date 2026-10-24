@@ -26,7 +26,6 @@ import {
   type MessagePortMain,
 } from 'electron';
 import {
-  AgentDeckError,
   type AgentDeckEvent,
   type AgentKind,
   type StartAgentRequest,
@@ -40,7 +39,7 @@ import { createWorkspaceServices } from '@agentdeck/workspace-service';
 import tmuxHostPath from '../utility/tmux-host.ts?modulePath';
 import { DESKTOP_IPC, type BoardReadyInfo, type StartupInfo } from '../shared/desktop-bridge.ts';
 import { createAlerts } from './alerts.ts';
-import { createAppService } from './app-service.ts';
+import { createAppService, openFileInEditor } from './app-service.ts';
 import { registerBrowserService } from './browser/index.ts';
 import { startHostProcess } from './host-process.ts';
 import { installIpc, type IpcMainLike } from './ipc.ts';
@@ -326,10 +325,14 @@ async function main(): Promise<void> {
     await terminals.list().catch(() => undefined);
     return terminals.startError;
   });
+  // 用编辑器打开 settings.json，打不开就在 Finder 里显示并提示（IS-47）
   const openSettings = async () => {
     if (!existsSync(settings.path)) settings.update({});
-    const err = await shell.openPath(settings.path);
-    if (err) throw new AgentDeckError({ code: 'not-found', message: `Couldn’t open ${settings.path}`, detail: err });
+    return openFileInEditor(settings.path, {
+      editorCommand: settings.get().editorCommand,
+      env: loginEnv,
+      showItemInFolder: (p) => shell.showItemInFolder(p),
+    });
   };
   ipcMain.handle(DESKTOP_IPC.openSettings, (e) => (fromTop(e) ? openSettings() : null));
 
@@ -362,7 +365,13 @@ async function main(): Promise<void> {
     Menu.buildFromTemplate(
       buildMenuTemplate(app.getName(), {
         shortcut: sendShortcut,
-        openSettings: () => void openSettings().catch((e: unknown) => console.error(e)),
+        openSettings: () =>
+          void openSettings().then(
+            (res) => {
+              if (res.opened === 'finder') mainWindow?.webContents.send(DESKTOP_IPC.notice, res.message);
+            },
+            (e: unknown) => console.error(e),
+          ),
         quit: (stop) => void quit(stop),
         dev: isDev
           ? {

@@ -1,11 +1,11 @@
 // 组装（第 3 波）用到的纯逻辑：数据目录、登录 shell 环境解析、设置文件、外部程序命令、终端转发层、截图模式、角标、菜单。
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { chmod, mkdtemp, readFile, rm, utimes, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { StatusSnapshot, TerminalId } from '@agentdeck/contracts';
 import { createAlerts } from '../src/main/alerts.ts';
-import { appleScriptString, editorArgs, systemTerminalPlan } from '../src/main/app-service.ts';
+import { appleScriptString, editorArgs, openFileInEditor, resolveEditor, systemTerminalPlan } from '../src/main/app-service.ts';
 import { fallbackEnv, parseEnvOutput } from '../src/main/login-env.ts';
 import { buildMenuTemplate, MENU_ACCELERATORS, RESERVED_ACCELERATORS } from '../src/main/menu.ts';
 import { MAX_SOCKET_PATH, resolvePaths } from '../src/main/paths.ts';
@@ -81,6 +81,23 @@ describe('settings file', () => {
     expect(JSON.parse(await readFile(path, 'utf8')).editorCommand).toBe('cursor -g');
     expect(openSettingsFile(path, defaultSettings([])).get().editorCommand).toBe('cursor -g');
   });
+  it('picks up hand edits without a restart and keeps them on the next update (IS-47)', async () => {
+    dir = await mkdtemp(join(tmpdir(), 'agentdeck-settings-'));
+    const path = join(dir, 'settings.json');
+    const file = openSettingsFile(path, defaultSettings([]));
+    file.update({ editorCommand: 'cursor -g' });
+    const edited = { ...JSON.parse(await readFile(path, 'utf8')), editorCommand: 'zed', terminalApp: 'iTerm' };
+    await writeFile(path, JSON.stringify(edited));
+    await utimes(path, new Date(), new Date(Date.now() + 5000));
+    expect(file.get().editorCommand).toBe('zed');
+    file.update({ notifications: false });
+    const saved = JSON.parse(await readFile(path, 'utf8'));
+    expect(saved).toMatchObject({ editorCommand: 'zed', terminalApp: 'iTerm', notifications: false });
+    // 改坏了：继续用上一次的
+    await writeFile(path, '{ broken');
+    await utimes(path, new Date(), new Date(Date.now() + 10000));
+    expect(file.get().editorCommand).toBe('zed');
+  });
 });
 
 describe('external programs', () => {
@@ -95,6 +112,64 @@ describe('external programs', () => {
     expect(systemTerminalPlan('Terminal', "tmux attach -t '=t-1'")).toMatchObject({ kind: 'osascript' });
     expect(systemTerminalPlan('iTerm', 'x')).toMatchObject({ kind: 'osascript' });
     expect(systemTerminalPlan('Ghostty', 'x')).toEqual({ kind: 'command-file' });
+  });
+
+  describe('opening settings.json (IS-47)', () => {
+    let bin = '';
+    afterEach(async () => {
+      if (bin) await rm(bin, { recursive: true, force: true });
+      bin = '';
+    });
+    async function fakeEditor(name: string): Promise<string> {
+      bin = await mkdtemp(join(tmpdir(), 'ad-editor-'));
+      const file = join(bin, name);
+      await writeFile(file, '#!/bin/sh\n');
+      await chmod(file, 0o755);
+      return bin;
+    }
+
+    it('opens it with the editor command, never the system default app', async () => {
+      const dir = await fakeEditor('code');
+      const run = vi.fn(async () => {});
+      const reveal = vi.fn();
+      const res = await openFileInEditor('/data/settings.json', { editorCommand: 'code -g', env: { PATH: dir }, showItemInFolder: reveal, run });
+      expect(res).toEqual({ opened: 'editor' });
+      expect(run).toHaveBeenCalledWith(join(dir, 'code'), ['-g', '/data/settings.json'], { PATH: dir }, '/data');
+      expect(reveal).not.toHaveBeenCalled();
+    });
+
+    it('finds the editor CLI inside the app bundle when it is not on PATH', async () => {
+      const vscode = '/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code';
+      expect(await resolveEditor('code', { PATH: '/nonexistent' }, (p) => p === vscode)).toBe(vscode);
+      expect(await resolveEditor('code', { PATH: '/nonexistent', HOME: '/Users/me' }, (p) => p === `/Users/me${vscode}`)).toBe(`/Users/me${vscode}`);
+      expect(await resolveEditor('nano-x', { PATH: '/nonexistent' }, () => true)).toBeNull();
+      const run = vi.fn(async () => {});
+      const res = await openFileInEditor('/data/settings.json', { editorCommand: 'code -g', env: { PATH: '/nonexistent' }, showItemInFolder: vi.fn(), run, exists: (p) => p === vscode });
+      expect(res).toEqual({ opened: 'editor' });
+      expect(run).toHaveBeenCalledWith(vscode, ['-g', '/data/settings.json'], { PATH: '/nonexistent' }, '/data');
+    });
+
+    it('shows it in Finder with a reason when the editor is missing, empty or fails to start', async () => {
+      const reveal = vi.fn();
+      const missing = await openFileInEditor('/data/settings.json', { editorCommand: 'echo-1792834415023', env: { PATH: '/nonexistent' }, showItemInFolder: reveal, exists: () => false });
+      expect(missing).toMatchObject({ opened: 'finder', message: expect.stringContaining('“echo-1792834415023”') });
+      expect(reveal).toHaveBeenCalledWith('/data/settings.json');
+
+      const empty = await openFileInEditor('/data/settings.json', { editorCommand: '  ', env: {}, showItemInFolder: reveal, exists: () => false });
+      expect(empty).toMatchObject({ opened: 'finder', message: expect.stringContaining('No editor command is set') });
+
+      const dir = await fakeEditor('code');
+      const broken = await openFileInEditor('/data/settings.json', {
+        editorCommand: 'code -g',
+        env: { PATH: dir },
+        showItemInFolder: reveal,
+        run: async () => {
+          throw new Error('spawn EACCES');
+        },
+      });
+      expect(broken.opened).toBe('finder');
+      expect(reveal).toHaveBeenCalledTimes(3);
+    });
   });
 });
 
