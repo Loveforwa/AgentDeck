@@ -90,6 +90,88 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* ---- 左下角的吉祥物 Clawd：缩放按钮右边那一段里冒出来，只是装饰 ---- */
+
+.ad-board {
+  --clawd-left: 72px;
+  --clawd-range: max(0px, min(320px, 40% - 72px));
+}
+
+.ad-clawd {
+  position: absolute;
+  bottom: 0;
+  z-index: 4;
+  pointer-events: none;
+  transform: translateY(100%);
+  opacity: 0;
+  transition:
+    transform 320ms var(--motion-ease),
+    opacity 320ms var(--motion-ease);
+}
+
+.ad-clawd[data-shown='true'] {
+  transform: translateY(-6px);
+  opacity: 1;
+}
+
+.ad-clawd-sprite {
+  display: block;
+}
+
+.ad-clawd-body {
+  fill: var(--mascot);
+}
+
+.ad-clawd-eye {
+  fill: var(--mascot-eye);
+}
+
+.ad-clawd-prop {
+  fill: var(--mascot-prop);
+}
+
+.ad-clawd-screen {
+  fill: var(--surface);
+}
+
+.ad-clawd-ink {
+  fill: var(--mascot);
+}
+
+.ad-clawd-food {
+  fill: var(--mascot-food);
+}
+
+/* 两帧交替：一帧亮着时另一帧藏着 */
+.ad-clawd-frame {
+  animation: ad-clawd-flip 700ms steps(1, end) infinite;
+}
+
+.ad-clawd-frame-2 {
+  animation-delay: -350ms;
+}
+
+@keyframes ad-clawd-flip {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ad-clawd {
+    transition: none;
+  }
+  .ad-clawd-frame {
+    animation: none;
+  }
+  .ad-clawd-frame-2 {
+    opacity: 0;
+  }
+}
+
 /* ---- 窗口节点 ---- */
 
 .ad-window-node {

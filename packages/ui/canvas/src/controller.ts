@@ -1,7 +1,7 @@
 // BoardController：白板的全部行为。React 组件只负责画和把手势交给它；它只通过 window.agentdeck（AgentDeckApi）调服务。
 // 不依赖 React，测试里直接拿 createFakeApi() 跑。
 
-import type { AgentDeckApi, AgentDeckErrorData, AgentKind, BoardState, CreateWorkspaceRequest, ErrorCode, FrameNode, OpenWindowRequest, ProjectId, ProjectPatch, Rect, Settings, Size, TerminalWindowData, Unsubscribe, Viewport, WindowCommand, WindowId, WindowNode, WindowStatusBadge, WorkspaceId } from '@agentdeck/contracts';
+import type { AgentDeckApi, AgentDeckErrorData, AgentKind, BoardState, CreateWorkspaceRequest, ErrorCode, FrameNode, OpenWindowRequest, ProjectId, ProjectPatch, Rect, Settings, Size, TerminalWindowData, Unsubscribe, Viewport, WindowCommand, WindowId, WindowNode, WindowStatusBadge, Workspace, WorkspaceId } from '@agentdeck/contracts';
 import { TITLE_BAR_HEIGHT, resizeRect, type ResizeEdge } from '@agentdeck/ui-window-shell';
 import { isSummarySize, windowRegistry, type WindowDefinition, type WindowRegistry } from './registry.ts';
 import { startableAgents } from './model/agents.ts';
@@ -176,6 +176,8 @@ export class BoardController {
         const w = this.state.windows.find((n) => terminalIdOf(n) === e.terminalId);
         if (w) this.jumpToWindow(w.id);
       }),
+      api.on('board.add-frame', (e) => this.addFrameFromService(e.workspace)),
+      api.on('board.open-window', (e) => void this.openWindowFromService(e.request, e.highlight)),
     );
     // 存档：保存的那部分一变就排进防抖
     this.unsubs.push(
@@ -791,8 +793,11 @@ export class BoardController {
     return this.addWindow({ type: BROWSER_TYPE, workspaceId: opts.workspaceId, rect, data: def.create({}) });
   }
 
-  /** 窗口组件调 props.openWindow：同 reuseKey 的已经开着就聚焦它并闪一下，否则开在发起窗口右边、同一个工作区。 */
-  openWindow(fromId: WindowId | null, req: OpenWindowRequest): WindowId | null {
+  /**
+   * 窗口组件调 props.openWindow：同 reuseKey 的已经开着就聚焦它并闪一下，否则开在发起窗口右边、同一个工作区。
+   * quiet：不聚焦、不移动视口（服务开的窗口，见 openWindowFromService）。
+   */
+  openWindow(fromId: WindowId | null, req: OpenWindowRequest, opts: { quiet?: boolean } = {}): WindowId | null {
     const def = this.registry.get(req.type);
     if (!def) {
       this.notify(`Can’t open a ${req.type} window`);
@@ -803,7 +808,8 @@ export class BoardController {
       for (const [id, k] of this.reuseKeys) {
         if (k !== key || !this.windowById(id)) continue;
         this.updateData(id, req.data as object);
-        this.jumpAndFlash(id);
+        if (opts.quiet) this.flashWindow(id);
+        else this.jumpAndFlash(id);
         return id;
       }
     }
@@ -811,8 +817,30 @@ export class BoardController {
     const ws = req.workspaceId === undefined ? (from?.workspaceId ?? null) : req.workspaceId;
     const placed = this.placeWindow(def.defaultSize, ws, { nextTo: from?.id ?? null });
     const rect = { ...placed, ...req.rect };
+    const { focusedId, selectedFrame } = this.state;
     const id = this.addWindow({ type: req.type, workspaceId: ws, rect, data: def.create(req.data as never) });
+    if (opts.quiet) this.set({ focusedId, selectedFrame });
     if (key) this.reuseKeys.set(id, key);
+    return id;
+  }
+
+  // ---- 服务让白板做的事（M1：agent 通过 MCP 开终端、工作区、网页） ----
+  // 终端和工作区已经由服务建好，这里只放上白板。不抢键盘焦点、不动视口：用户可能正在别的窗口里打字。
+
+  /** board.add-frame：工作区放到空位上；已经有框时不动。 */
+  addFrameFromService(workspace: Workspace): void {
+    this.set((s) => ({ workspaces: { ...s.workspaces, [workspace.id]: workspace } }));
+    if (this.frameOf(workspace.id)) return;
+    const rect = this.freeFrameRect(this.defaultFrameSize());
+    this.set((s) => ({ frames: [...s.frames, { workspaceId: workspace.id, rect, z: this.maxFrameZ() + 1, autoApprove: false }] }));
+  }
+
+  /** board.open-window：照 openWindow 放进框里（框不在白板上时散放）；highlight 时闪一下。 */
+  openWindowFromService(req: OpenWindowRequest, highlight: boolean): WindowId | null {
+    const ws = req.workspaceId ?? null;
+    const workspaceId = ws && this.frameOf(ws) ? ws : null;
+    const id = this.openWindow(null, { ...req, workspaceId }, { quiet: true });
+    if (id && highlight) this.set((s) => ({ flash: { ...s.flash, [id]: (s.flash[id] ?? 0) + 1 } }));
     return id;
   }
 

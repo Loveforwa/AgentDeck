@@ -9,6 +9,7 @@ const internal = [
   '@agentdeck/agent-adapters',
   '@agentdeck/contracts',
   '@agentdeck/git-service',
+  '@agentdeck/mcp-server',
   '@agentdeck/port-watch',
   '@agentdeck/store',
   '@agentdeck/tmux-host',

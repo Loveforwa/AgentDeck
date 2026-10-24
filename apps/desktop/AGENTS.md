@@ -20,6 +20,7 @@ src/main/
   screenshot.ts     AGENTDECK_SCREENSHOT 截图模式
   services.ts / registry.ts / ipc.ts / events.ts   注册表、IPC 路由、事件广播（F3）
   browser/          网页窗口的主进程部分（线 5）：BrowserService、响应头改写、agentdeck-file://、iframe 小桥
+  mcp.ts            AgentDeck 的 MCP 服务（M1，packages/mcp-server）：工具通过注册表调服务
 src/utility/
   tmux-host.ts      utilityProcess 入口：startTmuxHost + port-watch，输出按 viewId 写进窗口端口
 src/preload/        window.agentdeck（contracts 的 AgentDeckApi）、window.agentdeckDesktop、window.agentdeckFiles
@@ -27,6 +28,14 @@ src/shared/         方法名单、线路工具、主进程 ↔ utilityProcess �
 src/renderer/       顶栏 + 白板（ui-canvas）+ 源代码管理面板（scm-panel）；注册终端、网页两种窗口；演示模式（demo.ts）
 test/               Vitest：注册表、preload 代理、主进程接线、组装用到的纯逻辑（assembly.test.ts）、browser
 ```
+
+## MCP（M1）
+
+`startAppMcp({ registry, emit })` 在 `app.whenReady` 后启动 `packages/mcp-server`，听 `127.0.0.1:47621`（被占用时随机端口），
+token 在 `~/.agentdeck/run/mcp-token`。工具用 `viaRegistry` 调注册表里的服务（发起者 senderId 为 0，不是任何窗口），
+所以服务注册上之后工具就能用；没注册的返回 `Service not available: …`。白板事件（`board.add-frame`、`board.open-window`）走 `emit` 广播。
+
+已接好：`createAgentRuntime({ mcp: () => mcp?.endpoint ?? null })` 让 claude 启动时挂上它；`startAppMcp` 带 `workspaceOf`、`onInput`；`electron.vite.config.ts` 把 `@agentdeck/mcp-server` 打进主进程产物；退出时关掉。
 
 ## 运行
 

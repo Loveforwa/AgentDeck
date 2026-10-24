@@ -44,6 +44,7 @@ import { startHostProcess } from './host-process.ts';
 import { installIpc, type IpcMainLike } from './ipc.ts';
 import { readLoginEnv, type Env } from './login-env.ts';
 import { buildMenuTemplate, type MenuShortcutId } from './menu.ts';
+import { startAppMcp } from './mcp.ts';
 import { resolvePaths } from './paths.ts';
 import { createScreenshotter } from './screenshot.ts';
 import { guardGitService, guardWorkspaceService } from './self-repo-guard.ts';
@@ -165,8 +166,11 @@ async function main(): Promise<void> {
     hookSocket: paths.hookSocket,
     env: loginEnv,
   });
+  // AgentDeck 的 MCP（M1）：白板上的 claude 启动时挂上它，工具经注册表调服务。起不来不影响应用，只是 agent 拿不到这些工具。
+  let mcp: Awaited<ReturnType<typeof startAppMcp>> | null = null;
   const rt = createAgentRuntime({
     env: () => loginEnv,
+    mcp: () => mcp?.endpoint ?? null,
     terminals,
     notifyCommand,
     agentExtension: paths.agentExtension,
@@ -176,6 +180,13 @@ async function main(): Promise<void> {
     socketPath: paths.hookSocket,
   });
   await rt.start();
+  startAppMcp({ registry, emit, workspaceOf: (id) => rt.status.get(id)?.workspaceId, onInput: (id) => rt.noteInput(id) }).then(
+    (server) => {
+      mcp = server;
+      console.log(`[agentdeck] MCP on ${server.endpoint.url}`);
+    },
+    (e: unknown) => console.error('[agentdeck] MCP did not start', e),
+  );
   terminals.onEvent((event) => {
     emit(event);
     rt.onTerminalEvent(event);
@@ -265,6 +276,7 @@ async function main(): Promise<void> {
     // ⌘Q 只断开（会话留在 tmux 里继续跑）；Stop all and quit 才结束 tmux 服务
     await terminals.stop(stopTerminals);
     host.stop();
+    await mcp?.close();
     store.close();
     app.exit(0);
   };

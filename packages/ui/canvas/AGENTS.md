@@ -74,6 +74,7 @@ import '@agentdeck/ui-kit/base.css';
 - 新建的东西放在右键的位置；⌘N / ⌘T 放在聚焦窗口右边、同一个工作区；没有聚焦时在视口中心。新工作区没给位置时放在空的地方。
 - 关闭运行中的终端要确认（Stop and close，调 `terminals.kill`）；已退出的终端和网页直接关。
 - 删除工作区：Remove from board / Also delete the worktree folder；服务抛 `dirty-worktree` 后要勾“I understand these changes will be lost”再带 `force: true`。成功后结束框里的终端。
+- 服务开的东西（M1，agent 通过 MCP）：`board.add-frame` 把已建好的工作区放到空位（`addFrameFromService`）；`board.open-window` 照 `openWindow` 放进框里，框不在白板上时散放（`openWindowFromService`）。都不抢键盘焦点、不动视口，`highlight` 时窗口闪一下。
 - 保存：保存的部分（视口、框、窗口、面板）引用一变就排进防抖，半秒后 `board.save`；`pagehide` 时立刻写。启动时 `board.load` 恢复。
 
 ## dev 页面

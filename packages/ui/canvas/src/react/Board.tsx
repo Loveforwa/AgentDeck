@@ -20,6 +20,7 @@ import { BoardDialogs } from './dialogs.tsx';
 import { FrameNodeView, PendingFrameView } from './FrameNodeView.tsx';
 import { WindowNodeView } from './WindowNodeView.tsx';
 import { useBoardState, useController } from './context.tsx';
+import { Clawd } from './Clawd.tsx';
 import '../canvas.css';
 
 const nodeTypes: NodeTypes = {
@@ -158,6 +159,7 @@ export function Board() {
       ) : null}
       <EmptyState />
       <ZoomControl />
+      <Clawd />
       <BoardMenu />
       <BoardDialogs />
     </div>

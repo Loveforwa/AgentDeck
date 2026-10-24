@@ -92,6 +92,17 @@ export interface OpenWindowRequest<TData = unknown> {
   reuseKey?: string;
 }
 
+/**
+ * 服务让白板做的事（M1：agent 通过 MCP 开终端、工作区、网页）。终端、工作区已经由服务建好，白板只负责放上去。
+ * 两者都不抢键盘焦点、不移动视口：用户可能正在别的窗口里打字。
+ * - board.add-frame：把已建好的工作区放到白板的空位上；已经有框时不动。
+ * - board.open-window：同窗口组件的 openWindow，但没有发起窗口，所以 request.workspaceId 总是给出（null 是散放）。
+ *   highlight 为 true 时窗口闪一下，提醒用户这里多了东西。
+ */
+export type BoardEvent =
+  | { type: 'board.add-frame'; workspace: Workspace }
+  | { type: 'board.open-window'; request: OpenWindowRequest; highlight: boolean };
+
 /** 白板发给窗口的命令：⌘K 清屏、标题栏右键菜单里的项。 */
 export type WindowCommand = 'clear' | 'restart' | (string & {});
 

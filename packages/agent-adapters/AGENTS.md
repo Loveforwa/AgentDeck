@@ -26,6 +26,7 @@ const rt = createAgentRuntime({
   emit: (e) => sendToRenderer(e),                 // status.changed、agent.turn-end
   destructivePatterns: () => settings.approvals.destructivePatterns,
   extraArgs: (agent) => settings.agents[agent]?.extraArgs ?? [],
+  mcp: () => mcpServer.endpoint,                  // M1：AgentDeck 的 MCP 服务（packages/mcp-server），没起来返回 null
 });
 await rt.start();                                 // 监听 ~/.agentdeck/run/hooks.sock
 tmuxHostEvents.on((e) => rt.onTerminalEvent(e));  // terminal.activity / silence / exit / host-lost
@@ -131,6 +132,14 @@ omp：`--approval-mode always-ask` 跑 bash，PermissionRequest 带上了 `comma
 `--resume <id>` 报原 id，`--fork <id>` 报新 id。没在真 TUI 里核对：omp 确认框“允许一次”的按键（所以没有 Approve all）。
 真窗口（单独的 AgentDeck 实例、临时 HOME、同一个假模型）：菜单列出 Pi、Oh My Pi；pi 一轮 running → idle → turn-end；omp 的 bash 批准显示 needs-approval（summary 是命令），
 在确认框按 Enter 批准后 running → idle → turn-end；omp 新会话的 id 由 SessionStart 报上来存进库，`--resume <id>` 能接回（omp 只在第一条消息后才写会话文件，没说过话的会话接不回）。
+
+## AgentDeck 的 MCP（M1）
+
+`LaunchContext.mcp` 有值时 claude 适配器加 `--mcp-config <json>`：一个叫 `agentdeck` 的 http 服务，
+`Authorization: Bearer ${AGENTDECK_MCP_TOKEN}`、`x-agentdeck-terminal: ${AGENTDECK_TERM}`，由 claude 从环境里展开（2.1.291 实测），
+token 本身只放进 `LaunchSpec.env`，不进命令行。和用户自己配的 MCP 合并（不用 `--strict-mcp-config`）。codex 暂时不挂。
+
+`StartAgentRequest.prompt`（第一条消息）：claude、codex 都放在参数最后、`--` 之后（`--mcp-config` 和不少用户参数后面能跟多个值，不隔开会被吃掉）。只在新会话时带。
 
 ## agentdeck-notify 怎么打包（组装阶段）
 

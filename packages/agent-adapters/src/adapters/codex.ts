@@ -126,7 +126,8 @@ export class CodexAdapter implements AgentAdapterExt {
     }
     return {
       cmd: this.command,
-      args: [...head, ...hookArgs, ...ctx.extraArgs],
+      // codex [PROMPT]：位置参数是第一条消息。MCP 目前只挂给 claude，ctx.mcp 在这里不用。
+      args: [...head, ...hookArgs, ...ctx.extraArgs, ...(ctx.prompt && ctx.mode.kind === 'new' ? ['--', ctx.prompt] : [])],
       sessionId: sessionId as AgentSessionId | null,
     };
   }

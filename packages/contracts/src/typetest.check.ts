@@ -10,6 +10,10 @@ api.on('status.changed', (e) => {
 api.on('terminal.link', (e: EventOf<'terminal.link'>) => {
   if (e.link.kind === 'file') void e.link.path;
 });
+api.on('board.open-window', (e: EventOf<'board.open-window'>) => {
+  const t: string = e.request.type;
+  void t;
+});
 const fakeLastLines: TerminalHost['lastLines'] = async (_id: TerminalId, n: number) => Array.from({ length: n }, () => '');
 const fakeStatus: GitService['status'] = async (repo) => ({
   repo, branch: 'main', head: null, upstream: null, ahead: 0, behind: 0, aheadOfBase: 0, baseBranch: 'main',

@@ -16,6 +16,7 @@
     "@agentdeck/contracts": "workspace:*",
     "@agentdeck/design-tokens": "workspace:*",
     "@agentdeck/git-service": "workspace:*",
+    "@agentdeck/mcp-server": "workspace:*",
     "@agentdeck/port-watch": "workspace:*",
     "@agentdeck/scm-panel": "workspace:*",
     "@agentdeck/store": "workspace:*",

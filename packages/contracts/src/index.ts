@@ -8,4 +8,5 @@ export * from './git.ts';
 export * from './board.ts';
 export * from './browser.ts';
 export * from './app.ts';
+export * from './mcp.ts';
 export * from './ipc.ts';

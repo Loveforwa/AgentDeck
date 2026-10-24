@@ -7,6 +7,7 @@ import type {
   AgentKind,
   AgentService,
   AgentSessionId,
+  McpEndpoint,
   StartAgentRequest,
   StartAgentResult,
   TerminalHost,
@@ -43,6 +44,8 @@ export interface AgentServiceOptions {
   notifyCommand: AbsPath;
   /** Settings › Agents 里的额外启动参数。 */
   extraArgs?: (agent: AgentKind) => string[];
+  /** AgentDeck 的 MCP 服务（M1）。返回 null 表示没起来，这次启动不挂。 */
+  mcp?: () => McpEndpoint | null;
   onStarted?: (started: StartedAgent) => void;
 }
 
@@ -85,7 +88,10 @@ export class AgentServiceImpl implements AgentService {
       notifyCommand: this.opts.notifyCommand,
       extraArgs: this.opts.extraArgs?.(req.agent) ?? [],
       ...(req.command !== undefined ? { command: req.command } : {}),
+      ...(req.prompt ? { prompt: req.prompt } : {}),
     };
+    const mcp = this.opts.mcp?.();
+    if (mcp) ctx.mcp = mcp;
     const prepared = info.capabilities.hooks ? await adapter.prepare?.(ctx) : undefined;
     const spec = adapter.launch(ctx);
     if (req.agent === 'custom' && !(await findExecutable(spec.cmd, this.opts.env()))) {

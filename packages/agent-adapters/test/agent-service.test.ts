@@ -101,6 +101,25 @@ describe('AgentServiceImpl', () => {
     expect(started).toEqual([{ terminalId: res.terminalId, agent: 'claude', workspaceId: 'ws', hooks: true, sessionId: res.sessionId }]);
   });
 
+  it('start: passes the prompt and the MCP endpoint to the adapter', async () => {
+    const env = { PATH: bin, SHELL: '/bin/sh' };
+    terminals = new FakeTerminalHost({ silenceMs: 0 });
+    let endpoint: { url: string; token: string } | null = { url: 'http://127.0.0.1:1/mcp', token: 'tok' };
+    const s = new AgentServiceImpl({
+      adapters: createDefaultAdapters({ env: () => env }),
+      terminals,
+      env: () => env,
+      notifyCommand: '/opt/agentdeck/agentdeck-notify',
+      mcp: () => endpoint,
+    });
+    const res = await s.start(req({ prompt: 'write tests' }));
+    expect(res.args).toContain('--mcp-config');
+    expect(res.args.slice(-2)).toEqual(['--', 'write tests']);
+    expect(terminals.get(res.terminalId).env).toMatchObject({ AGENTDECK_MCP_TOKEN: 'tok' });
+    endpoint = null;
+    expect((await s.start(req({}))).args).not.toContain('--mcp-config');
+  });
+
   it('start: resume keeps the session id', async () => {
     const res = await service().start(req({ mode: { kind: 'resume', sessionId: 'abc' as AgentSessionId } }));
     expect(res.sessionId).toBe('abc');
