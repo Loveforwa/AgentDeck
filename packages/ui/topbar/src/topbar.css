@@ -1,8 +1,12 @@
 /*
- * 一行顶栏（MVP v2 · V1）：和 macOS 的标题栏合成一行（窗口用 hiddenInset），整条是窗口的拖动区，
- * 按钮和菜单不是。高度和 apps/desktop 的 trafficLightPosition 对应（红黄绿按钮在这一行里居中）。
+ * 一行顶栏（MVP v2 · V1）：和 macOS 的标题栏合成一行（窗口用 hiddenInset）。高度和 apps/desktop 的
+ * trafficLightPosition 对应（红黄绿按钮在这一行里居中）。
  * 没有横栏：背景透明、没有底边线，白板铺到窗口最上面，只有按钮浮在上面（2026-10-25 用户要求）。
  * 每个按钮自己带一块底色，压在窗口上也看得清。
+ *
+ * IS-63：顶栏浮在白板上，所以它自己不是拖动区、也不接指针（pointer-events: none），点在空白处的指针落到下面的
+ * 白板上。窗口的拖动区由放顶栏的一方画在白板下面（ui/canvas 的 .ad-workbench-drag），白板上的窗口、框从里面挖掉。
+ * 顶栏里的按钮、菜单和数字各自接指针、no-drag。
  */
 .ad-topbar {
   display: flex;
@@ -18,11 +22,13 @@
   font-size: var(--text-md);
   white-space: nowrap;
   user-select: none;
-  -webkit-app-region: drag;
+  pointer-events: none;
 }
 
+.ad-topbar > :not(.ad-topbar-spacer),
 .ad-topbar button,
 .ad-topbar [role='menu'] {
+  pointer-events: auto;
   -webkit-app-region: no-drag;
 }
 

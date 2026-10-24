@@ -5,6 +5,17 @@ import { createFakeApi, SAMPLE } from '@agentdeck/fakes';
 import { BoardController } from '../src/controller.ts';
 import { Workbench, type WorkbenchProps } from '../src/react/Workbench.tsx';
 import { createWindowRegistry } from '../src/registry.ts';
+import css from '../src/canvas.css?raw';
+
+/** 选择器列表里含 selector 的那几条规则的声明，拼在一起（jsdom 不加载 CSS，直接看源文件）。 */
+function declarations(selector: string): string {
+  const out: string[] = [];
+  for (const m of css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    const selectors = (m[1] ?? '').split(',').map((s) => s.trim());
+    if (selectors.includes(selector)) out.push(m[2] ?? '');
+  }
+  return out.join('\n');
+}
 
 // jsdom 没有这些，React Flow 要用
 beforeAll(() => {
@@ -188,6 +199,30 @@ describe('Workbench', () => {
     expect(document.querySelector('.ad-topbar')?.classList.contains('ad-topbar--traffic-lights')).toBe(true);
   });
 
+  it('the window drag strip sits under the board; windows, frames and the panel are cut out of it (IS-63)', async () => {
+    const { c } = setup({ trafficLights: true, renderPanel: () => <div>panel</div> });
+    await waitFor(() => expect(c.state.loaded).toBe(true));
+    const workbench = document.querySelector('.ad-workbench')!;
+    // 拖动条排在最前（DOM 顺序和绘制顺序都在白板、面板之前），顶栏在它后面
+    const drag = workbench.firstElementChild!;
+    expect(drag.className).toBe('ad-workbench-drag');
+    expect(drag.getAttribute('aria-hidden')).toBe('true');
+    expect([...workbench.children].map((el) => el.className.split(' ')[0])).toEqual(['ad-workbench-drag', 'ad-topbar', 'ad-workbench-main']);
+    const strip = declarations('.ad-workbench-drag');
+    expect(strip).toMatch(/-webkit-app-region:\s*drag/);
+    expect(strip).toMatch(/height:\s*var\(--topbar-height\)/);
+    expect(strip).toMatch(/z-index:\s*0/);
+    // 这一条之外 canvas.css 里没有别的 drag
+    expect(css.match(/-webkit-app-region:\s*drag/g)).toHaveLength(1);
+    for (const selector of ['.ad-board .react-flow__node', '.ad-board .ad-frame-resize', '.ad-board .ad-window-resize', '.ad-panel', '.ad-panel-rail', '.ad-popover', '.ad-dialog']) {
+      expect(declarations(selector), selector).toMatch(/-webkit-app-region:\s*no-drag/);
+    }
+    // 窗口和框都是 React Flow 的节点，面板是 .ad-panel：上面那条规则选得中
+    expect(document.querySelector('.ad-board .react-flow__node .ad-frame')).toBeTruthy();
+    expect(document.querySelector('.ad-board .react-flow__node .ad-window-node')).toBeTruthy();
+    expect(screen.getByRole('complementary', { name: 'Side panel' }).classList.contains('ad-panel')).toBe(true);
+  });
+
   it('the panel collapses to a 28px rail and expands again; ⌘B toggles; the state is saved (MVP v2 · V4)', async () => {
     const { api, c } = setup({
       renderPanel: ({ workspace, collapseButton }) => (
@@ -239,6 +274,28 @@ describe('Workbench', () => {
     await act(() => new Promise((r) => setTimeout(r, 20)));
     expect(within(rail).queryByRole('img', { name: 'Uncommitted changes' })).toBeNull();
     act(() => api.scenario.gitChanged(SAMPLE.paths.agentdeck, [{ path: 'README.md', unstaged: 'modified' }]));
+    expect(await within(rail).findByRole('img', { name: 'Uncommitted changes' })).toBeTruthy();
+  });
+
+  it('the rail shows the branch icon even with nothing in focus, muted and without a dot (IS-67)', async () => {
+    const { api, c } = setup({ renderPanel: () => <div>panel</div> });
+    await waitFor(() => expect(c.state.loaded).toBe(true));
+    act(() => c.togglePanel());
+    expect(c.activeWorkspaceId(c.state)).toBeNull();
+    const rail = screen.getByRole('complementary', { name: 'Side panel (collapsed)' });
+    const branch = rail.querySelector('.ad-panel-rail-branch');
+    expect(branch?.querySelector('svg')).toBeTruthy();
+    expect(branch?.classList.contains('ad-panel-rail-branch--idle')).toBe(true);
+    expect(branch?.getAttribute('title')).toBe('No workspace in focus');
+    // 有未提交改动的仓库也不出点：点只跟着聚焦的工作区
+    act(() => api.scenario.gitChanged(SAMPLE.paths.agentdeck, [{ path: 'README.md', unstaged: 'modified' }]));
+    await act(() => new Promise((r) => setTimeout(r, 20)));
+    expect(within(rail).queryByRole('img', { name: 'Uncommitted changes' })).toBeNull();
+
+    // 聚焦一个窗口：图标变回正常，标题是分支名
+    act(() => c.focusWindow('win-login-claude' as WindowId));
+    const focused = screen.getByRole('complementary', { name: 'Side panel (collapsed)' }).querySelector('.ad-panel-rail-branch');
+    expect(focused?.classList.contains('ad-panel-rail-branch--idle')).toBe(false);
     expect(await within(rail).findByRole('img', { name: 'Uncommitted changes' })).toBeTruthy();
   });
 

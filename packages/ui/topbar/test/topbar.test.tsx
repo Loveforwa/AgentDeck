@@ -1,6 +1,17 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { summaryText, Topbar, waitingText, workspaceText } from '../src/index.ts';
+import css from '../src/topbar.css?raw';
+
+/** 选择器列表里含 selector 的那几条规则的声明，拼在一起（jsdom 不加载 CSS，直接看源文件）。 */
+function declarations(selector: string): string {
+  const out: string[] = [];
+  for (const m of css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    const selectors = (m[1] ?? '').split(',').map((s) => s.trim());
+    if (selectors.includes(selector)) out.push(m[2] ?? '');
+  }
+  return out.join('\n');
+}
 
 const base = { workspaces: 2, windows: 5, running: 0, waiting: 0, projectsMenu: [] } as const;
 
@@ -96,5 +107,22 @@ describe('Topbar', () => {
     expect(screen.getByRole('menu', { name: 'Projects' })).toBeTruthy();
     expect(screen.getByRole('menuitem', { name: /agentdeck/ })).toBeTruthy();
     expect(screen.getByRole('menuitem', { name: /Add project/ })).toBeTruthy();
+  });
+
+  it('floats over the board (IS-63): the bar takes no pointer and is no drag region, its controls do and are no-drag', () => {
+    const bar = declarations('.ad-topbar');
+    expect(bar).toMatch(/pointer-events:\s*none/);
+    expect(bar).not.toMatch(/-webkit-app-region/);
+    // 拖动区由放顶栏的一方画（ui/canvas 的 .ad-workbench-drag），顶栏里一处 drag 都没有
+    expect(css).not.toMatch(/-webkit-app-region:\s*drag/);
+    for (const selector of ['.ad-topbar > :not(.ad-topbar-spacer)', '.ad-topbar button', ".ad-topbar [role='menu']"]) {
+      const d = declarations(selector);
+      expect(d, selector).toMatch(/pointer-events:\s*auto/);
+      expect(d, selector).toMatch(/-webkit-app-region:\s*no-drag/);
+    }
+    // 空白（spacer）以外的每一项都被上面那条选中：按钮和数字都接指针
+    render(<Topbar {...base} running={1} waiting={1} />);
+    const items = [...document.querySelector('header.ad-topbar')!.children].filter((el) => el.matches(':not(.ad-topbar-spacer)'));
+    expect(items.map((el) => el.className.split(' ')[0])).toEqual(['ad-button', 'ad-topbar-summary', 'ad-topbar-count', 'ad-topbar-waiting', 'ad-button']);
   });
 });

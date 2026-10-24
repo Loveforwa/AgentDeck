@@ -71,6 +71,13 @@ function WorkbenchInner(props: WorkbenchProps) {
     <BoardProvider controller={controller}>
       <ReactFlowProvider>
         <div className="ad-workbench">
+          {/*
+            拖动窗口的那一条（IS-63）：顶栏浮在白板上，拖动区不放在顶栏上，单独一个元素，DOM 里排最前、画在白板下面。
+            Electron 按页面报上来的顺序把 drag 区域并进来、no-drag 区域减掉（和层叠无关），这一条在 DOM 顺序和绘制顺序里
+            都排最前，后面压在它上面的窗口节点、框、面板、浮层（canvas.css 里 no-drag）都能从拖动区里挖掉，能点；
+            空着的地方仍然拖得动窗口。
+          */}
+          <div className="ad-workbench-drag" aria-hidden="true" />
           <BoardTopbar boardName={boardName} trafficLights={trafficLights === true} />
           <div className="ad-workbench-main">
             <Board />
@@ -161,21 +168,23 @@ function Panel({ renderPanel }: { renderPanel: WorkbenchProps['renderPanel'] }) 
   );
 }
 
-/** 收起后的竖条（MVP v2 · V4）：展开按钮、分支图标，聚焦的工作区有未提交的改动时分支图标旁一个点。 */
+/**
+ * 收起后的竖条（MVP v2 · V4）：展开按钮、分支图标，聚焦的工作区有未提交的改动时分支图标旁一个点。
+ * 没有聚焦的工作区时分支图标也在，颜色更淡（IS-67）；点只跟着聚焦的工作区。
+ */
 function PanelRail({ workspace, onExpand }: { workspace: Workspace | null; onExpand(): void }) {
   const dirty = useUncommitted(workspace);
   const branch = workspace ? (workspace.branch ?? workspace.name) : null;
+  const title = branch === null ? 'No workspace in focus' : dirty ? `${branch} · uncommitted changes` : branch;
   return (
     <aside className="ad-panel-rail" aria-label="Side panel (collapsed)">
       <button type="button" className="ad-panel-toggle" aria-label="Expand panel" title="Expand panel (⌘B)" onClick={onExpand}>
         <ExpandIcon />
       </button>
-      {branch !== null ? (
-        <span className="ad-panel-rail-branch" title={dirty ? `${branch} · uncommitted changes` : branch}>
-          <BranchIcon />
-          {dirty ? <span className="ad-panel-rail-dot" role="img" aria-label="Uncommitted changes" /> : null}
-        </span>
-      ) : null}
+      <span className={`ad-panel-rail-branch${branch === null ? ' ad-panel-rail-branch--idle' : ''}`} title={title}>
+        <BranchIcon />
+        {dirty ? <span className="ad-panel-rail-dot" role="img" aria-label="Uncommitted changes" /> : null}
+      </span>
     </aside>
   );
 }
