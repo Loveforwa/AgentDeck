@@ -1,7 +1,7 @@
 // BoardController：白板的全部行为。React 组件只负责画和把手势交给它；它只通过 window.agentdeck（AgentDeckApi）调服务。
 // 不依赖 React，测试里直接拿 createFakeApi() 跑。
 
-import type { AgentDeckApi, AgentDeckErrorData, AgentKind, BoardState, CreateWorkspaceRequest, ErrorCode, FrameNode, OpenWindowRequest, ProjectId, ProjectPatch, Rect, Settings, Size, TerminalWindowData, Unsubscribe, Viewport, WindowCommand, WindowId, WindowNode, WindowStatusBadge, Workspace, WorkspaceId } from '@agentdeck/contracts';
+import type { AgentDeckApi, AgentDeckErrorData, AgentKind, BoardState, CreateWorkspaceRequest, ErrorCode, FrameNode, OpenWindowRequest, ProjectId, ProjectPatch, Rect, Settings, Size, TerminalId, TerminalWindowData, Unsubscribe, Viewport, WindowCommand, WindowGroupId, WindowGroupMemberRequest, WindowId, WindowNode, WindowStatusBadge, Workspace, WorkspaceId } from '@agentdeck/contracts';
 import { TITLE_BAR_HEIGHT, resizeRect, type ResizeEdge } from '@agentdeck/ui-window-shell';
 import { isSummarySize, windowRegistry, type WindowDefinition, type WindowRegistry } from './registry.ts';
 import { startableAgents } from './model/agents.ts';
@@ -29,6 +29,7 @@ import {
   zoomAroundCenter,
   type Point,
 } from './model/geometry.ts';
+import { dissolveGroups } from './model/groups.ts';
 import { adjacentWindow, windowOrder } from './model/navigation.ts';
 import type { ShortcutId } from './model/shortcuts.ts';
 import { NEAR_FRAME_PX, SNAP_PX, snapMove, snapResize, type Guide } from './model/snap.ts';
@@ -109,6 +110,14 @@ function newWindowId(): WindowId {
   return `win-${Date.now().toString(36)}-${idSeq}` as WindowId;
 }
 
+function newGroupId(): WindowGroupId {
+  idSeq += 1;
+  return `grp-${Date.now().toString(36)}-${idSeq}` as WindowGroupId;
+}
+
+/** 最后一次按键后多久内算“正在打字”（毫秒）。 */
+export const TYPING_MS = 2000;
+
 function errorMessage(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
 }
@@ -127,8 +136,8 @@ export class BoardController {
   private readonly autosave: Autosave<BoardState>;
   private readonly unsubs: Unsubscribe[] = [];
   private drag: DragSession | null = null;
-  /** openWindow 的 reuseKey，按窗口记。不保存（contracts 0.1.3 加了 WindowNode.reuseKey，待改成随白板保存）。 */
-  private readonly reuseKeys = new Map<WindowId, string>();
+  /** 用户最近一次按键的时间（N1：用户正在打字时，服务让白板做的事只闪一下，不抢焦点、不弹提示）。 */
+  private lastKeyAt = Number.NEGATIVE_INFINITY;
   /** WindowComponentProps.onCommand 的订阅，按窗口记。 */
   private readonly commandListeners = new Map<WindowId, Set<(command: WindowCommand) => void>>();
   private lastBadgeCount = -1;
@@ -193,8 +202,17 @@ export class BoardController {
         if (w) this.jumpToWindow(w.id);
       }),
       api.on('board.add-frame', (e) => this.addFrameFromService(e.workspace)),
-      api.on('board.open-window', (e) => void this.openWindowFromService(e.request, e.highlight)),
+      api.on('board.open-window', (e) => void this.openWindowFromService(e.request, e.highlight, e.nearTerminal ?? null)),
+      api.on('board.open-group', (e) => void this.openGroupFromService(e.lead, e.members, e.highlight)),
+      api.on('board.focus-window', (e) => this.focusFromService(e.target)),
+      api.on('board.notify', (e) => this.notifyFromService(e.from, e.message)),
     );
+    // 用户在哪儿打字（终端的 xterm、对话框的输入框……）都会经过 window 的 keydown（捕获阶段）。网页窗口的 iframe 里的按键收不到。
+    if (typeof window !== 'undefined') {
+      const onKey = () => this.noteKeyboardInput();
+      window.addEventListener('keydown', onKey, true);
+      this.unsubs.push(() => window.removeEventListener('keydown', onKey, true));
+    }
     // 存档：保存的那部分一变就排进防抖
     this.unsubs.push(
       this.store.subscribe((s, prev) => {
@@ -1000,14 +1018,14 @@ export class BoardController {
       this.notify(`Can’t open a ${req.type} window`);
       return null;
     }
-    const key = req.reuseKey ? `${req.type}:${req.reuseKey}` : null;
-    if (key) {
-      for (const [id, k] of this.reuseKeys) {
-        if (k !== key || !this.windowById(id)) continue;
-        this.updateData(id, req.data as object);
-        if (opts.quiet) this.flashWindow(id);
-        else this.jumpAndFlash(id);
-        return id;
+    // reuseKey 存在窗口上（WindowNode.reuseKey），随白板保存，重启后同一地址仍然复用（N1：open_browser 同一来源跳过去刷新）
+    if (req.reuseKey) {
+      const existing = this.state.windows.find((w) => w.type === req.type && w.reuseKey === req.reuseKey);
+      if (existing) {
+        this.updateData(existing.id, req.data as object);
+        if (opts.quiet) this.flashWindow(existing.id);
+        else this.jumpAndFlash(existing.id);
+        return existing.id;
       }
     }
     const from = fromId ? this.windowById(fromId) : undefined;
@@ -1017,7 +1035,7 @@ export class BoardController {
     const { focusedId, selectedFrame } = this.state;
     const id = this.addWindow({ type: req.type, workspaceId: ws, rect, data: def.create(req.data as never) });
     if (opts.quiet) this.set({ focusedId, selectedFrame });
-    if (key) this.reuseKeys.set(id, key);
+    if (req.reuseKey) this.patchWindow(id, { reuseKey: req.reuseKey });
     return id;
   }
 
@@ -1032,13 +1050,95 @@ export class BoardController {
     this.set((s) => ({ frames: [...s.frames, { workspaceId: workspace.id, rect, z: this.maxFrameZ() + 1, autoApprove: false }] }));
   }
 
-  /** board.open-window：照 openWindow 放进框里（框不在白板上时散放）；highlight 时闪一下。 */
-  openWindowFromService(req: OpenWindowRequest, highlight: boolean): WindowId | null {
-    const ws = req.workspaceId ?? null;
-    const workspaceId = ws && this.frameOf(ws) ? ws : null;
-    const id = this.openWindow(null, { ...req, workspaceId }, { quiet: true });
-    if (id && highlight) this.set((s) => ({ flash: { ...s.flash, [id]: (s.flash[id] ?? 0) + 1 } }));
+  /**
+   * board.open-window：照 openWindow 放进框里（框不在白板上时散放）；highlight 时闪一下。
+   * nearTerminal（N1，open_browser 的调用者）的窗口在同一个框里时放在它右边。
+   */
+  openWindowFromService(req: OpenWindowRequest, highlight: boolean, nearTerminal: TerminalId | null = null): WindowId | null {
+    const workspaceId = this.onBoardWorkspace(req.workspaceId ?? null);
+    const near = this.windowOfTerminal(nearTerminal);
+    const from = near && near.workspaceId === workspaceId ? near.id : null;
+    const id = this.openWindow(from, { ...req, workspaceId }, { quiet: true });
+    if (id && highlight) this.flashWindow(id);
     return id;
+  }
+
+  /**
+   * board.open-group（N1 open_terminals）：一组终端放在 lead 的窗口右边，按网格排（3 个是 2×2 缺一、6 个是 3×2），
+   * 盖住别的窗口时照常挪到空位；然后记进窗口组（WindowNode.group）。lead 已经在组里（它自己是别人开的子终端）时加进那个组。
+   * 找不到 lead 的窗口时只是依次放进框里，不成组。不抢焦点、不动视口。
+   */
+  openGroupFromService(lead: TerminalId | null, members: readonly WindowGroupMemberRequest[], highlight: boolean): WindowId[] {
+    const leadWin = this.windowOfTerminal(lead);
+    const cols = Math.max(1, Math.ceil(Math.sqrt(members.length)));
+    const ids: WindowId[] = [];
+    members.forEach((m, i) => {
+      const workspaceId = this.onBoardWorkspace(m.request.workspaceId ?? null);
+      const beside = leadWin && leadWin.workspaceId === workspaceId ? leadWin : null;
+      let rect = m.request.rect;
+      if (beside && !rect) {
+        const size = this.registry.get(m.request.type)?.defaultSize ?? FALLBACK_SIZE;
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        rect = {
+          x: beside.rect.x + beside.rect.w + GAP + col * (size.w + GAP),
+          y: beside.rect.y + row * (size.h + GAP),
+        };
+      }
+      const id = this.openWindow(null, { ...m.request, workspaceId, ...(rect ? { rect } : {}) }, { quiet: true });
+      if (!id) return;
+      ids.push(id);
+      if (highlight) this.flashWindow(id);
+    });
+    if (leadWin && ids.length > 0) {
+      const current = this.windowById(leadWin.id)?.group;
+      const groupId = current?.id ?? newGroupId();
+      const labels = new Map(ids.map((id, i) => [id, members[i]?.label ?? null]));
+      this.set((s) => ({
+        windows: s.windows.map((w) => {
+          if (w.id === leadWin.id && !current) return { ...w, group: { id: groupId, role: 'lead', label: null } };
+          if (labels.has(w.id)) return { ...w, group: { id: groupId, role: 'member', label: labels.get(w.id) ?? null } };
+          return w;
+        }),
+      }));
+    }
+    return ids;
+  }
+
+  /** board.focus-window（N1 focus_window）：跳过去、闪一下并聚焦；用户正在打字时只闪一下。 */
+  focusFromService(target: { windowId: WindowId } | { terminalId: TerminalId }): void {
+    const w = 'windowId' in target ? this.windowById(target.windowId) : this.windowOfTerminal(target.terminalId);
+    if (!w) return;
+    if (this.isUserTyping()) this.flashWindow(w.id);
+    else this.jumpAndFlash(w.id);
+  }
+
+  /** board.notify（N1 notify）：发通知的窗口闪一下，弹一条“claude · feat/login: Tests passed”；用户正在打字时只闪。 */
+  notifyFromService(from: TerminalId | null, message: string): void {
+    const w = this.windowOfTerminal(from);
+    if (w) this.flashWindow(w.id);
+    if (this.isUserTyping()) return;
+    const who = w ? `${w.title ?? defaultName(w, this.definitionOf(w)?.label)} · ${this.workspaceTitle(w.workspaceId)}` : 'Agent';
+    this.notify(`${who}: ${message}`);
+  }
+
+  /** 记一次键盘输入（start() 里接到 window 的 keydown；测试直接调）。 */
+  noteKeyboardInput(at: number = Date.now()): void {
+    this.lastKeyAt = at;
+  }
+
+  /** 最近 TYPING_MS 里按过键。 */
+  isUserTyping(at: number = Date.now()): boolean {
+    return at - this.lastKeyAt < TYPING_MS;
+  }
+
+  private windowOfTerminal(id: TerminalId | null): WindowNode | undefined {
+    return id ? this.state.windows.find((w) => terminalIdOf(w) === id) : undefined;
+  }
+
+  /** 服务给的工作区不在白板上（没有框）时散放。 */
+  private onBoardWorkspace(ws: WorkspaceId | null): WorkspaceId | null {
+    return ws && this.frameOf(ws) ? ws : null;
   }
 
   // ---- 关闭 ----
@@ -1080,12 +1180,11 @@ export class BoardController {
 
   private removeWindows(ids: WindowId[]): void {
     const gone = new Set(ids);
-    for (const id of ids) this.reuseKeys.delete(id);
     this.set((s) => {
       const badges = { ...s.badges };
       for (const id of ids) delete badges[id];
       return {
-        windows: s.windows.filter((w) => !gone.has(w.id)),
+        windows: dissolveGroups(s.windows.filter((w) => !gone.has(w.id))),
         badges,
         focusedId: s.focusedId && gone.has(s.focusedId) ? null : s.focusedId,
       };

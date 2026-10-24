@@ -65,7 +65,7 @@ import '@agentdeck/ui-kit/base.css';
 | `src/registry.ts` | 窗口注册表（唯一对别的界面包开放的文件） |
 | `src/controller.ts` | `BoardController`：启动和事件、拖动、改大小、放大、新建、关闭、工作区、视口、快捷键 |
 | `src/store.ts` | zustand vanilla store：保存的部分（BoardState）+ 临时状态 |
-| `src/model/` | 纯函数：`geometry`（框跟着长、框的最小尺寸、视口）、`attention`（S3 计数、⌘J ⌘⇧J 顺序、顶栏的第几个）、`navigation`（S3 ⌘⇧] ⌘⇧[ 按位置切窗口的顺序）、`autosave`（B5 防抖）、`shortcuts`（R1 按键表）、`drop`（W5 落点）、`snap`（V3 吸附和对齐线）、`avoid`（V3 松手避让、框之间 20px、挤开别的框）、`windows`（终端相关的判断）、`branch`（分支名检查）、`settings`（Settings 的草稿和补丁） |
+| `src/model/` | 纯函数：`groups`（N1 窗口组：`listGroups`、`dissolveGroups`）、`geometry`（框跟着长、框的最小尺寸、视口）、`attention`（S3 计数、⌘J ⌘⇧J 顺序、顶栏的第几个）、`navigation`（S3 ⌘⇧] ⌘⇧[ 按位置切窗口的顺序）、`autosave`（B5 防抖）、`shortcuts`（R1 按键表）、`drop`（W5 落点）、`snap`（V3 吸附和对齐线）、`avoid`（V3 松手避让、框之间 20px、挤开别的框）、`windows`（终端相关的判断）、`branch`（分支名检查）、`settings`（Settings 的草稿和补丁） |
 | `src/react/` | `Workbench`、`Board`（React Flow）、`WindowNodeView`、`FrameNodeView`、`Guides`（V3 对齐线，屏幕坐标画；跟踪 ⌘）、`BoardMenu`（右键菜单）、`dialogs`（新建 / 删除工作区、W5、停止终端、改名）、`SettingsDialog`、`useShortcuts` |
 | `src/canvas.css` | 白板、框、面板、对话框字段的样式，只用 tokens |
 | `dev/` | dev 页面（Vite） |
@@ -84,6 +84,12 @@ import '@agentdeck/ui-kit/base.css';
 - 关闭运行中的终端要确认（Stop and close，调 `terminals.kill`）；已退出的终端和网页直接关。
 - 删除工作区：Remove from board / Also delete the worktree folder；服务抛 `dirty-worktree` 后要勾“I understand these changes will be lost”再带 `force: true`。成功后结束框里的终端。
 - 服务开的东西（M1，agent 通过 MCP）：`board.add-frame` 把已建好的工作区放到空位（`addFrameFromService`）；`board.open-window` 照 `openWindow` 放进框里，框不在白板上时散放（`openWindowFromService`）。都不抢键盘焦点、不动视口，`highlight` 时窗口闪一下。
+- N1（MVP v3）：
+  - `board.open-window` 的 `nearTerminal`（open_browser 的调用者）：那个终端的窗口和网页在同一个框里时放在它右边，被占了照 V3 挪到最近的空位。
+  - `board.open-group`（open_terminals，`openGroupFromService`）：一组终端放在 lead 窗口右边，按网格排（列数 ⌈√n⌉），照常避让、框跟着长；然后记进窗口组 `WindowNode.group`（lead 的 role 为 `lead`，子终端 `member` + label），随白板保存。lead 已经在组里（它自己是子终端）时新开的加进同一个组。找不到 lead 的窗口时只开窗口、不成组。
+  - 关窗口时 `dissolveGroups`：lead 没了，子终端去掉 group 变回普通窗口；子终端都没了，lead 也去掉。`listGroups(windows)`（从包里导出）给 N2 的侧边栏用：每组的 lead 和按打开先后排的子终端。
+  - `board.focus-window`（`focusFromService`）：照 ⌘J 跳过去、闪一下、聚焦；`board.notify`（`notifyFromService`）：发通知的窗口闪一下，Toast 写 “claude · agentdeck · feat/login: Tests passed”。用户 2 秒内按过键（`TYPING_MS`，`window` 上捕获阶段的 keydown，网页 iframe 里的按键收不到）时两者都只闪一下：不抢焦点、不动视口、不弹 Toast。
+  - `reuseKey` 改成存在窗口上（`WindowNode.reuseKey`，随白板保存），重启后 open_browser 同一个 origin 仍然复用那个窗口（以前是控制器里的 Map，重启就丢）。
 - 保存：保存的部分（视口、框、窗口、面板）引用一变就排进防抖，半秒后 `board.save`；`pagehide` 时立刻写。启动时 `board.load` 恢复。
 
 ## dev 页面
@@ -108,6 +114,7 @@ import '@agentdeck/ui-kit/base.css';
 - `snap.test.ts`、`avoid.test.ts`：V3 的纯函数（吸附的各种对象、阈值、最小尺寸、对齐线换成屏幕坐标；空位、优先框内、框停在 20px、沿边滑、挤开和连锁、启动时分开）。
 - `layout-v3.test.ts`（对着 `createFakeApi()`）：拖动和改大小吸附、⌘ 不吸、阈值随缩放、松手滑到空位、框放不下就长并挤开别的框、放大的窗口例外、拖框停在边上、拖框边挤开再回来、IS-54 回归；IS-65 拖窗口对齐旁边的框、远的框不算、改框大小吸到隔 20 不挤开、吸到别的框的下边和正好装下窗口；IS-66 窗口间距 20。
 - `controller.test.ts`（对着 `createFakeApi()`）：恢复布局、保存防抖和重启后一致、status.changed 驱动提醒和程序坞角标、⌘J ⌘⇧J 和闪一下、⌘⇧] ⌘⇧[ 切窗口（视口里看得见就不动）、通知跳转、框里新建终端用工作区目录、⌘N、reuseKey、W5 弹回和 Open new、拖到框边框变大、网页换框、拖框带走窗口、框的最小尺寸、改大小松手才生效和摘要卡、放大还原、关闭确认、新建工作区和 setup、创建失败、删除工作区的 dirty 流程、Add project…。
+- `mcp-board.test.ts`（N1，对着 `createFakeApi()`）：网页开在调用者旁边（散放时正好在右边 20px、在框里挨着调用者不盖住别人、调用者在别的框时不拉出框）、reuseKey 重启后仍复用；窗口组的位置（在 lead 右边、互不重叠、框跟着长）、不抢焦点、保存和重启后恢复、第二次加进同一组、子终端再开也进同一组、关 lead 子终端变普通窗口、子终端关完 lead 不再是组、没有 lead 时不成组；focus-window 跳过去 / 打字时只闪；keydown 算打字；notify 的 Toast 文字 / 打字时只闪。
 - `settings.test.tsx`：Settings 对话框的入口（顶栏、Projects ▾、⌘,）、保存只发改了的字段、改完后新建 worktree 用新的基础分支 / 复制文件 / 初始化命令、多仓库、换页保留草稿和 Cancel、General、保存失败的提示、Open settings.json、Locate…、草稿函数。
 - `workbench.test.tsx`：整个 Workbench 在 jsdom 里渲染：顶栏数字随假事件变化、框标题“1 running”绿灯和“2 waiting”黄灯（为 0 不显示）、终端聚焦时按键不被拦、⌘B ⌘J、顶栏“1/2 waiting”、⌘⇧J ⌘⇧]（⌘] 不拦）、Delete 打开删除对话框。
 
