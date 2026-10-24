@@ -90,6 +90,36 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* ---- 底部一行常用快捷键（只是提示，不挡鼠标）。在 Clawd 的活动范围右边、React Flow 水印左边；
+   放不下的项折到第二行被裁掉，所以窄的时候从后往前藏 ---- */
+
+.ad-shortcut-hints {
+  position: absolute;
+  right: 112px;
+  bottom: var(--space-sm);
+  left: calc(var(--clawd-left) + var(--clawd-range) + var(--space-lg));
+  z-index: 4;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  column-gap: var(--space-lg);
+  height: var(--control-sm);
+  overflow: hidden;
+  color: var(--muted);
+  font-size: var(--text-xs);
+  line-height: var(--control-sm);
+  white-space: nowrap;
+  opacity: 0.75;
+  pointer-events: none;
+  user-select: none;
+}
+
+.ad-shortcut-hint kbd {
+  font-family: var(--font-mono);
+  font-size: inherit;
+  color: inherit;
+}
+
 /* ---- 左下角的吉祥物 Clawd：缩放按钮右边那一段里冒出来，只是装饰 ---- */
 
 .ad-board {

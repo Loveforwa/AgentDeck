@@ -21,6 +21,7 @@ import { FrameNodeView, PendingFrameView } from './FrameNodeView.tsx';
 import { WindowNodeView } from './WindowNodeView.tsx';
 import { useBoardState, useController } from './context.tsx';
 import { Clawd } from './Clawd.tsx';
+import { ShortcutHints } from './ShortcutHints.tsx';
 import '../canvas.css';
 
 const nodeTypes: NodeTypes = {
@@ -159,6 +160,7 @@ export function Board() {
       ) : null}
       <EmptyState />
       <ZoomControl />
+      <ShortcutHints />
       <Clawd />
       <BoardMenu />
       <BoardDialogs />

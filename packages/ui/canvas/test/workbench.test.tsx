@@ -43,6 +43,15 @@ function setup() {
 }
 
 describe('Workbench', () => {
+  it('shows a faint line of common shortcuts at the bottom, same keys as the menus', async () => {
+    const { c } = setup();
+    await waitFor(() => expect(c.state.loaded).toBe(true));
+    const hints = document.querySelector<HTMLElement>('.ad-shortcut-hints');
+    expect(hints?.getAttribute('aria-label')).toBe('Keyboard shortcuts');
+    const items = [...(hints?.querySelectorAll('.ad-shortcut-hint') ?? [])].map((el) => el.textContent);
+    expect(items.slice(0, 3)).toEqual(['⌘J next waiting', '⌘⇧] ⌘⇧[ switch window', '⌘⇧↩ maximize']);
+  });
+
   it('closing a running terminal asks inside that window, with the conversation topic; Esc cancels', async () => {
     const { api, c } = setup();
     await waitFor(() => expect(c.state.loaded).toBe(true));
