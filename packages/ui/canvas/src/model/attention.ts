@@ -1,4 +1,4 @@
-// 提醒（任务 S3）：谁在等你、顶栏的 running / waiting 数、框标题的“1 waiting”、⌘J 的跳转顺序。
+// 提醒（任务 S3）：谁在等你、顶栏的 running / waiting 数、框标题的“1 running”“1 waiting”（IS-64）、⌘J 的跳转顺序。
 // 数据来自 status.snapshot() 和 status.changed；窗口通过 TerminalWindowData.terminalId 对上终端。
 // 不是终端的窗口，组件用 setStatus 给了 tone: 'attention' 也算在等你。
 
@@ -19,6 +19,8 @@ export interface AttentionSummary {
   waiting: WindowId[];
   /** 每个工作区里在等你的窗口数。 */
   waitingByWorkspace: Partial<Record<WorkspaceId, number>>;
+  /** 每个工作区里状态为 running 的终端数（框标题的绿灯，和顶栏的 running 同一个口径）。 */
+  runningByWorkspace: Partial<Record<WorkspaceId, number>>;
 }
 
 export function statusOf(node: WindowNode, statuses: AttentionInput['statuses']): StatusSnapshot | null {
@@ -36,9 +38,13 @@ export function summarize(input: AttentionInput): AttentionSummary {
   let running = 0;
   const waiting: { id: WindowId; since: string; order: number }[] = [];
   const waitingByWorkspace: Partial<Record<WorkspaceId, number>> = {};
+  const runningByWorkspace: Partial<Record<WorkspaceId, number>> = {};
   input.windows.forEach((w, order) => {
     const s = statusOf(w, input.statuses);
-    if (s?.status === 'running') running += 1;
+    if (s?.status === 'running') {
+      running += 1;
+      if (w.workspaceId) runningByWorkspace[w.workspaceId] = (runningByWorkspace[w.workspaceId] ?? 0) + 1;
+    }
     if (isWaiting(w, input)) {
       waiting.push({ id: w.id, since: s?.since ?? '', order });
       if (w.workspaceId) waitingByWorkspace[w.workspaceId] = (waitingByWorkspace[w.workspaceId] ?? 0) + 1;
@@ -47,7 +53,7 @@ export function summarize(input: AttentionInput): AttentionSummary {
   // ISO 时间可以直接按字符串比较；没有时间的（只靠 badge）排在后面，再按白板上的顺序
   const key = (w: { since: string }) => w.since || '\uffff';
   waiting.sort((a, b) => (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : a.order - b.order));
-  return { running, waiting: waiting.map((w) => w.id), waitingByWorkspace };
+  return { running, waiting: waiting.map((w) => w.id), waitingByWorkspace, runningByWorkspace };
 }
 
 /** ⌘J：当前聚焦的是在等你的窗口就跳到它后面那个，否则跳到第一个。没有在等你的返回 null。 */
@@ -73,4 +79,9 @@ export function waitingPosition(waiting: readonly WindowId[], current: WindowId 
 /** 框标题栏右侧：“1 waiting”；没有时为空。 */
 export function waitingLabel(n: number | undefined): string {
   return n ? `${n} waiting` : '';
+}
+
+/** 框标题栏右侧：“2 running”；没有时为空（IS-64）。 */
+export function runningLabel(n: number | undefined): string {
+  return n ? `${n} running` : '';
 }

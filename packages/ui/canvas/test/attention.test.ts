@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { StatusSnapshot, TerminalId, WindowId, WindowNode, WorkspaceId } from '@agentdeck/contracts';
-import { isWaiting, nextWaiting, prevWaiting, summarize, waitingLabel, waitingPosition } from '../src/model/attention.ts';
+import { isWaiting, nextWaiting, prevWaiting, runningLabel, summarize, waitingLabel, waitingPosition } from '../src/model/attention.ts';
 
 const WS_A = 'ws-a' as WorkspaceId;
 const WS_B = 'ws-b' as WorkspaceId;
@@ -45,6 +45,23 @@ describe('attention (S3)', () => {
     expect(s.waitingByWorkspace).toEqual({ [WS_A]: 1, [WS_B]: 1 });
     expect(waitingLabel(s.waitingByWorkspace[WS_A])).toBe('1 waiting');
     expect(waitingLabel(undefined)).toBe('');
+  });
+
+  it('counts running terminals per workspace, the same way as the top bar total (IS-64)', () => {
+    const more = { ...statuses, t3: snap('t3', 'running') };
+    const s = summarize({ windows, statuses: more, badges: {} });
+    expect(s.running).toBe(3);
+    // w4 不在任何工作区：算进顶栏的总数，不算进任何框
+    expect(s.runningByWorkspace).toEqual({ [WS_A]: 1, [WS_B]: 1 });
+    const inFrames = Object.values(s.runningByWorkspace).reduce<number>((a, b) => a + (b ?? 0), 0);
+    expect(inFrames).toBe(s.running - 1);
+    // 在等你的不算 running；工作区里没有 running 的就没有这一项
+    const none = summarize({ windows, statuses: { t2: snap('t2', 'needs-approval') }, badges: {} });
+    expect(none.runningByWorkspace).toEqual({});
+    expect(runningLabel(s.runningByWorkspace[WS_A])).toBe('1 running');
+    expect(runningLabel(2)).toBe('2 running');
+    expect(runningLabel(undefined)).toBe('');
+    expect(runningLabel(0)).toBe('');
   });
 
   it('a window that set an attention badge also counts', () => {
