@@ -27,6 +27,9 @@
   --radius-menu: 8px;
   --radius-panel: 10px;
   --radius-frame: 12px;
+  --plugin-mark-height: 16px;
+  --plugin-mark-text: 9.5px;
+  --plugin-mark-radius: 4px;
   --motion-duration: 140ms;
   --motion-ease: cubic-bezier(0.2, 0, 0, 1);
   --motion: var(--motion-duration) var(--motion-ease);
@@ -58,6 +61,8 @@
   --status-waiting: #BF8700;
   --status-error: #CF222E;
   --guide: #2563EB;
+  --plugin-auto-approve: #CF222E;
+  --plugin-auto-approve-fg: #FFFFFF;
   --focus: #1A1A1A;
   --scrim: rgba(26, 26, 26, 0.18);
   --shadow-float: 0 8px 24px rgba(0, 0, 0, 0.08);
@@ -87,6 +92,8 @@
   --status-waiting: #E3B341;
   --status-error: #F85149;
   --guide: #58A6FF;
+  --plugin-auto-approve: #DA3633;
+  --plugin-auto-approve-fg: #FFFFFF;
   --focus: #EDEDEA;
   --scrim: rgba(0, 0, 0, 0.45);
   --shadow-float: 0 8px 24px rgba(0, 0, 0, 0.32);
@@ -118,6 +125,8 @@
     --status-waiting: #E3B341;
     --status-error: #F85149;
     --guide: #58A6FF;
+    --plugin-auto-approve: #DA3633;
+    --plugin-auto-approve-fg: #FFFFFF;
     --focus: #EDEDEA;
     --scrim: rgba(0, 0, 0, 0.45);
     --shadow-float: 0 8px 24px rgba(0, 0, 0, 0.32);

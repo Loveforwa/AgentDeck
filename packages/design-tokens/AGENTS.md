@@ -4,7 +4,7 @@ AgentDeck 的样子只在这里定：颜色（亮 / 暗两套）、字体、字�
 
 ## 方向（别换）
 
-- 暖灰加墨黑。颜色只表达状态（MVP v2 · V2 红绿灯）：`--status-running` 绿（运行中，也是 Running 的文字色）、`--status-waiting` 黄（等你的灯和窗口边框）、`--attention` 黄色系文字（Waiting、需要你处理、会丢东西的风险提示）、`--status-error` 红（出错，也是 Error 的文字色）。状态灯是图形，和底色对比至少 3:1；文字 4.5:1，测试里都有。另外 `--guide` 蓝色只给白板拖动时临时出现的对齐线和间距、尺寸标注（MVP v2 · V3）。其他地方不用彩色。
+- 暖灰加墨黑。颜色只表达状态（MVP v2 · V2 红绿灯）：`--status-running` 绿（运行中，也是 Running 的文字色）、`--status-waiting` 黄（等你的灯和窗口边框）、`--attention` 黄色系文字（Waiting、需要你处理、会丢东西的风险提示）、`--status-error` 红（出错，也是 Error 的文字色）。状态灯是图形，和底色对比至少 3:1；文字 4.5:1，测试里都有。另外 `--guide` 蓝色只给白板拖动时临时出现的对齐线和间距、尺寸标注（MVP v2 · V3）；`--plugin-auto-approve`（红底，字用 `--plugin-auto-approve-fg`）只给 Auto-approve 插件的标记（终端底边的书签、框标题的小标签，PL1，见 docs/plugins.md），书签“需要你处理”时改用 `--attention` / `--on-attention`。其他地方不用彩色。
 - 不用渐变、发光、毛玻璃、emoji。用 1px 线分隔；只有浮起来的东西（菜单、弹出框、对话框、提示、拖动中的窗口）有 `--shadow-float`。
 - 字号只有 11 / 12 / 13 / 15；圆角控件 6、窗口 8、菜单和对话框 8、右侧面板 10、工作区框 12（`--radius-inset` 4 只给嵌在圆角容器里的高亮）；界面上不留直角（MVP v2 · V1）。
 - 动效一种：`--motion`（140ms 减速曲线），系统开了减少动效时时长为 0。
@@ -23,7 +23,7 @@ AgentDeck 的样子只在这里定：颜色（亮 / 暗两套）、字体、字�
 
 - CSS：`@import '@agentdeck/design-tokens/tokens.css'`（`@agentdeck/ui-kit/base.css` 已经引了）。
 - 主题切换：默认亮色，跟随 `prefers-color-scheme`；任何元素上加 `data-theme="light" | "dark"` 强制它里面的主题。
-- 变量名：颜色 `--ground --surface --raised --hover --ink --ink-hover --on-ink --muted --line --line-strong --line-subtle --attention --on-attention --attention-soft --status-running --status-waiting --status-error --guide --focus --scrim --shadow-float`；其他 `--font-ui --font-mono --text-{xs,sm,md,lg} --leading --weight-{regular,medium,strong} --space-{2xs,xs,sm,md,lg,xl,2xl} --control-sm --control-md --row --radius-{inset,control,window,menu,panel,frame} --motion --motion-duration --motion-ease --opacity-disabled --z-{dialog,popover,toast}`。
+- 变量名：颜色 `--ground --surface --raised --hover --ink --ink-hover --on-ink --muted --line --line-strong --line-subtle --attention --on-attention --attention-soft --status-running --status-waiting --status-error --guide --plugin-auto-approve --plugin-auto-approve-fg --focus --scrim --shadow-float`；插件标记的尺寸 `--plugin-mark-height`（16px）`--plugin-mark-text`（9.5px，只给插件标记，不是第五档字号）`--plugin-mark-radius`；其他 `--font-ui --font-mono --text-{xs,sm,md,lg} --leading --weight-{regular,medium,strong} --space-{2xs,xs,sm,md,lg,xl,2xl} --control-sm --control-md --row --radius-{inset,control,window,menu,panel,frame} --motion --motion-duration --motion-ease --opacity-disabled --z-{dialog,popover,toast}`。
 - TS：`import { themes, vars } from '@agentdeck/design-tokens'`。`themes.dark.ink` 这种实际颜色值只给必须要字面值的地方用（比如 xterm.js 的主题）；inline style 用 `vars.color.ink`（即 `var(--ink)`）。
 
 ## 颜色检查

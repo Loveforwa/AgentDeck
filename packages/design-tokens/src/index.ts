@@ -40,6 +40,13 @@ export interface ThemeColors {
   statusError: string;
   /** 白板的对齐线和间距、尺寸标注（MVP v2 · V3）。只在拖动、改大小时出现，不表示状态。也是标注数字的文字色 */
   guide: string;
+  /**
+   * 插件标记（PL1 · docs/plugins.md）：Auto-approve 开着时终端底边左侧的红色小书签、框标题的小标签。
+   * 和 statusError 同一个红，但不是“出错”：表示“这里替你按批准”，提醒你它开着。需要你处理时书签改用 attention。
+   */
+  pluginAutoApprove: string;
+  /** pluginAutoApprove 底上的字 */
+  pluginAutoApproveFg: string;
   /** 键盘焦点环 */
   focus: string;
   /** 对话框背后的遮罩 */
@@ -75,6 +82,8 @@ export const light: ThemeColors = {
   statusWaiting: '#BF8700',
   statusError: '#CF222E',
   guide: '#2563EB',
+  pluginAutoApprove: '#CF222E',
+  pluginAutoApproveFg: '#FFFFFF',
   focus: '#1A1A1A',
   scrim: 'rgba(26, 26, 26, 0.18)',
   shadowFloat: '0 8px 24px rgba(0, 0, 0, 0.08)',
@@ -104,6 +113,9 @@ export const dark: ThemeColors = {
   statusWaiting: '#E3B341',
   statusError: '#F85149',
   guide: '#58A6FF',
+  // 暗色下 statusError（#F85149）配白字只有 3.4:1，书签的字只有 9.5px，用深一档的红
+  pluginAutoApprove: '#DA3633',
+  pluginAutoApproveFg: '#FFFFFF',
   focus: '#EDEDEA',
   scrim: 'rgba(0, 0, 0, 0.45)',
   shadowFloat: '0 8px 24px rgba(0, 0, 0, 0.32)',
@@ -175,6 +187,16 @@ export const motion = {
   ease: 'cubic-bezier(0.2, 0, 0, 1)',
 } as const;
 
+/**
+ * 插件标记的尺寸（PL1 书签：16px 高、9.5px 半粗体字）。比正文的四档字号小，只给贴在窗口边上的插件标记用，
+ * 别的地方不用（字号仍然只有 11 / 12 / 13 / 15）。
+ */
+export const plugin = {
+  markHeight: '16px',
+  markText: '9.5px',
+  markRadius: '4px',
+} as const;
+
 export const opacity = {
   disabled: '0.4',
 } as const;
@@ -227,6 +249,7 @@ export function renderTokensCss(): string {
     ...Object.entries(space).map(([k, v]): [string, string] => [`--space-${k}`, v]),
     ...Object.entries(size).map(([k, v]): [string, string] => [`--${kebab(k)}`, v]),
     ...Object.entries(radius).map(([k, v]): [string, string] => [`--radius-${k}`, v]),
+    ...Object.entries(plugin).map(([k, v]): [string, string] => [`--plugin-${kebab(k)}`, v]),
     ['--motion-duration', motion.duration],
     ['--motion-ease', motion.ease],
     ['--motion', 'var(--motion-duration) var(--motion-ease)'],
