@@ -7,6 +7,7 @@
 // - 命令找不到：“Command not found: claude” + Open Settings / Use Shell instead。
 // - 摘要卡（T8）：不 attach，用 lastLines 取最后 3 行；窗口够大、只是白板缩小时取整屏行数，画成文字快照（IS-41）。
 // - 标题栏状态：status.changed 按 terminalId 对上；带 sessionId 时写回 data（恢复会话、Fork 用）。
+// - cd 出了工作区（IS-57，N7）：状态后面加淡色的 “outside workspace”，悬停看实际目录和工作区目录。只是提示。
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type DragEvent, type ReactNode } from 'react';
 import {
@@ -23,7 +24,8 @@ import {
 import { Button, Menu, Popover } from '@agentdeck/ui-kit';
 import { quotePaths } from './keys.ts';
 import { termSizeFor } from './metrics.ts';
-import { listTerminals } from './router.ts';
+import { outsideWorkspaceTag, platformCompareOptions } from './cwd.ts';
+import { listTerminals, watchTerminalCwd } from './router.ts';
 import { TerminalSession } from './session.ts';
 import { badgeFor, exitBadge, exitMessage } from './status.ts';
 import { commandName } from './title.ts';
@@ -45,6 +47,7 @@ type Phase =
 export const OPEN_SETTINGS_EVENT = 'agentdeck:open-settings';
 
 const STATUS_TICK_MS = 30_000;
+const IS_MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 /** 窗口被拉小成摘要卡时显示的行数。 */
 const SUMMARY_LINES = 3;
 /** 内容区至少这么大，才算“白板缩小导致的摘要”，显示整屏文字快照（IS-41）。 */
@@ -61,7 +64,7 @@ function errorOf(e: unknown): { code: string | null; message: string } {
 }
 
 export function TerminalWindow(props: TerminalWindowProps): ReactNode {
-  const { window: node, focused, contentSize, summary, visible, onCommand } = props;
+  const { window: node, workspace, focused, contentSize, summary, visible, onCommand } = props;
   const data = node.data;
 
   // 重启后 updateData 要等白板回传才进 props，这段时间用自己记的新 id
@@ -165,7 +168,20 @@ export function TerminalWindow(props: TerminalWindowProps): ReactNode {
     return () => clearInterval(t);
   }, []);
 
-  const badge: WindowStatusBadge | null =
+  // ---- 当前目录在不在工作区里（IS-57）：只为框里、进程还活着的终端盯着；看不见时不取，回来再取 ----
+  const workspacePath = workspace?.path ?? null;
+  const [cwd, setCwd] = useState<string | null>(null);
+  const watchCwd = terminalId !== null && workspacePath !== null && phase.kind === 'live' && exitCode === null;
+  useEffect(() => {
+    if (!watchCwd) setCwd(null);
+  }, [watchCwd]);
+  useEffect(() => {
+    if (!watchCwd || !visible || !terminalId) return;
+    return watchTerminalCwd(api(), terminalId, setCwd);
+  }, [watchCwd, visible, terminalId]);
+  const outsideTag = watchCwd ? outsideWorkspaceTag(cwd, workspacePath, platformCompareOptions(IS_MAC)) : null;
+
+  const baseBadge: WindowStatusBadge | null =
     phase.kind === 'ended' || phase.kind === 'not-found'
       ? null
       : phase.kind === 'starting'
@@ -177,12 +193,21 @@ export function TerminalWindow(props: TerminalWindowProps): ReactNode {
             : exitCode !== null
               ? exitBadge(exitCode)
               : null;
-  const badgeKey = badge ? `${badge.text}|${badge.tone}|${badge.dot}` : '';
+  // 没有状态文字（还没拿到状态）时不单独画标签
+  const badge: WindowStatusBadge | null = baseBadge && outsideTag ? { ...baseBadge, tag: outsideTag } : baseBadge;
+  const badgeKey = badge ? `${badge.text}|${badge.tone}|${badge.dot}|${badge.detail ?? ''}|${badge.tag?.text ?? ''}|${badge.tag?.detail ?? ''}` : '';
   // 只在内容变了时调用；setStatus 走 ref，白板每次渲染传新函数也不会来回触发
   const badgeRef = useRef(badge);
   badgeRef.current = badge;
+  const sentRef = useRef<WindowStatusBadge | null>(null);
   useEffect(() => {
-    propsRef.current.setStatus(badgeRef.current);
+    const next = badgeRef.current;
+    const prev = sentRef.current;
+    // 白板的 setBadge 只比 text / tone / dot，一样就不更新（canvas/src/controller.ts）。只有标签或悬停说明变了时
+    // 先清掉再给，标签才会出现、消失。白板改成连 tag、detail 一起比之后可以去掉（见本包 AGENTS.md）
+    if (prev && next && prev.text === next.text && prev.tone === next.tone && prev.dot === next.dot) propsRef.current.setStatus(null);
+    propsRef.current.setStatus(next);
+    sentRef.current = next;
   }, [badgeKey]);
 
   // ---- xterm ----
