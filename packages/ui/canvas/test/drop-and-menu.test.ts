@@ -42,16 +42,29 @@ describe('drop target (W5)', () => {
 });
 
 describe('context menus (B3)', () => {
-  it('New terminal lists installed agents with Shell last', () => {
+  it('New terminal lists installed agents by label with Shell last, and hides custom (IS-21)', () => {
+    const caps = { hooks: false, resume: false, fork: false, askTool: false };
+    const picked: string[] = [];
     const items = terminalItems(
       [
         { id: 'claude', label: 'Claude Code', installed: true, version: null, capabilities: { hooks: true, resume: true, fork: true, askTool: true } },
-        { id: 'gemini', label: 'Gemini', installed: false, version: null, capabilities: { hooks: false, resume: false, fork: false, askTool: false } },
-        { id: 'shell', label: 'Shell', installed: true, version: null, capabilities: { hooks: false, resume: false, fork: false, askTool: false } },
+        { id: 'gemini', label: 'Gemini', installed: false, version: null, capabilities: caps },
+        { id: 'omp', label: 'Oh My Pi', installed: true, version: '18.0.4', capabilities: caps },
+        { id: 'shell', label: 'Shell', installed: true, version: null, capabilities: caps },
+        { id: 'custom', label: 'Custom command', installed: true, version: null, capabilities: caps },
       ],
-      () => {},
+      (agent) => picked.push(agent),
     );
-    expect(items.map((i) => (i.type === 'separator' ? '-' : i.label))).toEqual(['claude', '-', 'Shell']);
+    expect(items.map((i) => (i.type === 'separator' ? '-' : i.label))).toEqual(['Claude Code', 'Oh My Pi', '-', 'Shell']);
+    const omp = items[1]!;
+    if (omp.type !== 'separator') omp.onSelect?.();
+    expect(picked).toEqual(['omp']);
+  });
+
+  it('New terminal says so when nothing can be started', () => {
+    const caps = { hooks: false, resume: false, fork: false, askTool: false };
+    const items = terminalItems([{ id: 'custom', label: 'Custom command', installed: true, version: null, capabilities: caps }], () => {});
+    expect(items.map((i) => (i.type === 'separator' ? '-' : i.label))).toEqual(['No agents installed']);
   });
 
   it('blank board, frame title and window title menus', async () => {

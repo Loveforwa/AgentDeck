@@ -4,6 +4,7 @@
 import type { AgentDeckApi, AgentDeckErrorData, AgentKind, BoardState, CreateWorkspaceRequest, ErrorCode, FrameNode, OpenWindowRequest, ProjectId, Rect, Size, TerminalWindowData, Unsubscribe, Viewport, WindowCommand, WindowId, WindowNode, WindowStatusBadge, WorkspaceId } from '@agentdeck/contracts';
 import { TITLE_BAR_HEIGHT, resizeRect, type ResizeEdge } from '@agentdeck/ui-window-shell';
 import { isSummarySize, windowRegistry, type WindowDefinition, type WindowRegistry } from './registry.ts';
+import { startableAgents } from './model/agents.ts';
 import { nextWaiting, summarize, statusOf, type AttentionSummary } from './model/attention.ts';
 import { createAutosave, type Autosave } from './model/autosave.ts';
 import { decideDrop, dropTargetAt } from './model/drop.ts';
@@ -1043,7 +1044,7 @@ export class BoardController {
   /** 默认 agent（Settings 里的 defaultAgent），取不到时用第一个装好的。 */
   async defaultAgent(): Promise<AgentKind> {
     const settings = await this.api.app.getSettings().catch(() => null);
-    const installed = this.state.agents.filter((a) => a.installed);
+    const installed = startableAgents(this.state.agents);
     if (settings && installed.some((a) => a.id === settings.defaultAgent)) return settings.defaultAgent;
     return installed[0]?.id ?? 'shell';
   }

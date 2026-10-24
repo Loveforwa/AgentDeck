@@ -27,7 +27,6 @@ import {
 } from 'electron';
 import {
   type AgentDeckEvent,
-  type AgentKind,
   type StartAgentRequest,
   type StatusSnapshot,
   type TerminalId,
@@ -60,9 +59,6 @@ const demo = process.env['AGENTDECK_DEMO'] === '1';
 app.setName('AgentDeck');
 // 开发时可以开 Chrome DevTools 协议，脚本驱动界面做端到端检查（AGENTDECK_DEBUG_PORT=9333）
 if (isDev && process.env['AGENTDECK_DEBUG_PORT']) app.commandLine.appendSwitch('remote-debugging-port', process.env['AGENTDECK_DEBUG_PORT']);
-
-/** 有钩子的 agent：重开应用时按“带钩子”接回状态机。 */
-const HOOKED_AGENTS = new Set<AgentKind>(['claude', 'codex']);
 
 async function writeNotifyWrapper(opts: { dir: string; script: string; hookSocket: string; env: Env }): Promise<string> {
   // 钩子在 tmux 窗格里跑，PATH 里不一定有 node：先用登录 shell 里的 node，没有就用应用自带的 Electron 当 node 跑。
@@ -173,6 +169,7 @@ async function main(): Promise<void> {
     env: () => loginEnv,
     terminals,
     notifyCommand,
+    agentExtension: paths.agentExtension,
     emit,
     destructivePatterns: () => settings.get().approvals.destructivePatterns,
     extraArgs: (agent) => settings.get().agents[agent]?.extraArgs ?? [],
@@ -186,12 +183,9 @@ async function main(): Promise<void> {
     if (event.type === 'terminal.input') rt.noteInput(event.id);
   });
 
-  // 白板的 New terminal ▸ 把 list() 里每个已安装的 agent 都列出来，但“自定义命令”要先问命令是什么（还没有这个对话框），
-  // 直接选会以没有命令启动失败。先不交给界面，见 IS-21。
-  const visible = (list: Awaited<ReturnType<typeof rt.agents.list>>) => list.filter((a) => a.id !== 'custom');
   const agents = {
-    list: () => rt.agents.list().then(visible),
-    refresh: () => rt.agents.refresh().then(visible),
+    list: () => rt.agents.list(),
+    refresh: () => rt.agents.refresh(),
     async start(req: StartAgentRequest) {
       const res = await rt.agents.start(req);
       store.terminals.put({
@@ -213,15 +207,17 @@ async function main(): Promise<void> {
   };
 
   // 重开应用：tmux 里还活着的终端按库里的记录接回状态机（tmux-host/AGENTS.md「给组装」、agent-adapters/AGENTS.md）
-  void terminals.list().then(
-    (live) => {
+  // 有没有钩子按适配器现在报的能力（claude、codex、带扩展的 pi / omp），不再写死名单。
+  void Promise.all([terminals.list(), rt.agents.list()]).then(
+    ([live, infos]) => {
+      const hooked = new Set(infos.filter((a) => a.capabilities.hooks).map((a) => a.id));
       for (const t of live) {
         const rec = store.terminals.get(t.id);
         if (!rec || rt.status.get(t.id)) continue;
         rt.status.track(t.id, {
           agent: rec.agent,
           workspaceId: rec.workspaceId,
-          hooks: HOOKED_AGENTS.has(rec.agent),
+          hooks: hooked.has(rec.agent),
           status: t.alive ? 'idle' : t.exitCode === 0 ? 'exited' : 'error',
           sessionId: rec.sessionId,
         });

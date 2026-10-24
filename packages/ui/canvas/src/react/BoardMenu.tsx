@@ -4,6 +4,7 @@
 import { Menu, Popover, type MenuEntry } from '@agentdeck/ui-kit';
 import type { AgentInfo, TerminalWindowData, WorkspaceId } from '@agentdeck/contracts';
 import type { BoardController } from '../controller.ts';
+import { startableAgents } from '../model/agents.ts';
 import { SHORTCUT_LABELS } from '../model/shortcuts.ts';
 import { BROWSER_TYPE, TERMINAL_TYPE, isTerminal } from '../model/windows.ts';
 import type { MenuState } from '../store.ts';
@@ -26,15 +27,15 @@ export function BoardMenu() {
   );
 }
 
-/** New terminal ▸ 的子菜单：已安装的 agent，Shell 放在分隔线后面。 */
+/** New terminal ▸ 的子菜单：已安装的 agent（显示 AgentInfo.label），Shell 放在分隔线后面。 */
 export function terminalItems(agents: readonly AgentInfo[], onPick: (agent: AgentInfo['id']) => void): MenuEntry[] {
-  const installed = agents.filter((a) => a.installed);
+  const installed = startableAgents(agents);
   const named = installed.filter((a) => a.id !== 'shell');
   const shell = installed.find((a) => a.id === 'shell');
-  const items: MenuEntry[] = named.map((a) => ({ id: `agent-${a.id}`, label: a.id, onSelect: () => onPick(a.id) }));
+  const items: MenuEntry[] = named.map((a) => ({ id: `agent-${a.id}`, label: a.label || a.id, onSelect: () => onPick(a.id) }));
   if (shell) {
     if (items.length) items.push({ type: 'separator' });
-    items.push({ id: 'agent-shell', label: 'Shell', onSelect: () => onPick('shell') });
+    items.push({ id: 'agent-shell', label: shell.label || 'Shell', onSelect: () => onPick('shell') });
   }
   if (items.length === 0) items.push({ id: 'agent-none', label: 'No agents installed', disabled: true });
   return items;
