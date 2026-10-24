@@ -21,7 +21,7 @@
   max-width: calc(100vw - 32px);
   padding: var(--space-xl);
   border: 1px solid var(--line);
-  border-radius: var(--radius-window);
+  border-radius: var(--radius-menu);
   background: var(--raised);
   box-shadow: var(--shadow-float);
   color: var(--ink);

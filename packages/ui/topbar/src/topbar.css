@@ -1,11 +1,15 @@
+/*
+ * 一行顶栏（MVP v2 · V1）：和 macOS 的标题栏合成一行（窗口用 hiddenInset），整条是窗口的拖动区，
+ * 按钮和菜单不是。高度和 apps/desktop 的 trafficLightPosition 对应（红黄绿按钮在这一行里居中）。
+ */
 .ad-topbar {
   display: flex;
   flex: none;
   align-items: center;
-  gap: var(--space-md);
+  gap: var(--space-sm);
   box-sizing: border-box;
-  height: 40px;
-  padding: 0 var(--space-md) 0 var(--space-lg);
+  height: 34px;
+  padding: 0 var(--space-sm);
   border-bottom: 1px solid var(--line);
   background: var(--ground);
   color: var(--ink);
@@ -13,10 +17,45 @@
   font-size: var(--text-md);
   white-space: nowrap;
   user-select: none;
+  -webkit-app-region: drag;
 }
 
-.ad-topbar-name {
+.ad-topbar button,
+.ad-topbar [role='menu'] {
+  -webkit-app-region: no-drag;
+}
+
+/* 左边留给系统的红黄绿按钮 */
+.ad-topbar--traffic-lights {
+  padding-left: 76px;
+}
+
+.ad-topbar-project {
+  min-width: 0;
+  font-size: var(--text-md);
   font-weight: var(--weight-strong);
+}
+
+.ad-topbar-project-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ad-topbar-summary {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 只有图标的按钮（齿轮） */
+.ad-topbar-icon {
+  width: var(--control-sm);
+  padding: 0;
+  color: var(--muted);
+}
+
+.ad-topbar-icon:hover:not(:disabled) {
+  color: var(--ink);
 }
 
 .ad-topbar-summary,

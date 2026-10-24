@@ -42,6 +42,8 @@ export interface StartupInfo {
   demo: { repoPath: string } | null;
   /** AGENTDECK_SCREENSHOT 模式。 */
   screenshot: boolean;
+  /** 窗口用 hiddenInset 标题栏（macOS）：顶栏左边要给红黄绿按钮留位置（MVP v2 · V1）。旧的主进程没有这一项。 */
+  trafficLights?: boolean;
 }
 
 export interface BoardReadyInfo {

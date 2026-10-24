@@ -28,6 +28,8 @@ export interface WorkbenchProps extends Omit<BoardControllerOptions, 'api' | 'no
   /** Settings 对话框底部的 Open settings.json。不给就不显示这个按钮。 */
   onOpenSettingsFile?(): void;
   boardName?: string;
+  /** macOS 的 hiddenInset 标题栏：顶栏左边给系统的红黄绿按钮留位置（MVP v2 · V1）。 */
+  trafficLights?: boolean;
 }
 
 /** 顶栏 + 白板 + 右侧面板，外面包好 ToastProvider 和 React Flow 的 provider。 */
@@ -43,7 +45,7 @@ function WorkbenchInner(props: WorkbenchProps) {
   const toast = useToast();
   const toastRef = useRef(toast);
   toastRef.current = toast;
-  const { api, controller: given, renderPanel, onOpenSettingsFile, boardName, ...options } = props;
+  const { api, controller: given, renderPanel, onOpenSettingsFile, boardName, trafficLights, ...options } = props;
   const [controller] = useState(
     () => given ?? new BoardController({ ...options, api, notify: (message) => toastRef.current.show({ message }) }),
   );
@@ -65,7 +67,7 @@ function WorkbenchInner(props: WorkbenchProps) {
     <BoardProvider controller={controller}>
       <ReactFlowProvider>
         <div className="ad-workbench">
-          <BoardTopbar boardName={boardName} />
+          <BoardTopbar boardName={boardName} trafficLights={trafficLights === true} />
           <div className="ad-workbench-main">
             <Board />
             <Panel renderPanel={renderPanel} />
@@ -77,10 +79,15 @@ function WorkbenchInner(props: WorkbenchProps) {
   );
 }
 
-function BoardTopbar({ boardName }: { boardName: string | undefined }) {
+function BoardTopbar({ boardName, trafficLights }: { boardName: string | undefined; trafficLights: boolean }) {
   const c = useController();
   const frames = useBoardState((s) => s.frames.length);
-  const terminals = useBoardState((s) => s.windows.filter((w) => w.type === 'terminal').length);
+  const windows = useBoardState((s) => s.windows.length);
+  // 左边：聚焦的窗口（或选中的框）所在的项目和工作区（“main · 3 windows”）；都没有时是整块白板
+  const activeId = useBoardState((s) => c.activeWorkspaceId(s));
+  const active = useBoardState((s) => (activeId ? s.workspaces[activeId] : undefined));
+  const activeWindows = useBoardState((s) => (activeId ? s.windows.filter((w) => w.workspaceId === activeId).length : 0));
+  const projectName = useBoardState((s) => (active ? s.projects.find((p) => p.id === active.projectId)?.name : undefined));
   const running = useBoardState((s) => summarize(s).running);
   const waiting = useBoardState((s) => summarize(s).waiting.length);
   // 聚焦的窗口在 ⌘J 顺序里排第几，顶栏显示“2/3 waiting”
@@ -104,8 +111,11 @@ function BoardTopbar({ boardName }: { boardName: string | undefined }) {
   return (
     <Topbar
       boardName={boardName ?? 'My Board'}
+      projectName={projectName ?? null}
+      workspace={active ? { label: active.branch ?? active.name, windows: activeWindows } : null}
       workspaces={frames}
-      terminals={terminals}
+      windows={windows}
+      trafficLights={trafficLights}
       running={running}
       waiting={waiting}
       {...(position ? { waitingPosition: position } : {})}

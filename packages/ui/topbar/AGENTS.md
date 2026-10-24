@@ -1,13 +1,15 @@
 # @agentdeck/ui-topbar
 
-顶栏（任务 B4）：左边“My Board”和“2 workspaces · 4 terminals”，右边 Projects ▾、“● 3 running”（绿灯）、“1 waiting”（前面一个黄灯，单击跳到下一个在等你的窗口）、Settings。
+顶栏（任务 B4，MVP v2 · V1 改成一行）：和 macOS 的系统标题栏合成一行（34px，窗口用 hiddenInset），整条是窗口拖动区（`-webkit-app-region: drag`，按钮和菜单 `no-drag`）。
+左边：项目菜单（按钮上是聚焦的窗口所在的项目名，没有时“My Board”；菜单是各项目 › New workspace… / Project settings…、Add project…），后面灰字写当前工作区“main · 3 windows”，没有时整块白板“2 workspaces · 5 windows”。
+右边：“● 3 running”（绿灯）、“1 waiting”（前面一个黄灯，单击跳到下一个在等你的窗口）、齿轮（aria-label Settings，提示 Settings (⌘,)）。
 
 只管显示：数字和 Projects ▾ 菜单的内容由白板（`@agentdeck/ui-canvas`）算好传进来。只依赖 contracts、design-tokens、ui-kit 和 React；只有 canvas 用它。
 
 ## 对外接口
 
-- `Topbar`：`boardName?`、`workspaces`、`terminals`、`running`、`waiting`、`projectsMenu`（ui-kit 的 `MenuEntry[]`）、`onWaitingClick`、`onSettings`。数为 0 时不显示 running / waiting。
-- `summaryText(workspaces, terminals)`：单复数。
+- `Topbar`：`boardName?`、`projectName?`、`workspace?`（`{ label, windows }`）、`workspaces`、`windows`、`running`、`waiting`、`waitingPosition?`、`projectsMenu`（ui-kit 的 `MenuEntry[]`）、`onWaitingClick`、`onSettings`、`trafficLights?`（左边留 76px 给红黄绿按钮）。数为 0 时不显示 running / waiting。
+- `summaryText(workspaces, windows)`、`workspaceText(workspace)`、`waitingText(waiting, position?)`：单复数。
 
 ## 测试
 

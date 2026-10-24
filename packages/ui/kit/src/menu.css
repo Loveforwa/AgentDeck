@@ -5,7 +5,7 @@
   min-width: 180px;
   padding: var(--space-xs);
   border: 1px solid var(--line);
-  border-radius: var(--radius-control);
+  border-radius: var(--radius-menu);
   background: var(--raised);
   box-shadow: var(--shadow-float);
   color: var(--ink);
