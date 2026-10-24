@@ -1,7 +1,19 @@
 // 白板的数据形状和保存。需求见「3 · 白板」「9 · 保存与重启」。
 // 保存实现：packages/store（M0），运行在主进程，SQLite。白板界面：packages/ui/canvas（线 2）。
 
-import type { AgentKind, AgentSessionId, IsoTime, Rect, Size, TermSize, TerminalId, Unsubscribe, WindowId, WorkspaceId } from './common.ts';
+import type {
+  AgentKind,
+  AgentSessionId,
+  IsoTime,
+  Rect,
+  Size,
+  TermSize,
+  TerminalId,
+  Unsubscribe,
+  WindowGroupId,
+  WindowId,
+  WorkspaceId,
+} from './common.ts';
 import type { Workspace } from './workspace.ts';
 
 export interface Viewport {
@@ -34,7 +46,22 @@ export interface WindowNode<TData = unknown> {
   restoreRect: Rect | null;
   /** 打开时带的 OpenWindowRequest.reuseKey，随白板保存，重启后同一地址仍然复用这个窗口。 */
   reuseKey?: string | null;
+  /**
+   * 属于哪个窗口组（MVP v3 · N1、N2）：agent 用 MCP 的 open_terminals 一次开出的子终端，和开它们的主 agent。
+   * 随白板保存，N2 的侧边栏据此列出一组里的子终端。没有组时不填或为 null。N1 加。
+   * 关掉主 agent 的窗口时，子终端去掉这个字段，变回普通窗口；组里最后一个子终端关掉时，主 agent 的也去掉。
+   */
+  group?: WindowGroupRef | null;
   data: TData;
+}
+
+/** 窗口在组里的身份。同一组的窗口 id 相同，一组只有一个 lead。N1 加。 */
+export interface WindowGroupRef {
+  id: WindowGroupId;
+  /** lead：开出这一组的主 agent；member：子终端（按在 BoardState.windows 里的先后排）。 */
+  role: 'lead' | 'member';
+  /** 子终端的名字，例如 'api'（open_terminals 的 labels）。主 agent、没给名字时为 null。英文原样，界面直接显示。 */
+  label?: string | null;
 }
 
 export interface TerminalWindowData {
@@ -98,10 +125,28 @@ export interface OpenWindowRequest<TData = unknown> {
  * - board.add-frame：把已建好的工作区放到白板的空位上；已经有框时不动。
  * - board.open-window：同窗口组件的 openWindow，但没有发起窗口，所以 request.workspaceId 总是给出（null 是散放）。
  *   highlight 为 true 时窗口闪一下，提醒用户这里多了东西。
+ *   nearTerminal（N1 加）：放在这个终端的窗口右边（它在 request.workspaceId 的框里时），例如 agent 用 open_browser 开的网页
+ *   放在调用者旁边。找不到那个窗口时照常放。
+ * - board.open-group（N1）：一次放上一组终端（open_terminals），挂在 lead 终端的窗口旁边，组成窗口组（WindowNode.group）。
+ *   lead 为 null（调用者不是白板上的终端）或白板上找不到 lead 的窗口时只是依次放进框里，不成组；lead 已经在一个组里时加进那个组。
+ * - board.focus-window（N1）：把窗口拉到眼前（平移到看得见、闪一下、聚焦）。用户正在打字时只闪一下，不抢键盘焦点、不动视口。
+ * - board.notify（N1）：agent 发来的一句通知。from 的窗口闪一下，并弹一条提示；用户正在打字时只闪，不弹。
+ *   应用在后台时的系统通知由主进程发，不经过白板。
  */
 export type BoardEvent =
   | { type: 'board.add-frame'; workspace: Workspace }
-  | { type: 'board.open-window'; request: OpenWindowRequest; highlight: boolean };
+  | { type: 'board.open-window'; request: OpenWindowRequest; highlight: boolean; nearTerminal?: TerminalId | null }
+  | { type: 'board.open-group'; lead: TerminalId | null; members: WindowGroupMemberRequest[]; highlight: boolean }
+  | { type: 'board.focus-window'; target: { windowId: WindowId } | { terminalId: TerminalId } }
+  | { type: 'board.notify'; from: TerminalId | null; message: string };
+
+/** board.open-group 里的一个窗口。N1 加。 */
+export interface WindowGroupMemberRequest {
+  /** workspaceId 总是给出（null 是散放），同 board.open-window。 */
+  request: OpenWindowRequest;
+  /** 存进 WindowGroupRef.label。 */
+  label: string | null;
+}
 
 /** 白板发给窗口的命令：⌘K 清屏、标题栏右键菜单里的项。 */
 export type WindowCommand = 'clear' | 'restart' | (string & {});
