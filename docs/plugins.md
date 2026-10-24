@@ -37,7 +37,7 @@
 
 | 插件 | 终端窗口 | 网页窗口 | 工作区框 | 白板 | 标记 | 状态 |
 | --- | --- | --- | --- | --- | --- | --- |
-| Auto-approve | ✓ 所有 agent：claude、codex 走钩子；kimi、omp 看屏幕发键；pi 从不问（DR-56） | ✗ | ✓ 框里所有终端 | ✗ | 终端底边左侧的书签 “Auto-approve on” | 设计中（PL1） |
+| Auto-approve | ✓ claude、codex 走钩子；omp 看屏幕发键（没在真终端核对）；pi 从不问；kimi 先不支持（DR-56） | ✗ | ✓ 框里所有终端 | ✗ | 终端底边左侧的书签 “Auto-approve on” | 后端做完（PL1，界面另做） |
 | CC Switch 用量 | ✓ 五种 agent（AgentDeck 自己读各 agent 的会话文件，见 DR-55；kimi 新建会话靠推断） | ✗ | 以后（项目用量） | 以后（整台电脑） | 终端上方或下方一条细长圆角条，可拖 | 设计中（PL2） |
 
 ## 不是插件的东西
@@ -53,3 +53,5 @@
 - 2026-10-25：CC Switch 调研结论（DR-55）：CC Switch 的数据是事后扫会话文件得到的，最快 1 分钟一次，没有上下文长度，所以条上的实时数字由我们自己读会话文件；CC Switch 只做以后的历史数据源和 “Open in CC Switch”。条只贴在终端上下两边，不离开终端。
 - 2026-10-25：Auto-approve 调研结论（DR-56）：claude、codex 用 PermissionRequest 钩子回 allow；kimi 看屏幕发 1；omp 发 ↑ ↵（待核对）；pi 没有确认框。看屏幕的做法要在 known.ts 记 agent 版本。
 - 2026-10-25：Approve all 不设快捷键。
+- 2026-10-25：Auto-approve 第一版只支持 claude、codex、omp、pi，kimi 先不支持（菜单写 “Not supported for kimi yet”）。破坏性命令的默认名单补全（在整段命令里找，见 packages/agent-adapters 的 `DEFAULT_DESTRUCTIVE_PATTERNS`）。
+  替你按不了的时候（破坏性、选择题 / 要你打字、没按成）书签统一显示 “Needs you”，服务只给原因（`approval.needs-you`），界面不写专门的破坏性文案。
