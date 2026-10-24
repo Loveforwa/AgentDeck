@@ -8,8 +8,8 @@ import type { FakeServices } from '@agentdeck/fakes';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { literalKeys, loadOrCreateToken, startMcpServer } from '../src/index.ts';
-import type { McpHttpServer } from '../src/index.ts';
+import { browserTarget, literalKeys, loadOrCreateToken, SERVER_INSTRUCTIONS, startMcpServer } from '../src/index.ts';
+import type { McpHttpServer, McpHttpServerOptions } from '../src/index.ts';
 
 const TOKEN = 'a'.repeat(64);
 const T = SAMPLE.terminals;
@@ -107,13 +107,23 @@ describe('tools', () => {
     const { tools } = await (await connect()).listTools();
     expect(tools.map((t) => t.name).sort()).toEqual([
       'create_workspace',
+      'focus_window',
       'list_terminals',
+      'list_windows',
       'list_workspaces',
+      'notify',
       'open_browser',
       'open_terminal',
+      'open_terminals',
       'read_terminal',
       'send_to_terminal',
     ]);
+  });
+
+  it('tells the agent when to use the tools (server instructions)', async () => {
+    const client = await connect();
+    expect(client.getInstructions()).toBe(SERVER_INSTRUCTIONS);
+    expect(SERVER_INSTRUCTIONS).toMatch(/open_terminals/);
   });
 
   it('list_workspaces marks the caller’s workspace', async () => {
@@ -195,6 +205,32 @@ describe('tools', () => {
       reuseKey: 'http://localhost:5173',
       data: { url: 'http://localhost:5173/login', mode: 'frame', openedBy: { terminalId: T.loginClaude } },
     });
+    // N1：放在调用者终端旁边
+    if (e.type === 'board.open-window') expect(e.nearTerminal).toBe(T.loginClaude);
+  });
+
+  it('open_browser only takes http(s) URLs and local files', async () => {
+    const client = await connect();
+    const opened = async (url: string) => {
+      const r = await call(client, 'open_browser', { url });
+      return r.error ? { error: r.value as string } : r.value.opened;
+    };
+    expect(await opened('localhost:3000')).toBe('http://localhost:3000/');
+    expect(await opened('127.0.0.1:8080/app')).toBe('http://127.0.0.1:8080/app');
+    expect(await opened('https://example.com/docs')).toBe('https://example.com/docs');
+    expect(await opened('/Users/me/site/index.html')).toBe('/Users/me/site/index.html');
+    expect(await opened('file:///Users/me/report%20v2.html')).toBe('/Users/me/report v2.html');
+    for (const bad of ['javascript:alert(1)', 'data:text/html,<b>x</b>', 'ftp://example.com/a', 'index.html', '~/site/index.html', '//evil.example/x', 'file://server/share/a.html', 'chrome://settings']) {
+      expect(await opened(bad)).toEqual({ error: `Only http(s) URLs and local files can be opened: ${bad}` });
+    }
+    // 拒绝的不发事件
+    expect(events).toHaveLength(5);
+  });
+
+  it('browserTarget keeps the reuse key per origin', () => {
+    expect(browserTarget('http://localhost:5173')).toBe('http://localhost:5173/');
+    expect(browserTarget('  http://localhost:5173/a?b=1#c ')).toBe('http://localhost:5173/a?b=1#c');
+    expect(() => browserTarget('')).toThrow();
   });
 
   it('read_terminal returns the last lines and the status', async () => {
@@ -228,6 +264,175 @@ describe('tools', () => {
   it('a caller whose env had no AGENTDECK_TERM sends the literal placeholder and counts as outside', async () => {
     const { value } = await call(await connect('${AGENTDECK_TERM}'), 'list_workspaces');
     expect(value.workspaces.some((w: { current: boolean }) => w.current)).toBe(false);
+  });
+});
+
+/** 换一组注入的依赖重开服务（N1 的 board、confirm、onNotify）。 */
+async function restart(extra: Partial<McpHttpServerOptions>): Promise<void> {
+  await server.close();
+  server = await startMcpServer({ ...deps(), token: TOKEN, port: 0, submitDelayMs: 0, ...extra });
+}
+
+function groupEvent(): Extract<BoardEvent, { type: 'board.open-group' }> {
+  const e = events.find((x) => x.type === 'board.open-group');
+  if (!e || e.type !== 'board.open-group') throw new Error('expected board.open-group');
+  return e;
+}
+
+describe('N1 · open_terminals', () => {
+  it('opens n agents in the caller’s workspace with their prompts and asks the board for one group next to the caller', async () => {
+    const before = fakes.agents.started.length;
+    const { value, error } = await call(await connect(), 'open_terminals', {
+      count: 3,
+      prompts: ['build the api', 'build the ui', 'write the tests'],
+      labels: ['api', 'ui', 'tests'],
+    });
+    expect(error).toBe(false);
+    const started = fakes.agents.started.slice(before).map((s) => s.request);
+    expect(started).toHaveLength(3);
+    expect(started.map((r) => r.prompt)).toEqual(['build the api', 'build the ui', 'write the tests']);
+    for (const r of started) expect(r).toMatchObject({ agent: 'claude', cwd: SAMPLE.paths.agentdeckLogin, workspaceId: W.agentdeckLogin, mode: { kind: 'new' } });
+    expect(value.lead).toBe(T.loginClaude);
+    expect(value.terminals.map((t: { label: string }) => t.label)).toEqual(['api', 'ui', 'tests']);
+    // 一个事件，白板一起放
+    expect(events.map((e) => e.type)).toEqual(['board.open-group']);
+    const g = groupEvent();
+    expect(g.lead).toBe(T.loginClaude);
+    expect(g.highlight).toBe(true);
+    expect(g.members.map((m) => m.label)).toEqual(['api', 'ui', 'tests']);
+    expect(g.members.map((m) => (m.request.data as TerminalWindowData).terminalId)).toEqual(value.terminals.map((t: { terminalId: string }) => t.terminalId));
+    for (const m of g.members) expect(m.request).toMatchObject({ type: 'terminal', workspaceId: W.agentdeckLogin });
+  });
+
+  it('fewer prompts and labels than terminals is fine; more is an error', async () => {
+    const client = await connect();
+    const ok = await call(client, 'open_terminals', { count: 2, agent: 'codex', prompts: ['only the first'] });
+    expect(ok.error).toBe(false);
+    const [a, b] = fakes.agents.started.slice(-2).map((s) => s.request);
+    expect(a).toMatchObject({ agent: 'codex', prompt: 'only the first' });
+    expect(b!.prompt).toBeUndefined();
+    expect(groupEvent().members.map((m) => m.label)).toEqual([null, null]);
+    expect(await call(client, 'open_terminals', { count: 1, prompts: ['a', 'b'] })).toEqual({ error: true, value: 'Got 2 prompts for 1 terminals' });
+    expect(await call(client, 'open_terminals', { count: 1, labels: ['a', 'b'] })).toEqual({ error: true, value: 'Got 2 labels for 1 terminals' });
+  });
+
+  it('up to 6 without asking; more needs the user’s yes', async () => {
+    const asked: { title: string; body: string; confirm: string }[] = [];
+    let answer = false;
+    await restart({
+      confirm: async (q) => {
+        asked.push(q);
+        return answer;
+      },
+    });
+    const client = await connect();
+    expect((await call(client, 'open_terminals', { count: 6 })).error).toBe(false);
+    expect(asked).toHaveLength(0);
+
+    const before = fakes.agents.started.length;
+    expect(await call(client, 'open_terminals', { count: 7 })).toEqual({ error: true, value: 'The user declined opening 7 terminals' });
+    expect(asked.at(-1)).toEqual({ title: 'Open 7 terminals?', body: 'An agent wants to open 7 claude terminals in feat/login at once.', confirm: 'Open 7' });
+    expect(fakes.agents.started.length).toBe(before);
+
+    answer = true;
+    const { value } = await call(client, 'open_terminals', { count: 7 });
+    expect(value.terminals).toHaveLength(7);
+    expect(await call(client, 'open_terminals', { count: 17 })).toMatchObject({ error: true });
+  });
+
+  it('without a way to ask, more than 6 is refused and nothing starts', async () => {
+    const before = fakes.agents.started.length;
+    const r = await call(await connect(), 'open_terminals', { count: 8 });
+    expect(r.error).toBe(true);
+    expect(r.value).toMatch(/needs the user’s confirmation/);
+    expect(fakes.agents.started.length).toBe(before);
+    expect(events).toEqual([]);
+  });
+
+  it('a failure part-way still puts the started ones on the board and says where it stopped', async () => {
+    let n = 0;
+    await restart({
+      agents: {
+        list: () => fakes.agents.list(),
+        start: (req) => (++n === 3 ? Promise.reject(new Error('Command not found: claude')) : fakes.agents.start(req)),
+      },
+    });
+    const { value, error } = await call(await connect(), 'open_terminals', { count: 4 });
+    expect(error).toBe(false);
+    expect(value.terminals).toHaveLength(2);
+    expect(value.error).toBe('Stopped after 2 of 4: Command not found: claude');
+    expect(groupEvent().members).toHaveLength(2);
+  });
+
+  it('a caller outside AgentDeck gets loose terminals and no lead', async () => {
+    const { value } = await call(await connect(null), 'open_terminals', { count: 1, agent: 'shell' });
+    expect(value).toMatchObject({ workspaceId: null, lead: null });
+    expect(groupEvent().lead).toBeNull();
+  });
+});
+
+describe('N1 · list_windows, focus_window, notify', () => {
+  it('list_windows: type, title, status, topic, group and self from the saved board', async () => {
+    const board = (await fakes.board.load())!;
+    // 一组：login 的 claude 是主 agent，codex 是它开的子终端
+    const groupId = 'grp-1' as never;
+    board.windows = board.windows.map((w) =>
+      w.id === 'win-login-claude' ? { ...w, group: { id: groupId, role: 'lead' as const, label: null } } : w.id === 'win-login-codex' ? { ...w, group: { id: groupId, role: 'member' as const, label: 'review' } } : w,
+    );
+    await fakes.board.save(board);
+    fakes.terminals.setTitle(T.loginClaude, 'Fix the login bug');
+    await restart({ board: fakes.board });
+    const { value } = await call(await connect(), 'list_windows');
+    const byId = Object.fromEntries(value.windows.map((w: { id: string }) => [w.id, w]));
+    expect(byId['win-login-claude']).toMatchObject({
+      type: 'terminal',
+      title: 'claude',
+      workspaceId: W.agentdeckLogin,
+      terminalId: T.loginClaude,
+      agent: 'claude',
+      topic: 'Fix the login bug',
+      group: { id: 'grp-1', role: 'lead', label: null },
+      self: true,
+    });
+    expect(byId['win-login-codex']).toMatchObject({
+      status: 'needs-approval',
+      waitingFor: { kind: 'approval', summary: 'pnpm test' },
+      group: { id: 'grp-1', role: 'member', label: 'review' },
+      self: false,
+    });
+    expect(byId['win-browser']).toMatchObject({ type: 'browser', group: null, self: false });
+    expect(byId['win-browser'].url).toBeTruthy();
+    expect(byId['win-browser'].terminalId).toBeUndefined();
+
+    const only = await call(await connect(), 'list_windows', { workspace_id: W.shopCart });
+    expect(only.value.windows.map((w: { id: string }) => w.id).sort()).toEqual(['win-shop-claude', 'win-shop-shell']);
+  });
+
+  it('list_windows without a board is an error', async () => {
+    expect(await call(await connect(), 'list_windows')).toEqual({ error: true, value: 'The board isn’t available' });
+  });
+
+  it('focus_window asks the board by window or terminal id, checking that it exists', async () => {
+    await restart({ board: fakes.board });
+    const client = await connect();
+    expect((await call(client, 'focus_window', { terminal_id: T.shopClaude })).value).toEqual({ requested: true, terminalId: T.shopClaude });
+    expect((await call(client, 'focus_window', { window_id: 'win-browser' })).value).toEqual({ requested: true, windowId: 'win-browser' });
+    expect(events).toEqual([
+      { type: 'board.focus-window', target: { terminalId: T.shopClaude } },
+      { type: 'board.focus-window', target: { windowId: 'win-browser' } },
+    ]);
+    expect(await call(client, 'focus_window', { terminal_id: 'nope' })).toEqual({ error: true, value: 'Terminal not found: nope' });
+    expect(await call(client, 'focus_window', { window_id: 'nope' })).toEqual({ error: true, value: 'Window not found: nope' });
+    expect(await call(client, 'focus_window', {})).toEqual({ error: true, value: 'Pass either window_id or terminal_id' });
+    expect(events).toHaveLength(2);
+  });
+
+  it('notify flashes the caller on the board and hands the message to the app (system notification in the background)', async () => {
+    const notes: { terminalId: TerminalId | null; message: string }[] = [];
+    await restart({ onNotify: (n) => notes.push(n) });
+    expect((await call(await connect(), 'notify', { message: '  Tests\npassed  ' })).value).toEqual({ notified: true });
+    expect(events).toEqual([{ type: 'board.notify', from: T.loginClaude, message: 'Tests passed' }]);
+    expect(notes).toEqual([{ terminalId: T.loginClaude, message: 'Tests passed' }]);
   });
 });
 
