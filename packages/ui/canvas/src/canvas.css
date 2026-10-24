@@ -22,6 +22,33 @@
   z-index: 6;
 }
 
+/*
+ * 拖动窗口的那一条（IS-63，macOS hiddenInset）：和顶栏一样高，DOM 里排最前、画在白板下面（z-index 0，后面的白板
+ * 和面板盖在上面）。顶栏自己不是拖动区、不接指针（见 ui/topbar 的 topbar.css），白板上压在这一条上的东西用下面的
+ * no-drag 从拖动区里挖掉。空着的白板顶上仍然拖得动窗口（这一条里不能拖白板平移）。
+ */
+.ad-workbench-drag {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 0;
+  height: var(--topbar-height);
+  -webkit-app-region: drag;
+}
+
+/* 压在拖动条上也要能点的：窗口节点和框（含伸出去的改大小把手）、右侧面板、浮层（菜单、对话框、提示） */
+.ad-board .react-flow__node,
+.ad-board .ad-frame-resize,
+.ad-board .ad-window-resize,
+.ad-panel,
+.ad-panel-rail,
+.ad-popover,
+.ad-dialog,
+.ad-toast {
+  -webkit-app-region: no-drag;
+}
+
 .ad-workbench-main {
   display: flex;
   flex: 1;

@@ -71,6 +71,13 @@ function WorkbenchInner(props: WorkbenchProps) {
     <BoardProvider controller={controller}>
       <ReactFlowProvider>
         <div className="ad-workbench">
+          {/*
+            拖动窗口的那一条（IS-63）：顶栏浮在白板上，拖动区不放在顶栏上，单独一个元素，DOM 里排最前、画在白板下面。
+            Electron 按页面报上来的顺序把 drag 区域并进来、no-drag 区域减掉（和层叠无关），这一条在 DOM 顺序和绘制顺序里
+            都排最前，后面压在它上面的窗口节点、框、面板、浮层（canvas.css 里 no-drag）都能从拖动区里挖掉，能点；
+            空着的地方仍然拖得动窗口。
+          */}
+          <div className="ad-workbench-drag" aria-hidden="true" />
           <BoardTopbar boardName={boardName} trafficLights={trafficLights === true} />
           <div className="ad-workbench-main">
             <Board />
