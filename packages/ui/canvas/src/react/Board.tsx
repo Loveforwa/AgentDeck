@@ -1,4 +1,5 @@
-// 白板画布（任务 B1）：React Flow。两指滚动和拖空白处平移，⌘ + 滚轮缩放（25%–200%），不响应双指捏合；
+// 白板画布（任务 B1）：React Flow。手势（N6）：两指滚动在空白处平移、在窗口上滚窗口内容，捏合和 ⌘ + 滚轮缩放（25%–200%），
+// 按住空格拖动或拖空白处平移，规则见 model/gestures.ts；
 // 20px 点阵，缩到 50% 以下隐藏。框和窗口都是不可拖的节点，移动和改大小由我们自己的手势做（只能拖标题栏）。
 
 import { useEffect, useMemo, useRef, type MouseEvent as ReactMouseEvent } from 'react';
@@ -23,6 +24,8 @@ import { useBoardState, useController } from './context.tsx';
 import { Clawd } from './Clawd.tsx';
 import { ShortcutHints } from './ShortcutHints.tsx';
 import { Guides, useTrackMeta } from './Guides.tsx';
+import { FLOW_GESTURES, WINDOW_NODE_CLASS } from '../model/gestures.ts';
+import { useSpacePan, useWindowZoomWheel } from './gestures.ts';
 import '../canvas.css';
 
 const nodeTypes: NodeTypes = {
@@ -45,6 +48,8 @@ export function Board() {
   const viewport = useBoardState((s) => s.viewport);
   const loaded = useBoardState((s) => s.loaded);
   useTrackMeta();
+  const spacePan = useSpacePan();
+  useWindowZoomWheel(wrapper, c);
 
   // 让控制器能做带动画的平移缩放（⌘J、⌘1、放大窗口）
   useEffect(() => {
@@ -98,7 +103,7 @@ export function Board() {
           ...base,
           id: w.id,
           type: 'window',
-          className: 'nopan',
+          className: WINDOW_NODE_CLASS,
           position: { x: r.x, y: r.y },
           data: { id: w.id },
           style: { width: r.w, height: r.h, pointerEvents: 'all' as const },
@@ -120,7 +125,7 @@ export function Board() {
   return (
     <div
       ref={wrapper}
-      className="ad-board"
+      className={spacePan ? 'ad-board ad-board--space-pan' : 'ad-board'}
       onDoubleClick={(e) => {
         // 双击空白处也弹出菜单（不直接创建，避免误触）
         if ((e.target as Element).classList.contains('react-flow__pane')) openPaneMenu(e);
@@ -134,12 +139,8 @@ export function Board() {
           onViewportChange={(vp: Viewport) => c.viewportChanged(vp)}
           minZoom={MIN_ZOOM}
           maxZoom={MAX_ZOOM}
-          panOnScroll
-          zoomOnScroll={false}
-          zoomOnPinch={false}
-          zoomActivationKeyCode="Meta"
-          zoomOnDoubleClick={false}
-          panOnDrag={[0, 1]}
+          {...FLOW_GESTURES}
+          panOnDrag={[...FLOW_GESTURES.panOnDrag]}
           selectionOnDrag={false}
           nodesDraggable={false}
           nodesConnectable={false}

@@ -8,6 +8,7 @@ import { SUMMARY_ZOOM } from '../controller.ts';
 import { useBoardState, useController, useWindowType } from './context.tsx';
 import { WindowStopConfirm } from './dialogs.tsx';
 import { metaHeld } from './Guides.tsx';
+import { passWheelToContent } from './gestures.ts';
 
 export type WindowNodeData = { id: WindowId };
 
@@ -78,8 +79,8 @@ export function WindowNodeView({ data }: NodeProps & { data: WindowNodeData }) {
         flashKey={flash}
         maximized={maximized}
         resizable={!maximized}
-        className="nopan nodrag"
-        contentClassName={focused ? 'nowheel' : ''}
+        className="nopan nodrag nowheel"
+        contentClassName="nowheel"
         onActivate={() => {
           c.closeMenu();
           if (!focused && !summary) c.focusWindow(id);
@@ -99,11 +100,12 @@ export function WindowNodeView({ data }: NodeProps & { data: WindowNodeData }) {
       >
         {Component ? <Component {...props} /> : <div className="ad-window-missing">Unknown window type: {node.type}</div>}
         {stopConfirm ? <WindowStopConfirm dialog={stopConfirm} /> : null}
-        {/* 没聚焦时盖一层：滚轮平移白板而不是滚内容，第一下单击只聚焦；摘要卡单击恢复大小 */}
+        {/* 没聚焦时盖一层：第一下单击只聚焦，滚轮交给下面的内容（N6，不平移白板）；摘要卡单击恢复大小 */}
         {!focused || summary ? (
           <div
             className="ad-window-cover"
             onClick={() => (summary ? c.expandSummary(id) : c.focusWindow(id))}
+            onWheel={(e) => passWheelToContent(e.currentTarget, e.nativeEvent)}
             aria-hidden="true"
           />
         ) : null}

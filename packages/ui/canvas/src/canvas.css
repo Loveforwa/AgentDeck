@@ -287,11 +287,23 @@
   height: 100%;
 }
 
-/* 没聚焦时盖在内容上：滚轮平移白板，第一下单击只聚焦 */
+/* 没聚焦时盖在内容上：第一下单击只聚焦；滚轮由 passWheelToContent 交给下面的内容（N6） */
 .ad-window-cover {
   position: absolute;
   inset: 0;
   z-index: 1;
+}
+
+/* 按住空格平移（N6）：框和窗口都不接指针，拖到哪里都落在 React Flow 的底板上 */
+.ad-board--space-pan .react-flow__pane {
+  cursor: grab;
+}
+.ad-board--space-pan .react-flow__pane.dragging {
+  cursor: grabbing;
+}
+.ad-board--space-pan .react-flow__node,
+.ad-board--space-pan .react-flow__node * {
+  pointer-events: none !important;
 }
 
 /* 关闭运行中终端的确认：只盖住这个窗口（不是整个应用） */
