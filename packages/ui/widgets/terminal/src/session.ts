@@ -20,6 +20,9 @@ import { installQueryAnswers, type QueryAnswers } from './queries.ts';
 import { routerFor } from './router.ts';
 import { readColors, type TermColors } from './theme.ts';
 
+/** 内容区大小变了以后，盯着容器实际大小的时长（IS-49）。 */
+const FIT_WINDOW_MS = 1000;
+
 export interface TerminalSessionOptions {
   api: AgentDeckApi;
   /** xterm 画在这里面。 */
@@ -175,6 +178,25 @@ export class TerminalSession {
     this.size = size;
     this.term.resize(size.cols, size.rows);
     if (this.viewId !== null) this.opts.api.terminals.resize(this.viewId, size);
+  }
+
+  /**
+   * 白板给的内容区大小变了（改大小松手、放大、还原）：这时白板可能还没把新大小排到页面上（React Flow 下一帧才改节点大小），
+   * 马上量会量到旧的大小，放大后终端还是原来的行列数、还原后反而按放大的画（IS-49）。所以等排版：之后 1 秒内容器的实际大小
+   * 每变一次就重量一次（ResizeObserver 开始观察时也会报一次当前大小）。返回取消函数。
+   */
+  fitAfterLayout(fallback?: { w: number; h: number }): () => void {
+    if (typeof ResizeObserver === 'undefined') {
+      this.fitToContainer(fallback);
+      return () => {};
+    }
+    const ro = new ResizeObserver(() => this.fitToContainer(fallback));
+    ro.observe(this.opts.container);
+    const timer = setTimeout(() => ro.disconnect(), FIT_WINDOW_MS);
+    return () => {
+      clearTimeout(timer);
+      ro.disconnect();
+    };
   }
 
   currentSize(): TermSize {

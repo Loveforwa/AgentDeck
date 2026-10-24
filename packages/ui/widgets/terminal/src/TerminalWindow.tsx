@@ -233,10 +233,10 @@ export function TerminalWindow(props: TerminalWindowProps): ReactNode {
     return () => session.detach();
   }, [shouldAttach, session, terminalId]);
 
-  // 改大小松手后（contentSize 只在松手后变）
+  // 改大小松手后、放大和还原后（contentSize 只在这些时候变）：等新大小排到页面上再量（IS-49）
   useEffect(() => {
     if (!session || summary || !showScreen) return;
-    session.fitToContainer({ w: contentSize.w, h: contentSize.h });
+    return session.fitAfterLayout({ w: contentSize.w, h: contentSize.h });
   }, [session, summary, showScreen, contentSize.w, contentSize.h]);
 
   useEffect(() => {

@@ -17,6 +17,7 @@ import type {
 } from '@agentdeck/contracts';
 import { createFakeApi, type FakeApi } from '@agentdeck/fakes';
 import { TerminalWindow, terminalWindowType } from '../src/index.ts';
+import { termSizeFor } from '../src/metrics.ts';
 
 type FakeXterm = {
   focused: boolean;
@@ -435,5 +436,47 @@ describe('size changes while attaching', () => {
     release();
     await waitFor(() => expect(resize).toHaveBeenCalled());
     expect(resize.mock.calls.at(-1)?.[1]).toEqual({ cols: 49, rows: 11 });
+  });
+  it('maximize / restore: measures after the board has laid out the new size, for a short while (IS-49)', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const observers: { cb: () => void; connected: boolean }[] = [];
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        entry: { cb: () => void; connected: boolean };
+        constructor(cb: () => void) {
+          this.entry = { cb, connected: false };
+          observers.push(this.entry);
+        }
+        observe() {
+          this.entry.connected = true;
+        }
+        disconnect() {
+          this.entry.connected = false;
+        }
+      },
+    );
+    try {
+      makeTerminal({ history: 'x' });
+      const resize = vi.spyOn(api.terminals, 'resize');
+      const h = mount({ terminalId: T, agent: 'claude', cmd: 'claude', cwd: '/repo' }, { contentSize: { w: 560, h: 332 } });
+      await waitFor(() => expect(api.fakes.terminals.views(T)).toHaveLength(1));
+      resize.mockClear();
+      h.setProps({ contentSize: { w: 1070, h: 758 } });
+      await flush();
+      // 白板把新大小排到页面上之前不量：等观察器报
+      expect(resize).not.toHaveBeenCalled();
+      const live = observers.filter((o) => o.connected);
+      expect(live).toHaveLength(1);
+      act(() => live[0]!.cb());
+      await waitFor(() => expect(resize).toHaveBeenCalled());
+      expect(resize.mock.calls.at(-1)?.[1]).toEqual(termSizeFor({ w: 1070, h: 758 }));
+      // 一秒后不再盯着，拖动等别的大小变化不会顺带改 tmux
+      act(() => vi.advanceTimersByTime(1100));
+      expect(observers.some((o) => o.connected)).toBe(false);
+    } finally {
+      vi.unstubAllGlobals();
+      vi.useRealTimers();
+    }
   });
 });

@@ -290,6 +290,7 @@ ISSUES = [
     ('IS-46', 'P1', '缺失', 'agent-adapters · 白板', '本机装的 pi（@earendil-works/pi-coding-agent 0.83.0）和 omp（oh-my-pi 18.0.4）不在新建终端菜单里：适配器写死了 claude、codex、shell、custom，没有自动发现', '右键 › New terminal ▸', '用别的 agent 的人只能开 Shell 再手动敲命令，也没有状态提醒', 'DR-51 的方案：已知 agent 表 + 通用适配器（先 pi、omp、kimi）；第二步用 -e 加载自带扩展当钩子', 'TC-17'),
     ('IS-47', 'P1', '缺陷', 'apps/desktop', '点 Settings 用系统默认程序打开 settings.json，这台 Mac 上 .json 默认是 Tor Browser；打开失败或程序起来慢时界面没有任何提示（渲染进程和菜单都只写 console.error）', '点顶栏 Settings 或 ⌘,', '设置打不开，也不知道为什么', '有 Settings 界面后改成对话框；Open settings.json 改用 editorCommand 打开，失败在 Finder 里显示文件，错误用 Toast 提示', 'TC-15'),
     ('IS-48', 'P3', '缺陷', '开发环境', 'dev 数据目录的 settings.json 里 editorCommand 被改成了 "echo-1792834415023"（大概是之前的验收脚本留下的），Open in editor 会失效', 'cat .agentdeck-dev/settings.json', '开发环境里点文件链接打不开编辑器', '恢复成 code -g', ''),
+    ('IS-49', 'P1', '缺陷', '终端窗口', '终端窗口放大后，内容还是原来的行列数，只占左上角；还原后反过来按放大的行列数画：放大、还原时终端在白板把新大小排到页面上之前就量了尺寸，量到的总是上一次的', '开一个终端，双击标题栏放大，再还原', '放大没用，还原后画面乱', '内容区大小变了以后，1 秒内盯着容器的实际大小（ResizeObserver），排好版再量', 'TC-25'),
 ]
 
 # 用户在验收报告网页上填的验收结果（2026-10-24 从网页数据库同步的快照）。网页打开后以数据库为准；
@@ -324,6 +325,7 @@ ACCEPTED = {
 
 # 已经处理的问题：处理状态和备注
 RESOLVED = {
+    'IS-49': '2026-10-24 已修：放大、还原、改大小后等页面排好版再量，加了测试；用户在自己的 AgentDeck 里试过，放大后铺满',
     'IS-47': '2026-10-24 已修：Settings 和 ⌘, 用 editorCommand（默认 code -g）打开 settings.json，PATH 里没有 code 时去 App 包里找（VS Code、Cursor、Zed、Sublime）；打不开就在 Finder 里显示并在界面上提示原因。顺带：手改 settings.json 不用重启就生效，也不会被应用盖掉。设置界面另做（IS-13）。要重启 AgentDeck',
     'IS-48': '2026-10-24 已恢复成 code -g',
     'IS-44': '2026-10-24 已做：外部网站自动用 webview（独立分区、UA 去掉 Electron、允许登录弹窗），出错页加 Show it here；在单独的 Electron 实例里验证 google、github、Google 登录页都能显示和缩放。要重启 AgentDeck，真正登录待用户试（TC-28）',
