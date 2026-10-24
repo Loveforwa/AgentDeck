@@ -26,6 +26,7 @@ import type { Session, WebContents } from 'electron';
 import { LOCAL_FILE_SCHEME } from '@agentdeck/contracts';
 import type { ServiceRegistry } from '../registry.ts';
 import { BRIDGE_SCRIPT, isBoardFrame } from './bridge.ts';
+import { pingFetch } from './ping-fetch.ts';
 import { createBrowserService, publicBrowserService, type BrowserCore } from './service.ts';
 
 export { createBrowserService, publicBrowserService, type BrowserCore } from './service.ts';
@@ -41,7 +42,11 @@ export function registerBrowserService(
 ): BrowserCore {
   const core = createBrowserService({
     openExternal: (url) => shell.openExternal(url),
-    fetch: (input, init) => net.fetch(input as string, { ...init, bypassCustomProtocolHandlers: true }),
+    // ping 带 redirect: 'manual'，net.fetch 遇到跳转会抛错，改走 net.request（ping-fetch.ts，IS-43）
+    fetch: pingFetch(
+      (opts) => net.request(options.session ? { ...opts, session: options.session } : opts),
+      (input, init) => net.fetch(input as string, { ...init, bypassCustomProtocolHandlers: true }),
+    ),
     realpath: (path) => realpath(path),
     stat: (path) => stat(path),
   });

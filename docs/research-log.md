@@ -3,7 +3,7 @@
 实现过程中和一开始设想不一样的地方：原来以为什么、实际是什么、怎么决定的、好处和代价。
 由 `docs/research/build.py` 从 `docs/research/entries.py` 生成，不要直接改这个文件。更新于 2026-10-24。
 
-共 46 条：已解决 25，进行中 13，推迟 5，待验证 3。
+共 47 条：已解决 26，进行中 13，推迟 5，待验证 3。
 
 编号规则（全项目统一）：DR-xx 调研记录 · TC-xx 端到端用例 · IS-xx 问题 · F1、T2、X3 等是 MVP 任务表的任务编号。用例和问题在 docs/status/AgentDeck-端到端用例与问题清单-*.xlsx 里；每条调研下面列出相关的用例和问题。
 
@@ -57,6 +57,7 @@
   - [DR-41 在 AgentDeck 里管理它自己的仓库，切一下分支应用就坏了](#dr-41)（进行中）
   - [DR-45 xterm 的两个默认值和 tmux 不合：回滚为 0 会崩，Unicode 6 宽度会错位](#dr-45)（已解决）
   - [DR-46 claude 的颜色主题不能用用户的全局设置](#dr-46)（已解决）
+  - [DR-47 Electron 的 net.fetch 不支持 redirect: manual](#dr-47)（已解决）
 - **还没验证的**：已经有对策，但要等对应的线用真东西试过才算数
   - [DR-42 claude 能不能把对话 fork 到另一个目录](#dr-42)（待验证）
   - [DR-43 Approve all 发的“允许一次”按键对不对](#dr-43)（待验证）
@@ -657,6 +658,20 @@
 - **决策**：启动 claude 时 --settings 加 "theme":"auto"；终端组件记下 ?2031 的开关，白板换深浅色时主动发 CSI ? 997 ; 1|2 n。用一个假装成 xterm 的脚本 attach 真 tmux、跑真 claude，深→浅→深都跟着变。
 - **好处**：不改用户的配置文件；深浅色切换时开着的 claude 也跟着变。
 - **代价**：用户选的色弱（daltonized）、ANSI 主题在 AgentDeck 里会换成普通深浅色；codex 等其他 agent 还没看；已经开着的 claude 要重开才拿到新参数。
+
+<a id="dr-47"></a>
+
+### DR-47 Electron 的 net.fetch 不支持 redirect: manual
+
+状态：已解决 · 出处：apps/desktop/src/main/browser/ping-fetch.ts · 旧编号 —
+
+相关：TC-27、IS-43、IS-44
+
+- **原来以为**：主进程的 ping 用 net.fetch（走系统代理）加 redirect: manual，服务回了任何 HTTP 响应（包括 3xx）就算在响应。
+- **实际情况**：2026-10-24 用户打开 google.com 显示 “isn’t responding”。实测 Electron 45：net.fetch 带 redirect: manual 时，只要地址跳转就抛 “Redirect was cancelled”（google.com → 301）；不跳转的地址（www.google.com）正常。所以所有会跳转的地址都被当成没响应，包括把 / 跳到 /login 的本地 dev server。另外 google、github 都带 X-Frame-Options，就算 ping 通了也嵌不进白板的 iframe。
+- **决策**：ping 改用 net.request（redirect: manual）：收到 redirect 或 response 事件就记下状态码、abort，不读正文；不是 manual 的请求仍用 net.fetch。外部网站能不能在白板里显示另外决定（IS-44）。
+- **好处**：会跳转的地址判断正确；仍走 session 的网络栈和系统代理；有单测，也在真 Electron 里跑过。
+- **代价**：多了一层自己写的请求代码；外部网站在 MVP 里仍然只能 Open in browser。
 
 ## 还没验证的
 

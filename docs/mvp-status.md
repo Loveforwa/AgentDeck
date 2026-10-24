@@ -6,7 +6,7 @@
 
 ## 一句话
 
-第一个能打开、能用的版本已经组装好。39 项基础功能里 33 项有自动测试，2 项只有手动验证，4 项没做完；26 条端到端用例里 8 条当前有问题、3 条在真窗口里验证过；问题清单 42 条（P0 8、P1 14、P2 16、P3 4）。
+第一个能打开、能用的版本已经组装好。39 项基础功能里 33 项有自动测试，2 项只有手动验证，4 项没做完；27 条端到端用例里 8 条当前有问题、3 条在真窗口里验证过；问题清单 44 条（P0 8、P1 15、P2 17、P3 4）。
 
 ## 已经实现的基础功能
 
@@ -106,7 +106,7 @@
 | R1 | 快捷键 | 完成，有自动测试 | 快捷键分发 + 菜单 | 菜单项触发 ⌘B ⌘W | 真键盘在网页里没试 |
 | R2 | 端到端验收 | 部分完成 / 未做 | 没有 | 没有 | 没有 Playwright，14 条验收场景都没自动化 |
 
-## 端到端用例（26 条，TC-01 到 TC-14 是 14 条验收场景）
+## 端到端用例（27 条，TC-01 到 TC-14 是 14 条验收场景）
 
 ### TC-02 基于 main 新建一个分支工作区，开箱即用
 
@@ -318,6 +318,16 @@ P1 · 部分验证 · 关联问题 IS-42 · 相关调研 DR-46
 - **最终效果**：不用改自己的 claude 配置，在 AgentDeck 里不管深浅色字都看得清
 - **当前情况**：已修：2026-10-24 用户在深色白板上看到 claude 的问题标题是黑字、输入框是白条（IS-42）。用独立 tmux 3.6a + claude 2.1.291 模拟整条链路验证过（深→浅→深都跟着变）；已经开着的 claude 要重开才生效
 
+### TC-27 网页窗口打开会跳转的地址，不误报“没响应”
+
+P1 · 部分验证 · 关联问题 IS-43 IS-44 · 相关调研 DR-47
+
+- **前置要求**：AgentDeck 重启过（ping 在主进程里）；一个会把 / 跳到别处的地址：https://google.com/（跳到 www），或 dev server 里把 / 跳到 /login 的项目
+- **操作步骤**：1. 网页窗口地址栏输入 https://google.com/ 回车；2. 再打开一个会把 / 跳到 /login 的本地地址
+- **UI / 后台预期表现**：UI：不出现 “isn’t responding”。google 这类拒绝被嵌入的外部网站显示 “This page can’t be shown on the board.” 和 Open in browser；本地地址跟着跳到 /login 并正常显示。 后台：ping 收到 301/302 就算有响应，不跟过去。
+- **最终效果**：会跳转的网站和本地服务都能正常判断
+- **当前情况**：已修：2026-10-24 用户打开 google.com 显示 “isn’t responding”（IS-43）：Electron 的 net.fetch 在 redirect: manual 时遇到跳转就抛错。改用 net.request 后，在真 Electron 里 google.com → 301、github.com/login → 200；外部网站嵌进白板本身还没做（见 IS-44）
+
 ### TC-09 把终端拉小成摘要卡，腾出地方；缩小白板时终端仍看得清
 
 P2 · 部分验证 · 关联问题 IS-23 IS-41 · 相关调研 DR-06
@@ -368,7 +378,7 @@ P2 · 未实现 · 关联问题 IS-35 · 相关调研 DR-14 DR-34
 - **最终效果**：重启不丢上下文
 - **当前情况**：属于 MVP 完整版（M4 · X6），还没做
 
-## 问题清单（42 条）
+## 问题清单（44 条）
 
 ### P0 · 阻塞 MVP 验收
 
@@ -401,6 +411,7 @@ P2 · 未实现 · 关联问题 IS-35 · 相关调研 DR-14 DR-34
 | IS-40 | 缺陷 | 终端窗口 | agent 输出里的 emoji（✅ ❌ ⚡ ⏳ 🙂 🤖 等）后面的字错位、重叠：xterm 默认按 Unicode 6 算宽度，emoji 算一格，tmux 算两格 | 加载 @xterm/addon-unicode11 并切到 Unicode 11（实测和 tmux 3.6a 全部吻合） | TC-25 | 已解决 |
 | IS-41 | 缺陷 | 白板 · 终端窗口 | ⌘− 稍微缩小一点（低于 75%）所有终端就只剩最下面 3 行、上面一大片空白，看起来像不渲染了：原设计低于 75% 一律变摘要卡，太早；而且窗口很大时也只显示 3 行 | 缩放门槛改成 50%；窗口本身够大、只是白板缩小时，显示整屏文字快照（每秒刷新），拖小的窗口仍然是 3 行摘要卡 | TC-09 | 已解决 |
 | IS-42 | 缺陷 | 终端窗口 · agent 适配 | 深色白板上 claude 的问题标题、选项是黑字，输入框是一条白底：用户 ~/.claude.json 里 theme 是 light（给平时的浅色终端选的），claude 在 AgentDeck 里照样用浅色主题 | 启动 claude 时 --settings 里加 "theme":"auto"（盖过全局配置、不改文件），claude 用 OSC 11 问背景色；白板切深浅色时终端组件发 CSI ? 997 n，tmux 转给 claude 重新判断 | TC-26 | 已解决 |
+| IS-43 | 缺陷 | 网页窗口 | 网页窗口打开 https://google.com/ 显示 “isn’t responding”：ping 用的 Electron net.fetch 在 redirect: manual 时遇到任何跳转都抛 “Redirect was cancelled”，所有会跳转的地址（google.com、把 / 跳到 /login 的 dev server）都被当成没响应 | ping 改用 net.request（redirect: manual，收到跳转或响应头就算有响应，不读正文），仍走系统代理 | TC-27 | 已解决 |
 
 ### P2 · 次要体验、完整性、性能
 
@@ -422,6 +433,7 @@ P2 · 未实现 · 关联问题 IS-35 · 相关调研 DR-14 DR-34
 | IS-31 | 清理 | git | 开发期间留下十几个已合并的分支和 worktree，面板 Repository 区和分支下拉里全列出来了（IS-37 就是点到了其中一个） | 确认后删掉已合并的 claude/* 分支和对应 worktree |  | 待处理 |
 | IS-35 | 缺失 | 整体 | 重启电脑后恢复会话（验收场景 14）还没做 | 按计划在 M4 做 | TC-14 | 待处理 |
 | IS-36 | 缺失 | apps/desktop | 没有打包流程：better-sqlite3 的 asarUnpack、node-pty spawn-helper 权限、tmux.conf 和 agentdeck-notify 的资源路径都还没进打包配置 | 加 electron-builder 配置，产出 .app | TC-20 | 待处理 |
+| IS-44 | 缺口 | 网页窗口 | google、github 这类外部网站带 X-Frame-Options（SAMEORIGIN / deny），在白板的 iframe 里只能显示 “This page can’t be shown on the board.” + Open in browser；MVP 只给本地来源去掉这些头 | P1 的 <webview partition> 模式（DR 里实测过能登录、能跟着白板缩放）；或者对外部网站也去掉 X-Frame-Options，但 SameSite 的登录 cookie 仍然带不上 | TC-27 | 待处理 |
 
 ### P3 · 清理
 

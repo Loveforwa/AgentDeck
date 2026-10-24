@@ -328,6 +328,13 @@ ENTRIES = [
          pros='不改用户的配置文件；深浅色切换时开着的 claude 也跟着变。',
          cons='用户选的色弱（daltonized）、ANSI 主题在 AgentDeck 里会换成普通深浅色；codex 等其他 agent 还没看；已经开着的 claude 要重开才拿到新参数。',
          status='done', where='packages/agent-adapters/src/adapters/claude.ts、packages/ui/widgets/terminal/src/queries.ts'),
+    dict(id='DR-47', old='—', cases=['TC-27'], issues=['IS-43', 'IS-44'], stage='E', title='Electron 的 net.fetch 不支持 redirect: manual',
+         assumed='主进程的 ping 用 net.fetch（走系统代理）加 redirect: manual，服务回了任何 HTTP 响应（包括 3xx）就算在响应。',
+         found='2026-10-24 用户打开 google.com 显示 “isn’t responding”。实测 Electron 45：net.fetch 带 redirect: manual 时，只要地址跳转就抛 “Redirect was cancelled”（google.com → 301）；不跳转的地址（www.google.com）正常。所以所有会跳转的地址都被当成没响应，包括把 / 跳到 /login 的本地 dev server。另外 google、github 都带 X-Frame-Options，就算 ping 通了也嵌不进白板的 iframe。',
+         decision='ping 改用 net.request（redirect: manual）：收到 redirect 或 response 事件就记下状态码、abort，不读正文；不是 manual 的请求仍用 net.fetch。外部网站能不能在白板里显示另外决定（IS-44）。',
+         pros='会跳转的地址判断正确；仍走 session 的网络栈和系统代理；有单测，也在真 Electron 里跑过。',
+         cons='多了一层自己写的请求代码；外部网站在 MVP 里仍然只能 Open in browser。',
+         status='done', where='apps/desktop/src/main/browser/ping-fetch.ts'),
 
     # ---- F 待验证 ----
     dict(id='DR-42', old='F1', cases=[], issues=[], stage='F', title='claude 能不能把对话 fork 到另一个目录',

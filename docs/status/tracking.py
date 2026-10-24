@@ -6,6 +6,14 @@
 # 状态：⚠ 当前有问题 / 未验证 / 部分验证 / 已验证 / 未实现
 CASES = [
     # ---- 当前有问题 ----
+    dict(id='TC-27', p='P1', status='部分验证',
+         scene='网页窗口打开会跳转的地址，不误报“没响应”',
+         pre='AgentDeck 重启过（ping 在主进程里）；一个会把 / 跳到别处的地址：https://google.com/（跳到 www），或 dev server 里把 / 跳到 /login 的项目',
+         steps='1. 网页窗口地址栏输入 https://google.com/ 回车\n2. 再打开一个会把 / 跳到 /login 的本地地址',
+         expect='UI：不出现 “isn’t responding”。google 这类拒绝被嵌入的外部网站显示 “This page can’t be shown on the board.” 和 Open in browser；本地地址跟着跳到 /login 并正常显示。\n后台：ping 收到 301/302 就算有响应，不跟过去。',
+         result='会跳转的网站和本地服务都能正常判断',
+         issue='已修：2026-10-24 用户打开 google.com 显示 “isn’t responding”（IS-43）：Electron 的 net.fetch 在 redirect: manual 时遇到跳转就抛错。改用 net.request 后，在真 Electron 里 google.com → 301、github.com/login → 200；外部网站嵌进白板本身还没做（见 IS-44）',
+         rel='IS-43 IS-44'),
     dict(id='TC-26', p='P1', status='部分验证',
          scene='深色白板上 claude 的字看得清，切换深浅色后跟着变',
          pre='自己的 ~/.claude.json 里 theme 是 light（或 dark）；AgentDeck 重启过（启动参数在主进程里）；新开一个 claude 终端',
@@ -268,10 +276,13 @@ ISSUES = [
     ('IS-40', 'P1', '缺陷', '终端窗口', 'agent 输出里的 emoji（✅ ❌ ⚡ ⏳ 🙂 🤖 等）后面的字错位、重叠：xterm 默认按 Unicode 6 算宽度，emoji 算一格，tmux 算两格', '让 claude 回答里带 emoji，对比系统终端', '回答看不清', '加载 @xterm/addon-unicode11 并切到 Unicode 11（实测和 tmux 3.6a 全部吻合）', 'TC-25'),
     ('IS-41', 'P1', '缺陷', '白板 · 终端窗口', '⌘− 稍微缩小一点（低于 75%）所有终端就只剩最下面 3 行、上面一大片空白，看起来像不渲染了：原设计低于 75% 一律变摘要卡，太早；而且窗口很大时也只显示 3 行', '⌘− 缩到 73% 左右看终端', '缩小看全局时什么都看不清', '缩放门槛改成 50%；窗口本身够大、只是白板缩小时，显示整屏文字快照（每秒刷新），拖小的窗口仍然是 3 行摘要卡', 'TC-09'),
     ('IS-42', 'P1', '缺陷', '终端窗口 · agent 适配', '深色白板上 claude 的问题标题、选项是黑字，输入框是一条白底：用户 ~/.claude.json 里 theme 是 light（给平时的浅色终端选的），claude 在 AgentDeck 里照样用浅色主题', '全局 theme 设成 light，在深色白板上开 claude，让它用 AskUserQuestion 提问', '深色模式下 agent 的问题几乎看不清', '启动 claude 时 --settings 里加 "theme":"auto"（盖过全局配置、不改文件），claude 用 OSC 11 问背景色；白板切深浅色时终端组件发 CSI ? 997 n，tmux 转给 claude 重新判断', 'TC-26'),
+    ('IS-43', 'P1', '缺陷', '网页窗口', '网页窗口打开 https://google.com/ 显示 “isn’t responding”：ping 用的 Electron net.fetch 在 redirect: manual 时遇到任何跳转都抛 “Redirect was cancelled”，所有会跳转的地址（google.com、把 / 跳到 /login 的 dev server）都被当成没响应', '网页窗口打开 https://google.com/', '会跳转的网站、带登录跳转的本地服务都打不开', 'ping 改用 net.request（redirect: manual，收到跳转或响应头就算有响应，不读正文），仍走系统代理', 'TC-27'),
+    ('IS-44', 'P2', '缺口', '网页窗口', 'google、github 这类外部网站带 X-Frame-Options（SAMEORIGIN / deny），在白板的 iframe 里只能显示 “This page can’t be shown on the board.” + Open in browser；MVP 只给本地来源去掉这些头', '网页窗口打开 https://www.google.com/', '想在白板上顺手查资料、看文档时只能跳去系统浏览器', 'P1 的 <webview partition> 模式（DR 里实测过能登录、能跟着白板缩放）；或者对外部网站也去掉 X-Frame-Options，但 SameSite 的登录 cookie 仍然带不上', 'TC-27'),
 ]
 
 # 已经处理的问题：处理状态和备注
 RESOLVED = {
+    'IS-43': '2026-10-24 已修：ping 改用 net.request，加了测试；真 Electron 里 google.com → 301、github.com/login → 200。要重启 AgentDeck 才生效',
     'IS-42': '2026-10-24 已修：claude 启动时主题设成 auto，深浅色切换时通知 tmux；独立 tmux 里模拟整条链路验证通过。要重启 AgentDeck、重开 claude 终端才生效',
     'IS-41': '2026-10-24 已修：缩放门槛 75% 改 50%；缩小时显示整屏文字快照，加了测试。正在运行的 AgentDeck 已热更新',
     'IS-39': '2026-10-24 已修（3ceabfb）：scrollback 改成 1000，固定种子的复现测试通过；正在运行的 AgentDeck 已热更新',
