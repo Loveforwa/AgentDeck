@@ -3,7 +3,7 @@
 实现过程中和一开始设想不一样的地方：原来以为什么、实际是什么、怎么决定的、好处和代价。
 由 `docs/research/build.py` 从 `docs/research/entries.py` 生成，不要直接改这个文件。更新于 2026-10-25。
 
-共 57 条：已解决 36，进行中 13，推迟 5，待验证 3。
+共 58 条：已解决 37，进行中 13，推迟 5，待验证 3。
 
 编号规则（全项目统一）：DR-xx 调研记录 · TC-xx 端到端用例 · IS-xx 问题 · F1、T2、X3 等是 MVP 任务表的任务编号。用例和问题在 MVP 验收报告（docs/status/index.html）里；每条调研下面列出相关的用例和问题。
 
@@ -69,6 +69,7 @@
   - [DR-55 token 用量从哪读：CC Switch 还是自己读会话文件](#dr-55)（已解决）
   - [DR-56 Auto-approve 怎么替各 agent 按“允许一次”](#dr-56)（已解决）
   - [DR-57 React Flow 手势的两个坑](#dr-57)（已解决）
+  - [DR-58 各 agent 怎么在启动时挂上 AgentDeck 的 MCP](#dr-58)（已解决）
   - [DR-42 claude 能不能把对话 fork 到另一个目录](#dr-42)（待验证）
   - [DR-43 Approve all 发的“允许一次”按键对不对](#dr-43)（待验证）
   - [DR-44 经过 tmux 后的手感，要人在真界面上确认](#dr-44)（待验证）
@@ -820,6 +821,18 @@
 - **决策**：窗口节点和内容一律 nowheel，没聚焦时盖层把滚轮转给内容（终端再派发给 xterm，网页让盖层暂时不接指针）；panActivationKeyCode 设为 null，空格平移自己实现，焦点在终端、输入框、可编辑区时不拿空格。
 - **好处**：两指滚动永远给窗口；终端里空格、Shift+空格正常。
 - **代价**：缩得很小时窗口变成摘要卡，在卡上也不能两指平移白板；刚点过按钮时焦点在按钮上，空格先给按钮。
+
+<a id="dr-58"></a>
+
+### DR-58 各 agent 怎么在启动时挂上 AgentDeck 的 MCP
+
+状态：已解决 · 出处：v3 N1 · packages/agent-adapters、packages/mcp-server · 旧编号 —
+
+- **原来以为**：每个 agent 都有像 claude --mcp-config 一样的启动参数。
+- **实际情况**：codex 0.164 可以用 -c mcp_servers.agentdeck.*（bearer_token_env_var、env_http_headers）挂，命令行上只有环境变量名，和用户配置合并；用临时 CODEX_HOME 跑 codex app-server 不连模型也能测通 MCP。omp 18.0.4 用 --plugin-dir 加载 Claude 插件格式的目录，清单里的 url、headers 支持 ${VAR}。pi 本身不支持 MCP（README：“No MCP.”）。kimi 2.3.1 没有挂 MCP 的启动参数，只能改 KIMI_CODE_HOME（连账号一起换）或往用户仓库写 .mcp.json，而且要用户信任过那个目录。
+- **决策**：claude、codex、omp 挂上；pi、kimi 跳过并在 agent-adapters AGENTS.md 写明原因。需求里“自动装载 skill”先用 MCP 连接时附带的说明代替，不往用户配置里写 skill。
+- **好处**：不改用户配置，token 不进命令行。
+- **代价**：pi、kimi 用不了白板工具；omp 的连接没在真 TUI 里核对。
 
 <a id="dr-42"></a>
 
