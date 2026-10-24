@@ -100,6 +100,20 @@ export function menuItems(c: BoardController, menu: MenuState, available: { term
           onSelect: () => c.toggleMaximize(id),
         },
       ];
+      // 窗口类型自己的菜单项（WindowTypeDefinition.menu），选中时作为 WindowCommand 发给窗口；例如终端的
+      // Clear、Restart、Restart and resume conversation。“Open in system terminal” 白板下面已经有一项，不重复
+      const own = (c.definitionOf(w)?.menu ?? []).filter((m) => m.id !== 'open-in-system-terminal');
+      if (own.length > 0) {
+        items.push(
+          { type: 'separator' },
+          ...own.map((m) => ({
+            id: `window-${m.id}`,
+            label: m.label,
+            ...(m.shortcut ? { shortcut: m.shortcut } : {}),
+            onSelect: () => void c.sendWindowCommand(id, m.id),
+          })),
+        );
+      }
       if (isTerminal(w)) {
         const data = w.data as Partial<TerminalWindowData>;
         const others = s.frames.filter((f) => f.workspaceId !== w.workspaceId);

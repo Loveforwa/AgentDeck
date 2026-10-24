@@ -344,6 +344,7 @@ ISSUES = [
     ('IS-58', 'P2', '设计', '源代码管理面板', 'Repository 区列出一长串分支（多数是开发留下的旧 worktree 分支），看不出分支、合并、变基的关系', '看面板的 Repository 区', '找不到真正关心的分支', 'v3 N5：换成提交图，已合并的旧分支折起来；IS-31 的清理也能缓解', ''),
     ('IS-59', 'P2', '设计', '白板', '在终端上两指滑动有时被白板拿去平移，和终端滚动冲突；希望白板平移用三指', '鼠标在终端上两指滑动', '想滚终端却挪了白板', 'v3 N6：先调研（应用拿不到三指原始事件，DR-53）', ''),
     ('IS-60', 'P3', '需求不一致', '白板 · agent-adapters', 'Approve all（X3）原定 ⌘⇧J，S3 已把 ⌘⇧J 用作“上一个在等你的窗口”', '对照 MVP 任务表 X3 和现在的快捷键', '做 X3 时会冲突', 'v3 N8：Approve all 另找按键（例如 ⌘⌥J）', ''),
+    ('IS-61', 'P1', '缺陷', '白板 · 终端窗口', '终端标题栏右键菜单里没有终端自己的项（Clear、Restart、Restart and resume conversation）：白板的窗口菜单是写死的，没读窗口类型声明的 menu（IS-18 的一部分）', '右键 claude 的标题栏', '“重启并接着对话”等功能界面上点不到', '白板把 WindowTypeDefinition.menu 的项加进窗口菜单，选中时作为 WindowCommand 发给窗口；Open in system terminal 不重复', 'TC-22'),
 ]
 
 # 用户在验收报告网页上填的验收结果（2026-10-24 从网页数据库同步的快照）。网页打开后以数据库为准；
@@ -375,6 +376,7 @@ ACCEPTED = {
 
 # 已经处理的问题：处理状态和备注
 RESOLVED = {
+    'IS-61': '2026-10-24 已修：窗口菜单读 WindowTypeDefinition.menu；在单独的实例里截图确认 Clear、Restart、Restart and resume conversation 都出现了',
     'IS-52': '2026-10-24 已做（MVP v2 V2，第 0 波）：红绿灯状态，contracts 0.1.6 加 running 色调和悬停说明',
     'IS-50': '2026-10-24 已改：确认框画在终端窗口里，标题带对话主题；要重启 AgentDeck（tmux-host 在主进程里）',
     'IS-45': '2026-10-24 已修（S3，合进 main e9b3673）：⌘J 闪一下和 “2/3 waiting”，⌘⇧J 反向，⌘⇧] / ⌘⇧[ 切窗口',

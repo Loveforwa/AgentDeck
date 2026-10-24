@@ -99,4 +99,46 @@ describe('context menus (B3)', () => {
     ]);
     c.dispose();
   });
+
+  it('a window type’s own menu items show up in its title menu and send commands (Restart and resume conversation)', async () => {
+    const registry = createWindowRegistry();
+    registry.register({
+      type: 'terminal',
+      label: 'Terminal',
+      defaultSize: { w: 560, h: 360 },
+      minSize: { w: 110, h: 60 },
+      component: () => null,
+      create: (init: object) => ({ terminalId: null, ...init }),
+      menu: [
+        { id: 'clear', label: 'Clear', shortcut: '⌘K' },
+        { id: 'restart', label: 'Restart' },
+        { id: 'restart-resume', label: 'Restart and resume conversation' },
+        { id: 'open-in-system-terminal', label: 'Open in system terminal' },
+      ],
+    });
+    const c = new BoardController({ api: createFakeApi(), registry });
+    await c.start();
+    const id = 'win-login-claude' as WindowId;
+    const got: string[] = [];
+    c.onWindowCommand(id, (cmd) => got.push(cmd));
+    const items = menuItems(c, { screen: { x: 0, y: 0 }, flow: { x: 0, y: 0 }, target: { kind: 'window', windowId: id } }, { terminal: true, browser: true });
+    expect(items.map((i) => (i.type === 'separator' ? '-' : i.label))).toEqual([
+      'Rename…',
+      'Maximize',
+      '-',
+      'Clear',
+      'Restart',
+      'Restart and resume conversation',
+      '-',
+      'Copy folder path',
+      'Open in system terminal',
+      'Open in another workspace',
+      '-',
+      'Close',
+    ]);
+    const resume = items.find((i) => i.type !== 'separator' && i.label === 'Restart and resume conversation');
+    if (resume && resume.type !== 'separator') resume.onSelect?.();
+    expect(got).toEqual(['restart-resume']);
+    c.dispose();
+  });
 });
