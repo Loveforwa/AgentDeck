@@ -117,6 +117,7 @@ export function App({ controller, loaded, startup }: { controller: BoardControll
         api={window.agentdeck}
         controller={controller}
         onOpenSettingsFile={openSettingsFile}
+        trafficLights={startup.trafficLights === true}
         renderPanel={({ workspace }) => <SidePanel workspace={workspace} controller={controller} />}
       />
       {notices.length > 0 ? (

@@ -152,11 +152,16 @@ export const size = {
   row: '24px',
 } as const;
 
-/** 圆角三档：控件 6、窗口 8、框和面板 12。inset 只给嵌在 6 圆角容器里的高亮（菜单行），不算单独一档。 */
+/**
+ * 圆角（MVP v2 · V1：到处是圆角，没有直角）：控件 6、窗口 8、菜单和对话框 8、右侧面板 10、工作区框 12。
+ * inset 只给嵌在圆角容器里的高亮（菜单行），不算单独一档。
+ */
 export const radius = {
   inset: '4px',
   control: '6px',
   window: '8px',
+  menu: '8px',
+  panel: '10px',
   frame: '12px',
 } as const;
 
@@ -193,6 +198,8 @@ export const vars = {
     inset: 'var(--radius-inset)',
     control: 'var(--radius-control)',
     window: 'var(--radius-window)',
+    menu: 'var(--radius-menu)',
+    panel: 'var(--radius-panel)',
     frame: 'var(--radius-frame)',
   },
   motion: 'var(--motion)',

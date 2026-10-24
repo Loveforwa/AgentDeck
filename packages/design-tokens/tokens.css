@@ -24,6 +24,8 @@
   --radius-inset: 4px;
   --radius-control: 6px;
   --radius-window: 8px;
+  --radius-menu: 8px;
+  --radius-panel: 10px;
   --radius-frame: 12px;
   --motion-duration: 140ms;
   --motion-ease: cubic-bezier(0.2, 0, 0, 1);

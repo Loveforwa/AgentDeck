@@ -188,9 +188,10 @@ describe('Settings dialog (TC-15)', () => {
     expect(within(dialog()).queryByRole('button', { name: 'Open settings.json' })).toBeNull();
   });
 
-  it('Projects ▾ › Project settings… opens it on that project', async () => {
+  it('project menu › Project settings… opens it on that project', async () => {
     const { c } = await setup();
-    fireEvent.click(screen.getByRole('button', { name: /Projects/ }));
+    // 一行顶栏（MVP v2 · V1）：项目菜单在左边，没有聚焦时按钮上写 My Board
+    fireEvent.click(screen.getByRole('button', { name: 'My Board' }));
     fireEvent.click(await screen.findByRole('menuitem', { name: /shop/ }));
     fireEvent.click(await screen.findByRole('menuitem', { name: 'Project settings…' }));
     expect(c.state.dialog).toEqual({ kind: 'settings', section: 'projects', projectId: SAMPLE.projects.shop });

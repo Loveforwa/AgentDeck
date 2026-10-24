@@ -52,6 +52,7 @@ import { emit as broadcast, registry } from './services.ts';
 import { defaultSettings, openSettingsFile } from './settings.ts';
 import { createTerminalProxy } from './terminal-service.ts';
 import { createTerminalPortBroker } from './terminal-ports.ts';
+import { mainWindowOptions, usesInsetTitleBar } from './window-options.ts';
 
 const isDev = !app.isPackaged;
 const screenshotPath = process.env['AGENTDECK_SCREENSHOT'] || null;
@@ -326,6 +327,7 @@ async function main(): Promise<void> {
       tmuxError: terminals.startError,
       demo: demo && repoRoot ? { repoPath: repoRoot } : null,
       screenshot: screenshotPath !== null,
+      trafficLights: usesInsetTitleBar(process.platform),
     };
   });
   ipcMain.handle(DESKTOP_IPC.retryTmux, async (e) => {
@@ -386,23 +388,8 @@ async function main(): Promise<void> {
 
   // ---- 窗口 ----
   function createWindow(): BrowserWindow {
-    const win = new BrowserWindow({
-      width: 1440,
-      height: 900,
-      minWidth: 720,
-      minHeight: 480,
-      show: false,
-      title: 'AgentDeck',
-      webPreferences: {
-        preload: join(import.meta.dirname, '../preload/index.cjs'),
-        contextIsolation: true,
-        nodeIntegration: false,
-        sandbox: true,
-        webSecurity: true,
-        // 网页窗口的 webview 模式（外部网站，IS-44）；挂上去的 webview 由 browser/index.ts 锁住
-        webviewTag: true,
-      },
-    });
+    // 选项在 window-options.ts（macOS 上 hiddenInset 标题栏，和顶栏合成一行，MVP v2 · V1）
+    const win = new BrowserWindow(mainWindowOptions(process.platform, join(import.meta.dirname, '../preload/index.cjs')));
     win.once('ready-to-show', () => (screenshotPath ? win.showInactive() : win.show()));
     win.on('focus', () => alerts.focusChanged());
     win.on('blur', () => alerts.focusChanged());

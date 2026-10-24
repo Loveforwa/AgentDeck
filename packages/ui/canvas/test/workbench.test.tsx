@@ -3,7 +3,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import type { WindowComponentProps, WindowId } from '@agentdeck/contracts';
 import { createFakeApi, SAMPLE } from '@agentdeck/fakes';
 import { BoardController } from '../src/controller.ts';
-import { Workbench } from '../src/react/Workbench.tsx';
+import { Workbench, type WorkbenchProps } from '../src/react/Workbench.tsx';
 import { createWindowRegistry } from '../src/registry.ts';
 
 // jsdom 没有这些，React Flow 要用
@@ -26,7 +26,7 @@ function Text(props: WindowComponentProps<{ terminalId: string | null }>) {
   );
 }
 
-function setup() {
+function setup(props: Partial<WorkbenchProps> = {}) {
   const registry = createWindowRegistry();
   registry.register({
     type: 'terminal',
@@ -38,7 +38,7 @@ function setup() {
   });
   const api = createFakeApi();
   const c = new BoardController({ api, registry });
-  render(<Workbench api={api} controller={c} />);
+  render(<Workbench api={api} controller={c} {...props} />);
   return { api, c };
 }
 
@@ -81,8 +81,8 @@ describe('Workbench', () => {
   it('shows the top bar counts and the frames', async () => {
     const { api, c } = setup();
     await waitFor(() => expect(c.state.loaded).toBe(true));
-    expect(screen.getByText('My Board')).toBeTruthy();
-    expect(screen.getByText('3 workspaces · 5 terminals')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'My Board' })).toBeTruthy();
+    expect(screen.getByText('3 workspaces · 6 windows')).toBeTruthy();
     expect(screen.getByRole('button', { name: '1 waiting' })).toBeTruthy();
     act(() => void api.scenario.agentNeedsApproval(SAMPLE.terminals.loginClaude));
     expect(screen.getByRole('button', { name: '2 waiting' })).toBeTruthy();
@@ -137,5 +137,25 @@ describe('Workbench', () => {
     expect(c.state.dialog?.kind).toBe('remove-workspace');
     expect(await screen.findByText('Delete workspace shop · fix/cart-total')).toBeTruthy();
     expect(screen.getByText('claude will be stopped')).toBeTruthy();
+  });
+
+  it('top bar left side follows the focused window: project name and "branch · n windows" (MVP v2 · V1)', async () => {
+    const { c } = setup();
+    await waitFor(() => expect(c.state.loaded).toBe(true));
+    act(() => c.focusWindow('win-login-claude' as WindowId));
+    expect(screen.getByRole('button', { name: 'agentdeck' }).getAttribute('aria-haspopup')).toBe('menu');
+    expect(screen.getByText('feat/login · 2 windows')).toBeTruthy();
+    act(() => c.selectFrame(SAMPLE.workspaces.shopCart));
+    expect(screen.getByRole('button', { name: 'shop' })).toBeTruthy();
+    expect(screen.getByText('fix/cart-total · 2 windows')).toBeTruthy();
+    act(() => c.selectFrame(null));
+    expect(screen.getByRole('button', { name: 'My Board' })).toBeTruthy();
+    expect(screen.getByText('3 workspaces · 6 windows')).toBeTruthy();
+  });
+
+  it('trafficLights leaves room for the macOS window buttons', async () => {
+    const { c } = setup({ trafficLights: true });
+    await waitFor(() => expect(c.state.loaded).toBe(true));
+    expect(document.querySelector('.ad-topbar')?.classList.contains('ad-topbar--traffic-lights')).toBe(true);
   });
 });
