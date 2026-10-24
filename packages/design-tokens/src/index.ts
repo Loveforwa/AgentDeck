@@ -35,6 +35,14 @@ export interface ThemeColors {
   scrim: string;
   /** 只给浮起来的东西：菜单、弹出框、对话框、提示、拖动中的窗口 */
   shadowFloat: string;
+  /** 左下角的小吉祥物 Clawd 的身体。不是 attention，不表示任何状态 */
+  mascot: string;
+  /** Clawd 的眼睛，明暗主题都是深色（橙色身体上要看得见） */
+  mascotEye: string;
+  /** Clawd 手里的东西（杠铃、电脑、碗），跟着底色走 */
+  mascotProp: string;
+  /** Clawd 碗里的饭 */
+  mascotFood: string;
 }
 
 export const light: ThemeColors = {
@@ -54,6 +62,10 @@ export const light: ThemeColors = {
   focus: '#1A1A1A',
   scrim: 'rgba(26, 26, 26, 0.18)',
   shadowFloat: '0 8px 24px rgba(0, 0, 0, 0.08)',
+  mascot: '#D97757',
+  mascotEye: '#1A1A1A',
+  mascotProp: '#383836',
+  mascotFood: '#D9A520',
 };
 
 // 暖深灰，不是纯黑。深色下阴影看不出来，浮起来的东西靠 raised 比 surface 亮一档来区分。
@@ -74,6 +86,10 @@ export const dark: ThemeColors = {
   focus: '#EDEDEA',
   scrim: 'rgba(0, 0, 0, 0.45)',
   shadowFloat: '0 8px 24px rgba(0, 0, 0, 0.32)',
+  mascot: '#D97757',
+  mascotEye: '#1A1A1A',
+  mascotProp: '#A3A39E',
+  mascotFood: '#E3B341',
 };
 
 export const themes = { light, dark } as const;
