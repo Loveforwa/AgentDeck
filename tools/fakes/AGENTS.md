@@ -19,6 +19,7 @@ contracts 里每个服务的内存假实现（任务 F6）。第 2 波各条线�
 | `FakeApprovalService` | ApprovalService | `simulateStuck(terminalId)`、`isAutoApprove(ws)` |
 | `FakeBoardStore` | BoardStore | `saves`、`current()` |
 | `FakeBrowserService` | BrowserService | `setReachable(url, ok)`、`allowedOrigins`、`opened` |
+| `FakeUsageService` | UsageService | `set(id, patch)`（预置用量，watch 着时发 usage.changed）、`watching`；没预置的终端是 no-data |
 | `FakeAppService` | AppService | `queuePickFolder(...)`、`defaultPick`、`calls`、`trashed`、`badge`、`quitRequest`、`windowShown()`、`focusTerminal(id)` |
 | `FakeEventBus` | `on` / `onTerminalData` 背后的总线 | `emit`、`emitTerminalData`、`log`、`eventsOf(type)`、`clearLog()` |
 | `createFakeApi()` | AgentDeckApi | 返回值多了 `fakes`（上面这些实例）、`bus`、`scenario`、`dispose()` |
