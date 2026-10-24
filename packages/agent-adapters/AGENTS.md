@@ -7,7 +7,8 @@
 - **AgentService**（T4）：`list` / `refresh` / `start`。start 用适配器算 LaunchSpec，再调注入的 `TerminalHost.create`。
 - **钩子 socket 服务端**（S1）：`HookServer`，收 `agentdeck-notify` 发来的 HookEnvelope，交给适配器的 `parseHook`。
   小命令本身在 `tools/agentdeck-notify`。
-- **状态机**（S2）：`StatusMachine` 实现 `StatusService`，发 `status.changed`、`agent.turn-end`。`ApprovalServicePlaceholder` 是 P1 的占位。
+- **状态机**（S2）：`StatusMachine` 实现 `StatusService`，发 `status.changed`、`agent.turn-end`。
+- **批准**（PL1 Auto-approve、X3 Approve all）：`ApprovalServiceImpl` 实现 `ApprovalService`，见下面「Auto-approve 和 Approve all」。
 - **后台通知规则**（S4）：`backgroundAlerts()` / `badgeCount()`，纯函数；真正发通知、设角标在 apps/desktop。
 
 不许碰：`packages/contracts`（不够用写进本目录的 `CONTRACT_NOTES.md`）、`apps/desktop`、其他包。
@@ -20,7 +21,8 @@ import { createAgentRuntime, backgroundAlerts } from '@agentdeck/agent-adapters'
 
 const rt = createAgentRuntime({
   env: () => loginShellEnv,                       // docs/decisions.md：$SHELL -ilc env 读一次
-  terminals: tmuxHost,                            // 只用 create
+  terminals: tmuxHost,                            // create；批准用 sendKeys、lastLines
+  approvalRecords: store.approvals,               // 批准记录写进库（不给只在内存里）
   notifyCommand: '/…/agentdeck-notify',           // 绝对路径，见下面「agentdeck-notify 怎么打包」
   agentExtension: '/…/agentdeck-pi-extension.mjs', // pi、omp 用 -e 加载；不给时它们没有钩子
   emit: (e) => sendToRenderer(e),                 // status.changed、agent.turn-end
@@ -48,11 +50,13 @@ tmuxHostEvents.on((e) => rt.onTerminalEvent(e));  // terminal.activity / silence
 | `createDefaultAdapters({ env, agentExtension? })` | `[ClaudeAdapter, CodexAdapter, …已知表里的每一行（KnownAgentAdapter）, ShellAdapter, CustomCommandAdapter]` |
 | `KNOWN_AGENTS` / `KnownAgentAdapter` / `EXTENSION_ENV` | 已知 agent 表、通用适配器、扩展读的环境变量名 |
 | `AgentAdapterExt` | `AgentAdapter` + 可选的 `prepare(ctx)`（launch 前的异步准备，codex 用） |
-| `HookServer` | `start()` / `close()`；`decide` 回调决定 PermissionRequest 回 allow 还是 none（P0 一律 none） |
+| `HookServer` | `start()` / `close()`；`decide` 回调决定 PermissionRequest 回 allow 还是 none（runtime 接 `ApprovalServiceImpl.decide`），先回答再 `onHook`，`ReceivedHook.decision` 是送到了的回答 |
 | `StatusMachine` | `StatusService` + `track` / `forget` / `onHook` / `onTerminalEvent` / `noteInput` / `get` / `pendingRequests` |
-| `ApprovalServicePlaceholder` | P1 之前的占位：approve 返回 unsupported，setAutoApprove 抛 unsupported |
+| `ApprovalServiceImpl` | `ApprovalService`，外加 `decide` / `noteAutoAllowed` / `onStatusEvent`（runtime 接线用）、`isOn(terminalId)` |
+| `autoApproveSupport` / `approvalStrategy` | 每种 agent 的做法（`src/status/support.ts`） |
+| `matchOmpApproval` | omp 的 Approve / Deny 确认框认屏规则（`src/status/screens.ts`） |
 | `backgroundAlerts` / `badgeCount` | S4 规则 |
-| `DEFAULT_DESTRUCTIVE_PATTERNS` | 建议的 Settings 默认值（rm -rf、git push --force、reset --hard、DROP/TRUNCATE、FLUSHDB/ALL、.env） |
+| `DEFAULT_DESTRUCTIVE_PATTERNS` | 建议的 Settings 默认值，在整段命令里找：rm -r/-f、sudo rm、find -delete、git push -f/--force/+refspec、reset --hard、clean -f、checkout -- / .、restore、stash drop/clear、DROP/TRUNCATE/DELETE FROM 无 WHERE、FLUSHDB/ALL、mkfs、dd of=、写 /dev/sd*、chmod -R 777、kubectl delete、terraform destroy、.env |
 
 ## 各 agent 怎么启动
 
@@ -62,9 +66,9 @@ tmuxHostEvents.on((e) => rt.onTerminalEvent(e));  // terminal.activity / silence
 | codex | `codex -c hooks.…（7 条）-c hooks.state={…}` | `codex resume <id> …` | `codex fork <id> …` | `-c` 覆盖 + 信任哈希 | `y` |
 | shell | `$SHELL -l`；带命令时 `$SHELL -l -c <命令>` | 不支持 | 不支持 | 无 | 无 |
 | custom | 按 shell 规则拆开的命令 | 不支持 | 不支持 | 无 | 无 |
-| pi | `pi --session-id <新 uuid>` | `--session <id>` | `--fork <id> --session-id <新 uuid>` | `-e agentdeck-pi-extension.mjs`（0.80.4 起） | 无（pi 没有批准确认框） |
-| omp | `omp`（会话 id 等扩展报） | `--resume <id>` | `--fork <id>`（新 id 等扩展报） | `-e agentdeck-pi-extension.mjs`（18.0 起，更早没验证） | 无（Approve / Deny 选择列表，按键没核对） |
-| kimi | `kimi` | `-S <id>` | 不支持 | 无 | 无 |
+| pi | `pi --session-id <新 uuid>` | `--session <id>` | `--fork <id> --session-id <新 uuid>` | `-e agentdeck-pi-extension.mjs`（0.80.4 起） | 不用（pi 从不请求批准） |
+| omp | `omp`（会话 id 等扩展报） | `--resume <id>` | `--fork <id>`（新 id 等扩展报） | `-e agentdeck-pi-extension.mjs`（18.0 起，更早没验证） | `Up Enter`（读源码得出，**没在真终端核对**；发前先认屏） |
+| kimi | `kimi` | `-S <id>` | 不支持 | 无 | 先不支持（2.3.1 是 `1`，见 known.ts） |
 
 - 用户在 Settings 里加的启动参数放在最后。claude 的 LaunchSpec.env 带 `CLAUDE_CODE_TMUX_TRUECOLOR=1`。
 - `--settings` 的值是一整段 JSON，**线 1 的 tmux-host 建会话时要按参数数组传**（`new-session … -- cmd arg1 arg2`），不要拼成一行 shell 命令，否则要自己转义。
@@ -129,7 +133,7 @@ LaunchSpec.env 带 `AGENTDECK_NOTIFY`（notify 路径）、`AGENTDECK_AGENT`（i
 实测（2026-10-24，pi 0.83.0、omp 18.0.4）：临时 HOME、本地假的 OpenAI 兼容服务（不用账号、不花钱），`--mode rpc`（omp 的提问要 `--mode rpc-ui`）。
 pi：SessionStart（就是 `--session-id` 给的 id）→ UserPromptSubmit → Stop → SessionEnd；`--session <id>` 接回、`--fork <id> --session-id <新>` 都报对了 id。
 omp：`--approval-mode always-ask` 跑 bash，PermissionRequest 带上了 `command`，批准后 UserPromptSubmit、Stop；ask 工具 → Question（问题文字）→ 回答后 UserPromptSubmit → Stop；
-`--resume <id>` 报原 id，`--fork <id>` 报新 id。没在真 TUI 里核对：omp 确认框“允许一次”的按键（所以没有 Approve all）。
+`--resume <id>` 报原 id，`--fork <id>` 报新 id。没在真 TUI 里核对：omp 确认框“允许一次”的按键（PL1 按源码定为 Up Enter，发前先认屏，见下面）。
 真窗口（单独的 AgentDeck 实例、临时 HOME、同一个假模型）：菜单列出 Pi、Oh My Pi；pi 一轮 running → idle → turn-end；omp 的 bash 批准显示 needs-approval（summary 是命令），
 在确认框按 Enter 批准后 running → idle → turn-end；omp 新会话的 id 由 SessionStart 报上来存进库，`--resume <id>` 能接回（omp 只在第一条消息后才写会话文件，没说过话的会话接不回）。
 
@@ -159,6 +163,27 @@ pi 扩展 `agentdeck-pi-extension.mjs` 也要一起放进 Resources（它在 age
 - 破坏性：有命令看命令，没有命令（Edit 这类）看 summary（“Edit /repo/.env”）。名单每次判断时现取，改设置立即生效。
 - 还没 track 就到的钩子留 10 秒，track 时补上（SessionStart 可能比 `TerminalHost.create` 返回还早）。
 - `StatusSnapshot.sessionId` 带着当前会话 id；session-start 换了 id 时即使状态不变也发一次 status.changed（codex、omp 启动时不知道 id，靠它存进库和窗口数据）。
+
+## Auto-approve 和 Approve all（PL1、X3）
+
+规则见 docs/plugins.md、DR-56，代码在 `src/status/approval.ts`（服务）、`support.ts`（每种 agent 的做法）、`auto-approve.ts`（开关）、`screens.ts`（omp 认屏）。
+
+| agent | Auto-approve 怎么按 | Approve all | 核对 |
+| --- | --- | --- | --- |
+| claude | PermissionRequest 钩子回 allow（终端不进 needs-approval）；开关前就在等的、钩子回答没送到的发 `1` | 发 `1` | 钩子实测；按键见 DR-43 |
+| codex | 同上，发 `y`（永远不发 p / a） | 发 `y` | 同上 |
+| omp | 扩展报 PermissionRequest → needs-approval；屏幕上认出 `Allow tool:` 和 Approve / Deny 后发 `Up Enter` | 同左 | 18.0.4 源码，**没在真终端核对**（support 报 verified: false） |
+| pi | 不用按（从不请求批准）；support 报 never-asks | — | — |
+| kimi、shell、custom | 不支持（`setTerminalAutoApprove(id, true)` 抛 unsupported） | unsupported | — |
+
+- 开关：框（`setAutoApprove`，框里的终端包括之后新开的，会清掉框里终端单独的设置）和单个终端（`setTerminalAutoApprove`，单独设置优先，null 跟着框）。
+  打开时框里 / 这个终端已经在等的、不是破坏性的批准请求马上按。每次变化发 `approval.auto-approve-changed`（完整状态）。
+- 不替你答：提问（question：AskUserQuestion、ExitPlanMode、codex request_user_input、MCP elicitation）、破坏性命令。
+  开着 Auto-approve 的终端在等你时发 `approval.needs-you`（reason：destructive / question / couldnt-approve / unsupported；处理完或关掉时 reason 为 null），`autoApproveNeedsYou()` 取当前列表。
+- 发键后 2 秒内状态没离开这条请求的 needs-approval 算 couldnt-approve；自动批准的同一条请求不重试，重新打开开关时会再试。
+- `approve(ids, { by, includeDestructive })`：一条默认算 user（破坏性的也批），多条默认算 approve-all（破坏性的不批，返回 `destructive`，除非 includeDestructive）。同一条请求和 Auto-approve 撞上时只按一次。
+- 记录：每次批准一条 ApprovalRecord（user / approve-all / auto-approve），内存里留最近 1000 条；给了 `approvalRecords` 就写进库，`history()` 从库里读。
+- 开关状态本身只在内存里；随白板保存的是 `FrameNode.autoApprove`、`TerminalWindowData.autoApprove`，apps/desktop 启动、终端接回状态机之后按白板恢复一次。
 
 ## 测试
 

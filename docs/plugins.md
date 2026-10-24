@@ -37,7 +37,7 @@
 
 | 插件 | 终端窗口 | 网页窗口 | 工作区框 | 白板 | 标记 | 状态 |
 | --- | --- | --- | --- | --- | --- | --- |
-| Auto-approve | ✓ claude、codex 走钩子；omp 看屏幕发键；pi 从不问。kimi 暂不支持（DR-56） | ✗ | ✓ 框里所有终端 | ✗ | 终端底边左侧的红色小书签 “Auto-approve”；需要你处理时临时变橙 “Needs you” | 开发中（PL1） |
+| Auto-approve | ✓ claude、codex 走钩子；omp 看屏幕发键；pi 从不问。kimi 暂不支持（DR-56） | ✗ | ✓ 框里所有终端 | ✗ | 终端底边左侧的红色小书签 “Auto-approve”；需要你处理时临时变橙 “Needs you” | 后端做完，界面开发中（PL1） |
 | Usage 用量记录 | ✓ 五种 agent（自己读各 agent 的会话文件，见 DR-55；kimi 新建会话靠推断） | ✗ | 以后（项目用量） | 以后（整台电脑） | 终端上方或下方一条细长圆角条，可拖 | 开发中（PL2） |
 
 ## 不是插件的东西
@@ -55,3 +55,4 @@
 - 2026-10-25：Approve all 不设快捷键。
 - 2026-10-25（第二次）：Auto-approve 先做 claude、codex、omp、pi 四个，kimi 暂不做。书签缩小，只写 “Auto-approve”，红色；没替你按、需要你处理时临时变橙，只写 “Needs you”（原因放在悬停里）。破坏性命令按常见命令匹配（不只看开头），选择题、要打字回答的都照常等。
 - 2026-10-25（第二次）：不接 CC Switch，用量插件改名 Usage，是我们自己的用量记录工具。
+- 2026-10-25：PL1 后端：破坏性命令的默认名单补全（在整段命令里找，见 packages/agent-adapters 的 `DEFAULT_DESTRUCTIVE_PATTERNS`）。替你按不了的时候（破坏性、选择题 / 要你打字、没按成）服务只给原因（`approval.needs-you`），界面统一显示 “Needs you”。

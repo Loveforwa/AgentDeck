@@ -6,7 +6,7 @@ import { connect } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { StatusEvent, TerminalId } from '@agentdeck/contracts';
+import type { StatusEvent, TerminalId, WorkspaceId } from '@agentdeck/contracts';
 import { FakeTerminalHost } from '@agentdeck/fakes';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ClaudeAdapter } from '../src/adapters/claude.ts';
@@ -127,6 +127,42 @@ describe('HookServer', () => {
     await notify('term-1', 'claude', 'Stop', fx.claude.Stop);
     expect(rt.status.get('term-1' as TerminalId)!.status).toBe('idle');
     expect(events.filter((e) => e.type === 'agent.turn-end')).toHaveLength(1);
+  });
+
+  it('Auto-approve end to end: notify prints allow, the terminal never shows needs-approval, a record is kept', async () => {
+    const events: StatusEvent[] = [];
+    const rt = createAgentRuntime({
+      env: () => ({ PATH: '/nowhere' }),
+      terminals: new FakeTerminalHost(),
+      notifyCommand: NOTIFY,
+      emit: (e) => events.push(e),
+      destructivePatterns: () => [String.raw`\brm\s+-rf\b`],
+      socketPath,
+    });
+    server = rt.hookServer;
+    await rt.start();
+    const id = 'term-a' as TerminalId;
+    const ws = 'ws-a' as WorkspaceId;
+    rt.status.track(id, { agent: 'claude', workspaceId: ws, hooks: true, status: 'running' });
+    // 关着：照常等你
+    expect(await notify(id, 'claude', 'PermissionRequest', fx.claude.PermissionRequestBash)).toBe('');
+    expect(rt.status.get(id)!.status).toBe('needs-approval');
+    await notify(id, 'claude', 'PostToolUse', fx.claude.PermissionRequestBash);
+    await rt.approvals.setAutoApprove(ws, true);
+    events.length = 0;
+    const out = await notify(id, 'claude', 'PermissionRequest', fx.claude.PermissionRequestBash);
+    expect(JSON.parse(out)).toEqual({ hookSpecificOutput: { hookEventName: 'PermissionRequest', decision: { behavior: 'allow' } } });
+    expect(rt.status.get(id)!.status).toBe('running');
+    expect(events.filter((e) => e.type === 'status.changed')).toEqual([]);
+    expect(events.filter((e) => e.type === 'approval.auto-approved')).toHaveLength(1);
+    expect((await rt.approvals.history(ws, 10)).map((r) => [r.by, r.request.summary])).toEqual([['auto-approve', 'mkdir agentdeck-probe']]);
+    // 提问、破坏性命令照常等你
+    expect(await notify(id, 'claude', 'PermissionRequest', fx.claude.PermissionRequestAsk)).toBe('');
+    expect(rt.status.get(id)!.status).toBe('needs-reply');
+    const rm = { ...fx.claude.PermissionRequestBash, tool_input: { command: 'rm -rf dist' } };
+    expect(await notify(id, 'claude', 'PermissionRequest', rm)).toBe('');
+    expect(rt.status.get(id)!.status).toBe('needs-approval');
+    expect(await rt.approvals.autoApproveNeedsYou()).toMatchObject([{ terminalId: id, reason: 'destructive' }]);
   });
 
   it('ignores bad lines', async () => {

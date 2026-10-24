@@ -1,6 +1,7 @@
 // 把本包的几块接在一起，给组装阶段（apps/desktop 主进程）一个入口：
 //   AgentService ─onStarted→ StatusMachine.track
-//   HookServer ─onHook→ StatusMachine.onHook
+//   HookServer ─decide→ ApprovalServiceImpl.decide（Auto-approve 的钩子回答）─onHook→ StatusMachine.onHook
+//   StatusMachine 的事件 → ApprovalServiceImpl（按键批准、needs-you）
 //   TerminalHost 的事件 → onTerminalEvent；IPC 层的 terminals.write / sendKeys → noteInput
 // 组装时把 agents / status / approvals 挂到 IPC 上，emit 接到事件通道。
 
@@ -12,13 +13,15 @@ import type { EnvSource } from './env.ts';
 import { hookHint } from './hook-payload.ts';
 import type { HookServerOptions } from './hook-server.ts';
 import { HookServer } from './hook-server.ts';
-import { ApprovalServicePlaceholder } from './status/approval.ts';
+import { ApprovalServiceImpl } from './status/approval.ts';
+import type { ApprovalRecordStore, ApprovalTiming } from './status/approval.ts';
 import { StatusMachine } from './status/machine.ts';
 
 export interface AgentRuntimeOptions {
   /** 登录 shell 的环境。 */
   env: EnvSource;
-  terminals: Pick<TerminalHost, 'create'>;
+  /** create 给 AgentService；sendKeys、lastLines 给 ApprovalService（批准按键、看屏幕），不给时批准一律失败（测试里常不给）。 */
+  terminals: Pick<TerminalHost, 'create'> & Partial<Pick<TerminalHost, 'sendKeys' | 'lastLines'>>;
   /** agentdeck-notify 的绝对路径。 */
   notifyCommand: AbsPath;
   /** agentdeck-pi-extension.mjs 的绝对路径（pi、omp 用 -e 加载它拿状态）。不给时它们没有钩子。 */
@@ -34,15 +37,24 @@ export interface AgentRuntimeOptions {
   socketPath?: string;
   /** 默认 createDefaultAdapters。 */
   adapters?: AgentAdapterExt[];
+  /** 覆盖 Auto-approve 的钩子回答（测试用）。默认 ApprovalServiceImpl.decide。 */
   decide?: HookServerOptions['decide'];
+  /** 批准记录写到哪里（packages/store 的 approvals）。不给时只在内存里。 */
+  approvalRecords?: ApprovalRecordStore;
+  approvalTiming?: ApprovalTiming;
   now?: () => Date;
 }
 
 export function createAgentRuntime(opts: AgentRuntimeOptions) {
   const adapters =
     opts.adapters ?? createDefaultAdapters({ env: opts.env, ...(opts.agentExtension ? { agentExtension: opts.agentExtension } : {}) });
+  // 状态机的事件先交给界面，再给 ApprovalService（按键批准要看状态有没有离开 needs-approval）
+  let approvals: ApprovalServiceImpl | null = null;
   const status = new StatusMachine({
-    emit: opts.emit,
+    emit: (e) => {
+      opts.emit(e);
+      approvals?.onStatusEvent(e);
+    },
     destructivePatterns: opts.destructivePatterns,
     ...(opts.now ? { now: opts.now } : {}),
   });
@@ -56,16 +68,38 @@ export function createAgentRuntime(opts: AgentRuntimeOptions) {
     onStarted: (s) =>
       status.track(s.terminalId, { agent: s.agent, workspaceId: s.workspaceId, hooks: s.hooks, sessionId: s.sessionId }),
   });
+  const approvalService = new ApprovalServiceImpl({
+    status,
+    terminals: {
+      sendKeys: (id, keys) => (opts.terminals.sendKeys ? opts.terminals.sendKeys(id, keys) : Promise.reject(new Error('sendKeys not available'))),
+      lastLines: (id, n) => (opts.terminals.lastLines ? opts.terminals.lastLines(id, n) : Promise.resolve([])),
+    },
+    approveKeys: (agent) => agents.adapter(agent)?.approveOnceKeys ?? null,
+    destructivePatterns: opts.destructivePatterns,
+    emit: opts.emit,
+    ...(opts.approvalRecords ? { records: opts.approvalRecords } : {}),
+    ...(opts.approvalTiming ? { timing: opts.approvalTiming } : {}),
+    ...(opts.now ? { now: opts.now } : {}),
+  });
+  approvals = approvalService;
   const hookServer = new HookServer({
     ...(opts.socketPath ? { socketPath: opts.socketPath } : {}),
     adapterFor: (agent) => agents.adapter(agent),
-    onHook: (h) => status.onHook(h.terminalId, h.event, hookHint(h.hookName, h.envelope.payload)),
-    ...(opts.decide ? { decide: opts.decide } : {}),
+    onHook: (h) => {
+      // Auto-approve 已经用钩子放行：agent 不会显示确认框，终端也不进 needs-approval（书签上记一次）
+      if (h.decision === 'allow' && h.event?.type === 'permission-request') {
+        approvalService.noteAutoAllowed(h);
+        status.onHook(h.terminalId, null);
+        return;
+      }
+      status.onHook(h.terminalId, h.event, hookHint(h.hookName, h.envelope.payload));
+    },
+    decide: opts.decide ?? ((h) => approvalService.decide(h)),
   });
   return {
     agents,
     status,
-    approvals: new ApprovalServicePlaceholder(),
+    approvals: approvalService,
     hookServer,
     onTerminalEvent: (event: TerminalEvent) => status.onTerminalEvent(event),
     noteInput: (terminalId: TerminalId) => status.noteInput(terminalId),

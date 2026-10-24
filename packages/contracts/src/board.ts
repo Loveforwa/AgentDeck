@@ -48,6 +48,11 @@ export interface TerminalWindowData {
   sessionId: AgentSessionId | null;
   /** Shell 恢复时填进输入行但不运行的命令，例如 'pnpm dev'。 */
   startCommand: string | null;
+  /**
+   * PL1：这个终端单独的 Auto-approve 设置（ApprovalService.setTerminalAutoApprove）。
+   * true 单独开，false 框开着但它单独关；不填或 null 跟着框（FrameNode.autoApprove）。
+   */
+  autoApprove?: boolean | null;
 }
 
 export interface BrowserWindowData {

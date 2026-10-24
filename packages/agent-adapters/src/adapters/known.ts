@@ -10,10 +10,18 @@
 //        扩展事件 agent_settled 0.80.4 起才有（CHANGELOG）。没有批准确认框，也没有内置的提问工具。
 //   omp  18.0.4（npm @oh-my-pi/pi-coding-agent，pi 的分支，跑在 bun 上）：--help 有 -r/--resume[=<id 前缀>]、-e；
 //        --fork <id> 不在 --help 里，但源码 cli/flag-tables.ts 有，main.ts 按 id 前缀找会话再 forkFrom。
-//        新会话的 id 启动时不知道，要等扩展的 session_start 报上来。批准确认框是 Approve / Deny 的选择列表，
-//        “允许一次”的按键没核对，所以 approveOnceKeys 为 null（不出现 Approve all）。提问工具叫 ask。
-//   kimi 0.29.1（~/.kimi-code/bin/kimi）：--help 有 -S/--session [id]（接回指定会话）、-V/--version。
-//        没有 fork，没有钩子或扩展，会话 id 启动时不知道（所以实际上接不回，除非以后能拿到 id）。
+//        新会话的 id 启动时不知道，要等扩展的 session_start 报上来。提问工具叫 ask。
+//        批准确认框（2026-10-25 读源码，PL1）：src/extensibility/extensions/wrapper.ts 里 select("Allow tool: <name>\n…", ["Approve", "Deny"])，
+//        选择列表 src/modes/components/hook-selector.ts 的 ↑ 到顶就停、不绕回，所以 approveOnceKeys = Up Enter 一定选中 Approve
+//        （只这一次，omp 的选择列表没有“总是允许”）。**没在真终端里核对**：ApprovalService 发键前先在屏幕上认出
+//        Allow tool: 和 Approve / Deny（status/screens.ts），认不出就不发；autoApproveSupport 报 verified: false。
+//   kimi 2.3.1（~/.kimi-code/bin/kimi，2026-10-24 从 0.29.1 升上来，0.29 的核对记录作废）：-S/--session [id]、-V/--version 还在
+//        （launch 参数沿用 0.29 的核对，2.3.1 没有重新跑 --help）。没有 fork；钩子不能批准，没有扩展；会话 id 启动时不知道。
+//        批准确认框（读 2.3.1 打包的源码，DR-56）：标题 Run this command? / Write this file? / Apply these edits? / Approve <Tool>?，
+//        选项 1. Approve once / 2. Approve for this session / 3. Reject / 4. Reject with feedback，按数字键直接选中提交，
+//        所以“允许一次”是 1。计划确认（Ready to build with this plan?）和 Start a goal? 用同一个面板但选项不同，不能答。
+//        2026-10-25 定：Auto-approve / Approve all 先不支持 kimi（status/support.ts 报 "Not supported for kimi yet"），
+//        所以 approveOnceKeys 仍为 null；以后要做就照上面的规则看屏幕（kimi 没有 needs-approval 状态，要在终端安静下来时看）。
 // 本机没有 gemini、opencode、aider，参数没法核对，先不登记。
 
 import type { AgentKind } from '@agentdeck/contracts';
@@ -48,6 +56,10 @@ export interface KnownAgent {
   extension: { flag: string; turnEnd: 'agent_settled' | 'agent_end'; minVersion: string } | null;
   /** 有提问工具（扩展会把它报成 question）。没有扩展时不算。 */
   askTool: boolean;
+  /**
+   * 确认框里“允许一次”的按键（tmux send-keys 的写法）。null = 没有确认框或没核对。
+   * Auto-approve / Approve all 怎么用它见 status/support.ts。
+   */
   approveOnceKeys: string[] | null;
 }
 
@@ -73,7 +85,8 @@ export const KNOWN_AGENTS: readonly KnownAgent[] = [
     // 本机实测的版本。更早的版本可能也有这些事件，没验证过就按没有处理。
     extension: { flag: '-e', turnEnd: 'agent_end', minVersion: '18.0.0' },
     askTool: true,
-    approveOnceKeys: null,
+    // 没在真终端里核对（见上面的核对记录）：发之前 ApprovalService 会先在屏幕上认出 Approve / Deny
+    approveOnceKeys: ['Up', 'Enter'],
   },
   {
     id: 'kimi',

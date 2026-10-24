@@ -21,8 +21,14 @@ export { hookHint, parseCommonHook, parsePermissionRequest } from './hook-payloa
 export { defaultHookSocketPath, HookServer, parseEnvelope } from './hook-server.ts';
 export type { HookServerOptions, ReceivedHook } from './hook-server.ts';
 export { StatusMachine } from './status/machine.ts';
-export type { HookHint, StatusMachineOptions, TrackOptions } from './status/machine.ts';
-export { ApprovalServicePlaceholder } from './status/approval.ts';
+export type { HookHint, StatusMachineOptions, TrackedTerminal, TrackOptions } from './status/machine.ts';
+export { ApprovalServiceImpl } from './status/approval.ts';
+export type { ApprovalRecordStore, ApprovalServiceOptions, ApprovalStatusSource, ApprovalTiming } from './status/approval.ts';
+export { AutoApproveScopes } from './status/auto-approve.ts';
+export { matchApprovalScreen, matchOmpApproval } from './status/screens.ts';
+export type { ScreenKind, ScreenPrompt } from './status/screens.ts';
+export { approvalStrategy, autoApproveSupport } from './status/support.ts';
+export type { ApprovalStrategy } from './status/support.ts';
 export { compilePatterns, DEFAULT_DESTRUCTIVE_PATTERNS, isDestructive } from './status/destructive.ts';
 export { backgroundAlerts, badgeCount, isWaiting } from './background-alerts.ts';
 export type { AlertInput, AlertOutput, SystemNotification } from './background-alerts.ts';

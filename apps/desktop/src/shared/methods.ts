@@ -47,7 +47,7 @@ export const SERVICE_METHODS = {
   terminals: ['create', 'kill', 'list', 'attach', 'detach', 'write', 'resize', 'sendKeys', 'lastLines', 'attachCommand', 'recentLinks'],
   agents: ['list', 'refresh', 'start'],
   status: ['snapshot'],
-  approvals: ['approve', 'setAutoApprove', 'history'],
+  approvals: ['approve', 'setAutoApprove', 'history', 'setTerminalAutoApprove', 'autoApproveState', 'autoApproveSupport', 'autoApproveNeedsYou'],
   board: ['load', 'save'],
   browser: ['prepare', 'fileUrl', 'openExternal', 'ping'],
 } as const satisfies { readonly [S in ServiceName]: readonly MethodsOf<S>[] };

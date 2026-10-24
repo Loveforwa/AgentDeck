@@ -30,6 +30,7 @@ import {
   type StartAgentRequest,
   type StatusSnapshot,
   type TerminalId,
+  type TerminalWindowData,
 } from '@agentdeck/contracts';
 import { createAgentRuntime, DEFAULT_DESTRUCTIVE_PATTERNS, findExecutable } from '@agentdeck/agent-adapters';
 import { createGitService } from '@agentdeck/git-service';
@@ -179,6 +180,8 @@ async function main(): Promise<void> {
     destructivePatterns: () => settings.get().approvals.destructivePatterns,
     extraArgs: (agent) => settings.get().agents[agent]?.extraArgs ?? [],
     socketPath: paths.hookSocket,
+    // 每次批准（你点的、Approve all、Auto-approve）写进库，Approval history 从库里读（PL1）
+    approvalRecords: store.approvals,
   });
   await rt.start();
   startAppMcp({ registry, emit, workspaceOf: (id) => rt.status.get(id)?.workspaceId, onInput: (id) => rt.noteInput(id) }).then(
@@ -220,6 +223,18 @@ async function main(): Promise<void> {
 
   // 重开应用：tmux 里还活着的终端按库里的记录接回状态机（tmux-host/AGENTS.md「给组装」、agent-adapters/AGENTS.md）
   // 有没有钩子按适配器现在报的能力（claude、codex、带扩展的 pi / omp），不再写死名单。
+  // Auto-approve 的开关随白板保存（FrameNode.autoApprove、TerminalWindowData.autoApprove），运行时以 rt.approvals 为准：
+  // 重开应用、终端接回状态机之后按白板恢复一次（PL1）。界面改开关时调 approvals 的方法，再按 approval.auto-approve-changed 存白板。
+  const restoreAutoApprove = async () => {
+    const board = await store.board.load();
+    for (const f of board.frames) if (f.autoApprove) await rt.approvals.setAutoApprove(f.workspaceId, true);
+    for (const w of board.windows) {
+      const data = w.type === 'terminal' ? (w.data as Partial<TerminalWindowData> | null) : null;
+      if (!data?.terminalId || typeof data.autoApprove !== 'boolean') continue;
+      // 不支持的 agent（例如 kimi）会抛 unsupported，跳过它，不影响别的终端
+      await rt.approvals.setTerminalAutoApprove(data.terminalId, data.autoApprove).catch(() => undefined);
+    }
+  };
   void Promise.all([terminals.list(), rt.agents.list()]).then(
     ([live, infos]) => {
       const hooked = new Set(infos.filter((a) => a.capabilities.hooks).map((a) => a.id));
@@ -236,7 +251,7 @@ async function main(): Promise<void> {
       }
     },
     (e: unknown) => console.warn(`[agentdeck] terminals unavailable: ${e instanceof Error ? e.message : String(e)}`),
-  );
+  ).then(restoreAutoApprove).catch((e: unknown) => console.warn(`[agentdeck] could not restore Auto-approve: ${e instanceof Error ? e.message : String(e)}`));
 
   // ---- 窗口、通知、角标 ----
   let mainWindow: BrowserWindow | null = null;

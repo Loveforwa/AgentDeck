@@ -2,7 +2,6 @@ import type { PendingRequest, RequestId, StatusSnapshot, TerminalId, TerminalSta
 import { describe, expect, it } from 'vitest';
 import { backgroundAlerts, badgeCount } from '../src/background-alerts.ts';
 import { compareVersions, findExecutable, shellQuote, splitCommand } from '../src/env.ts';
-import { ApprovalServicePlaceholder } from '../src/status/approval.ts';
 import { compilePatterns, DEFAULT_DESTRUCTIVE_PATTERNS, isDestructive } from '../src/status/destructive.ts';
 
 function snap(id: string, status: TerminalStatus, pendingId?: string): StatusSnapshot {
@@ -119,14 +118,5 @@ describe('env helpers', () => {
     expect(await findExecutable('sh', { PATH: '/nowhere' })).toBeNull();
     expect(await findExecutable('/bin/sh', {})).toBe('/bin/sh');
     expect(await findExecutable('bin/sh', { PATH: '/' })).toBeNull();
-  });
-});
-
-describe('ApprovalServicePlaceholder (P1)', () => {
-  it('says unsupported for everything', async () => {
-    const a = new ApprovalServicePlaceholder();
-    expect(await a.approve(['r1' as RequestId])).toEqual([{ id: 'r1', ok: false, reason: 'unsupported' }]);
-    await expect(a.setAutoApprove('w' as never, true)).rejects.toMatchObject({ code: 'unsupported' });
-    expect(await a.history('w' as never, 10)).toEqual([]);
   });
 });

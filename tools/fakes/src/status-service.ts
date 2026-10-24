@@ -6,7 +6,11 @@ import type {
   AgentKind,
   ApprovalRecord,
   ApprovalService,
+  ApproveOptions,
   ApproveResult,
+  AutoApproveNeedsYou,
+  AutoApproveState,
+  AutoApproveSupport,
   PendingRequest,
   RequestId,
   StatusService,
@@ -16,7 +20,7 @@ import type {
   TerminalStatus,
   WorkspaceId,
 } from '@agentdeck/contracts';
-import { WAITING_STATUSES } from '@agentdeck/contracts';
+import { isAutoApproveOn, WAITING_STATUSES } from '@agentdeck/contracts';
 import { FakeEventBus } from './bus.ts';
 import { clone, idGenerator, nowIso, sleep } from './util.ts';
 
@@ -205,7 +209,9 @@ export class FakeApprovalService implements ApprovalService {
   private readonly terminals: TerminalHost;
   private readonly approveKeys: (agent: AgentKind) => string[] | null;
   private readonly stuckTimeoutMs: number;
-  private readonly autoOn = new Set<WorkspaceId>();
+  private readonly autoOn = new Map<WorkspaceId, string>();
+  /** 单个终端的设置（PL1）。 */
+  private readonly terminalAuto = new Map<TerminalId, { on: boolean; since: string }>();
   private readonly stuck = new Set<TerminalId>();
   /** 新的在后。 */
   private readonly records: ApprovalRecord[] = [];
@@ -216,7 +222,7 @@ export class FakeApprovalService implements ApprovalService {
     this.approveKeys = opts.approveKeys;
     this.stuckTimeoutMs = opts.stuckTimeoutMs ?? 2000;
     this.status.autoApprove = (pending) => {
-      if (!pending.workspaceId || !this.autoOn.has(pending.workspaceId) || pending.destructive) return null;
+      if (!isAutoApproveOn(this.state(), pending.terminalId, pending.workspaceId) || pending.destructive) return null;
       const keys = this.approveKeys(pending.agent);
       if (!keys) return null;
       void this.terminals.sendKeys(pending.terminalId, keys).catch(() => undefined);
@@ -224,12 +230,14 @@ export class FakeApprovalService implements ApprovalService {
     };
   }
 
-  async approve(ids: RequestId[]): Promise<ApproveResult[]> {
-    const by = ids.length > 1 ? 'approve-all' : 'user';
+  async approve(ids: RequestId[], opts: ApproveOptions = {}): Promise<ApproveResult[]> {
+    const by = opts.by ?? (ids.length > 1 ? 'approve-all' : 'user');
+    const includeDestructive = opts.includeDestructive ?? by === 'user';
     return Promise.all(
       ids.map(async (id): Promise<ApproveResult> => {
         const pending = this.status.findRequest(id);
         if (!pending || pending.kind !== 'approval') return { id, ok: false, reason: 'gone' };
+        if (pending.destructive && !includeDestructive) return { id, ok: false, reason: 'destructive' };
         const keys = this.approveKeys(pending.agent);
         if (!keys) return { id, ok: false, reason: 'unsupported' };
         try {
@@ -249,8 +257,40 @@ export class FakeApprovalService implements ApprovalService {
   }
 
   async setAutoApprove(workspaceId: WorkspaceId, on: boolean): Promise<void> {
-    if (on) this.autoOn.add(workspaceId);
+    if (on) this.autoOn.set(workspaceId, this.autoOn.get(workspaceId) ?? nowIso());
     else this.autoOn.delete(workspaceId);
+    this.status.bus.emit({ type: 'approval.auto-approve-changed', state: this.state() });
+  }
+
+  /** 简化：不清框里其他终端的设置，也不补按已经在等的请求（真实现见 agent-adapters 的 ApprovalServiceImpl）。 */
+  async setTerminalAutoApprove(terminalId: TerminalId, on: boolean | null): Promise<void> {
+    if (on === null) this.terminalAuto.delete(terminalId);
+    else this.terminalAuto.set(terminalId, { on, since: nowIso() });
+    this.status.bus.emit({ type: 'approval.auto-approve-changed', state: this.state() });
+  }
+
+  async autoApproveState(): Promise<AutoApproveState> {
+    return this.state();
+  }
+
+  async autoApproveSupport(): Promise<AutoApproveSupport[]> {
+    return ['claude', 'codex', 'kimi', 'omp', 'pi', 'shell', 'custom'].map((agent) => {
+      if (agent === 'pi') return { agent, method: 'never-asks', verified: true, note: 'pi never asks for approval' };
+      if (agent === 'claude' || agent === 'codex') return { agent, method: 'hook', verified: true, note: null };
+      if (agent === 'omp') return { agent, method: 'keys', verified: false, note: 'Untested for Oh My Pi' };
+      return { agent, method: 'unsupported', verified: false, note: `Not supported for ${agent}${agent === 'kimi' ? ' yet' : ''}` };
+    });
+  }
+
+  /** 简化：开着 Auto-approve 的终端里在等的破坏性命令和提问算 needs you（不发 approval.needs-you 事件）。 */
+  async autoApproveNeedsYou(): Promise<AutoApproveNeedsYou[]> {
+    return (await this.status.snapshot()).flatMap((s): AutoApproveNeedsYou[] => {
+      const p = s.pending;
+      if (!p || !isAutoApproveOn(this.state(), s.terminalId, p.workspaceId)) return [];
+      if (p.kind === 'question') return [{ terminalId: s.terminalId, reason: 'question', request: clone(p) }];
+      if (p.destructive) return [{ terminalId: s.terminalId, reason: 'destructive', request: clone(p) }];
+      return [];
+    });
   }
 
   async history(workspaceId: WorkspaceId, limit: number): Promise<ApprovalRecord[]> {
@@ -271,6 +311,13 @@ export class FakeApprovalService implements ApprovalService {
 
   isAutoApprove(workspaceId: WorkspaceId): boolean {
     return this.autoOn.has(workspaceId);
+  }
+
+  private state(): AutoApproveState {
+    return {
+      workspaces: [...this.autoOn].map(([workspaceId, since]) => ({ workspaceId, since })),
+      terminals: [...this.terminalAuto].map(([terminalId, t]) => ({ terminalId, on: t.on, since: t.since })),
+    };
   }
 
   private record(request: PendingRequest, by: ApprovalRecord['by']): ApprovalRecord {

@@ -24,11 +24,17 @@ function oneLine(text: string): string {
   return line.length > SUMMARY_MAX ? `${line.slice(0, SUMMARY_MAX - 1)}…` : line;
 }
 
-/** 这些工具是在向用户提问，不是请求批准：进 needs-reply，永远不自动批准、不进 Approve all。 */
-const QUESTION_TOOLS = new Set(['AskUserQuestion', 'ExitPlanMode']);
+/**
+ * 这些工具是在向用户提问，不是请求批准：进 needs-reply，永远不自动批准、不进 Approve all。
+ * request_user_input 是 codex 的提问工具（还在开发中，没实测过它会不会走 PermissionRequest；万一走了也不能当批准）。
+ */
+const QUESTION_TOOLS = new Set(['AskUserQuestion', 'ExitPlanMode', 'request_user_input']);
 
-/** 编辑类工具：summary 写“Edit <路径>”，这样 `\.env` 一类的破坏性规则也能匹配到。 */
-const FILE_TOOLS = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit']);
+/**
+ * 编辑类工具：summary 写“Edit <路径>”，这样 `\.env` 一类的破坏性规则也能匹配到。
+ * 小写的 edit、write 是 omp 的工具名（扩展把 tool_approval_requested 报成 PermissionRequest，参数是 { path, … }）。
+ */
+const FILE_TOOLS = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit', 'edit', 'write']);
 
 export function parseSessionStart(payload: unknown): AgentHookEvent | null {
   const id = str(obj(payload)?.session_id);
