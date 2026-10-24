@@ -1,9 +1,10 @@
-// 应用页面：顶栏 + 白板（@agentdeck/ui-canvas）+ 右侧源代码管理面板（@agentdeck/scm-panel）。
+// 应用页面：顶栏 + 白板（@agentdeck/ui-canvas）+ 右侧源代码管理面板（@agentdeck/scm-panel；什么都没选中时是 @agentdeck/board-nav-panel 的快速定位列表）。
 // tmux 起不来时显示说明页和 Retry；读登录 shell 环境失败等提示显示在左下角。
 // AGENTDECK_DEMO=1 时自动把本仓库加成项目、建主目录工作区、开一个 Shell 和一个 claude（见 demo.ts）。
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { AgentDeckErrorData, TerminalWindowData, Workspace, WorkspaceId } from '@agentdeck/contracts';
+import { BoardNav } from '@agentdeck/board-nav-panel';
 import { ScmPanel } from '@agentdeck/scm-panel';
 import { useBoardState, Workbench, type BoardController } from '@agentdeck/ui-canvas';
 import { Button } from '@agentdeck/ui-kit';
@@ -22,8 +23,30 @@ function terminalLabel(data: TerminalWindowData): string {
 }
 
 
-/** 右侧面板：跟着聚焦的窗口（或选中的框）所在的工作区。 */
+/** 什么都没选中时的快速定位列表（V5）：整块白板的目录，单击一行和 ⌘J 一样跳过去。 */
+function BoardNavPanel({ controller }: { controller: BoardController }) {
+  const projects = useBoardState((s) => s.projects);
+  const workspaces = useBoardState((s) => s.workspaces);
+  const frames = useBoardState((s) => s.frames);
+  const windows = useBoardState((s) => s.windows);
+  const statuses = useBoardState((s) => s.statuses);
+  const badges = useBoardState((s) => s.badges);
+  return (
+    <BoardNav
+      projects={projects}
+      workspaces={workspaces}
+      frames={frames}
+      windows={windows}
+      statuses={statuses}
+      badges={badges}
+      onJump={(id) => controller.jumpAndFlash(id)}
+    />
+  );
+}
+
+/** 右侧面板：跟着聚焦的窗口（或选中的框）所在的工作区；什么都没选中时是快速定位列表。 */
 function SidePanel({ workspace, controller }: { workspace: Workspace | null; controller: BoardController }) {
+  const nothingSelected = useBoardState((s) => s.focusedId === null && s.selectedFrame === null);
   const wsId = workspace?.id ?? null;
   // 这个工作区目录里开着的终端，不管在跑还是空闲（Q38：切分支前只要有一个就确认）。
   // 用字符串做选择结果，避免每次渲染都是新数组。
@@ -45,6 +68,7 @@ function SidePanel({ workspace, controller }: { workspace: Workspace | null; con
     controller.selectFrame(id);
     controller.fitFrame(id);
   };
+  if (nothingSelected) return <BoardNavPanel controller={controller} />;
   return <ScmPanel workspaceId={wsId} onGoToWorkspace={goTo} openTerminals={openTerminals} />;
 }
 

@@ -674,7 +674,8 @@ export class BoardController {
     return target;
   }
 
-  private jumpAndFlash(id: WindowId): void {
+  /** 跳过去、闪一下并聚焦（⌘J 的效果）。面板的快速定位列表（V5）也用它。 */
+  jumpAndFlash(id: WindowId): void {
     this.flashWindow(id);
     this.jumpToWindow(id);
   }
