@@ -47,6 +47,8 @@ export interface BranchInfo {
   /** 远端分支时是远端名（例如 'origin'），name 不带远端前缀；本地分支为 null 或不填。 */
   remote?: string | null;
   lastCommitAt: IsoTime | null;
+  /** 已经合并进 branches(…, { mergedInto }) 给的分支（分支顶端是它的祖先）。没传 mergedInto 时不填。提交图据此把旧分支收成一行（N5）。 */
+  merged?: boolean;
 }
 
 export interface WorktreeInfo {
@@ -64,6 +66,39 @@ export interface CommitInfo {
   at: IsoTime;
   /** 是否已在基础分支上（提交列表里“On main”分隔线以下）。 */
   onBase: boolean;
+  /** 父提交的完整哈希，第一个是第一父提交；根提交是空数组；合并提交有两个以上。旧实现不填（N5 提交图把列表当成一条直线）。 */
+  parents?: string[];
+  /** 指着这个提交的引用（git log 的 %D）。旧实现不填。 */
+  refs?: CommitRef[];
+  /** 这个提交改了哪些文件（相对第一父提交；根提交相对空树）。只在 log 传了 opts.commit 时填。 */
+  files?: CommitFile[];
+}
+
+export interface CommitRef {
+  /** 本地分支不带 refs/heads/（feat/login）；远端分支带远端名（origin/main）；标签是标签名；分离 HEAD 是 'HEAD'。 */
+  name: string;
+  kind: 'branch' | 'remote' | 'tag' | 'head';
+  /** 这个仓库目录的 HEAD 指着这个分支（git 显示成 HEAD -> main）。 */
+  current?: boolean;
+}
+
+export interface CommitFile {
+  /** 相对仓库根目录。 */
+  path: string;
+  /** 重命名、复制前的路径。 */
+  fromPath: string | null;
+  kind: ChangeKind;
+}
+
+/** log 的选项（N5）。graph、commit 都不传时和原来一样：`<base>..HEAD` 加基础分支上的几条。 */
+export interface LogOptions extends StatusOptions {
+  /**
+   * 提交图：几个分支（加上 HEAD）的提交按拓扑顺序（新的在前，子提交一定在父提交前面），最多 limit 条，都带 parents 和 refs。
+   * branches 不传时是所有本地分支；传了时只看这几个（不存在的跳过），例如 [当前分支, 基础分支]。onBase 仍按基础分支算。
+   */
+  graph?: { branches?: string[] };
+  /** 只取这一个提交（哈希或引用），带上 parents、refs 和 files，忽略 graph。找不到时抛 not-found。 */
+  commit?: string;
 }
 
 export interface StashInfo {
@@ -107,8 +142,11 @@ export interface GitService {
    * 没有可提交的内容时抛 git-failed，detail 是 git 原话（nothing to commit）。
    */
   commit(repo: AbsPath, message: string, opts: { all: boolean }): Promise<CommitInfo>;
-  /** 默认只有本地分支；remote=true 时加上远端分支（已有同名本地分支的不重复列）。 */
-  branches(repo: AbsPath, opts?: { remote?: boolean }): Promise<BranchInfo[]>;
+  /**
+   * 默认只有本地分支；remote=true 时加上远端分支（已有同名本地分支的不重复列）。
+   * mergedInto（分支名，解析规则同基础分支）：给每个分支填 merged；这个分支不存在时 merged 都是 false（N5）。
+   */
+  branches(repo: AbsPath, opts?: { remote?: boolean; mergedInto?: string }): Promise<BranchInfo[]>;
   /** branch 是远端分支名时（没有同名本地分支）建一个跟踪它的本地分支再切过去，和 git switch 一样。 */
   switchBranch(repo: AbsPath, branch: string, strategy: SwitchStrategy): Promise<void>;
   createBranch(repo: AbsPath, name: string, opts: { from?: string; switchTo: boolean }): Promise<void>;
@@ -121,8 +159,9 @@ export interface GitService {
   /**
    * `<base>..HEAD` 的提交（onBase=false），加上从 HEAD 和基础分支的合并基点往前的几条（onBase=true，至少 3 条，总数不超过 limit）。
    * 基础分支名先找本地分支，再找 origin/<名字>。
+   * opts.graph：提交图；opts.commit：只取一个提交并带上它改的文件（见 LogOptions，N5）。
    */
-  log(repo: AbsPath, limit: number, opts?: StatusOptions): Promise<CommitInfo[]>;
+  log(repo: AbsPath, limit: number, opts?: LogOptions): Promise<CommitInfo[]>;
   /** 统一 diff 文本。staged=true 时比较暂存区和 HEAD。 */
   diff(repo: AbsPath, path: string, opts: { staged: boolean }): Promise<string>;
 

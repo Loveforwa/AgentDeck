@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { parseBranches, parseLog, parseStashes, parseStatusV2, parseWorktrees } from '../src/index.ts';
+import {
+  parseBranches,
+  parseDecorations,
+  parseLog,
+  parseNameStatus,
+  parseStashes,
+  parseStatusV2,
+  parseWorktrees,
+  reachableWithin,
+} from '../src/index.ts';
 
 const Z = '\0';
 
@@ -89,6 +98,60 @@ describe('parseBranches / parseLog / parseStashes', () => {
       { hash: 'aaaa', shortHash: 'aa', author: 'Ann', at: '2026-10-20T09:00:00.000Z', subject: 'feat: one' },
       { hash: 'bbbb', shortHash: 'bb', author: 'Bo', at: '2026-10-20T08:00:00.000Z', subject: 'fix: two: colon' },
     ]);
+  });
+
+  it('reads parents and refs when the format has them (N5)', () => {
+    const out =
+      `cccc${Z}cc${Z}Ann${Z}2026-10-20T10:00:00Z${Z}Merge feat/x${Z}aaaa bbbb${Z}HEAD -> refs/heads/main, refs/remotes/origin/main, refs/remotes/origin/HEAD, tag: refs/tags/v1.0\x1e\n` +
+      `bbbb${Z}bb${Z}Bo${Z}2026-10-20T09:30:00Z${Z}feat: x${Z}aaaa${Z}refs/heads/feat/x, refs/remotes/origin/feat/x, refs/stash\x1e\n` +
+      `aaaa${Z}aa${Z}Bo${Z}2026-10-20T09:00:00Z${Z}root${Z}${Z}\x1e\n`;
+    const [merge, feat, root] = parseLog(out);
+    expect(merge).toMatchObject({ hash: 'cccc', subject: 'Merge feat/x', parents: ['aaaa', 'bbbb'] });
+    expect(merge?.refs).toEqual([
+      { name: 'main', kind: 'branch', current: true },
+      { name: 'origin/main', kind: 'remote' },
+      { name: 'v1.0', kind: 'tag' },
+    ]);
+    expect(feat?.refs).toEqual([
+      { name: 'feat/x', kind: 'branch' },
+      { name: 'origin/feat/x', kind: 'remote' },
+    ]);
+    expect(root).toMatchObject({ parents: [], refs: [] });
+  });
+
+  it('reads a detached HEAD decoration', () => {
+    expect(parseDecorations('HEAD, refs/heads/feat/a, tag: refs/tags/nightly')).toEqual([
+      { name: 'HEAD', kind: 'head' },
+      { name: 'feat/a', kind: 'branch' },
+      { name: 'nightly', kind: 'tag' },
+    ]);
+    expect(parseDecorations('')).toEqual([]);
+  });
+
+  it('reads diff-tree --name-status -z (N5)', () => {
+    const out = ['M', 'src/a b.ts', 'A', 'new.ts', 'D', 'old.ts', 'R087', 'from.ts', 'to.ts', 'C100', 'x.ts', 'y.ts', 'T', 'link', ''].join(Z);
+    expect(parseNameStatus(out)).toEqual([
+      { path: 'src/a b.ts', fromPath: null, kind: 'modified' },
+      { path: 'new.ts', fromPath: null, kind: 'added' },
+      { path: 'old.ts', fromPath: null, kind: 'deleted' },
+      { path: 'to.ts', fromPath: 'from.ts', kind: 'renamed' },
+      { path: 'y.ts', fromPath: 'x.ts', kind: 'copied' },
+      { path: 'link', fromPath: null, kind: 'modified' },
+    ]);
+    expect(parseNameStatus('')).toEqual([]);
+  });
+
+  it('walks reachability inside one window of the graph', () => {
+    const commits = [
+      { hash: 'm', parents: ['c', 'f'] },
+      { hash: 'f', parents: ['b'] },
+      { hash: 'x', parents: ['b'] },
+      { hash: 'c', parents: ['b'] },
+      { hash: 'b', parents: ['outside'] },
+    ];
+    expect([...reachableWithin(commits, 'm')].sort()).toEqual(['b', 'c', 'f', 'm']);
+    expect(reachableWithin(commits, null).size).toBe(0);
+    expect(reachableWithin(commits, 'not-in-window').size).toBe(0);
   });
 
   it('reads stash subjects and the branch they came from', () => {

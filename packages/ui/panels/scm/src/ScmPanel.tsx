@@ -2,16 +2,16 @@
 // 面板跟着聚焦的工作区（workspaceId 由白板传进来）；所有 git 操作走 window.agentdeck.git。
 
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
-import type { AgentDeckErrorData, CommitInfo, Project, StashInfo, Workspace, WorkspaceId } from '@agentdeck/contracts';
+import type { AgentDeckErrorData, Project, StashInfo, Workspace, WorkspaceId } from '@agentdeck/contracts';
 import { AgentDeckError } from '@agentdeck/contracts';
 import { Button, type PopoverAnchor } from '@agentdeck/ui-kit';
 import { BranchPicker } from './BranchPicker.tsx';
 import { ChangeList, type ChangeActions } from './ChangeList.tsx';
+import { CommitGraph } from './CommitGraph.tsx';
 import { DiffView, type DiffTarget } from './DiffView.tsx';
 import { CommitAllDialog, DiscardDialog, ErrorDetail, NewBranchDialog, SwitchDialog } from './dialogs.tsx';
 import { BranchIcon, CaretIcon, RefreshIcon } from './icons.tsx';
 import {
-  baseName,
   branchSummary,
   commitLabel,
   commitPlan,
@@ -21,11 +21,10 @@ import {
   operationLabel,
   relativeTime,
   shortPath,
-  splitCommits,
   type ChangeRow,
   type CommitPlan,
 } from './model.ts';
-import { toErrorData, useDirectory, useRepos, type RepoState, type ScmApi } from './useScm.ts';
+import { toErrorData, useDirectory, useRepos, type GraphView, type RepoState, type ScmApi } from './useScm.ts';
 import './scm.css';
 
 const NONE: readonly string[] = [];
@@ -33,7 +32,7 @@ const NONE: readonly string[] = [];
 export interface ScmPanelProps {
   /** 聚焦的窗口所在的工作区；聚焦的是散放窗口时传 null。 */
   workspaceId: WorkspaceId | null;
-  /** 单击被别的工作区占用的分支、或 Repository 区的一行：白板平移到那个框并聚焦它。 */
+  /** 单击被别的工作区占用的分支、或提交图里带 ◧ 的分支标签：白板平移到那个框并聚焦它。 */
   onGoToWorkspace?: (workspaceId: WorkspaceId) => void;
   /**
    * 这个工作区目录里开着的终端（不管是在跑还是空闲），例如 ['claude', 'zsh']。
@@ -59,10 +58,25 @@ function readFlag(key: string): boolean {
 }
 
 function writeFlag(key: string): void {
+  writeValue(key, '1');
+}
+
+function writeValue(key: string, value: string): void {
   try {
-    globalThis.localStorage?.setItem(key, '1');
+    globalThis.localStorage?.setItem(key, value);
   } catch {
-    // 存不了就下次再问一次
+    // 存不了就下次再问一次 / 用默认值
+  }
+}
+
+/** 提交图上次看的是哪个视图（N5），默认 All branches。 */
+const GRAPH_VIEW_KEY = 'agentdeck.scm.graphView';
+
+function readGraphView(): GraphView {
+  try {
+    return globalThis.localStorage?.getItem(GRAPH_VIEW_KEY) === 'workspace' ? 'workspace' : 'all';
+  } catch {
+    return 'all';
   }
 }
 
@@ -83,7 +97,12 @@ export function ScmPanel({ workspaceId, onGoToWorkspace, openTerminals, runningA
   const dir = useDirectory(api);
   const workspace = workspaceId ? (dir.workspaces?.find((w) => w.id === workspaceId) ?? null) : null;
   const project = workspace ? (dir.projects.find((p) => p.id === workspace.projectId) ?? null) : null;
-  const data = useRepos(api, workspace, project);
+  const [graphView, setGraphView] = useState<GraphView>(readGraphView);
+  const changeGraphView = (v: GraphView) => {
+    setGraphView(v);
+    writeValue(GRAPH_VIEW_KEY, v);
+  };
+  const data = useRepos(api, workspace, project, graphView);
 
   const [diff, setDiff] = useState<DiffTarget | null>(null);
   const [dialog, setDialog] = useState<DialogState | null>(null);
@@ -283,8 +302,16 @@ export function ScmPanel({ workspaceId, onGoToWorkspace, openTerminals, runningA
           : single && (
               <>
                 <RepoChanges repo={single} actions={changeActions(single)} busy={data.busy} />
-                <RepositoryList repo={single} workspaces={dir.workspaces} current={workspace} onGoTo={onGoToWorkspace} />
-                <CommitList commits={single.log} baseBranch={single.status?.baseBranch ?? single.baseBranch ?? null} />
+                <CommitGraph
+                  api={api}
+                  repo={single}
+                  workspaces={dir.workspaces}
+                  view={graphView}
+                  onView={changeGraphView}
+                  onGoTo={onGoToWorkspace}
+                  onCheckout={(b) => beginSwitch(single, b)}
+                  busy={data.busy}
+                />
               </>
             )}
       </>
@@ -561,65 +588,6 @@ function RepoGroup(props: {
         <StashBanner stash={props.stash} onRestore={() => props.onRestore(props.stash!)} onDismiss={() => props.onDismiss(props.stash!)} />
       )}
       <RepoChanges repo={repo} actions={props.actions} busy={props.busy} />
-    </section>
-  );
-}
-
-function RepositoryList(props: {
-  repo: RepoState;
-  workspaces: readonly Workspace[];
-  current: Workspace;
-  onGoTo: ((id: WorkspaceId) => void) | undefined;
-}) {
-  const { repo, workspaces, current, onGoTo } = props;
-  if (repo.worktrees.length < 2) return null;
-  return (
-    <section className="scm-section scm-list" aria-label="Repository">
-      <span className="scm-section-title">Repository</span>
-      {repo.worktrees.map((wt) => {
-        const ws = workspaces.find((w) => w.path === wt.path || w.repos.some((r) => r.path === wt.path)) ?? null;
-        const here = ws?.id === current.id;
-        const label = wt.branch ?? `${wt.head.slice(0, 7)} (detached)`;
-        const where = wt.main ? 'main folder' : `…/${baseName(wt.path)}`;
-        const canGo = !!ws && !here && !!onGoTo;
-        return (
-          <button
-            key={wt.path}
-            type="button"
-            className="scm-list-row"
-            data-current={here || undefined}
-            data-off={!ws || undefined}
-            disabled={!canGo}
-            title={ws ? wt.path : `${wt.path}\nNot on the board`}
-            onClick={() => ws && onGoTo?.(ws.id)}
-          >
-            <BranchIcon />
-            <span className="scm-mono scm-list-main">{label}</span>
-            <span className="scm-muted scm-list-note">{ws ? where : 'not on board'}</span>
-          </button>
-        );
-      })}
-    </section>
-  );
-}
-
-function CommitList({ commits, baseBranch }: { commits: CommitInfo[]; baseBranch: string | null }) {
-  const [copied, copy] = useCopied();
-  if (commits.length === 0) return null;
-  const { own, onBase } = splitCommits(commits);
-  const row = (c: CommitInfo) => (
-    <button key={c.hash} type="button" className="scm-list-row" title={`${c.subject}\n${c.author} · ${c.hash}\nClick to copy the hash`} onClick={() => copy(c.hash, c.hash)}>
-      <span className="scm-mono scm-muted scm-hash">{c.shortHash}</span>
-      <span className="scm-list-main">{copied === c.hash ? 'Copied' : c.subject}</span>
-      <span className="scm-muted scm-list-note">{relativeTime(c.at)}</span>
-    </button>
-  );
-  return (
-    <section className="scm-section scm-list" aria-label="Commits">
-      <span className="scm-section-title">Commits</span>
-      {own.map(row)}
-      {onBase.length > 0 && <div className="scm-on-base">On {baseBranch ?? 'base branch'}</div>}
-      {onBase.map(row)}
     </section>
   );
 }

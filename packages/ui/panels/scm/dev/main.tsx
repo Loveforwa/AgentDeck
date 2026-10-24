@@ -7,10 +7,11 @@ import './dev.css';
 
 import { StrictMode, useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import type { GitService, TerminalId, Workspace, WorkspaceId } from '@agentdeck/contracts';
+import type { GitService, LogOptions, TerminalId, Workspace, WorkspaceId } from '@agentdeck/contracts';
 import { SAMPLE, createFakeApi } from '@agentdeck/fakes';
 import { Button } from '@agentdeck/ui-kit';
 import { ScmPanel, type ScmApi } from '../src/index.ts';
+import { demoBranches, demoLog } from './demo-graph.ts';
 
 const fake = createFakeApi({ latencyMs: 60 });
 const P = SAMPLE.paths;
@@ -25,6 +26,9 @@ const AGENT_OF: Partial<Record<WorkspaceId, { terminal: TerminalId; agent: strin
 
 /** git 调用前多等一会儿，看 Refreshing…；顺便数一数面板调了几次 status。 */
 const slow = { on: false };
+/** 示范提交图（N5）：agentdeck 这个仓库的 graph / commit 查询换成 dev/demo-graph.ts 里编的图。 */
+const demo = { on: true };
+const isAgentdeck = (repo: unknown) => repo === P.agentdeck || repo === P.agentdeckLogin;
 const statusCalls = { n: 0, listener: (_n: number) => {} };
 const slowGit = new Proxy(fake.git, {
   get(target, prop, receiver) {
@@ -33,6 +37,12 @@ const slowGit = new Proxy(fake.git, {
     return async (...args: unknown[]) => {
       if (prop === 'status') statusCalls.listener(++statusCalls.n);
       if (slow.on) await new Promise((r) => setTimeout(r, 1500));
+      const [repo, , opts] = args as [string, unknown, LogOptions | undefined];
+      if (demo.on && prop === 'log' && isAgentdeck(repo) && (opts?.graph || opts?.commit)) {
+        const s = await target.status(repo);
+        return demoLog(s.branch, s.head, opts);
+      }
+      if (demo.on && prop === 'branches' && isAgentdeck(repo)) return demoBranches(await target.branches(repo));
       return (value as (...a: unknown[]) => unknown).apply(target, args);
     };
   },
@@ -47,6 +57,7 @@ function App() {
   const [focus, setFocus] = useState<WorkspaceId | null>(W.agentdeckLogin);
   const [dark, setDark] = useState(false);
   const [slowOn, setSlowOn] = useState(false);
+  const [demoOn, setDemoOn] = useState(demo.on);
   const [agentRunning, setAgentRunning] = useState(false);
   const [log, setLog] = useState<string[]>([]);
   const [gitCalls, setGitCalls] = useState(0);
@@ -203,6 +214,17 @@ function App() {
             <label className="dev-radio">
               <input type="checkbox" checked={agentRunning} onChange={(e) => setAgentRunning(e.target.checked)} />
               <span>An agent is running in this workspace (warns before switching branches)</span>
+            </label>
+            <label className="dev-radio">
+              <input
+                type="checkbox"
+                checked={demoOn}
+                onChange={(e) => {
+                  demo.on = e.target.checked;
+                  setDemoOn(e.target.checked);
+                }}
+              />
+              <span>Demo commit graph for agentdeck (forks, merges, merged branches) — press Refresh after changing</span>
             </label>
             <label className="dev-radio">
               <input type="checkbox" checked={dark} onChange={(e) => setDark(e.target.checked)} />

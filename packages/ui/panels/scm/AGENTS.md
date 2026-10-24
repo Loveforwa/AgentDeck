@@ -11,7 +11,7 @@ import { ScmPanel } from '@agentdeck/scm-panel';
 
 <ScmPanel
   workspaceId={focusedWorkspaceId}        // 聚焦的窗口所在的工作区；散放窗口传 null
-  onGoToWorkspace={(id) => board.focusFrame(id)} // 单击被占用的分支 / Repository 区的一行
+  onGoToWorkspace={(id) => board.focusFrame(id)} // 单击被占用的分支 / 提交图里带 ◧ 的分支标签
   runningAgents={['claude']}               // 这个工作区里正在跑的 agent，切分支前提示
   // api={...}                              // 默认 window.agentdeck；dev 页面和测试传假实现
   // headerActions={collapseButton}        // 标题栏 Refresh 后面的按钮：白板 renderPanel 给的收起面板按钮（MVP v2 · V4）
@@ -29,8 +29,13 @@ import { ScmPanel } from '@agentdeck/scm-panel';
 - Merge Changes（冲突，置顶）/ Staged Changes / Changes，按文件夹树形列出（单链文件夹合并成 `src/auth`），可折叠。悬停出现 + 暂存（冲突里是“标记已解决”）、− 取消暂存、放弃；文件夹和组标题上同样的操作作用于下面所有文件。状态字母 M A D R C U，冲突 !（橙色），子模块 S 并写“Submodule changed”。
 - 单击文件：面板里看只读 diff，顶部 Back 和 Open in editor；双击直接在编辑器打开（`app.openInEditor`）。
 - 放弃要确认：“Discard changes to x? This can’t be undone.”；未跟踪文件是“Move x to Trash?”。
-- Repository：这个项目所有的工作目录（`git.worktrees`），单击跳到对应的框；不在白板上的灰显写“not on board”（加回白板缺接口，见 git-service 的 CONTRACT_NOTES）。只有一个工作目录时不显示。
-- Commits：最近 20 条，分隔线“On main”以下是基础分支上的；单击复制哈希。
+- Graph（N5，IS-58，替换原来的 Repository 和 Commits 两块；只在单仓库时有）：`git.log(…, 60, { graph })` 的提交图，`CommitGraph.tsx` 画，排布是 `graph.ts` 的纯函数。
+  - 泳道、分叉和合并画成弧线；合并提交是空心双圈，HEAD 是实心点。颜色只有墨黑（HEAD 和基础分支那条线）和三种暖灰（scm.css 的 `--graph-tone-*`，都由 token 混出来）。
+  - 标签：本地分支（HEAD 指着的写 `HEAD → main`，墨黑实底）、本地没有同名分支的远端分支（虚线框）、标签。白板上有框在用的分支（经 `git.worktrees` 的目录对上工作区）墨黑描边、后面带 ◧ 和框名（框名和分支名一样时只写 ◧），单击跳到那个框；在 worktree 里检出但不在白板上的灰显。
+  - 已经合并进基础分支（`git.branches({ mergedInto })` 的 `merged`）、没有框在用的分支收成最后一行“n merged branches not on the board”，点 Show 才在图上显示它们的标签并列出名字。
+  - 右上 “All branches ▾ / This workspace ▾”：所有本地分支，或者只看 HEAD 加基础分支（`graph: { branches: [] }`）。记在 localStorage 的 `agentdeck.scm.graphView`，默认 All branches；换了只重取提交图，不算一次刷新。
+  - 单击一行在下面展开它改了哪些文件（`git.log(…, 1, { commit })`，左边照着泳道画竖线）。悬停出现 Checkout（这一行上有能切过去的本地分支时，走原来的切分支流程）和 Copy（复制完整哈希）。
+  - 服务没给 parents / refs 时（假实现）当成一条直线，HEAD 那条补上当前分支的标签。
 - 多仓库工作区：提交框在最上面，“Commit 5 changes in 2 repos”（每个仓库有暂存就提交暂存的，否则提交全部）；下面每个仓库一组，组标题有仓库名、它自己的分支按钮、“Commit this repo”。
 - 没有 git 的文件夹：“notes isn’t a Git repository.” 和 Initialize Repository（`projects.initGit`）。
 - 散放窗口：“This window isn’t in a workspace.”；文件夹丢了：“Folder not found”。
@@ -48,7 +53,7 @@ import { ScmPanel } from '@agentdeck/scm-panel';
 
 ## dev 页面
 
-`pnpm --filter @agentdeck/scm-panel dev` → http://localhost:5347 。数据来自 `createFakeApi()`：左边选聚焦的工作区（单仓库 worktree、主目录、多仓库、散放窗口），模拟 agent 一轮结束、外部改文件、合并冲突、把主目录弄脏（演示 Stash and switch 和恢复）、加一个没有 git 的文件夹；可以打开“慢 git”（每次调用 1.5 秒）看 Refreshing…、模拟有 agent 在跑、切暗色。页头显示面板调了几次 `git.status`。`dev:build` 打包到 `dist-dev/`（不提交）。
+`pnpm --filter @agentdeck/scm-panel dev` → http://localhost:5347 。数据来自 `createFakeApi()`：左边选聚焦的工作区（单仓库 worktree、主目录、多仓库、散放窗口），模拟 agent 一轮结束、外部改文件、合并冲突、把主目录弄脏（演示 Stash and switch 和恢复）、加一个没有 git 的文件夹；可以打开“慢 git”（每次调用 1.5 秒）看 Refreshing…、模拟有 agent 在跑、切暗色；“Demo commit graph”（默认开）把 agentdeck 仓库的提交图换成 `dev/demo-graph.ts` 里编的图（分叉、合并、已合并的旧分支），因为假实现的 log 不认 graph。页头显示面板调了几次 `git.status`。`dev:build` 打包到 `dist-dev/`（不提交）。
 
 ## 测试
 
@@ -58,6 +63,8 @@ pnpm --filter @agentdeck/scm-panel typecheck
 ```
 
 - `test/model.test.ts`：分组、文件夹树、按钮文字、分支摘要、时间、diff 行分类。
+- `test/graph.test.ts`：提交图的泳道排布（直线、没有 parents、分叉、合并、合并进已有泳道、空位复用、窗外的父提交、墨黑和灰）、弧线路径、标签、收起已合并的分支。
+- `test/panel.test.tsx` 的 “commit graph (N5)”：用手写的图替换假实现的 log / branches，测画面（HEAD 点、合并双圈、弧线、◧ 框名和跳转）、收起和 Show、展开文件列表、Checkout 和 Copy、切换视图并记住。
 - `test/panel.test.tsx`：散放窗口、树形列表、暂存和 ⌘↩ 提交、只在三种时机刷新（数 `git.status` 调用次数）、Refreshing…、被占用的分支灰显并跳转、Stash and switch 和恢复、第一次 Commit all 确认、放弃进废纸篓、diff、合并中、Initialize Repository。
 
 ## 不许碰

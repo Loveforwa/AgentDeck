@@ -1,4 +1,4 @@
-import type { GitService, WorkspaceId } from '@agentdeck/contracts';
+import type { CommitInfo, GitService, LogOptions, WorkspaceId } from '@agentdeck/contracts';
 import { SAMPLE, createFakeApi, type FakeApi } from '@agentdeck/fakes';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -61,8 +61,11 @@ describe('ScmPanel', () => {
     const changes = screen.getByRole('region', { name: 'Changes' });
     expect(within(changes).getByText('Login.tsx')).toBeTruthy();
     expect(within(changes).getByText('login.test.ts')).toBeTruthy();
-    expect(screen.getByRole('region', { name: 'Commits' })).toBeTruthy();
-    expect(screen.getByText('On main')).toBeTruthy();
+    // 假实现的 log 没有 parents / refs：提交图画成一条直线，HEAD 那条补上当前分支
+    const graph = screen.getByRole('region', { name: 'Commit graph' });
+    expect(within(graph).getByText('HEAD → feat/login')).toBeTruthy();
+    expect(within(graph).getByText('Add login form')).toBeTruthy();
+    expect(screen.queryByRole('region', { name: 'Repository' })).toBeNull();
   });
 
   it('stages with +, commits with ⌘↩, and refreshes once per action', async () => {
@@ -259,5 +262,171 @@ describe('ScmPanel', () => {
     await user.click(screen.getByRole('button', { name: 'Initialize Repository' }));
     await screen.findByRole('button', { name: /Branch main/ });
     expect(screen.getByText('No changes')).toBeTruthy();
+  });
+});
+
+// ---- 提交图（N5） ----
+
+/**
+ * 假实现的 log 不认 graph / commit，这里换成一张手写的图：
+ * feat/login（HEAD）从 b3 分出；main 上合并过 feat/old；spike 没合并、不在白板上；还有两个已合并的旧分支不在这一窗里。
+ */
+async function graphSetup() {
+  const base = setup();
+  const head = (await base.fake.git.status(P.agentdeckLogin)).head ?? 'head';
+  const at = (m: number) => new Date(Date.parse('2026-10-20T09:00:00Z') - m * 60_000).toISOString();
+  const commit = (hash: string, subject: string, parents: string[], refs: CommitInfo['refs'] = [], m = 0): CommitInfo => ({
+    hash,
+    shortHash: hash.slice(0, 7),
+    subject,
+    author: 'Ann',
+    at: at(m),
+    onBase: false,
+    parents,
+    refs,
+  });
+  const graph: CommitInfo[] = [
+    commit(head, 'Add login form', ['l1'], [{ name: 'feat/login', kind: 'branch', current: true }], 0),
+    commit('mmmmmmm1', 'Merge feat/old', ['b3', 'o1'], [{ name: 'main', kind: 'branch' }, { name: 'origin/main', kind: 'remote' }], 1),
+    commit('o1', 'Old work', ['b3'], [{ name: 'feat/old', kind: 'branch' }], 2),
+    commit('s1', 'Abandoned spike', ['b3'], [{ name: 'spike', kind: 'branch' }], 3),
+    commit('l1', 'Add login route', ['b3'], [], 4),
+    commit('b3', 'Add board canvas', ['b2'], [{ name: 'v1', kind: 'tag' }], 5),
+    commit('b2', 'Initial commit', [], [], 6),
+  ];
+  const calls: LogOptions[] = [];
+  const merged: Record<string, boolean> = { main: true, 'feat/login': false, 'feat/old': true, spike: false, 'old/a': true, 'old/b': true };
+  const git = new Proxy(base.api.git, {
+    get(target, prop, receiver) {
+      if (prop === 'log')
+        return async (repo: string, limit: number, opts?: LogOptions) => {
+          if (repo !== P.agentdeckLogin || (!opts?.graph && !opts?.commit)) return target.log(repo, limit, opts);
+          calls.push(opts);
+          if (opts.commit === 'o1')
+            return [{ ...graph[2]!, files: [{ path: 'src/old/thing.ts', fromPath: null, kind: 'modified' }, { path: 'README.md', fromPath: null, kind: 'added' }] }];
+          if (opts.commit) return [graph.find((c) => c.hash === opts.commit)!];
+          return opts.graph?.branches ? graph.filter((c) => c.hash !== 's1' && c.hash !== 'o1') : graph;
+        };
+      if (prop === 'branches')
+        return async (repo: string, opts?: { mergedInto?: string }) => {
+          const list = await target.branches(repo);
+          const names = new Set(list.map((b) => b.name));
+          const extra = Object.keys(merged)
+            .filter((n) => !names.has(n))
+            .map((name) => ({ name, current: false, checkedOutAt: null, lastCommitAt: null }));
+          return [...list, ...extra].map((b) => (opts?.mergedInto ? { ...b, merged: merged[b.name] ?? false } : b));
+        };
+      return Reflect.get(target, prop, receiver) as unknown;
+    },
+  }) as GitService;
+  return { ...base, api: { ...base.api, git } as ScmApi, calls, head };
+}
+
+describe('commit graph (N5)', () => {
+  it('draws lanes with merge and fork arcs, labels branches, and highlights frames on the board', async () => {
+    const user = userEvent.setup();
+    const { api } = await graphSetup();
+    const goTo = vi.fn<(id: WorkspaceId) => void>();
+    render(<ScmPanel api={api} workspaceId={W.agentdeckLogin} onGoToWorkspace={goTo} />);
+    const graph = await screen.findByRole('region', { name: 'Commit graph' });
+    await within(graph).findByText('Merge feat/old');
+    const rows = within(graph).getAllByRole('listitem');
+    expect(rows.map((r) => r.querySelector('.scm-graph-subject')?.textContent)).toEqual([
+      'Add login form',
+      'Merge feat/old',
+      'Old work',
+      'Abandoned spike',
+      'Add login route',
+      'Add board canvas',
+      'Initial commit',
+    ]);
+    // HEAD 是实心点，合并提交是空心双圈；有分叉、合并的弧线（C 曲线）
+    expect(rows[0]!.querySelector('[data-head]')).not.toBeNull();
+    expect(rows[1]!.querySelectorAll('circle')).toHaveLength(2);
+    expect([...graph.querySelectorAll('.scm-graph-line')].some((p) => p.getAttribute('d')?.includes('C'))).toBe(true);
+    // 颜色只用档位（墨黑和灰），不写颜色值
+    expect(rows[0]!.querySelector('[data-head]')?.getAttribute('data-tone')).toBe('0');
+    expect(graph.innerHTML).not.toMatch(/#[0-9a-f]{3,6}\b|rgb\(/i);
+
+    expect(within(rows[0]!).getByText('HEAD → feat/login')).toBeTruthy();
+    // 框名和分支名一样时只写 ◧
+    expect(within(rows[0]!).getByText('◧')).toBeTruthy();
+    expect(within(rows[1]!).getByText('◧ main folder')).toBeTruthy();
+    // main 在白板上（主目录）：带 ◧，单击跳过去；origin/main 和本地 main 在同一个提交上，不重复
+    await user.click(within(rows[1]!).getByRole('button', { name: /^main/ }));
+    expect(goTo).toHaveBeenCalledWith(W.agentdeckMain);
+    expect(within(rows[1]!).queryByText('origin/main')).toBeNull();
+    expect(within(rows[3]!).getByText('spike').closest('[data-board]')).toBeNull();
+    expect(within(rows[5]!).getByText('v1')).toBeTruthy();
+  });
+
+  it('collapses merged branches that are not on the board into one row', async () => {
+    const user = userEvent.setup();
+    const { api } = await graphSetup();
+    render(<ScmPanel api={api} workspaceId={W.agentdeckLogin} />);
+    const graph = await screen.findByRole('region', { name: 'Commit graph' });
+    const toggle = await within(graph).findByRole('button', { name: /3 merged branches not on the board/ });
+    expect(within(graph).queryByText('feat/old')).toBeNull();
+    await user.click(toggle);
+    const list = within(graph).getByRole('list', { name: 'Merged branches' });
+    expect(within(list).getAllByRole('listitem').map((r) => r.textContent)).toEqual(['feat/old', 'old/a', 'old/b']);
+    // 展开后图上也出现它们的标签
+    expect(within(graph).getAllByText('feat/old').length).toBe(2);
+    await user.click(within(graph).getByRole('button', { name: /merged branches not on the board/ }));
+    expect(within(graph).queryByText('feat/old')).toBeNull();
+  });
+
+  it('shows the files of a commit inline when you click it', async () => {
+    const user = userEvent.setup();
+    const { api, calls } = await graphSetup();
+    render(<ScmPanel api={api} workspaceId={W.agentdeckLogin} />);
+    const graph = await screen.findByRole('region', { name: 'Commit graph' });
+    const row = await within(graph).findByRole('button', { name: /Old work/ });
+    await user.click(row);
+    expect(row.getAttribute('aria-expanded')).toBe('true');
+    const files = await within(graph).findByLabelText('Files in o1');
+    expect(await within(files).findByText('thing.ts')).toBeTruthy();
+    expect(within(files).getByText('src/old')).toBeTruthy();
+    expect(within(files).getByText('README.md')).toBeTruthy();
+    expect(calls.some((c) => c.commit === 'o1')).toBe(true);
+    await user.click(row);
+    expect(within(graph).queryByLabelText('Files in o1')).toBeNull();
+  });
+
+  it('offers Checkout for a branch tip and Copy for every commit', async () => {
+    const user = userEvent.setup();
+    const { api } = await graphSetup();
+    const writeText = vi.fn(async () => undefined);
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    render(<ScmPanel api={api} workspaceId={W.agentdeckLogin} />);
+    const graph = await screen.findByRole('region', { name: 'Commit graph' });
+    await within(graph).findByText('Abandoned spike');
+    // 当前分支、被别的框检出的 main 都没有 Checkout；spike 有
+    expect(within(graph).queryByRole('button', { name: 'Checkout feat/login' })).toBeNull();
+    expect(within(graph).queryByRole('button', { name: 'Checkout main' })).toBeNull();
+    await user.click(within(graph).getByRole('button', { name: 'Copy hash mmmmmmm' }));
+    expect(writeText).toHaveBeenCalledWith('mmmmmmm1');
+    expect(within(graph).getByText('Copied')).toBeTruthy();
+    // 走面板原来的切分支流程：有改动先问
+    await user.click(within(graph).getByRole('button', { name: 'Checkout spike' }));
+    expect(await screen.findByRole('dialog', { name: '3 uncommitted changes' })).toBeTruthy();
+  });
+
+  it('switches between This workspace and All branches, and remembers the choice', async () => {
+    const user = userEvent.setup();
+    const { api, calls } = await graphSetup();
+    const { unmount } = render(<ScmPanel api={api} workspaceId={W.agentdeckLogin} />);
+    const graph = await screen.findByRole('region', { name: 'Commit graph' });
+    await within(graph).findByText('Abandoned spike');
+    expect(calls.at(-1)?.graph).toEqual({});
+    await user.click(within(graph).getByRole('button', { name: 'Show: All branches' }));
+    await user.click(await screen.findByRole('menuitemcheckbox', { name: 'This workspace' }));
+    await waitFor(() => expect(within(graph).queryByText('Abandoned spike')).toBeNull());
+    expect(calls.at(-1)?.graph).toEqual({ branches: [] });
+    expect(within(graph).getByRole('button', { name: 'Show: This workspace' })).toBeTruthy();
+    unmount();
+
+    render(<ScmPanel api={api} workspaceId={W.agentdeckLogin} />);
+    await screen.findByRole('button', { name: 'Show: This workspace' });
   });
 });
