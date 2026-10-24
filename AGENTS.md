@@ -5,7 +5,7 @@
 ## 先读这些
 
 - 需求（设计画布，带配图和操作流程，以它为准）：https://claude.ai/artifact/2GtB5izXeQSV3NecUYuLAo
-- 插件（Auto-approve、CC Switch 用量）：**做插件前先读 `docs/plugins.md`（插件手册：能贴在哪些东西上、登记表、决定记录）**；样子在设计画布的“插件能力”页，任务是 MVP 任务表的 M7（PL0–PL2）
+- 插件（Auto-approve、Usage 用量记录）：**做插件前先读 `docs/plugins.md`（插件手册：能贴在哪些东西上、登记表、决定记录）**；样子在设计画布的“插件能力”页，任务是 MVP 任务表的 M7（PL0–PL2）
 - 实施方案（技术选型、模块、风险）：https://claude.ai/artifact/QrjHF5gpT6zdHJr6wdFaWp ，本地副本 `docs/design/agentdeck-plan.html`
 - MVP 任务表（任务编号、依赖、完成标准）：https://claude.ai/artifact/8UAh7Quj23xxk7oEikgdEg ，本地副本 `docs/design/agentdeck-mvp-plan.html`
 - **MVP v2 和 v3（2026-10-24 第一轮验收后定的）**：需求在设计画布的“MVP v2 · v3”那一页（画板 11 · MVP v2、12 · MVP v3，带概念图）；任务在 MVP 任务表的 M5（V1–V5，MVP v2）和 M6（N1–N8，MVP v3）；对应的问题是 IS-51～IS-60，要先调研的是 DR-52～DR-55；v2 的分波和每条线的范围见 MVP 任务表的“MVP v2 实施安排”，验收用例是 TC-29～TC-33。v2 做完之前不开 v3。MVP 是分版本做的：M0–M4 是 MVP v1。
@@ -33,7 +33,7 @@ Electron + TypeScript + React 18 + Zustand，白板用 React Flow（@xyflow/reac
 - 只改你的任务负责的目录。要改 `packages/contracts` 先停下，单独提交，见它的 AGENTS.md。
 - 界面依赖方向：`packages/ui/*` 只能依赖 contracts 和 design-tokens；服务不能依赖 ui；各 widget、各 adapter 之间不互相引用。机器检查的完整规则见下面「检查和模块边界」。
 - 产品界面上的所有文字用英文；注释、文档、提交说明里的解释用中文也可以。
-- 组件里不写颜色值，样子只在 `packages/design-tokens` 里定。界面风格：暖灰加墨黑；颜色只表达状态（MVP v2 · V2 红绿灯）：运行中绿（`--status-running`）、等你黄（`--status-waiting` / `--attention`）、出错红（`--status-error`），别处不用彩色；不用渐变、发光、emoji。
+- 组件里不写颜色值，样子只在 `packages/design-tokens` 里定。界面风格：暖灰加墨黑；颜色只表达状态（MVP v2 · V2 红绿灯）：运行中绿（`--status-running`）、等你黄（`--status-waiting` / `--attention`）、出错红（`--status-error`）；插件 Auto-approve 开着时的书签用红色（`--plugin-auto-approve`），别处不用彩色；不用渐变、发光、emoji。
 - 分支名和提交信息带任务编号，例如 `feat/F6-fakes`、`F6: add fake TerminalHost`。
 - 提交前：`pnpm check`（含所有包的测试）。
 - 每个包有自己的 AGENTS.md：职责、对外接口、不许碰的目录、怎么跑测试。新建包时一起写。
