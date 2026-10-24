@@ -44,10 +44,10 @@ def md():
     o += [f'| {a} | {SMOKE_LABEL[b]} | {c} |' for a, b, c in D.SMOKE]
     o += ['', '## 39 项基础功能（P0）', '', '| 编号 | 功能 | 状态 | 自动测试 | 真窗口里验证 | 备注 |', '| --- | --- | --- | --- | --- | --- |']
     o += [f'| {i} | {t} | {P0_LABEL[s]} | {a} | {m} | {n} |' for i, t, s, a, m, n in D.P0]
-    o += ['', '## 14 条验收场景', '', '| # | 场景 | 状态 | 依据 |', '| --- | --- | --- | --- |']
-    o += [f'| {i} | {t} | {ACC_LABEL[s]} | {n} |' for i, t, s, n in D.ACCEPT]
+    o += ['', '## 14 条验收场景（端到端用例 TC-01 到 TC-14）', '', '| 用例 | 场景 | 状态 | 依据 |', '| --- | --- | --- | --- |']
+    o += [f'| TC-{i:02d} | {t} | {ACC_LABEL[s]} | {n} |' for i, t, s, n in D.ACCEPT]
     o += ['', '## 已知问题（apps/desktop/ASSEMBLY_NOTES.md）', '']
-    o += [f'{k}. **{a}**：{b}' for k, (a, b) in enumerate(D.ISSUES, 1)]
+    o += [f'- **{i}** {a}：{b}' for i, a, b in D.ISSUES]
     o += ['', '## 还没处理的', ''] + [f'- {x}' for x in D.PENDING]
     o += ['', '## 明天验货', '']
     for k, (a, b, c) in enumerate(D.TRY, 1):
@@ -70,9 +70,9 @@ def page():
         f'<tr><td class="mono b">{i}</td><td class="b">{E(t)}</td><td>{chip(s, P0_LABEL[s])}</td>'
         f'<td>{E(a)}</td><td>{E(m)}</td><td class="muted">{E(n)}</td></tr>' for i, t, s, a, m, n in D.P0)
     acc = ''.join(
-        f'<tr><td class="mono b">{i}</td><td>{E(t)}</td><td>{chip(s, ACC_LABEL[s])}</td><td class="muted">{E(n)}</td></tr>'
+        f'<tr><td class="mono b">TC-{i:02d}</td><td>{E(t)}</td><td>{chip(s, ACC_LABEL[s])}</td><td class="muted">{E(n)}</td></tr>'
         for i, t, s, n in D.ACCEPT)
-    issues = ''.join(f'<li><b>{E(a)}</b>：{E(b)}</li>' for a, b in D.ISSUES)
+    issues = ''.join(f'<li><span class="mono">{E(i)}</span> <b>{E(a)}</b>：{E(b)}</li>' for i, a, b in D.ISSUES)
     pending = ''.join(f'<li>{E(x)}</li>' for x in D.PENDING)
     tries = ''.join(
         f'<li><div class="try-h"><b>{E(a)}</b></div><code>{E(b)}</code><p>{E(c)}</p></li>' for a, b, c in D.TRY)
@@ -200,12 +200,12 @@ tr:first-child td {{ border-top: 0 }}
 </section>
 
 <section class="block">
-  <div class="head"><h2>14 条验收场景</h2><p>来自设计画布「10 · 全局规则」：MVP 完成时每一条都要能从头走到尾。</p></div>
-  <div class="tbl"><table class="wide"><thead><tr><th>#</th><th>场景</th><th>状态</th><th>依据</th></tr></thead><tbody>{acc}</tbody></table></div>
+  <div class="head"><h2>14 条验收场景</h2><p>来自设计画布「10 · 全局规则」，编号就是端到端用例 TC-01 到 TC-14（详细步骤在 xlsx 里）。</p></div>
+  <div class="tbl"><table class="wide"><thead><tr><th>用例</th><th>场景</th><th>状态</th><th>依据</th></tr></thead><tbody>{acc}</tbody></table></div>
 </section>
 
 <div class="two">
-  <section class="block"><div class="head"><h2>已知问题</h2><p>apps/desktop/ASSEMBLY_NOTES.md，都不会让程序崩</p></div><ol class="list">{issues}</ol></section>
+  <section class="block"><div class="head"><h2>已知问题</h2><p>apps/desktop/ASSEMBLY_NOTES.md，都不会让程序崩</p></div><ul class="list">{issues}</ul></section>
   <section class="block"><div class="head"><h2>还没处理的</h2></div><ul class="list">{pending}</ul>
     <div class="head" style="margin-top:12px"><h2>建议的下一步</h2></div><ol class="list">{nexts}</ol></section>
 </div>

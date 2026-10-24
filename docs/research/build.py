@@ -42,21 +42,26 @@ def build_md():
         '',
         '共 ' + str(len(ENTRIES)) + ' 条：' + '，'.join(f'{STATUS[k]} {v}' for k, v in c.items()) + '。',
         '',
+        '编号规则（全项目统一）：DR-xx 调研记录 · TC-xx 端到端用例 · IS-xx 问题 · F1、T2、X3 等是 MVP 任务表的任务编号。'
+        '用例和问题在 docs/status/AgentDeck-端到端用例与问题清单-*.xlsx 里；每条调研下面列出相关的用例和问题。',
+        '',
         '## 目录',
         '',
     ]
     for sid, name, desc in STAGES:
-        out.append(f'- **{sid} · {name}**：{desc}')
+        out.append(f'- **{name}**：{desc}')
         for e in ENTRIES:
             if e['stage'] == sid:
                 out.append(f'  - [{e["id"]} {e["title"]}](#{e["id"].lower()})（{STATUS[e["status"]]}）')
     out.append('')
     for sid, name, desc in STAGES:
-        out += [f'## {sid} · {name}', '', desc, '']
+        out += [f'## {name}', '', desc, '']
         for e in ENTRIES:
             if e['stage'] != sid:
                 continue
-            out += [f'<a id="{e["id"].lower()}"></a>', '', f'### {e["id"]} {e["title"]}', '', f'状态：{STATUS[e["status"]]} · 出处：{e["where"]}', '']
+            out += [f'<a id="{e["id"].lower()}"></a>', '', f'### {e["id"]} {e["title"]}', '', f'状态：{STATUS[e["status"]]} · 出处：{e["where"]} · 旧编号 {e["old"]}', '']
+            if e['cases'] or e['issues']:
+                out += ['相关：' + '、'.join(e['cases'] + e['issues']), '']
             out += [f'- **原来以为**：{e["assumed"]}', f'- **实际情况**：{e["found"]}']
             if e['status'] == 'pending':
                 out += [f'- **怎么验证**：{e["decision"]}']
@@ -64,6 +69,13 @@ def build_md():
                 out += [f'- **决策**：{e["decision"]}', f'- **好处**：{e["pros"]}', f'- **代价**：{e["cons"]}']
             out.append('')
     return '\n'.join(out)
+
+
+def links(e):
+    refs = e['cases'] + e['issues']
+    if not refs:
+        return ''
+    return '相关 ' + ' '.join(f'<span class="ref">{E(r)}</span>' for r in refs) + ' · '
 
 
 def build_html():
@@ -74,7 +86,7 @@ def build_html():
             f'<li><a href="#{e["id"].lower()}"><span class="mono">{e["id"]}</span>{E(e["title"])}</a>'
             f'<span class="st st-{e["status"]}">{STATUS[e["status"]]}</span></li>'
             for e in ENTRIES if e['stage'] == sid)
-        toc.append(f'<section class="toc-group"><h3><span class="mono">{sid}</span>{E(name)}</h3><ul>{items}</ul></section>')
+        toc.append(f'<section class="toc-group"><h3>{E(name)}</h3><ul>{items}</ul></section>')
 
     body = []
     for sid, name, desc in STAGES:
@@ -92,9 +104,9 @@ def build_html():
   <header><span class="mono eid">{e["id"]}</span><h4>{E(e["title"])}</h4><span class="st st-{e["status"]}">{STATUS[e["status"]]}</span></header>
   <div class="row two"><div><span class="label">原来以为</span><p>{E(e["assumed"])}</p></div><div><span class="label">实际情况</span><p>{E(e["found"])}</p></div></div>
   {tail}
-  <p class="where">出处：{E(e["where"])}</p>
+  <p class="where">{links(e)}出处：{E(e["where"])} · 旧编号 {E(e["old"])}</p>
 </article>''')
-        body.append(f'<section class="stage" id="stage-{sid.lower()}"><div class="stage-head"><h2><span class="mono">{sid}</span>{E(name)}</h2><p>{E(desc)}</p></div>{"".join(arts)}</section>')
+        body.append(f'<section class="stage" id="stage-{sid.lower()}"><div class="stage-head"><h2>{E(name)}</h2><p>{E(desc)}</p></div>{"".join(arts)}</section>')
 
     facts = ''.join(f'<span><span class="st st-{k}">{STATUS[k]}</span> <b>{v}</b></span>' for k, v in c.items())
 
@@ -140,7 +152,7 @@ header.page p {{ margin: 0; color: var(--muted); font-size: 15px }}
 .toc-group ul {{ list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px }}
 .toc-group li {{ display: flex; gap: 8px; align-items: baseline; justify-content: space-between; font-size: 13px }}
 .toc-group a {{ color: var(--ink); text-decoration: none; display: flex; gap: 8px; min-width: 0 }}
-.toc-group a .mono {{ color: var(--muted); font-size: 12px; flex: none; width: 22px }}
+.toc-group a .mono {{ color: var(--muted); font-size: 12px; flex: none; width: 44px }}
 .toc-group a:hover {{ text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--line) }}
 a:focus-visible {{ outline: 2px solid var(--attention); outline-offset: 2px }}
 .stage {{ display: flex; flex-direction: column; gap: 14px }}
@@ -161,6 +173,9 @@ a:focus-visible {{ outline: 2px solid var(--attention); outline-offset: 2px }}
 .pro .label {{ color: var(--good) }}
 .con .label {{ color: var(--attention) }}
 .where {{ margin: 0; font-size: 12px; color: var(--muted) }}
+.ref {{ font-family: var(--font-mono); font-size: 11.5px; color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; margin-right: 2px }}
+.rules {{ margin: 0; font-size: 13px; color: var(--muted) }}
+.rules b {{ font-family: var(--font-mono); color: var(--ink); font-weight: 500 }}
 .foot {{ font-size: 12.5px; color: var(--muted) }}
 @media (max-width: 860px) {{
   .toc {{ grid-template-columns: minmax(0, 1fr) }}
@@ -176,6 +191,7 @@ a:focus-visible {{ outline: 2px solid var(--attention); outline-offset: 2px }}
   <h1>AgentDeck 调研记录</h1>
   <p>从画原型到写代码，哪些地方和一开始想的不一样：原来以为什么、实际是什么、怎么决定的、换来的好处和付出的代价。最后一组是已经有对策、还要等真东西试过的。</p>
   <div class="facts"><span>共 <b>{len(ENTRIES)}</b> 条</span>{facts}</div>
+  <p class="rules">编号全项目统一：<b>DR-xx</b> 调研记录 · <b>TC-xx</b> 端到端用例 · <b>IS-xx</b> 问题 · <b>F1、T2、X3</b> 等是 MVP 任务表的任务。用例和问题在《AgentDeck 端到端用例与问题清单》xlsx 里，每条调研下面列出相关的用例和问题。</p>
 </header>
 
 <nav aria-label="目录"><div class="toc">{"".join(toc)}</div></nav>

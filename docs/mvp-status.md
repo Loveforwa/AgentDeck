@@ -104,36 +104,36 @@
 | R1 | 快捷键 | 完成，有自动测试 | 快捷键分发 + 菜单 | 菜单项触发 ⌘B ⌘W | 真键盘在网页里没试 |
 | R2 | 端到端验收 | 部分完成 / 未做 | 没有 | 没有 | 没有 Playwright，14 条验收场景都没自动化 |
 
-## 14 条验收场景
+## 14 条验收场景（端到端用例 TC-01 到 TC-14）
 
-| # | 场景 | 状态 | 依据 |
+| 用例 | 场景 | 状态 | 依据 |
 | --- | --- | --- | --- |
-| 1 | 右键 › Add project… 选文件夹，直接进入新建工作区对话框 | 还没验证 | 流程有单测（假的选文件夹）；Electron 里没点过，组装用的是演示模式 |
-| 2 | 基于 main 新建 feat/oauth：框出现、worktree 建好、.env 已复制、初始化命令自动运行 | 还没验证 | 服务层有真 git 测试；Electron 里没建过 worktree |
-| 3 | 同一仓库再建 fix/rate-limit，两个框各开一个 claude 同时改代码 | 还没验证 | 服务层支持多 worktree；两个真 claude 并行没试过 |
-| 4 | claude 请求批准：2 秒内变橙，框和顶栏“1 waiting”，后台时有系统通知 | 部分验证 | 手动发一个批准请求，橙色、计数、角标都出现了；真 claude 还停在信任提示，系统通知没真弹 |
-| 5 | ⌘J 跳过去，直接批准，状态回到运行中 | 还没验证 | ⌘J 有单测；真 claude 批准后回到运行中没测。场景写“按 y”，claude 实测是 1 或回车 |
-| 6 | 框里跑 dev server，点 localhost 链接，网页窗口出现在右边同一个框里 | 部分验证 | 组装时用 python http.server 点开过网页窗口；pnpm dev 没试 |
-| 7 | 聚焦 claude，面板显示更改，暂存、写信息、⌘↩ 提交，提交记录里出现 | 部分验证 | 暂存和取消暂存在 Electron 里试过；真提交没做（避免改 main） |
-| 8 | 切到 fix/rate-limit 时显示“in fix/rate-limit”，单击跳到那个框 | 还没验证 | 面板有单测；要第二个 worktree，组装时没试 |
-| 9 | 两个终端拉小成摘要卡，单击恢复原大小并聚焦 | 部分验证 | 白板和终端窗口都有单测；Electron 里没拉过 |
-| 10 | 退出再打开：位置不变，终端还在运行，历史都在 | 基本可以 | 今晚在 main 上重开过一次，截图为证；没测强杀进程 |
-| 11 | 标题栏右键 › Open in system terminal，两边输入同步 | 还没验证 | 命令拼装有单测；没真点 |
-| 12 | 删除 fix/rate-limit 并删目录：有改动要先确认；目录消失、分支还在 | 部分验证 | 服务层有真 git 测试；Electron 里没走过 |
-| 13 | 关掉窗口 claude 继续跑，批准请求来通知，点通知回来并跳到它 | 部分验证 | 关窗口后台继续在 Electron 里试过；点通知没试 |
-| 14 | 重启电脑后 Restore all，接回原来的对话 | 没做（P1） | 属于 P1（MVP 完整版），还没做 |
+| TC-01 | 右键 › Add project… 选文件夹，直接进入新建工作区对话框 | 还没验证 | 流程有单测（假的选文件夹）；Electron 里没点过，组装用的是演示模式 |
+| TC-02 | 基于 main 新建 feat/oauth：框出现、worktree 建好、.env 已复制、初始化命令自动运行 | 还没验证 | 服务层有真 git 测试；Electron 里没建过 worktree |
+| TC-03 | 同一仓库再建 fix/rate-limit，两个框各开一个 claude 同时改代码 | 还没验证 | 服务层支持多 worktree；两个真 claude 并行没试过 |
+| TC-04 | claude 请求批准：2 秒内变橙，框和顶栏“1 waiting”，后台时有系统通知 | 部分验证 | 手动发一个批准请求，橙色、计数、角标都出现了；真 claude 还停在信任提示，系统通知没真弹 |
+| TC-05 | ⌘J 跳过去，直接批准，状态回到运行中 | 还没验证 | ⌘J 有单测；真 claude 批准后回到运行中没测。场景写“按 y”，claude 实测是 1 或回车 |
+| TC-06 | 框里跑 dev server，点 localhost 链接，网页窗口出现在右边同一个框里 | 部分验证 | 组装时用 python http.server 点开过网页窗口；pnpm dev 没试 |
+| TC-07 | 聚焦 claude，面板显示更改，暂存、写信息、⌘↩ 提交，提交记录里出现 | 部分验证 | 暂存和取消暂存在 Electron 里试过；真提交没做（避免改 main） |
+| TC-08 | 切到 fix/rate-limit 时显示“in fix/rate-limit”，单击跳到那个框 | 还没验证 | 面板有单测；要第二个 worktree，组装时没试 |
+| TC-09 | 两个终端拉小成摘要卡，单击恢复原大小并聚焦 | 部分验证 | 白板和终端窗口都有单测；Electron 里没拉过 |
+| TC-10 | 退出再打开：位置不变，终端还在运行，历史都在 | 基本可以 | 今晚在 main 上重开过一次，截图为证；没测强杀进程 |
+| TC-11 | 标题栏右键 › Open in system terminal，两边输入同步 | 还没验证 | 命令拼装有单测；没真点 |
+| TC-12 | 删除 fix/rate-limit 并删目录：有改动要先确认；目录消失、分支还在 | 部分验证 | 服务层有真 git 测试；Electron 里没走过 |
+| TC-13 | 关掉窗口 claude 继续跑，批准请求来通知，点通知回来并跳到它 | 部分验证 | 关窗口后台继续在 Electron 里试过；点通知没试 |
+| TC-14 | 重启电脑后 Restore all，接回原来的对话 | 没做（P1） | 属于 P1（MVP 完整版），还没做 |
 
 ## 已知问题（apps/desktop/ASSEMBLY_NOTES.md）
 
-1. **tmux-host**：变量重名导致终端进程一启动就崩，组装时在构建配置里绕过了，根子没改
-2. **tmux-host**：打包后默认的 tmux.conf 路径不对，应用现在总是显式传路径
-3. **workspace-service**：没有“worktree 放哪”的选项，开发模式下借一个假的主目录
-4. **白板**：第二次 start() 在白板加载完之前就返回
-5. **白板**：新建终端菜单里有用不了的 custom，按 agent id 而不是名字显示
-6. **agent-adapters**：claude 停在信任提示时状态显示 Idle，应该算在等你
-7. **源代码管理面板**：没有聚焦任何窗口时也显示“This window isn’t in a workspace.”
-8. **agent-adapters**：重开应用后状态都显示“Idle · now”，开始时间没接上
-9. **终端窗口**：连着建两个终端时第二个可能误显示“Previous session ended”
+- **IS-09** tmux-host：变量重名导致终端进程一启动就崩，组装时在构建配置里绕过了，根子没改
+- **IS-10** tmux-host：打包后默认的 tmux.conf 路径不对，应用现在总是显式传路径
+- **IS-19** workspace-service：没有“worktree 放哪”的选项，开发模式下借一个假的主目录
+- **IS-20** 白板：第二次 start() 在白板加载完之前就返回
+- **IS-21** 白板：新建终端菜单里有用不了的 custom，按 agent id 而不是名字显示
+- **IS-06** agent-adapters：claude 停在信任提示时状态显示 Idle，应该算在等你
+- **IS-22** 源代码管理面板：没有聚焦任何窗口时也显示“This window isn’t in a workspace.”
+- **IS-08** agent-adapters：重开应用后状态都显示“Idle · now”，开始时间没接上
+- **IS-07** 终端窗口：连着建两个终端时第二个可能误显示“Previous session ended”
 
 ## 还没处理的
 

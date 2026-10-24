@@ -104,7 +104,7 @@ P0 = [
     ('R2', '端到端验收', 'partial', '没有', '没有', '没有 Playwright，14 条验收场景都没自动化'),
 ]
 
-# 14 条验收场景（来自设计画布「10 · 全局规则」）
+# 14 条验收场景（来自设计画布「10 · 全局规则」），编号就是端到端用例 TC-01 到 TC-14
 # status: ok 基本可以 / part 部分验证 / no 还没验证 / todo 没做
 ACCEPT = [
     (1, '右键 › Add project… 选文件夹，直接进入新建工作区对话框', 'no', '流程有单测（假的选文件夹）；Electron 里没点过，组装用的是演示模式'),
@@ -123,17 +123,17 @@ ACCEPT = [
     (14, '重启电脑后 Restore all，接回原来的对话', 'todo', '属于 P1（MVP 完整版），还没做'),
 ]
 
-# 已知问题（apps/desktop/ASSEMBLY_NOTES.md），都不会让程序崩
+# 已知问题（apps/desktop/ASSEMBLY_NOTES.md），都不会让程序崩；编号是问题清单里的 IS-xx
 ISSUES = [
-    ('tmux-host', '变量重名导致终端进程一启动就崩，组装时在构建配置里绕过了，根子没改'),
-    ('tmux-host', '打包后默认的 tmux.conf 路径不对，应用现在总是显式传路径'),
-    ('workspace-service', '没有“worktree 放哪”的选项，开发模式下借一个假的主目录'),
-    ('白板', '第二次 start() 在白板加载完之前就返回'),
-    ('白板', '新建终端菜单里有用不了的 custom，按 agent id 而不是名字显示'),
-    ('agent-adapters', 'claude 停在信任提示时状态显示 Idle，应该算在等你'),
-    ('源代码管理面板', '没有聚焦任何窗口时也显示“This window isn’t in a workspace.”'),
-    ('agent-adapters', '重开应用后状态都显示“Idle · now”，开始时间没接上'),
-    ('终端窗口', '连着建两个终端时第二个可能误显示“Previous session ended”'),
+    ('IS-09', 'tmux-host', '变量重名导致终端进程一启动就崩，组装时在构建配置里绕过了，根子没改'),
+    ('IS-10', 'tmux-host', '打包后默认的 tmux.conf 路径不对，应用现在总是显式传路径'),
+    ('IS-19', 'workspace-service', '没有“worktree 放哪”的选项，开发模式下借一个假的主目录'),
+    ('IS-20', '白板', '第二次 start() 在白板加载完之前就返回'),
+    ('IS-21', '白板', '新建终端菜单里有用不了的 custom，按 agent id 而不是名字显示'),
+    ('IS-06', 'agent-adapters', 'claude 停在信任提示时状态显示 Idle，应该算在等你'),
+    ('IS-22', '源代码管理面板', '没有聚焦任何窗口时也显示“This window isn’t in a workspace.”'),
+    ('IS-08', 'agent-adapters', '重开应用后状态都显示“Idle · now”，开始时间没接上'),
+    ('IS-07', '终端窗口', '连着建两个终端时第二个可能误显示“Previous session ended”'),
 ]
 
 PENDING = [
