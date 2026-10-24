@@ -13,13 +13,13 @@ FONT = 'Arial'
 # 状态：⚠ 当前有问题 / 未验证 / 部分验证 / 已验证 / 未实现
 CASES = [
     # ---- 当前有问题 ----
-    dict(id='E24', p='P0', status='⚠ 当前有问题',
+    dict(id='E24', p='P0', status='部分验证',
          scene='在面板里给“主目录工作区”切换分支',
          pre='主目录工作区的框里开着终端（空闲也算）；项目是一个普通测试仓库，不要用 agenduck 本身',
          steps='1. 聚焦框里的终端\n2. 面板里单击分支按钮\n3. 单击另一个分支',
          expect='UI：只要这个目录里有终端开着（不管 Running 还是 Idle），先弹确认，写明哪些终端在这个目录里、它们看到的文件会变；确认后才切换，框标题更新为新分支。\n后台：确认后才执行 git switch；切换后 workspace-service 更新记录并发 workspace.changed。',
          result='不会因为点错一下就把正在用的目录切到别的分支',
-         issue='2026-10-24 实际发生：在 agenduck 自己的主目录工作区里单击分支，没有任何确认就把仓库从 main 切到了一个遗留分支（终端都是 Idle，面板只在有改动或有 Running 的 agent 时才确认）；而 AgentDeck 正是从这个目录运行的，开发服务器立刻加载了旧代码，界面变成早期自检页并报错（Q38、Q39）',
+         issue='已修（925c11f）：只要目录里有终端开着就确认（Q38）；切 AgentDeck 自己运行的目录（agenduck）会被拒绝并提示（Q39）。在真窗口里用调试端口调用切分支已确认被拒绝；确认框请在一个测试仓库上点一遍验收。起因：2026-10-24 在 agenduck 的主目录工作区里单击分支，没确认就切到遗留分支，正在运行的 AgentDeck 热更新成旧代码',
          rel='Q38 Q39 Q31'),
     dict(id='E04', p='P0', status='⚠ 当前有问题',
          scene='agent 停下来请求批准时，用户一眼看出是谁在等',
@@ -289,7 +289,7 @@ ws = wb.active
 ws.title = '说明'
 rows = [
     ('AgentDeck MVP 端到端用例与问题清单', None),
-    ('生成时间', '2026-10-24，基于 main 01947e0（下午补了 E24、Q38、Q39）。证据来自各包测试、apps/desktop/ASSEMBLY_NOTES.md、2026-10-23 的组装和两次启动截图。'),
+    ('生成时间', '2026-10-24，基于 main 925c11f（下午补了 E24、Q38、Q39，Q38、Q39 已修）。证据来自各包测试、apps/desktop/ASSEMBLY_NOTES.md、2026-10-23 的组装和两次启动截图。'),
     ('', None),
     ('怎么用', None),
     ('1', '先看「端到端用例」：排在最前面、标着“⚠ 当前有问题”的是已知会出问题的用例，问题写在“当前问题”列。'),
@@ -499,6 +499,17 @@ for p in ['P0', 'P1', 'P2']:
 ws3.cell(s2 + 1, 1).font = Font(name=FONT, size=10, bold=True, color='FFFFFF')
 for col, w in zip('ABCD', (18, 12, 14, 16)):
     ws3.column_dimensions[col].width = w
+
+# 已经处理的问题：处理状态和备注
+RESOLVED = {
+    'Q38': '2026-10-24 已修（925c11f）：只要目录里有终端开着就确认，确认框列出这些终端；面板加了测试',
+    'Q39': '2026-10-24 已修（925c11f）：应用启动时找出自己运行的目录，界面对它切分支、建分支并切换、连目录删除都拒绝；真窗口里验证过',
+}
+for r in range(2, last_issue + 1):
+    note = RESOLVED.get(ws2.cell(r, 1).value)
+    if note:
+        ws2.cell(r, 10).value = '已解决'
+        ws2.cell(r, 11).value = note
 
 # 没有 LibreOffice 可以预先算好公式，打开时让 Excel / Numbers / WPS 全部重算
 wb.calculation.fullCalcOnLoad = True
