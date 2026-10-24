@@ -12,7 +12,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@agentdeck/contracts": "workspace:*"
+    "@agentdeck/contracts": "workspace:*",
+    "@agentdeck/mcp-server": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",

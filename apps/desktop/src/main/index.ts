@@ -7,6 +7,7 @@ import echoHostPath from '../utility/echo-host.ts?modulePath';
 import { registerDevServices } from './dev-services.ts';
 import { startHostProcess } from './host-process.ts';
 import { installIpc, type IpcMainLike } from './ipc.ts';
+import { startAppMcp } from './mcp.ts';
 import { emit, registry } from './services.ts';
 import { createTerminalPortBroker } from './terminal-ports.ts';
 
@@ -63,11 +64,25 @@ void app.whenReady().then(() => {
     setBadge: (count) => app.dock?.setBadge(count > 0 ? String(count) : ''),
   });
 
+  // AgentDeck 的 MCP（M1）。起不来不影响应用，只是 agent 拿不到这些工具。
+  // 组装时：createAgentRuntime({ mcp: () => mcp?.endpoint ?? null })，再传 workspaceOf、onInput（见 AGENTS.md）。
+  let mcp: Awaited<ReturnType<typeof startAppMcp>> | null = null;
+  startAppMcp({ registry, emit }).then(
+    (server) => {
+      mcp = server;
+      console.log(`[agentdeck] MCP on ${server.endpoint.url}`);
+    },
+    (e: unknown) => console.error('[agentdeck] MCP did not start', e),
+  );
+
   createWindow();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
-  app.on('will-quit', () => host.stop());
+  app.on('will-quit', () => {
+    host.stop();
+    void mcp?.close();
+  });
 });
 
 app.on('window-all-closed', () => {

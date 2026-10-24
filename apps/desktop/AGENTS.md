@@ -15,6 +15,7 @@ src/main/
   terminal-ports.ts 每个窗口一条 MessageChannelMain：port1 给 preload，port2 给 utilityProcess
   host-process.ts   启动终端 utilityProcess，转交端口和控制消息
   dev-services.ts   内联的最小假服务（app、terminals），只用来自检，组装时删除
+  mcp.ts            AgentDeck 的 MCP 服务（M1，packages/mcp-server）：工具通过注册表调服务
 src/utility/
   echo-host.ts      utilityProcess 里跑的回显假进程，以后换成 packages/tmux-host
 src/preload/
@@ -49,6 +50,18 @@ registry.context()?.senderId;                // 在服务方法里取发起调�
 - 服务抛 `AgentDeckError`（或 `AgentDeckErrorData` 形状的对象）会原样传到界面；其他异常变成 `internal`，`detail` 是堆栈。
 - 没注册的服务或方法返回 `not-found`。同名重复注册会抛错。
 - 现在 `src/main/index.ts` 里调用 `registerDevServices` 注册了内联假服务；接真实实现时去掉它，避免重复注册。
+
+## MCP（M1）
+
+`startAppMcp({ registry, emit })` 在 `app.whenReady` 后启动 `packages/mcp-server`，听 `127.0.0.1:47621`（被占用时随机端口），
+token 在 `~/.agentdeck/run/mcp-token`。工具用 `viaRegistry` 调注册表里的服务（发起者 senderId 为 0，不是任何窗口），
+所以服务注册上之后工具就能用；没注册的返回 `Service not available: …`。白板事件（`board.add-frame`、`board.open-window`）走 `emit` 广播。
+
+组装时还要接三处（见 `packages/mcp-server/AGENTS.md`）：
+
+- `createAgentRuntime({ …, mcp: () => mcp?.endpoint ?? null })`：claude 启动时挂上这个 MCP。
+- `startAppMcp({ …, workspaceOf: (id) => rt.status.get(id)?.workspaceId, onInput: (id) => rt.noteInput(id) })`。
+- `electron.vite.config.ts` 的主进程把 `@agentdeck/mcp-server` 打进产物（TS 源码包）；以后接的服务包也照这样加进 `bundleServices`。
 
 ## 安全
 
