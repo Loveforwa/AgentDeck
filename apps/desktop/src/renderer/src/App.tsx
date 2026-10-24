@@ -3,7 +3,7 @@
 // AGENTDECK_DEMO=1 时自动把本仓库加成项目、建主目录工作区、开一个 Shell 和一个 claude（见 demo.ts）。
 
 import { useEffect, useMemo, useState } from 'react';
-import { WAITING_STATUSES, type AgentDeckErrorData, type TerminalWindowData, type Workspace, type WorkspaceId } from '@agentdeck/contracts';
+import type { AgentDeckErrorData, TerminalWindowData, Workspace, WorkspaceId } from '@agentdeck/contracts';
 import { ScmPanel } from '@agentdeck/scm-panel';
 import { useBoardState, Workbench, type BoardController } from '@agentdeck/ui-canvas';
 import { Button } from '@agentdeck/ui-kit';
@@ -11,7 +11,15 @@ import { OPEN_SETTINGS_EVENT } from '@agentdeck/ui-widget-terminal';
 import type { StartupInfo } from '../../shared/desktop-bridge.ts';
 import { reportBoardReady, runDemo } from './demo.ts';
 
-const ACTIVE = new Set(['starting', 'running', ...WAITING_STATUSES]);
+/** 进程已经结束的状态。其余（starting / running / 在等你 / idle）都算“开着”。 */
+const ENDED = new Set(['exited', 'error']);
+
+/** 面板确认框里显示的名字：agent 用 agent 名，Shell 和自定义命令用命令名。 */
+function terminalLabel(data: TerminalWindowData): string {
+  if (data.agent !== 'shell' && data.agent !== 'custom') return data.agent;
+  const cmd = data.cmd.split('/').pop() ?? '';
+  return cmd === '' ? 'shell' : cmd;
+}
 
 function openSettings(): void {
   void window.agentdeckDesktop?.openSettings().catch((e: unknown) => console.error(e));
@@ -20,24 +28,27 @@ function openSettings(): void {
 /** 右侧面板：跟着聚焦的窗口（或选中的框）所在的工作区。 */
 function SidePanel({ workspace, controller }: { workspace: Workspace | null; controller: BoardController }) {
   const wsId = workspace?.id ?? null;
-  // 这个工作区里正在跑的 agent（切分支前提示）。用字符串做选择结果，避免每次渲染都是新数组。
-  const running = useBoardState((s) => {
+  // 这个工作区目录里开着的终端，不管在跑还是空闲（Q38：切分支前只要有一个就确认）。
+  // 用字符串做选择结果，避免每次渲染都是新数组。
+  const open = useBoardState((s) => {
     if (!wsId) return '';
     const names = new Set<string>();
     for (const w of s.windows) {
       if (w.type !== 'terminal' || w.workspaceId !== wsId) continue;
       const data = w.data as TerminalWindowData;
-      const st = data.terminalId ? s.statuses[data.terminalId] : undefined;
-      if (data.agent !== 'shell' && st && ACTIVE.has(st.status)) names.add(data.agent);
+      if (!data.terminalId) continue; // 还没起来，或重启后会话已经没了
+      const st = s.statuses[data.terminalId];
+      if (st && ENDED.has(st.status)) continue;
+      names.add(terminalLabel(data));
     }
     return [...names].sort().join(',');
   });
-  const runningAgents = useMemo(() => (running ? running.split(',') : []), [running]);
+  const openTerminals = useMemo(() => (open ? open.split(',') : []), [open]);
   const goTo = (id: WorkspaceId) => {
     controller.selectFrame(id);
     controller.fitFrame(id);
   };
-  return <ScmPanel workspaceId={wsId} onGoToWorkspace={goTo} runningAgents={runningAgents} />;
+  return <ScmPanel workspaceId={wsId} onGoToWorkspace={goTo} openTerminals={openTerminals} />;
 }
 
 function TmuxMissing({ error, onRetry }: { error: AgentDeckErrorData; onRetry: () => void }) {

@@ -28,12 +28,19 @@ import {
 import { toErrorData, useDirectory, useRepos, type RepoState, type ScmApi } from './useScm.ts';
 import './scm.css';
 
+const NONE: readonly string[] = [];
+
 export interface ScmPanelProps {
   /** 聚焦的窗口所在的工作区；聚焦的是散放窗口时传 null。 */
   workspaceId: WorkspaceId | null;
   /** 单击被别的工作区占用的分支、或 Repository 区的一行：白板平移到那个框并聚焦它。 */
   onGoToWorkspace?: (workspaceId: WorkspaceId) => void;
-  /** 这个工作区里正在运行的 agent，例如 ['claude']。切分支前提示“它看到的文件会变”。 */
+  /**
+   * 这个工作区目录里开着的终端（不管是在跑还是空闲），例如 ['claude', 'zsh']。
+   * 只要有一个，切分支前就先确认（Q38：空闲的 agent 和 Shell 也在这个目录里，切走会改掉它们眼前的文件）。
+   */
+  openTerminals?: readonly string[];
+  /** @deprecated 旧名字，等同于 openTerminals。 */
   runningAgents?: readonly string[];
   /** 默认 window.agentdeck。dev 页面和测试传假实现。 */
   api?: ScmApi;
@@ -68,7 +75,8 @@ interface Picker {
   anchor: PopoverAnchor;
 }
 
-export function ScmPanel({ workspaceId, onGoToWorkspace, runningAgents = [], api: apiProp }: ScmPanelProps) {
+export function ScmPanel({ workspaceId, onGoToWorkspace, openTerminals, runningAgents, api: apiProp }: ScmPanelProps) {
+  const terminalsHere = openTerminals ?? runningAgents ?? NONE;
   const api = apiProp ?? window.agentdeck;
   const dir = useDirectory(api);
   const workspace = workspaceId ? (dir.workspaces?.find((w) => w.id === workspaceId) ?? null) : null;
@@ -162,7 +170,7 @@ export function ScmPanel({ workspaceId, onGoToWorkspace, runningAgents = [], api
 
   const beginSwitch = (repo: RepoState, branch: string) => {
     const changes = repo.status?.files.length ?? 0;
-    if (changes === 0 && runningAgents.length === 0) {
+    if (changes === 0 && terminalsHere.length === 0) {
       void run(`Couldn’t switch to ${branch}`, () => api.git.switchBranch(repo.path, branch, 'carry'));
       return;
     }
@@ -319,7 +327,7 @@ export function ScmPanel({ workspaceId, onGoToWorkspace, runningAgents = [], api
           branch={dialog.branch}
           current={dialog.repo.status?.branch ?? null}
           changes={data.repos.find((r) => r.path === dialog.repo.path)?.status?.files.length ?? 0}
-          agents={runningAgents}
+          agents={terminalsHere}
           carryRefused={dialog.carryRefused}
           error={dialog.error}
           busy={data.busy}

@@ -141,7 +141,7 @@ describe('ScmPanel', () => {
     await user.click(screen.getByRole('button', { name: /Branch feat\/other/ }));
     await user.click(await screen.findByRole('option', { name: 'feat/login' }));
     const dialog = await screen.findByRole('dialog', { name: '3 uncommitted changes' });
-    expect(within(dialog).getByText(/claude is running in this folder/)).toBeTruthy();
+    expect(within(dialog).getByText(/claude is open in this folder/)).toBeTruthy();
     await user.click(within(dialog).getByRole('button', { name: 'Stash and switch' }));
     await screen.findByRole('button', { name: /Branch feat\/login/ });
     expect(screen.getByText('No changes')).toBeTruthy();
@@ -155,6 +155,33 @@ describe('ScmPanel', () => {
     await user.click(screen.getByRole('button', { name: 'Restore' }));
     await ready('Commit 1 file');
     expect(screen.queryByText(/Changes stashed/)).toBeNull();
+  });
+
+  it('asks before switching a clean folder when any terminal is open there, even an idle shell (Q38)', async () => {
+    const user = userEvent.setup();
+    const { api } = setup();
+    const { rerender } = render(<ScmPanel api={api} workspaceId={W.agentdeckMain} openTerminals={['zsh']} />);
+    await ready();
+    // 新建一个分支并切过去，好让 main 空出来可以切回
+    await user.click(screen.getByRole('button', { name: /Branch main/ }));
+    await user.click(await screen.findByRole('option', { name: 'New branch…' }));
+    await user.type(screen.getByPlaceholderText('feat/my-change'), 'feat/q38{Enter}');
+    await screen.findByRole('button', { name: /Branch feat\/q38/ });
+
+    // 没有改动，但目录里开着一个空闲的 zsh：先确认，取消就不切
+    await user.click(screen.getByRole('button', { name: /Branch feat\/q38/ }));
+    await user.click(await screen.findByRole('option', { name: 'main' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Switch to main?' });
+    expect(within(dialog).getByText(/zsh is open in this folder/)).toBeTruthy();
+    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    expect(screen.getByRole('button', { name: /Branch feat\/q38/ })).toBeTruthy();
+
+    // 目录里没有任何终端：直接切
+    rerender(<ScmPanel api={api} workspaceId={W.agentdeckMain} openTerminals={[]} />);
+    await user.click(screen.getByRole('button', { name: /Branch feat\/q38/ }));
+    await user.click(await screen.findByRole('option', { name: 'main' }));
+    await screen.findByRole('button', { name: /Branch main/ });
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
   it('confirms the first Commit all, then remembers', async () => {

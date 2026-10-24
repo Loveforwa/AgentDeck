@@ -221,7 +221,7 @@ function App() {
         <ScmPanel
           api={api}
           workspaceId={focus}
-          runningAgents={agentRunning && agent ? [agent.agent === 'shell' ? 'claude' : agent.agent] : []}
+          openTerminals={agentRunning && agent ? [agent.agent === 'shell' ? 'claude' : agent.agent] : []}
           onGoToWorkspace={(id) => {
             setFocus(id);
             note(`Board pans to ${workspaces.find((w) => w.id === id)?.name ?? id}`);

@@ -22,6 +22,12 @@ export function ErrorDetail({ error }: { error: AgentDeckErrorData }) {
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
+/** ['claude'] → 'claude'；['claude', 'zsh'] → 'claude and zsh'；三个以上用逗号。 */
+function listNames(names: readonly string[]): string {
+  if (names.length <= 2) return names.join(' and ');
+  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+}
+
 export function SwitchDialog(props: {
   branch: string;
   current: string | null;
@@ -35,7 +41,7 @@ export function SwitchDialog(props: {
   onSwitch(strategy: 'carry' | 'stash'): void;
 }) {
   const { branch, current, changes, agents, carryRefused, error, busy, onCancel, onSwitch } = props;
-  const who = agents.length === 0 ? null : `${agents.join(' and ')} ${agents.length === 1 ? 'is' : 'are'} running in this folder.`;
+  const who = agents.length === 0 ? null : `${listNames(agents)} ${agents.length === 1 ? 'is' : 'are'} open in this folder.`;
   return (
     <Dialog
       open
@@ -64,7 +70,11 @@ export function SwitchDialog(props: {
         )
       }
     >
-      {who && <DialogText tone="attention">{who} Switching branches changes the files it sees.</DialogText>}
+      {who && (
+        <DialogText tone="attention">
+          {who} Switching branches changes the files {agents.length === 1 ? 'it sees' : 'they see'}.
+        </DialogText>
+      )}
       {changes > 0 && (
         <DialogText tone="muted">
           {carryRefused

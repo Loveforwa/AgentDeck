@@ -48,6 +48,7 @@ import { readLoginEnv, type Env } from './login-env.ts';
 import { buildMenuTemplate, type MenuShortcutId } from './menu.ts';
 import { resolvePaths } from './paths.ts';
 import { createScreenshotter } from './screenshot.ts';
+import { guardGitService, guardWorkspaceService } from './self-repo-guard.ts';
 import { emit as broadcast, registry } from './services.ts';
 import { defaultSettings, openSettingsFile } from './settings.ts';
 import { createTerminalProxy } from './terminal-service.ts';
@@ -150,6 +151,9 @@ async function main(): Promise<void> {
 
   // ---- git、项目、工作区 ----
   const git = createGitService({ moveToTrash: (p) => shell.trashItem(p), env: loginEnv, emit });
+  // 应用自己运行的目录（开发时是 agenduck 仓库）。界面不能切它的分支、不能连目录删掉它（Q39，见 self-repo-guard.ts）
+  const selfRoot = await git.repoRoot(app.getAppPath()).catch(() => null);
+  if (selfRoot) console.log(`[agentdeck] running from git checkout ${selfRoot}; branch switches there are blocked`);
   const { projects, workspaces } = createWorkspaceServices({
     git,
     projects: store.projects,
@@ -297,8 +301,8 @@ async function main(): Promise<void> {
     }),
   );
   registry.register('projects', projects);
-  registry.register('workspaces', workspaces);
-  registry.register('git', git);
+  registry.register('workspaces', guardWorkspaceService(workspaces, selfRoot));
+  registry.register('git', guardGitService(git, selfRoot));
   registry.register('terminals', terminals);
   registry.register('agents', agents);
   registry.register('status', rt.status);
