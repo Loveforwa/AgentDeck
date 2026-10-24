@@ -3,7 +3,7 @@
 实现过程中和一开始设想不一样的地方：原来以为什么、实际是什么、怎么决定的、好处和代价。
 由 `docs/research/build.py` 从 `docs/research/entries.py` 生成，不要直接改这个文件。更新于 2026-10-24。
 
-共 44 条：已解决 23，进行中 13，推迟 5，待验证 3。
+共 45 条：已解决 24，进行中 13，推迟 5，待验证 3。
 
 编号规则（全项目统一）：DR-xx 调研记录 · TC-xx 端到端用例 · IS-xx 问题 · F1、T2、X3 等是 MVP 任务表的任务编号。用例和问题在 docs/status/AgentDeck-端到端用例与问题清单-*.xlsx 里；每条调研下面列出相关的用例和问题。
 
@@ -55,6 +55,7 @@
   - [DR-39 Claude Code 里配的 codex MCP 坏了，每个新 session 都提示重连](#dr-39)（已解决）
   - [DR-40 主仓库搬家后，修 worktree 要把每个路径传给 git](#dr-40)（已解决）
   - [DR-41 在 AgentDeck 里管理它自己的仓库，切一下分支应用就坏了](#dr-41)（进行中）
+  - [DR-45 xterm 的两个默认值和 tmux 不合：回滚为 0 会崩，Unicode 6 宽度会错位](#dr-45)（已解决）
 - **还没验证的**：已经有对策，但要等对应的线用真东西试过才算数
   - [DR-42 claude 能不能把对话 fork 到另一个目录](#dr-42)（待验证）
   - [DR-43 Approve all 发的“允许一次”按键对不对](#dr-43)（待验证）
@@ -627,6 +628,20 @@
 - **决策**：立刻 git switch main 并重启恢复。之后：只要目录里有任何终端开着就先确认（IS-37）；应用发现要切的目录就是自己运行的目录时拒绝并提示（IS-38）；验收改用别的测试仓库，或在独立 worktree 里跑 pnpm dev。
 - **好处**：自举开发不会再被一次误点打断。
 - **代价**：切分支多一次确认；开发 AgentDeck 自己时要多维护一个 worktree。
+
+<a id="dr-45"></a>
+
+### DR-45 xterm 的两个默认值和 tmux 不合：回滚为 0 会崩，Unicode 6 宽度会错位
+
+状态：已解决 · 出处：提交 3ceabfb；packages/ui/widgets/terminal/test/xterm-buffer.test.ts · 旧编号 —
+
+相关：TC-25、IS-39、IS-40
+
+- **原来以为**：tmux 自己管回滚，xterm 的回滚设成 0 就行；xterm 默认的字符宽度够用。
+- **实际情况**：2026-10-24 验收时，一个 claude 终端在对话中改窗口大小后变空白（loadCell / isWrapped）。headless 版 xterm 加固定种子模糊测试复现：scrollback 为 0 时改大小，缓冲区会少行。另外 xterm 默认按 Unicode 6 算宽度，emoji 算一格，而 tmux 3.6a 算两格，回答里 ✅ ❌ 后面的字整体错一列。
+- **决策**：scrollback 改成 1000（固定种子 1、18、37 在 0 时出事、在 1000 时不出事）；加 @xterm/addon-unicode11 并切到 Unicode 11，对 tmux 实测 35 个 claude 常用符号的宽度，全部吻合。两件事都写成了回归测试。
+- **好处**：终端不会因为改大小崩掉；emoji 和中文的排版和系统终端一致。
+- **代价**：每个终端多占一点内存（1000 行回滚）；以后 tmux 或 xterm 升级改了宽度表，要重新对一遍（测试会提醒）。
 
 ## 还没验证的
 

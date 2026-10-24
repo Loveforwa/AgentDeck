@@ -314,6 +314,14 @@ ENTRIES = [
          cons='切分支多一次确认；开发 AgentDeck 自己时要多维护一个 worktree。',
          status='partial', where='问题清单 IS-37、IS-38；用例 TC-24'),
 
+    dict(id='DR-45', old='—', cases=['TC-25'], issues=['IS-39', 'IS-40'], stage='E', title='xterm 的两个默认值和 tmux 不合：回滚为 0 会崩，Unicode 6 宽度会错位',
+         assumed='tmux 自己管回滚，xterm 的回滚设成 0 就行；xterm 默认的字符宽度够用。',
+         found='2026-10-24 验收时，一个 claude 终端在对话中改窗口大小后变空白（loadCell / isWrapped）。headless 版 xterm 加固定种子模糊测试复现：scrollback 为 0 时改大小，缓冲区会少行。另外 xterm 默认按 Unicode 6 算宽度，emoji 算一格，而 tmux 3.6a 算两格，回答里 ✅ ❌ 后面的字整体错一列。',
+         decision='scrollback 改成 1000（固定种子 1、18、37 在 0 时出事、在 1000 时不出事）；加 @xterm/addon-unicode11 并切到 Unicode 11，对 tmux 实测 35 个 claude 常用符号的宽度，全部吻合。两件事都写成了回归测试。',
+         pros='终端不会因为改大小崩掉；emoji 和中文的排版和系统终端一致。',
+         cons='每个终端多占一点内存（1000 行回滚）；以后 tmux 或 xterm 升级改了宽度表，要重新对一遍（测试会提醒）。',
+         status='done', where='提交 3ceabfb；packages/ui/widgets/terminal/test/xterm-buffer.test.ts'),
+
     # ---- F 待验证 ----
     dict(id='DR-42', old='F1', cases=[], issues=[], stage='F', title='claude 能不能把对话 fork 到另一个目录',
          assumed='claude --resume <id> --fork-session 在任何目录都能用。',

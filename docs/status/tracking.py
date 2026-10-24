@@ -6,6 +6,14 @@
 # 状态：⚠ 当前有问题 / 未验证 / 部分验证 / 已验证 / 未实现
 CASES = [
     # ---- 当前有问题 ----
+    dict(id='TC-25', p='P0', status='部分验证',
+         scene='在终端里和 agent 对话，同时改窗口大小，字显示正常',
+         pre='框里有一个在跑的 claude，让它的回答里带几个 emoji（例如让它“用 ✅ ❌ 列一下优缺点”）',
+         steps='1. 让 claude 回答\n2. 回答过程中拖窗口右下角改大小，再双击标题栏放大、还原\n3. 看回答里 emoji 后面的字',
+         expect='UI：终端一直正常刷新，不会变成空白；emoji 占两格，后面的字不重叠、不断开，和在系统终端里看到的一样。\n后台：改大小松手后才通知 tmux 新的行列数；xterm 的回滚不是 0（1000），字符宽度按 Unicode 11 算。',
+         result='对话时随手改窗口大小不会把终端弄坏',
+         issue='已修（3ceabfb）：2026-10-24 验收时，在一个 claude 终端里对话时终端突然变空白，控制台报 loadCell / isWrapped（IS-39）；agent 输出的 emoji 后面的字错位（IS-40）。两个问题都有测试复现并修好；请在真窗口里按步骤再试一次确认',
+         rel='IS-39 IS-40'),
     dict(id='TC-24', p='P0', status='部分验证',
          scene='在面板里给“主目录工作区”切换分支',
          pre='主目录工作区的框里开着终端（空闲也算）；项目是一个普通测试仓库，不要用 agenduck 本身',
@@ -248,10 +256,14 @@ ISSUES = [
     ('IS-32', 'P3', '清理', '开发环境', 'Electron 二进制要手动下载一次（pnpm 10 不跑依赖的 postinstall）', '新克隆后 pnpm dev 报 Electron uninstall', '新环境第一次启动会失败', '在 pnpm 配置里允许 electron 的安装脚本，或在根目录加 setup 脚本', ''),
     ('IS-33', 'P3', '清理', '开发环境', 'dev 的 tmux 实例里留着 4 个演示会话，其中 2 个来自组装用的 worktree', 'tmux -L agentdeck-desktop-dev ls', '无害，占一点资源', '验收完后 tmux -L agentdeck-desktop-dev kill-server', ''),
     ('IS-34', 'P3', '技术债', 'agent-adapters 测试', '真 agent 测试会自动回答 codex 的“信任这个文件夹”，往用户的 codex 配置里写记录', '看 real-agents.test.ts', '跑测试会改用户配置', '测试里用临时 CODEX_HOME 和 CLAUDE_CONFIG_DIR', ''),
+    ('IS-39', 'P0', '缺陷', '终端窗口', '和 agent 对话时终端突然变空白、不再刷新，控制台报 “Cannot read properties of undefined (reading \'loadCell\')” 和 “setting \'isWrapped\'”：xterm 6 在 scrollback 为 0 时改大小，缓冲区行数可能少于屏幕行数', '改终端大小的同时让它持续输出；test/xterm-buffer.test.ts 用固定种子复现', '终端彻底坏掉，只能重开窗口', '把 scrollback 改成大于 0（1000）', 'TC-25'),
+    ('IS-40', 'P1', '缺陷', '终端窗口', 'agent 输出里的 emoji（✅ ❌ ⚡ ⏳ 🙂 🤖 等）后面的字错位、重叠：xterm 默认按 Unicode 6 算宽度，emoji 算一格，tmux 算两格', '让 claude 回答里带 emoji，对比系统终端', '回答看不清', '加载 @xterm/addon-unicode11 并切到 Unicode 11（实测和 tmux 3.6a 全部吻合）', 'TC-25'),
 ]
 
 # 已经处理的问题：处理状态和备注
 RESOLVED = {
+    'IS-39': '2026-10-24 已修（3ceabfb）：scrollback 改成 1000，固定种子的复现测试通过；正在运行的 AgentDeck 已热更新',
+    'IS-40': '2026-10-24 已修（3ceabfb）：加 Unicode 11 宽度表，35 个常用符号和 tmux 实测宽度全部吻合，写成测试',
     'IS-37': '2026-10-24 已修（925c11f）：只要目录里有终端开着就确认，确认框列出这些终端；面板加了测试',
     'IS-38': '2026-10-24 已修（925c11f）：应用启动时找出自己运行的目录，界面对它切分支、建分支并切换、连目录删除都拒绝；真窗口里验证过',
 }
