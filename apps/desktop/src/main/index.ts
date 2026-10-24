@@ -44,7 +44,7 @@ import { startHostProcess } from './host-process.ts';
 import { installIpc, type IpcMainLike } from './ipc.ts';
 import { readLoginEnv, type Env } from './login-env.ts';
 import { buildMenuTemplate, type MenuShortcutId } from './menu.ts';
-import { startAppMcp } from './mcp.ts';
+import { startAppMcp, writeMcpPluginDir } from './mcp.ts';
 import { resolvePaths } from './paths.ts';
 import { createScreenshotter } from './screenshot.ts';
 import { guardGitService, guardWorkspaceService } from './self-repo-guard.ts';
@@ -167,11 +167,17 @@ async function main(): Promise<void> {
     hookSocket: paths.hookSocket,
     env: loginEnv,
   });
-  // AgentDeck 的 MCP（M1）：白板上的 claude 启动时挂上它，工具经注册表调服务。起不来不影响应用，只是 agent 拿不到这些工具。
+  // AgentDeck 的 MCP（M1、N1）：白板上的 claude、codex、omp 启动时挂上它，工具经注册表调服务。起不来不影响应用，只是 agent 拿不到这些工具。
   let mcp: Awaited<ReturnType<typeof startAppMcp>> | null = null;
+  // omp 用 --plugin-dir 加载的插件目录（内容固定，url、token 走环境变量）。写不了就不给，omp 不挂 MCP。
+  const mcpPluginDir = await writeMcpPluginDir(join(paths.dataDir, 'mcp-plugin')).catch((e: unknown) => {
+    console.warn('[agentdeck] MCP plugin folder not written', e);
+    return undefined;
+  });
   const rt = createAgentRuntime({
     env: () => loginEnv,
     mcp: () => mcp?.endpoint ?? null,
+    ...(mcpPluginDir ? { mcpPluginDir } : {}),
     terminals,
     notifyCommand,
     agentExtension: paths.agentExtension,
@@ -181,7 +187,29 @@ async function main(): Promise<void> {
     socketPath: paths.hookSocket,
   });
   await rt.start();
-  startAppMcp({ registry, emit, workspaceOf: (id) => rt.status.get(id)?.workspaceId, onInput: (id) => rt.noteInput(id) }).then(
+  startAppMcp({
+    registry,
+    emit,
+    workspaceOf: (id) => rt.status.get(id)?.workspaceId,
+    onInput: (id) => rt.noteInput(id),
+    // N1：open_terminals 超过 6 个先问；默认按钮是 Cancel（是 agent 发起的）
+    confirm: async ({ title, body, confirm }) => {
+      const options = { type: 'question' as const, buttons: [confirm, 'Cancel'], defaultId: 1, cancelId: 1, message: title, detail: body, noLink: true };
+      const win = mainWindow ?? BrowserWindow.getAllWindows()[0];
+      const { response } = win ? await dialog.showMessageBox(win, options) : await dialog.showMessageBox(options);
+      return response === 0;
+    },
+    // N1：notify 在白板上闪一下（board.notify）；应用在后台时另发系统通知，和状态提醒用同一个开关
+    onNotify: ({ terminalId, message }) => {
+      if (BrowserWindow.getFocusedWindow() !== null || !settings.get().notifications || !Notification.isSupported()) return;
+      const note = new Notification({ title: terminalId ? terminalLabel(terminalId) : 'AgentDeck', body: message });
+      note.on('click', () => {
+        showWindow();
+        if (terminalId) broadcast({ type: 'app.focus-terminal', terminalId });
+      });
+      note.show();
+    },
+  }).then(
     (server) => {
       mcp = server;
       console.log(`[agentdeck] MCP on ${server.endpoint.url}`);
@@ -241,14 +269,16 @@ async function main(): Promise<void> {
   // ---- 窗口、通知、角标 ----
   let mainWindow: BrowserWindow | null = null;
   let quitting = false;
+  /** 通知标题里怎么称呼这个终端，例如 "claude · agentdeck"。 */
+  function terminalLabel(id: TerminalId): string {
+    const st = rt.status.get(id);
+    const ws = st?.workspaceId ? store.workspaces.get(st.workspaceId) : null;
+    return ws ? `${st?.agent ?? 'terminal'} · ${ws.name}` : (st?.agent ?? 'terminal');
+  }
   const alerts = createAlerts({
     appFocused: () => BrowserWindow.getFocusedWindow() !== null,
     notificationsEnabled: () => settings.get().notifications,
-    label: (s) => {
-      const st = rt.status.get(s.terminalId);
-      const ws = st?.workspaceId ? store.workspaces.get(st.workspaceId) : null;
-      return ws ? `${st?.agent ?? 'terminal'} · ${ws.name}` : (st?.agent ?? 'terminal');
-    },
+    label: (s) => terminalLabel(s.terminalId),
     notify: (n) => {
       if (!Notification.isSupported()) return;
       const note = new Notification({ title: n.title, body: n.body });
