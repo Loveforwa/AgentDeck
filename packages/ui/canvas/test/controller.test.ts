@@ -230,7 +230,7 @@ describe('new windows (B3, W3)', () => {
     expect(req.workspaceId).toBe(W.shopCart);
     const added = c.state.windows.at(-1)!;
     const near = win('win-shop-claude');
-    expect(added.rect.x).toBe(near.rect.x + near.rect.w + 16);
+    expect(added.rect.x).toBe(near.rect.x + near.rect.w + 20); // IS-66：窗口之间的标准间距 20
   });
 
   it('openWindow reuses the window with the same key and flashes it', () => {

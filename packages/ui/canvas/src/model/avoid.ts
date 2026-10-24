@@ -1,13 +1,16 @@
 // 不重叠（MVP v2 · V3，DR-52）：
 // - 窗口：只在松手时处理。盖住了别的窗口就挪到离松手位置最近、放得下的空位；框里放不下就放到框外，框跟着长。不推别的窗口。
-// - 框：框之间至少 FRAME_GAP。拖框碰到别的框就停在边上（clampFrameMove）；框变大挤到别的框时，被挤的框整体往外挪（pushFrames）。
+// - 框：框之间至少 GAP。拖框碰到别的框就停在边上（clampFrameMove）；框变大挤到别的框时，被挤的框整体往外挪（pushFrames）。
 // Figma、tldraw、Excalidraw 都不管重叠；这里是白板上放的是要看内容的窗口，所以加了这一步。
 
 import type { Rect } from '@agentdeck/contracts';
 import { intersects } from './geometry.ts';
 
-/** 框和框之间至少留这么多（需求画板 11 · V3）。 */
-export const FRAME_GAP = 20;
+/**
+ * 标准间距：框和框之间至少留这么多，窗口和窗口之间的标准间距（吸附的间距、松手时挪开留的空、新窗口放在旁边）也是它（需求画板 11 · V3）。
+ * 窗口原来用 16，和框不一致，IS-66 统一成 20。
+ */
+export const GAP = 20;
 
 const EPS = 1e-6;
 
@@ -32,7 +35,7 @@ export function tooClose(a: Rect, b: Rect, gap: number): boolean {
 export interface FreeSpotOptions {
   /** 挪开时和别的东西隔这么远。 */
   gap: number;
-  /** 离得不到 margin 才算挡住（窗口 0：只有真的盖住才挪；框 FRAME_GAP）。 */
+  /** 离得不到 margin 才算挡住（窗口 0：只有真的盖住才挪；框 GAP）。 */
   margin?: number;
   /** 优先放在这个区域里（框的内边）；放不下才放到外面（框跟着长）。 */
   area?: Rect | null;

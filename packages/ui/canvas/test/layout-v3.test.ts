@@ -122,6 +122,22 @@ describe('snapping while dragging and resizing (V3)', () => {
   });
 });
 
+describe('IS-66: windows use the same 20px standard gap as frames', () => {
+  it('a window dragged next to another snaps 20px from it, and the gap is labelled 20', () => {
+    const main = W.agentdeckMain;
+    layout(
+      [[main, { x: 0, y: 0, w: 1000, h: 400 }]],
+      [browser('a', main, { x: 16, y: 36, w: 300, h: 200 }), browser('b', main, { x: 400, y: 36, w: 300, h: 200 })],
+    );
+    c.moveWindowStart(id('b'));
+    c.moveWindow(id('b'), -61, 0, pointerIn(main), { snap: true }); // 339，离 a 的右边 23
+    expect(win('b').rect.x).toBe(316 + 20);
+    expect(c.state.guides).toContainEqual(expect.objectContaining({ kind: 'gap', axis: 'x', size: 20 }));
+    c.moveWindowEnd(id('b'));
+    expect(win('b').rect.x).toBe(336);
+  });
+});
+
 describe('no overlapping windows on release (V3)', () => {
   it('a window dropped on another slides to the nearest free spot; the other does not move', () => {
     const claude = win('win-shop-claude').rect;
@@ -130,7 +146,7 @@ describe('no overlapping windows on release (V3)', () => {
     expect(intersects(win('win-shop-shell').rect, claude)).toBe(true); // 拖动中可以盖住
     c.moveWindowEnd(id('win-shop-shell'));
     expect(win('win-shop-claude').rect).toEqual(claude);
-    expect(tooClose(win('win-shop-shell').rect, claude, 16)).toBe(false);
+    expect(tooClose(win('win-shop-shell').rect, claude, 20)).toBe(false); // IS-66：挪开时留 20
     expect(win('win-shop-shell').workspaceId).toBe(W.shopCart);
     expect(c.state.dialog).toBeNull();
   });
@@ -152,12 +168,12 @@ describe('no overlapping windows on release (V3)', () => {
     c.resizeWindowStart(id('a'), 'e');
     c.resizeWindow(id('a'), 132, 0);
     c.resizeWindowEnd(id('a'));
-    // 框里放不下 500 宽的 a：最近的空位在 b 左边隔 16，框往左长，挡路的 feat/login 往左挪，里面的窗口跟着
-    expect(win('a').rect).toEqual({ x: -116, y: 36, w: 500, h: 248 });
+    // 框里放不下 500 宽的 a：最近的空位在 b 左边隔 20（IS-66），框往左长，挡路的 feat/login 往左挪，里面的窗口跟着
+    expect(win('a').rect).toEqual({ x: -120, y: 36, w: 500, h: 248 });
     expect(win('b').rect).toEqual({ x: 400, y: 36, w: 368, h: 248 });
-    expect(frame(main).rect.x).toBe(-132);
-    expect(frame(login).rect.x).toBe(-352);
-    expect(win('c').rect.x).toBe(-336);
+    expect(frame(main).rect.x).toBe(-136);
+    expect(frame(login).rect.x).toBe(-356);
+    expect(win('c').rect.x).toBe(-340);
   });
 
   it('a new window that would land on another goes to a free spot', async () => {

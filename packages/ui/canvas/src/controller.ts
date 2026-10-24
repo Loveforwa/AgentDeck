@@ -7,7 +7,7 @@ import { isSummarySize, windowRegistry, type WindowDefinition, type WindowRegist
 import { startableAgents } from './model/agents.ts';
 import { nextWaiting, prevWaiting, summarize, statusOf, type AttentionSummary } from './model/attention.ts';
 import { createAutosave, type Autosave } from './model/autosave.ts';
-import { FRAME_GAP, clampFrameMove, findFreeSpot, pushFrames, separateFrames, tooClose } from './model/avoid.ts';
+import { GAP, clampFrameMove, findFreeSpot, pushFrames, separateFrames, tooClose } from './model/avoid.ts';
 import { decideDrop, dropTargetAt } from './model/drop.ts';
 import {
   FRAME_HEADER,
@@ -73,8 +73,6 @@ export interface BoardControllerOptions {
 
 /** 新窗口默认大小：终端 560×360（需求「5 · 终端窗口」）。没有注册时用这个。 */
 const FALLBACK_SIZE: Size = { w: 560, h: 360 };
-/** 新窗口和旁边窗口的间距。 */
-const GAP = 16;
 /**
  * 低于这个缩放比例时，有 summaryBelow 的窗口都画成摘要卡（需求「3 · 白板」原定 75%）。
  * 2026-10-24 验收时 ⌘− 缩一点点（73%）终端就不显示内容，太早了，改成 50%（IS-41）；
@@ -227,7 +225,7 @@ export class BoardController {
   /** 老布局里互相盖住的框（IS-53、IS-54）启动时分开，框里的窗口跟着走；没有重叠时什么都不改。 */
   private separateOverlappingFrames(): void {
     const s = this.state;
-    const moved = separateFrames(new Map(s.frames.map((f) => [f.workspaceId, f.rect])), FRAME_GAP);
+    const moved = separateFrames(new Map(s.frames.map((f) => [f.workspaceId, f.rect])), GAP);
     if (moved.size === 0) return;
     const shift = new Map<WorkspaceId, { dx: number; dy: number }>();
     for (const f of s.frames) {
@@ -404,11 +402,11 @@ export class BoardController {
   }
 
   /**
-   * ws 的框从 before 变成 after：挤到的框连同里面的窗口挪开（框之间至少 FRAME_GAP）。别的框都按 base 的位置算，
+   * ws 的框从 before 变成 after：挤到的框连同里面的窗口挪开（框之间至少 GAP）。别的框都按 base 的位置算，
    * 拖动中每次从 base 重新算，所以框又变小时被挪开的框会回到原处。
    */
   private applyFrameChange(base: LayoutBase, ws: WorkspaceId, before: Rect | null, after: Rect): void {
-    const pushed = pushFrames(base.frames, { id: ws, before, after }, FRAME_GAP);
+    const pushed = pushFrames(base.frames, { id: ws, before, after }, GAP);
     const s = this.state;
     let framesChanged = false;
     const frames = s.frames.map((f) => {
@@ -698,17 +696,17 @@ export class BoardController {
     };
   }
 
-  /** 拖框：碰到别的框就停在边上（隔 FRAME_GAP），可以沿着边滑（V3）。snap 时吸到别的框的边、中线和 FRAME_GAP 的间距。 */
+  /** 拖框：碰到别的框就停在边上（隔 GAP），可以沿着边滑（V3）。snap 时吸到别的框的边、中线和 GAP 的间距。 */
   moveFrame(ws: WorkspaceId, dx: number, dy: number, opts: DragOptions = {}): void {
     const d = this.drag;
     if (d?.kind !== 'move-frame' || d.ws !== ws) return;
     const others = this.state.frames.filter((f) => f.workspaceId !== ws).map((f) => f.rect);
     let rect = { ...d.start, x: d.start.x + dx, y: d.start.y + dy };
-    if (opts.snap) rect = snapMove(rect, others, { threshold: this.snapThreshold(), gap: FRAME_GAP }).rect;
-    rect = clampFrameMove(d.last, rect, others, FRAME_GAP);
+    if (opts.snap) rect = snapMove(rect, others, { threshold: this.snapThreshold(), gap: GAP }).rect;
+    rect = clampFrameMove(d.last, rect, others, GAP);
     d.last = rect;
     // 线按停下来的位置画：停在别的框边上时也标出间距
-    const guides = opts.snap ? snapMove(rect, others, { threshold: 1e-3, gap: FRAME_GAP }).guides : [];
+    const guides = opts.snap ? snapMove(rect, others, { threshold: 1e-3, gap: GAP }).guides : [];
     const mx = rect.x - d.start.x;
     const my = rect.y - d.start.y;
     this.set((s) => ({
@@ -1140,7 +1138,7 @@ export class BoardController {
     const centered = { x: Math.round(c.x - size.w / 2), y: Math.round(c.y - size.h / 2), ...size };
     const s = this.state;
     const taken = [...s.frames.map((f) => f.rect), ...s.windows.map((w) => w.rect), ...s.pending.map((p) => p.rect)];
-    if (!taken.some((r) => tooClose(r, centered, FRAME_GAP))) return centered;
+    if (!taken.some((r) => tooClose(r, centered, GAP))) return centered;
     const all = bounds(taken)!;
     return { x: all.x + all.w + GAP * 3, y: all.y, ...size };
   }
