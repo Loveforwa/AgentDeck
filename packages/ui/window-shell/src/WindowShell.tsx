@@ -95,6 +95,11 @@ export function WindowShell(props: WindowShellProps) {
             {status.text}
           </span>
         ) : null}
+        {status?.tag?.text ? (
+          <span className="ad-window-tag" title={status.tag.detail}>
+            {status.tag.text}
+          </span>
+        ) : null}
         <span className="ad-window-actions">
           <button
             type="button"
