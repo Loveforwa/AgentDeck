@@ -853,7 +853,17 @@ export class BoardController {
     if (isTerminal(w) && terminalIdOf(w)) {
       const st = statusOf(w, this.state.statuses);
       if (!st || !STOPPED.has(st.status)) {
-        this.set({ dialog: { kind: 'stop-terminal', windowId: id } });
+        this.set({ dialog: { kind: 'stop-terminal', windowId: id, topic: null } });
+        // 确认里写上当前对话的主题（程序设的终端标题），例如 “Stop claude · Check local git history?”
+        const tid = terminalIdOf(w)!;
+        void this.api.terminals.list().then(
+          (list) => {
+            const topic = list.find((t) => t.id === tid)?.title ?? null;
+            if (!topic) return;
+            this.set((s) => (s.dialog?.kind === 'stop-terminal' && s.dialog.windowId === id ? { dialog: { ...s.dialog, topic } } : {}));
+          },
+          () => {},
+        );
         return;
       }
       void this.api.terminals.kill(terminalIdOf(w)!).catch(() => {});

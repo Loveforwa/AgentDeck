@@ -28,8 +28,10 @@ describe('FakeTerminalHost basics', () => {
     const { id } = await host.create({ ...req, env: { FOO: '1', [TERMINAL_ID_ENV]: 'nope' } });
     expect(host.get(id).env).toEqual({ FOO: '1', [TERMINAL_ID_ENV]: id });
     expect(await host.list()).toEqual([
-      { id, cwd: req.cwd, command: 'zsh', alive: true, exitCode: null, lastActivityAt: null },
+      { id, cwd: req.cwd, command: 'zsh', alive: true, exitCode: null, lastActivityAt: null, title: null },
     ]);
+    host.setTitle(id, 'Fix the login bug');
+    expect((await host.list())[0]?.title).toBe('Fix the login bug');
     await host.kill(id);
     expect(await host.list()).toEqual([]);
     expect(bus.eventsOf('terminal.exit')).toEqual([{ type: 'terminal.exit', id, code: 129 }]);

@@ -380,7 +380,7 @@ describe('window frame (B2)', () => {
   it('closing a running terminal asks first, then stops it', async () => {
     c.focusWindow(id('win-login-claude'));
     c.runShortcut('close-window');
-    expect(c.state.dialog).toEqual({ kind: 'stop-terminal', windowId: 'win-login-claude' });
+    expect(c.state.dialog).toEqual({ kind: 'stop-terminal', windowId: 'win-login-claude', topic: null });
     expect(c.windowById(id('win-login-claude'))).toBeDefined();
     await c.stopAndClose(id('win-login-claude'));
     expect(c.windowById(id('win-login-claude'))).toBeUndefined();

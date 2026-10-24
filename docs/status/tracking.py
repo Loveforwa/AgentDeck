@@ -291,6 +291,7 @@ ISSUES = [
     ('IS-47', 'P1', '缺陷', 'apps/desktop', '点 Settings 用系统默认程序打开 settings.json，这台 Mac 上 .json 默认是 Tor Browser；打开失败或程序起来慢时界面没有任何提示（渲染进程和菜单都只写 console.error）', '点顶栏 Settings 或 ⌘,', '设置打不开，也不知道为什么', '有 Settings 界面后改成对话框；Open settings.json 改用 editorCommand 打开，失败在 Finder 里显示文件，错误用 Toast 提示', 'TC-15'),
     ('IS-48', 'P3', '缺陷', '开发环境', 'dev 数据目录的 settings.json 里 editorCommand 被改成了 "echo-1792834415023"（大概是之前的验收脚本留下的），Open in editor 会失效', 'cat .agentdeck-dev/settings.json', '开发环境里点文件链接打不开编辑器', '恢复成 code -g', ''),
     ('IS-49', 'P1', '缺陷', '终端窗口', '终端窗口放大后，内容还是原来的行列数，只占左上角；还原后反过来按放大的行列数画：放大、还原时终端在白板把新大小排到页面上之前就量了尺寸，量到的总是上一次的', '开一个终端，双击标题栏放大，再还原', '放大没用，还原后画面乱', '内容区大小变了以后，1 秒内盯着容器的实际大小（ResizeObserver），排好版再量', 'TC-25'),
+    ('IS-50', 'P2', '设计', '白板 · 终端窗口', '关闭运行中的终端时，确认框是盖住整个应用的弹窗；标题只写 “Stop kimi?”，看不出是哪段对话', '点终端右上角的 ×', '同时开着好几个 agent 时容易关错', '确认框只盖住那个终端窗口；标题带上当前对话的主题（程序设的终端标题，contracts 0.1.5 的 TerminalInfo.title），例如 “Stop claude · Check local git history?”；空闲时正文写 “… will exit”，运行中写 “The current task will be interrupted.”', 'TC-22'),
 ]
 
 # 用户在验收报告网页上填的验收结果（2026-10-24 从网页数据库同步的快照）。网页打开后以数据库为准；
@@ -322,6 +323,7 @@ ACCEPTED = {
 
 # 已经处理的问题：处理状态和备注
 RESOLVED = {
+    'IS-50': '2026-10-24 已改：确认框画在终端窗口里，标题带对话主题；要重启 AgentDeck（tmux-host 在主进程里）',
     'IS-45': '2026-10-24 已修（S3，合进 main e9b3673）：⌘J 闪一下和 “2/3 waiting”，⌘⇧J 反向，⌘⇧] / ⌘⇧[ 切窗口',
     'IS-46': '2026-10-24 已修（X13，合进 main e9b3673）：已知 agent 表（pi、omp、kimi）和通用适配器，pi / omp 用 -e 加载自带扩展拿状态；Kimi 没真启动过',
     'IS-13': '2026-10-24 已做 Projects、General 两页（X12，合进 main e9b3673）；Agents、Approvals 两页以后再做',

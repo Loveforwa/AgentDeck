@@ -43,6 +43,27 @@ function setup() {
 }
 
 describe('Workbench', () => {
+  it('closing a running terminal asks inside that window, with the conversation topic; Esc cancels', async () => {
+    const { api, c } = setup();
+    await waitFor(() => expect(c.state.loaded).toBe(true));
+    api.fakes.terminals.setTitle(SAMPLE.terminals.loginClaude, 'Fix the login bug');
+    act(() => c.closeWindow('win-login-claude' as WindowId));
+    // React Flow 在 jsdom 里量不到节点大小，节点是 visibility: hidden，所以按选择器找（role 查询会跳过它）
+    const confirm = await waitFor(() => {
+      const el = document.querySelector<HTMLElement>('.ad-window-confirm[role="alertdialog"]');
+      if (!el) throw new Error('no confirm yet');
+      return el;
+    });
+    await waitFor(() => expect(confirm.textContent).toContain('· Fix the login bug?'));
+    // 只盖住这个窗口：在窗口的节点里面，没有整个应用的遮罩
+    expect(confirm.closest('.react-flow__node')?.getAttribute('data-id')).toBe('win-login-claude');
+    expect(document.querySelector('.ad-dialog-backdrop')).toBeNull();
+    expect(document.activeElement?.textContent).toBe('Stop and close');
+    fireEvent.keyDown(confirm, { key: 'Escape' });
+    expect(c.state.dialog).toBeNull();
+    expect(c.windowById('win-login-claude' as WindowId)).toBeDefined();
+  });
+
   it('shows the top bar counts and the frames', async () => {
     const { api, c } = setup();
     await waitFor(() => expect(c.state.loaded).toBe(true));

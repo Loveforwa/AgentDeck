@@ -260,6 +260,7 @@ class TmuxHostImpl implements TmuxHost {
         alive: !r.dead,
         exitCode: r.dead ? r.exitCode : null,
         lastActivityAt: activity === null ? null : new Date(activity).toISOString(),
+        title: r.title,
       };
     });
   }
@@ -674,6 +675,9 @@ const SESSION_FORMAT = [
   '#{pane_dead_signal}',
   '#{window_activity}',
   '#{window_width}',
+  '#{host}',
+  // 放最后：标题里可能有任何字符
+  '#{pane_title}',
 ].join('\t');
 
 export interface SessionRow {
@@ -685,13 +689,26 @@ export interface SessionRow {
   /** 秒级时间戳。 */
   activity: number;
   width: number;
+  /** 程序设的终端标题（见 cleanTitle）。 */
+  title: string | null;
+}
+
+/**
+ * pane_title → TerminalInfo.title：tmux 默认的标题是主机名，那就是没设过，返回 null；
+ * agent 常在标题前面加转圈或状态符号（claude 的 ✳ ⠂ ⠐），去掉开头不是字母数字的部分。
+ */
+export function cleanTitle(raw: string, host: string): string | null {
+  const t = raw.trim();
+  if (!t || t === host || t === host.split('.')[0]) return null;
+  const stripped = t.replace(/^[^\p{L}\p{N}]+/u, '').trim();
+  return stripped || null;
 }
 
 export function parseSessions(out: string): SessionRow[] {
   const rows: SessionRow[] = [];
   for (const line of out.split('\n')) {
     if (!line) continue;
-    const [id = '', cwd = '', command = '', dead = '', status = '', signal = '', activity = '', width = ''] = line.split('\t');
+    const [id = '', cwd = '', command = '', dead = '', status = '', signal = '', activity = '', width = '', host = '', ...rest] = line.split('\t');
     if (!id) continue;
     const isDead = dead === '1';
     rows.push({
@@ -702,6 +719,7 @@ export function parseSessions(out: string): SessionRow[] {
       exitCode: isDead ? (exitCodeOf(status, signal) ?? 0) : null,
       activity: Number(activity) || 0,
       width: Number(width) || 0,
+      title: cleanTitle(rest.join('\t'), host),
     });
   }
   return rows;

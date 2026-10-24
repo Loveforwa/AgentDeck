@@ -1,8 +1,9 @@
 // 白板的对话框：新建工作区（W3）、删除工作区（W4 的界面部分）、终端不能换框（W5）、停止终端、改名。Settings 在 SettingsDialog.tsx。
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { BranchInfo, CreateWorkspaceRequest, Project, ProjectId, WorkspaceMode } from '@agentdeck/contracts';
 import { Button, Dialog, DialogText, RadioGroup } from '@agentdeck/ui-kit';
+import { statusOf } from '../model/attention.ts';
 import { validateBranchName } from '../model/branch.ts';
 import { defaultName } from '../model/windows.ts';
 import type { DialogState } from '../store.ts';
@@ -20,7 +21,8 @@ export function BoardDialogs() {
     case 'move-terminal':
       return <MoveTerminalDialog dialog={dialog} />;
     case 'stop-terminal':
-      return <StopTerminalDialog dialog={dialog} />;
+      // 画在那个终端窗口里面（WindowNodeView），不盖住整个应用
+      return null;
     case 'rename-window':
     case 'rename-workspace':
       return <RenameDialog dialog={dialog} />;
@@ -309,27 +311,50 @@ function MoveTerminalDialog({ dialog }: { dialog: Of<'move-terminal'> }) {
 
 // ---- 停止终端 ----
 
-function StopTerminalDialog({ dialog }: { dialog: Of<'stop-terminal'> }) {
+/**
+ * 关闭运行中的终端前的确认：画在那个终端窗口里面，只盖住这个窗口，白板上别的东西照常能看能用。
+ * 标题带上当前对话的主题（程序设的终端标题），例如 “Stop claude · Check local git history?”。
+ * Esc 取消，焦点默认在 Stop and close 上（↩ 确认）。
+ */
+export function WindowStopConfirm({ dialog }: { dialog: Of<'stop-terminal'> }) {
   const c = useController();
   const w = c.windowById(dialog.windowId);
+  const status = useBoardState((s) => (w ? statusOf(w, s.statuses)?.status : undefined));
+  const confirmRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => confirmRef.current?.focus({ preventScroll: true }), []);
   const name = w ? (w.title ?? defaultName(w, c.definitionOf(w)?.label)) : 'terminal';
+  const titleId = `stop-${dialog.windowId}`;
+  const busy = status === undefined || status === 'running' || status === 'starting';
   return (
-    <Dialog
-      open
-      title={`Stop ${name}?`}
-      width={360}
-      onClose={() => c.closeDialog()}
-      actions={
-        <>
+    <div
+      className="ad-window-confirm nodrag nopan nowheel"
+      role="alertdialog"
+      aria-modal="false"
+      aria-labelledby={titleId}
+      onKeyDown={(e) => {
+        if (e.key !== 'Escape') return;
+        e.preventDefault();
+        e.stopPropagation();
+        c.closeDialog();
+      }}
+      onPointerDown={(e) => e.stopPropagation()}
+    >
+      <div className="ad-dialog ad-window-confirm__card">
+        <h2 className="ad-dialog-title ad-window-confirm__title" id={titleId} title={dialog.topic ?? undefined}>
+          Stop {name}
+          {dialog.topic ? <span className="ad-window-confirm__topic"> · {dialog.topic}</span> : null}?
+        </h2>
+        <div className="ad-dialog-body">
+          <DialogText tone="muted">{busy ? 'The current task will be interrupted.' : `${name} will exit and this window will close.`}</DialogText>
+        </div>
+        <div className="ad-dialog-actions">
           <Button onClick={() => c.closeDialog()}>Cancel</Button>
-          <Button variant="primary" data-autofocus onClick={() => void c.stopAndClose(dialog.windowId)}>
+          <Button ref={confirmRef} variant="primary" onClick={() => void c.stopAndClose(dialog.windowId)}>
             Stop and close
           </Button>
-        </>
-      }
-    >
-      <DialogText tone="muted">The current task will be interrupted.</DialogText>
-    </Dialog>
+        </div>
+      </div>
+    </div>
   );
 }
 

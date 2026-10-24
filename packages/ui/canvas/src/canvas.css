@@ -186,6 +186,34 @@
   z-index: 1;
 }
 
+/* 关闭运行中终端的确认：只盖住这个窗口（不是整个应用） */
+.ad-window-confirm {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-md);
+  background: var(--scrim);
+  animation: ad-dialog-fade var(--motion);
+}
+
+.ad-window-confirm__card {
+  width: min(360px, 100%);
+  max-height: 100%;
+  overflow: auto;
+}
+
+.ad-window-confirm__title {
+  overflow-wrap: anywhere;
+}
+
+.ad-window-confirm__topic {
+  font-weight: var(--weight-regular);
+  color: var(--muted);
+}
+
 .ad-window-missing {
   display: flex;
   align-items: center;

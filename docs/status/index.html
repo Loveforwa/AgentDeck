@@ -146,7 +146,7 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
     <div class="barbox"><span class="t">28 条端到端用例的现状</span><div class="bar"><span class="seg seg-part" style="flex:4"></span><span class="seg seg-ok" style="flex:24"></span></div>
       <div class="legend"><span><i class="dot seg-prob"></i>当前有问题 <b>0</b></span><span><i class="dot seg-no"></i>未验证 <b>0</b></span><span><i class="dot seg-part"></i>部分验证 <b>4</b></span><span><i class="dot seg-ok"></i>已验证 <b>24</b></span><span><i class="dot seg-todo"></i>未实现 <b>0</b></span></div></div>
     <div class="barbox"><span class="t">你的验收进度</span><div class="bar" id="acc-bar"></div>
-      <div class="legend"><span><i class="dot seg-pass"></i>通过 <b id="n-pass">0</b></span><span><i class="dot seg-fail"></i>不通过或阻塞 <b id="n-fail">0</b></span><span>还没验收 <b id="n-open">28</b></span><span>问题已解决 <b id="n-solved">15</b> / 49</span></div></div>
+      <div class="legend"><span><i class="dot seg-pass"></i>通过 <b id="n-pass">0</b></span><span><i class="dot seg-fail"></i>不通过或阻塞 <b id="n-fail">0</b></span><span>还没验收 <b id="n-open">28</b></span><span>问题已解决 <b id="n-solved">16</b> / 50</span></div></div>
   </div>
 </header>
 
@@ -668,7 +668,7 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
 </section>
 
 <section class="block">
-  <div class="head"><h2>问题清单</h2><p>49 条，按 P 级排列。解决一条就把处理状态改成“已解决”。</p></div>
+  <div class="head"><h2>问题清单</h2><p>50 条，按 P 级排列。解决一条就把处理状态改成“已解决”。</p></div>
   <section class="pgroup"><h3><span class="pri pri-P0">P0</span>阻塞 MVP 验收<span class="muted"> · 8 条</span></h3><article class="issue" id="is-01" data-issue="IS-01" data-state="待处理">
   <div class="case-head">
     <span class="mono cid">IS-01</span><span class="pri pri-P0">P0</span><span class="tag">未验证</span><span class="mod">agent-adapters · 整体</span>
@@ -1101,7 +1101,7 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
   </details>
   <p class="links">关联用例 <a class="ref" href="#tc-25">TC-25</a></p>
   <label class="field note"><span>处理备注</span><textarea id="isnote-IS-49" data-is="IS-49" class="is-note" rows="1" placeholder="处理到哪了">2026-10-24 已修：放大、还原、改大小后等页面排好版再量，加了测试；用户在自己的 AgentDeck 里试过，放大后铺满</textarea></label>
-</article></section><section class="pgroup"><h3><span class="pri pri-P2">P2</span>次要体验、完整性、性能<span class="muted"> · 17 条</span></h3><article class="issue" id="is-08" data-issue="IS-08" data-state="待处理">
+</article></section><section class="pgroup"><h3><span class="pri pri-P2">P2</span>次要体验、完整性、性能<span class="muted"> · 18 条</span></h3><article class="issue" id="is-08" data-issue="IS-08" data-state="待处理">
   <div class="case-head">
     <span class="mono cid">IS-08</span><span class="pri pri-P2">P2</span><span class="tag">缺陷</span><span class="mod">agent-adapters · contracts</span>
     <label class="field result"><span>处理状态</span><select id="st-IS-08" data-is="IS-08" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
@@ -1373,6 +1373,22 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
   </details>
   <p class="links">关联用例 <a class="ref" href="#tc-27">TC-27</a> <a class="ref" href="#tc-28">TC-28</a> · 相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-47" target="_blank" rel="noopener">DR-47</a> <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-48" target="_blank" rel="noopener">DR-48</a></p>
   <label class="field note"><span>处理备注</span><textarea id="isnote-IS-44" data-is="IS-44" class="is-note" rows="1" placeholder="处理到哪了">2026-10-24 已做：外部网站自动用 webview（独立分区、UA 去掉 Electron、允许登录弹窗），出错页加 Show it here；在单独的 Electron 实例里验证 google、github、Google 登录页都能显示和缩放。要重启 AgentDeck，真正登录待用户试（TC-28）</textarea></label>
+</article><article class="issue" id="is-50" data-issue="IS-50" data-state="已解决">
+  <div class="case-head">
+    <span class="mono cid">IS-50</span><span class="pri pri-P2">P2</span><span class="tag">设计</span><span class="mod">白板 · 终端窗口</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-50" data-is="IS-50" class="ist"><option>待处理</option><option>处理中</option><option selected>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">关闭运行中的终端时，确认框是盖住整个应用的弹窗；标题只写 “Stop kimi?”，看不出是哪段对话</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>点终端右上角的 ×</p></div>
+      <div><span class="label">影响</span><p>同时开着好几个 agent 时容易关错</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>确认框只盖住那个终端窗口；标题带上当前对话的主题（程序设的终端标题，contracts 0.1.5 的 TerminalInfo.title），例如 “Stop claude · Check local git history?”；空闲时正文写 “… will exit”，运行中写 “The current task will be interrupted.”</p></div>
+    </div>
+  </details>
+  <p class="links">关联用例 <a class="ref" href="#tc-22">TC-22</a></p>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-50" data-is="IS-50" class="is-note" rows="1" placeholder="处理到哪了">2026-10-24 已改：确认框画在终端窗口里，标题带对话主题；要重启 AgentDeck（tmux-host 在主进程里）</textarea></label>
 </article></section><section class="pgroup"><h3><span class="pri pri-P3">P3</span>清理<span class="muted"> · 5 条</span></h3><article class="issue" id="is-30" data-issue="IS-30" data-state="待处理">
   <div class="case-head">
     <span class="mono cid">IS-30</span><span class="pri pri-P3">P3</span><span class="tag">清理</span><span class="mod">白板</span>
@@ -1484,7 +1500,7 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
 </details>
 </div>
 
-<script type="application/json" id="meta">{"cases": ["TC-28", "TC-27", "TC-26", "TC-25", "TC-24", "TC-04", "TC-05", "TC-03", "TC-10", "TC-02", "TC-15", "TC-16", "TC-17", "TC-01", "TC-06", "TC-07", "TC-08", "TC-09", "TC-11", "TC-12", "TC-13", "TC-18", "TC-19", "TC-20", "TC-21", "TC-22", "TC-23", "TC-14"], "issues": ["IS-37", "IS-38", "IS-01", "IS-02", "IS-03", "IS-04", "IS-05", "IS-06", "IS-07", "IS-09", "IS-10", "IS-11", "IS-12", "IS-13", "IS-14", "IS-16", "IS-17", "IS-24", "IS-08", "IS-15", "IS-18", "IS-19", "IS-20", "IS-21", "IS-22", "IS-23", "IS-25", "IS-26", "IS-27", "IS-28", "IS-29", "IS-35", "IS-36", "IS-30", "IS-31", "IS-32", "IS-33", "IS-34", "IS-39", "IS-40", "IS-41", "IS-42", "IS-43", "IS-44", "IS-45", "IS-46", "IS-47", "IS-48", "IS-49"], "defaults": {"IS-45": {"status": "已解决", "note": "2026-10-24 已修（S3，合进 main e9b3673）：⌘J 闪一下和 “2/3 waiting”，⌘⇧J 反向，⌘⇧] / ⌘⇧[ 切窗口"}, "IS-46": {"status": "已解决", "note": "2026-10-24 已修（X13，合进 main e9b3673）：已知 agent 表（pi、omp、kimi）和通用适配器，pi / omp 用 -e 加载自带扩展拿状态；Kimi 没真启动过"}, "IS-13": {"status": "已解决", "note": "2026-10-24 已做 Projects、General 两页（X12，合进 main e9b3673）；Agents、Approvals 两页以后再做"}, "IS-21": {"status": "已解决", "note": "2026-10-24 已修（X13）：菜单按名字显示，白板里藏掉 custom"}, "IS-49": {"status": "已解决", "note": "2026-10-24 已修：放大、还原、改大小后等页面排好版再量，加了测试；用户在自己的 AgentDeck 里试过，放大后铺满"}, "IS-47": {"status": "已解决", "note": "2026-10-24 已修：Settings 和 ⌘, 用 editorCommand（默认 code -g）打开 settings.json，PATH 里没有 code 时去 App 包里找（VS Code、Cursor、Zed、Sublime）；打不开就在 Finder 里显示并在界面上提示原因。顺带：手改 settings.json 不用重启就生效，也不会被应用盖掉。设置界面另做（IS-13）。要重启 AgentDeck"}, "IS-48": {"status": "已解决", "note": "2026-10-24 已恢复成 code -g"}, "IS-44": {"status": "已解决", "note": "2026-10-24 已做：外部网站自动用 webview（独立分区、UA 去掉 Electron、允许登录弹窗），出错页加 Show it here；在单独的 Electron 实例里验证 google、github、Google 登录页都能显示和缩放。要重启 AgentDeck，真正登录待用户试（TC-28）"}, "IS-43": {"status": "已解决", "note": "2026-10-24 已修：ping 改用 net.request，加了测试；真 Electron 里 google.com → 301、github.com/login → 200。要重启 AgentDeck 才生效"}, "IS-42": {"status": "已解决", "note": "2026-10-24 已修：claude 启动时主题设成 auto，深浅色切换时通知 tmux；独立 tmux 里模拟整条链路验证通过。要重启 AgentDeck；已经开着的 claude 用标题栏右键 › Restart and resume conversation 换上新参数（对话接着）"}, "IS-41": {"status": "已解决", "note": "2026-10-24 已修：缩放门槛 75% 改 50%；缩小时显示整屏文字快照，加了测试。正在运行的 AgentDeck 已热更新"}, "IS-39": {"status": "已解决", "note": "2026-10-24 已修（3ceabfb）：scrollback 改成 1000，固定种子的复现测试通过；正在运行的 AgentDeck 已热更新"}, "IS-40": {"status": "已解决", "note": "2026-10-24 已修（3ceabfb）：加 Unicode 11 宽度表，35 个常用符号和 tmux 实测宽度全部吻合，写成测试"}, "IS-37": {"status": "已解决", "note": "2026-10-24 已修（925c11f）：只要目录里有终端开着就确认，确认框列出这些终端；面板加了测试"}, "IS-38": {"status": "已解决", "note": "2026-10-24 已修（925c11f）：应用启动时找出自己运行的目录，界面对它切分支、建分支并切换、连目录删除都拒绝；真窗口里验证过"}}}</script>
+<script type="application/json" id="meta">{"cases": ["TC-28", "TC-27", "TC-26", "TC-25", "TC-24", "TC-04", "TC-05", "TC-03", "TC-10", "TC-02", "TC-15", "TC-16", "TC-17", "TC-01", "TC-06", "TC-07", "TC-08", "TC-09", "TC-11", "TC-12", "TC-13", "TC-18", "TC-19", "TC-20", "TC-21", "TC-22", "TC-23", "TC-14"], "issues": ["IS-37", "IS-38", "IS-01", "IS-02", "IS-03", "IS-04", "IS-05", "IS-06", "IS-07", "IS-09", "IS-10", "IS-11", "IS-12", "IS-13", "IS-14", "IS-16", "IS-17", "IS-24", "IS-08", "IS-15", "IS-18", "IS-19", "IS-20", "IS-21", "IS-22", "IS-23", "IS-25", "IS-26", "IS-27", "IS-28", "IS-29", "IS-35", "IS-36", "IS-30", "IS-31", "IS-32", "IS-33", "IS-34", "IS-39", "IS-40", "IS-41", "IS-42", "IS-43", "IS-44", "IS-45", "IS-46", "IS-47", "IS-48", "IS-49", "IS-50"], "defaults": {"IS-50": {"status": "已解决", "note": "2026-10-24 已改：确认框画在终端窗口里，标题带对话主题；要重启 AgentDeck（tmux-host 在主进程里）"}, "IS-45": {"status": "已解决", "note": "2026-10-24 已修（S3，合进 main e9b3673）：⌘J 闪一下和 “2/3 waiting”，⌘⇧J 反向，⌘⇧] / ⌘⇧[ 切窗口"}, "IS-46": {"status": "已解决", "note": "2026-10-24 已修（X13，合进 main e9b3673）：已知 agent 表（pi、omp、kimi）和通用适配器，pi / omp 用 -e 加载自带扩展拿状态；Kimi 没真启动过"}, "IS-13": {"status": "已解决", "note": "2026-10-24 已做 Projects、General 两页（X12，合进 main e9b3673）；Agents、Approvals 两页以后再做"}, "IS-21": {"status": "已解决", "note": "2026-10-24 已修（X13）：菜单按名字显示，白板里藏掉 custom"}, "IS-49": {"status": "已解决", "note": "2026-10-24 已修：放大、还原、改大小后等页面排好版再量，加了测试；用户在自己的 AgentDeck 里试过，放大后铺满"}, "IS-47": {"status": "已解决", "note": "2026-10-24 已修：Settings 和 ⌘, 用 editorCommand（默认 code -g）打开 settings.json，PATH 里没有 code 时去 App 包里找（VS Code、Cursor、Zed、Sublime）；打不开就在 Finder 里显示并在界面上提示原因。顺带：手改 settings.json 不用重启就生效，也不会被应用盖掉。设置界面另做（IS-13）。要重启 AgentDeck"}, "IS-48": {"status": "已解决", "note": "2026-10-24 已恢复成 code -g"}, "IS-44": {"status": "已解决", "note": "2026-10-24 已做：外部网站自动用 webview（独立分区、UA 去掉 Electron、允许登录弹窗），出错页加 Show it here；在单独的 Electron 实例里验证 google、github、Google 登录页都能显示和缩放。要重启 AgentDeck，真正登录待用户试（TC-28）"}, "IS-43": {"status": "已解决", "note": "2026-10-24 已修：ping 改用 net.request，加了测试；真 Electron 里 google.com → 301、github.com/login → 200。要重启 AgentDeck 才生效"}, "IS-42": {"status": "已解决", "note": "2026-10-24 已修：claude 启动时主题设成 auto，深浅色切换时通知 tmux；独立 tmux 里模拟整条链路验证通过。要重启 AgentDeck；已经开着的 claude 用标题栏右键 › Restart and resume conversation 换上新参数（对话接着）"}, "IS-41": {"status": "已解决", "note": "2026-10-24 已修：缩放门槛 75% 改 50%；缩小时显示整屏文字快照，加了测试。正在运行的 AgentDeck 已热更新"}, "IS-39": {"status": "已解决", "note": "2026-10-24 已修（3ceabfb）：scrollback 改成 1000，固定种子的复现测试通过；正在运行的 AgentDeck 已热更新"}, "IS-40": {"status": "已解决", "note": "2026-10-24 已修（3ceabfb）：加 Unicode 11 宽度表，35 个常用符号和 tmux 实测宽度全部吻合，写成测试"}, "IS-37": {"status": "已解决", "note": "2026-10-24 已修（925c11f）：只要目录里有终端开着就确认，确认框列出这些终端；面板加了测试"}, "IS-38": {"status": "已解决", "note": "2026-10-24 已修（925c11f）：应用启动时找出自己运行的目录，界面对它切分支、建分支并切换、连目录删除都拒绝；真窗口里验证过"}}}</script>
 <script>
 (function () {
   var META = JSON.parse(document.getElementById('meta').textContent);

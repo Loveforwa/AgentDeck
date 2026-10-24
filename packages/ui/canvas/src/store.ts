@@ -37,7 +37,11 @@ export type DialogState =
   | { kind: 'remove-workspace'; workspaceId: WorkspaceId; dirty: boolean; busy: boolean; error: string | null }
   /** W5：终端不能换框，问要不要在目标框里新开一个。at 是松手时窗口的位置。 */
   | { kind: 'move-terminal'; windowId: WindowId; to: WorkspaceId; at: Point }
-  | { kind: 'stop-terminal'; windowId: WindowId }
+  /**
+   * 关闭运行中的终端前确认。画在那个窗口里面（不盖住整个应用）。topic 是程序设的终端标题（当前对话的主题，
+   * TerminalInfo.title），打开后异步取到再填上；没有时为 null。
+   */
+  | { kind: 'stop-terminal'; windowId: WindowId; topic: string | null }
   | { kind: 'rename-window'; windowId: WindowId }
   | { kind: 'rename-workspace'; workspaceId: WorkspaceId }
   /** Settings（TC-15）：左边项目列表和 General，右边那一页。section 为 projects 时 projectId 是选中的项目。 */

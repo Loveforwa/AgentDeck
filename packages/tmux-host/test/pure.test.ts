@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { classifyInput, exitCodeOf, paneEnv, parseSessions, parseTmuxVersion, serverEnv, signalNumber } from '../src/index.ts';
+import { classifyInput, cleanTitle, exitCodeOf, paneEnv, parseSessions, parseTmuxVersion, serverEnv, signalNumber } from '../src/index.ts';
 import { shQuote, tmuxFormatEscape, versionAtLeast } from '../src/tmux.ts';
 
 describe('classifyInput', () => {
@@ -84,10 +84,20 @@ describe('parseSessions', () => {
   it('reads list-sessions rows', () => {
     const out = 'a\t/private/tmp\tclaude\t0\t\t\t1792763452\t120\nb\t/tmp\tsh\t1\t\tterm\t1792763400\t80\nc\t/tmp\tsh\t1\t3\t\t0\t80\n';
     expect(parseSessions(out)).toEqual([
-      { id: 'a', cwd: '/private/tmp', command: 'claude', dead: false, exitCode: null, activity: 1792763452, width: 120 },
-      { id: 'b', cwd: '/tmp', command: 'sh', dead: true, exitCode: 143, activity: 1792763400, width: 80 },
-      { id: 'c', cwd: '/tmp', command: 'sh', dead: true, exitCode: 3, activity: 0, width: 80 },
+      { id: 'a', cwd: '/private/tmp', command: 'claude', dead: false, exitCode: null, activity: 1792763452, width: 120, title: null },
+      { id: 'b', cwd: '/tmp', command: 'sh', dead: true, exitCode: 143, activity: 1792763400, width: 80, title: null },
+      { id: 'c', cwd: '/tmp', command: 'sh', dead: true, exitCode: 3, activity: 0, width: 80, title: null },
     ]);
+  });
+  it('reads the program’s terminal title; the host name means none was set', () => {
+    const row = (title: string) => `a\t/tmp\tclaude\t0\t\t\t1\t80\tmac.local\t${title}\n`;
+    expect(parseSessions(row('✳ Check local git history'))[0]?.title).toBe('Check local git history');
+    expect(parseSessions(row('⠐ Fix\tthe build'))[0]?.title).toBe('Fix\tthe build');
+    expect(parseSessions(row('hello'))[0]?.title).toBe('hello');
+    expect(parseSessions(row('mac.local'))[0]?.title).toBeNull();
+    expect(parseSessions(row('mac'))[0]?.title).toBeNull();
+    expect(parseSessions(row('✳ '))[0]?.title).toBeNull();
+    expect(cleanTitle('π - agenduck', 'mac')).toBe('π - agenduck');
   });
 });
 

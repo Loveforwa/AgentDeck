@@ -50,7 +50,9 @@ export class TmuxError extends Error {
 }
 
 export function createRunner(opts: { path: string; socket: string; config: string; env: Env; timeoutMs?: number }): TmuxRunner {
-  const base = ['-L', opts.socket, '-f', opts.config];
+  // -u：不管环境里有没有 UTF-8 的 LANG / LC_ALL 都按 UTF-8 输出。没有时 tmux 会把 list-sessions 输出里的 Tab 和中文
+  // 都换成 “_”，整行解析不出来（2026-10-24 用空环境实测；从程序坞打开应用时环境可能就是这样，IS-11）
+  const base = ['-u', '-L', opts.socket, '-f', opts.config];
   const timeout = opts.timeoutMs ?? 10_000;
   return {
     path: opts.path,

@@ -240,6 +240,17 @@ describe.skipIf(!tmuxOk)('TmuxHost with real tmux', () => {
     await expect(host.lastLines('nope' as TerminalId, 3)).rejects.toMatchObject({ code: 'not-found' });
   });
 
+  it('list() reports the title the program set (OSC 2), without the spinner; none for a plain shell (IS-50)', async () => {
+    const t = id();
+    const plain = id();
+    await host.create({ id: t, cmd: 'sh', args: ['-c', "printf '\\033]2;✳ 修好 login bug\\007'; sleep 30"], cwd: cwd(), size: { cols: 80, rows: 20 } });
+    await host.create({ id: plain, cmd: 'sh', args: ['-c', 'sleep 30'], cwd: cwd(), size: { cols: 80, rows: 20 } });
+    await waitFor(async () => (await host.list()).find((x) => x.id === t)?.title === '修好 login bug').catch(async (e: unknown) => {
+      throw new Error(`title was ${JSON.stringify((await host.list()).find((x) => x.id === t)?.title)}: ${String(e)}`);
+    });
+    expect((await host.list()).find((x) => x.id === plain)?.title).toBeNull();
+  });
+
   it('attachCommand points at the same server and session', async () => {
     const cmd = await host.attachCommand('abc' as TerminalId);
     expect(cmd).toContain(`-L ${SOCKET}`);

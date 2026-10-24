@@ -6,6 +6,7 @@ import { isWaiting } from '../model/attention.ts';
 import { defaultName } from '../model/windows.ts';
 import { SUMMARY_ZOOM } from '../controller.ts';
 import { useBoardState, useController, useWindowType } from './context.tsx';
+import { WindowStopConfirm } from './dialogs.tsx';
 
 export type WindowNodeData = { id: WindowId };
 
@@ -19,6 +20,7 @@ export function WindowNodeView({ data }: NodeProps & { data: WindowNodeData }) {
   const badge = useBoardState((s) => s.badges[id] ?? null);
   const lifted = useBoardState((s) => s.lifted === id || s.resizing?.id === id);
   const flash = useBoardState((s) => s.flash[id] ?? 0);
+  const stopConfirm = useBoardState((s) => (s.dialog?.kind === 'stop-terminal' && s.dialog.windowId === id ? s.dialog : null));
   const waiting = useBoardState((s) => {
     const w = s.windows.find((n) => n.id === id);
     return w ? isWaiting(w, s) : false;
@@ -95,6 +97,7 @@ export function WindowNodeView({ data }: NodeProps & { data: WindowNodeData }) {
         onClose={() => c.closeWindow(id)}
       >
         {Component ? <Component {...props} /> : <div className="ad-window-missing">Unknown window type: {node.type}</div>}
+        {stopConfirm ? <WindowStopConfirm dialog={stopConfirm} /> : null}
         {/* 没聚焦时盖一层：滚轮平移白板而不是滚内容，第一下单击只聚焦；摘要卡单击恢复大小 */}
         {!focused || summary ? (
           <div

@@ -29,6 +29,8 @@ export interface FakeTerminalHostOptions {
 }
 
 export interface CreateWithOptions {
+  /** 程序设的终端标题（例如 claude 的对话主题）。 */
+  title?: string;
   /** 指定 id，预置示例数据时用。 */
   id?: TerminalId;
   recording?: Recording | null;
@@ -70,6 +72,8 @@ interface Term {
   alive: boolean;
   exitCode: number | null;
   lastActivityAt: IsoTime | null;
+  /** 程序设的终端标题（TerminalInfo.title）。 */
+  title: string | null;
   output: string;
   inputs: string[];
   keys: string[][];
@@ -184,6 +188,7 @@ export class FakeTerminalHost implements TerminalHost {
       alive: t.alive,
       exitCode: t.exitCode,
       lastActivityAt: t.lastActivityAt,
+      title: t.title,
     }));
   }
 
@@ -262,6 +267,7 @@ export class FakeTerminalHost implements TerminalHost {
       alive: o.exited === undefined,
       exitCode: o.exited ?? null,
       lastActivityAt: o.history ? nowIso() : null,
+      title: o.title ?? null,
       output: o.history ?? '',
       inputs: [],
       keys: [],
@@ -322,6 +328,11 @@ export class FakeTerminalHost implements TerminalHost {
 
   has(id: TerminalId): boolean {
     return this.terms.has(id);
+  }
+
+  /** 模拟程序改了终端标题（OSC 0/2）。 */
+  setTitle(id: TerminalId, title: string | null): void {
+    this.require(id).title = title;
   }
 
   get(id: TerminalId): FakeTerminalState {
