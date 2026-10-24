@@ -32,7 +32,14 @@ import {
   type TerminalId,
   type TerminalWindowData,
 } from '@agentdeck/contracts';
-import { createAgentRuntime, DEFAULT_DESTRUCTIVE_PATTERNS, findExecutable } from '@agentdeck/agent-adapters';
+import {
+  createAgentRuntime,
+  DEFAULT_DESTRUCTIVE_PATTERNS,
+  defaultUsageRoots,
+  findExecutable,
+  UsageServiceImpl,
+  type UsageTarget,
+} from '@agentdeck/agent-adapters';
 import { createGitService } from '@agentdeck/git-service';
 import { openStore } from '@agentdeck/store';
 import { createWorkspaceServices } from '@agentdeck/workspace-service';
@@ -118,6 +125,8 @@ async function main(): Promise<void> {
 
   // ---- 事件总线：所有服务的事件经这里发给界面，顺便接给需要的服务 ----
   const statusOf = new Map<TerminalId, StatusSnapshot>();
+  // 终端的 token 用量（插件 PL2），建好 agent runtime 后创建；钩子里 pi / omp 扩展报的上下文、claude 的 transcript_path 先给它
+  let usage: UsageServiceImpl | null = null;
   let onStatus: (s: StatusSnapshot) => void = () => {};
   const emit = (event: AgentDeckEvent) => {
     broadcast(event);
@@ -126,6 +135,7 @@ async function main(): Promise<void> {
       statusOf.set(event.snapshot.terminalId, event.snapshot);
       store.terminals.updateStatus(event.snapshot.terminalId, event.snapshot.status, event.snapshot.exitCode);
       if (event.snapshot.sessionId) store.terminals.updateSession(event.snapshot.terminalId, event.snapshot.sessionId);
+      usage?.noteSession(event.snapshot.terminalId);
       onStatus(event.snapshot);
     }
   };
@@ -171,6 +181,8 @@ async function main(): Promise<void> {
   // AgentDeck 的 MCP（M1）：白板上的 claude 启动时挂上它，工具经注册表调服务。起不来不影响应用，只是 agent 拿不到这些工具。
   let mcp: Awaited<ReturnType<typeof startAppMcp>> | null = null;
   const rt = createAgentRuntime({
+    tapHook: (h) =>
+      usage?.noteHook({ terminalId: h.terminalId, agent: h.agent, hookName: h.hookName, payload: h.envelope.payload }) ?? false,
     env: () => loginEnv,
     mcp: () => mcp?.endpoint ?? null,
     terminals,
@@ -198,11 +210,29 @@ async function main(): Promise<void> {
     if (event.type === 'terminal.input') rt.noteInput(event.id);
   });
 
+  // 本次运行里启动的终端的启动时间：kimi 新建会话没有 id，用量模块按目录和启动时间推断是哪个会话
+  const startedAt = new Map<TerminalId, number>();
+  const usageTarget = (id: TerminalId): UsageTarget | null => {
+    const st = rt.status.get(id);
+    const rec = store.terminals.get(id);
+    const agent = st?.agent ?? rec?.agent;
+    if (!agent) return null;
+    return { terminalId: id, agent, sessionId: st?.sessionId ?? rec?.sessionId ?? null, cwd: rec?.cwd ?? null, startedAt: startedAt.get(id) ?? null };
+  };
+  usage = new UsageServiceImpl({
+    lookup: usageTarget,
+    targets: () => store.terminals.list().flatMap((r) => usageTarget(r.terminalId) ?? []),
+    emit,
+    roots: defaultUsageRoots(homedir(), loginEnv),
+  });
+
   const agents = {
     list: () => rt.agents.list(),
     refresh: () => rt.agents.refresh(),
     async start(req: StartAgentRequest) {
+      const t0 = Date.now();
       const res = await rt.agents.start(req);
+      startedAt.set(res.terminalId, t0);
       store.terminals.put({
         terminalId: res.terminalId,
         windowId: null,
@@ -289,6 +319,7 @@ async function main(): Promise<void> {
     }
     for (const win of BrowserWindow.getAllWindows()) win.destroy();
     await rt.close().catch(() => undefined);
+    usage?.close();
     // ⌘Q 只断开（会话留在 tmux 里继续跑）；Stop all and quit 才结束 tmux 服务
     await terminals.stop(stopTerminals);
     host.stop();
@@ -331,6 +362,7 @@ async function main(): Promise<void> {
   registry.register('status', rt.status);
   registry.register('approvals', rt.approvals);
   registry.register('board', store.board);
+  registry.register('usage', usage);
   registerBrowserService(registry);
 
   // ---- 应用壳自己的 IPC（src/shared/desktop-bridge.ts）----
