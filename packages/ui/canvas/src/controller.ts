@@ -1,7 +1,7 @@
 // BoardController：白板的全部行为。React 组件只负责画和把手势交给它；它只通过 window.agentdeck（AgentDeckApi）调服务。
 // 不依赖 React，测试里直接拿 createFakeApi() 跑。
 
-import type { AgentDeckApi, AgentDeckErrorData, AgentKind, BoardState, CreateWorkspaceRequest, ErrorCode, FrameNode, OpenWindowRequest, ProjectId, Rect, Size, TerminalWindowData, Unsubscribe, Viewport, WindowCommand, WindowId, WindowNode, WindowStatusBadge, WorkspaceId } from '@agentdeck/contracts';
+import type { AgentDeckApi, AgentDeckErrorData, AgentKind, BoardState, CreateWorkspaceRequest, ErrorCode, FrameNode, OpenWindowRequest, ProjectId, ProjectPatch, Rect, Settings, Size, TerminalWindowData, Unsubscribe, Viewport, WindowCommand, WindowId, WindowNode, WindowStatusBadge, WorkspaceId } from '@agentdeck/contracts';
 import { TITLE_BAR_HEIGHT, resizeRect, type ResizeEdge } from '@agentdeck/ui-window-shell';
 import { isSummarySize, windowRegistry, type WindowDefinition, type WindowRegistry } from './registry.ts';
 import { nextWaiting, summarize, statusOf, type AttentionSummary } from './model/attention.ts';
@@ -42,6 +42,7 @@ import {
   type DialogState,
   type MenuState,
   type PendingFrame,
+  type SettingsSection,
 } from './store.ts';
 
 /** 白板组件注册进来，让控制器能做带动画的平移缩放。没有时（测试）直接改 store。 */
@@ -1038,6 +1039,53 @@ export class BoardController {
     return projectId;
   }
 
+  // ---- Settings（TC-15） ----
+
+  /** 打开 Settings：顶栏 Settings、⌘,、Projects ▾ › Project settings…、终端窗口里的设置链接。默认停在第一个项目上。 */
+  openSettings(opts: { section?: SettingsSection; projectId?: ProjectId | null } = {}): void {
+    const projectId = opts.projectId ?? this.state.projects[0]?.id ?? null;
+    const section = opts.section ?? (projectId ? 'projects' : 'general');
+    this.openDialog(section === 'projects' && projectId ? { kind: 'settings', section, projectId } : { kind: 'settings', section: 'general' });
+  }
+
+  /** 保存一个项目的设置（projects.update）。失败时提示，返回 false。 */
+  async saveProjectSettings(id: ProjectId, patch: ProjectPatch): Promise<boolean> {
+    try {
+      const project = await this.api.projects.update(id, patch);
+      this.set((s) => ({ projects: s.projects.map((p) => (p.id === id ? project : p)) }));
+      return true;
+    } catch (e) {
+      this.notify(`Couldn’t save ${this.state.projects.find((p) => p.id === id)?.name ?? 'the project'}: ${errorMessage(e)}`);
+      return false;
+    }
+  }
+
+  /** 保存 General 页（app.updateSettings）。失败时提示，返回 false。 */
+  async saveAppSettings(patch: Partial<Settings>): Promise<boolean> {
+    try {
+      await this.api.app.updateSettings(patch);
+      return true;
+    } catch (e) {
+      this.notify(`Couldn’t save settings: ${errorMessage(e)}`);
+      return false;
+    }
+  }
+
+  /** 项目文件夹找不到时 Locate…：选新的位置，projects.locate。 */
+  async locateProject(id: ProjectId): Promise<boolean> {
+    const project = this.state.projects.find((p) => p.id === id);
+    try {
+      const folder = await this.api.app.pickFolder({ title: `Locate ${project?.name ?? 'project'}` });
+      if (!folder) return false;
+      const located = await this.api.projects.locate(id, folder);
+      this.set((s) => ({ projects: s.projects.map((p) => (p.id === id ? located : p)) }));
+      return true;
+    } catch (e) {
+      this.notify(errorMessage(e));
+      return false;
+    }
+  }
+
   // ---- 快捷键 ----
 
   /** 默认 agent（Settings 里的 defaultAgent），取不到时用第一个装好的。 */
@@ -1096,6 +1144,9 @@ export class BoardController {
       case 'delete-selection':
         if (!s.selectedFrame) return false;
         this.askRemoveWorkspace(s.selectedFrame);
+        return true;
+      case 'open-settings':
+        this.openSettings();
         return true;
       case 'escape':
         if (s.menu) this.closeMenu();

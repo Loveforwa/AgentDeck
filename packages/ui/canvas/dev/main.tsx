@@ -110,6 +110,6 @@ function DemoPanel({ workspace }: PanelContext) {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <Workbench api={api} controller={controller} renderPanel={(ctx) => <DemoPanel {...ctx} />} onOpenSettings={() => {}} />
+    <Workbench api={api} controller={controller} renderPanel={(ctx) => <DemoPanel {...ctx} />} onOpenSettingsFile={() => {}} />
   </StrictMode>,
 );

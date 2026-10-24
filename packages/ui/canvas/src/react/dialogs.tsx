@@ -1,4 +1,4 @@
-// 白板的对话框：新建工作区（W3）、删除工作区（W4 的界面部分）、终端不能换框（W5）、停止终端、改名。
+// 白板的对话框：新建工作区（W3）、删除工作区（W4 的界面部分）、终端不能换框（W5）、停止终端、改名。Settings 在 SettingsDialog.tsx。
 
 import { useEffect, useState } from 'react';
 import type { BranchInfo, CreateWorkspaceRequest, Project, ProjectId, WorkspaceMode } from '@agentdeck/contracts';
@@ -24,6 +24,9 @@ export function BoardDialogs() {
     case 'rename-window':
     case 'rename-workspace':
       return <RenameDialog dialog={dialog} />;
+    case 'settings':
+      // Workbench 里的 SettingsDialogHost 画它（要用 Workbench 的 onOpenSettingsFile）
+      return null;
   }
 }
 

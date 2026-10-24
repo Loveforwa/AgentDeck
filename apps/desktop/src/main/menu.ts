@@ -24,6 +24,7 @@ export const MENU_ACCELERATORS: Record<MenuShortcutId, string> = {
   'zoom-in': 'CmdOrCtrl+=',
   'zoom-out': 'CmdOrCtrl+-',
   'clear-terminal': 'CmdOrCtrl+K',
+  'open-settings': 'CmdOrCtrl+,',
 };
 
 /** 菜单里绝对不能出现的 accelerator（网页窗口和 Electron 默认行为要用）。 */
@@ -31,7 +32,6 @@ export const RESERVED_ACCELERATORS = ['CmdOrCtrl+R', 'CmdOrCtrl+[', 'CmdOrCtrl+]
 
 export interface MenuActions {
   shortcut(id: MenuShortcutId): void;
-  openSettings(): void;
   quit(stopTerminals: boolean): void;
   /** 只在开发时出现。 */
   dev: { reload(): void; toggleDevTools(): void } | null;
@@ -68,7 +68,8 @@ export function buildMenuTemplate(appName: string, actions: MenuActions): MenuIt
       submenu: [
         { role: 'about' },
         { type: 'separator' },
-        { label: 'Settings…', accelerator: 'CmdOrCtrl+,', click: () => actions.openSettings() },
+        // 打开界面里的 Settings 对话框（TC-15）；settings.json 从对话框底部打开
+        sc('open-settings', 'Settings…'),
         { type: 'separator' },
         { role: 'services' },
         { type: 'separator' },

@@ -110,3 +110,19 @@ export function Checkbox(props: { checked: boolean; onChange(checked: boolean): 
     </label>
   );
 }
+
+/** 多行文本框，例如 Settings 里一行一个的文件名。 */
+export function TextArea(props: { value: string; onChange(value: string): void; 'aria-label': string; placeholder?: string; rows?: number }) {
+  return (
+    <textarea
+      className="ad-input ad-textarea"
+      value={props.value}
+      placeholder={props.placeholder}
+      aria-label={props['aria-label']}
+      rows={props.rows ?? 3}
+      spellCheck={false}
+      autoComplete="off"
+      onChange={(e) => props.onChange(e.target.value)}
+    />
+  );
+}

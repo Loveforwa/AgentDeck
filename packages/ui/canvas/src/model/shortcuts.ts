@@ -15,6 +15,7 @@ export type ShortcutId =
   | 'zoom-in' // ⌘=
   | 'zoom-out' // ⌘−
   | 'clear-terminal' // ⌘K
+  | 'open-settings' // ⌘,
   | 'delete-selection' // Delete / Backspace
   | 'escape'; // Esc
 
@@ -70,6 +71,8 @@ export function matchShortcut(e: KeyLike, mac = true): ShortcutId | null {
         return 'zoom-out';
       case 'k':
         return 'clear-terminal';
+      case ',':
+        return 'open-settings';
     }
     return null;
   }
@@ -84,6 +87,8 @@ export function matchShortcut(e: KeyLike, mac = true): ShortcutId | null {
  * 不带 ⌘ 的只在没有窗口聚焦、焦点也不在输入框里时处理。焦点在对话框、输入框里时 ⌘ 快捷键也交给它们。
  */
 export function shouldHandle(id: ShortcutId, ctx: ShortcutContext): boolean {
+  // ⌘, 在输入框里也打开 Settings（输入框不用它）；对话框开着时 useShortcuts 整个不处理
+  if (id === 'open-settings') return true;
   if (ctx.inEditable) return false;
   if (id === 'delete-selection' || id === 'escape') return !ctx.windowFocused;
   return true;
@@ -107,4 +112,5 @@ export const SHORTCUT_LABELS = {
   'zoom-100': '⌘0',
   'show-all': '⌘1',
   'clear-terminal': '⌘K',
+  'open-settings': '⌘,',
 } as const satisfies Partial<Record<ShortcutId, string>>;
