@@ -1,6 +1,6 @@
 // 只用于类型检查：确认接口能被实现、事件能按 type 收窄。不会被打包。
-import type { AgentDeckApi, EventOf, GitService, TerminalHost, TerminalId } from './index.ts';
-import { FIRE_AND_FORGET } from './index.ts';
+import type { AgentDeckApi, ApproveResult, AutoApproveState, EventOf, GitService, TerminalHost, TerminalId, WorkspaceId } from './index.ts';
+import { FIRE_AND_FORGET, isAutoApproveOn } from './index.ts';
 
 declare const api: AgentDeckApi;
 api.on('status.changed', (e) => {
@@ -20,3 +20,19 @@ const fakeStatus: GitService['status'] = async (repo) => ({
   operation: 'none', files: [], at: new Date().toISOString(),
 });
 void fakeLastLines; void fakeStatus; void FIRE_AND_FORGET.terminals;
+// PL1：Auto-approve 的开关、事件、Approve all 的选项。
+api.on('approval.auto-approve-changed', (e) => {
+  const on: boolean = isAutoApproveOn(e.state, 't1' as TerminalId, 'w1' as WorkspaceId);
+  void on;
+});
+api.on('approval.needs-you', (e) => {
+  if (e.reason === 'couldnt-approve' || e.reason === 'destructive') void e.request?.summary;
+});
+void api.approvals.autoApproveNeedsYou().then((xs) => xs.map((x) => [x.terminalId, x.reason]));
+void api.approvals.approve([], { by: 'approve-all', includeDestructive: false }).then((rs: ApproveResult[]) => {
+  for (const r of rs) if (!r.ok && r.reason === 'destructive') void r.id;
+});
+void api.approvals.setTerminalAutoApprove('t1' as TerminalId, null);
+void api.approvals.autoApproveSupport().then((s) => s.map((x) => x.method));
+const emptyState: AutoApproveState = { workspaces: [], terminals: [] };
+void emptyState;
