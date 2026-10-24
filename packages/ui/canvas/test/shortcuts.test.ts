@@ -12,6 +12,11 @@ describe('shortcuts (R1)', () => {
     expect(matchShortcut(cmd('w'))).toBe('close-window');
     expect(matchShortcut(cmd('Enter', { shiftKey: true }))).toBe('toggle-maximize');
     expect(matchShortcut(cmd('j'))).toBe('next-waiting');
+    expect(matchShortcut(cmd('J', { shiftKey: true }))).toBe('prev-waiting');
+    expect(matchShortcut(cmd('}', { shiftKey: true, code: 'BracketRight' }))).toBe('next-window');
+    expect(matchShortcut(cmd('{', { shiftKey: true, code: 'BracketLeft' }))).toBe('prev-window');
+    // 别的键盘布局下 key 不一定是 } {，按物理键认
+    expect(matchShortcut(cmd('*', { shiftKey: true, code: 'BracketRight' }))).toBe('next-window');
     expect(matchShortcut(cmd('b'))).toBe('toggle-panel');
     expect(matchShortcut(cmd('0'))).toBe('zoom-100');
     expect(matchShortcut(cmd('1'))).toBe('show-all');
@@ -29,6 +34,10 @@ describe('shortcuts (R1)', () => {
     expect(matchShortcut(key('n'))).toBeNull();
     expect(matchShortcut(key('n', { ctrlKey: true }))).toBeNull(); // ⌃N 是终端的
     expect(matchShortcut(cmd('n', { altKey: true }))).toBeNull();
+    // 不带 ⇧ 的 ⌘[ ⌘] 是网页窗口的后退前进，白板不拦
+    expect(matchShortcut(cmd('[', { code: 'BracketLeft' }))).toBeNull();
+    expect(matchShortcut(cmd(']', { code: 'BracketRight' }))).toBeNull();
+    expect(matchShortcut(key('{', { shiftKey: true, code: 'BracketLeft' }))).toBeNull();
   });
 
   it('a focused terminal keeps every key without ⌘', () => {
@@ -38,6 +47,7 @@ describe('shortcuts (R1)', () => {
     }
     expect(resolveShortcut(key('c', { ctrlKey: true }), ctx)).toBeNull();
     expect(resolveShortcut(cmd('j'), ctx)).toBe('next-waiting');
+    expect(resolveShortcut(cmd('}', { shiftKey: true, code: 'BracketRight' }), ctx)).toBe('next-window');
     expect(resolveShortcut(cmd('w'), ctx)).toBe('close-window');
   });
 

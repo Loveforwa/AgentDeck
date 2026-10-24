@@ -102,7 +102,7 @@ function DemoPanel({ workspace }: PanelContext) {
       </section>
       <section>
         <h2>Try</h2>
-        <p>Right-click the board or a frame. Drag a terminal into another frame. Drag a corner below 320×200. ⌘J jumps to the next waiting window; ⌘0 / ⌘1 zoom; ⌘B hides this panel.</p>
+        <p>Right-click the board or a frame. Drag a terminal into another frame. Drag a corner below 320×200. ⌘J / ⌘⇧J jump to the next / previous waiting window; ⌘⇧] / ⌘⇧[ step through windows; ⌘0 / ⌘1 zoom; ⌘B hides this panel.</p>
       </section>
     </div>
   );

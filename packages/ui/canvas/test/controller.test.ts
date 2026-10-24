@@ -130,6 +130,70 @@ describe('attention (S3) and ⌘J', () => {
     expect(c.state.viewport.zoom).toBeLessThanOrEqual(1);
   });
 
+  it('⌘J and ⌘⇧J flash the window they land on; ⌘⇧J goes backwards', () => {
+    api.scenario.agentAsks(T.shopClaude);
+    api.scenario.agentNeedsApproval(T.loginClaude, { command: 'pnpm test' });
+    const order = c.attention().waiting;
+    expect(order).toHaveLength(3);
+    expect(c.runShortcut('prev-waiting')).toBe(true);
+    expect(c.state.focusedId).toBe(order[2]);
+    expect(c.state.flash[order[2]!]).toBe(1);
+    c.jumpToPrevWaiting();
+    expect(c.state.focusedId).toBe(order[1]);
+    c.jumpToNextWaiting();
+    expect(c.state.focusedId).toBe(order[2]);
+    expect(c.state.flash[order[2]!]).toBe(2);
+    c.jumpToNextWaiting();
+    expect(c.state.focusedId).toBe(order[0]);
+    expect(c.state.flash[order[0]!]).toBe(1);
+  });
+
+  it('nothing waiting: ⌘J and ⌘⇧J do nothing', () => {
+    api.scenario.agentTurnEnd(T.loginCodex);
+    expect(c.attention().waiting).toEqual([]);
+    c.focusWindow(id('win-browser'));
+    expect(c.jumpToNextWaiting()).toBeNull();
+    expect(c.jumpToPrevWaiting()).toBeNull();
+    expect(c.state.focusedId).toBe('win-browser');
+    expect(c.state.flash).toEqual({});
+  });
+});
+
+describe('⌘⇧] ⌘⇧[ window navigation (S3)', () => {
+  it('walks every window by position: within the frame, then the next frames, cycling', () => {
+    c.focusWindow(id('win-dev-server'));
+    const seen: (string | null)[] = [];
+    for (let i = 0; i < 6; i += 1) {
+      expect(c.runShortcut('next-window')).toBe(true);
+      seen.push(c.state.focusedId);
+    }
+    expect(seen).toEqual(['win-browser', 'win-login-claude', 'win-login-codex', 'win-shop-claude', 'win-shop-shell', 'win-dev-server']);
+    expect(c.runShortcut('prev-window')).toBe(true);
+    expect(c.state.focusedId).toBe('win-shop-shell');
+    // 不闪：只有 ⌘J 闪
+    expect(c.state.flash).toEqual({});
+  });
+
+  it('a window already in view keeps the viewport; one off screen brings it in', () => {
+    c.viewportChanged({ x: 0, y: 0, zoom: 1 });
+    c.focusWindow(id('win-dev-server'));
+    c.jumpToAdjacentWindow(1); // 网页窗口 648..1168，在 1200 宽的视口里
+    expect(c.state.focusedId).toBe('win-browser');
+    expect(c.state.viewport).toEqual({ x: 0, y: 0, zoom: 1 });
+    c.jumpToAdjacentWindow(1); // 下一个框里，在视口外
+    expect(c.state.focusedId).toBe('win-login-claude');
+    expect(c.state.viewport).not.toEqual({ x: 0, y: 0, zoom: 1 });
+  });
+
+  it('with a frame selected and no window focused, starts in that frame', () => {
+    c.selectFrame(W.shopCart);
+    c.jumpToAdjacentWindow(1);
+    expect(c.state.focusedId).toBe('win-shop-claude');
+    c.focusWindow(null);
+    c.jumpToAdjacentWindow(-1);
+    expect(c.state.focusedId).toBe('win-shop-shell');
+  });
+
   it('a notification click jumps to that terminal', () => {
     api.scenario.notificationClicked(T.shopShell);
     expect(c.state.focusedId).toBe('win-shop-shell');

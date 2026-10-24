@@ -18,6 +18,10 @@ export const MENU_ACCELERATORS: Record<MenuShortcutId, string> = {
   'close-window': 'CmdOrCtrl+W',
   'toggle-maximize': 'Shift+CmdOrCtrl+Enter',
   'next-waiting': 'CmdOrCtrl+J',
+  'prev-waiting': 'Shift+CmdOrCtrl+J',
+  // 带 ⇧ 的方括号：不带 ⇧ 的 ⌘[ ⌘] 留给网页窗口（RESERVED_ACCELERATORS）
+  'next-window': 'Shift+CmdOrCtrl+]',
+  'prev-window': 'Shift+CmdOrCtrl+[',
   'toggle-panel': 'CmdOrCtrl+B',
   'zoom-100': 'CmdOrCtrl+0',
   'show-all': 'CmdOrCtrl+1',
@@ -105,7 +109,16 @@ export function buildMenuTemplate(appName: string, actions: MenuActions): MenuIt
       ],
     },
     { label: 'View', submenu: view },
-    { label: 'Go', submenu: [sc('next-waiting', 'Next Waiting Terminal')] },
+    {
+      label: 'Go',
+      submenu: [
+        sc('next-waiting', 'Next Waiting Terminal'),
+        sc('prev-waiting', 'Previous Waiting Terminal'),
+        { type: 'separator' },
+        sc('next-window', 'Next Window'),
+        sc('prev-window', 'Previous Window'),
+      ],
+    },
     {
       label: 'Window',
       role: 'window',

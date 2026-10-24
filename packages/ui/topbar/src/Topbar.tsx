@@ -9,6 +9,8 @@ export interface TopbarProps {
   terminals: number;
   running: number;
   waiting: number;
+  /** 聚焦的窗口是第几个在等你的（从 1 开始），显示成“2/3 waiting”；不在里面时不给。 */
+  waitingPosition?: number;
   /** Projects ▾ 菜单的内容，由白板按项目列表生成。 */
   projectsMenu: readonly MenuEntry[];
   /** 单击“n waiting”：跳到下一个在等你的窗口（和 ⌘J 相同）。 */
@@ -19,6 +21,11 @@ export interface TopbarProps {
 /** “2 workspaces · 4 terminals” */
 export function summaryText(workspaces: number, terminals: number): string {
   return `${plural(workspaces, 'workspace')} · ${plural(terminals, 'terminal')}`;
+}
+
+/** “3 waiting”；聚焦的窗口在里面时“2/3 waiting”。 */
+export function waitingText(waiting: number, position?: number): string {
+  return position && position <= waiting ? `${position}/${waiting} waiting` : `${waiting} waiting`;
 }
 
 function plural(n: number, word: string): string {
@@ -54,10 +61,10 @@ export function Topbar(props: TopbarProps) {
         <button
           type="button"
           className="ad-topbar-waiting"
-          title="Jump to the next window waiting for you (⌘J)"
+          title="Jump to the next window waiting for you (⌘J, previous ⌘⇧J)"
           onClick={() => props.onWaitingClick?.()}
         >
-          {waiting} waiting
+          {waitingText(waiting, props.waitingPosition)}
         </button>
       ) : null}
       <Button size="sm" variant="ghost" onClick={() => props.onSettings?.()}>

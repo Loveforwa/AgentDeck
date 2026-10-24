@@ -72,6 +72,28 @@ describe('Workbench', () => {
     expect(c.state.focusedId).toBe('win-login-codex');
   });
 
+  it('top bar shows the focused window position among waiting ones; ⌘⇧J and ⌘⇧] are handled', async () => {
+    const { api, c } = setup();
+    await waitFor(() => expect(c.state.loaded).toBe(true));
+    act(() => void api.scenario.agentNeedsApproval(SAMPLE.terminals.loginClaude));
+    expect(screen.getByRole('button', { name: '2 waiting' })).toBeTruthy();
+    const order = c.attention().waiting;
+    act(() => void c.jumpToNextWaiting());
+    expect(screen.getByRole('button', { name: '1/2 waiting' })).toBeTruthy();
+    fireEvent.keyDown(window, { key: 'J', metaKey: true, shiftKey: true });
+    expect(c.state.focusedId).toBe(order[1]);
+    expect(screen.getByRole('button', { name: '2/2 waiting' })).toBeTruthy();
+    act(() => c.focusWindow('win-browser' as WindowId));
+    expect(screen.getByRole('button', { name: '2 waiting' })).toBeTruthy();
+    fireEvent.keyDown(window, { key: '}', code: 'BracketRight', metaKey: true, shiftKey: true });
+    expect(c.state.focusedId).toBe('win-login-claude');
+    // ⌘] 不带 ⇧ 不拦（网页窗口的前进）
+    const ev = new KeyboardEvent('keydown', { key: ']', code: 'BracketRight', metaKey: true, bubbles: true, cancelable: true });
+    window.dispatchEvent(ev);
+    expect(ev.defaultPrevented).toBe(false);
+    expect(c.state.focusedId).toBe('win-login-claude');
+  });
+
   it('Esc with nothing focused clears the selection; Delete opens the remove dialog', async () => {
     const { c } = setup();
     await waitFor(() => expect(c.state.loaded).toBe(true));
