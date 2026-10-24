@@ -14,6 +14,7 @@ import type {
   WindowId,
   WorkspaceId,
 } from './common.ts';
+import type { SkillItemId } from './skills.ts';
 import type { Workspace } from './workspace.ts';
 
 export interface Viewport {
@@ -80,6 +81,11 @@ export interface TerminalWindowData {
    * true 单独开，false 框开着但它单独关；不填或 null 跟着框（FrameNode.autoApprove）。
    */
   autoApprove?: boolean | null;
+  /**
+   * N9：这个终端选的 skill 和 MCP（SkillItemId，只存 built-in 和 library 的，repo 的跟着仓库）。
+   * 不填或 null 用默认（built-in 勾、library 不勾，见 effectiveSkillSelection）。下次启动（Restart and resume）时生效。
+   */
+  skills?: SkillItemId[] | null;
 }
 
 export interface BrowserWindowData {
