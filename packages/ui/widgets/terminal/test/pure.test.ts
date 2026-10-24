@@ -1,6 +1,7 @@
 import { Terminal } from '@xterm/headless';
 import { describe, expect, it } from 'vitest';
 import type { TerminalLink } from '@agentdeck/contracts';
+import { isPathInside, normalizePath, outsideWorkspaceTag, platformCompareOptions } from '../src/cwd.ts';
 import { decideKey, quotePaths, SHIFT_ENTER } from '../src/keys.ts';
 import { findLinks } from '../src/links.ts';
 import { installQueryAnswers } from '../src/queries.ts';
@@ -124,5 +125,53 @@ describe('query answers on a real xterm parser', () => {
     await write('\x1b[?2031l');
     q.themeChanged();
     expect(out).toHaveLength(2);
+  });
+});
+
+describe('cwd inside workspace (IS-57)', () => {
+  const mac = platformCompareOptions(true);
+  const linux = platformCompareOptions(false);
+
+  it('normalizes trailing and doubled slashes, . and ..', () => {
+    expect(normalizePath('/repo/wt/')).toBe('/repo/wt');
+    expect(normalizePath('//repo//wt/./src/..')).toBe('/repo/wt');
+    expect(normalizePath('/')).toBe('/');
+    expect(normalizePath('/..')).toBe('/');
+    expect(normalizePath('')).toBeNull();
+    expect(normalizePath('~/code')).toBeNull();
+    expect(normalizePath('relative/dir')).toBeNull();
+  });
+
+  it('the folder itself and anything under it is inside; a prefix-sharing sibling is not', () => {
+    expect(isPathInside('/repo/wt', '/repo/wt')).toBe(true);
+    expect(isPathInside('/repo/wt/', '/repo/wt')).toBe(true);
+    expect(isPathInside('/repo/wt', '/repo/wt/')).toBe(true);
+    expect(isPathInside('/repo/wt/packages/ui', '/repo/wt')).toBe(true);
+    expect(isPathInside('/repo/wt-2', '/repo/wt')).toBe(false);
+    expect(isPathInside('/repo', '/repo/wt')).toBe(false);
+    expect(isPathInside('/repo/wt/..', '/repo/wt')).toBe(false);
+    expect(isPathInside('/anything', '/')).toBe(true);
+  });
+
+  it('macOS: /tmp, /var, /etc are the same as /private/...; case does not matter', () => {
+    expect(isPathInside('/tmp/x/wt/src', '/private/tmp/x/wt', mac)).toBe(true);
+    expect(isPathInside('/private/var/folders/wt', '/var/folders/wt', mac)).toBe(true);
+    expect(isPathInside('/Users/Me/Code/WT', '/Users/me/code/wt', mac)).toBe(true);
+    expect(isPathInside('/private/tmp-other/wt', '/tmp/wt', mac)).toBe(false);
+    // Linux 不做这些
+    expect(isPathInside('/tmp/x/wt', '/private/tmp/x/wt', linux)).toBe(false);
+    expect(isPathInside('/Users/Me/wt', '/Users/me/wt', linux)).toBe(false);
+  });
+
+  it('unknown paths give null (no hint)', () => {
+    expect(isPathInside('', '/repo/wt')).toBeNull();
+    expect(isPathInside('/repo/wt', '')).toBeNull();
+  });
+
+  it('outsideWorkspaceTag: tag only when known to be outside, hover shows both paths', () => {
+    expect(outsideWorkspaceTag('/repo/wt/src', '/repo/wt')).toBeNull();
+    expect(outsideWorkspaceTag(null, '/repo/wt')).toBeNull();
+    expect(outsideWorkspaceTag('/somewhere', null)).toBeNull();
+    expect(outsideWorkspaceTag('/somewhere', '/repo/wt')).toEqual({ text: 'outside workspace', detail: 'Now in /somewhere\nWorkspace: /repo/wt' });
   });
 });

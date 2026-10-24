@@ -39,6 +39,20 @@ describe('WindowShell', () => {
     expect(screen.getByText('Waiting').getAttribute('title')).toBe('Needs approval');
   });
 
+  it('shows a muted tag after the status, with its own hover detail (IS-57)', () => {
+    const { rerender } = render(
+      <WindowShell
+        name="zsh"
+        status={{ text: 'Idle · 2m', tone: 'muted', dot: 'hollow', tag: { text: 'outside workspace', detail: 'Now in /tmp\nWorkspace: /repo/wt' } }}
+      />,
+    );
+    const tag = screen.getByText('outside workspace');
+    expect(tag.className).toBe('ad-window-tag');
+    expect(tag.getAttribute('title')).toBe('Now in /tmp\nWorkspace: /repo/wt');
+    rerender(<WindowShell name="zsh" status={{ text: 'Idle · 2m', tone: 'muted', dot: 'hollow' }} />);
+    expect(screen.queryByText('outside workspace')).toBeNull();
+  });
+
   it('reports title drags as total screen deltas', () => {
     const onMove = vi.fn();
     const onMoveEnd = vi.fn();

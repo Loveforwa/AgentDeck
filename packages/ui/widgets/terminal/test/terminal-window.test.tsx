@@ -14,6 +14,8 @@ import type {
   WindowId,
   WindowNode,
   WindowStatusBadge,
+  Workspace,
+  WorkspaceId,
 } from '@agentdeck/contracts';
 import { createFakeApi, type FakeApi } from '@agentdeck/fakes';
 import { TerminalWindow, terminalWindowType } from '../src/index.ts';
@@ -43,6 +45,8 @@ interface Harness {
   setProps(p: Partial<HostProps>): void;
   data(): TerminalWindowData;
   status(): WindowStatusBadge | null;
+  /** 每次 setStatus 的参数，按顺序。 */
+  statusLog: (WindowStatusBadge | null)[];
   opened: OpenWindowRequest[];
   command(c: WindowCommand): void;
   closed: () => number;
@@ -53,6 +57,7 @@ interface HostProps {
   summary: boolean;
   focused: boolean;
   contentSize: Size;
+  workspace: Workspace | null;
 }
 
 function mount(data: Partial<TerminalWindowData>, initial: Partial<HostProps> = {}): Harness {
@@ -60,11 +65,12 @@ function mount(data: Partial<TerminalWindowData>, initial: Partial<HostProps> = 
   const listeners = new Set<(c: WindowCommand) => void>();
   let current: TerminalWindowData = terminalWindowType.create(data);
   let status: WindowStatusBadge | null = null;
+  const statusLog: (WindowStatusBadge | null)[] = [];
   let closed = 0;
   let setOuter: (p: Partial<HostProps>) => void = () => {};
 
   function Host(): ReactNode {
-    const [props, setProps] = useState<HostProps>({ visible: true, summary: false, focused: true, contentSize: { w: 560, h: 332 }, ...initial });
+    const [props, setProps] = useState<HostProps>({ visible: true, summary: false, focused: true, contentSize: { w: 560, h: 332 }, workspace: null, ...initial });
     const [d, setD] = useState(current);
     // 和白板一样：setStatus 会让外面重新渲染，每次传进去的回调都是新的（防止来回触发）
     const [, rerender] = useState(0);
@@ -72,7 +78,7 @@ function mount(data: Partial<TerminalWindowData>, initial: Partial<HostProps> = 
     const node: WindowNode<TerminalWindowData> = {
       id: 'w1' as WindowId,
       type: 'terminal',
-      workspaceId: null,
+      workspaceId: props.workspace?.id ?? null,
       rect: { x: 0, y: 0, w: 560, h: 360 },
       z: 0,
       title: null,
@@ -82,7 +88,6 @@ function mount(data: Partial<TerminalWindowData>, initial: Partial<HostProps> = 
     return (
       <TerminalWindow
         window={node}
-        workspace={null}
         {...props}
         updateData={(patch) => {
           current = { ...current, ...patch };
@@ -90,6 +95,7 @@ function mount(data: Partial<TerminalWindowData>, initial: Partial<HostProps> = 
         }}
         setStatus={(s) => {
           status = s;
+          statusLog.push(s);
           rerender((n) => n + 1);
         }}
         requestFocus={() => {}}
@@ -108,6 +114,7 @@ function mount(data: Partial<TerminalWindowData>, initial: Partial<HostProps> = 
     setProps: (p) => act(() => setOuter(p)),
     data: () => current,
     status: () => status,
+    statusLog,
     opened,
     command: (c) => act(() => listeners.forEach((l) => l(c))),
     closed: () => closed,
@@ -337,6 +344,87 @@ describe('title bar status', () => {
     act(() => api.bus.emit({ type: 'status.changed', snapshot: snap }));
     await waitFor(() => expect(h.status()).toEqual({ text: 'Waiting · 3m', tone: 'attention', dot: 'filled', detail: 'Needs approval' }));
     expect(h.data().sessionId).toBe('codex-thread-1');
+  });
+});
+
+describe('outside workspace hint (IS-57, N7)', () => {
+  const ws: Workspace = {
+    id: 'ws-1' as WorkspaceId,
+    projectId: 'p-1' as Workspace['projectId'],
+    name: 'feat-oauth',
+    mode: 'worktree',
+    path: '/private/var/repo/feat-oauth',
+    branch: 'feat/oauth',
+    repos: [],
+    createdAt: new Date().toISOString(),
+    missing: false,
+  };
+  const running = (): StatusSnapshot => ({ terminalId: T, status: 'running', since: new Date().toISOString(), exitCode: null, pending: null, sessionId: null });
+
+  /** 假服务的 list() 里 cwd 固定是创建时的目录；改成测试里可变的当前目录。 */
+  function fakeCwd(initial: string): { cd(path: string): void } {
+    let cwd = initial;
+    const list = api.terminals.list.bind(api.terminals);
+    vi.spyOn(api.terminals, 'list').mockImplementation(async () => (await list()).map((t) => (t.id === T ? { ...t, cwd } : t)));
+    return {
+      cd: (path) => {
+        cwd = path;
+        // 命令跑完、安静下来时重新取一次
+        act(() => api.bus.emit({ type: 'terminal.silence', id: T, at: new Date().toISOString() }));
+      },
+    };
+  }
+
+  it('tags the title bar when the terminal cd’s out of its frame’s folder, and clears it on the way back', async () => {
+    makeTerminal({ history: 'x' });
+    const sh = fakeCwd('/private/var/repo/feat-oauth/');
+    const h = mount({ terminalId: T, agent: 'shell', cmd: 'zsh', cwd: ws.path }, { workspace: ws });
+    await waitFor(() => expect(api.fakes.terminals.views(T)).toHaveLength(1));
+    act(() => api.bus.emit({ type: 'status.changed', snapshot: running() }));
+    await waitFor(() => expect(h.status()).toMatchObject({ text: 'Running · now', tone: 'running' }));
+    expect(h.status()?.tag).toBeUndefined();
+
+    sh.cd('/Users/me/other-repo');
+    await waitFor(() => expect(h.status()?.tag?.text).toBe('outside workspace'));
+    // 只是提示：状态灯和文字不变，悬停写实际目录和工作区目录
+    expect(h.status()).toMatchObject({ text: 'Running · now', tone: 'running', dot: 'filled' });
+    expect(h.status()?.tag?.detail).toBe('Now in /Users/me/other-repo\nWorkspace: /private/var/repo/feat-oauth');
+
+    sh.cd('/private/var/repo/feat-oauth/src');
+    await waitFor(() => expect(h.status()?.tag).toBeUndefined());
+    expect(h.status()).toMatchObject({ text: 'Running · now', tone: 'running' });
+  });
+
+  it('a sibling folder with the same prefix counts as outside', async () => {
+    makeTerminal({ history: 'x' });
+    fakeCwd('/private/var/repo/feat-oauth-2');
+    const h = mount({ terminalId: T, agent: 'shell', cmd: 'zsh', cwd: ws.path }, { workspace: ws });
+    act(() => api.bus.emit({ type: 'status.changed', snapshot: running() }));
+    await waitFor(() => expect(h.status()?.tag?.text).toBe('outside workspace'));
+  });
+
+  it('terminals not in a frame never get the tag', async () => {
+    makeTerminal({ history: 'x' });
+    fakeCwd('/somewhere/else');
+    const h = mount({ terminalId: T, agent: 'shell', cmd: 'zsh', cwd: '/repo' });
+    await waitFor(() => expect(api.fakes.terminals.views(T)).toHaveLength(1));
+    act(() => api.bus.emit({ type: 'status.changed', snapshot: running() }));
+    await waitFor(() => expect(h.status()).toMatchObject({ text: 'Running · now' }));
+    await flush();
+    expect(h.status()?.tag).toBeUndefined();
+  });
+
+  it('pushes the badge again when only the tag changed (the board ignores same text / tone / dot)', async () => {
+    makeTerminal({ history: 'x' });
+    const sh = fakeCwd(ws.path);
+    const h = mount({ terminalId: T, agent: 'shell', cmd: 'zsh', cwd: ws.path }, { workspace: ws });
+    act(() => api.bus.emit({ type: 'status.changed', snapshot: running() }));
+    await waitFor(() => expect(h.status()).toMatchObject({ text: 'Running · now' }));
+    const before = h.statusLog.length;
+    sh.cd('/tmp');
+    await waitFor(() => expect(h.status()?.tag?.text).toBe('outside workspace'));
+    // canvas 的 setBadge 只比 text / tone / dot：先清掉再给，标签才会出现
+    expect(h.statusLog.slice(before)).toEqual([null, expect.objectContaining({ text: 'Running · now', tag: expect.objectContaining({ text: 'outside workspace' }) })]);
   });
 });
 

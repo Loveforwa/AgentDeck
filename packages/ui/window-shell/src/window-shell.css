@@ -79,6 +79,17 @@
   color: var(--status-error);
 }
 
+/* 状态后面的淡色小标签（例如终端的 outside workspace，IS-57）：只是提示，不用彩色 */
+.ad-window-tag {
+  flex: none;
+  padding: 0 var(--space-xs);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  color: var(--muted);
+  font-size: var(--text-xs);
+  line-height: 16px;
+}
+
 .ad-window-actions {
   display: flex;
   flex: none;

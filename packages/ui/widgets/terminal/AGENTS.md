@@ -30,6 +30,8 @@ registerTerminalWindow(); // = registerWindow(terminalWindowType)，registerWind
 - **输入（T3）**：聚焦时不带 ⌘ 的按键全部交给 xterm（Esc、⌃C、Tab、方向键、空格）；⌘C / ⌘V 不让 xterm 处理，由浏览器发 copy / paste 事件、xterm 自己接（多行粘贴按程序的 bracketed paste 模式发）；其他 ⌘ 组合冒泡给白板。从访达拖进来的文件写入带单引号的路径（当作粘贴）。
 - **链接**：屏幕上的 localhost 地址和“文件:行号”画下划线（规则是 port-watch 的副本，见下）。单击 localhost → `openWindow({ type: 'browser', data: { url, mode: 'frame', openedBy: { terminalId, label } }, reuseKey: <origin> })`，label 是 “zsh · pnpm dev” 这种；单击文件 → `app.openInEditor(绝对路径, 行)`（相对路径按 `data.cwd` 拼）；OSC 8 里的其他网址 → `window.open`（组装时转系统浏览器）。
 - **标题栏状态**：`status.snapshot()` 取一次，之后 `status.changed` 按 terminalId 对上，`setStatus`：Starting / Running · 4m / Needs approval · 3m（attention）/ Needs reply · 3m（attention）/ Idle · 12m / Exited / Error · exit 1，每 30 秒刷新时间。没有状态机的数据时，进程退出用 Exited / Error · exit N。`status.changed` 带 `sessionId` 且和 data 里不同时 `updateData({ sessionId })`。
+- **cd 出了工作区（IS-57，MVP v3 · N7）**：只是提示。在框里的终端（`props.workspace` 不为 null）、进程还活着时，盯着 `TerminalInfo.cwd`（tmux 的 `pane_current_path`）：挂上时取一次，之后所有终端窗口共用一个 3 秒的定时器 `terminals.list()`，这个终端 `terminal.silence` 时也取；窗口看不见时不取。cwd 不在 `workspace.path` 里面时，标题栏状态带 `tag: { text: 'outside workspace', detail: 'Now in …\nWorkspace: …' }`（contracts 的 `WindowStatusBadge.tag`，window-shell 画成淡色小标签），回到里面就去掉。散放的终端、还没有状态文字时不显示。不拦、不改源代码管理面板、不锁目录。路径比较见 `src/cwd.ts`：去掉末尾 /、. 和 ..；macOS 上 `/tmp` `/var` `/etc` 当作 `/private/...`、不分大小写；拿不到 realpath，其他符号链接认不出（只会多提示，不会漏）。
+  - **白板那边要改的**：`canvas/src/controller.ts` 的 `setBadge` 只比 text / tone / dot，一样就不更新，所以只改了 tag（或 detail）时这里先 `setStatus(null)` 再给新的。白板改成连 `tag`、`detail` 一起比之后，`TerminalWindow.tsx` 里这段可以去掉。
 - **退出（T5）**：`terminal.exit` 或 list() 里 `alive: false` → 内容保留，底部 “Process exited (code 1)”（0 时 “Process exited”）+ Restart / Close。Restart = 先 kill 旧会话，再 `agents.start({ agent, cwd, workspaceId, mode: new, size, command: startCommand })`，`updateData({ terminalId, cmd, args, sessionId })`。`command-not-found` → “Command not found: claude” + Open Settings（发冒泡的 `agentdeck:open-settings` 事件）/ Use Shell instead（`agents.start({ agent: 'shell' })`，data 改成 shell）。
 - **重开应用（T6）**：按保存的 terminalId 在 `terminals.list()` 里找（同一时刻多个窗口合成一次调用）。找到就接回；没有（或 terminalId 为 null）→ “Previous session ended” + Restart ▾（有 sessionId 时菜单：Resume conversation / New conversation），否则 Restart。`terminal.host-lost` → “Session ended”。
 - **摘要卡（T8）**：`summary` 为 true 时不 attach、不改行列数，显示 `lastLines(id, 3)`；有 activity / silence / exit 时最多每秒重读一次。在等你时最后一行用 attention 色。恢复原大小由白板做（单击摘要卡）。
@@ -42,7 +44,8 @@ registerTerminalWindow(); // = registerWindow(terminalWindowType)，registerWind
 | `src/definition.ts` | `terminalWindowType` |
 | `src/TerminalWindow.tsx` | 组件：状态（checking / live / starting / ended / not-found / failed）、退出条、提示页、摘要卡 |
 | `src/session.ts` | `TerminalSession`：xterm、插件、attach / detach / resize、输入扣留、按键、链接。不依赖 React |
-| `src/router.ts` | 终端输出按 viewId 分发（早到的先缓存）；`list()` 合并调用 |
+| `src/router.ts` | 终端输出按 viewId 分发（早到的先缓存）；`list()` 合并调用；`watchTerminalCwd`（共用定时器盯当前目录） |
+| `src/cwd.ts` | 纯函数：路径规范、`isPathInside`、`outsideWorkspaceTag`（IS-57） |
 | `src/queries.ts` `keys.ts` `links.ts` `status.ts` `theme.ts` `metrics.ts` `title.ts` | 纯函数 |
 | `test/` | jsdom + `createFakeApi()`；xterm 用 `@xterm/headless` 垫（`test/setup.ts`） |
 | `dev/` | dev 页面（假 api；`?real=1` 接 tmux-host 的 dev bridge） |
