@@ -37,8 +37,15 @@
 
 | 插件 | 终端窗口 | 网页窗口 | 工作区框 | 白板 | 标记 | 状态 |
 | --- | --- | --- | --- | --- | --- | --- |
-| Auto-approve | ✓ claude、codex 走钩子；omp 看屏幕发键；pi 从不问。kimi 暂不支持（DR-56） | ✗ | ✓ 框里所有终端 | ✗ | 终端底边左侧的红色小书签 “Auto-approve”；需要你处理时临时变橙 “Needs you” | 后端做完，界面开发中（PL1） |
+| Auto-approve | ✓ claude、codex 走钩子；omp 看屏幕发键；pi 从不问。kimi 暂不支持（DR-56） | ✗ | ✓ 框里所有终端 | ✗ | 终端底边左侧的红色小书签 “Auto-approve”；需要你处理时临时变橙 “Needs you”；框上开着时框标题里红色小标签 | 后端和界面都做完（PL1），等真应用里验收 |
 | Usage 用量记录 | ✓ 五种 agent（自己读各 agent 的会话文件，见 DR-55；kimi 新建会话靠推断） | ✗ | 以后（项目用量） | 以后（整台电脑） | 终端上方或下方一条细长圆角条，可拖 | 开发中（PL2） |
+
+## 代码在哪里（PL0）
+
+- 登记表：`packages/ui/canvas/src/plugins/index.ts` 的 `PLUGINS`。加插件 = 写一个 `PluginDefinition`（`plugins/types.ts`）加一行：`attachesTo`（terminal / browser / frame / board）、`agents`、`availability`（不能开时的原因）、`isOn`、`toggle`、`menuExtras`、`WindowMark` / `FrameMark`（标记组件）。右键菜单的 PLUGINS 一组和标记都从登记表来，不用改菜单和窗口节点。
+- 菜单零件：ui-kit `Menu` 的 `{ type: 'heading' }`（PLUGINS 小标题）和 `MenuItem.hint`（灰掉的原因）。
+- 标记的颜色和尺寸：design-tokens 的 `--plugin-auto-approve` / `--plugin-auto-approve-fg`、`--plugin-mark-height` / `--plugin-mark-text` / `--plugin-mark-radius`。新插件要新颜色时在 design-tokens 加专用 token。
+- Auto-approve 的界面：`plugins/auto-approve.tsx`（书签、小卡片、框标签）、`approvals/model.ts`（状态、开关、写进白板）、`react/approvals.tsx`（第一次开的确认、Approval history、Approve all）。
 
 ## 不是插件的东西
 
@@ -55,4 +62,5 @@
 - 2026-10-25：Approve all 不设快捷键。
 - 2026-10-25（第二次）：Auto-approve 先做 claude、codex、omp、pi 四个，kimi 暂不做。书签缩小，只写 “Auto-approve”，红色；没替你按、需要你处理时临时变橙，只写 “Needs you”（原因放在悬停里）。破坏性命令按常见命令匹配（不只看开头），选择题、要打字回答的都照常等。
 - 2026-10-25（第二次）：不接 CC Switch，用量插件改名 Usage，是我们自己的用量记录工具。
+- 2026-10-25：PL1 界面：第一次打开 Auto-approve 时问一句（设计画布 PluginApprove 第 1 步），之后不再问（记在界面的 localStorage）。开关以主进程服务为准，界面点开关只调服务，收到 `approval.auto-approve-changed` 再写进白板；重开应用由 apps/desktop 恢复一次，界面不重复推，只在终端换了 terminalId 时补推。Approve all 按任务定为“有 1 条以上在等批准就显示”（SpecStatus 原写 2 条）。网页窗口目前没有插件，右键网页不出 PLUGINS 一组。
 - 2026-10-25：PL1 后端：破坏性命令的默认名单补全（在整段命令里找，见 packages/agent-adapters 的 `DEFAULT_DESTRUCTIVE_PATTERNS`）。替你按不了的时候（破坏性、选择题 / 要你打字、没按成）服务只给原因（`approval.needs-you`），界面统一显示 “Needs you”。

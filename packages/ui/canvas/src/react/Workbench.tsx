@@ -104,6 +104,8 @@ function BoardTopbar({ boardName, trafficLights }: { boardName: string | undefin
   // 聚焦的窗口在 ⌘J 顺序里排第几，顶栏显示“2/3 waiting”
   const position = useBoardState((s) => waitingPosition(summarize(s).waiting, s.focusedId));
   const projects = useBoardState((s) => s.projects);
+  // X3：在等“允许一次”的请求数，顶栏据此显示 Approve all…
+  const approvable = useBoardState((s) => c.approvals.approvable(s).length);
   const menu = useMemo<MenuEntry[]>(
     () => [
       ...projects.map((p) => ({
@@ -132,6 +134,8 @@ function BoardTopbar({ boardName, trafficLights }: { boardName: string | undefin
       {...(position ? { waitingPosition: position } : {})}
       projectsMenu={menu}
       onWaitingClick={() => c.jumpToNextWaiting()}
+      approvable={approvable}
+      onApproveAll={() => c.approvals.openApproveAll()}
       onSettings={() => c.openSettings()}
     />
   );

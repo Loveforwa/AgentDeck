@@ -1,5 +1,6 @@
 import { createContext, useContext, useSyncExternalStore, type ReactNode } from 'react';
 import { useStore } from 'zustand';
+import type { ApprovalsState } from '../approvals/model.ts';
 import type { BoardController } from '../controller.ts';
 import type { WindowDefinition } from '../registry.ts';
 import type { BoardStoreState } from '../store.ts';
@@ -19,6 +20,11 @@ export function useController(): BoardController {
 /** 订阅白板状态的一部分。selector 返回新对象时会每次都重画，取标量或 store 里已有的引用。 */
 export function useBoardState<T>(selector: (s: BoardStoreState) => T): T {
   return useStore(useController().store, selector);
+}
+
+/** 订阅批准的状态（Auto-approve 插件、Approval history、Approve all），规则同 useBoardState。 */
+export function useApprovals<T>(selector: (s: ApprovalsState) => T): T {
+  return useStore(useController().approvals.store, selector);
 }
 
 /** 按类型查注册表，widget 晚注册时也会更新。 */

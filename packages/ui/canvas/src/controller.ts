@@ -4,6 +4,7 @@
 import type { AgentDeckApi, AgentDeckErrorData, AgentKind, BoardState, CreateWorkspaceRequest, ErrorCode, FrameNode, OpenWindowRequest, ProjectId, ProjectPatch, Rect, Settings, Size, TerminalWindowData, Unsubscribe, Viewport, WindowCommand, WindowId, WindowNode, WindowStatusBadge, Workspace, WorkspaceId } from '@agentdeck/contracts';
 import { TITLE_BAR_HEIGHT, resizeRect, type ResizeEdge } from '@agentdeck/ui-window-shell';
 import { isSummarySize, windowRegistry, type WindowDefinition, type WindowRegistry } from './registry.ts';
+import { ApprovalsModel } from './approvals/model.ts';
 import { startableAgents } from './model/agents.ts';
 import { nextWaiting, prevWaiting, summarize, statusOf, type AttentionSummary } from './model/attention.ts';
 import { createAutosave, type Autosave } from './model/autosave.ts';
@@ -134,12 +135,15 @@ export class BoardController {
   private lastBadgeCount = -1;
   private started = false;
   private pendingSeq = 0;
+  /** 批准（PL1 Auto-approve、Approval history、X3 Approve all），见 approvals/model.ts。 */
+  readonly approvals: ApprovalsModel;
 
   constructor(opts: BoardControllerOptions) {
     this.opts = opts;
     this.api = opts.api;
     this.registry = opts.registry ?? windowRegistry;
     this.store = createBoardStore();
+    this.approvals = new ApprovalsModel(this, (message) => this.notify(message));
     this.autosave = createAutosave<BoardState>({
       save: (state) => this.api.board.save(state),
       delayMs: opts.autosaveMs ?? 500,
@@ -195,6 +199,7 @@ export class BoardController {
       api.on('board.add-frame', (e) => this.addFrameFromService(e.workspace)),
       api.on('board.open-window', (e) => void this.openWindowFromService(e.request, e.highlight)),
     );
+    void this.approvals.start();
     // 存档：保存的那部分一变就排进防抖
     this.unsubs.push(
       this.store.subscribe((s, prev) => {
@@ -250,6 +255,7 @@ export class BoardController {
   dispose(): void {
     this.started = false;
     for (const u of this.unsubs.splice(0)) u();
+    this.approvals.dispose();
     void this.autosave.flush();
     this.autosave.dispose();
   }

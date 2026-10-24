@@ -18,6 +18,7 @@ import { useState } from 'react';
 import { MAX_ZOOM, MIN_ZOOM } from '../model/geometry.ts';
 import { BoardMenu, terminalItems } from './BoardMenu.tsx';
 import { BoardDialogs } from './dialogs.tsx';
+import { ApprovalDialogs } from './approvals.tsx';
 import { FrameNodeView, PendingFrameView } from './FrameNodeView.tsx';
 import { WindowNodeView } from './WindowNodeView.tsx';
 import { useBoardState, useController } from './context.tsx';
@@ -168,6 +169,7 @@ export function Board() {
       <Clawd />
       <BoardMenu />
       <BoardDialogs />
+      <ApprovalDialogs />
     </div>
   );
 }

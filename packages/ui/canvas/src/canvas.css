@@ -283,8 +283,222 @@
 /* ---- 窗口节点 ---- */
 
 .ad-window-node {
+  position: relative;
   width: 100%;
   height: 100%;
+}
+
+/* ---- 插件的标记（PL0、PL1，docs/plugins.md） ---- */
+
+/*
+  Auto-approve 的书签：挂在终端底边左侧，贴着下边框的外沿（top: 100%，不留缝也不压边），
+  在窗口外面，不挡终端内容。跟着节点走：移动、改大小、放大都跟着。
+*/
+.ad-auto-approve-mark {
+  position: absolute;
+  top: 100%;
+  left: var(--space-lg);
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: var(--plugin-mark-height);
+  padding: 0 7px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0 0 var(--plugin-mark-radius) var(--plugin-mark-radius);
+  background: var(--plugin-auto-approve);
+  color: var(--plugin-auto-approve-fg);
+  font-family: var(--font-ui);
+  font-size: var(--plugin-mark-text);
+  font-weight: var(--weight-strong);
+  letter-spacing: 0.01em;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: default;
+  pointer-events: all;
+}
+
+/* 要你自己处理：临时变橙，只写 Needs you（原因在悬停里） */
+.ad-auto-approve-mark--needs-you {
+  background: var(--attention);
+  color: var(--on-attention);
+}
+
+.ad-auto-approve-mark:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+/* 每次自动批准闪一下：一层同色浅底淡出 */
+.ad-auto-approve-flash {
+  position: absolute;
+  inset: 0;
+  background: var(--plugin-auto-approve-fg);
+  opacity: 0;
+  pointer-events: none;
+  animation: ad-auto-approve-flash calc(var(--motion-duration) * 5) var(--motion-ease);
+}
+
+@keyframes ad-auto-approve-flash {
+  0% {
+    opacity: 0.45;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* 框标题里的小标签（框上开着 Auto-approve） */
+.ad-auto-approve-tag {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  align-self: center;
+  height: 18px;
+  padding: 0 7px;
+  border-radius: var(--radius-inset);
+  background: var(--plugin-auto-approve);
+  color: var(--plugin-auto-approve-fg);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+}
+
+/* 点书签弹出的小卡片 */
+.ad-auto-approve-card {
+  width: 300px;
+}
+
+.ad-auto-approve-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  font-size: var(--text-sm);
+}
+
+.ad-auto-approve-card-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+}
+
+.ad-auto-approve-card-title {
+  flex: 1;
+  font-weight: var(--weight-strong);
+}
+
+.ad-auto-approve-card-muted {
+  color: var(--muted);
+}
+
+.ad-auto-approve-card-needs {
+  color: var(--attention);
+}
+
+.ad-auto-approve-card-mono {
+  font-family: var(--font-mono);
+}
+
+.ad-auto-approve-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  padding: var(--space-xs) 0;
+  border-bottom: 1px solid var(--line-subtle);
+}
+
+.ad-auto-approve-card-row {
+  display: flex;
+  gap: var(--space-sm);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.ad-auto-approve-card-time {
+  flex: none;
+}
+
+.ad-auto-approve-card-summary {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ad-auto-approve-card-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.ad-auto-approve-card-spacer {
+  flex: 1;
+}
+
+/* Approval history */
+.ad-approval-history {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.ad-approval-history th {
+  padding: var(--space-xs) var(--space-sm) var(--space-xs) 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-weight: var(--weight-medium);
+  text-align: left;
+}
+
+.ad-approval-history td {
+  max-width: 220px;
+  padding: var(--space-xs) var(--space-sm) var(--space-xs) 0;
+  border-bottom: 1px solid var(--line-subtle);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ad-approval-history-time {
+  color: var(--muted);
+}
+
+.ad-approval-history-summary {
+  font-family: var(--font-mono);
+}
+
+/* Approve all（X3）的列表 */
+.ad-approve-all-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  max-height: 320px;
+  overflow: auto;
+}
+
+.ad-approve-all-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+
+.ad-approve-all-command {
+  padding-left: 22px;
+  overflow: hidden;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ad-approve-all-note {
+  padding-left: 22px;
+  color: var(--attention);
+  font-size: var(--text-xs);
 }
 
 /* 没聚焦时盖在内容上：第一下单击只聚焦；滚轮由 passWheelToContent 交给下面的内容（N6） */
