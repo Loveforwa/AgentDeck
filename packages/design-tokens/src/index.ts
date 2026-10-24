@@ -30,6 +30,8 @@ export interface ThemeColors {
   attention: string;
   /** attention 底上的字 */
   onAttention: string;
+  /** 在等你的一行的浅黄底（V5 快速定位列表）。上面的 ink、muted、attention 文字都要过 4.5:1 */
+  attentionSoft: string;
   /** 状态灯（MVP v2 · V2）：运行中。也用作 Running 的文字色 */
   statusRunning: string;
   /** 状态灯：等你（点和窗口边框用；文字用 attention） */
@@ -68,6 +70,7 @@ export const light: ThemeColors = {
   lineSubtle: '#EEEEEB',
   attention: '#B45309',
   onAttention: '#FFFFFF',
+  attentionSoft: '#FFF7E6',
   statusRunning: '#1A7F37',
   statusWaiting: '#BF8700',
   statusError: '#CF222E',
@@ -96,6 +99,7 @@ export const dark: ThemeColors = {
   lineSubtle: '#353531',
   attention: '#E3B341',
   onAttention: '#1A1A1A',
+  attentionSoft: '#33301F',
   statusRunning: '#3FB950',
   statusWaiting: '#E3B341',
   statusError: '#F85149',

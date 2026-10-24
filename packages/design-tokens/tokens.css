@@ -53,6 +53,7 @@
   --line-subtle: #EEEEEB;
   --attention: #B45309;
   --on-attention: #FFFFFF;
+  --attention-soft: #FFF7E6;
   --status-running: #1A7F37;
   --status-waiting: #BF8700;
   --status-error: #CF222E;
@@ -81,6 +82,7 @@
   --line-subtle: #353531;
   --attention: #E3B341;
   --on-attention: #1A1A1A;
+  --attention-soft: #33301F;
   --status-running: #3FB950;
   --status-waiting: #E3B341;
   --status-error: #F85149;
@@ -111,6 +113,7 @@
     --line-subtle: #353531;
     --attention: #E3B341;
     --on-attention: #1A1A1A;
+    --attention-soft: #33301F;
     --status-running: #3FB950;
     --status-waiting: #E3B341;
     --status-error: #F85149;
