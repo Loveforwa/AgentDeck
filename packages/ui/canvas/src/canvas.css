@@ -1,6 +1,9 @@
 /* 白板、工作区框、整体布局。颜色只用 tokens。 */
 
 .ad-workbench {
+  /* 顶栏浮在白板上（没有横栏，见 ui/topbar 的 topbar.css），白板铺满整个窗口 */
+  --topbar-height: 34px;
+  position: relative;
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -9,6 +12,14 @@
   color: var(--ink);
   font-family: var(--font-ui);
   font-size: var(--text-md);
+}
+
+.ad-workbench > .ad-topbar {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 6;
 }
 
 .ad-workbench-main {
@@ -482,7 +493,8 @@
   flex: none;
   box-sizing: border-box;
   min-width: 0;
-  margin: var(--space-xs) var(--space-xs) var(--space-xs) 0;
+  /* 顶上让开浮在右上角的状态灯和齿轮 */
+  margin: calc(var(--topbar-height) + var(--space-2xs)) var(--space-xs) var(--space-xs) 0;
   border: 1px solid var(--line);
   border-radius: var(--radius-panel);
   background: var(--surface);
