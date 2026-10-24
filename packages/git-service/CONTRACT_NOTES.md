@@ -62,3 +62,4 @@
 - `FakeProjectService.initGit` 不更新主目录工作区的 `repos`（真实现会填上 `{ name: '.', path, branch }`）。面板对“git 项目的主目录工作区 repos 为空”做了兜底，用工作区目录本身。
 - 假的 stash 信息格式不同（见第 4 条）。
 - 假的写操作每次都发 `git.status`（见第 11 条）。
+- N5（提交图）加的 `log` 选项 `graph` / `commit`、`branches({ mergedInto })`，假实现（tools/fakes，不归线 3 改）还不认：`log` 照旧返回 HEAD 往前的一条直线、没有 parents / refs / files，`branches` 不填 merged。面板对此有兜底（没有 parents 时当成直线、没有 files 时写 “Files aren’t available”），但 dev 页面上看不到分叉和合并。建议 F6 的负责人跟进：假仓库已经有分支，按 parents 走出提交图不难。

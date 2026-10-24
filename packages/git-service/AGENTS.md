@@ -19,7 +19,7 @@ const git = createGitService({
 });
 ```
 
-另外导出 `SystemGitService`（类）、`GitCommandError`、`samePath`，以及解析函数 `parseStatusV2` `parseWorktrees` `parseBranches` `parseLog` `parseStashes`（纯函数）。
+另外导出 `SystemGitService`（类）、`GitCommandError`、`samePath`，以及解析函数 `parseStatusV2` `parseWorktrees` `parseBranches` `parseLog` `parseDecorations` `parseNameStatus` `parseStashes` `reachableWithin`（纯函数）。
 
 ## 每个方法跑什么
 
@@ -30,12 +30,14 @@ const git = createGitService({
 | unstage | `restore --staged`；没有提交时 `rm --cached -r` | 重命名连旧路径一起还原 |
 | discard | 见下 | 未跟踪的、新加进暂存区的文件调 `moveToTrash` |
 | commit | `add -A`（all）+ `commit -q -F -` | 信息走 stdin；钩子失败时 detail 是钩子的输出 |
-| branches | `for-each-ref refs/heads`，按最近提交排 | `checkedOutAt` 来自 `%(worktreepath)`，包括自己这个目录 |
+| branches | `for-each-ref refs/heads`，按最近提交排 | `checkedOutAt` 来自 `%(worktreepath)`，包括自己这个目录。传 `mergedInto` 时再跑一次 `for-each-ref --merged=<分支>` 填 `merged`（N5） |
 | switchBranch | `switch`；stash 策略先 `stash push --include-untracked -m "AgentDeck: switched to <分支>"` | 切不过去时把刚存的 stash 放回来 |
 | createBranch / addWorktree | `switch -c` / `branch` / `worktree add -b`，都带 `--no-track` | 从 origin/main 分出时不把上游设成 main |
 | deleteBranch | `branch -d` / `-D` | |
 | stashes / applyStash | `stash list` / `stash apply`（+ `stash drop`） | id 只认 `stash@{n}` |
-| log | `log <base>..HEAD` + 合并基点往前几条（onBase） | 没有基础分支时全部 onBase=false |
+| log | `log <base>..HEAD` + 合并基点往前几条（onBase）；每条都带 `%P`（parents）和 `--decorate=full` 的 `%D`（refs） | 没有基础分支时全部 onBase=false |
+| log（`graph`，N5） | `log --date-order -n<limit> <分支… 或 --branches> HEAD <base>` | 提交图。onBase 在这一窗里从基础分支顶端沿 parents 走就准（拓扑顺序，见 `reachableWithin`） |
+| log（`commit`，N5） | `log -1` + `diff-tree -r -z --no-commit-id --name-status -M <第一父> <提交>`；根提交 `--root` | 填 files；合并提交相对第一父提交 |
 | diff | `diff [--cached] --no-color --no-ext-diff`；未跟踪文件 `diff --no-index /dev/null <文件>` | |
 | worktrees | `worktree list --porcelain -z` | 要 git ≥ 2.36；bare 主仓库不列出 |
 | removeWorktree | `worktree remove [--force]`；目录已经没了时 `worktree prune` | |
@@ -71,8 +73,8 @@ pnpm --filter @agentdeck/git-service test       # Vitest，在真实临时仓库
 pnpm --filter @agentdeck/git-service typecheck
 ```
 
-- `test/parse.test.ts`：各种输出的解析（重命名、冲突、子模块、带空格的路径、分离 HEAD、bare 仓库）。
-- `test/git-service.test.ts`：新增、修改、删除、重命名、冲突、合并中、变基中、子模块显示为一条、stash 往返、带改动切换和冲突时拒绝、被占用的分支、worktree 增删、删分支、目录被手动删掉、钩子失败、超时、找不到 git、并发写排队。
+- `test/parse.test.ts`：各种输出的解析（重命名、冲突、子模块、带空格的路径、分离 HEAD、bare 仓库）、parents 和 refs（%D 全名、远端、标签、分离 HEAD）、name-status、窗内可达。
+- `test/git-service.test.ts`：新增、修改、删除、重命名、冲突、合并中、变基中、子模块显示为一条、stash 往返、带改动切换和冲突时拒绝、被占用的分支、worktree 增删、删分支、目录被手动删掉、钩子失败、超时、找不到 git、并发写排队；提交图（分叉、合并、上限、只看几个分支、分离 HEAD）、单个提交的文件（重命名、根提交、合并提交）、已合并的分支。
 - 测试里的 git 不读用户的全局配置（`GIT_CONFIG_GLOBAL=/dev/null`，见 `test/helpers.ts`）。
 
 ## 不许碰

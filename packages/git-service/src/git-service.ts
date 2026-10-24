@@ -10,6 +10,7 @@ import type {
   FileChange,
   GitEvent,
   GitService,
+  LogOptions,
   RepoOperation,
   RepoStatus,
   StashInfo,
@@ -21,11 +22,13 @@ import { AgentDeckError } from '@agentdeck/contracts';
 import {
   AGENTDECK_STASH_PREFIX,
   BRANCH_FORMAT,
-  LOG_FORMAT,
+  LOG_ARGS,
   STASH_FORMAT,
   parseBranches,
   parseLog,
+  parseNameStatus,
   parseStashes,
+  reachableWithin,
   parseStatusV2,
   parseWorktrees,
   type ParsedCommit,
@@ -178,7 +181,7 @@ export class SystemGitService implements GitService {
       if (opts.all) await this.git(repo, ['add', '-A']);
       // 信息从 stdin 给：多行、以 - 开头都没问题
       await this.git(repo, ['commit', '-q', '-F', '-'], { input: message, timeoutMs: this.longTimeoutMs });
-      const [c] = parseLog((await this.git(repo, ['log', '-1', `--format=${LOG_FORMAT}`, 'HEAD'])).stdout);
+      const [c] = parseLog((await this.git(repo, ['log', '-1', ...LOG_ARGS, 'HEAD'])).stdout);
       if (!c) throw new AgentDeckError({ code: 'internal', message: 'Committed, but could not read the commit' });
       const baseRef = await this.resolveRef(repo, await this.defaultBranch(repo));
       const onBase = baseRef ? await this.isAncestor(repo, c.hash, baseRef) : false;
@@ -188,9 +191,15 @@ export class SystemGitService implements GitService {
 
   // ---- 分支 ----
 
-  async branches(repo: AbsPath): Promise<BranchInfo[]> {
+  async branches(repo: AbsPath, opts?: { remote?: boolean; mergedInto?: string }): Promise<BranchInfo[]> {
     const out = await this.git(repo, ['for-each-ref', '--sort=-committerdate', `--format=${BRANCH_FORMAT}`, 'refs/heads']);
-    return parseBranches(out.stdout);
+    const list = parseBranches(out.stdout);
+    if (opts?.mergedInto === undefined) return list;
+    const into = await this.resolveRef(repo, opts.mergedInto);
+    const merged = into
+      ? new Set((await this.git(repo, ['for-each-ref', `--merged=${into}`, '--format=%(refname:short)', 'refs/heads'])).stdout.split('\n'))
+      : new Set<string>();
+    return list.map((b) => ({ ...b, merged: merged.has(b.name) }));
   }
 
   async switchBranch(repo: AbsPath, branch: string, strategy: SwitchStrategy): Promise<void> {
@@ -256,11 +265,21 @@ export class SystemGitService implements GitService {
 
   // ---- 提交记录、差异 ----
 
-  async log(repo: AbsPath, limit: number, opts?: StatusOptions): Promise<CommitInfo[]> {
+  async log(repo: AbsPath, limit: number, opts?: LogOptions): Promise<CommitInfo[]> {
+    if (opts?.commit !== undefined) return [await this.commitWithFiles(repo, opts.commit, opts)];
     if (limit <= 0 || !(await this.hasHead(repo))) return [];
     const baseRef = await this.resolveRef(repo, opts?.baseBranch ?? (await this.defaultBranch(repo)));
-    const logOf = async (range: string[], n: number): Promise<ParsedCommit[]> =>
-      n <= 0 ? [] : parseLog((await this.git(repo, ['log', `-n${n}`, `--format=${LOG_FORMAT}`, ...range, '--'])).stdout);
+    const logOf = async (range: string[], n: number, extra: string[] = []): Promise<ParsedCommit[]> =>
+      n <= 0 ? [] : parseLog((await this.git(repo, ['log', `-n${n}`, ...extra, ...LOG_ARGS, ...range, '--'])).stdout);
+    if (opts?.graph) {
+      // 提交图：几个分支加 HEAD，按时间排（仍保证子提交在父提交前面）；基础分支也放进去，onBase 才能在窗里算准
+      const refs = opts.graph.branches ? await this.existingRefs(repo, opts.graph.branches) : ['--branches'];
+      const range = [...refs, 'HEAD', ...(baseRef ? [baseRef] : [])];
+      const commits = await logOf(range, limit, ['--date-order']);
+      const baseTip = baseRef ? (await this.git(repo, ['rev-parse', '--verify', '-q', `${baseRef}^{commit}`], { okCodes: [1] })).stdout.trim() : '';
+      const onBase = reachableWithin(commits, baseTip || null);
+      return commits.map((c) => toCommit(c, onBase.has(c.hash)));
+    }
     if (!baseRef) return (await logOf(['HEAD'], limit)).map((c) => toCommit(c, false));
 
     const own = await logOf([`${baseRef}..HEAD`], limit);
@@ -449,6 +468,32 @@ export class SystemGitService implements GitService {
     return out.code === 0 ? out.stdout.trim() : null;
   }
 
+  /** 提交图要看的分支：本地分支用全名，其次按基础分支的规则解析（origin/main、标签、哈希）；不存在的跳过。 */
+  private async existingRefs(repo: AbsPath, names: readonly string[]): Promise<string[]> {
+    const refs: string[] = [];
+    for (const name of names) {
+      const ref = await this.resolveRef(repo, name);
+      if (ref && !refs.includes(ref)) refs.push(ref);
+    }
+    return refs;
+  }
+
+  /** 一个提交，带上它相对第一父提交改了哪些文件（根提交相对空树）。 */
+  private async commitWithFiles(repo: AbsPath, rev: string, opts: StatusOptions): Promise<CommitInfo> {
+    const notFound = () => new AgentDeckError({ code: 'not-found', message: `Commit ${rev} not found` });
+    if (rev === '' || rev.startsWith('-')) throw notFound();
+    const hash = (await this.git(repo, ['rev-parse', '--verify', '-q', `${rev}^{commit}`], { okCodes: [1] })).stdout.trim();
+    if (!hash) throw notFound();
+    const [c] = parseLog((await this.git(repo, ['log', '-1', ...LOG_ARGS, hash, '--'])).stdout);
+    if (!c) throw notFound();
+    const first = c.parents?.[0];
+    const range = first ? [first, hash] : ['--root', hash];
+    const out = await this.git(repo, ['diff-tree', '-r', '-z', '--no-commit-id', '--name-status', '-M', ...range]);
+    const baseRef = await this.resolveRef(repo, opts.baseBranch ?? (await this.defaultBranch(repo)));
+    const onBase = baseRef ? await this.isAncestor(repo, hash, baseRef) : false;
+    return { ...toCommit(c, onBase), files: parseNameStatus(out.stdout) };
+  }
+
   private async resolveRefOrThrow(repo: AbsPath, name: string): Promise<string> {
     const ref = await this.resolveRef(repo, name);
     if (!ref) throw new AgentDeckError({ code: 'not-found', message: `Branch ${name} not found` });
@@ -502,7 +547,10 @@ function branchInUse(branch: string, path: AbsPath): AgentDeckError {
 }
 
 function toCommit(c: ParsedCommit, onBase: boolean): CommitInfo {
-  return { hash: c.hash, shortHash: c.shortHash, subject: c.subject, author: c.author, at: c.at, onBase };
+  const out: CommitInfo = { hash: c.hash, shortHash: c.shortHash, subject: c.subject, author: c.author, at: c.at, onBase };
+  if (c.parents) out.parents = c.parents;
+  if (c.refs) out.refs = c.refs;
+  return out;
 }
 
 /** 冲突文件排最前，其余保持 git 的顺序（按路径）。 */

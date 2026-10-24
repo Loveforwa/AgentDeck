@@ -290,6 +290,96 @@ describe('commit and log', () => {
       ['Add entry point', true],
     ]);
   });
+
+  it('returns parents and refs on every commit', async () => {
+    const r = await repo();
+    const { git } = makeGit();
+    const [head, prev] = await git.log(r.path, 2);
+    expect(head?.parents).toEqual([prev?.hash]);
+    expect(head?.refs).toEqual([{ name: 'main', kind: 'branch', current: true }]);
+    const root = (await git.log(r.path, 20)).at(-1);
+    expect(root?.parents).toEqual([]);
+  });
+
+  /** main：Initial → entry → package.json → Main four → Merge feat/old；feature/login 从 package.json 分出，feat/old 从 Main four 分出后合并回 main。 */
+  async function forkedRepo() {
+    const r = await repo();
+    r.commit('Main four');
+    r.git('switch', '-q', '-c', 'feat/old');
+    r.commit('Old work');
+    r.git('switch', '-q', 'main');
+    r.git('merge', '-q', '--no-ff', '-m', 'Merge feat/old', 'feat/old');
+    r.git('tag', 'v1');
+    return r;
+  }
+
+  it('draws a graph across branches: date order, merges with two parents, onBase from the base branch (N5)', async () => {
+    const r = await forkedRepo();
+    const { git } = makeGit();
+    const graph = await git.log(r.path, 20, { graph: {} });
+    expect(graph.map((c) => [c.subject, c.onBase])).toEqual([
+      ['Merge feat/old', true],
+      ['Old work', true],
+      ['Main four', true],
+      ['Add login form', false],
+      ['Add package.json', true],
+      ['Add entry point', true],
+      ['Initial commit', true],
+    ]);
+    const bySubject = new Map(graph.map((c) => [c.subject, c]));
+    const merge = bySubject.get('Merge feat/old');
+    expect(merge?.parents).toEqual([bySubject.get('Main four')?.hash, bySubject.get('Old work')?.hash]);
+    expect(merge?.refs).toEqual([
+      { name: 'main', kind: 'branch', current: true },
+      { name: 'v1', kind: 'tag' },
+    ]);
+    expect(bySubject.get('Old work')?.refs).toEqual([{ name: 'feat/old', kind: 'branch' }]);
+    expect(bySubject.get('Add login form')?.parents).toEqual([bySubject.get('Add package.json')?.hash]);
+
+    // 有上限；只看几个分支（不存在的跳过）
+    expect(await git.log(r.path, 3, { graph: {} })).toHaveLength(3);
+    const mine = await git.log(r.path, 20, { graph: { branches: ['feature/login', 'nope'] } });
+    expect(mine.map((c) => c.subject)).toContain('Add login form');
+    // 在 feature/login 上看：HEAD 是它
+    r.git('switch', '-q', 'feature/login');
+    const fromLogin = await git.log(r.path, 20, { graph: { branches: ['main'] } });
+    expect(fromLogin.find((c) => c.subject === 'Add login form')?.refs).toEqual([{ name: 'feature/login', kind: 'branch', current: true }]);
+    // 分离 HEAD
+    r.git('switch', '-q', '--detach', 'main~1');
+    const detached = await git.log(r.path, 20, { graph: { branches: [] } });
+    expect(detached.find((c) => c.subject === 'Main four')?.refs).toEqual([{ name: 'HEAD', kind: 'head' }]);
+  });
+
+  it('returns one commit with the files it changed (N5)', async () => {
+    const r = await forkedRepo();
+    r.git('mv', 'src/index.ts', 'src/main.ts');
+    r.writeFile('README.md', '# Changed\n');
+    r.git('rm', '-q', 'package.json');
+    r.git('commit', '-q', '-am', 'Rename and edit');
+    const { git } = makeGit();
+    const [c] = await git.log(r.path, 1, { commit: 'HEAD' });
+    expect(c?.subject).toBe('Rename and edit');
+    expect(c?.files).toEqual([
+      { path: 'README.md', fromPath: null, kind: 'modified' },
+      { path: 'package.json', fromPath: null, kind: 'deleted' },
+      { path: 'src/main.ts', fromPath: 'src/index.ts', kind: 'renamed' },
+    ]);
+    const root = r.git('rev-list', '--max-parents=0', 'HEAD');
+    expect((await git.log(r.path, 1, { commit: root }))[0]?.files).toEqual([{ path: 'README.md', fromPath: null, kind: 'added' }]);
+    // 合并提交：相对第一父提交
+    expect((await git.log(r.path, 1, { commit: 'v1' }))[0]?.files).toEqual([{ path: 'log.txt', fromPath: null, kind: 'modified' }]);
+    expect(await rejection(git.log(r.path, 1, { commit: 'nope' }))).toMatchObject({ code: 'not-found' });
+    expect(await rejection(git.log(r.path, 1, { commit: '--all' }))).toMatchObject({ code: 'not-found' });
+  });
+
+  it('marks branches merged into the base branch (N5)', async () => {
+    const r = await forkedRepo();
+    const { git } = makeGit();
+    const merged = Object.fromEntries((await git.branches(r.path, { mergedInto: 'main' })).map((b) => [b.name, b.merged]));
+    expect(merged).toEqual({ main: true, 'feat/old': true, 'feature/login': false });
+    expect((await git.branches(r.path, { mergedInto: 'nope' })).every((b) => b.merged === false)).toBe(true);
+    expect((await git.branches(r.path))[0]?.merged).toBeUndefined();
+  });
 });
 
 describe('diff', () => {

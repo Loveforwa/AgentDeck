@@ -1,6 +1,16 @@
 // git 输出的解析，都是纯函数，单测直接喂文本。
 
-import type { AbsPath, BranchInfo, ChangeKind, FileChange, IsoTime, StashInfo, WorktreeInfo } from '@agentdeck/contracts';
+import type {
+  AbsPath,
+  BranchInfo,
+  ChangeKind,
+  CommitFile,
+  CommitRef,
+  FileChange,
+  IsoTime,
+  StashInfo,
+  WorktreeInfo,
+} from '@agentdeck/contracts';
 
 // ---- status --porcelain=v2 -z --branch ----
 
@@ -176,8 +186,12 @@ export function parseBranches(out: string): BranchInfo[] {
 
 // ---- log ----
 
-/** 字段：完整哈希、短哈希、作者、提交时间、标题，\0 分隔；记录之间用 \x1e。 */
-export const LOG_FORMAT = '%H%x00%h%x00%an%x00%cI%x00%s%x1e';
+/**
+ * 字段：完整哈希、短哈希、作者、提交时间、标题、父提交（空格分隔）、引用（%D），\0 分隔；记录之间用 \x1e。
+ * 要和 `--decorate=full` 一起用（LOG_ARGS），%D 里才是 refs/heads/… 这样的全名，分支名带斜杠也分得清本地和远端。
+ */
+export const LOG_FORMAT = '%H%x00%h%x00%an%x00%cI%x00%s%x00%P%x00%D%x1e';
+export const LOG_ARGS = [`--format=${LOG_FORMAT}`, '--decorate=full'];
 
 export interface ParsedCommit {
   hash: string;
@@ -185,6 +199,9 @@ export interface ParsedCommit {
   author: string;
   at: IsoTime;
   subject: string;
+  /** 输出里没有这一栏（旧格式）时不填。 */
+  parents?: string[];
+  refs?: CommitRef[];
 }
 
 export function parseLog(out: string): ParsedCommit[] {
@@ -192,10 +209,81 @@ export function parseLog(out: string): ParsedCommit[] {
   for (const rec of out.split('\x1e')) {
     const r = rec.replace(/^\n/, '');
     if (r === '') continue;
-    const [hash = '', shortHash = '', author = '', at = '', subject = ''] = r.split('\0');
-    list.push({ hash, shortHash, author, at: toIso(at), subject });
+    const [hash = '', shortHash = '', author = '', at = '', subject = '', parents, refs] = r.split('\0');
+    const c: ParsedCommit = { hash, shortHash, author, at: toIso(at), subject };
+    if (parents !== undefined) c.parents = parents.split(' ').filter((p) => p !== '');
+    if (refs !== undefined) c.refs = parseDecorations(refs);
+    list.push(c);
   }
   return list;
+}
+
+/**
+ * `--decorate=full` 的 %D：“HEAD -> refs/heads/main, refs/remotes/origin/main, tag: refs/tags/v1”；分离 HEAD 是 “HEAD, refs/heads/x”。
+ * 远端的 HEAD（origin/HEAD）、refs/stash 之类不要。
+ */
+export function parseDecorations(text: string): CommitRef[] {
+  const refs: CommitRef[] = [];
+  for (const raw of text.split(', ')) {
+    const part = raw.trim();
+    if (part === '') continue;
+    if (part === 'HEAD') {
+      refs.push({ name: 'HEAD', kind: 'head' });
+      continue;
+    }
+    const current = part.startsWith('HEAD -> ');
+    const full = current ? part.slice('HEAD -> '.length) : part.replace(/^tag: /, '');
+    if (full.startsWith('refs/heads/')) refs.push({ name: full.slice('refs/heads/'.length), kind: 'branch', ...(current ? { current } : {}) });
+    else if (full.startsWith('refs/remotes/')) {
+      const name = full.slice('refs/remotes/'.length);
+      if (!name.endsWith('/HEAD')) refs.push({ name, kind: 'remote' });
+    } else if (full.startsWith('refs/tags/')) refs.push({ name: full.slice('refs/tags/'.length), kind: 'tag' });
+  }
+  return refs;
+}
+
+/**
+ * 提交图里哪些提交从 tip 走得到（在基础分支上）。只在这一窗提交里沿 parents 走就够了：
+ * 列表是拓扑顺序、tip 也在遍历的引用里，所以 X 在窗里时，tip 到 X 路上的提交（都是 X 的后代）一定排在 X 前面，也在窗里。
+ */
+export function reachableWithin(commits: readonly { hash: string; parents?: string[] }[], tip: string | null): Set<string> {
+  const seen = new Set<string>();
+  if (!tip) return seen;
+  const byHash = new Map(commits.map((c) => [c.hash, c]));
+  const stack = [tip];
+  while (stack.length) {
+    const h = stack.pop()!;
+    if (seen.has(h)) continue;
+    const c = byHash.get(h);
+    if (!c) continue;
+    seen.add(h);
+    stack.push(...(c.parents ?? []));
+  }
+  return seen;
+}
+
+// ---- diff-tree --name-status -z ----
+
+/** “M\0path\0”、“R100\0old\0new\0”。重命名、复制后面跟两个路径。 */
+export function parseNameStatus(out: string): CommitFile[] {
+  const parts = out.split('\0');
+  const files: CommitFile[] = [];
+  for (let i = 0; i < parts.length; i++) {
+    const code = parts[i] ?? '';
+    if (code === '') continue;
+    const letter = code[0] ?? 'M';
+    if (letter === 'R' || letter === 'C') {
+      const fromPath = parts[i + 1] ?? null;
+      const path = parts[i + 2] ?? '';
+      i += 2;
+      files.push({ path, fromPath, kind: letter === 'R' ? 'renamed' : 'copied' });
+    } else {
+      const path = parts[i + 1] ?? '';
+      i += 1;
+      files.push({ path, fromPath: null, kind: kindOf(letter) === 'unmodified' ? 'modified' : kindOf(letter) });
+    }
+  }
+  return files;
 }
 
 // ---- stash list ----
