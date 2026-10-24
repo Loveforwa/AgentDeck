@@ -15,6 +15,9 @@ export const TERMINAL_WINDOW_TYPE = 'terminal';
 export const TERMINAL_MENU: WindowMenuItem[] = [
   { id: 'clear', label: 'Clear', shortcut: '⌘K' },
   { id: 'restart', label: 'Restart' },
+  // agent 带着原来的会话 id 重启（claude --resume、codex resume）：对话接着，启动参数换成最新的
+  // （例如 2026-10-24 加的 theme: auto）。没有会话 id（Shell、还没开始对话）时和 Restart 一样。
+  { id: 'restart-resume', label: 'Restart and resume conversation' },
   { id: 'open-in-system-terminal', label: 'Open in system terminal' },
 ];
 

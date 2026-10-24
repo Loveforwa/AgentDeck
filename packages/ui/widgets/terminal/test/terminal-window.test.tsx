@@ -353,6 +353,25 @@ describe('board commands', () => {
     h.command('restart');
     await waitFor(() => expect(h.data().terminalId).not.toBe(T));
   });
+
+  it('restart and resume conversation keeps the session id; without one it starts fresh', async () => {
+    makeTerminal({ history: 'x' });
+    const h = mount({ terminalId: T, agent: 'claude', cmd: 'claude', cwd: '/repo', sessionId: 's-1' as AgentSessionId });
+    await waitFor(() => expect(api.fakes.terminals.views(T)).toHaveLength(1));
+    h.command('restart-resume');
+    await waitFor(() => expect(h.data().terminalId).not.toBe(T));
+    expect(api.fakes.agents.started.at(-1)?.request.mode).toEqual({ kind: 'resume', sessionId: 's-1' });
+    expect(h.data().sessionId).toBe('s-1');
+  });
+
+  it('restart and resume on a shell (no session id) is a plain restart', async () => {
+    makeTerminal({ history: 'x' });
+    const h = mount({ terminalId: T, agent: 'shell', cmd: '/bin/zsh', cwd: '/repo' });
+    await waitFor(() => expect(api.fakes.terminals.views(T)).toHaveLength(1));
+    h.command('restart-resume');
+    await waitFor(() => expect(h.data().terminalId).not.toBe(T));
+    expect(api.fakes.agents.started.at(-1)?.request.mode).toEqual({ kind: 'new' });
+  });
 });
 
 describe('links', () => {
@@ -387,7 +406,7 @@ describe('terminalWindowType', () => {
     expect(terminalWindowType.title?.({ ...d, agent: 'shell', cmd: '/bin/zsh' })).toBe('zsh');
     expect(terminalWindowType.closeConfirm?.(d)).toEqual({ title: 'Close claude?', body: 'claude will be stopped. This can’t be undone.', confirm: 'Stop and close' });
     expect(terminalWindowType.closeConfirm?.({ ...d, terminalId: null })).toBeNull();
-    expect(terminalWindowType.menu?.map((m) => m.label)).toEqual(['Clear', 'Restart', 'Open in system terminal']);
+    expect(terminalWindowType.menu?.map((m) => m.label)).toEqual(['Clear', 'Restart', 'Restart and resume conversation', 'Open in system terminal']);
     expect(terminalWindowType.termSize?.({ w: 560, h: 332 })).toEqual({ cols: 69, rows: 19 });
   });
 

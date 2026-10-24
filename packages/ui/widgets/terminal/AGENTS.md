@@ -20,7 +20,7 @@ registerTerminalWindow(); // = registerWindow(terminalWindowType)，registerWind
 | `title(data)` | agent 名（claude、codex）；Shell 用命令名（`zsh`）；自定义命令用命令的第一个词 |
 | `closeConfirm(data)` | 有 terminalId 时：“Close claude?” / “claude will be stopped. This can’t be undone.” / “Stop and close”（拿不到进程是否活着，见 tmux-host/CONTRACT_NOTES.md 第 1 条） |
 | `onClose(data)` | `terminals.kill(terminalId)` |
-| `menu` | Clear（⌘K）、Restart、Open in system terminal（命令 id：`clear`、`restart`、`open-in-system-terminal`）。Rename 由白板做 |
+| `menu` | Clear（⌘K）、Restart、Restart and resume conversation、Open in system terminal（命令 id：`clear`、`restart`、`restart-resume`、`open-in-system-terminal`）。Rename 由白板做 |
 | `termSize(contentSize)` | 13px JetBrains Mono（7.8×17）加内边距 8/4 算行列数；attach 时按 xterm 实际量到的格子再校正 |
 
 ## 行为
@@ -33,7 +33,7 @@ registerTerminalWindow(); // = registerWindow(terminalWindowType)，registerWind
 - **退出（T5）**：`terminal.exit` 或 list() 里 `alive: false` → 内容保留，底部 “Process exited (code 1)”（0 时 “Process exited”）+ Restart / Close。Restart = 先 kill 旧会话，再 `agents.start({ agent, cwd, workspaceId, mode: new, size, command: startCommand })`，`updateData({ terminalId, cmd, args, sessionId })`。`command-not-found` → “Command not found: claude” + Open Settings（发冒泡的 `agentdeck:open-settings` 事件）/ Use Shell instead（`agents.start({ agent: 'shell' })`，data 改成 shell）。
 - **重开应用（T6）**：按保存的 terminalId 在 `terminals.list()` 里找（同一时刻多个窗口合成一次调用）。找到就接回；没有（或 terminalId 为 null）→ “Previous session ended” + Restart ▾（有 sessionId 时菜单：Resume conversation / New conversation），否则 Restart。`terminal.host-lost` → “Session ended”。
 - **摘要卡（T8）**：`summary` 为 true 时不 attach、不改行列数，显示 `lastLines(id, 3)`；有 activity / silence / exit 时最多每秒重读一次。在等你时最后一行用 attention 色。恢复原大小由白板做（单击摘要卡）。
-- **命令（onCommand）**：`clear` → xterm `clear()` + `sendKeys(['C-l'])`（tmux 历史清不掉，见 CONTRACT_NOTES.md 第 2 条）；`restart`；`open-in-system-terminal` → `app.openInSystemTerminal`。
+- **命令（onCommand）**：`clear` → xterm `clear()` + `sendKeys(['C-l'])`（tmux 历史清不掉，见 CONTRACT_NOTES.md 第 2 条）；`restart`（新对话）；`restart-resume`（带原来的会话 id 重启，对话接着、启动参数换成最新的；没有会话 id 时同 restart）；`open-in-system-terminal` → `app.openInSystemTerminal`。
 
 ## 目录
 

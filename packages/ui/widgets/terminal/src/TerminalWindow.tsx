@@ -317,6 +317,10 @@ export function TerminalWindow(props: TerminalWindowProps): ReactNode {
           case 'restart':
             void restart({ mode: 'new' });
             return;
+          case 'restart-resume':
+            // start 在没有 sessionId 时自动退回新开
+            void restart({ mode: 'resume' });
+            return;
           case 'open-in-system-terminal':
             if (id) void api().app.openInSystemTerminal(id).catch(() => {});
             return;
