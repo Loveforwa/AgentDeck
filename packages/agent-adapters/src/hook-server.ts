@@ -16,6 +16,11 @@ export interface ReceivedHook {
   /** 适配器认不出时为 null（仍然交给 onHook，方便记日志）。 */
   event: AgentHookEvent | null;
   envelope: HookEnvelope;
+  /**
+   * 要回答的钩子（envelope.expectsReply）回了什么，而且回答确实写给了 agentdeck-notify。
+   * 'allow' 表示 agent 会直接放行（Auto-approve），这条请求不该再让终端进 needs-approval。不要回答的钩子没有这个字段。
+   */
+  decision?: HookReply['decision'];
 }
 
 export interface HookServerOptions {
@@ -24,8 +29,9 @@ export interface HookServerOptions {
   adapterFor: (agent: AgentKind) => Pick<AgentAdapter, 'parseHook'> | undefined;
   onHook: (hook: ReceivedHook) => void;
   /**
-   * 要回答的钩子怎么答。P0 没有 Auto-approve，默认一律 none（照常显示 agent 自己的确认）。
-   * P1 的 ApprovalService 接在这里：工作区开了 Auto-approve 且不是破坏性命令时返回 allow。
+   * 要回答的钩子怎么答。不给时一律 none（照常显示 agent 自己的确认）。
+   * runtime 接的是 ApprovalServiceImpl.decide：终端或它的框开了 Auto-approve 且不是破坏性命令时返回 allow。
+   * 先回答、再调 onHook（onHook 能从 ReceivedHook.decision 知道回了什么）。要快：notify 只等 2 秒。
    */
   decide?: (hook: ReceivedHook) => HookReply['decision'] | Promise<HookReply['decision']>;
   /** 收到坏数据时（不是 JSON、版本不对）。默认忽略。 */
@@ -116,16 +122,23 @@ export class HookServer {
       event,
       envelope,
     };
-    this.opts.onHook(hook);
-    if (!envelope.expectsReply) return;
+    if (!envelope.expectsReply) {
+      this.opts.onHook(hook);
+      return;
+    }
     let decision: HookReply['decision'];
     try {
       decision = (await this.opts.decide?.(hook)) ?? 'none';
     } catch {
       decision = 'none';
     }
-    const reply: HookReply = { v: 1, decision };
-    if (!socket.destroyed) socket.write(`${JSON.stringify(reply)}\n`);
+    // notify 已经走了（超时、agent 被打断）：回答送不到，agent 会照常显示确认框，按 none 算
+    if (socket.destroyed || !socket.writable) decision = 'none';
+    else {
+      const reply: HookReply = { v: 1, decision };
+      socket.write(`${JSON.stringify(reply)}\n`);
+    }
+    this.opts.onHook({ ...hook, decision });
   }
 }
 

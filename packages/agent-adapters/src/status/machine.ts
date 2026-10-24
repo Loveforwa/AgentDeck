@@ -62,6 +62,14 @@ export interface TrackOptions {
   sessionId?: AgentSessionId | null;
 }
 
+export interface TrackedTerminal {
+  terminalId: TerminalId;
+  agent: AgentKind;
+  workspaceId: WorkspaceId | null;
+  status: TerminalStatus;
+  pending: PendingRequest | null;
+}
+
 /** 钩子事件之外的线索，由 hookHint() 从原始负载里取。 */
 export interface HookHint {
   /** 这是某个工具跑完（PostToolUse），值是它的 summary，和 PendingRequest.summary 的算法相同。 */
@@ -241,6 +249,17 @@ export class StatusMachine implements StatusService {
   /** 所有在等你的请求。 */
   pendingRequests(): PendingRequest[] {
     return [...this.entries.values()].flatMap((e) => (e.snap.pending ? [structuredClone(e.snap.pending)] : []));
+  }
+
+  /** 所有在跟踪的终端（ApprovalService 用：框里有哪些终端、哪些要看屏幕）。 */
+  tracked(): TrackedTerminal[] {
+    return [...this.entries].map(([terminalId, e]) => ({
+      terminalId,
+      agent: e.agent,
+      workspaceId: e.workspaceId,
+      status: e.snap.status,
+      pending: e.snap.pending ? structuredClone(e.snap.pending) : null,
+    }));
   }
 
   // ---- 内部 ----
