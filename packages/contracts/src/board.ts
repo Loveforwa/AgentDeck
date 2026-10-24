@@ -62,7 +62,20 @@ export interface WindowGroupRef {
   role: 'lead' | 'member';
   /** 子终端的名字，例如 'api'（open_terminals 的 labels）。主 agent、没给名字时为 null。英文原样，界面直接显示。 */
   label?: string | null;
+  /**
+   * 只在 lead 上（N2 侧边栏）：这一组子终端怎么显示，随白板保存。不填或 null 时按 { mode: 'all' }（N1 存下的组）。
+   * 收起的子终端不画在白板上，进程照常运行，仍然算进“在等你”。
+   */
+  view?: WindowGroupView | null;
 }
+
+/**
+ * 窗口组的显示方式（N2）。
+ * - one：只显示 shown 这一个子终端（贴在侧边栏右边），其余收起。
+ * - all：Show all，子终端都是普通窗口，平铺在侧边栏右边。
+ * - collapsed：Collapse group，子终端都收起，只剩侧边栏。
+ */
+export type WindowGroupView = { mode: 'one'; shown: WindowId } | { mode: 'all' } | { mode: 'collapsed' };
 
 export interface TerminalWindowData {
   /** 电脑重启后会话没了，恢复前为 null。 */

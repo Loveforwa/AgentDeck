@@ -34,6 +34,9 @@ const grouped: WindowNode = {
   group: { id: 'g' as WindowGroupId, role: 'member', label: 'api' },
 };
 void grouped;
+// N2：lead 上记着侧边栏的显示方式
+const leadRef: NonNullable<WindowNode['group']> = { id: 'g' as WindowGroupId, role: 'lead', label: null, view: { mode: 'one', shown: 'w' as WindowId } };
+void leadRef;
 const fakeLastLines: TerminalHost['lastLines'] = async (_id: TerminalId, n: number) => Array.from({ length: n }, () => '');
 const fakeStatus: GitService['status'] = async (repo) => ({
   repo, branch: 'main', head: null, upstream: null, ahead: 0, behind: 0, aheadOfBase: 0, baseBranch: 'main',
