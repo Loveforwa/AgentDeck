@@ -146,7 +146,7 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
     <div class="barbox"><span class="t">33 条端到端用例的现状</span><div class="bar"><span class="seg seg-part" style="flex:9"></span><span class="seg seg-ok" style="flex:24"></span></div>
       <div class="legend"><span><i class="dot seg-prob"></i>当前有问题 <b>0</b></span><span><i class="dot seg-no"></i>未验证 <b>0</b></span><span><i class="dot seg-part"></i>部分验证 <b>9</b></span><span><i class="dot seg-ok"></i>已验证 <b>24</b></span><span><i class="dot seg-todo"></i>未实现 <b>0</b></span></div></div>
     <div class="barbox"><span class="t">你的验收进度</span><div class="bar" id="acc-bar"></div>
-      <div class="legend"><span><i class="dot seg-pass"></i>通过 <b id="n-pass">0</b></span><span><i class="dot seg-fail"></i>不通过或阻塞 <b id="n-fail">0</b></span><span>还没验收 <b id="n-open">33</b></span><span>问题已解决 <b id="n-solved">23</b> / 62</span></div></div>
+      <div class="legend"><span><i class="dot seg-pass"></i>通过 <b id="n-pass">0</b></span><span><i class="dot seg-fail"></i>不通过或阻塞 <b id="n-fail">0</b></span><span>还没验收 <b id="n-open">33</b></span><span>问题已解决 <b id="n-solved">23</b> / 67</span></div></div>
   </div>
 </header>
 
@@ -758,7 +758,7 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
 </section>
 
 <section class="block">
-  <div class="head"><h2>问题清单</h2><p>62 条，按 P 级排列。解决一条就把处理状态改成“已解决”。</p></div>
+  <div class="head"><h2>问题清单</h2><p>67 条，按 P 级排列。解决一条就把处理状态改成“已解决”。</p></div>
   <section class="pgroup"><h3><span class="pri pri-P0">P0</span>阻塞 MVP 验收<span class="muted"> · 10 条</span></h3><article class="issue" id="is-01" data-issue="IS-01" data-state="待处理">
   <div class="case-head">
     <span class="mono cid">IS-01</span><span class="pri pri-P0">P0</span><span class="tag">未验证</span><span class="mod">agent-adapters · 整体</span>
@@ -1287,7 +1287,7 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
   </details>
   <p class="links">关联用例 <a class="ref" href="#tc-22">TC-22</a></p>
   <label class="field note"><span>处理备注</span><textarea id="isnote-IS-61" data-is="IS-61" class="is-note" rows="1" placeholder="处理到哪了">2026-10-24 已修：窗口菜单读 WindowTypeDefinition.menu；在单独的实例里截图确认 Clear、Restart、Restart and resume conversation 都出现了</textarea></label>
-</article></section><section class="pgroup"><h3><span class="pri pri-P2">P2</span>次要体验、完整性、性能<span class="muted"> · 23 条</span></h3><article class="issue" id="is-08" data-issue="IS-08" data-state="待处理">
+</article></section><section class="pgroup"><h3><span class="pri pri-P2">P2</span>次要体验、完整性、性能<span class="muted"> · 25 条</span></h3><article class="issue" id="is-08" data-issue="IS-08" data-state="待处理">
   <div class="case-head">
     <span class="mono cid">IS-08</span><span class="pri pri-P2">P2</span><span class="tag">缺陷</span><span class="mod">agent-adapters · contracts</span>
     <label class="field result"><span>处理状态</span><select id="st-IS-08" data-is="IS-08" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
@@ -1655,7 +1655,39 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
   </details>
   
   <label class="field note"><span>处理备注</span><textarea id="isnote-IS-62" data-is="IS-62" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
-</article></section><section class="pgroup"><h3><span class="pri pri-P3">P3</span>清理<span class="muted"> · 6 条</span></h3><article class="issue" id="is-30" data-issue="IS-30" data-state="待处理">
+</article><article class="issue" id="is-63" data-issue="IS-63" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-63</span><span class="pri pri-P2">P2</span><span class="tag">缺陷</span><span class="mod">顶栏 · 白板</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-63" data-is="IS-63" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">顶栏去掉横栏后，最上面 34px 整条仍是拖窗口区：压在这里的窗口内容点不到，也不能在这里平移白板</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>把一个终端拖到白板最上面，点它的标题栏</p></div>
+      <div><span class="label">影响</span><p>窗口点不动，以为卡住了</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>拖动区只留按钮之间的空白（按钮和窗口都设成 no-drag），或者白板内容让出这 34px</p></div>
+    </div>
+  </details>
+  <p class="links">关联用例 <a class="ref" href="#tc-29">TC-29</a></p>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-63" data-is="IS-63" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article><article class="issue" id="is-64" data-issue="IS-64" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-64</span><span class="pri pri-P2">P2</span><span class="tag">需求不一致</span><span class="mod">工作区框</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-64" data-is="IS-64" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">V2 要求框标题也用红绿灯，现在框标题只有黄灯 “n waiting”，没有绿灯和 Running</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>框里有一个在跑的 claude，看框标题</p></div>
+      <div><span class="label">影响</span><p>看框标题看不出里面有没有在跑</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>框标题加 “● n running”，和顶栏同一套</p></div>
+    </div>
+  </details>
+  <p class="links">关联用例 <a class="ref" href="#tc-30">TC-30</a></p>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-64" data-is="IS-64" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article></section><section class="pgroup"><h3><span class="pri pri-P3">P3</span>清理<span class="muted"> · 9 条</span></h3><article class="issue" id="is-30" data-issue="IS-30" data-state="待处理">
   <div class="case-head">
     <span class="mono cid">IS-30</span><span class="pri pri-P3">P3</span><span class="tag">清理</span><span class="mod">白板</span>
     <label class="field result"><span>处理状态</span><select id="st-IS-30" data-is="IS-30" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
@@ -1751,6 +1783,54 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
   </details>
   
   <label class="field note"><span>处理备注</span><textarea id="isnote-IS-60" data-is="IS-60" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article><article class="issue" id="is-65" data-issue="IS-65" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-65</span><span class="pri pri-P3">P3</span><span class="tag">需求不一致</span><span class="mod">白板</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-65" data-is="IS-65" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">V3 规则表写拖窗口时对齐对象包括“相邻的框”，现在只吸同框的窗口和框内边；改框大小也没有吸附</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>拖一个窗口靠近别的框的边</p></div>
+      <div><span class="label">影响</span><p>和旁边的框对不齐</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>拖窗口时把附近框的外边也加进吸附目标；resizeFrame 接上 snap</p></div>
+    </div>
+  </details>
+  <p class="links">关联用例 <a class="ref" href="#tc-31">TC-31</a></p>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-65" data-is="IS-65" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article><article class="issue" id="is-66" data-issue="IS-66" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-66</span><span class="pri pri-P3">P3</span><span class="tag">需求不一致</span><span class="mod">白板</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-66" data-is="IS-66" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">窗口之间的标准间距和让位后留的空是 16px，画板 11 例图里是 20px（框和框之间才是 20）</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>把两个窗口并排吸在一起量间距</p></div>
+      <div><span class="label">影响</span><p>和例图对不上</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>定一个数：建议窗口之间也用 20，和框之间一致</p></div>
+    </div>
+  </details>
+  <p class="links">关联用例 <a class="ref" href="#tc-31">TC-31</a></p>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-66" data-is="IS-66" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article><article class="issue" id="is-67" data-issue="IS-67" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-67</span><span class="pri pri-P3">P3</span><span class="tag">需求不一致</span><span class="mod">右侧面板</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-67" data-is="IS-67" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">面板收起后的竖条，只有聚焦了工作区才显示分支图标；什么都没选中时只有 ⇤</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>收起面板后点白板空白处</p></div>
+      <div><span class="label">影响</span><p>和画板 11 的样子不一样</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>没选中时也显示分支图标（灰的），或者把需求改成“聚焦时才显示”</p></div>
+    </div>
+  </details>
+  <p class="links">关联用例 <a class="ref" href="#tc-32">TC-32</a></p>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-67" data-is="IS-67" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
 </article></section>
 </section>
 
@@ -1782,7 +1862,7 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
 </details>
 </div>
 
-<script type="application/json" id="meta">{"cases": ["TC-29", "TC-30", "TC-31", "TC-32", "TC-33", "TC-28", "TC-27", "TC-26", "TC-25", "TC-24", "TC-04", "TC-05", "TC-03", "TC-10", "TC-02", "TC-15", "TC-16", "TC-17", "TC-01", "TC-06", "TC-07", "TC-08", "TC-09", "TC-11", "TC-12", "TC-13", "TC-18", "TC-19", "TC-20", "TC-21", "TC-22", "TC-23", "TC-14"], "issues": ["IS-37", "IS-38", "IS-01", "IS-02", "IS-03", "IS-04", "IS-05", "IS-06", "IS-07", "IS-09", "IS-10", "IS-11", "IS-12", "IS-13", "IS-14", "IS-16", "IS-17", "IS-24", "IS-08", "IS-15", "IS-18", "IS-19", "IS-20", "IS-21", "IS-22", "IS-23", "IS-25", "IS-26", "IS-27", "IS-28", "IS-29", "IS-35", "IS-36", "IS-30", "IS-31", "IS-32", "IS-33", "IS-34", "IS-39", "IS-40", "IS-41", "IS-42", "IS-43", "IS-44", "IS-45", "IS-46", "IS-47", "IS-48", "IS-49", "IS-50", "IS-51", "IS-52", "IS-53", "IS-54", "IS-55", "IS-56", "IS-57", "IS-58", "IS-59", "IS-60", "IS-61", "IS-62"], "defaults": {"IS-51": {"status": "已解决", "note": "2026-10-25 已做（MVP v2 V1，f95c6a7）"}, "IS-53": {"status": "已解决", "note": "2026-10-25 已做（MVP v2 V3）：吸附、对齐线、松手避让、框之间 20px"}, "IS-54": {"status": "已解决", "note": "2026-10-25 已修（MVP v2 V3）：框不再重叠，有回归测试"}, "IS-55": {"status": "已解决", "note": "2026-10-25 已做（MVP v2 V4）"}, "IS-56": {"status": "已解决", "note": "2026-10-25 已做（MVP v2 V5）"}, "IS-61": {"status": "已解决", "note": "2026-10-24 已修：窗口菜单读 WindowTypeDefinition.menu；在单独的实例里截图确认 Clear、Restart、Restart and resume conversation 都出现了"}, "IS-52": {"status": "已解决", "note": "2026-10-24 已做（MVP v2 V2，第 0 波）：红绿灯状态，contracts 0.1.6 加 running 色调和悬停说明"}, "IS-50": {"status": "已解决", "note": "2026-10-24 已改：确认框画在终端窗口里，标题带对话主题；要重启 AgentDeck（tmux-host 在主进程里）"}, "IS-45": {"status": "已解决", "note": "2026-10-24 已修（S3，合进 main e9b3673）：⌘J 闪一下和 “2/3 waiting”，⌘⇧J 反向，⌘⇧] / ⌘⇧[ 切窗口"}, "IS-46": {"status": "已解决", "note": "2026-10-24 已修（X13，合进 main e9b3673）：已知 agent 表（pi、omp、kimi）和通用适配器，pi / omp 用 -e 加载自带扩展拿状态；Kimi 没真启动过"}, "IS-13": {"status": "已解决", "note": "2026-10-24 已做 Projects、General 两页（X12，合进 main e9b3673）；Agents、Approvals 两页以后再做"}, "IS-21": {"status": "已解决", "note": "2026-10-24 已修（X13）：菜单按名字显示，白板里藏掉 custom"}, "IS-49": {"status": "已解决", "note": "2026-10-24 已修：放大、还原、改大小后等页面排好版再量，加了测试；用户在自己的 AgentDeck 里试过，放大后铺满"}, "IS-47": {"status": "已解决", "note": "2026-10-24 已修：Settings 和 ⌘, 用 editorCommand（默认 code -g）打开 settings.json，PATH 里没有 code 时去 App 包里找（VS Code、Cursor、Zed、Sublime）；打不开就在 Finder 里显示并在界面上提示原因。顺带：手改 settings.json 不用重启就生效，也不会被应用盖掉。设置界面另做（IS-13）。要重启 AgentDeck"}, "IS-48": {"status": "已解决", "note": "2026-10-24 已恢复成 code -g"}, "IS-44": {"status": "已解决", "note": "2026-10-24 已做：外部网站自动用 webview（独立分区、UA 去掉 Electron、允许登录弹窗），出错页加 Show it here；在单独的 Electron 实例里验证 google、github、Google 登录页都能显示和缩放。要重启 AgentDeck，真正登录待用户试（TC-28）"}, "IS-43": {"status": "已解决", "note": "2026-10-24 已修：ping 改用 net.request，加了测试；真 Electron 里 google.com → 301、github.com/login → 200。要重启 AgentDeck 才生效"}, "IS-42": {"status": "已解决", "note": "2026-10-24 已修：claude 启动时主题设成 auto，深浅色切换时通知 tmux；独立 tmux 里模拟整条链路验证通过。要重启 AgentDeck；已经开着的 claude 用标题栏右键 › Restart and resume conversation 换上新参数（对话接着）"}, "IS-41": {"status": "已解决", "note": "2026-10-24 已修：缩放门槛 75% 改 50%；缩小时显示整屏文字快照，加了测试。正在运行的 AgentDeck 已热更新"}, "IS-39": {"status": "已解决", "note": "2026-10-24 已修（3ceabfb）：scrollback 改成 1000，固定种子的复现测试通过；正在运行的 AgentDeck 已热更新"}, "IS-40": {"status": "已解决", "note": "2026-10-24 已修（3ceabfb）：加 Unicode 11 宽度表，35 个常用符号和 tmux 实测宽度全部吻合，写成测试"}, "IS-37": {"status": "已解决", "note": "2026-10-24 已修（925c11f）：只要目录里有终端开着就确认，确认框列出这些终端；面板加了测试"}, "IS-38": {"status": "已解决", "note": "2026-10-24 已修（925c11f）：应用启动时找出自己运行的目录，界面对它切分支、建分支并切换、连目录删除都拒绝；真窗口里验证过"}}}</script>
+<script type="application/json" id="meta">{"cases": ["TC-29", "TC-30", "TC-31", "TC-32", "TC-33", "TC-28", "TC-27", "TC-26", "TC-25", "TC-24", "TC-04", "TC-05", "TC-03", "TC-10", "TC-02", "TC-15", "TC-16", "TC-17", "TC-01", "TC-06", "TC-07", "TC-08", "TC-09", "TC-11", "TC-12", "TC-13", "TC-18", "TC-19", "TC-20", "TC-21", "TC-22", "TC-23", "TC-14"], "issues": ["IS-37", "IS-38", "IS-01", "IS-02", "IS-03", "IS-04", "IS-05", "IS-06", "IS-07", "IS-09", "IS-10", "IS-11", "IS-12", "IS-13", "IS-14", "IS-16", "IS-17", "IS-24", "IS-08", "IS-15", "IS-18", "IS-19", "IS-20", "IS-21", "IS-22", "IS-23", "IS-25", "IS-26", "IS-27", "IS-28", "IS-29", "IS-35", "IS-36", "IS-30", "IS-31", "IS-32", "IS-33", "IS-34", "IS-39", "IS-40", "IS-41", "IS-42", "IS-43", "IS-44", "IS-45", "IS-46", "IS-47", "IS-48", "IS-49", "IS-50", "IS-51", "IS-52", "IS-53", "IS-54", "IS-55", "IS-56", "IS-57", "IS-58", "IS-59", "IS-60", "IS-61", "IS-62", "IS-63", "IS-64", "IS-65", "IS-66", "IS-67"], "defaults": {"IS-51": {"status": "已解决", "note": "2026-10-25 已做（MVP v2 V1，f95c6a7）"}, "IS-53": {"status": "已解决", "note": "2026-10-25 已做（MVP v2 V3）：吸附、对齐线、松手避让、框之间 20px"}, "IS-54": {"status": "已解决", "note": "2026-10-25 已修（MVP v2 V3）：框不再重叠，有回归测试"}, "IS-55": {"status": "已解决", "note": "2026-10-25 已做（MVP v2 V4）"}, "IS-56": {"status": "已解决", "note": "2026-10-25 已做（MVP v2 V5）"}, "IS-61": {"status": "已解决", "note": "2026-10-24 已修：窗口菜单读 WindowTypeDefinition.menu；在单独的实例里截图确认 Clear、Restart、Restart and resume conversation 都出现了"}, "IS-52": {"status": "已解决", "note": "2026-10-24 已做（MVP v2 V2，第 0 波）：红绿灯状态，contracts 0.1.6 加 running 色调和悬停说明"}, "IS-50": {"status": "已解决", "note": "2026-10-24 已改：确认框画在终端窗口里，标题带对话主题；要重启 AgentDeck（tmux-host 在主进程里）"}, "IS-45": {"status": "已解决", "note": "2026-10-24 已修（S3，合进 main e9b3673）：⌘J 闪一下和 “2/3 waiting”，⌘⇧J 反向，⌘⇧] / ⌘⇧[ 切窗口"}, "IS-46": {"status": "已解决", "note": "2026-10-24 已修（X13，合进 main e9b3673）：已知 agent 表（pi、omp、kimi）和通用适配器，pi / omp 用 -e 加载自带扩展拿状态；Kimi 没真启动过"}, "IS-13": {"status": "已解决", "note": "2026-10-24 已做 Projects、General 两页（X12，合进 main e9b3673）；Agents、Approvals 两页以后再做"}, "IS-21": {"status": "已解决", "note": "2026-10-24 已修（X13）：菜单按名字显示，白板里藏掉 custom"}, "IS-49": {"status": "已解决", "note": "2026-10-24 已修：放大、还原、改大小后等页面排好版再量，加了测试；用户在自己的 AgentDeck 里试过，放大后铺满"}, "IS-47": {"status": "已解决", "note": "2026-10-24 已修：Settings 和 ⌘, 用 editorCommand（默认 code -g）打开 settings.json，PATH 里没有 code 时去 App 包里找（VS Code、Cursor、Zed、Sublime）；打不开就在 Finder 里显示并在界面上提示原因。顺带：手改 settings.json 不用重启就生效，也不会被应用盖掉。设置界面另做（IS-13）。要重启 AgentDeck"}, "IS-48": {"status": "已解决", "note": "2026-10-24 已恢复成 code -g"}, "IS-44": {"status": "已解决", "note": "2026-10-24 已做：外部网站自动用 webview（独立分区、UA 去掉 Electron、允许登录弹窗），出错页加 Show it here；在单独的 Electron 实例里验证 google、github、Google 登录页都能显示和缩放。要重启 AgentDeck，真正登录待用户试（TC-28）"}, "IS-43": {"status": "已解决", "note": "2026-10-24 已修：ping 改用 net.request，加了测试；真 Electron 里 google.com → 301、github.com/login → 200。要重启 AgentDeck 才生效"}, "IS-42": {"status": "已解决", "note": "2026-10-24 已修：claude 启动时主题设成 auto，深浅色切换时通知 tmux；独立 tmux 里模拟整条链路验证通过。要重启 AgentDeck；已经开着的 claude 用标题栏右键 › Restart and resume conversation 换上新参数（对话接着）"}, "IS-41": {"status": "已解决", "note": "2026-10-24 已修：缩放门槛 75% 改 50%；缩小时显示整屏文字快照，加了测试。正在运行的 AgentDeck 已热更新"}, "IS-39": {"status": "已解决", "note": "2026-10-24 已修（3ceabfb）：scrollback 改成 1000，固定种子的复现测试通过；正在运行的 AgentDeck 已热更新"}, "IS-40": {"status": "已解决", "note": "2026-10-24 已修（3ceabfb）：加 Unicode 11 宽度表，35 个常用符号和 tmux 实测宽度全部吻合，写成测试"}, "IS-37": {"status": "已解决", "note": "2026-10-24 已修（925c11f）：只要目录里有终端开着就确认，确认框列出这些终端；面板加了测试"}, "IS-38": {"status": "已解决", "note": "2026-10-24 已修（925c11f）：应用启动时找出自己运行的目录，界面对它切分支、建分支并切换、连目录删除都拒绝；真窗口里验证过"}}}</script>
 <script>
 (function () {
   var META = JSON.parse(document.getElementById('meta').textContent);

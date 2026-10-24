@@ -109,13 +109,14 @@ tr:target td { background: var(--soft) }
 <header>
   <span class="eyebrow">AgentDeck · 实施计划 · 2026-10-23</span>
   <h1>AgentDeck MVP 实施计划</h1>
-  <p>把设计画布里的需求拆成可以交给一个 agent 独立完成的任务，按“地基 → 白板和终端 → 工作区和 Git → 状态和网页”的顺序推进。M3 做完就是基础 MVP：能用它过完一整天真实的开发。MVP 分版本做：M0–M4 是 <b>MVP v1</b>；2026-10-24 第一轮验收后加了 <b>MVP v2</b>（M5）和 <b>MVP v3</b>（M6），需求在设计画布“MVP v2 · v3”那一页（画板 11、12），v2 的分波安排见下面“MVP v2 实施安排”。</p>
+  <p>把设计画布里的需求拆成可以交给一个 agent 独立完成的任务，按“地基 → 白板和终端 → 工作区和 Git → 状态和网页”的顺序推进。M3 做完就是基础 MVP：能用它过完一整天真实的开发。MVP 分版本做：M0–M4 是 <b>MVP v1</b>；2026-10-24 第一轮验收后加了 <b>MVP v2</b>（M5）和 <b>MVP v3</b>（M6），需求在设计画布“MVP v2 · v3”那一页（画板 11、12），v2 的分波安排见下面“MVP v2 实施安排”。2026-10-25 加了<b>插件</b>（M7）：Auto-approve、token 用量这类以后别人也能写的功能，需求在设计画布“插件能力”那一页（画板 PL0–PL3）。</p>
   <div class="facts">
     <span>基础 MVP（P0）<b>39</b> 项</span>
     <span>MVP 完整版（P1）<b>11</b> 项</span>
     <span>MVP v2（M5）<b>5</b> 项</span>
     <span>MVP v3（M6）<b>8</b> 项</span>
-    <span>里程碑 <b>7</b> 个</span>
+    <span>插件（M7）<b>5</b> 项</span>
+    <span>里程碑 <b>8</b> 个</span>
     <span>并行线 <b>5</b> 条</span>
   </div>
 </header>
@@ -158,6 +159,11 @@ tr:target td { background: var(--soft) }
   <h3>MVP v3</h3>
   <p>让 agent 通过 AgentDeck 的 MCP 在白板上开窗口、子 agent 窗口组和插件入口、cc-switch 的 token、提交图、平移手势、工作区目录规则。需求见画板 12，标“概念”的先定稿再开工。</p>
   <p class="exit"><span class="label">完成标准</span>按画板 12 每一节定稿后再写；v2 做完之前不开工。</p>
+</li><li class="ms">
+  <div class="ms-head"><span class="mid">M7</span><span class="ms-n">5 项</span></div>
+  <h3>插件</h3>
+  <p>右键终端（或框、白板）› Plugins 是所有插件的入口；插件贴在窗口、框、白板上，范围不同。第一批：Auto-approve、Usage · CC Switch、Skills · MCP、子 agent 窗口组菜单。画板 12 的 N3、N4 并到这里。需求见“插件能力”页。</p>
+  <p class="exit"><span class="label">完成标准</span>右键终端能开关 Auto-approve 并看到书签；终端顶上的用量条能扯到框上、扯到白板上；别人照着 PL0 的说明能写出一个插件。</p>
 </li>
   </ol>
   <p class="path"><span class="label">关键路径</span>　<span class="mono">F1 → F2 → F3 → T1 → T2 → W3 → G2 → S1 → S2 → S3 → R2</span>。终端显示（T2）最重，越早开始越好；白板、Git、网页三条线在 M0 之后可以和它同时做。</p>
@@ -190,11 +196,12 @@ tr:target td { background: var(--soft) }
 <section aria-labelledby="table-title">
   <div class="section-head"><h2 id="table-title">任务表</h2><p>依赖列里的编号可以点，跳到那一行。“需求”列是设计画布里对应的需求画板编号。</p></div>
   <div class="filters" role="group" aria-label="筛选">
-    <button type="button" class="chip" data-filter-p="all" aria-pressed="true">全部 <span class="n">63</span></button>
+    <button type="button" class="chip" data-filter-p="all" aria-pressed="true">全部 <span class="n">68</span></button>
     <button type="button" class="chip" data-filter-p="P0" aria-pressed="false">只看基础 MVP <span class="n">39</span></button>
     <button type="button" class="chip" data-filter-p="P1" aria-pressed="false">只看完整版 <span class="n">11</span></button>
     <button type="button" class="chip" data-filter-p="R2" aria-pressed="false">只看 v2 <span class="n">5</span></button>
     <button type="button" class="chip" data-filter-p="NX" aria-pressed="false">只看 v3 <span class="n">8</span></button>
+    <button type="button" class="chip" data-filter-p="PL" aria-pressed="false">只看插件 <span class="n">5</span></button>
     <span class="sep" aria-hidden="true"></span>
     <button type="button" class="chip" data-filter-l="串行" aria-pressed="false">串行（M0 一个 agent 做完） <span class="n">8</span></button><button type="button" class="chip" data-filter-l="线1" aria-pressed="false">线 1 · 终端 <span class="n">9</span></button><button type="button" class="chip" data-filter-l="线2" aria-pressed="false">线 2 · 白板 <span class="n">10</span></button><button type="button" class="chip" data-filter-l="线3" aria-pressed="false">线 3 · 工作区与 Git <span class="n">10</span></button><button type="button" class="chip" data-filter-l="线4" aria-pressed="false">线 4 · Agent 与状态 <span class="n">8</span></button><button type="button" class="chip" data-filter-l="线5" aria-pressed="false">线 5 · 网页 <span class="n">4</span></button><button type="button" class="chip" data-filter-l="审查" aria-pressed="false">审查与验收 <span class="n">1</span></button>
   </div>
@@ -203,6 +210,7 @@ tr:target td { background: var(--soft) }
     <span><span class="pri p1">P1</span> MVP 完整版，M4</span>
     <span><span class="pri p2">v2</span> MVP v2，M5</span>
     <span><span class="pri pn">v3</span> MVP v3，M6</span>
+    <span><span class="pri pn">插件</span> 插件，M7</span>
     <span>规模按一个 agent 的工作量：<span class="mono">S</span> 半天到 1 天，<span class="mono">M</span> 1 到 3 天，<span class="mono">L</span> 3 天以上</span>
   </div>
   <div class="table-box">
@@ -273,12 +281,18 @@ tr:target td { background: var(--soft) }
 <tr class="group" data-m="M6"><th colspan="8"><span class="mid">M6</span> MVP v3<span class="gnote">需求见画板 12；标“概念”的先在画板上定稿再开工。v2 做完之前不开工。</span></th></tr>
 <tr id="N1" data-p="NX" data-l="v3"><td class="id"><span class="mono">N1</span><span class="pri pn" title="MVP v3">v3</span></td><td class="task"><b>AgentDeck 的 MCP 给所有 agent</b><span>在 M1-mcp（claude 已接）的基础上：codex、pi、omp、kimi 启动时也挂上；工具 open_browser、open_terminals（subagent 窗口组）、focus_window、notify、list_windows；启动时可选装载一个 AgentDeck skill，不写进用户全局配置</span></td><td class="mono small">mcp-server、agent-adapters、ui/canvas</td><td class="mono small">—</td><td class="done">白板上的 claude 说“开 3 个 subagent”，白板上出现 3 个终端；说“打开 localhost:3000”，旁边出现网页窗口</td><td class="size"><span class="sz" title="3 天以上">L</span></td><td class="small">MVP v3</td><td class="small spec">12 · N1</td></tr>
 <tr id="N2" data-p="NX" data-l="v3"><td class="id"><span class="mono">N2</span><span class="pri pn" title="MVP v3">v3</span></td><td class="task"><b>子 agent 窗口组和附着菜单（概念）</b><span>先定形态：A 侧边栏 / B 标签页 / 按数量切换（DR-54）；谁算一组、主 agent 关掉时子终端怎么办；菜单也是插件入口</span></td><td class="mono small">ui/canvas、widgets/terminal</td><td class="mono small"><a href="#N1" class="dep">N1</a></td><td class="done">画板 12 的 N2 定稿；一组子终端能切换、平铺、收起</td><td class="size"><span class="sz" title="3 天以上">L</span></td><td class="small">MVP v3</td><td class="small spec">12 · N2</td></tr>
-<tr id="N3" data-p="NX" data-l="v3"><td class="id"><span class="mono">N3</span><span class="pri pn" title="MVP v3">v3</span></td><td class="task"><b>插件接口（概念）</b><span>只开四个口子：窗口组菜单项、标题栏小标签、右侧面板页签、MCP 工具；插件不能改白板本身；先写 contracts 草案</span></td><td class="mono small">contracts、ui/canvas、apps/desktop</td><td class="mono small"><a href="#N2" class="dep">N2</a></td><td class="done">一个示例插件在四个位置各放一样东西</td><td class="size"><span class="sz" title="3 天以上">L</span></td><td class="small">MVP v3</td><td class="small spec">12 · N3</td></tr>
-<tr id="N4" data-p="NX" data-l="v3"><td class="id"><span class="mono">N4</span><span class="pri pn" title="MVP v3">v3</span></td><td class="task"><b>接入 cc-switch：看得见 token</b><span>先调研 cc-switch 的数据怎么读、能不能按会话拆（DR-55）；窗口标题栏 token 小标签、框标题“今天用了多少”、面板 Usage 页签按项目列、能打开 cc-switch 完整面板；做成第一个插件</span></td><td class="mono small">插件、ui/canvas</td><td class="mono small"><a href="#N3" class="dep">N3</a></td><td class="done">每个窗口和项目都看得到今天的 token</td><td class="size"><span class="sz" title="1 到 3 天">M</span></td><td class="small">MVP v3</td><td class="small spec">12 · N4</td></tr>
+<tr id="N3" data-p="NX" data-l="v3"><td class="id"><span class="mono">N3</span><span class="pri pn" title="MVP v3">v3</span></td><td class="task"><b>插件接口（并入 <a href="#PL0" class="dep">PL0</a>）</b><span>2026-10-25 起插件单独成一组（M7），入口改成右键 › Plugins，四个口子之外加了书签和白板卡片，见 PL0</span></td><td class="mono small">contracts、ui/canvas、apps/desktop</td><td class="mono small"><a href="#N2" class="dep">N2</a></td><td class="done">一个示例插件在四个位置各放一样东西</td><td class="size"><span class="sz" title="3 天以上">L</span></td><td class="small">MVP v3</td><td class="small spec">12 · N3</td></tr>
+<tr id="N4" data-p="NX" data-l="v3"><td class="id"><span class="mono">N4</span><span class="pri pn" title="MVP v3">v3</span></td><td class="task"><b>接入 cc-switch：看得见 token（并入 <a href="#PL2" class="dep">PL2</a>）</b><span>改成 Usage · CC Switch 插件：终端顶上一条，扯到框上看项目、扯到白板看整台电脑，见 PL2</span></td><td class="mono small">插件、ui/canvas</td><td class="mono small"><a href="#N3" class="dep">N3</a></td><td class="done">每个窗口和项目都看得到今天的 token</td><td class="size"><span class="sz" title="1 到 3 天">M</span></td><td class="small">MVP v3</td><td class="small spec">12 · N4</td></tr>
 <tr id="N5" data-p="NX" data-l="v3"><td class="id"><span class="mono">N5</span><span class="pri pn" title="MVP v3">v3</span></td><td class="task"><b>面板里的提交图</b><span>Repository 的分支列表换成提交图：分叉、合并、变基一眼看清，框里在用的分支高亮，已合并且不在白板上的旧分支折成一行（IS-58）</span></td><td class="mono small">panels/scm、git-service</td><td class="mono small">—</td><td class="done">合并过 M1-mcp 的 main 在图上能看出分支和合并点</td><td class="size"><span class="sz" title="1 到 3 天">M</span></td><td class="small">MVP v3</td><td class="small spec">12 · N5</td></tr>
 <tr id="N6" data-p="NX" data-l="v3"><td class="id"><span class="mono">N6</span><span class="pri pn" title="MVP v3">v3</span></td><td class="task"><b>白板平移手势（先调研）</b><span>两指滑动留给终端；平移改成空白处拖动（开了系统三指拖移的人就是三指平移）、空格拖动；应用拿不到三指原始事件（DR-53）</span></td><td class="mono small">ui/canvas</td><td class="mono small">—</td><td class="done">在终端上两指滚动只滚终端；三指在空白处拖动平移白板</td><td class="size"><span class="sz" title="半天到 1 天">S</span></td><td class="small">MVP v3</td><td class="small spec">12 · N6</td></tr>
 <tr id="N7" data-p="NX" data-l="v3"><td class="id"><span class="mono">N7</span><span class="pri pn" title="MVP v3">v3</span></td><td class="task"><b>工作区和目录规则（待定）</b><span>终端 cd 出工作区目录时怎么办：建议提示（标题栏 “outside workspace”，面板跟着实际目录），或强制、或不管；先定规则（IS-57）</span></td><td class="mono small">widgets/terminal、tmux-host、panels/scm</td><td class="mono small">—</td><td class="done">画板 12 的 N7 定稿并实现</td><td class="size"><span class="sz" title="1 到 3 天">M</span></td><td class="small">MVP v3</td><td class="small spec">12 · N7</td></tr>
 <tr id="N8" data-p="NX" data-l="v3"><td class="id"><span class="mono">N8</span><span class="pri pn" title="MVP v3">v3</span></td><td class="task"><b>杂项</b><span>Approve all（X3）原定 ⌘⇧J，已被 S3 用作“上一个在等你的窗口”，另找按键（例如 ⌘⌥J）；其他 agent 接 MCP 并入 N1</span></td><td class="mono small">agent-adapters、ui/canvas</td><td class="mono small"><a href="#X3" class="dep">X3</a></td><td class="done">Approve all 有不冲突的快捷键</td><td class="size"><span class="sz" title="半天到 1 天">S</span></td><td class="small">MVP v3</td><td class="small spec">12 · N8</td></tr>
+<tr class="group" data-m="M7"><th colspan="8"><span class="mid">M7</span> 插件<span class="gnote">需求见设计画布“插件能力”页（PL0–PL3）。PL0 先做，其余几个之间互不依赖，可以并行。</span></th></tr>
+<tr id="PL0" data-p="PL" data-l="插件"><td class="id"><span class="mono">PL0</span><span class="pri pn" title="插件">插件</span></td><td class="task"><b>插件框架</b><span>contracts 定插件声明（id、范围、支持的 agent、要的能力）和 activate(ctx)；右键终端 / 框 / 白板加 Plugins ▸ 子菜单（打钩是已贴上，用不了的灰掉写原因），Manage plugins… 打开 Settings › Plugins；三种范围，拖动改范围；能放的地方：ui.strip、ui.tag、ui.card、ui.panelTab、ui.menuItem、mcp.tool；自带插件放 packages/plugins/*，别人的放 ~/.agentdeck/plugins</span></td><td class="mono small">contracts、ui/canvas、apps/desktop、packages/plugins</td><td class="mono small">—</td><td class="done">一个示例插件能贴到窗口、框、白板，取下后不留东西；Settings › Plugins 列出它</td><td class="size"><span class="sz" title="3 天以上">L</span></td><td class="small">插件</td><td class="small spec">PL0</td></tr>
+<tr id="PL1" data-p="PL" data-l="插件"><td class="id"><span class="mono">PL1</span><span class="pri pn" title="插件">插件</span></td><td class="task"><b>Auto-approve 插件</b><span>贴在终端或框上：权限请求直接回“允许一次”（claude 走 hook 的 decide，codex 发 y），选择题、破坏性命令、要打字的照常等你；终端底部墨黑书签 “Auto-approve on · n”，没替你按时变橙并写原因；每次写 ApprovalRecord，Approval history 能看；和 Approve all（X3）共用破坏性命令名单</span></td><td class="mono small">plugins、agent-adapters</td><td class="mono small"><a href="#PL0" class="dep">PL0</a> <a href="#X3" class="dep">X3</a></td><td class="done">开着时 claude 跑 pnpm test 不再停下；rm -rf 照常停下且书签变橙；history 里有记录</td><td class="size"><span class="sz" title="1 到 3 天">M</span></td><td class="small">插件</td><td class="small spec">PL1</td></tr>
+<tr id="PL2" data-p="PL" data-l="插件"><td class="id"><span class="mono">PL2</span><span class="pri pn" title="插件">插件</span></td><td class="task"><b>Usage · CC Switch 插件</b><span>先调研 CC Switch 和各 agent 本地会话记录怎么读、怎么对到窗口（DR-55）；终端顶上一条（这次对话 token、上下文占比），扯到框上变项目今天的用量，扯到白板变整台电脑的卡片，拖回窗口变回来；只写 token，花费和换 provider 点 Open CC Switch</span></td><td class="mono small">plugins、ui/canvas</td><td class="mono small"><a href="#PL0" class="dep">PL0</a></td><td class="done">三种范围都能看到数字，和 CC Switch 里的对得上</td><td class="size"><span class="sz" title="1 到 3 天">M</span></td><td class="small">插件</td><td class="small spec">PL2</td></tr>
+<tr id="PL3" data-p="PL" data-l="插件"><td class="id"><span class="mono">PL3</span><span class="pri pn" title="插件">插件</span></td><td class="task"><b>Skills · MCP 插件</b><span>右侧面板 Skills · MCP 页签：这个终端（或整个框）带哪些 skill 和 MCP，来源分 built in / repo / library（~/.agentdeck/skills、~/.agentdeck/mcp），Add skill… / Add MCP…；只通过启动参数带进去，不改用户自己的配置；改了以后用 Restart and resume 生效</span></td><td class="mono small">plugins、agent-adapters、ui/panels</td><td class="mono small"><a href="#PL0" class="dep">PL0</a> <a href="#N1" class="dep">N1</a></td><td class="done">在一个 claude 终端里关掉一个 MCP，重启并接着对话后它不在 /mcp 里</td><td class="size"><span class="sz" title="1 到 3 天">M</span></td><td class="small">插件</td><td class="small spec">PL3</td></tr>
+<tr id="PL4" data-p="PL" data-l="插件"><td class="id"><span class="mono">PL4</span><span class="pri pn" title="插件">插件</span></td><td class="task"><b>Subagents 插件（子 agent 窗口组菜单）</b><span>N2 的窗口组做成插件：open_terminals 开出一组时自动贴上，列出子窗口和状态，Show all / Stack / Collapse group，其他插件能往这个菜单里加项；形态等 DR-54</span></td><td class="mono small">plugins、ui/canvas</td><td class="mono small"><a href="#PL0" class="dep">PL0</a> <a href="#N2" class="dep">N2</a></td><td class="done">开 3 个 subagent 后旁边出现组菜单，能切换、平铺、收起</td><td class="size"><span class="sz" title="1 到 3 天">M</span></td><td class="small">插件</td><td class="small spec">PL3</td></tr>
 </tbody>
     </table>
     <p class="empty" id="empty" hidden>没有符合筛选条件的任务。</p>
@@ -288,7 +302,7 @@ tr:target td { background: var(--soft) }
 <div class="two">
   <section aria-labelledby="later-title">
     <div class="section-head"><h2 id="later-title">不在这次 MVP 里</h2></div>
-    <ul class="later"><li><b>多仓库项目</b><span>一个工作区里多个仓库各一个 worktree，面板按仓库分组</span><span class="mono small muted">8</span></li><li><b>Auto-approve</b><span>按工作区自动批准，挡住危险命令并留记录</span><span class="mono small muted">6</span></li><li><b>Skills · MCP 面板</b><span>本地库、按工作区启用、同步到各 agent。AgentDeck 自己的 MCP 已排进 N1</span><span class="mono small muted">v0.2 · N1</span></li><li><b>自动存档</b><span>写文件后存快照到隐藏的 git ref，可回滚</span><span class="mono small muted">v0.2</span></li><li><b>小地图、按状态筛选</b><span>白板上的整理工具。对齐吸附已排进 MVP v2 的 V3</span><span class="mono small muted">v0.2 · V3</span></li><li><b>合并回 main、创建 PR</b><span>同仓多框改同一文件时提示</span><span class="mono small muted">v0.3</span></li><li><b>更多 agent 适配</b><span>gemini、aider、opencode 等的钩子</span><span class="mono small muted">v0.2</span></li></ul>
+    <ul class="later"><li><b>多仓库项目</b><span>一个工作区里多个仓库各一个 worktree，面板按仓库分组</span><span class="mono small muted">8</span></li><li><b>自动存档</b><span>写文件后存快照到隐藏的 git ref，可回滚</span><span class="mono small muted">v0.2</span></li><li><b>小地图、按状态筛选</b><span>白板上的整理工具。对齐吸附已排进 MVP v2 的 V3</span><span class="mono small muted">v0.2 · V3</span></li><li><b>合并回 main、创建 PR</b><span>同仓多框改同一文件时提示</span><span class="mono small muted">v0.3</span></li><li><b>更多 agent 适配</b><span>gemini、aider、opencode 等的钩子</span><span class="mono small muted">v0.2</span></li></ul>
   </section>
   <section aria-labelledby="use-title">
     <div class="section-head"><h2 id="use-title">怎么用这张表</h2></div>
