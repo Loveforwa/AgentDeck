@@ -7,28 +7,31 @@ import { isSummarySize, windowRegistry, type WindowDefinition, type WindowRegist
 import { startableAgents } from './model/agents.ts';
 import { nextWaiting, prevWaiting, summarize, statusOf, type AttentionSummary } from './model/attention.ts';
 import { createAutosave, type Autosave } from './model/autosave.ts';
-import { GAP, clampFrameMove, findFreeSpot, pushFrames, separateFrames, tooClose } from './model/avoid.ts';
+import { GAP, clampFrameMove, findFreeSpot, inflate, pushFrames, separateFrames, tooClose } from './model/avoid.ts';
 import { decideDrop, dropTargetAt } from './model/drop.ts';
 import {
   FRAME_HEADER,
+  FRAME_MIN,
   FRAME_PAD,
   bounds,
   center,
   containsPoint,
   fitViewport,
+  frameAround,
   growFrame,
   innerArea,
   intersects,
   resizeFrame,
   sameRect,
   toFlow,
+  union,
   visibleRect,
   zoomAroundCenter,
   type Point,
 } from './model/geometry.ts';
 import { adjacentWindow, windowOrder } from './model/navigation.ts';
 import type { ShortcutId } from './model/shortcuts.ts';
-import { SNAP_PX, snapMove, snapResize, type Guide } from './model/snap.ts';
+import { NEAR_FRAME_PX, SNAP_PX, snapMove, snapResize, type Guide } from './model/snap.ts';
 import {
   BROWSER_TYPE,
   TERMINAL_TYPE,
@@ -380,6 +383,16 @@ export class BoardController {
       .map((w) => this.footprint(w));
   }
 
+  /**
+   * 拖窗口时也对齐的框（IS-65）：在视口里、离 anchor（窗口所在的框连同窗口；散放的窗口就是它自己）不到 NEAR_FRAME_PX
+   * 屏幕像素的框，也就是旁边的框，看它们的外边和中线。skip：窗口自己的框（拖动中跟着窗口长）和指针所在的框（看它的内边）。
+   */
+  private nearbyFrames(anchor: Rect, skip: readonly (WorkspaceId | null)[]): Rect[] {
+    const s = this.state;
+    const near = inflate(anchor, NEAR_FRAME_PX / s.viewport.zoom);
+    return s.frames.filter((f) => !skip.includes(f.workspaceId) && this.isVisible(f.rect, s) && intersects(near, f.rect)).map((f) => f.rect);
+  }
+
   /** 吸附距离：屏幕上 SNAP_PX，换成白板坐标。 */
   private snapThreshold(): number {
     return SNAP_PX / this.state.viewport.zoom;
@@ -505,7 +518,7 @@ export class BoardController {
 
   /**
    * dx、dy：白板坐标的总位移；pointer：指针的白板坐标。snap 时吸到同一个框里别的窗口和框的内边（指针进了别的框就看那个框），
-   * 画对齐线。重叠不在这里管，松手时再挪。
+   * 还有附近的框的外边和中线（IS-65），画对齐线。重叠不在这里管，松手时再挪。
    */
   moveWindow(id: WindowId, dx: number, dy: number, pointer: Point, opts: DragOptions = {}): void {
     const d = this.drag;
@@ -517,10 +530,12 @@ export class BoardController {
     let guides: Guide[] = [];
     if (opts.snap && !this.isMaximized(w)) {
       const area = target ? (this.frameOf(target)?.rect ?? null) : d.frameStart;
-      const res = snapMove(rect, this.snapTargets(id, target ?? w.workspaceId), {
+      const ws = target ?? w.workspaceId;
+      const res = snapMove(rect, this.snapTargets(id, ws), {
         threshold: this.snapThreshold(),
         gap: GAP,
         area: area ? innerArea(area) : null,
+        alignTo: this.nearbyFrames(area ? union(area, rect) : rect, [ws, w.workspaceId]),
       });
       rect = res.rect;
       guides = res.guides;
@@ -733,15 +748,36 @@ export class BoardController {
     this.drag = { kind: 'resize-frame', ws, edge, start: f.rect, content: this.contentBounds(ws), base: this.layoutBase() };
   }
 
-  /** 拖框的边：挤到的框挪开，再拉小时回到原处（V3）。 */
-  resizeFrame(ws: WorkspaceId, dx: number, dy: number): void {
+  /**
+   * 拖框的边：挤到的框挪开，再拉小时回到原处（V3）。snap 时（IS-65，和改窗口大小一样）动的边吸到别的框的边、
+   * 隔 GAP 的位置、同宽同高，还有正好装下里面窗口的位置；吸附不去挤别的框（挤开是用户拖过去的，不是吸过去的）。
+   */
+  resizeFrame(ws: WorkspaceId, dx: number, dy: number, opts: DragOptions = {}): void {
     const d = this.drag;
     if (d?.kind !== 'resize-frame' || d.ws !== ws) return;
-    this.applyFrameChange(d.base, ws, d.start, resizeFrame(d.start, d.edge, dx, dy, d.content));
+    let rect = resizeFrame(d.start, d.edge, dx, dy, d.content);
+    let guides: Guide[] = [];
+    if (opts.snap) {
+      // 不吸时就会被挤开的框不当吸附对象：它的位置跟着这个框变。别的框按拖动前的位置算
+      const pushed = pushFrames(d.base.frames, { id: ws, before: d.start, after: rect }, GAP);
+      const others = [...d.base.frames].filter(([k]) => k !== ws && !pushed.has(k)).map(([, r]) => r);
+      const res = snapResize(rect, d.edge, others, {
+        threshold: this.snapThreshold(),
+        gap: GAP,
+        min: FRAME_MIN,
+        fit: d.content ? { content: d.content, frame: frameAround(d.content) } : null,
+        keepApart: GAP,
+      });
+      rect = res.rect;
+      guides = res.guides;
+    }
+    if (guides.length > 0 || this.state.guides.length > 0) this.set({ guides });
+    this.applyFrameChange(d.base, ws, d.start, rect);
   }
 
   resizeFrameEnd(): void {
     this.drag = null;
+    if (this.state.guides.length > 0) this.set({ guides: [] });
   }
 
   // ---- 视口 ----

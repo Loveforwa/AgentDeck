@@ -71,7 +71,7 @@ function FrameResizeHandle({ ws, edge }: { ws: WorkspaceId; edge: ResizeEdge }) 
   const c = useController();
   const onPointerDown = usePointerDrag({
     onStart: () => c.resizeFrameStart(ws, edge),
-    onMove: (dx, dy) => c.resizeFrame(ws, dx / c.state.viewport.zoom, dy / c.state.viewport.zoom),
+    onMove: (dx, dy, e) => c.resizeFrame(ws, dx / c.state.viewport.zoom, dy / c.state.viewport.zoom, { snap: !e.metaKey }),
     onEnd: () => c.resizeFrameEnd(),
   });
   return <div className={`ad-frame-resize ad-frame-resize--${edge} nopan`} data-edge={edge} onPointerDown={onPointerDown} />;
