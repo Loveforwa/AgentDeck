@@ -4,7 +4,8 @@ AgentDeck 自己的 MCP 服务（任务 M1）。白板里的 agent 通过它开�
 
 - HTTP（streamable HTTP，无状态），只听 `127.0.0.1`，固定端口 `47621`，被占用时换随机端口。
 - 用到的服务（projects、workspaces、agents、terminals、status）和白板事件出口都由构造参数注入，类型来自 contracts，不 import 别的服务包。
-- 挂到 agent 上：`packages/agent-adapters` 的 claude 适配器（`LaunchContext.mcp` → `--mcp-config`）。codex 暂时不挂。
+- 挂到 agent 上：`packages/agent-adapters`（`LaunchContext.mcp`）。claude `--mcp-config`，codex `-c mcp_servers.agentdeck.*`，omp `--plugin-dir`（N1）；pi、kimi 启动时挂不上，原因见 agent-adapters/AGENTS.md。
+- initialize 带 `SERVER_INSTRUCTIONS`（什么时候该用这些工具，claude 会放进系统提示）。需求里的“自动装载一个 AgentDeck skill”先用它代替，不往用户配置里写 skill。
 
 不许碰：`packages/contracts`（不够用先停下，见它的 AGENTS.md）、其他包。
 
@@ -18,9 +19,22 @@ AgentDeck 自己的 MCP 服务（任务 M1）。白板里的 agent 通过它开�
 | `list_terminals` | 终端和状态（含在等什么），调用者自己标 `self`；可按工作区过滤 | |
 | `open_terminal` | `agents.start` 开 agent 或 Shell，再让白板把窗口放进框里；可带第一条消息 `prompt` | 调用者的工作区，agent 为 claude |
 | `create_workspace` | `workspaces.create` 新建 worktree 和分支 → 框放上白板 → 有初始化命令先开 Shell 跑 → 开 agent（带 `prompt`） | 调用者的项目，agent 为 claude，`none` 不开 |
-| `open_browser` | 白板开网页窗口，同一个 origin 复用已开的窗口 | 调用者的工作区 |
+| `open_browser` | 白板开网页窗口，放在调用者终端旁边（`nearTerminal`）；同一个 origin 复用已开的窗口（跳过去刷新）。只收 http(s) 和本地文件，见下 | 调用者的工作区 |
 | `read_terminal` | 别的终端最后 n 行（最多 500） | 60 行 |
 | `send_to_terminal` | 往别的终端打字，再按回车；不能发给自己 | `submit: true` |
+| `open_terminals`（N1） | 一次开 `count` 个 agent（每个子 agent 一个，`prompts[i]`、`labels[i]` 依次给），发一个 `board.open-group`：白板把它们挂在调用者旁边，组成窗口组。超过 6 个先 `confirm` 问用户，没有 `confirm` 或用户拒绝就一个都不开；最多 16。一个一个开，中途失败时已开的照样放上白板，返回里 `error` 写停在第几个 | 调用者的工作区，agent 为 claude |
+| `list_windows`（N1） | 白板上的窗口：类型、标题、工作区、终端 id、agent、状态、在等什么、对话主题（`TerminalInfo.title`）、网址、窗口组、`self`。读 `board.load()`，白板改动后半秒才保存，刚开的窗口可能还不在 | |
+| `focus_window`（N1） | `window_id` 或 `terminal_id`（二选一，先核对存在）→ `board.focus-window`。白板：跳过去聚焦；用户正在打字时只闪一下 | |
+| `notify`（N1） | 一句话（最多 300 字，空白压成一个空格）→ `board.notify`（调用者窗口闪一下 + 白板提示；正在打字时只闪）；再交给 `onNotify`（组装时：应用在后台发系统通知） | |
+
+N1 加的注入项都是可选的：`board`（list_windows 没有它就报错，focus_window 没有它就不核对 window_id）、`confirm`、`onNotify`。
+
+### open_browser 收什么地址（`browserTarget`）
+
+- `http://`、`https://` 带主机名的，URL 规范化后原样（`http://localhost:5173` → `http://localhost:5173/`）。
+- 不带协议的本机地址（`localhost:3000`、`127.0.0.1:8080/app`、`0.0.0.0`、`[::1]`）补上 `http://`：agent 常这么写。
+- 本地文件：绝对路径原样；`file://` URL（主机只能空或 localhost）换成绝对路径（`BrowserWindowData.url` 的约定，打开时再经 `BrowserService.prepare`）。
+- 其他一律 `Only http(s) URLs and local files can be opened: …`，不发事件：`javascript:`、`data:`、`ftp:`、`chrome:`、相对路径、`~/…`、`//host/…`、`file://别的主机/…`。
 
 “调用者的工作区”：先问注入的 `workspaceOf`（组装时接状态机），再看 `status.snapshot` 的 `workspaceId`，最后按终端当前目录找路径最长的工作区。
 
@@ -37,7 +51,9 @@ AgentDeck 自己的 MCP 服务（任务 M1）。白板里的 agent 通过它开�
 终端、工作区由服务建好后发 contracts 的 `BoardEvent`，白板（`packages/ui/canvas`）放上去：
 
 - `board.add-frame`：工作区放到空位上。
-- `board.open-window`：窗口放进框里；`highlight` 时闪一下。不抢键盘焦点、不动视口。
+- `board.open-window`：窗口放进框里；`highlight` 时闪一下。不抢键盘焦点、不动视口。`nearTerminal`（N1）：放在这个终端的窗口右边。
+- `board.open-group`（N1）：一组终端挂在 `lead`（调用者）旁边，记进窗口组（`WindowNode.group`，随白板保存，N2 的侧边栏读它）。
+- `board.focus-window`、`board.notify`（N1）：见上表。
 
 白板没开（窗口都关了）时事件没人收，终端照常在跑，但白板上没有它的窗口。
 
@@ -62,6 +78,9 @@ const mcp = await startMcpServer({
   onInput: (id) => rt.noteInput(id),
   emit: (e) => emit(e),          // 广播给界面
   homeDir: homedir(),
+  board,                         // N1：BoardStore（list_windows、focus_window）
+  confirm: async (q) => …,       // N1：open_terminals 超过 6 个时问用户，返回 true 才开
+  onNotify: (n) => …,            // N1：notify 工具，应用在后台时发系统通知
 });
 // agent-adapters：createAgentRuntime({ …, mcp: () => mcp.endpoint })
 // 退出前：await mcp.close()
@@ -73,4 +92,9 @@ const mcp = await startMcpServer({
 pnpm --filter @agentdeck/mcp-server test        # 真的 HTTP + SDK 的 Client，后面是 tools/fakes
 pnpm --filter @agentdeck/mcp-server typecheck
 AGENTDECK_REAL_CLAUDE=1 pnpm --filter @agentdeck/mcp-server test real-claude   # 真的 claude -p 连一次（默认跳过）
+AGENTDECK_REAL_CODEX=1 pnpm --filter @agentdeck/mcp-server test real-codex     # 真的 codex app-server 连一次（默认跳过）
 ```
+
+real-codex（N1，2026-10-25 codex 0.164.0 跑过）：照 agent-adapters 的 `codexMcpOverrides` 用 `-c` 挂上，起 `codex app-server`（临时 `CODEX_HOME`，不碰 `~/.codex`），
+`mcpServerStatus/list` 列出了 agentdeck 和全部工具（token 从 `bearer_token_env_var` 取对了），`thread/start` 建一个空会话（不发消息、不连模型）后
+`mcpServer/tool/call` 调 `list_workspaces`，feat/login 标了 `current`（`x-agentdeck-terminal` 从 `env_http_headers` 取对了）。

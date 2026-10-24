@@ -26,6 +26,8 @@ export interface AgentRuntimeOptions {
   notifyCommand: AbsPath;
   /** agentdeck-pi-extension.mjs 的绝对路径（pi、omp 用 -e 加载它拿状态）。不给时它们没有钩子。 */
   agentExtension?: AbsPath;
+  /** 写好 mcpPluginFiles() 的目录（N1：omp 用 --plugin-dir 挂 AgentDeck 的 MCP）。不给时 omp 不挂。 */
+  mcpPluginDir?: AbsPath;
   emit: (event: StatusEvent) => void;
   /** Settings › Approvals › destructivePatterns。 */
   destructivePatterns: () => readonly string[];
@@ -52,7 +54,12 @@ export interface AgentRuntimeOptions {
 
 export function createAgentRuntime(opts: AgentRuntimeOptions) {
   const adapters =
-    opts.adapters ?? createDefaultAdapters({ env: opts.env, ...(opts.agentExtension ? { agentExtension: opts.agentExtension } : {}) });
+    opts.adapters ??
+    createDefaultAdapters({
+      env: opts.env,
+      ...(opts.agentExtension ? { agentExtension: opts.agentExtension } : {}),
+      ...(opts.mcpPluginDir ? { mcpPluginDir: opts.mcpPluginDir } : {}),
+    });
   // 状态机的事件先交给界面，再给 ApprovalService（按键批准要看状态有没有离开 needs-approval）
   let approvals: ApprovalServiceImpl | null = null;
   const status = new StatusMachine({

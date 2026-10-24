@@ -4,19 +4,26 @@
 // 告诉扩展 notify 的路径和自己是谁。扩展把事件转成和 claude 同名的钩子（SessionStart、UserPromptSubmit、
 // PermissionRequest、Stop、SessionEnd），另加一个 Question，经 agentdeck-notify 发到 HookServer。
 // 所以这里的 parseHook 基本就是 parseCommonHook。扩展的路径由组装阶段传入（AdapterDeps.agentExtension），没有就不加钩子。
+//
+// AgentDeck 的 MCP（N1）：表里有 mcp 的 agent（omp）启动时加 `--plugin-dir <mcpPluginDir>`，url、token 放进 LaunchSpec.env，
+// 插件清单里写成 ${…} 由 agent 自己展开（mcp-plugin.ts）。pi、kimi 启动时挂不上，见 AGENTS.md。
 
 import { randomUUID } from 'node:crypto';
+import { MCP_TOKEN_ENV } from '@agentdeck/contracts';
 import type { AbsPath, AgentCapabilities, AgentHookEvent, AgentSessionId, LaunchContext, LaunchSpec } from '@agentdeck/contracts';
 import { atLeast } from '../env.ts';
 import { parseCommonHook } from '../hook-payload.ts';
 import type { KnownAgent } from './known.ts';
 import { EXTENSION_ENV } from './known.ts';
+import { MCP_URL_ENV } from './mcp-plugin.ts';
 import type { AdapterDeps, AgentAdapterExt, DetectResult } from './types.ts';
 import { detectCommand, unsupported } from './types.ts';
 
 export interface KnownAgentAdapterOptions extends AdapterDeps {
   /** agentdeck-pi-extension.mjs 的绝对路径。没有时表里有 extension 的 agent 也按没有钩子处理。 */
   agentExtension?: AbsPath | null;
+  /** 写好 mcpPluginFiles() 的目录（N1，omp 的 --plugin-dir）。没有时这些 agent 不挂 AgentDeck 的 MCP。 */
+  mcpPluginDir?: AbsPath | null;
   /** 测试里固定新会话 id。 */
   newSessionId?: () => string;
 }
@@ -96,6 +103,12 @@ export class KnownAgentAdapter implements AgentAdapterExt {
         [EXTENSION_ENV.agent]: this.id,
         [EXTENSION_ENV.turnEnd]: ext.turnEnd,
       };
+    }
+    // AgentDeck 的 MCP（N1）：插件目录是固定内容，url 和 token 走环境变量
+    const mcp = this.def.mcp;
+    if (ctx.mcp && mcp && this.deps.mcpPluginDir && atLeast(this.lastVersion, mcp.minVersion)) {
+      args.push(mcp.flag, this.deps.mcpPluginDir);
+      env = { ...env, [MCP_URL_ENV]: ctx.mcp.url, [MCP_TOKEN_ENV]: ctx.mcp.token };
     }
     args.push(...ctx.extraArgs);
     return { cmd: this.command, args, ...(env ? { env } : {}), sessionId: sessionId as AgentSessionId | null };

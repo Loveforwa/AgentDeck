@@ -17,6 +17,8 @@ export type ViewId = Brand<string, 'ViewId'>;
 export type AgentSessionId = Brand<string, 'AgentSessionId'>;
 /** 一条“等你处理”的请求（批准或提问）。 */
 export type RequestId = Brand<string, 'RequestId'>;
+/** 白板上的一个窗口组（MVP v3 · N1、N2：agent 一次开出的子终端和开它们的主 agent）。N1 加。 */
+export type WindowGroupId = Brand<string, 'WindowGroupId'>;
 
 /** 内置的 agent，加上任意自定义命令。 */
 export type AgentKind = 'claude' | 'codex' | 'gemini' | 'shell' | 'custom' | (string & {});

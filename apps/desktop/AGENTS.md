@@ -38,6 +38,11 @@ token 在 `~/.agentdeck/run/mcp-token`。工具用 `viaRegistry` 调注册表里
 
 已接好：`createAgentRuntime({ mcp: () => mcp?.endpoint ?? null })` 让 claude 启动时挂上它；`startAppMcp` 带 `workspaceOf`、`onInput`；`electron.vite.config.ts` 把 `@agentdeck/mcp-server` 打进主进程产物；退出时关掉。
 
+N1（MVP v3）：
+- codex 启动时也挂（`-c mcp_servers.agentdeck.*`，agent-adapters 自己算）；omp 用 `--plugin-dir`：启动时 `writeMcpPluginDir(<dataDir>/mcp-plugin)` 写一次固定内容的插件目录，传给 `createAgentRuntime({ mcpPluginDir })`。pi、kimi 挂不上，原因见 agent-adapters/AGENTS.md。
+- `startAppMcp` 另给 `board`（`viaRegistry(registry, 'board')`，list_windows、focus_window 读保存的白板）、`confirm`（open_terminals 超过 6 个时系统对话框，默认按钮 Cancel）、`onNotify`（notify 工具：应用不在前台、通知开着时发系统通知，标题和状态提醒一样是 “claude · 工作区”，点了跳到那个终端）。
+- 新的白板事件 `board.open-group`、`board.focus-window`、`board.notify` 同样走 `emit` 广播，白板（ui/canvas）处理。
+
 ## 运行
 
 ```bash

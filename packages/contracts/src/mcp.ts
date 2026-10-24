@@ -1,5 +1,5 @@
 // AgentDeck 自己的 MCP 服务（M1）：白板里的 agent 通过它开终端、开工作区、开网页、看和指挥别的终端。
-// 服务跑在主进程（HTTP，只听 127.0.0.1），实现：packages/mcp-server；挂到 agent 上：packages/agent-adapters（目前只有 claude）。
+// 服务跑在主进程（HTTP，只听 127.0.0.1），实现：packages/mcp-server；挂到 agent 上：packages/agent-adapters（claude、codex、omp；N1 起，见它的 AGENTS.md）。
 
 /** agent 配置里这个 MCP 服务的名字，claude 里的工具名是 mcp__agentdeck__<工具名>。 */
 export const MCP_SERVER_NAME = 'agentdeck';

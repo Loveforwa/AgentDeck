@@ -12,7 +12,7 @@ import { MCP_SERVER_NAME, MCP_TERMINAL_HEADER } from '@agentdeck/contracts';
 import type { McpEndpoint, TerminalId } from '@agentdeck/contracts';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import { registerTools } from './tools.ts';
+import { registerTools, SERVER_INSTRUCTIONS } from './tools.ts';
 import type { McpToolDeps } from './tools.ts';
 
 /** 固定端口：AgentDeck 重启后还活着的 agent（tmux 里）靠它连回来。被占用时换一个随机端口，那些 agent 要重开才能用。 */
@@ -83,7 +83,7 @@ async function handle(req: IncomingMessage, res: ServerResponse, opts: McpHttpSe
   const body = await readJson(req);
   if (body === TOO_LARGE) return reply(res, 413, 'Payload too large');
 
-  const server = new McpServer({ name: MCP_SERVER_NAME, version: opts.version ?? '0.1.0' });
+  const server = new McpServer({ name: MCP_SERVER_NAME, version: opts.version ?? '0.1.0' }, { instructions: SERVER_INSTRUCTIONS });
   registerTools(server, opts, { terminalId: callerTerminal(req.headers[MCP_TERMINAL_HEADER]) });
   const transport = new StreamableHTTPServerTransport({ enableJsonResponse: true }) // 不给 sessionIdGenerator 就是无状态;
   res.on('close', () => {

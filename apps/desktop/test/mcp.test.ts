@@ -2,8 +2,8 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { AgentDeckError, type AgentDeckEvent, type Workspace } from '@agentdeck/contracts';
-import { MCP_SENDER_ID, startAppMcp, viaRegistry } from '../src/main/mcp.ts';
+import { AgentDeckError, type AgentDeckEvent, type BoardState, type Workspace } from '@agentdeck/contracts';
+import { MCP_SENDER_ID, startAppMcp, viaRegistry, writeMcpPluginDir } from '../src/main/mcp.ts';
 import { createServiceRegistry } from '../src/main/registry.ts';
 
 const dirs: string[] = [];
@@ -61,5 +61,59 @@ describe('startAppMcp', () => {
     } finally {
       await server.close();
     }
+  });
+
+  it('N1: list_windows reads the board through the registry; notify and the >6 confirmation go to the app', async () => {
+    const home = mkdtempSync(join(tmpdir(), 'desk-mcp-'));
+    dirs.push(home);
+    const registry = createServiceRegistry();
+    const board: BoardState = { version: 1, viewport: { x: 0, y: 0, zoom: 1 }, frames: [], windows: [], panel: { open: true, width: 320 }, savedAt: '' };
+    registry.register('board', { load: async () => board });
+    registry.register('terminals', { list: async () => [] });
+    registry.register('status', { snapshot: async () => [] });
+    registry.register('workspaces', { list: async () => [] });
+    const notes: unknown[] = [];
+    const asked: unknown[] = [];
+    const server = await startAppMcp({
+      registry,
+      emit: () => {},
+      homeDir: home,
+      port: 0,
+      onNotify: (n) => notes.push(n),
+      confirm: async (q) => {
+        asked.push(q);
+        return false;
+      },
+    });
+    try {
+      const token = readFileSync(join(home, '.agentdeck/run/mcp-token'), 'utf8').trim();
+      const call = async (name: string, args: object = {}) => {
+        const res = await fetch(server.endpoint.url, {
+          method: 'POST',
+          headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json', accept: 'application/json, text/event-stream' },
+          body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name, arguments: args } }),
+        });
+        return ((await res.json()) as { result: { isError?: boolean; content: { text: string }[] } }).result;
+      };
+      expect(JSON.parse((await call('list_windows')).content[0]!.text)).toEqual({ windows: [] });
+      await call('notify', { message: 'Tests passed' });
+      expect(notes).toEqual([{ terminalId: null, message: 'Tests passed' }]);
+      expect(await call('open_terminals', { count: 7, workspace_id: null })).toMatchObject({ isError: true });
+      expect(asked).toHaveLength(1);
+    } finally {
+      await server.close();
+    }
+  });
+});
+
+describe('writeMcpPluginDir', () => {
+  it('writes the fixed plugin folder omp loads with --plugin-dir', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'desk-plugin-'));
+    dirs.push(dir);
+    expect(await writeMcpPluginDir(join(dir, 'mcp-plugin'))).toBe(join(dir, 'mcp-plugin'));
+    const manifest = JSON.parse(readFileSync(join(dir, 'mcp-plugin/.claude-plugin/plugin.json'), 'utf8'));
+    expect(manifest.mcpServers.agentdeck.url).toBe('${AGENTDECK_MCP_URL}');
+    // 再写一遍（每次启动）不出错
+    await writeMcpPluginDir(join(dir, 'mcp-plugin'));
   });
 });

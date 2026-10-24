@@ -9,9 +9,12 @@
 //
 // 准备失败（app-server 不通、超时）时这次启动不加钩子，状态退回按输出活动判断。
 // 更老、没有 hooks 的版本用 legacy notify：`-c notify=[...]`，只知道一轮结束。注意它会顶掉用户自己的 notify 设置。
+//
+// AgentDeck 的 MCP（N1）：同样用 `-c mcp_servers.agentdeck.*` 临时加上，token 和终端 id 只写环境变量名，见 codexMcpOverrides。
 
 import { spawn } from 'node:child_process';
-import type { AgentCapabilities, AgentHookEvent, AgentSessionId, LaunchContext, LaunchSpec } from '@agentdeck/contracts';
+import { MCP_SERVER_NAME, MCP_TERMINAL_HEADER, MCP_TOKEN_ENV, TERMINAL_ID_ENV } from '@agentdeck/contracts';
+import type { AgentCapabilities, AgentHookEvent, AgentSessionId, LaunchContext, LaunchSpec, McpEndpoint } from '@agentdeck/contracts';
 import { atLeast, findExecutable, shellQuote } from '../env.ts';
 import { parseCommonHook } from '../hook-payload.ts';
 import type { AdapterDeps, AgentAdapterExt, DetectResult } from './types.ts';
@@ -21,6 +24,11 @@ import { detectCommand, NO_CAPABILITIES } from './types.ts';
 const MIN_HOOKS_VERSION = '0.159.0';
 /** `codex resume <id>`、`codex fork <id>` 在 0.159 上实测可用。 */
 const MIN_FORK_VERSION = '0.159.0';
+/**
+ * `-c mcp_servers.<名>.{url,bearer_token_env_var,env_http_headers}` 在 0.164.0 上实测可用。更早的版本没核对：
+ * 不认识的字段可能让整份配置加载失败、codex 起不来，所以按没有处理。
+ */
+const MIN_MCP_VERSION = '0.164.0';
 
 export const CODEX_HOOK_EVENTS = [
   'SessionStart',
@@ -124,10 +132,18 @@ export class CodexAdapter implements AgentAdapterExt {
     } else if (!this.capabilities(this.lastVersion).hooks) {
       hookArgs = ['-c', `notify=[${toml(ctx.notifyCommand)},"codex","notify"]`];
     }
+    const mcp = ctx.mcp && atLeast(this.lastVersion, MIN_MCP_VERSION) ? ctx.mcp : null;
     return {
       cmd: this.command,
-      // codex [PROMPT]：位置参数是第一条消息。MCP 目前只挂给 claude，ctx.mcp 在这里不用。
-      args: [...head, ...hookArgs, ...ctx.extraArgs, ...(ctx.prompt && ctx.mode.kind === 'new' ? ['--', ctx.prompt] : [])],
+      // codex [PROMPT]：位置参数是第一条消息。
+      args: [
+        ...head,
+        ...hookArgs,
+        ...(mcp ? codexMcpOverrides(mcp) : []),
+        ...ctx.extraArgs,
+        ...(ctx.prompt && ctx.mode.kind === 'new' ? ['--', ctx.prompt] : []),
+      ],
+      ...(mcp ? { env: { [MCP_TOKEN_ENV]: mcp.token } } : {}),
       sessionId: sessionId as AgentSessionId | null,
     };
   }
@@ -145,6 +161,24 @@ export class CodexAdapter implements AgentAdapterExt {
         return parseCommonHook(hookName, payload);
     }
   }
+}
+
+/**
+ * AgentDeck 的 MCP（N1）：`-c mcp_servers.agentdeck.*` 临时加一个 streamable HTTP 服务，不改 ~/.codex/config.toml。
+ * token 和终端 id 只写环境变量的名字（bearer_token_env_var、env_http_headers），由 codex 从环境里取，不出现在命令行上。
+ * session flags 层按字段合并进用户配置：用户自己的 MCP 照常在（0.164.0 用临时 CODEX_HOME 实测 `codex mcp list` 两个都在、
+ * `codex mcp get agentdeck --json` 是 streamable_http + 这两个字段）。工具名是 mcp__agentdeck__<工具>。
+ */
+export function codexMcpOverrides(mcp: McpEndpoint): string[] {
+  const key = `mcp_servers.${MCP_SERVER_NAME}`;
+  return [
+    '-c',
+    `${key}.url=${toml(mcp.url)}`,
+    '-c',
+    `${key}.bearer_token_env_var=${toml(MCP_TOKEN_ENV)}`,
+    '-c',
+    `${key}.env_http_headers={${toml(MCP_TERMINAL_HEADER)}=${toml(TERMINAL_ID_ENV)}}`,
+  ];
 }
 
 function hookCommand(notifyCommand: string, event: string): string {

@@ -23,6 +23,8 @@
 //        2026-10-25 定：Auto-approve / Approve all 先不支持 kimi（status/support.ts 报 "Not supported for kimi yet"），
 //        所以 approveOnceKeys 仍为 null；以后要做就照上面的规则看屏幕（kimi 没有 needs-approval 状态，要在终端安静下来时看）。
 // 本机没有 gemini、opencode、aider，参数没法核对，先不登记。
+// MCP（N1，2026-10-25）：pi 0.83.0 没有 MCP；omp 18.0.4 用 --plugin-dir；kimi 2.3.1 的 --help 仍是 -S/--session [id]，
+// 没有 MCP 的启动参数。详见 AGENTS.md「AgentDeck 的 MCP」。
 
 import type { AgentKind } from '@agentdeck/contracts';
 
@@ -61,6 +63,11 @@ export interface KnownAgent {
    * Auto-approve / Approve all 怎么用它见 status/support.ts。
    */
   approveOnceKeys: string[] | null;
+  /**
+   * 怎么挂 AgentDeck 的 MCP（N1）。plugin-dir：`<flag> <目录>` 临时加载 AgentDeck 自己的插件目录（mcpPluginFiles 写出的），
+   * 插件清单里的 url、token、终端 id 都写成 `${环境变量}`，由 agent 自己展开。null = 启动时挂不上（原因见 AGENTS.md）。
+   */
+  mcp: { kind: 'plugin-dir'; flag: string; minVersion: string } | null;
 }
 
 export const KNOWN_AGENTS: readonly KnownAgent[] = [
@@ -76,6 +83,8 @@ export const KNOWN_AGENTS: readonly KnownAgent[] = [
     extension: { flag: '-e', turnEnd: 'agent_settled', minVersion: '0.80.4' },
     askTool: false,
     approveOnceKeys: null,
+    // pi 不内置 MCP（README “No MCP.”、docs/usage.md），要靠扩展自己实现 MCP 客户端，见 AGENTS.md「AgentDeck 的 MCP」。
+    mcp: null,
   },
   {
     id: 'omp',
@@ -87,6 +96,9 @@ export const KNOWN_AGENTS: readonly KnownAgent[] = [
     askTool: true,
     // 没在真终端里核对（见上面的核对记录）：发之前 ApprovalService 会先在屏幕上认出 Approve / Deny
     approveOnceKeys: ['Up', 'Enter'],
+    // --plugin-dir 加载 Claude 插件格式的目录（.claude-plugin/plugin.json 里内联 mcpServers），url 和 headers 展开 ${VAR}。
+    // 18.0.4 实测（源码 discovery/helpers.ts injectPluginDirRoots、discovery/claude-plugins.ts loadMCPServers），见 AGENTS.md。
+    mcp: { kind: 'plugin-dir', flag: '--plugin-dir', minVersion: '18.0.4' },
   },
   {
     id: 'kimi',
@@ -96,5 +108,7 @@ export const KNOWN_AGENTS: readonly KnownAgent[] = [
     extension: null,
     askTool: false,
     approveOnceKeys: null,
+    // 2.3.1 没有挂 MCP 的启动参数，只读 KIMI_CODE_HOME、仓库根的 .mcp.json、<cwd>/.kimi-code/mcp.json，见 AGENTS.md。
+    mcp: null,
   },
 ];

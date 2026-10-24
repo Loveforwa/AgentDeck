@@ -12,6 +12,7 @@ import { KnownAgentAdapter } from '../src/adapters/generic.ts';
 import { createDefaultAdapters } from '../src/adapters/index.ts';
 import type { KnownAgent } from '../src/adapters/known.ts';
 import { EXTENSION_ENV, KNOWN_AGENTS } from '../src/adapters/known.ts';
+import { MCP_URL_ENV, mcpPluginFiles } from '../src/adapters/mcp-plugin.ts';
 import { createAgentRuntime } from '../src/runtime.ts';
 
 const NOTIFY_SCRIPT = fileURLToPath(new URL('../../../tools/agentdeck-notify/bin/agentdeck-notify.mjs', import.meta.url));
@@ -287,4 +288,85 @@ describe('pi / omp extension end to end', () => {
       rmSync(dir, { recursive: true, force: true });
     }
   }, 20_000);
+});
+
+describe('AgentDeck MCP for the known agents (N1)', () => {
+  const env = () => ({ PATH: bin });
+  const mcp = { url: 'http://127.0.0.1:47621/mcp', token: 'secret-token' };
+  const PLUGIN_DIR = '/Users/me/.agentdeck/mcp-plugin';
+
+  it('omp: --plugin-dir with our plugin folder; url and token only in env', async () => {
+    const omp = new KnownAgentAdapter(def('omp'), { env, agentExtension: EXTENSION, mcpPluginDir: PLUGIN_DIR });
+    await omp.detect();
+    const spec = omp.launch({ ...ctx({ kind: 'new' }, ['--model', 'x']), mcp });
+    expect(spec.args).toEqual(['-e', EXTENSION, '--plugin-dir', PLUGIN_DIR, '--model', 'x']);
+    expect(spec.env).toMatchObject({ [MCP_URL_ENV]: mcp.url, AGENTDECK_MCP_TOKEN: 'secret-token', [EXTENSION_ENV.agent]: 'omp' });
+    expect(spec.args.join(' ')).not.toContain('secret-token');
+    // resume 也挂
+    expect(omp.launch({ ...ctx({ kind: 'resume', sessionId: 'abc' as AgentSessionId }), mcp }).args).toEqual([
+      '--resume',
+      'abc',
+      '-e',
+      EXTENSION,
+      '--plugin-dir',
+      PLUGIN_DIR,
+    ]);
+    // 没有 MCP（服务没起来）或没有插件目录时不挂
+    expect(omp.launch(ctx()).args).toEqual(['-e', EXTENSION]);
+    const noDir = new KnownAgentAdapter(def('omp'), { env });
+    await noDir.detect();
+    expect(noDir.launch({ ...ctx(), mcp })).toEqual({ cmd: 'omp', args: [], sessionId: null });
+  });
+
+  it('omp without hooks still gets the MCP (env without the extension variables)', async () => {
+    const omp = new KnownAgentAdapter(def('omp'), { env, mcpPluginDir: PLUGIN_DIR });
+    await omp.detect();
+    expect(omp.launch({ ...ctx(), mcp })).toEqual({
+      cmd: 'omp',
+      args: ['--plugin-dir', PLUGIN_DIR],
+      env: { [MCP_URL_ENV]: mcp.url, AGENTDECK_MCP_TOKEN: 'secret-token' },
+      sessionId: null,
+    });
+  });
+
+  it('pi and kimi cannot take it at launch: nothing added', async () => {
+    for (const id of ['pi', 'kimi']) {
+      expect(def(id).mcp).toBeNull();
+      const a = new KnownAgentAdapter(def(id), { env, mcpPluginDir: PLUGIN_DIR, newSessionId: () => 'n1' });
+      await a.detect();
+      const spec = a.launch({ ...ctx(), mcp });
+      expect(spec.args).not.toContain('--plugin-dir');
+      expect(spec.env).toBeUndefined();
+    }
+  });
+
+  it('the plugin folder is fixed content: the manifest only refers to env vars', () => {
+    const files = mcpPluginFiles();
+    expect(Object.keys(files)).toEqual(['.claude-plugin/plugin.json']);
+    const manifest = JSON.parse(files['.claude-plugin/plugin.json']!);
+    expect(manifest.name).toBe('agentdeck');
+    expect(manifest.mcpServers).toEqual({
+      agentdeck: {
+        type: 'http',
+        url: '${AGENTDECK_MCP_URL}',
+        headers: { Authorization: 'Bearer ${AGENTDECK_MCP_TOKEN}', 'x-agentdeck-terminal': '${AGENTDECK_TERM}' },
+      },
+    });
+  });
+
+  it('createAgentRuntime passes the plugin folder to omp', async () => {
+    const host = recordingHost();
+    const rt = createAgentRuntime({
+      env,
+      terminals: host,
+      notifyCommand: NOTIFY,
+      mcpPluginDir: PLUGIN_DIR,
+      mcp: () => mcp,
+      emit: () => {},
+      destructivePatterns: () => [],
+    });
+    await rt.agents.start({ agent: 'omp', cwd: '/repo', workspaceId: null, mode: { kind: 'new' } });
+    expect(host.created[0]!.args).toEqual(['--plugin-dir', PLUGIN_DIR]);
+    expect(host.created[0]!.env).toMatchObject({ [MCP_URL_ENV]: mcp.url });
+  });
 });
