@@ -19,6 +19,7 @@ import type { AdapterLaunchContext, AgentAdapterExt } from './adapters/types.ts'
 import type { LaunchSkills } from './skills/types.ts';
 import type { EnvSource } from './env.ts';
 import { findExecutable } from './env.ts';
+import type { ConversationCheck } from './fork.ts';
 
 /**
  * LaunchContext.terminalId 要求在创建前就知道终端 id，但 TerminalHost.create 才分配 id，调用方没法指定。
@@ -55,6 +56,10 @@ export interface AgentServiceOptions {
    */
   skills?: (req: StartAgentRequest) => Promise<LaunchSkills | null>;
   onStarted?: (started: StartedAgent) => void;
+  /**
+   * X4：fork 前看原来的对话在不在（fork.ts）。返回 false 时不开终端，抛 not-found；null、出错、不给时照常启动。
+   */
+  conversationExists?: ConversationCheck;
 }
 
 export class AgentServiceImpl implements AgentService {
@@ -87,6 +92,17 @@ export class AgentServiceImpl implements AgentService {
     }
     if (req.mode.kind === 'fork' && !info.capabilities.fork) {
       throw new AgentDeckError({ code: 'unsupported', message: `${adapter.label} can't fork a conversation` });
+    }
+    if (req.mode.kind === 'fork') {
+      // 还没说过话的会话没有文件，agent 会报 “No conversation found” 直接退出（X4）
+      const found = await this.opts.conversationExists?.(req.agent, req.mode.sessionId).catch(() => null);
+      if (found === false) {
+        throw new AgentDeckError({
+          code: 'not-found',
+          message: `No conversation to fork yet. Send ${adapter.label} a message first.`,
+          detail: `${req.agent} session ${req.mode.sessionId} has no saved conversation`,
+        });
+      }
     }
 
     const skills = (await this.opts.skills?.(req).catch(() => null)) ?? null;

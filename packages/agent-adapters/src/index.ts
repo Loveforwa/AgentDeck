@@ -5,6 +5,8 @@ export type { AgentRuntime, AgentRuntimeOptions } from './runtime.ts';
 export { AgentServiceImpl, PENDING_TERMINAL_ID } from './agent-service.ts';
 export type { AgentServiceOptions, StartedAgent } from './agent-service.ts';
 export { createDefaultAdapters } from './adapters/index.ts';
+export { conversationCheckFromEnv, conversationExists } from './fork.ts';
+export type { ConversationCheck } from './fork.ts';
 export { ClaudeAdapter, claudeHookEvents, claudeHookSettings, claudeMcpConfig } from './adapters/claude.ts';
 export {
   CODEX_HOOK_EVENTS,

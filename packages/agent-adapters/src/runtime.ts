@@ -11,6 +11,8 @@ import type { AgentAdapterExt } from './adapters/types.ts';
 import { AgentServiceImpl } from './agent-service.ts';
 import type { AgentServiceOptions, StartedAgent } from './agent-service.ts';
 import type { EnvSource } from './env.ts';
+import { conversationCheckFromEnv, conversationExists } from './fork.ts';
+import type { UsageRoots } from './usage/locate.ts';
 import { hookHint } from './hook-payload.ts';
 import type { HookServerOptions, ReceivedHook } from './hook-server.ts';
 import { HookServer } from './hook-server.ts';
@@ -54,6 +56,11 @@ export interface AgentRuntimeOptions {
    * 返回 true 表示这条只是给它的（USAGE_HOOK），不交给状态机。
    */
   tapHook?: (hook: ReceivedHook) => boolean;
+  /**
+   * X4：fork 前到哪里找原来的对话（只读）。不给时按登录 shell 环境的 HOME、CLAUDE_CONFIG_DIR 等推（defaultUsageRoots）；
+   * null 表示不查，直接启动。
+   */
+  sessionRoots?: UsageRoots | null;
   now?: () => Date;
 }
 
@@ -83,6 +90,9 @@ export function createAgentRuntime(opts: AgentRuntimeOptions) {
     ...(opts.extraArgs ? { extraArgs: opts.extraArgs } : {}),
     ...(opts.mcp ? { mcp: opts.mcp } : {}),
     ...(opts.skills ? { skills: opts.skills } : {}),
+    ...(opts.sessionRoots === null
+      ? {}
+      : { conversationExists: opts.sessionRoots ? conversationExists(opts.sessionRoots) : conversationCheckFromEnv(opts.env) }),
     onStarted: (s) => {
       status.track(s.terminalId, { agent: s.agent, workspaceId: s.workspaceId, hooks: s.hooks, sessionId: s.sessionId });
       opts.onStarted?.(s);

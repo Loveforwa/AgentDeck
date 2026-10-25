@@ -236,7 +236,8 @@ describe('CodexAdapter', () => {
     expect(r.args.slice(0, 2)).toEqual(['resume', 'th-1']);
     expect(r.sessionId).toBe('th-1');
     const f = codex.launch(ctx({ mode: { kind: 'fork', sessionId: 'th-1' as AgentSessionId } }));
-    expect(f.args.slice(0, 2)).toEqual(['fork', 'th-1']);
+    // X4：-C 写明新目录，不然从别的 worktree fork 时 TUI 先问用哪个目录、默认是原来的（0.164.0 实测）
+    expect(f.args.slice(0, 4)).toEqual(['fork', '-C', '/repo', 'th-1']);
     expect(f.sessionId).toBeNull();
   });
 
