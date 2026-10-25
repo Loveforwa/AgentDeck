@@ -8,7 +8,7 @@
 
 <a href="https://github.com/Loveforwa/AgentDeck/releases/latest"><img src="https://img.shields.io/badge/Download_for_macOS-.dmg-1a1a1a?style=for-the-badge&logo=apple&logoColor=white" alt="下载 macOS 版 AgentDeck"></a>
 
-macOS（Apple 芯片或 Intel）· 需要 [tmux](https://github.com/tmux/tmux) 3.5 以上和你要用的 agent · [未签名的应用怎么打开](#安装)
+[第一次打开被 macOS 拦住怎么办](#安装)
 
 [English](../../README.md) · **简体中文** · [日本語](README.ja.md) · [한국어](README.ko.md) · [Español](README.es.md) · [Français](README.fr.md) · [Deutsch](README.de.md)
 
@@ -84,6 +84,7 @@ AgentDeck 在本机跑一个 MCP 服务，启动 Claude Code、Codex 或 Oh My P
    brew install tmux
    xcode-select --install   # 还没有 git 的话
    ```
+   AgentDeck 启动时会检查 tmux，没装或低于 3.5 时会显示这条命令和 Retry 按钮。
 3. 安装你要用的 agent，并在普通终端里各登录一次（`claude`、`codex`、`pi`、`omp`、`kimi`）。AgentDeck 通过登录 shell 的 `PATH` 找到它们。
 4. 打开 AgentDeck。应用没有经过公证，第一次打开会被 macOS 拦下：
    - 在“应用程序”里右键 AgentDeck，选 **打开**，再点一次 **打开**。

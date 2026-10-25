@@ -8,7 +8,7 @@ Mehrere Coding-Agents nebeneinander auf einem Whiteboard, ein Git-Worktree pro B
 
 <a href="https://github.com/Loveforwa/AgentDeck/releases/latest"><img src="https://img.shields.io/badge/Download_for_macOS-.dmg-1a1a1a?style=for-the-badge&logo=apple&logoColor=white" alt="AgentDeck für macOS herunterladen"></a>
 
-macOS (Apple Silicon oder Intel) · benötigt [tmux](https://github.com/tmux/tmux) 3.5 oder neuer und die Agents, die du nutzen willst · [nicht signierte App öffnen](#installation)
+[macOS blockiert den ersten Start? So öffnest du die App](#installation)
 
 [English](../../README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md) · [한국어](README.ko.md) · [Español](README.es.md) · [Français](README.fr.md) · **Deutsch**
 
@@ -84,6 +84,7 @@ Plugins findest du im Kontextmenü eines Terminals. Auto-approve lässt sich auc
    brew install tmux
    xcode-select --install   # git, falls noch nicht vorhanden
    ```
+   AgentDeck prüft beim Start, ob tmux vorhanden ist. Fehlt es oder ist es älter als 3.5, zeigt die App diesen Befehl und einen Retry-Knopf.
 3. Installiere die Agents, die du nutzen willst, und melde dich in einem normalen Terminal einmal bei jedem an (`claude`, `codex`, `pi`, `omp`, `kimi`). AgentDeck findet sie über den `PATH` deiner Login-Shell.
 4. Öffne AgentDeck. Die App ist nicht notarisiert, deshalb blockiert macOS den ersten Start:
    - Klick im Ordner Programme mit der rechten Maustaste auf AgentDeck, wähle **Öffnen** und dann noch einmal **Öffnen**.

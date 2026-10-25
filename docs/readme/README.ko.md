@@ -8,7 +8,7 @@
 
 <a href="https://github.com/Loveforwa/AgentDeck/releases/latest"><img src="https://img.shields.io/badge/Download_for_macOS-.dmg-1a1a1a?style=for-the-badge&logo=apple&logoColor=white" alt="macOS용 AgentDeck 다운로드"></a>
 
-macOS(Apple 실리콘 또는 Intel) · [tmux](https://github.com/tmux/tmux) 3.5 이상과 사용할 에이전트가 필요 · [서명되지 않은 앱 여는 법](#설치)
+[처음 실행할 때 macOS가 막는다면](#설치)
 
 [English](../../README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md) · **한국어** · [Español](README.es.md) · [Français](README.fr.md) · [Deutsch](README.de.md)
 
@@ -84,6 +84,7 @@ AgentDeck은 로컬 MCP 서버를 실행하고, Claude Code, Codex, Oh My Pi를 
    brew install tmux
    xcode-select --install   # git이 아직 없다면
    ```
+   AgentDeck은 시작할 때 tmux를 확인합니다. 설치되어 있지 않거나 3.5보다 오래된 버전이면 이 명령과 Retry 버튼을 보여 줍니다.
 3. 사용할 에이전트를 설치하고, 일반 터미널에서 각각 한 번씩 로그인해 둡니다(`claude`, `codex`, `pi`, `omp`, `kimi`). AgentDeck은 로그인 셸의 `PATH`에서 이들을 찾습니다.
 4. AgentDeck을 엽니다. 앱이 공증되지 않아 처음 실행할 때 macOS가 막습니다.
    - 응용 프로그램 폴더에서 AgentDeck을 우클릭하고 **열기**를 고른 뒤, 다시 **열기**를 누릅니다.
