@@ -17,6 +17,9 @@ export function BoardMenu() {
   // 菜单开着时才需要这些；它们变了菜单跟着更新
   useBoardState((s) => s.agents);
   useBoardState((s) => s.frames);
+  // Fork 要看会话 id（X4）
+  useBoardState((s) => s.statuses);
+  useBoardState((s) => s.windows);
   // 插件项的勾和灰掉的原因
   useApprovals((s) => s.auto);
   useApprovals((s) => s.support);
@@ -149,6 +152,22 @@ export function menuItems(c: BoardController, menu: MenuState, available: { term
             })),
           },
         );
+        // X4：带着对话去别的工作区。只有 agent 终端有；不能 Fork（agent 不支持、还没有会话 id）时灰掉，原因写在后面
+        const fork = c.forkCheckOf(id);
+        if (fork) {
+          const reason = !fork.ok ? fork.reason : others.length === 0 ? 'No other workspaces' : null;
+          items.push({
+            id: 'fork',
+            label: 'Fork conversation into…',
+            disabled: reason !== null,
+            ...(reason ? { hint: reason } : {}),
+            items: others.map((f) => ({
+              id: `fork-${f.workspaceId}`,
+              label: c.workspaceTitle(f.workspaceId),
+              onSelect: () => void c.forkInWorkspace(id, f.workspaceId, null),
+            })),
+          });
+        }
       }
       items.push({ type: 'separator' }, { id: 'close', label: 'Close', shortcut: SHORTCUT_LABELS['close-window'], onSelect: () => c.closeWindow(id) });
       return items;

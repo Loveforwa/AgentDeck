@@ -1,7 +1,7 @@
 // BoardController：白板的全部行为。React 组件只负责画和把手势交给它；它只通过 window.agentdeck（AgentDeckApi）调服务。
 // 不依赖 React，测试里直接拿 createFakeApi() 跑。
 
-import type { AgentDeckApi, AgentDeckErrorData, AgentKind, BoardState, CreateWorkspaceRequest, ErrorCode, FrameNode, OpenWindowRequest, ProjectId, ProjectPatch, Rect, Settings, Size, TerminalId, TerminalWindowData, Unsubscribe, Viewport, WindowCommand, WindowGroupId, WindowGroupMemberRequest, WindowId, WindowNode, WindowStatusBadge, Workspace, WorkspaceId } from '@agentdeck/contracts';
+import type { AgentDeckApi, AgentDeckErrorData, AgentKind, BoardState, LaunchMode, CreateWorkspaceRequest, ErrorCode, FrameNode, OpenWindowRequest, ProjectId, ProjectPatch, Rect, Settings, Size, TerminalId, TerminalWindowData, Unsubscribe, Viewport, WindowCommand, WindowGroupId, WindowGroupMemberRequest, WindowId, WindowNode, WindowStatusBadge, Workspace, WorkspaceId } from '@agentdeck/contracts';
 import { TITLE_BAR_HEIGHT, resizeRect, type ResizeEdge } from '@agentdeck/ui-window-shell';
 import { isSummarySize, windowRegistry, type WindowDefinition, type WindowRegistry } from './registry.ts';
 import { ApprovalsModel } from './approvals/model.ts';
@@ -11,6 +11,7 @@ import { nextWaiting, prevWaiting, summarize, statusOf, type AttentionSummary } 
 import { createAutosave, type Autosave } from './model/autosave.ts';
 import { GAP, clampFrameMove, findFreeSpot, inflate, pushFrames, separateFrames, tooClose } from './model/avoid.ts';
 import { decideDrop, dropTargetAt } from './model/drop.ts';
+import { forkCheck, type ForkCheck } from './model/fork.ts';
 import {
   FRAME_HEADER,
   FRAME_MIN,
@@ -1135,7 +1136,10 @@ export class BoardController {
     return id;
   }
 
-  /** 新建终端（New terminal ▸、⌘N、框里的初始化命令、W5 的 Open new）。框里的目录是工作区目录，散放时是主目录。 */
+  /**
+   * 新建终端（New terminal ▸、⌘N、框里的初始化命令、W5 的 Open new、X4 的 Fork）。框里的目录是工作区目录，散放时是主目录。
+   * mode 默认新对话；X4 传 fork（agent 自己把原来的对话复制成新会话，原来的不动）。
+   */
   async newTerminal(opts: {
     agent: AgentKind;
     workspaceId: WorkspaceId | null;
@@ -1145,6 +1149,7 @@ export class BoardController {
     command?: string;
     cwd?: string;
     title?: string | null;
+    mode?: LaunchMode;
   }): Promise<WindowId | null> {
     const def = this.registry.get(TERMINAL_TYPE) as WindowDefinition<TerminalWindowData> | undefined;
     if (!def) {
@@ -1159,7 +1164,7 @@ export class BoardController {
         agent: opts.agent,
         cwd,
         workspaceId: opts.workspaceId,
-        mode: { kind: 'new' },
+        mode: opts.mode ?? { kind: 'new' },
         size: estimateTermSize(this.contentSizeOf(rect)),
         ...(opts.command !== undefined ? { command: opts.command } : {}),
       });
@@ -1576,11 +1581,42 @@ export class BoardController {
     return this.newTerminal({ agent: data.agent, workspaceId: to, at: pos, ...(command ? { command } : {}) });
   }
 
-  /** W5 提示的那句话。 */
+  /** W5 提示的那句话。能 Fork 时（X4）一起问。 */
   moveTerminalMessage(windowId: WindowId, to: WorkspaceId): string {
     const w = this.windowById(windowId);
     const agent = w && isTerminal(w) ? (w.data as TerminalWindowData).agent : null;
-    return `This terminal runs in ${this.workspaceTitle(w?.workspaceId ?? null)} and can’t change folders. Open a new ${agentNoun(agent)} in ${this.workspaceTitle(to)}?`;
+    const head = `This terminal runs in ${this.workspaceTitle(w?.workspaceId ?? null)} and can’t change folders.`;
+    if (this.forkCheckOf(windowId)?.ok) {
+      return `${head} Open a new ${agentNoun(agent)} in ${this.workspaceTitle(to)}, or fork this conversation there? The original keeps running.`;
+    }
+    return `${head} Open a new ${agentNoun(agent)} in ${this.workspaceTitle(to)}?`;
+  }
+
+  /** X4：这个终端能不能 Fork、不能时的原因。null：不是 agent 终端，不提供 Fork。 */
+  forkCheckOf(windowId: WindowId): ForkCheck | null {
+    const w = this.windowById(windowId);
+    return w ? forkCheck(w, this.state.agents, this.state.statuses) : null;
+  }
+
+  /**
+   * X4 · Fork conversation into…（W5 对话框的 Fork、终端标题栏菜单）：在目标框里开一个同款 agent，
+   * 带着这个终端的对话（claude --resume <id> --fork-session、codex fork <id>、pi / omp --fork）。原来的终端不动。
+   * at 照 Open new：松手的位置在目标框里就放那里，否则按平常的规则放进框里。不能 Fork 时提示原因，不开终端。
+   */
+  async forkInWorkspace(windowId: WindowId, to: WorkspaceId, at: Point | null): Promise<WindowId | null> {
+    this.set({ dialog: null });
+    const w = this.windowById(windowId);
+    if (!w || !isTerminal(w)) return null;
+    const check = forkCheck(w, this.state.agents, this.state.statuses);
+    if (!check) return null;
+    if (!check.ok) {
+      this.notify(check.reason);
+      return null;
+    }
+    const data = w.data as TerminalWindowData;
+    const frame = this.frameOf(to);
+    const pos = at && frame && containsPoint(frame.rect, at) ? at : null;
+    return this.newTerminal({ agent: data.agent, workspaceId: to, at: pos, mode: { kind: 'fork', sessionId: check.sessionId } });
   }
 
   // ---- 工作区 ----

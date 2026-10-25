@@ -1,4 +1,4 @@
-// 白板的对话框：新建工作区（W3）、删除工作区（W4 的界面部分）、终端不能换框（W5）、停止终端、改名、恢复上次会话（X6）。
+// 白板的对话框：新建工作区（W3）、删除工作区（W4 的界面部分）、终端不能换框（W5，X4 加了 Fork）、停止终端、改名、恢复上次会话（X6）。
 // Settings 在 SettingsDialog.tsx。
 
 import { useEffect, useRef, useState } from 'react';
@@ -293,15 +293,30 @@ export function listNames(names: readonly string[]): string {
 
 function MoveTerminalDialog({ dialog }: { dialog: Of<'move-terminal'> }) {
   const c = useController();
+  // X4：agent 终端多一个 Fork（带着对话去新目录）；不能 Fork 时灰掉，原因写在下面。shell、自定义命令没有这个按钮
+  useBoardState((s) => s.agents);
+  useBoardState((s) => s.statuses);
+  const fork = c.forkCheckOf(dialog.windowId);
+  const target = c.workspaceTitle(dialog.to);
   return (
     <Dialog
       open
       title="Terminals can’t change folders"
-      width={420}
+      width={fork ? 460 : 420}
       onClose={() => c.closeDialog()}
       actions={
         <>
           <Button onClick={() => c.closeDialog()}>Cancel</Button>
+          {fork ? (
+            <Button
+              disabled={!fork.ok}
+              title={fork.ok ? `Fork conversation into ${target}` : fork.reason}
+              aria-label={`Fork conversation into ${target}`}
+              onClick={() => void c.forkInWorkspace(dialog.windowId, dialog.to, dialog.at)}
+            >
+              Fork
+            </Button>
+          ) : null}
           <Button variant="primary" data-autofocus onClick={() => void c.openInWorkspace(dialog.windowId, dialog.to, dialog.at)}>
             Open new
           </Button>
@@ -309,6 +324,7 @@ function MoveTerminalDialog({ dialog }: { dialog: Of<'move-terminal'> }) {
       }
     >
       <DialogText>{c.moveTerminalMessage(dialog.windowId, dialog.to)}</DialogText>
+      {fork && !fork.ok ? <DialogText tone="muted">{`Can’t fork: ${fork.reason}.`}</DialogText> : null}
     </Dialog>
   );
 }
