@@ -286,7 +286,7 @@
 
 ### DR-15 先定接口再并发，接口第一版不够用
 
-状态：已解决 · 出处：提交 b24a0ca；tools/fakes/CONTRACT_NOTES.md · 旧编号 D1
+状态：已解决 · 出处：提交 68595fd；tools/fakes/CONTRACT_NOTES.md · 旧编号 D1
 
 - **原来以为**：contracts 0.1.0 写完，各条线照着做就行。
 - **实际情况**：写假实现时发现 10 处不够或说得不清：没法恢复 stash、没法删分支（回滚会留下分支）、改了基础分支 status 拿不到、开 agent 不带终端大小（首屏会跳）、删除有改动的工作区没法“确认后强删”、kill 后发不发 exit、attach 后先不先给整屏等。
@@ -298,7 +298,7 @@
 
 ### DR-16 窗口组件的 props 漏在接口外面
 
-状态：已解决 · 出处：提交 120559a · 旧编号 D2
+状态：已解决 · 出处：提交 dddf94c · 旧编号 D2
 
 - **原来以为**：白板、终端、网页各做各的，组装时再对。
 - **实际情况**：终端（线 1）和网页（线 5）是放进白板（线 2）里的窗口，三条线同时开发，如果不先定“白板给窗口什么”，每条线都会自己发明一套。
@@ -310,7 +310,7 @@
 
 ### DR-17 每次合并 pnpm-lock.yaml 都冲突
 
-状态：已解决 · 出处：第 1 波合并（cbecb00…f3ba92e） · 旧编号 D3
+状态：已解决 · 出处：第 1 波合并（91aa5d3…67b652e） · 旧编号 D3
 
 - **原来以为**：各条线只改自己的目录，合并不会冲突。
 - **实际情况**：几乎每条线都加依赖，锁文件是全仓库共用的一个文件。
@@ -322,7 +322,7 @@
 
 ### DR-18 检查规则比部分代码晚到
 
-状态：已解决 · 出处：提交 77e8373、2ce7166 · 旧编号 D4
+状态：已解决 · 出处：提交 b858371、81301d0 · 旧编号 D4
 
 - **原来以为**：第 1 波各包同时开始，CI 规则和代码一起合进来就行。
 - **实际情况**：F6 先写完，F5 的 lint 规则后到，合并后才发现 import type 不合规；F4 的 vite.config.ts 用了 node 内置模块，被“界面不能用 node 模块”的规则误伤；ESLint 还扫到了并行 session 的 worktree 目录。
@@ -334,7 +334,7 @@
 
 ### DR-19 并行开发需要正式的仓库目录
 
-状态：已解决 · 出处：提交 86afd45 · 旧编号 D5
+状态：已解决 · 出处：提交 5590e97 · 旧编号 D5
 
 - **原来以为**：在临时目录里先写，后面再说。
 - **实际情况**：并行 session 要各自的 git worktree，临时目录没有 git，而且会被清理。
@@ -346,7 +346,7 @@
 
 ### DR-20 第 2 波又收到约 30 条接口意见
 
-状态：进行中 · 出处：提交 a913dcf、1aa89fe · 旧编号 D6
+状态：进行中 · 出处：提交 68024ca、965452f · 旧编号 D6
 
 相关：IS-17、IS-18
 
@@ -364,7 +364,7 @@
 
 ### DR-21 跨 contextBridge 的错误会丢掉 code
 
-状态：已解决 · 出处：F3 提交 b9686b4、eec289e · 旧编号 E1
+状态：已解决 · 出处：F3 提交 614de9c、6399b8a · 旧编号 E1
 
 - **原来以为**：主进程抛的 AgentDeckError 能原样传到界面。
 - **实际情况**：Electron 的 contextBridge 只保留 Error 的 message，自定义字段（code、detail）都会丢，界面拿到的是 code 为 undefined 的普通 Error。
@@ -432,7 +432,7 @@
 
 ### DR-26 dependency-cruiser 命令行拒绝在 Node 25 上运行
 
-状态：已解决 · 出处：F5 提交 f096a64 · 旧编号 E6
+状态：已解决 · 出处：F5 提交 d3f6425 · 旧编号 E6
 
 - **原来以为**：用 depcruise 命令检查模块边界。
 - **实际情况**：本机 Node 是 25（奇数版本），depcruise 命令行直接拒绝运行。
@@ -622,7 +622,7 @@
 
 ### DR-40 主仓库搬家后，修 worktree 要把每个路径传给 git
 
-状态：已解决 · 出处：提交 1aa89fe · 旧编号 E20
+状态：已解决 · 出处：提交 965452f · 旧编号 E20
 
 - **原来以为**：git worktree repair 在主仓库里跑一下就行。
 - **实际情况**：写 repairWorktrees 的测试时发现：不带参数时只修主仓库这一侧的记录，worktree 里的 .git 文件还指向旧位置，打不开。
@@ -648,7 +648,7 @@
 
 ### DR-45 xterm 的两个默认值和 tmux 不合：回滚为 0 会崩，Unicode 6 宽度会错位
 
-状态：已解决 · 出处：提交 3ceabfb；packages/ui/widgets/terminal/test/xterm-buffer.test.ts · 旧编号 —
+状态：已解决 · 出处：提交 235eb59；packages/ui/widgets/terminal/test/xterm-buffer.test.ts · 旧编号 —
 
 相关：TC-25、IS-39、IS-40
 
@@ -704,7 +704,7 @@
 
 ### DR-52 白板的吸附、对齐线和不重叠：借鉴成熟的画布工具
 
-状态：已解决 · 出处：MVP v2 V3（f0c060f），packages/ui/canvas/src/model/snap.ts、avoid.ts · 旧编号 —
+状态：已解决 · 出处：MVP v2 V3（f05e824），packages/ui/canvas/src/model/snap.ts、avoid.ts · 旧编号 —
 
 相关：TC-31、IS-53、IS-54
 
@@ -722,7 +722,7 @@
 
 ### DR-49 多个窗口同时在等你时，⌘J 怎么跳
 
-状态：已解决 · 出处：已做：feat/S3-jump-waiting，合进 main e9b3673（按默认：批准和回复不分先后、⌘⇧] 切所有窗口、不做“回到上一个窗口”） · 旧编号 —
+状态：已解决 · 出处：已做：feat/S3-jump-waiting，合进 main 45d4b22（按默认：批准和回复不分先后、⌘⇧] 切所有窗口、不做“回到上一个窗口”） · 旧编号 —
 
 相关：TC-05、IS-45
 
@@ -736,7 +736,7 @@
 
 ### DR-50 Settings：用系统程序打开 settings.json 不可靠
 
-状态：已解决 · 出处：已做：claude/x12-settings-dialog-d59137，合进 main e9b3673（放在 canvas、先做 Projects 和 General、settings.json 用编辑器打开） · 旧编号 —
+状态：已解决 · 出处：已做：claude/x12-settings-dialog-d59137，合进 main 45d4b22（放在 canvas、先做 Projects 和 General、settings.json 用编辑器打开） · 旧编号 —
 
 相关：TC-15、IS-13、IS-47
 
@@ -750,7 +750,7 @@
 
 ### DR-51 检测用户装的其他 agent（pi、omp）
 
-状态：已解决 · 出处：已做：claude/x13-known-agents-0267bf，合进 main e9b3673（两步都做了；pi、omp 用临时 HOME 和假模型实测过事件，omp 的“允许一次”按键没核对，没有 Approve all） · 旧编号 —
+状态：已解决 · 出处：已做：claude/x13-known-agents-0267bf，合进 main 45d4b22（两步都做了；pi、omp 用临时 HOME 和假模型实测过事件，omp 的“允许一次”按键没核对，没有 Approve all） · 旧编号 —
 
 相关：TC-17、IS-46、IS-21
 

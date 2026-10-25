@@ -1,6 +1,6 @@
 # 线 3 对 contracts 0.1.2 的意见
 
-> **已处理（2026-10-23，contracts 0.1.3，提交 a913dcf）**：第 2、3、4、5、6 条加进了 contracts（`adoptPath`、`branches({ remote })`、`StashInfo.byAgentDeck`、`StatusSnapshot.workspaceId`、`repairWorktrees`），第 1、7–11 条写进了注释。git-service 已实现 `repairWorktrees`（把每个 worktree 路径传给 `git worktree repair`）和 `byAgentDeck`；远端分支、`adoptPath`、locate 调 repair、面板改用 `byAgentDeck` 待线 3 跟进。
+> **已处理（2026-10-23，contracts 0.1.3，提交 68024ca）**：第 2、3、4、5、6 条加进了 contracts（`adoptPath`、`branches({ remote })`、`StashInfo.byAgentDeck`、`StatusSnapshot.workspaceId`、`repairWorktrees`），第 1、7–11 条写进了注释。git-service 已实现 `repairWorktrees`（把每个 worktree 路径传给 `git worktree repair`）和 `byAgentDeck`；远端分支、`adoptPath`、locate 调 repair、面板改用 `byAgentDeck` 待线 3 跟进。
 
 写 git-service、workspace-service、scm 面板时发现的。没有改 `packages/contracts`，交给集成负责人决定。线 3 三个包共用这一份。
 

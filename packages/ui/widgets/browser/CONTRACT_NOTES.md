@@ -1,6 +1,6 @@
 # 对 contracts 的意见（线 5 · 网页窗口）
 
-> **已处理（2026-10-23，contracts 0.1.3，提交 a913dcf）**：第 1、2 条加进 `BrowserWindowData`（`reloadToken`、`openedBy`），复用时浅合并 data 写进了 `OpenWindowRequest` 注释；第 3 条选了 `titleBar: 'none'` + `data-window-drag` + `toggleMaximize()`；第 4 条加了 `TerminalHost.recentLinks`（线 1 实现）；第 5 条加了 `prepare(url, { mode })`；第 6、7 条写进了注释。网页窗口去掉本地的 `DataWithToken`、改成自己画标题栏待线 5 跟进（白板支持 `titleBar: 'none'` 待线 2）。
+> **已处理（2026-10-23，contracts 0.1.3，提交 68024ca）**：第 1、2 条加进 `BrowserWindowData`（`reloadToken`、`openedBy`），复用时浅合并 data 写进了 `OpenWindowRequest` 注释；第 3 条选了 `titleBar: 'none'` + `data-window-drag` + `toggleMaximize()`；第 4 条加了 `TerminalHost.recentLinks`（线 1 实现）；第 5 条加了 `prepare(url, { mode })`；第 6、7 条写进了注释。网页窗口去掉本地的 `DataWithToken`、改成自己画标题栏待线 5 跟进（白板支持 `titleBar: 'none'` 待线 2）。
 
 做 U1 U2 U3 时发现 contracts 0.1.2 不够用或没说清楚的地方。这里没有改 contracts，由集成负责人决定。前 3 条影响别的线。
 

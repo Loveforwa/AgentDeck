@@ -22,22 +22,22 @@ function commit(hash: string, subject: string, parents: string[], minutesAgo: nu
 export function demoGraph(currentBranch: string | null, head: string | null): CommitInfo[] {
   const onLogin = currentBranch === 'feat/login';
   const list = [
-    commit('a1b2c3d', 'Add login form', ['b095785'], 2, [{ name: 'feat/login', kind: 'branch', ...(onLogin ? { current: true } : {}) }]),
-    commit('e7a03e6', 'Plan round 2 and the next phase', ['e9b3673'], 5, [
+    commit('a1b2c3d', 'Add login form', ['7771e36'], 2, [{ name: 'feat/login', kind: 'branch', ...(onLogin ? { current: true } : {}) }]),
+    commit('443e7d4', 'Plan round 2 and the next phase', ['45d4b22'], 5, [
       { name: 'main', kind: 'branch', ...(currentBranch === 'main' ? { current: true } : {}) },
       { name: 'origin/main', kind: 'remote' },
     ]),
-    commit('e9b3673', 'Merge feat/M1-mcp', ['2415bc5', 'b095785'], 60),
-    commit('b095785', 'M1: Clawd, a pixel mascot', ['ada4077'], 70, [{ name: 'feat/M1-mcp', kind: 'branch' }]),
-    commit('2415bc5', 'Merge x13-known-agents', ['abf2dfb', 'd41fcea'], 120),
-    commit('d41fcea', 'X13: list agents by label', ['abf2dfb'], 130, [{ name: 'x13-known-agents', kind: 'branch' }]),
-    commit('ada4077', 'M1: start the MCP in the main process', ['f4a796a'], 180),
-    commit('abf2dfb', 'Board: center the window on restore', ['f4a796a'], 190),
-    commit('f4a796a', 'M1: packages/mcp-server', ['6d44acb'], 240, [{ name: 'v0.1', kind: 'tag' }]),
-    commit('6d44acb', 'docs: one numbering scheme', ['0c0ffee'], 300),
+    commit('45d4b22', 'Merge feat/M1-mcp', ['c0e5f66', '7771e36'], 60),
+    commit('7771e36', 'M1: Clawd, a pixel mascot', ['085ac71'], 70, [{ name: 'feat/M1-mcp', kind: 'branch' }]),
+    commit('c0e5f66', 'Merge x13-known-agents', ['9855a37', 'c0d317f'], 120),
+    commit('c0d317f', 'X13: list agents by label', ['9855a37'], 130, [{ name: 'x13-known-agents', kind: 'branch' }]),
+    commit('085ac71', 'M1: start the MCP in the main process', ['39d4653'], 180),
+    commit('9855a37', 'Board: center the window on restore', ['39d4653'], 190),
+    commit('39d4653', 'M1: packages/mcp-server', ['225ec4d'], 240, [{ name: 'v0.1', kind: 'tag' }]),
+    commit('225ec4d', 'docs: one numbering scheme', ['0c0ffee'], 300),
     commit('0c0ffee', 'Initial commit', [], 600),
   ];
-  const base = new Set(['e7a03e6', 'e9b3673', 'b095785', '2415bc5', 'd41fcea', 'ada4077', 'abf2dfb', 'f4a796a', '6d44acb', '0c0ffee']);
+  const base = new Set(['443e7d4', '45d4b22', '7771e36', 'c0e5f66', 'c0d317f', '085ac71', '9855a37', '39d4653', '225ec4d', '0c0ffee']);
   // HEAD 那条换成假实现 status 给的哈希，面板才画实心点
   const tip = list.find((c) => c.refs?.some((r) => r.current));
   const swap = (h: string) => (head && tip && h === tip.hash ? head : h);
@@ -56,7 +56,7 @@ export function demoLog(currentBranch: string | null, head: string | null, opts:
     const c = all.find((x) => x.hash === opts.commit);
     return c ? [{ ...c, files: demoFiles(c) }] : [];
   }
-  if (opts.graph?.branches) return all.filter((c) => !['d41fcea', '2415bc5'].includes(c.shortHash) || c.onBase);
+  if (opts.graph?.branches) return all.filter((c) => !['c0d317f', 'c0e5f66'].includes(c.shortHash) || c.onBase);
   return all;
 }
 

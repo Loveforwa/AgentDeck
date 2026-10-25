@@ -158,37 +158,37 @@ a:focus-visible { outline: 2px solid var(--attention); outline-offset: 2px }
   <header><span class="mono eid">DR-15</span><h4>先定接口再并发，接口第一版不够用</h4><span class="st st-done">已解决</span></header>
   <div class="row two"><div><span class="label">原来以为</span><p>contracts 0.1.0 写完，各条线照着做就行。</p></div><div><span class="label">实际情况</span><p>写假实现时发现 10 处不够或说得不清：没法恢复 stash、没法删分支（回滚会留下分支）、改了基础分支 status 拿不到、开 agent 不带终端大小（首屏会跳）、删除有改动的工作区没法“确认后强删”、kill 后发不发 exit、attach 后先不先给整屏等。</p></div></div>
   <div class="row one"><div><span class="label">决策</span><p>在各线开工前出 0.1.1，全部只加不改；BranchChoice.from 放宽为可选（不填时每个仓库用自己的基础分支）；kill 后发 terminal.exit（128 + 信号）。</p></div></div><div class="row two"><div class="pro"><span class="label">好处</span><p>问题在写真实实现之前就暴露并统一了，5 条线不会各猜各的。</p></div><div class="con"><span class="label">代价</span><p>多一次版本号和假实现返工；以后各线还会发现新的，需要有人收集合并。</p></div></div>
-  <p class="where">出处：提交 b24a0ca；tools/fakes/CONTRACT_NOTES.md · 旧编号 D1</p>
+  <p class="where">出处：提交 68595fd；tools/fakes/CONTRACT_NOTES.md · 旧编号 D1</p>
 </article><article id="dr-16" class="entry">
   <header><span class="mono eid">DR-16</span><h4>窗口组件的 props 漏在接口外面</h4><span class="st st-done">已解决</span></header>
   <div class="row two"><div><span class="label">原来以为</span><p>白板、终端、网页各做各的，组装时再对。</p></div><div><span class="label">实际情况</span><p>终端（线 1）和网页（线 5）是放进白板（线 2）里的窗口，三条线同时开发，如果不先定“白板给窗口什么”，每条线都会自己发明一套。</p></div></div>
   <div class="row one"><div><span class="label">决策</span><p>contracts 0.1.2 加 WindowComponentProps：所在工作区、聚焦、内容区大小、摘要卡、可见性，以及 updateData、setStatus、openWindow 等回调；线 2 先单独提交注册表。</p></div></div><div class="row two"><div class="pro"><span class="label">好处</span><p>三条线并发不用等彼此。</p></div><div class="con"><span class="label">代价</span><p>接口里多了一块 UI 相关的约定，以后改它要三条线一起配合。</p></div></div>
-  <p class="where">出处：提交 120559a · 旧编号 D2</p>
+  <p class="where">出处：提交 dddf94c · 旧编号 D2</p>
 </article><article id="dr-17" class="entry">
   <header><span class="mono eid">DR-17</span><h4>每次合并 pnpm-lock.yaml 都冲突</h4><span class="st st-done">已解决</span></header>
   <div class="row two"><div><span class="label">原来以为</span><p>各条线只改自己的目录，合并不会冲突。</p></div><div><span class="label">实际情况</span><p>几乎每条线都加依赖，锁文件是全仓库共用的一个文件。</p></div></div>
   <div class="row one"><div><span class="label">决策</span><p>合并时先取 main 的锁文件，再 pnpm install 重新生成，最后用 --frozen-lockfile 确认一致。</p></div></div><div class="row two"><div class="pro"><span class="label">好处</span><p>不用人工比对锁文件；结果和直接安装一致。</p></div><div class="con"><span class="label">代价</span><p>每次合并多一步；两条线加了同一个依赖的不同版本时要人工选。</p></div></div>
-  <p class="where">出处：第 1 波合并（cbecb00…f3ba92e） · 旧编号 D3</p>
+  <p class="where">出处：第 1 波合并（91aa5d3…67b652e） · 旧编号 D3</p>
 </article><article id="dr-18" class="entry">
   <header><span class="mono eid">DR-18</span><h4>检查规则比部分代码晚到</h4><span class="st st-done">已解决</span></header>
   <div class="row two"><div><span class="label">原来以为</span><p>第 1 波各包同时开始，CI 规则和代码一起合进来就行。</p></div><div><span class="label">实际情况</span><p>F6 先写完，F5 的 lint 规则后到，合并后才发现 import type 不合规；F4 的 vite.config.ts 用了 node 内置模块，被“界面不能用 node 模块”的规则误伤；ESLint 还扫到了并行 session 的 worktree 目录。</p></div></div>
   <div class="row one"><div><span class="label">决策</span><p>合并后统一修：eslint --fix；边界规则放过构建配置文件并加样例；ESLint 和 .gitignore 忽略 .claude/worktrees。</p></div></div><div class="row two"><div class="pro"><span class="label">好处</span><p>规则和代码在 main 上一致，之后的线一开始就受约束。</p></div><div class="con"><span class="label">代价</span><p>第 1 波合并时多了一次修补提交。教训：检查规则最好在第 0 波就合进去。</p></div></div>
-  <p class="where">出处：提交 77e8373、2ce7166 · 旧编号 D4</p>
+  <p class="where">出处：提交 b858371、81301d0 · 旧编号 D4</p>
 </article><article id="dr-19" class="entry">
   <header><span class="mono eid">DR-19</span><h4>并行开发需要正式的仓库目录</h4><span class="st st-done">已解决</span></header>
   <div class="row two"><div><span class="label">原来以为</span><p>在临时目录里先写，后面再说。</p></div><div><span class="label">实际情况</span><p>并行 session 要各自的 git worktree，临时目录没有 git，而且会被清理。</p></div></div>
   <div class="row one"><div><span class="label">决策</span><p>移到 /Users/liu/2026/agenduck，git init，第一次提交后再开第 1 波。</p></div></div><div class="row two"><div class="pro"><span class="label">好处</span><p>每条线一个分支，互不干扰，能逐个检查、合并。</p></div><div class="con"><span class="label">代价</span><p>代码还没推到 GitHub，CI 没在云端跑过（见 DR-29）。</p></div></div>
-  <p class="where">出处：提交 86afd45 · 旧编号 D5</p>
+  <p class="where">出处：提交 5590e97 · 旧编号 D5</p>
 </article><article id="dr-20" class="entry">
   <header><span class="mono eid">DR-20</span><h4>第 2 波又收到约 30 条接口意见</h4><span class="st st-partial">进行中</span></header>
   <div class="row two"><div><span class="label">原来以为</span><p>0.1.1 和 0.1.2 之后接口够用了。</p></div><div><span class="label">实际情况</span><p>4 条线各自发现了不够用的地方：白板只能按 type 写特例、白板没法给窗口发命令、复用窗口重启后失效、拿不到主目录、远端分支、接回已有 worktree、启动前不知道终端 id、codex 会话 id、拒绝批准没有钩子、网页窗口的标题栏等。</p></div></div>
   <div class="row one"><div><span class="label">决策</span><p>出 contracts 0.1.3，全部只加不改；能直接接上的（命令通道、repairWorktrees、stash 来源、假实现）当场改完，其余在各包的 CONTRACT_NOTES.md 里标为“待某条线跟进”。</p></div></div><div class="row two"><div class="pro"><span class="label">好处</span><p>线 1 一开始就用 0.1.3，不用再改一轮。</p></div><div class="con"><span class="label">代价</span><p>有一批新字段已经在接口里、但实现还没用上，要各条线再跟进一次。</p></div></div>
-  <p class="where">相关 <span class="ref">IS-17</span> <span class="ref">IS-18</span> · 出处：提交 a913dcf、1aa89fe · 旧编号 D6</p>
+  <p class="where">相关 <span class="ref">IS-17</span> <span class="ref">IS-18</span> · 出处：提交 68024ca、965452f · 旧编号 D6</p>
 </article></section><section class="stage" id="stage-e"><div class="stage-head"><h2>实现中的技术问题</h2><p>真正写代码、跑真实 agent 时撞到的</p></div><article id="dr-21" class="entry">
   <header><span class="mono eid">DR-21</span><h4>跨 contextBridge 的错误会丢掉 code</h4><span class="st st-done">已解决</span></header>
   <div class="row two"><div><span class="label">原来以为</span><p>主进程抛的 AgentDeckError 能原样传到界面。</p></div><div><span class="label">实际情况</span><p>Electron 的 contextBridge 只保留 Error 的 message，自定义字段（code、detail）都会丢，界面拿到的是 code 为 undefined 的普通 Error。</p></div></div>
   <div class="row one"><div><span class="label">决策</span><p>preload 不抛 Error，改成传普通对象，再在页面侧还原成 AgentDeckError；加了专门覆盖这一点的测试。</p></div></div><div class="row two"><div class="pro"><span class="label">好处</span><p>界面能按错误码处理（例如 dirty-worktree 再确认一次）。</p></div><div class="con"><span class="label">代价</span><p>IPC 层多一层包装，别处如果绕过它直接用 ipcRenderer 就会再踩一次。</p></div></div>
-  <p class="where">出处：F3 提交 b9686b4、eec289e · 旧编号 E1</p>
+  <p class="where">出处：F3 提交 614de9c、6399b8a · 旧编号 E1</p>
 </article><article id="dr-22" class="entry">
   <header><span class="mono eid">DR-22</span><h4>claude 在 tmux 里自己降到 256 色</h4><span class="st st-partial">进行中</span></header>
   <div class="row two"><div><span class="label">原来以为</span><p>tmux 配好真彩色，颜色就和直接运行一样。</p></div><div><span class="label">实际情况</span><p>Claude Code 检测到 $TMUX 时会故意降到 256 色，除非设置 CLAUDE_CODE_TMUX_TRUECOLOR。</p></div></div>
@@ -213,7 +213,7 @@ a:focus-visible { outline: 2px solid var(--attention); outline-offset: 2px }
   <header><span class="mono eid">DR-26</span><h4>dependency-cruiser 命令行拒绝在 Node 25 上运行</h4><span class="st st-done">已解决</span></header>
   <div class="row two"><div><span class="label">原来以为</span><p>用 depcruise 命令检查模块边界。</p></div><div><span class="label">实际情况</span><p>本机 Node 是 25（奇数版本），depcruise 命令行直接拒绝运行。</p></div></div>
   <div class="row one"><div><span class="label">决策</span><p>改成在 scripts/boundaries.mjs 里直接调 dependency-cruiser 的 API。</p></div></div><div class="row two"><div class="pro"><span class="label">好处</span><p>不用降级 Node；规则照样生效，每条都有故意违规的样例证明。</p></div><div class="con"><span class="label">代价</span><p>多一个自己维护的脚本；dependency-cruiser 的 API 变了要跟着改。</p></div></div>
-  <p class="where">出处：F5 提交 f096a64 · 旧编号 E6</p>
+  <p class="where">出处：F5 提交 d3f6425 · 旧编号 E6</p>
 </article><article id="dr-27" class="entry">
   <header><span class="mono eid">DR-27</span><h4>SQLite 原生模块要按 Electron 重新编译</h4><span class="st st-done">已解决</span></header>
   <div class="row two"><div><span class="label">原来以为</span><p>better-sqlite3 装上就能在应用里用。</p></div><div><span class="label">实际情况</span><p>它是原生模块，Node 和 Electron 的 ABI 不同，在 Node 里测试通过不代表在 Electron 里能加载。</p></div></div>
@@ -283,7 +283,7 @@ a:focus-visible { outline: 2px solid var(--attention); outline-offset: 2px }
   <header><span class="mono eid">DR-40</span><h4>主仓库搬家后，修 worktree 要把每个路径传给 git</h4><span class="st st-done">已解决</span></header>
   <div class="row two"><div><span class="label">原来以为</span><p>git worktree repair 在主仓库里跑一下就行。</p></div><div><span class="label">实际情况</span><p>写 repairWorktrees 的测试时发现：不带参数时只修主仓库这一侧的记录，worktree 里的 .git 文件还指向旧位置，打不开。</p></div></div>
   <div class="row one"><div><span class="label">决策</span><p>repairWorktrees 先列出所有 worktree，再把它们的路径都传给 git worktree repair；加了真实仓库搬家的测试。</p></div></div><div class="row two"><div class="pro"><span class="label">好处</span><p>ProjectService.locate 之后已有工作区能直接用。</p></div><div class="con"><span class="label">代价</span><p>worktree 本身也被挪走的情况仍然修不了，只能重新 locate。</p></div></div>
-  <p class="where">出处：提交 1aa89fe · 旧编号 E20</p>
+  <p class="where">出处：提交 965452f · 旧编号 E20</p>
 </article><article id="dr-41" class="entry">
   <header><span class="mono eid">DR-41</span><h4>在 AgentDeck 里管理它自己的仓库，切一下分支应用就坏了</h4><span class="st st-partial">进行中</span></header>
   <div class="row two"><div><span class="label">原来以为</span><p>面板切分支只影响那个工作区里的 agent；空闲的终端不会受影响，所以不用确认。</p></div><div><span class="label">实际情况</span><p>2026-10-24 验收时，在 agenduck 自己的主目录工作区里单击了一个遗留分支：终端都是 Idle，面板没确认就切了。AgentDeck 正是从这个目录用 pnpm dev 跑的，开发服务器立刻热更新成旧代码，界面变成早期的自检页并报错。</p></div></div>
@@ -293,7 +293,7 @@ a:focus-visible { outline: 2px solid var(--attention); outline-offset: 2px }
   <header><span class="mono eid">DR-45</span><h4>xterm 的两个默认值和 tmux 不合：回滚为 0 会崩，Unicode 6 宽度会错位</h4><span class="st st-done">已解决</span></header>
   <div class="row two"><div><span class="label">原来以为</span><p>tmux 自己管回滚，xterm 的回滚设成 0 就行；xterm 默认的字符宽度够用。</p></div><div><span class="label">实际情况</span><p>2026-10-24 验收时，一个 claude 终端在对话中改窗口大小后变空白（loadCell / isWrapped）。headless 版 xterm 加固定种子模糊测试复现：scrollback 为 0 时改大小，缓冲区会少行。另外 xterm 默认按 Unicode 6 算宽度，emoji 算一格，而 tmux 3.6a 算两格，回答里 ✅ ❌ 后面的字整体错一列。</p></div></div>
   <div class="row one"><div><span class="label">决策</span><p>scrollback 改成 1000（固定种子 1、18、37 在 0 时出事、在 1000 时不出事）；加 @xterm/addon-unicode11 并切到 Unicode 11，对 tmux 实测 35 个 claude 常用符号的宽度，全部吻合。两件事都写成了回归测试。</p></div></div><div class="row two"><div class="pro"><span class="label">好处</span><p>终端不会因为改大小崩掉；emoji 和中文的排版和系统终端一致。</p></div><div class="con"><span class="label">代价</span><p>每个终端多占一点内存（1000 行回滚）；以后 tmux 或 xterm 升级改了宽度表，要重新对一遍（测试会提醒）。</p></div></div>
-  <p class="where">相关 <span class="ref">TC-25</span> <span class="ref">IS-39</span> <span class="ref">IS-40</span> · 出处：提交 3ceabfb；packages/ui/widgets/terminal/test/xterm-buffer.test.ts · 旧编号 —</p>
+  <p class="where">相关 <span class="ref">TC-25</span> <span class="ref">IS-39</span> <span class="ref">IS-40</span> · 出处：提交 235eb59；packages/ui/widgets/terminal/test/xterm-buffer.test.ts · 旧编号 —</p>
 </article><article id="dr-46" class="entry">
   <header><span class="mono eid">DR-46</span><h4>claude 的颜色主题不能用用户的全局设置</h4><span class="st st-done">已解决</span></header>
   <div class="row two"><div><span class="label">原来以为</span><p>终端背景色交给 AgentDeck，claude 自己会配合；用户的 claude 配置不用管。</p></div><div><span class="label">实际情况</span><p>claude 的 theme 默认不是 auto：用户 ~/.claude.json 里是 light，claude 就不看背景色，在深色白板上用黑字。实测（2.1.291）：--settings 里的 theme 能盖过全局配置；auto 时 claude 发 OSC 11 问背景色，并订阅深浅色变化。tmux 3.6a attach 时对外层终端开 ?2031，收到 CSI ? 997 n 会转给程序。</p></div></div>
@@ -313,22 +313,22 @@ a:focus-visible { outline: 2px solid var(--attention); outline-offset: 2px }
   <header><span class="mono eid">DR-52</span><h4>白板的吸附、对齐线和不重叠：借鉴成熟的画布工具</h4><span class="st st-done">已解决</span></header>
   <div class="row two"><div><span class="label">原来以为</span><p>窗口可以随便摆，用户自己会排好；不需要对齐和避让。</p></div><div><span class="label">实际情况</span><p>第一轮验收里窗口、工作区框互相盖住，框重叠后还把终端误判成要换框（IS-53、IS-54）。调研（凭已有知识，没联网核实）：Figma 的吸附距离按屏幕像素、只对齐同一父容器、标数字、⌘ 临时不吸，不管重叠；tldraw 阈值约 8/缩放，吸附角、边、中心和等间距；Excalidraw 类似，红线加十字；React Flow 的 helper lines 示例只找每个方向最近的一个节点、阈值约 5px。这些工具都不防重叠。</p></div></div>
   <div class="row one"><div><span class="label">决策</span><p>吸附照前三者：6 个屏幕像素（随缩放换算）、每个方向只取最近的一条、同一个框里、⌘ 关闭、标数字，蓝色对齐线（--guide）。不重叠是我们加的：松手时重叠就滑到最近的空位，不推别人；框之间至少 20px，拖框碰到就停，框长大时挡路的框整体挪开；启动时分开已经重叠的框。放大的窗口例外。</p></div></div><div class="row two"><div class="pro"><span class="label">好处</span><p>IS-54 的误判自然消失；布局越用越整齐，内容不会被盖住。</p></div><div class="con"><span class="label">代价</span><p>框可能被自动挪开（只在被挤到时），窗口松手后会跳一下；改框大小时不吸附；散放的窗口只避让散放的窗口。</p></div></div>
-  <p class="where">相关 <span class="ref">TC-31</span> <span class="ref">IS-53</span> <span class="ref">IS-54</span> · 出处：MVP v2 V3（f0c060f），packages/ui/canvas/src/model/snap.ts、avoid.ts · 旧编号 —</p>
+  <p class="where">相关 <span class="ref">TC-31</span> <span class="ref">IS-53</span> <span class="ref">IS-54</span> · 出处：MVP v2 V3（f05e824），packages/ui/canvas/src/model/snap.ts、avoid.ts · 旧编号 —</p>
 </article></section><section class="stage" id="stage-f"><div class="stage-head"><h2>还没验证的</h2><p>已经有对策，但要等对应的线用真东西试过才算数</p></div><article id="dr-49" class="entry">
   <header><span class="mono eid">DR-49</span><h4>多个窗口同时在等你时，⌘J 怎么跳</h4><span class="st st-done">已解决</span></header>
   <div class="row two"><div><span class="label">原来以为</span><p>⌘J 依次跳到在等你的窗口就够了（MVP 任务表 S3）。</p></div><div><span class="label">实际情况</span><p>用户验收时问：多个窗口在等时按什么顺序跳？是不是该有在多个终端之间移动光标的快捷键？代码里是等得最久的在前、批准和回复不分、跨所有工作区循环，绕回第一个时没有提示，没有反向，也没有普通的“下一个窗口”快捷键（packages/ui/canvas/src/model/attention.ts、shortcuts.ts）。VS Code 的 F8 / ⇧F8、tmux 的 next-window -a 和 n / p 都把“要处理的队列”和“普通导航”分成两套键，并告诉你在第几个。</p></div></div>
   <div class="row one"><div><span class="label">决策</span><p>建议（待用户定）：⌘J 保持等得最久的在前，跳过去时闪一下，顶栏显示 “2/3 waiting”；加 ⌘⇧J 反向；加 ⌘⇧] / ⌘⇧[ 按位置在所有窗口之间切换（先框内、从上到下从左到右）。不改 contracts，约半天。</p></div></div><div class="row two"><div class="pro"><span class="label">好处</span><p>处理一串等你的窗口时知道在哪、还剩几个；不在等的窗口也能用键盘切换。</p></div><div class="con"><span class="label">代价</span><p>多 3 个快捷键要记；⌘⇧] / ⌘⇧[ 要和网页窗口里的按键区分（用 e.code）。</p></div></div>
-  <p class="where">相关 <span class="ref">TC-05</span> <span class="ref">IS-45</span> · 出处：已做：feat/S3-jump-waiting，合进 main e9b3673（按默认：批准和回复不分先后、⌘⇧] 切所有窗口、不做“回到上一个窗口”） · 旧编号 —</p>
+  <p class="where">相关 <span class="ref">TC-05</span> <span class="ref">IS-45</span> · 出处：已做：feat/S3-jump-waiting，合进 main 45d4b22（按默认：批准和回复不分先后、⌘⇧] 切所有窗口、不做“回到上一个窗口”） · 旧编号 —</p>
 </article><article id="dr-50" class="entry">
   <header><span class="mono eid">DR-50</span><h4>Settings：用系统程序打开 settings.json 不可靠</h4><span class="st st-done">已解决</span></header>
   <div class="row two"><div><span class="label">原来以为</span><p>MVP 先不做设置界面，点 Settings 用系统程序打开 settings.json 让用户手改。</p></div><div><span class="label">实际情况</span><p>用户验收时“打开出问题”：这台 Mac 上 .json 的默认程序是 Tor Browser；出错时界面没有任何提示。项目设置的字段（基础分支、worktree 位置、复制的文件、初始化命令）后端都已存好，projects.update 也在 IPC 里，新建工作区时都会用上，只是界面里没有地方能改。</p></div></div>
   <div class="row one"><div><span class="label">决策</span><p>建议（待用户定）：在白板（packages/ui/canvas）里做 Settings 对话框，先做 Projects 和 General 两页；顶栏 Settings、⌘, 和 Projects ▾ 里的 Project settings… 都打开它；底部保留 Open settings.json，改用 editorCommand 打开，失败在 Finder 里显示并用 Toast 提示。不改 contracts，约一天。</p></div></div><div class="row two"><div class="pro"><span class="label">好处</span><p>不依赖系统的默认程序；TC-15 能通过；后端已有的字段直接可用。</p></div><div class="con"><span class="label">代价</span><p>对话框约 250 行新代码；Agents、Approvals 两页另做。</p></div></div>
-  <p class="where">相关 <span class="ref">TC-15</span> <span class="ref">IS-13</span> <span class="ref">IS-47</span> · 出处：已做：claude/x12-settings-dialog-d59137，合进 main e9b3673（放在 canvas、先做 Projects 和 General、settings.json 用编辑器打开） · 旧编号 —</p>
+  <p class="where">相关 <span class="ref">TC-15</span> <span class="ref">IS-13</span> <span class="ref">IS-47</span> · 出处：已做：claude/x12-settings-dialog-d59137，合进 main 45d4b22（放在 canvas、先做 Projects 和 General、settings.json 用编辑器打开） · 旧编号 —</p>
 </article><article id="dr-51" class="entry">
   <header><span class="mono eid">DR-51</span><h4>检测用户装的其他 agent（pi、omp）</h4><span class="st st-done">已解决</span></header>
   <div class="row two"><div><span class="label">原来以为</span><p>MVP 只支持 claude、codex 和 Shell，别的 agent 用 Shell 手动启动。</p></div><div><span class="label">实际情况</span><p>用户本机装了 pi（@earendil-works/pi-coding-agent 0.83.0）和 omp（oh-my-pi 18.0.4，pi 的分支），都在登录 shell 的 PATH 里，--version 能取到版本，菜单里没有。适配器写死了 4 个，没有自动发现；没有钩子的 agent 状态只有 running / idle。pi 有 --session-id、--session、--fork；omp 有 --resume、--fork；两者都没有命令式钩子，但都有扩展事件（session_start、agent_end 等，omp 还有 tool_approval_requested），可以用 -e 临时加载。</p></div></div>
   <div class="row one"><div><span class="label">决策</span><p>建议（待用户定）：第一步加已知 agent 表和通用适配器（pi、omp，顺带本机有的 kimi），菜单能列出、能开、能接回，状态只有运行 / 空闲，约半天；第二步 AgentDeck 自带一个扩展用 -e 加载，把事件转成现有的钩子消息，拿到“轮到你”和 Needs approval，约 1–1.5 天；用户在设置里自己加 agent 以后再做（要改 contracts）。</p></div></div><div class="row two"><div class="pro"><span class="label">好处</span><p>装了什么 agent 菜单里就有什么；不改用户的 ~/.pi、~/.omp 配置。</p></div><div class="con"><span class="label">代价</span><p>第一步没有等你提醒；omp 新会话的 id 启动时拿不到，第一步接不回；扩展的做法要实测。</p></div></div>
-  <p class="where">相关 <span class="ref">TC-17</span> <span class="ref">IS-46</span> <span class="ref">IS-21</span> · 出处：已做：claude/x13-known-agents-0267bf，合进 main e9b3673（两步都做了；pi、omp 用临时 HOME 和假模型实测过事件，omp 的“允许一次”按键没核对，没有 Approve all） · 旧编号 —</p>
+  <p class="where">相关 <span class="ref">TC-17</span> <span class="ref">IS-46</span> <span class="ref">IS-21</span> · 出处：已做：claude/x13-known-agents-0267bf，合进 main 45d4b22（两步都做了；pi、omp 用临时 HOME 和假模型实测过事件，omp 的“允许一次”按键没核对，没有 Approve all） · 旧编号 —</p>
 </article><article id="dr-53" class="entry">
   <header><span class="mono eid">DR-53</span><h4>白板平移能不能用三指</h4><span class="st st-done">已解决</span></header>
   <div class="row two"><div><span class="label">原来以为</span><p>两指滑动在空白处平移白板、在窗口上滚窗口内容，够用。</p></div><div><span class="label">实际情况</span><p>用户希望三指拖动平移白板，两指永远给终端。macOS 的三指拖移是系统辅助功能，应用收到的只是普通的按住拖动，拿不到几根手指。</p></div></div>

@@ -1,9 +1,9 @@
 # MVP 验收报告的数据（用例和问题在 tracking.py，调研在 ../research/entries.py）（2026-10-23 晚的快照）。改这里，然后运行 `python3 docs/status/build.py`。
-# 证据来自：各包测试、组装时记下的问题（已并进 tracking.py 的问题清单）、提交 c98a173 的说明、shots/ 下的截图，
-# 以及当晚在 main（24c44e5）上重跑的 pnpm check 和两次 Electron 启动。
+# 证据来自：各包测试、组装时记下的问题（已并进 tracking.py 的问题清单）、提交 3c42908 的说明、shots/ 下的截图，
+# 以及当晚在 main（372434a）上重跑的 pnpm check 和两次 Electron 启动。
 
 DATE = '2026-10-25'
-COMMIT = '22373c2'
+COMMIT = '4f95b94'
 
 # 已经实现的基础功能，按用户能看到的东西分组
 FEATURES = [
@@ -52,7 +52,7 @@ FEATURES = [
 
 # 当晚跑过的烟测
 SMOKE = [
-    ('pnpm check（main，24c44e5）', 'ok', '类型检查、ESLint、颜色检查、模块边界全部通过；Vitest 719 个通过、4 个跳过（需要真 agent 的那 4 个）。其中约 15 个用真 tmux、约 68 个用真 git 临时仓库。'),
+    ('pnpm check（main，372434a）', 'ok', '类型检查、ESLint、颜色检查、模块边界全部通过；Vitest 719 个通过、4 个跳过（需要真 agent 的那 4 个）。其中约 15 个用真 tmux、约 68 个用真 git 临时仓库。'),
     ('演示模式启动（AGENTDECK_DEMO=1）', 'ok', '在 main 上启动 Electron：自动加本仓库为项目、建主目录工作区、开 zsh 和 claude 两个真终端，2 个终端都有输出后截图并正常退出。'),
     ('退出后重开', 'ok', '不带演示模式再启动一次：框、两个窗口位置不变，tmux 里的会话还在，历史输出完整接回。'),
     ('真 claude / codex 测试（AGENTDECK_REAL_AGENTS=1）', 'skip', '今晚没跑：它会自动回答 codex 的“信任这个文件夹”，往你的 codex 配置里写记录，需要你同意。线 4 开发时跑过两次，都通过。'),
@@ -123,7 +123,7 @@ TRY = [
 NEXT = [
     'MVP v3（N1、N2、N5、N6、N7、N9）和插件（PL0 入口、PL1 Auto-approve、PL2 Usage、X3 Approve all）都已合进 main，请按 TC-34～TC-42 在真应用里验收；这些都只在 dev 页面和测试里看过，没跑过真 agent。',
     'v2 的五处缺口（IS-63～IS-67）已修，请顺便在真窗口里试：顶上 34px 能点到窗口、空白处能拖动应用窗口；拖窗口靠近别的框、改框大小时的对齐线。',
-    'MVP v2（M5）五项都已合进 main（f95c6a7），请按 TC-29～TC-33 在真窗口里验收：红黄绿按钮的位置、拖动手感、单击 BOARD 列表跳转是截图看不到的。',
+    'MVP v2（M5）五项都已合进 main（5845172），请按 TC-29～TC-33 在真窗口里验收：红黄绿按钮的位置、拖动手感、单击 BOARD 列表跳转是截图看不到的。',
     '重新验收 2026-10-24 修好的 TC-05、TC-15、TC-17，以及合进来的 M1（白板上的 agent 自动连上 AgentDeck 的 MCP）。',
     'R2 已写（pnpm e2e，TC-01 TC-02 TC-05 TC-06 TC-07 TC-09 TC-10 TC-12 TC-30）：改动后跑一遍；还没写的 TC-03 TC-04 TC-08 TC-11 TC-13 见 e2e/AGENTS.md。',
     '修组装时记下的 9 条（IS-06～IS-10、IS-19～IS-22，多数是一两行的事），尤其是 tmux-host 的变量重名（IS-09）和“信任提示显示 Idle”（IS-06）。',
