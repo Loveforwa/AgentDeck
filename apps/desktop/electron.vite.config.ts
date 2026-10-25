@@ -1,6 +1,5 @@
 import { defineConfig } from 'electron-vite';
 import react from '@vitejs/plugin-react';
-import type { Plugin } from 'vite';
 
 // 内部包（@agentdeck/*）都是 TS 源码包，必须打进产物，不能当外部依赖。
 // 原生模块 better-sqlite3（store）、node-pty（tmux-host）反过来必须外部化：它们按 process.platform/arch 动态加载 .node，
@@ -16,26 +15,11 @@ const internal = [
   '@agentdeck/workspace-service',
 ];
 const bundleInternal = { exclude: internal };
-
-/**
- * electron-vite 给用到 require( 的 ESM 产物加一段 `const require = createRequire(import.meta.url)`（vite:esm-shim），
- * 而 packages/tmux-host/src/pty.ts 自己也在顶层声明了 `const require`，打进同一个 chunk 后变成重复声明（SyntaxError）。
- * 这里在打包前把这种模块自己的 require 改个名字。见问题清单 IS-09（docs/status/tracking.py）。
- */
-function renameLocalRequire(): Plugin {
-  return {
-    name: 'agentdeck:rename-local-require',
-    enforce: 'pre',
-    transform(code, id) {
-      if (!id.includes('/packages/') || !/\bconst require = createRequire\(/.test(code)) return null;
-      return { code: code.replace(/\brequire\b/g, '__agentdeckLocalRequire'), map: null };
-    },
-  };
-}
+// 以前这里有个插件把 tmux-host/src/pty.ts 自己的 `const require` 改名（和 vite:esm-shim 注入的重名，IS-09）；
+// 现在 pty.ts 用 nodeRequire，不需要了。
 
 export default defineConfig({
   main: {
-    plugins: [renameLocalRequire()],
     build: { externalizeDeps: bundleInternal },
   },
   preload: {

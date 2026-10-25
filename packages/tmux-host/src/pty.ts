@@ -14,14 +14,16 @@ export interface PtyModule {
   spawn(file: string, args: string[], options: IPtyForkOptions): IPty;
 }
 
-const require = createRequire(import.meta.url);
+// 不叫 require：electron-vite（vite:esm-shim）会给用到 require( 的 ESM 产物在顶层注入 `const require = createRequire(...)`，
+// 同名就是重复声明，终端进程一启动就崩（IS-09）。起个不会撞的名字，构建配置里不用再绕。
+const nodeRequire = createRequire(import.meta.url);
 
 /** 给 spawn-helper 补执行权限。返回检查过的文件（测试用）。 */
 export function ensureSpawnHelperExecutable(): string[] {
   const checked: string[] = [];
   let root: string;
   try {
-    root = dirname(require.resolve('node-pty/package.json'));
+    root = dirname(nodeRequire.resolve('node-pty/package.json'));
   } catch {
     return checked;
   }
@@ -48,6 +50,6 @@ let loaded: PtyModule | null = null;
 export function loadNodePty(): PtyModule {
   if (loaded) return loaded;
   ensureSpawnHelperExecutable();
-  loaded = require('node-pty') as PtyModule;
+  loaded = nodeRequire('node-pty') as PtyModule;
   return loaded;
 }
