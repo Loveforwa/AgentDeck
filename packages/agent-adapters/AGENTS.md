@@ -49,6 +49,7 @@ tmuxHostEvents.on((e) => rt.onTerminalEvent(e));  // terminal.activity / silence
 | 导出 | 说明 |
 | --- | --- |
 | `createAgentRuntime(opts)` | 把下面几块接好：`agents`、`status`、`approvals`、`hookServer`、`onTerminalEvent`、`noteInput`、`start`、`close` |
+| `conversationExists(roots)` / `conversationCheckFromEnv(env)` | X4：fork 前找原来的对话文件（见「Fork 对话」）；runtime 默认按登录环境接好，`sessionRoots: null` 关掉 |
 | `AgentServiceImpl` | `AgentService`。`onStarted` 回调告诉状态机这次启动是否真的带上了钩子 |
 | `createDefaultAdapters({ env, agentExtension? })` | `[ClaudeAdapter, CodexAdapter, …已知表里的每一行（KnownAgentAdapter）, ShellAdapter, CustomCommandAdapter]` |
 | `KNOWN_AGENTS` / `KnownAgentAdapter` / `EXTENSION_ENV` | 已知 agent 表、通用适配器、扩展读的环境变量名 |
@@ -69,12 +70,12 @@ tmuxHostEvents.on((e) => rt.onTerminalEvent(e));  // terminal.activity / silence
 | agent | 新建 | resume | fork | 钩子 | “允许一次” |
 | --- | --- | --- | --- | --- | --- |
 | claude | `claude --session-id <新 uuid> --settings <json>` | `--resume <id>` | `--resume <id> --fork-session --session-id <新 uuid>` | `--settings` 里的 hooks | `Enter` |
-| codex | `codex -c hooks.…（7 条）-c hooks.state={…}` | `codex resume <id> …` | `codex fork <id> …` | `-c` 覆盖 + 信任哈希 | `y` |
+| codex | `codex -c hooks.…（7 条）-c hooks.state={…}` | `codex resume <id> …` | `codex fork -C <cwd> <id> …` | `-c` 覆盖 + 信任哈希 | `y` |
 | shell | `$SHELL -l`；带命令时 `$SHELL -l -c <命令>` | 不支持 | 不支持 | 无 | 无 |
 | custom | 按 shell 规则拆开的命令 | 不支持 | 不支持 | 无 | 无 |
 | pi | `pi --session-id <新 uuid>` | `--session <id>` | `--fork <id> --session-id <新 uuid>` | `-e agentdeck-pi-extension.mjs`（0.80.4 起） | 不用（pi 从不请求批准） |
 | omp | `omp`（会话 id 等扩展报） | `--resume <id>` | `--fork <id>`（新 id 等扩展报） | `-e agentdeck-pi-extension.mjs`（18.0 起，更早没验证） | `Up Enter`（读源码得出，**没在真终端核对**；发前先认屏） |
-| kimi | `kimi` | `-S <id>` | 不支持 | 无 | 先不支持（2.3.1 是 `1`，见 known.ts） |
+| kimi | `kimi` | `-S <id>` | 不支持（见「Fork 对话」） | 无 | 先不支持（2.3.1 是 `1`，见 known.ts） |
 
 - 用户在 Settings 里加的启动参数放在最后。claude 的 LaunchSpec.env 带 `CLAUDE_CODE_TMUX_TRUECOLOR=1`。
 - 恢复上次会话（X6）：白板按记下的会话 id 用上表的 resume 重开（`test/agent-service.test.ts` 逐个 agent 核对进 tmux 的参数）。`StartAgentRequest.prefill` 只对不带 command 的 shell 转给 `terminals.create`（Shell 在输入行里填好上次的命令、不运行），agent 和 `-c` 跑命令的 shell 忽略它。
@@ -82,6 +83,30 @@ tmuxHostEvents.on((e) => rt.onTerminalEvent(e));  // terminal.activity / silence
 - 检测：在传入环境的 PATH 里找命令，跑 `--version` 取 x.y.z。版本取不到时按“够新”处理。
 - claude 的钩子要 2.0 以上（粗略下限），StopFailure 事件只在 2.1 以上加；codex 的钩子要 0.159 以上（本机实测的版本，更早的没验证）。
 - “允许一次”的按键是看确认框得出的（claude “❯ 1. Yes” 默认选中；codex “1. Yes, proceed (y)”），**待线 1 用真终端核对 send-keys 的效果**。
+
+## Fork 对话（X4，DR-42，2026-10-26 实测）
+
+用法：W5 对话框的 Fork、终端标题栏菜单的 Fork conversation into…（packages/ui/canvas）调 `agents.start({ mode: { kind: 'fork', sessionId } })`，
+cwd 是目标工作区的目录。原来的终端和对话都不动。
+
+**跨目录不用复制会话文件**：DR-42 担心 claude 换了目录找不到原会话，实测不会，所以没做“先把记录复制到新目录”的兜底。
+
+| agent | 跨目录 fork | 怎么核对的 |
+| --- | --- | --- |
+| claude 2.1.291 | 可以。`--resume <id>` 在所有项目目录里找；`--fork-session --session-id <新>` 把副本写进 `projects/<新 cwd>/<新 id>.jsonl`，每行的 cwd 改成新目录，原文件不变 | 真 CLI：目录 A 里 `claude -p … --session-id <A>` 记一个暗号，目录 B 里 `claude -p … --resume <A> --fork-session --session-id <B>` 答出暗号；tmux 里的 TUI 也一样（A 的终端开着，B 里 fork 后问暗号和 cwd，答对、cwd 是 B，A 那边没多出消息） |
+| codex 0.164.0 | 可以，但 **TUI 要 `-C <cwd>`**：不写时 cwd 和会话记下的不同，先弹 “Working directory · fork”（Use session directory / Use current directory / Always …），默认选中原来的目录；写了 `-C` 就直接用新目录、不弹 | 真 CLI：A 里 `codex exec`，B 里 `codex exec fork <id> "…"` 答出暗号、报的 cwd 是 B；tmux 里 `codex fork <id>` 弹了上面的框，`codex fork -C <B> <id>` 没弹、显示 “Thread forked from …” |
+| pi 0.83.0 | 可以。`--fork <id>` 先找本目录、再找所有项目（dist/main.js `resolveSessionPath`），`SessionManager.forkFrom` 写进新目录的 sessions 子目录、header 的 cwd 是新目录 | 真 CLI，不调模型：临时 `PI_CODING_AGENT_DIR`，用 pi 自己的 SessionManager 在 A 写一段两条消息的会话，B 里 `pi --mode rpc --fork <id> --session-id <新>`，`get_messages` 返回原来的两条，`get_state` 的 sessionFile 在 B 的目录下 |
+| omp 18.0.4 | 可以。`resolveResumableSession` 本目录没有时找全部（没给 `--session-dir` 时），`forkFrom` 写进新目录 | 真 CLI，不调模型：临时 `PI_CODING_AGENT_DIR`，bun 跑 omp 的 SessionManager 在 A 写会话，B 里 `omp --mode rpc --fork <id>`：B 的目录下多了新会话（header cwd 是 B、parentSession 是原 id、两条消息都在）。omp 随后因为没有模型退出，**TUI 里没核对** |
+| kimi 2.3.1 | 不支持。有 `kimi fork [id]` 子命令（不进 TUI，打印 “Forked to <新 id>”），要先跑它、再 `kimi -S <新 id>` 两步，新会话记在哪个目录没核对 | `kimi fork --help` 和打包的源码 `src/cli/sub/fork.ts`；没跑 |
+
+- **还没说过话的会话不能 fork**：claude、pi、omp 第一条消息之后才写会话文件（codex 的 id 本来就要等第一次输入），这时 agent 报
+  “No conversation found with session ID …” 直接退出（claude 2.1.291 实测）。所以 `AgentServiceImpl.start` 在 fork 前调 `conversationExists`
+  （`src/fork.ts`，复用用量模块的 `locateClaude` / `locateCodex` / `locatePi`，只读），确定没有时抛 `not-found`
+  “No conversation to fork yet. Send <label> a message first.”，不开终端；找不到目录、出错、kimi 等返回 null 时照常启动。
+  目录按登录 shell 环境的 HOME、`CLAUDE_CONFIG_DIR`、`CODEX_HOME`、`PI_CODING_AGENT_DIR` 推（`createAgentRuntime` 的 `sessionRoots` 可以覆盖，null 不查）。
+- fork 出来的会话 id：claude、pi 是 AgentDeck 生成的新 id（启动时就知道）；codex、omp 等 SessionStart 报上来。
+- 测试：`test/fork.test.ts`（每种 agent 的 fork 参数、临时目录里的假会话文件、找不到时不开终端、runtime 的开关）。
+- 实测时 claude、codex 自己在 `~/.claude/projects/`、`~/.codex/sessions/` 里留下了测试会话，没有去删（不改 agent 自己的目录）。
 
 ## 钩子实测（2026-10-23，claude 2.1.291，codex 0.159.2，macOS）
 

@@ -109,6 +109,7 @@ describe('context menus (B3)', () => {
       'Copy folder path',
       'Open in system terminal',
       'Open in another workspace',
+      'Fork conversation into…',
       '-',
       'Close',
     ]);
@@ -152,6 +153,7 @@ describe('context menus (B3)', () => {
       'Copy folder path',
       'Open in system terminal',
       'Open in another workspace',
+      'Fork conversation into…',
       '-',
       'Close',
     ]);

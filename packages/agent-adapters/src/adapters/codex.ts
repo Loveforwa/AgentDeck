@@ -124,7 +124,9 @@ export class CodexAdapter implements AgentAdapterExt {
       sessionId = ctx.mode.sessionId;
     } else if (ctx.mode.kind === 'fork') {
       // fork 出来的新会话 id 要等 SessionStart 钩子才知道。
-      head.push('fork', ctx.mode.sessionId);
+      // X4：-C 写明工作目录。不写时，从别的目录 fork（换了 worktree），TUI 先弹 “Working directory · fork”
+      // 让人选，默认选中的是原会话的目录（0.164.0 实测）；写了就直接用 -C 的目录，不弹。
+      head.push('fork', '-C', ctx.cwd, ctx.mode.sessionId);
     }
     const trust = this.trustCache.get(ctx.notifyCommand);
     let hookArgs: string[] = [];

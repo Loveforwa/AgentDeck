@@ -66,7 +66,7 @@ import '@agentdeck/ui-kit/base.css';
 | `src/registry.ts` | 窗口注册表（唯一对别的界面包开放的文件） |
 | `src/controller.ts` | `BoardController`：启动和事件、拖动、改大小、放大、新建、关闭、工作区、视口、快捷键 |
 | `src/store.ts` | zustand vanilla store：保存的部分（BoardState）+ 临时状态 |
-| `src/model/` | 纯函数：`history`（X10 撤销：`diffLayout`、`applyStep`、`BoardHistory`）、`selection`（X10 多选：`boxFrom`、`windowsInBox`、`toggleSelection`、`byWorkspace`）、`groups`（N1 窗口组：`listGroups`、`dissolveGroups`；N2 侧边栏：`groupView`、`hiddenMembers`、`syncGroups` 停靠、`lampOf`、`memberName`）、`geometry`（框跟着长、框的最小尺寸、视口）、`attention`（S3 计数、⌘J ⌘⇧J 顺序、顶栏的第几个）、`navigation`（S3 ⌘⇧] ⌘⇧[ 按位置切窗口的顺序）、`autosave`（B5 防抖）、`shortcuts`（R1 按键表）、`drop`（W5 落点）、`snap`（V3 吸附和对齐线）、`avoid`（V3 松手避让、框之间 20px、挤开别的框）、`windows`（终端相关的判断）、`gestures`（N6 手势规则和 React Flow 参数）、`branch`（分支名检查）、`settings`（Settings 的草稿和补丁） |
+| `src/model/` | 纯函数：`history`（X10 撤销：`diffLayout`、`applyStep`、`BoardHistory`）、`selection`（X10 多选：`boxFrom`、`windowsInBox`、`toggleSelection`、`byWorkspace`）、`groups`（N1 窗口组：`listGroups`、`dissolveGroups`；N2 侧边栏：`groupView`、`hiddenMembers`、`syncGroups` 停靠、`lampOf`、`memberName`）、`geometry`（框跟着长、框的最小尺寸、视口）、`attention`（S3 计数、⌘J ⌘⇧J 顺序、顶栏的第几个）、`navigation`（S3 ⌘⇧] ⌘⇧[ 按位置切窗口的顺序）、`autosave`（B5 防抖）、`shortcuts`（R1 按键表）、`drop`（W5 落点）、`snap`（V3 吸附和对齐线）、`avoid`（V3 松手避让、框之间 20px、挤开别的框）、`windows`（终端相关的判断）、`gestures`（N6 手势规则和 React Flow 参数）、`branch`（分支名检查）、`settings`（Settings 的草稿和补丁）、`fork`（X4：能不能 Fork、原因） |
 | `src/react/` | `Workbench`、`Board`（React Flow）、`WindowNodeView`、`FrameNodeView`、`GroupSidebar`（N2 窗口组的侧边栏节点）、`Guides`（V3 对齐线，屏幕坐标画；跟踪 ⌘）、`BoardMenu`（右键菜单，含 PLUGINS 一组）、`PluginMarks`（把登记表里插件的标记放到窗口节点和框标题上）、`approvals`（第一次开 Auto-approve 的确认、Approval history、Approve all 对话框）、`dialogs`（新建 / 删除工作区、W5、停止终端、改名）、`SettingsDialog`、`useShortcuts`、`gestures`（N6：空格平移、窗口上的缩放滚轮、盖层把滚轮交给内容）、`selection`（X10：Shift + 拖空白处框选、框选的矩形） |
 | `src/plugins/` | 插件（PL0，规则见 docs/plugins.md）：`types.ts`（`PluginDefinition`：能贴在 terminal / browser / frame / board 哪几种上、支持哪些 agent、能不能开和原因、开没开、开关、额外菜单项、窗口和框上的标记组件；`pluginMenuSection` 生成右键菜单的 PLUGINS 一组）、`index.ts`（登记表 `PLUGINS`，加插件就是加一行）、`auto-approve.tsx`（PL1：书签、小卡片、框标题的小标签）、`usage.tsx` + `usage-model.ts`（PL2：用量条、拖动换边、小卡片、watch / unwatch；纯函数） |
 | `src/approvals/` | 批准在界面这边的状态（PL1、X3）：`model.ts` 的 `ApprovalsModel`（`controller.approvals`，zustand vanilla store：服务报的开关、每种 agent 能不能开、needs-you、这次运行收到的自动批准、书签闪的次数、小卡片、Approval history、Approve all 的列表；开关、把开关写进白板、终端换 terminalId 时补推）、`text.ts`（原因、谁批的、时间、在等批准的请求） |
@@ -86,6 +86,11 @@ import '@agentdeck/ui-kit/base.css';
 - 点阵 20px，缩到 50% 以下隐藏。
 - 框和窗口是不可拖的 React Flow 节点，移动和改大小走 window-shell 的手势（只能拖标题栏），所以节点要显式 `pointer-events: all`。屏幕坐标换算用 store 里的视口（`controller.clientToFlow`），不用 React Flow 的 `screenToFlowPosition`（受控视口动画后它会落后）。
 - 框里的窗口拖向框外：框跟着长（W3）；指针进了别的框：那个框虚线，松手时终端弹回原处并问“Open new”（W5），网页直接换框。
+- Fork 对话（X4）：W5 对话框里 agent 终端多一个 Fork（悬停 “Fork conversation into <工作区>”），终端标题栏菜单在 Open in another workspace 下面有
+  Fork conversation into… ▸ 别的框。都调 `forkInWorkspace(windowId, to, at)`：在目标框里照常放一个同款 agent，`agents.start` 的 mode 是
+  `{ kind: 'fork', sessionId }`，原来的终端不动。能不能 Fork 看 `model/fork.ts` 的 `forkCheck`：shell、自定义命令不提供（按钮和菜单项都没有）；
+  agent 不支持（kimi）、没装、还没有会话 id（codex 第一次输入前）时灰掉，原因写在菜单项后面 / 对话框里。会话 id 有了但还没说过话时由
+  agents.start 报 “No conversation to fork yet…”，白板照常弹提示、不加窗口。测试：`test/fork.test.tsx`。
 - 吸附和不重叠（V3，TC-31，调研见 DR-52）：
   - 拖窗口、改窗口大小、拖框时屏幕 6px 内吸附（`SNAP_PX / zoom`）：同一个框里别的窗口（散放的：视口里的散放窗口）和框的内边；边对边、中线、标准间距 20（`avoid.ts` 的 `GAP`，和框之间一样，IS-66）、等间距、照别人的间距再排一个，改大小时还有同宽同高。拖窗口时还对齐附近的框（IS-65）：视口里、离窗口所在的框不到 `NEAR_FRAME_PX`（200 屏幕像素）的别的框，只看外边和中线（`SnapOptions.alignTo`，不算间距）。改框的大小也吸（IS-65）：别的框的边、隔 `GAP`、同宽同高，还有正好装下里面窗口的位置（`fit`，线画在窗口的边上）；不吸时就会被挤开的框不当对象，吸附本身不去挤别的框（`keepApart`）。画 `--guide` 蓝色虚线，间距和尺寸标数字。按住 ⌘ 不吸。控制器的 `moveWindow` / `resizeWindow` / `moveFrame` / `resizeFrame` 带 `{ snap }`，不给就不吸（测试、程序调用）。
   - 松手时（也包括新放上来的窗口）盖住了同一个框里别的窗口：挪到离松手位置最近、隔 16 的空位，优先在框里，放不下就放到框外让框长。不推别的窗口。放大中的窗口不挪，别人按它还原后的位置避让。

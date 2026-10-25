@@ -272,7 +272,8 @@ describe('moving windows between frames (W3, W5)', () => {
     expect(win('win-shop-claude').workspaceId).toBe(W.shopCart);
     expect(c.state.dialog).toMatchObject({ kind: 'move-terminal', windowId: 'win-shop-claude', to: W.agentdeckMain });
     expect(c.moveTerminalMessage(id('win-shop-claude'), W.agentdeckMain)).toBe(
-      'This terminal runs in shop · fix/cart-total and can’t change folders. Open a new claude in agentdeck · main?',
+      // X4：claude 有会话 id，可以 Fork，所以一起问
+      'This terminal runs in shop · fix/cart-total and can’t change folders. Open a new claude in agentdeck · main, or fork this conversation there? The original keeps running.',
     );
 
     const created = await c.openInWorkspace(id('win-shop-claude'), W.agentdeckMain, null);
