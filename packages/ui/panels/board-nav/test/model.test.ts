@@ -1,6 +1,6 @@
-import type { FrameNode, Project, ProjectId, StatusSnapshot, TerminalId, WindowId, WindowNode, Workspace, WorkspaceId } from '@agentdeck/contracts';
+import type { FrameNode, Project, ProjectId, StatusSnapshot, TerminalId, WindowGroupId, WindowId, WindowNode, Workspace, WorkspaceId } from '@agentdeck/contracts';
 import { describe, expect, it } from 'vitest';
-import { buildTree, navWindow, windowName } from '../src/index.ts';
+import { buildTree, groupNames, navWindow, windowName } from '../src/index.ts';
 
 const P = 'prj-a' as ProjectId;
 const WS = 'ws-a' as WorkspaceId;
@@ -101,5 +101,43 @@ describe('buildTree', () => {
     });
     expect(tree.projects[0]!.workspaces).toEqual([]);
     expect(tree.loose.map((w) => w.id)).toEqual(['a']);
+  });
+});
+
+describe('window groups (IS-70)', () => {
+  const G = 'grp-1' as WindowGroupId;
+  const lead = term('lead', WS, 0, 0, { group: { id: G, role: 'lead', label: null } });
+  const api = term('api', WS, 200, 0, { group: { id: G, role: 'member', label: 'api' } }, 'shell');
+  const plain = term('plain', WS, 400, 0, { group: { id: G, role: 'member', label: '  ' } }, 'claude');
+  const ui = term('ui', WS, 600, 0, { group: { id: G, role: 'member', label: 'ui' } }, 'codex');
+
+  it('names members like the group sidebar (sub-N · label, by order on the board) and the lead “lead”', () => {
+    const names = groupNames([lead, api, plain, ui]);
+    expect(Object.fromEntries(names)).toEqual({ lead: 'lead', api: 'sub-1 · api', plain: 'sub-2', ui: 'sub-3 · ui' });
+  });
+
+  it('a group without a lead or without members is not a group', () => {
+    expect(groupNames([api, ui]).size).toBe(0);
+    expect(groupNames([lead]).size).toBe(0);
+    expect(groupNames([term('x', WS, 0, 0)]).size).toBe(0);
+  });
+
+  it('buildTree puts the group name next to the agent name; a renamed window shows only its rename (like the title bar)', () => {
+    const renamed = { ...ui, title: 'frontend' };
+    const tree = buildTree({
+      projects: [project(P, 'a')],
+      workspaces: { [WS]: workspace(WS, 'main') },
+      frames: [frame(WS, 0, 0)],
+      windows: [lead, api, renamed, term('solo', WS, 800, 0)],
+      statuses: {},
+      badges: {},
+    });
+    const rows = tree.projects[0]!.workspaces[0]!.windows.map((w) => [w.name, w.group]);
+    expect(rows).toEqual([
+      ['claude', 'lead'],
+      ['zsh', 'sub-1 · api'],
+      ['frontend', null],
+      ['claude', null],
+    ]);
   });
 });

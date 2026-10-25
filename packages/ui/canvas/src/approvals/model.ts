@@ -22,7 +22,7 @@ import type {
   WorkspaceId,
 } from '@agentdeck/contracts';
 import type { BoardController } from '../controller.ts';
-import { agentOf, isTerminal, terminalIdOf } from '../model/windows.ts';
+import { agentOf, isAgentTerminal, isTerminal, terminalIdOf } from '../model/windows.ts';
 import type { BoardStoreState } from '../store.ts';
 import { pendingApprovals, pendingQuestions, plural } from './text.ts';
 
@@ -80,6 +80,9 @@ export interface ApprovalsState {
   confirm: AutoApproveTarget | null;
   approveAll: ApproveAllState | null;
 }
+
+/** 服务的 autoApproveSupport() 还没取到时，当作能自动批准的 agent（取到后以服务为准）。 */
+export const AUTO_APPROVE_AGENTS: readonly AgentKind[] = ['claude', 'codex', 'omp', 'pi'];
 
 const EMPTY: AutoApproveState = { workspaces: [], terminals: [] };
 const RECENT_MAX = 20;
@@ -261,16 +264,30 @@ export class ApprovalsModel {
     return s.auto.workspaces.some((w) => w.workspaceId === ws);
   }
 
-  /** 这个窗口实际开没开（单独设置优先，其次看它所在的框）。 */
+  /**
+   * 这个窗口能不能自动批准（IS-68）：只有 agent 终端，而且服务说这种 agent 支持。
+   * shell、自定义命令永远不能；kimi 这类服务报 unsupported 的也不能。框上开着 Auto-approve 只管能的这些，
+   * 别的窗口不打钩、不挂书签（包括 Needs you）、没有 since，哪怕服务的开关状态把它算在框里。
+   */
+  canAutoApprove(w: WindowNode, s: ApprovalsState = this.state): boolean {
+    if (!isAgentTerminal(w)) return false;
+    const agent = agentOf(w);
+    if (!agent) return false;
+    const support = this.supportOf(agent, s);
+    if (support) return support.method !== 'unsupported';
+    return s.support === null ? AUTO_APPROVE_AGENTS.includes(agent) : false;
+  }
+
+  /** 这个窗口实际开没开（单独设置优先，其次看它所在的框）。不能自动批准的窗口总是 false。 */
   windowOn(w: WindowNode, s: ApprovalsState = this.state): boolean {
     const id = terminalIdOf(w);
-    return id !== null && isAutoApproveOn(s.auto, id, w.workspaceId);
+    return id !== null && this.canAutoApprove(w, s) && isAutoApproveOn(s.auto, id, w.workspaceId);
   }
 
   /** 从什么时候开着。 */
   since(w: WindowNode, s: ApprovalsState = this.state): string | null {
     const id = terminalIdOf(w);
-    if (!id) return null;
+    if (!id || !this.canAutoApprove(w, s)) return null;
     const own = s.auto.terminals.find((t) => t.terminalId === id);
     if (own) return own.on ? own.since : null;
     return s.auto.workspaces.find((x) => x.workspaceId === w.workspaceId)?.since ?? null;
@@ -290,6 +307,7 @@ export class ApprovalsModel {
     if (target.kind === 'frame') return { ok: true };
     const w = this.c.windowById(target.windowId);
     if (!w || !isTerminal(w)) return { ok: false, reason: 'Only for terminals' };
+    if (!isAgentTerminal(w)) return { ok: false, reason: 'Only for agents' };
     const support = this.supportOf(agentOf(w));
     if (support?.method === 'unsupported') return { ok: false, reason: support.note ?? `Not supported for ${agentOf(w) ?? 'this terminal'}` };
     if (!terminalIdOf(w)) return { ok: false, reason: 'Terminal is not running' };
@@ -305,7 +323,7 @@ export class ApprovalsModel {
   /** 要你处理的原因（书签变成 Needs you）。终端已经不在等了（服务还没来得及说）就不算。 */
   needsYouOf(w: WindowNode, s: ApprovalsState = this.state, board: BoardStoreState = this.c.state): NeedsYou | null {
     const id = terminalIdOf(w);
-    if (!id) return null;
+    if (!id || !this.windowOn(w, s)) return null;
     const n = s.needsYou[id];
     if (!n) return null;
     const st = board.statuses[id];

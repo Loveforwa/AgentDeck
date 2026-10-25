@@ -6,7 +6,7 @@ import type { ComponentType } from 'react';
 import type { AgentKind, WindowId, WindowNode, WorkspaceId } from '@agentdeck/contracts';
 import type { MenuEntry } from '@agentdeck/ui-kit';
 import type { BoardController } from '../controller.ts';
-import { BROWSER_TYPE, agentOf, isTerminal } from '../model/windows.ts';
+import { BROWSER_TYPE, agentOf, isAgentTerminal, isTerminal } from '../model/windows.ts';
 
 /** 白板上插件能贴的几种东西（docs/plugins.md「第一件事」）。 */
 export type PluginThing = 'terminal' | 'browser' | 'frame' | 'board';
@@ -24,6 +24,11 @@ export interface PluginDefinition {
   attachesTo: readonly PluginThing[];
   /** 贴在终端上时支持哪些 agent；'all' 不限。不在里面的菜单项灰掉，写 “Not supported for kimi”。 */
   agents: readonly AgentKind[] | 'all';
+  /**
+   * 只给 agent 终端：shell、自定义命令的终端菜单里根本不列这一项（不是灰掉），也不该有标记（IS-68）。
+   * 不在 agents 里的 agent（例如 kimi）照常灰掉写原因。
+   */
+  agentsOnly?: boolean;
   /** 能不能开；不能时的原因写在菜单项后面（例如服务报的 “Not supported for kimi yet”）。不给就是能开。 */
   availability?(c: BoardController, target: PluginTarget): PluginAvailability;
   /** 在这个东西上开着没有（菜单项打钩）。 */
@@ -57,9 +62,9 @@ export function pluginMenuSection(c: BoardController, target: PluginTarget, plug
   const node = target.kind === 'window' ? c.windowById(target.windowId) : undefined;
   const thing = thingOf(node, target);
   const list = pluginsFor(plugins, thing);
-  if (list.length === 0) return [];
   const entries: MenuEntry[] = [{ type: 'heading', id: 'plugins-heading', label: 'PLUGINS' }];
   for (const p of list) {
+    if (p.agentsOnly && thing === 'terminal' && node && !isAgentTerminal(node)) continue;
     let avail: PluginAvailability = p.availability?.(c, target) ?? { ok: true };
     const agent = node ? agentOf(node) : null;
     if (avail.ok && thing === 'terminal' && p.agents !== 'all' && agent && !p.agents.includes(agent)) {
@@ -76,5 +81,5 @@ export function pluginMenuSection(c: BoardController, target: PluginTarget, plug
     });
     entries.push(...(p.menuExtras?.(c, target) ?? []));
   }
-  return entries;
+  return entries.length > 1 ? entries : [];
 }
