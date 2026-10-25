@@ -26,3 +26,5 @@
 - **claude 在 tmux 里要设 `CLAUDE_CODE_TMUX_TRUECOLOR=1`**，否则它检测到 `$TMUX` 会自己降到 256 色。由 claude 适配器在 LaunchSpec.env 里加。
 - **先不推到 GitHub。** 用户给出仓库名后再建私有仓库并推送；在那之前 CI 只在本地跑 `pnpm check`。
 - **contracts 并发期间只加不改**；`BranchChoice.from` 改为可选、kill 后发 `terminal.exit`（128 + 信号）见 contracts 0.1.1。
+
+- 2026-10-25：X2（其他 agent 的“等你”文字、Settings › Agents）不做；X10（框选多选、⌘Z / ⌘⇧Z 撤销白板操作）做；X4（Fork 对话）等用户看完使用场景再定。
