@@ -1601,11 +1601,22 @@ export class BoardController {
 
   // ---- Settings（TC-15） ----
 
-  /** 打开 Settings：顶栏 Settings、⌘,、Projects ▾ › Project settings…、终端窗口里的设置链接。默认停在第一个项目上。 */
+  /**
+   * 打开 Settings：顶栏 Settings、⌘,、Projects ▾ › Project settings…、终端窗口里的设置链接。
+   * 没指定项目时停在当前项目上（IS-71）：选中的框或聚焦窗口所在工作区的项目（和右侧面板跟随的同一个，`activeWorkspaceId`）；
+   * 都没有（或是散放的窗口）时停在第一个项目上。
+   */
   openSettings(opts: { section?: SettingsSection; projectId?: ProjectId | null } = {}): void {
-    const projectId = opts.projectId ?? this.state.projects[0]?.id ?? null;
+    const projectId = opts.projectId ?? this.currentProjectId() ?? this.state.projects[0]?.id ?? null;
     const section = opts.section ?? (projectId ? 'projects' : 'general');
     this.openDialog(section === 'projects' && projectId ? { kind: 'settings', section, projectId } : { kind: 'settings', section: 'general' });
+  }
+
+  /** 选中的框或聚焦窗口所在工作区的项目；项目已经不在列表里时为 null。 */
+  private currentProjectId(): ProjectId | null {
+    const ws = this.activeWorkspaceId();
+    const projectId = ws ? this.state.workspaces[ws]?.projectId : undefined;
+    return projectId && this.state.projects.some((p) => p.id === projectId) ? projectId : null;
   }
 
   /** 保存一个项目的设置（projects.update）。失败时提示，返回 false。 */
