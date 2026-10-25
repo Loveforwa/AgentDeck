@@ -138,13 +138,13 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
 <header>
   <span class="eyebrow">AgentDeck · MVP 验收报告 · 2026-10-25 · main 22373c2</span>
   <h1>AgentDeck MVP 验收报告</h1>
-  <p class="lede">第一个能打开、能用的版本已经组装好：白板、tmux 托管的真终端、工作区和 Git 面板、agent 状态提醒、网页窗口接在了一起。下面的端到端用例可以直接在这页上验收，问题清单可以直接改处理状态，填的内容会保存下来。2026-10-24 第一轮验收：39 条通过，0 条阻塞或不通过（在调研），3 条等你验收。</p>
+  <p class="lede">第一个能打开、能用的版本已经组装好：白板、tmux 托管的真终端、工作区和 Git 面板、agent 状态提醒、网页窗口接在了一起。下面的端到端用例可以直接在这页上验收，问题清单可以直接改处理状态，填的内容会保存下来。2026-10-24 第一轮验收：38 条通过，0 条阻塞或不通过（在调研），4 条等你验收。</p>
   <p class="rules">编号：<b>TC-xx</b> 端到端用例（TC-01 到 TC-14 是 14 条验收场景）· <b>IS-xx</b> 问题 · <b>DR-xx</b> 调研记录 · <b>F1、T2</b> 等是任务编号。</p>
   <div class="bars">
     <div class="barbox"><span class="t">39 项基础功能（P0 任务）</span><div class="bar"><span class="seg seg-auto" style="flex:33" title="完成，有自动测试 33"></span><span class="seg seg-manual" style="flex:2" title="完成，只有手动验证 2"></span><span class="seg seg-partial" style="flex:4" title="部分完成 / 未做 4"></span></div>
       <div class="legend"><span><i class="dot seg-auto"></i>有自动测试 <b>33</b></span><span><i class="dot seg-manual"></i>只有手动验证 <b>2</b></span><span><i class="dot seg-partial"></i>部分完成 / 未做 <b>4</b></span></div></div>
-    <div class="barbox"><span class="t">42 条端到端用例的现状</span><div class="bar"><span class="seg seg-part" style="flex:3"></span><span class="seg seg-ok" style="flex:39"></span></div>
-      <div class="legend"><span><i class="dot seg-prob"></i>当前有问题 <b>0</b></span><span><i class="dot seg-no"></i>未验证 <b>0</b></span><span><i class="dot seg-part"></i>部分验证 <b>3</b></span><span><i class="dot seg-ok"></i>已验证 <b>39</b></span><span><i class="dot seg-todo"></i>未实现 <b>0</b></span></div></div>
+    <div class="barbox"><span class="t">42 条端到端用例的现状</span><div class="bar"><span class="seg seg-part" style="flex:3"></span><span class="seg seg-ok" style="flex:38"></span><span class="seg seg-todo" style="flex:1"></span></div>
+      <div class="legend"><span><i class="dot seg-prob"></i>当前有问题 <b>0</b></span><span><i class="dot seg-no"></i>未验证 <b>0</b></span><span><i class="dot seg-part"></i>部分验证 <b>3</b></span><span><i class="dot seg-ok"></i>已验证 <b>38</b></span><span><i class="dot seg-todo"></i>未实现 <b>1</b></span></div></div>
     <div class="barbox"><span class="t">你的验收进度</span><div class="bar" id="acc-bar"></div>
       <div class="legend"><span><i class="dot seg-pass"></i>通过 <b id="n-pass">0</b></span><span><i class="dot seg-fail"></i>不通过或阻塞 <b id="n-fail">0</b></span><span>还没验收 <b id="n-open">42</b></span><span>问题已解决 <b id="n-solved">33</b> / 77</span></div></div>
   </div>
@@ -214,6 +214,24 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
   </details>
   
   <label class="field note"><span>验收备注</span><textarea id="note-TC-41" data-tc="TC-41" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
+</article><article class="case c-todo" id="tc-14" data-case="TC-14" data-status="todo" data-result="">
+  <div class="case-head">
+    <span class="mono cid">TC-14</span><span class="pri pri-P2">P2</span><span class="st st-todo">未实现</span>
+    <h4>重启电脑后恢复上次的工作区和 agent 对话</h4>
+    <label class="field result"><span>验收结果</span><select id="res-TC-14" data-tc="TC-14" class="res"><option value="" selected>未验收</option><option>通过</option><option>不通过</option><option>阻塞</option><option>跳过</option></select></label>
+  </div>
+  <p class="now"><span class="label">当前情况</span>属于 MVP 完整版（M4 · X6），还没做</p>
+  <details>
+    <summary>前置要求、操作步骤和预期</summary>
+    <div class="spec">
+      <div><span class="label">前置要求</span><p>电脑重启过（或 tmux kill-server 模拟）</p></div>
+      <div><span class="label">操作步骤</span><ol><li>打开应用</li><li>在 “Restore your last session?” 里选 Restore all</li></ol></div>
+      <div class="wide-cell"><span class="label">UI / 后台预期表现</span><p>UI：弹出恢复提示；恢复后工作区和窗口在原位，claude 接回原来的对话，Shell 在原目录打开并填好命令。</p><p>后台：按记录的会话 id 运行 claude --resume &lt;id&gt;、codex resume &lt;id&gt;。</p></div>
+      <div class="wide-cell"><span class="label">最终效果</span><p>重启不丢上下文</p></div>
+    </div>
+  </details>
+  <p class="links">关联问题 <a class="ref" href="#is-35">IS-35</a> · 相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-14" target="_blank" rel="noopener">DR-14</a> <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-34" target="_blank" rel="noopener">DR-34</a></p>
+  <label class="field note"><span>验收备注</span><textarea id="note-TC-14" data-tc="TC-14" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
 </article></div><p class="muted empty-group">没有。</p></div><div class="case-group" data-group="stuck"><h3 class="group-title">阻塞 / 不通过 <span class="gcount" data-gcount="stuck"></span></h3><div class="cases" data-cases="stuck"></div><p class="muted empty-group">没有。</p></div><details class="case-group" data-group="done"><summary class="group-title">已通过 <span class="gcount" data-gcount="done"></span><span class="muted small">（已收起，点开看）</span></summary><div class="cases" data-cases="done"><article class="case c-ok" id="tc-01" data-case="TC-01" data-status="ok" data-result="通过">
   <div class="case-head">
     <span class="mono cid">TC-01</span><span class="pri pri-P0">P0</span><span class="st st-ok">已验证</span>
@@ -844,24 +862,6 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
   </details>
   <p class="links">关联问题 <a class="ref" href="#is-15">IS-15</a> · 相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-04" target="_blank" rel="noopener">DR-04</a></p>
   <label class="field note"><span>验收备注</span><textarea id="note-TC-11" data-tc="TC-11" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
-</article><article class="case c-ok" id="tc-14" data-case="TC-14" data-status="ok" data-result="通过">
-  <div class="case-head">
-    <span class="mono cid">TC-14</span><span class="pri pri-P2">P2</span><span class="st st-ok">已验证</span>
-    <h4>重启电脑后恢复上次的工作区和 agent 对话</h4>
-    <label class="field result"><span>验收结果</span><select id="res-TC-14" data-tc="TC-14" class="res"><option value="">未验收</option><option selected>通过</option><option>不通过</option><option>阻塞</option><option>跳过</option></select></label>
-  </div>
-  <p class="now"><span class="label">当前情况</span>属于 MVP 完整版（M4 · X6），还没做</p>
-  <details>
-    <summary>前置要求、操作步骤和预期</summary>
-    <div class="spec">
-      <div><span class="label">前置要求</span><p>电脑重启过（或 tmux kill-server 模拟）</p></div>
-      <div><span class="label">操作步骤</span><ol><li>打开应用</li><li>在 “Restore your last session?” 里选 Restore all</li></ol></div>
-      <div class="wide-cell"><span class="label">UI / 后台预期表现</span><p>UI：弹出恢复提示；恢复后工作区和窗口在原位，claude 接回原来的对话，Shell 在原目录打开并填好命令。</p><p>后台：按记录的会话 id 运行 claude --resume &lt;id&gt;、codex resume &lt;id&gt;。</p></div>
-      <div class="wide-cell"><span class="label">最终效果</span><p>重启不丢上下文</p></div>
-    </div>
-  </details>
-  <p class="links">关联问题 <a class="ref" href="#is-35">IS-35</a> · 相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-14" target="_blank" rel="noopener">DR-14</a> <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-34" target="_blank" rel="noopener">DR-34</a></p>
-  <label class="field note"><span>验收备注</span><textarea id="note-TC-14" data-tc="TC-14" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
 </article><article class="case c-ok" id="tc-16" data-case="TC-16" data-status="ok" data-result="通过">
   <div class="case-head">
     <span class="mono cid">TC-16</span><span class="pri pri-P2">P2</span><span class="st st-ok">已验证</span>

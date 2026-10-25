@@ -341,7 +341,7 @@ CASES = [
          rel=''),
 
     # ---- 未实现（P1 功能）----
-    dict(id='TC-14', p='P2', status='已验证',
+    dict(id='TC-14', p='P2', status='未实现',
          scene='重启电脑后恢复上次的工作区和 agent 对话',
          pre='电脑重启过（或 tmux kill-server 模拟）',
          steps='1. 打开应用\n2. 在 “Restore your last session?” 里选 Restore all',
@@ -466,7 +466,6 @@ ACCEPTED = {
     'TC-11': '通过',
     'TC-12': '通过',
     'TC-13': '通过',
-    'TC-14': '通过',
     'TC-16': '通过',
     'TC-18': '通过',
     'TC-19': '通过',
