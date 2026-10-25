@@ -110,4 +110,4 @@ Le code est un monorepo pnpm : Electron et React pour l’app, xterm.js pour les
 
 ## Licence
 
-Licence : à définir
+[MIT](../../LICENSE)

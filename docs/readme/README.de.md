@@ -110,4 +110,4 @@ Der Code ist ein pnpm-Monorepo: Electron und React für die App, xterm.js für d
 
 ## Lizenz
 
-Lizenz: noch offen
+[MIT](../../LICENSE)

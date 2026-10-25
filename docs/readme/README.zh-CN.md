@@ -110,4 +110,4 @@ pnpm dist    # 打包 .dmg，放在 apps/desktop/dist/
 
 ## 许可证
 
-许可证：待定
+[MIT](../../LICENSE)

@@ -110,4 +110,4 @@ pnpm dist    # .dmg 파일을 apps/desktop/dist/에 생성
 
 ## 라이선스
 
-라이선스: 미정
+[MIT](../../LICENSE)

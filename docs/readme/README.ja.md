@@ -110,4 +110,4 @@ pnpm dist    # .dmg を apps/desktop/dist/ に作成
 
 ## ライセンス
 
-ライセンス：未定
+[MIT](../../LICENSE)
