@@ -34,3 +34,7 @@
 - **contracts 并发期间只加不改**；`BranchChoice.from` 改为可选、kill 后发 `terminal.exit`（128 + 信号）见 contracts 0.1.1。
 
 - 2026-10-25：X2（其他 agent 的“等你”文字、Settings › Agents）不做；X10（框选多选、⌘Z / ⌘⇧Z 撤销白板操作）做；X4（Fork 对话）等用户看完使用场景再定。
+
+- 2026-10-25：X4（Fork 对话）做：用 agent 自己的接回参数复制对话（claude `--resume <id> --fork-session`、codex `fork <id>`、pi / omp `--fork`），原来的对话不动。
+- 2026-10-25：打包成 macOS APP（.dmg），README 顶部（语言链接上方）放下载链接，指向 GitHub Releases。
+- 2026-10-25：GitHub 仓库名 AgentDeck（账号 Loveforwa），用户审完 README 再建仓库、推送。README 正文英文，另有中文、日文等共 7 种语言版本，配截图和 GIF；语气平实，只说工具做什么、举几个例子。

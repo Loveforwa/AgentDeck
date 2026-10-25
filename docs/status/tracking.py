@@ -433,6 +433,9 @@ ISSUES = [
     ('IS-75', 'P1', '风险', '插件 · Auto-approve', '回了 allow 就直接当已放行，不再进等待；agent 不认回复格式时终端一直显示 Running，还记一条假的自动批准记录。提问工具改名后可能被当成批准替你答掉', 'agent 升级改了钩子回复格式或提问工具名', 'agent 其实在等你，你却以为在跑', '回了 allow 后几秒内没有 PostToolUse / Stop 就退回 needs-approval；超过核对版本时关掉自动批准', 'TC-40'),
     ('IS-76', 'P2', '缺陷', 'agent-adapters · pi/omp/kimi', 'generic 适配器没用 ctx.prompt，MCP 的 open_terminals / create_workspace 指定 pi、omp、kimi 时第一条消息被悄悄丢掉，终端空着启动', '让 claude 用 open_terminals 开 pi 并给 prompts', '子 agent 没收到任务', '照各 agent 的方式带上第一条消息（参数或启动后发送）', 'TC-34'),
     ('IS-77', 'P2', '风险', 'agent-adapters · 兼容', '其他几处：codex 信任哈希缓存只按 notify 路径存，升级后不失效；重开接回终端时按当前适配器的钩子能力算，不是那次启动实际带没带；omp 认屏没检查 Approve 是第一项；AGENTS.md 写 claude 按 Enter、代码是 1；pi 1.4.0、omp 18.12.6、claude 2.1.310 没核对', '—', '升级后零散地出错', '按 DR-60 一并处理，先核对 pi 1.x（它可能已经有 MCP）', ''),
+    ('IS-78', 'P3', '缺陷', '项目', '添加项目时选了仓库里的子文件夹，界面不提示“用了仓库根目录”（探测结果里有这个信息，白板没用）', '右键 › Add project…，选仓库里的子文件夹', '不知道实际加的是哪个目录', '加项目后提示 Using the repository root: …', 'TC-01'),
+    ('IS-79', 'P3', '缺陷', '网页窗口', '在终端里第二次点同一个地址，只聚焦网页窗口、闪一下，不刷新页面（终端打开网页时没带刷新标记）', '终端里点两次 http://localhost:3000', '页面还是旧的', '复用窗口时带上 reloadToken', 'TC-06'),
+    ('IS-80', 'P2', '缺陷', 'apps/desktop · 终端通道', '页面初始化跑两次时（Playwright 下出现），主进程开了两条终端输出通道，页面只认第一条，终端没有输出、输入也送不进去', '用 Playwright 启动应用', '终端白屏', '页面收到新通道时换过去，或主进程只开一条', ''),
 ]
 
 # 用户在验收报告网页上填的验收结果（2026-10-24 从网页数据库同步的快照）。网页打开后以数据库为准；
