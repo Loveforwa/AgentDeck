@@ -114,6 +114,7 @@ import '@agentdeck/ui-kit/base.css';
   - 避让：找空位时（V3）lead 连同侧边栏和停靠的子终端算一块（`withGroup`），收起的子终端不挡，别的组的侧边栏挡；框按这一块长。侧边栏 / 停靠的子终端新出现时盖住了框里别的窗口，就把那些窗口挪到最近的空位（`settleGroup`，例外于“不推别的窗口”：是新出现的东西要地方）。
   - 关 lead：先照 Show all 平铺开，再 `dissolveGroups`，子终端都是普通窗口，侧边栏消失。
 - 保存：保存的部分（视口、框、窗口、面板）引用一变就排进防抖，半秒后 `board.save`；`pagehide` 时立刻写。启动时 `board.load` 恢复。
+- 恢复上次会话（X6，TC-14，`src/model/restore.ts`、`controller.checkRestore` / `restoreAll`、`dialogs.tsx` 的 RestoreSessionDialog）：白板画出来后、以及收到 `terminal.host-lost` 时，`terminals.list()` 一次，对每个窗口问它类型的 `WindowTypeDefinition.restore.describe(data, 还在的终端)`（contracts 的可选字段，现在只有终端有；白板不按 type 写特例）。有要恢复的就弹 “Restore your last session?”：一句 “5 terminals in 3 workspaces: 3 agents and 2 shells.”，下面每个窗口一行（名字 + 恢复后会怎样，最多 8 行），Not now / Restore all。tmux 会话都在（普通 ⌘Q 再打开）不弹；读不到终端列表不弹；正开着别的对话框不打断。Restore all 并发调每个窗口的 `restore.restore(data, { workspaceId, contentSize })`，把返回的 patch 合进 data（窗口 id、位置不变，跟着存盘），完成后 Toast：“Restored 5 terminals. codex had no saved conversation and started a new one.”，失败的写 “Couldn’t restore …: 原因”，那个窗口留着自己的 Restore。Not now 之后每个窗口自己有 Restore / Restart。收起的组成员也会恢复（不靠窗口组件在不在）。
 
 ## dev 页面
 

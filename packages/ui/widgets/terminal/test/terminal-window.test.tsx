@@ -20,6 +20,7 @@ import type {
 import { createFakeApi, type FakeApi } from '@agentdeck/fakes';
 import { TerminalWindow, terminalWindowType } from '../src/index.ts';
 import { termSizeFor } from '../src/metrics.ts';
+import { listTerminals } from '../src/router.ts';
 
 type FakeXterm = {
   focused: boolean;
@@ -50,6 +51,8 @@ interface Harness {
   opened: OpenWindowRequest[];
   command(c: WindowCommand): void;
   closed: () => number;
+  /** 白板从外面改 data（例如 Restore all）。 */
+  update(patch: Partial<TerminalWindowData>): void;
 }
 
 interface HostProps {
@@ -68,10 +71,15 @@ function mount(data: Partial<TerminalWindowData>, initial: Partial<HostProps> = 
   const statusLog: (WindowStatusBadge | null)[] = [];
   let closed = 0;
   let setOuter: (p: Partial<HostProps>) => void = () => {};
+  let setOuterData: (patch: Partial<TerminalWindowData>) => void = () => {};
 
   function Host(): ReactNode {
     const [props, setProps] = useState<HostProps>({ visible: true, summary: false, focused: true, contentSize: { w: 560, h: 332 }, workspace: null, ...initial });
     const [d, setD] = useState(current);
+    setOuterData = (patch) => {
+      current = { ...current, ...patch };
+      setD(current);
+    };
     // 和白板一样：setStatus 会让外面重新渲染，每次传进去的回调都是新的（防止来回触发）
     const [, rerender] = useState(0);
     setOuter = (p) => setProps((x) => ({ ...x, ...p }));
@@ -118,6 +126,7 @@ function mount(data: Partial<TerminalWindowData>, initial: Partial<HostProps> = 
     opened,
     command: (c) => act(() => listeners.forEach((l) => l(c))),
     closed: () => closed,
+    update: (patch) => act(() => setOuterData(patch)),
   };
 }
 
@@ -276,21 +285,71 @@ describe('reopening the app (T6)', () => {
     await waitFor(() => expect(screenText(xterm())).toContain('still running'));
   });
 
-  it('shows "Previous session ended" with Restart ▾ (resume / new) when the session is gone', async () => {
+  it('shows "Previous session ended" with Restore (resume) and Restart (new) when the session is gone (X6)', async () => {
     const h = mount({ terminalId: 'gone' as TerminalId, agent: 'claude', cmd: 'claude', cwd: '/repo', sessionId: 's-1' as AgentSessionId });
     expect(await screen.findByText('Previous session ended')).toBeTruthy();
+    expect(screen.getByText('Resumes the conversation')).toBeTruthy();
     expect(h.status()).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Restart ▾' }));
-    fireEvent.click(await screen.findByRole('menuitem', { name: 'Resume conversation' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Restore' }));
     await waitFor(() => expect(h.data().terminalId).not.toBe('gone'));
-    expect(api.fakes.agents.started.at(-1)?.request.mode).toEqual({ kind: 'resume', sessionId: 's-1' });
+    expect(api.fakes.agents.started.at(-1)?.request).toMatchObject({ agent: 'claude', cwd: '/repo', mode: { kind: 'resume', sessionId: 's-1' } });
     expect(h.data().sessionId).toBe('s-1');
+    await waitFor(() => expect(api.fakes.terminals.views(h.data().terminalId!)).toHaveLength(1));
   });
 
-  it('a shell without a session id gets a plain Restart', async () => {
+  it('Restart on the ended view starts a new conversation', async () => {
+    const h = mount({ terminalId: 'gone' as TerminalId, agent: 'claude', cmd: 'claude', cwd: '/repo', sessionId: 's-1' as AgentSessionId });
+    fireEvent.click(await screen.findByRole('button', { name: 'Restart' }));
+    await waitFor(() => expect(h.data().terminalId).not.toBe('gone'));
+    expect(api.fakes.agents.started.at(-1)?.request.mode).toEqual({ kind: 'new' });
+    expect(h.data().sessionId).not.toBe('s-1');
+  });
+
+  it('a shell without a session id or command gets a plain Restart', async () => {
     mount({ terminalId: 'gone' as TerminalId, agent: 'shell', cmd: '/bin/zsh', cwd: '/repo' });
     expect(await screen.findByText('Previous session ended')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Restart' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Restore' })).toBeNull();
+  });
+
+  it('an agent without a session id gets a plain Restart', async () => {
+    mount({ terminalId: null, agent: 'codex', cmd: 'codex', cwd: '/repo' });
+    expect(await screen.findByText('Previous session ended')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Restore' })).toBeNull();
+  });
+
+  it('Restore on a shell reopens it in the same folder with the last command typed in, not run (X6)', async () => {
+    const h = mount({ terminalId: 'gone' as TerminalId, agent: 'shell', cmd: '/bin/zsh', cwd: '/repo/web', startCommand: 'pnpm build', lastCommand: 'pnpm dev' });
+    expect(await screen.findByText('Opens zsh here with “pnpm dev” typed in, not run')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Restore' }));
+    await waitFor(() => expect(h.data().terminalId).not.toBe('gone'));
+    const req = api.fakes.agents.started.at(-1)!.request;
+    expect(req).toMatchObject({ agent: 'shell', cwd: '/repo/web', mode: { kind: 'new' }, prefill: 'pnpm dev' });
+    expect(req.command).toBeUndefined();
+    expect(api.fakes.terminals.get(h.data().terminalId!).request.prefill).toBe('pnpm dev');
+    expect(h.data()).toMatchObject({ agent: 'shell', startCommand: 'pnpm build', lastCommand: 'pnpm dev' });
+  });
+
+  it('Restore on a custom command reopens a shell with the command typed in instead of running it', async () => {
+    const h = mount({ terminalId: 'gone' as TerminalId, agent: 'custom', cmd: 'pnpm', args: ['dev'], cwd: '/repo', startCommand: 'pnpm dev' });
+    fireEvent.click(await screen.findByRole('button', { name: 'Restore' }));
+    await waitFor(() => expect(h.data().terminalId).not.toBe('gone'));
+    expect(api.fakes.agents.started.at(-1)?.request).toMatchObject({ agent: 'shell', prefill: 'pnpm dev' });
+    expect(h.data()).toMatchObject({ agent: 'shell', startCommand: 'pnpm dev' });
+  });
+
+  it('reconnects when Restore all gives it a new terminal id from outside, even with a stale cached list', async () => {
+    const h = mount({ terminalId: 'gone' as TerminalId, agent: 'claude', cmd: 'claude', cwd: '/repo', sessionId: 's-1' as AgentSessionId });
+    expect(await screen.findByText('Previous session ended')).toBeTruthy();
+    await new Promise((r) => setTimeout(r, 600));
+    // 别的窗口刚 list() 过（500ms 内合并），那份结果里还没有新终端（IS-07）
+    await listTerminals(api);
+    const { patch, fresh } = await terminalWindowType.restore!.restore(h.data(), { workspaceId: null, contentSize: { w: 560, h: 332 } });
+    expect(fresh).toBe(false);
+    expect(api.fakes.agents.started.at(-1)?.request.mode).toEqual({ kind: 'resume', sessionId: 's-1' });
+    h.update(patch);
+    await waitFor(() => expect(api.fakes.terminals.views(patch.terminalId!)).toHaveLength(1));
+    expect(screen.queryByText('Previous session ended')).toBeNull();
   });
 
   it('tmux server lost: "Session ended"', async () => {
@@ -299,6 +358,31 @@ describe('reopening the app (T6)', () => {
     await waitFor(() => expect(api.fakes.terminals.views(T)).toHaveLength(1));
     act(() => api.fakes.terminals.hostLost());
     expect(await screen.findByText('Session ended')).toBeTruthy();
+  });
+});
+
+describe('remembering what a shell ran (X6)', () => {
+  it('records the command the shell is running into lastCommand, also when not visible, and keeps it at the prompt', async () => {
+    api.fakes.terminals.createWith({ cmd: '/bin/zsh', args: ['-l'], cwd: '/repo' }, { id: T, history: '$ ' });
+    api.fakes.terminals.setForegroundCommand(T, 'pnpm dev');
+    const h = mount({ terminalId: T, agent: 'shell', cmd: '/bin/zsh', cwd: '/repo' }, { visible: false });
+    await waitFor(() => expect(h.data().lastCommand).toBe('pnpm dev'));
+    api.fakes.terminals.setForegroundCommand(T, null);
+    act(() => api.fakes.terminals.bus.emit({ type: 'terminal.silence', id: T, at: new Date().toISOString() }));
+    await flush();
+    expect(h.data().lastCommand).toBe('pnpm dev');
+    api.fakes.terminals.setForegroundCommand(T, 'pnpm test');
+    act(() => api.fakes.terminals.bus.emit({ type: 'terminal.silence', id: T, at: new Date().toISOString() }));
+    await waitFor(() => expect(h.data().lastCommand).toBe('pnpm test'));
+  });
+
+  it('does not record for agents', async () => {
+    makeTerminal({ history: 'x' });
+    api.fakes.terminals.setForegroundCommand(T, 'node tool.js');
+    const h = mount({ terminalId: T, agent: 'claude', cmd: 'claude', cwd: '/repo' });
+    await waitFor(() => expect(api.fakes.terminals.views(T)).toHaveLength(1));
+    await flush();
+    expect(h.data().lastCommand).toBeUndefined();
   });
 });
 

@@ -1,4 +1,5 @@
-// 白板的对话框：新建工作区（W3）、删除工作区（W4 的界面部分）、终端不能换框（W5）、停止终端、改名。Settings 在 SettingsDialog.tsx。
+// 白板的对话框：新建工作区（W3）、删除工作区（W4 的界面部分）、终端不能换框（W5）、停止终端、改名、恢复上次会话（X6）。
+// Settings 在 SettingsDialog.tsx。
 
 import { useEffect, useRef, useState } from 'react';
 import type { BranchInfo, CreateWorkspaceRequest, Project, ProjectId, WorkspaceMode } from '@agentdeck/contracts';
@@ -6,6 +7,7 @@ import { Button, Dialog, DialogText, RadioGroup } from '@agentdeck/ui-kit';
 import { statusOf } from '../model/attention.ts';
 import { validateBranchName } from '../model/branch.ts';
 import { defaultName } from '../model/windows.ts';
+import { restoreHeadline, restoreLines } from '../model/restore.ts';
 import type { DialogState } from '../store.ts';
 import { Checkbox, Field, Select, TextInput } from './fields.tsx';
 import { useBoardState, useController } from './context.tsx';
@@ -29,6 +31,8 @@ export function BoardDialogs() {
     case 'settings':
       // Workbench 里的 SettingsDialogHost 画它（要用 Workbench 的 onOpenSettingsFile）
       return null;
+    case 'restore-session':
+      return <RestoreSessionDialog dialog={dialog} />;
   }
 }
 
@@ -305,6 +309,44 @@ function MoveTerminalDialog({ dialog }: { dialog: Of<'move-terminal'> }) {
       }
     >
       <DialogText>{c.moveTerminalMessage(dialog.windowId, dialog.to)}</DialogText>
+    </Dialog>
+  );
+}
+
+// ---- X6：恢复上次会话 ----
+
+/**
+ * Stop all and quit、电脑重启、tmux 服务没了之后：问一次要不要全部恢复，列出会回来的东西。
+ * Not now（Esc）之后每个窗口里都有自己的 Restore / Restart。
+ */
+function RestoreSessionDialog({ dialog }: { dialog: Of<'restore-session'> }) {
+  const c = useController();
+  const { lines, more } = restoreLines(dialog.items);
+  return (
+    <Dialog
+      open
+      title="Restore your last session?"
+      width={460}
+      onClose={() => c.closeDialog()}
+      actions={
+        <>
+          <Button onClick={() => c.closeDialog()}>Not now</Button>
+          <Button variant="primary" data-autofocus onClick={() => void c.restoreAll()}>
+            Restore all
+          </Button>
+        </>
+      }
+    >
+      <DialogText>{restoreHeadline(dialog.items)}</DialogText>
+      <ul className="ad-restore-list" aria-label="Terminals to restore">
+        {lines.map((l) => (
+          <li key={l.windowId} className="ad-restore-row">
+            <span className="ad-restore-name">{l.label}</span>
+            <span className={l.fresh ? 'ad-restore-detail ad-restore-detail--fresh' : 'ad-restore-detail'}>{l.detail}</span>
+          </li>
+        ))}
+      </ul>
+      {more > 0 ? <DialogText tone="muted">and {more} more</DialogText> : null}
     </Dialog>
   );
 }

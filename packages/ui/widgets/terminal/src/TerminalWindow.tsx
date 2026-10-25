@@ -2,7 +2,8 @@
 // 白板给的 props 是 contracts 的 WindowComponentProps<TerminalWindowData>，服务只走 window.agentdeck。
 //
 // - visible 且不是摘要卡时 attach，否则 detach（只为视口里的终端打开显示）。
-// - 重开应用（T6）：按保存的 terminalId 在 list() 里找；会话没了显示 “Previous session ended” + Restart ▾。
+// - 重开应用（T6）：按保存的 terminalId 在 list() 里找；会话没了显示 “Previous session ended” + Restore / Restart（X6）。
+// - 恢复上次会话（X6，restore.ts）：Restore 让 agent 接回记下的对话、Shell 在原目录填好上次的命令；Shell 跑着的命令记进 lastCommand。
 // - 进程退出（T5）：内容保留，底部出现 “Process exited (code 1)” + Restart / Close。
 // - 命令找不到：“Command not found: claude” + Open Settings / Use Shell instead。
 // - 摘要卡（T8）：不 attach，用 lastLines 取最后 3 行；窗口够大、只是白板缩小时取整屏行数，画成文字快照（IS-41）。
@@ -21,11 +22,12 @@ import {
   type WindowComponentProps,
   type WindowStatusBadge,
 } from '@agentdeck/contracts';
-import { Button, Menu, Popover } from '@agentdeck/ui-kit';
+import { Button } from '@agentdeck/ui-kit';
 import { quotePaths } from './keys.ts';
 import { termSizeFor } from './metrics.ts';
 import { outsideWorkspaceTag, platformCompareOptions } from './cwd.ts';
-import { listTerminals, watchTerminalCwd } from './router.ts';
+import { planRestore, restoreDiffersFromRestart, restoreTerminal } from './restore.ts';
+import { listTerminals, watchTerminalCwd, watchTerminalInfo } from './router.ts';
 import { TerminalSession } from './session.ts';
 import { badgeFor, exitBadge, exitMessage } from './status.ts';
 import { commandName } from './title.ts';
@@ -53,6 +55,8 @@ const SUMMARY_LINES = 3;
 /** 内容区至少这么大，才算“白板缩小导致的摘要”，显示整屏文字快照（IS-41）。 */
 const SNAPSHOT_MIN: { w: number; h: number } = { w: 320, h: 160 };
 const SUMMARY_REFRESH_MS = 1000;
+/** Restore 时接不回原来的对话、开了新对话：标题栏的 “new conversation” 标签留这么久。 */
+const FRESH_NOTE_MS = 60_000;
 
 function api(): AgentDeckApi {
   return window.agentdeck;
@@ -78,11 +82,11 @@ export function TerminalWindow(props: TerminalWindowProps): ReactNode {
   // 窗口本身够大、只是白板缩小了：显示整屏文字（DOM 文字缩放后仍然清楚），而不是 3 行摘要
   const screenSnapshot = summary && contentSize.w >= SNAPSHOT_MIN.w && contentSize.h >= SNAPSHOT_MIN.h;
   const summaryRows = screenSnapshot ? termSizeFor(contentSize).rows : SUMMARY_LINES;
-  const [restartMenu, setRestartMenu] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  // X6：这次 Restore 没接回原来的对话（没记下会话 id），标题栏注明
+  const [freshNote, setFreshNote] = useState(false);
 
   const screenRef = useRef<HTMLDivElement>(null);
-  const restartRef = useRef<HTMLButtonElement>(null);
   const sessionRef = useRef<TerminalSession | null>(null);
   const [session, setSession] = useState<TerminalSession | null>(null);
   const propsRef = useRef(props);
@@ -104,9 +108,11 @@ export function TerminalWindow(props: TerminalWindowProps): ReactNode {
     let cancelled = false;
     setPhase({ kind: 'checking' });
     listTerminals(api())
-      .then((list) => {
+      .then(async (list) => {
+        let info = list.find((t) => t.id === data.terminalId);
+        // 合并过的列表可能比这个终端还早（连着新建、Restore all 一个个换上新 id 时，IS-07）：直接再问一次
+        if (!info && !cancelled) info = (await api().terminals.list()).find((t) => t.id === data.terminalId);
         if (cancelled) return;
-        const info = list.find((t) => t.id === data.terminalId);
         if (!info) {
           setPhase({ kind: 'ended', reason: 'previous' });
           return;
@@ -181,6 +187,23 @@ export function TerminalWindow(props: TerminalWindowProps): ReactNode {
   }, [watchCwd, visible, terminalId]);
   const outsideTag = watchCwd ? outsideWorkspaceTag(cwd, workspacePath, platformCompareOptions(IS_MAC)) : null;
 
+  // ---- X6：Shell 跑着的命令记下来（lastCommand），恢复上次会话时填回输入行。看不见时也记（电脑可能随时重启）----
+  const recordCommand = data.agent === 'shell' && terminalId !== null && phase.kind === 'live' && exitCode === null;
+  useEffect(() => {
+    if (!recordCommand || !terminalId) return;
+    return watchTerminalInfo(api(), terminalId, (info) => {
+      const cmd = info?.foregroundCommand;
+      if (cmd && cmd !== propsRef.current.window.data.lastCommand) propsRef.current.updateData({ lastCommand: cmd });
+    });
+  }, [recordCommand, terminalId]);
+
+  useEffect(() => {
+    if (!freshNote) return;
+    const t = setTimeout(() => setFreshNote(false), FRESH_NOTE_MS);
+    return () => clearTimeout(t);
+  }, [freshNote]);
+  const tag = outsideTag ?? (freshNote ? { text: 'new conversation', detail: 'No saved conversation to resume; started a new one' } : null);
+
   const baseBadge: WindowStatusBadge | null =
     phase.kind === 'ended' || phase.kind === 'not-found'
       ? null
@@ -194,7 +217,7 @@ export function TerminalWindow(props: TerminalWindowProps): ReactNode {
               ? exitBadge(exitCode)
               : null;
   // 没有状态文字（还没拿到状态）时不单独画标签
-  const badge: WindowStatusBadge | null = baseBadge && outsideTag ? { ...baseBadge, tag: outsideTag } : baseBadge;
+  const badge: WindowStatusBadge | null = baseBadge && tag ? { ...baseBadge, tag } : baseBadge;
   const badgeKey = badge ? `${badge.text}|${badge.tone}|${badge.dot}|${badge.detail ?? ''}|${badge.tag?.text ?? ''}|${badge.tag?.detail ?? ''}` : '';
   // 只在内容变了时调用；setStatus 走 ref，白板每次渲染传新函数也不会来回触发
   const badgeRef = useRef(badge);
@@ -286,7 +309,7 @@ export function TerminalWindow(props: TerminalWindowProps): ReactNode {
       const p = propsRef.current;
       const d = p.window.data;
       const old = ownId ?? d.terminalId;
-      setRestartMenu(false);
+      setFreshNote(false);
       setPhase({ kind: 'starting' });
       setExitCode(null);
       setSnapshot(null);
@@ -321,6 +344,30 @@ export function TerminalWindow(props: TerminalWindowProps): ReactNode {
     },
     [ownId],
   );
+
+  // ---- X6：Restore（会话没了之后）：agent 接回记下的对话，Shell 在原目录填好上次的命令 ----
+  const restore = useCallback(async () => {
+    const p = propsRef.current;
+    const d = p.window.data;
+    setPhase({ kind: 'starting' });
+    setExitCode(null);
+    setSnapshot(null);
+    setFreshNote(false);
+    try {
+      const { patch, fresh } = await restoreTerminal(api(), d, { workspaceId: p.workspace?.id ?? p.window.workspaceId, contentSize: p.contentSize });
+      const id = patch.terminalId ?? null;
+      startedRef.current = id;
+      setOwnId(id);
+      p.updateData(patch);
+      setFreshNote(fresh && d.agent !== 'shell' && d.agent !== 'custom');
+      setPhase({ kind: 'live' });
+      p.requestFocus();
+    } catch (e) {
+      const err = errorOf(e);
+      if (err.code === 'command-not-found') setPhase({ kind: 'not-found', command: commandName(d) });
+      else setPhase({ kind: 'failed', message: err.message });
+    }
+  }, []);
 
   // ---- 白板发来的命令（⌘K、标题栏右键菜单）----
   const commandRef = useRef({ start, terminalId, exitCode });
@@ -478,29 +525,25 @@ export function TerminalWindow(props: TerminalWindowProps): ReactNode {
           {phase.kind === 'ended' && (
             <>
               <p>{phase.reason === 'host-lost' ? 'Session ended' : 'Previous session ended'}</p>
-              <div className="ad-terminal__actions">
-                {data.sessionId ? (
-                  <>
-                    <Button size="sm" ref={restartRef} aria-haspopup="menu" aria-expanded={restartMenu} onClick={() => setRestartMenu((o) => !o)}>
-                      Restart ▾
+              {restoreDiffersFromRestart(data) ? (
+                <>
+                  <p className="ad-terminal__muted">{planRestore(data).detail}</p>
+                  <div className="ad-terminal__actions">
+                    <Button size="sm" variant="primary" onClick={() => void restore()}>
+                      Restore
                     </Button>
-                    <Popover open={restartMenu} anchor={restartRef} chrome={false} autoFocus={false} onClose={() => setRestartMenu(false)}>
-                      <Menu
-                        aria-label="Restart"
-                        items={[
-                          { id: 'resume', label: 'Resume conversation', onSelect: () => void start({ mode: 'resume' }) },
-                          { id: 'new', label: 'New conversation', onSelect: () => void start({ mode: 'new' }) },
-                        ]}
-                        onClose={() => setRestartMenu(false)}
-                      />
-                    </Popover>
-                  </>
-                ) : (
+                    <Button size="sm" onClick={() => void start({ mode: 'new' })}>
+                      Restart
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <div className="ad-terminal__actions">
                   <Button size="sm" onClick={() => void start({ mode: 'new' })}>
                     Restart
                   </Button>
-                )}
-              </div>
+                </div>
+              )}
             </>
           )}
         </div>

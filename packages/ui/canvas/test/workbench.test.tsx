@@ -306,3 +306,49 @@ describe('Workbench', () => {
     expect(screen.queryByRole('complementary', { name: /Side panel/ })).toBeNull();
   });
 });
+
+describe('Restore your last session? (X6)', () => {
+  it('after the tmux sessions are gone: a dialog lists what comes back; Restore all restores, Not now dismisses', async () => {
+    const restored: string[] = [];
+    const registry = createWindowRegistry();
+    registry.register<{ terminalId: string | null; agent?: string }>({
+      type: 'terminal',
+      label: 'Terminal',
+      defaultSize: { w: 560, h: 360 },
+      minSize: { w: 110, h: 60 },
+      component: Text,
+      create: (init) => ({ terminalId: null, ...init }),
+      restore: {
+        describe: (d, live) =>
+          d.terminalId && live.has(d.terminalId as never)
+            ? null
+            : d.agent === 'shell'
+              ? { kind: 'shell', label: 'zsh', detail: 'Opens zsh here with “pnpm dev” typed in, not run', fresh: false }
+              : { kind: 'agent', label: d.agent ?? 'agent', detail: 'Resumes the conversation', fresh: false },
+        restore: async (d) => {
+          restored.push(d.agent ?? '');
+          return { patch: { terminalId: `new-${restored.length}` }, fresh: false };
+        },
+      },
+    });
+    const api = createFakeApi();
+    api.fakes.terminals.hostLost();
+    const c = new BoardController({ api, registry });
+    render(<Workbench api={api} controller={c} />);
+    const dialog = await screen.findByRole('dialog', { name: 'Restore your last session?' });
+    expect(within(dialog).getByText('5 terminals in 3 workspaces: 3 agents and 2 shells.')).toBeTruthy();
+    expect(within(dialog).getAllByText('Opens zsh here with “pnpm dev” typed in, not run')).toHaveLength(2);
+    expect(within(dialog).getAllByText('Resumes the conversation')).toHaveLength(3);
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Restore all' }));
+    await waitFor(() => expect(restored).toHaveLength(5));
+    expect(screen.queryByRole('dialog', { name: 'Restore your last session?' })).toBeNull();
+    expect(await screen.findByText('Restored 5 terminals.')).toBeTruthy();
+
+    // tmux 服务又没了：再问一次；Not now 关掉，什么都不恢复
+    act(() => api.fakes.terminals.hostLost());
+    const again = await screen.findByRole('dialog', { name: 'Restore your last session?' });
+    fireEvent.click(within(again).getByRole('button', { name: 'Not now' }));
+    expect(screen.queryByRole('dialog', { name: 'Restore your last session?' })).toBeNull();
+    expect(restored).toHaveLength(5);
+  });
+});

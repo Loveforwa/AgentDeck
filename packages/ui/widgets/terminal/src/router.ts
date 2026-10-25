@@ -70,29 +70,31 @@ export function listTerminals(api: Pick<AgentDeckApi, 'terminals'>): Promise<Ter
   return promise;
 }
 
-/** 当前目录没有事件，只能轮询（IS-57）。所有终端窗口共用一个定时器，每轮一次 list()。 */
+/** 当前目录、正在跑的命令都没有事件，只能轮询（IS-57、X6）。所有终端窗口共用一个定时器，每轮一次 list()。 */
 export const CWD_REFRESH_MS = 3000;
+/** 用户敲完回车后多久看一眼正在跑的命令（X6：跑了这么久以上的命令才记得到）。 */
+export const AFTER_INPUT_MS = 1500;
 
-interface CwdWatch {
-  listeners: Set<{ id: TerminalId; cb: (cwd: string | null) => void }>;
+interface InfoWatch {
+  listeners: Set<{ id: TerminalId; cb: (info: TerminalInfo | null) => void }>;
   stop(): void;
 }
 
-const cwdWatches = new WeakMap<object, CwdWatch>();
+const infoWatches = new WeakMap<object, InfoWatch>();
 
 /**
- * 盯着一个终端的当前目录（TerminalInfo.cwd）：订阅时取一次，之后每 CWD_REFRESH_MS 取一次，
- * 这个终端安静下来（terminal.silence，命令跑完、cd 完）时也取。终端不在 list() 里时给 null。
+ * 盯着一个终端在 list() 里的信息（当前目录 cwd、正在跑的命令 foregroundCommand）：订阅时取一次，之后每 CWD_REFRESH_MS 取一次，
+ * 这个终端安静下来（terminal.silence，命令跑完、cd 完）时、用户输入后 AFTER_INPUT_MS 也取。终端不在 list() 里时给 null。
  */
-export function watchTerminalCwd(api: Pick<AgentDeckApi, 'terminals' | 'on'>, id: TerminalId, cb: (cwd: string | null) => void): Unsubscribe {
-  let w = cwdWatches.get(api);
+export function watchTerminalInfo(api: Pick<AgentDeckApi, 'terminals' | 'on'>, id: TerminalId, cb: (info: TerminalInfo | null) => void): Unsubscribe {
+  let w = infoWatches.get(api);
   if (!w) {
-    const listeners: CwdWatch['listeners'] = new Set();
+    const listeners: InfoWatch['listeners'] = new Set();
     // 定时和 silence 时直接 list()，不走 listTerminals 的 500ms 合并（那是给重开应用时一起挂上的窗口用的，会拿到旧结果）
     const load = () => {
       api.terminals.list().then(
         (list) => {
-          for (const l of listeners) l.cb(list.find((t) => t.id === l.id)?.cwd ?? null);
+          for (const l of listeners) l.cb(list.find((t) => t.id === l.id) ?? null);
         },
         () => {
           // 取不到就保持上一次的；下一轮再试
@@ -100,18 +102,30 @@ export function watchTerminalCwd(api: Pick<AgentDeckApi, 'terminals' | 'on'>, id
       );
     };
     const timer = setInterval(load, CWD_REFRESH_MS);
-    const off = api.on('terminal.silence', (e) => {
-      for (const l of listeners) if (l.id === e.id) return load();
-    });
-    const created: CwdWatch = {
+    let afterInput: ReturnType<typeof setTimeout> | null = null;
+    const watched = (tid: TerminalId) => [...listeners].some((l) => l.id === tid);
+    const offs = [
+      api.on('terminal.silence', (e) => {
+        if (watched(e.id)) load();
+      }),
+      api.on('terminal.input', (e) => {
+        if (afterInput || !watched(e.id)) return;
+        afterInput = setTimeout(() => {
+          afterInput = null;
+          load();
+        }, AFTER_INPUT_MS);
+      }),
+    ];
+    const created: InfoWatch = {
       listeners,
       stop: () => {
         clearInterval(timer);
-        off();
-        cwdWatches.delete(api);
+        if (afterInput) clearTimeout(afterInput);
+        offs.forEach((off) => off());
+        infoWatches.delete(api);
       },
     };
-    cwdWatches.set(api, created);
+    infoWatches.set(api, created);
     w = created;
   }
   const watch = w;
@@ -119,7 +133,7 @@ export function watchTerminalCwd(api: Pick<AgentDeckApi, 'terminals' | 'on'>, id
   watch.listeners.add(entry);
   void listTerminals(api).then(
     (list) => {
-      if (watch.listeners.has(entry)) cb(list.find((t) => t.id === id)?.cwd ?? null);
+      if (watch.listeners.has(entry)) cb(list.find((t) => t.id === id) ?? null);
     },
     () => {},
   );
@@ -127,4 +141,9 @@ export function watchTerminalCwd(api: Pick<AgentDeckApi, 'terminals' | 'on'>, id
     watch.listeners.delete(entry);
     if (watch.listeners.size === 0) watch.stop();
   };
+}
+
+/** 盯着一个终端的当前目录（TerminalInfo.cwd，IS-57）。终端不在 list() 里时给 null。 */
+export function watchTerminalCwd(api: Pick<AgentDeckApi, 'terminals' | 'on'>, id: TerminalId, cb: (cwd: string | null) => void): Unsubscribe {
+  return watchTerminalInfo(api, id, (info) => cb(info?.cwd ?? null));
 }

@@ -2,6 +2,12 @@
 
 按时间倒序。改动其中任何一条，先在这里写清楚再动代码。
 
+## 2026-10-25（X6 · 恢复上次会话）
+
+- **重开应用时只要有终端窗口的 tmux 会话没了，就问一次 “Restore your last session?”**（Restore all / Not now）；会话都在（普通 ⌘Q 再打开）不问。tmux 服务在应用开着时没了（`terminal.host-lost`）也问。Not now 之后每个窗口自己有 Restore / Restart。
+- **agent 按记下的会话 id 接回**（各适配器的 resume 参数），没记下就新开并说明；**Shell 在原目录重开、上次的命令填进输入行不运行**（`CreateTerminalRequest.prefill`，tmux-host 等提示符画出来后 `send-keys -l`，去掉换行）。自定义命令也按 Shell 恢复，不直接再跑。
+- **Shell 上次跑的命令靠 tmux-host 看终端的前台进程组（ps）记下**（`TerminalInfo.foregroundCommand` → `TerminalWindowData.lastCommand`），不读 shell 历史文件（分不清哪个终端）、不往用户的 shell 配置里加钩子。跑得很短的命令记不到，没记到时退回 `startCommand`。
+
 ## 2026-10-24（M1 · AgentDeck 的 MCP）
 
 - **AgentDeck 自己提供一个 MCP 服务**（`packages/mcp-server`），白板里的 agent 用它开终端、开工作区（worktree + 分支 + agent）、开网页、看和指挥别的终端。
