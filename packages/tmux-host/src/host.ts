@@ -7,6 +7,7 @@
 //   退出    → pane-died 钩子经同一个 socket 报回来；另有每 2 秒一次的 list-sessions 兜底，顺便发现服务没了（host-lost）
 
 import { randomBytes } from 'node:crypto';
+import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -50,7 +51,7 @@ export interface TmuxHostOptions {
   onData(message: TerminalDataMessage): void;
   /** tmux -L 的名字，默认 'agentdeck'。测试用自己的名字，互不影响。 */
   socketName?: string;
-  /** tmux.conf 的绝对路径。默认是本包里的那份；打包后要指向 resources 里的副本。 */
+  /** tmux.conf 的绝对路径。默认 DEFAULT_TMUX_CONF：本包里的那份，打包后是 resources 里的副本（IS-10）。 */
   configPath?: string;
   /** tmux 可执行文件。默认在 env.PATH 里找，再试 /opt/homebrew/bin、/usr/local/bin。 */
   tmuxPath?: string;
@@ -85,8 +86,33 @@ export interface TmuxHost extends TerminalHost {
   killServer(): Promise<void>;
 }
 
-/** 本包里的 tmux.conf。 */
-export const DEFAULT_TMUX_CONF = fileURLToPath(new URL('../tmux.conf', import.meta.url));
+/**
+ * 默认的 tmux.conf 在哪（IS-10）。依次试：
+ * 1. 本包里的那份（`../tmux.conf`，从源码跑、测试时就是它）；
+ * 2. 打包后的 resources 目录（`process.resourcesPath/tmux.conf`）：本包被打进应用的 out/ 以后 `import.meta.url` 不再指向本包，
+ *    第 1 条那个路径不存在，打包配置（apps/desktop/electron-builder.config.cjs）把 tmux.conf 放在 resources 里。
+ * 都没有时返回第 1 条（tmux 会报找不到配置文件，比悄悄用用户自己的 ~/.tmux.conf 好查）。
+ */
+export function resolveDefaultTmuxConf(input: {
+  packaged: string;
+  resourcesPath: string | undefined;
+  exists?: (path: string) => boolean;
+}): string {
+  const exists = input.exists ?? existsSync;
+  if (exists(input.packaged)) return input.packaged;
+  if (input.resourcesPath) {
+    const res = join(input.resourcesPath, 'tmux.conf');
+    if (exists(res)) return res;
+  }
+  return input.packaged;
+}
+
+/** 默认的 tmux.conf（见 resolveDefaultTmuxConf）。组装时仍可以用 configPath 显式传。 */
+export const DEFAULT_TMUX_CONF = resolveDefaultTmuxConf({
+  packaged: fileURLToPath(new URL('../tmux.conf', import.meta.url)),
+  // Electron 的主进程和 utilityProcess 都有 process.resourcesPath；纯 Node 里没有
+  resourcesPath: (process as { resourcesPath?: string }).resourcesPath,
+});
 
 const DEFAULT_SIZE: TermSize = { cols: 120, rows: 32 };
 const ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
