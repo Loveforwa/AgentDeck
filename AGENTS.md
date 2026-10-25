@@ -13,6 +13,7 @@
 - MVP 验收报告（现状、验收证据、端到端用例、问题清单）：https://claude.ai/artifact/FfnyWBeBAg1oPtyHieMbuu ，本地 `docs/status/index.html`（由 `docs/status/build.py` 生成）
 - 调研记录（实现中和最初设想不一样的地方、怎么决定的、好处和代价）：`docs/research-log.md`，网页版 https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK 。各条线发现新的情况写进自己的汇报或 CONTRACT_NOTES.md，合并时由集成负责人加进 `docs/research/entries.py`，不要各自直接改它（避免并行冲突）。
 - 接口：`packages/contracts`，规则见 `packages/contracts/AGENTS.md`
+- 写插件：步骤见 `.claude/skills/agentdeck-plugin/SKILL.md`（给 agent 和外部贡献者看的，英文），规则和登记表见 `docs/plugins.md`；对外的贡献说明是 `CONTRIBUTING.md`。
 
 ## 编号规则
 

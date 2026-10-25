@@ -108,6 +108,12 @@ pnpm dist    # .dmg 파일을 apps/desktop/dist/에 생성
 
 코드는 pnpm 모노레포입니다. 앱은 Electron과 React, 터미널은 xterm.js, 보드는 React Flow를 씁니다. 패키지마다 역할을 설명하는 `AGENTS.md`가 있으며, 내부 문서는 대부분 중국어입니다.
 
+## 기여하기
+
+버그 제보, 수정, 더 많은 에이전트 지원, 새 플러그인까지 어떤 기여든 환영합니다. 개발 환경 준비와 pull request 보내는 방법은 [CONTRIBUTING.md](../../CONTRIBUTING.md)에 있습니다.
+
+플러그인을 만들려면 [`.claude/skills/agentdeck-plugin/SKILL.md`](../../.claude/skills/agentdeck-plugin/SKILL.md)부터 읽어 보세요. 오른쪽 클릭 메뉴 항목과 표시부터 백엔드 서비스까지 전체 과정을 다룹니다. skill 형식으로 쓰여 있어서 코딩 에이전트에게 그대로 맡길 수 있습니다. 이 저장소에서는 Claude Code가 자동으로 불러오고, Codex나 다른 에이전트에는 이 파일을 알려 주면 됩니다. 플러그인 규칙과 기존 플러그인 목록은 [docs/plugins.md](../../docs/plugins.md)에 있습니다(중국어).
+
 ## 라이선스
 
 [MIT](../../LICENSE)

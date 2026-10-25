@@ -108,6 +108,12 @@ pnpm dist    # 打包 .dmg，放在 apps/desktop/dist/
 
 代码是 pnpm 单仓多包：应用用 Electron 和 React，终端用 xterm.js，白板用 React Flow。每个包都有一份 `AGENTS.md`，说明它负责什么；内部文档大多是中文。
 
+## 参与贡献
+
+非常欢迎大家来贡献：报 bug、修问题、支持更多 agent、写新插件都可以。怎么搭环境、怎么提 PR，见 [CONTRIBUTING.md](../../CONTRIBUTING.md)。
+
+想写插件的话，从 [`.claude/skills/agentdeck-plugin/SKILL.md`](../../.claude/skills/agentdeck-plugin/SKILL.md) 开始。它从右键菜单项、标记一直讲到后端服务，而且写成了 skill 的格式，可以直接交给编程 agent 照着做：在这个仓库里 Claude Code 会自动加载它，用 Codex 或别的 agent 时把这个文件指给它就行。插件的规则和现有插件的登记表在 [docs/plugins.md](../../docs/plugins.md)。
+
 ## 许可证
 
 [MIT](../../LICENSE)

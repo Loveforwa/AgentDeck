@@ -108,6 +108,12 @@ pnpm dist    # .dmg を apps/desktop/dist/ に作成
 
 コードは pnpm のモノレポです。アプリは Electron と React、ターミナルは xterm.js、ボードは React Flow。各パッケージの役割はそれぞれの `AGENTS.md` に書かれていますが、内部ドキュメントの多くは中国語です。
 
+## コントリビュート
+
+バグ報告、修正、対応エージェントの追加、新しいプラグインなど、どんな貢献も大歓迎です。開発環境の準備と pull request の送り方は [CONTRIBUTING.md](../../CONTRIBUTING.md) にあります。
+
+プラグインを作るなら [`.claude/skills/agentdeck-plugin/SKILL.md`](../../.claude/skills/agentdeck-plugin/SKILL.md) から読んでください。右クリックメニューの項目やマークからバックエンドのサービスまで、一通りの手順を書いています。skill の形式なので、コーディングエージェントにそのまま渡せます。このリポジトリでは Claude Code が自動で読み込みます。Codex などほかのエージェントには、このファイルを指定してください。プラグインのルールと既存プラグインの一覧は [docs/plugins.md](../../docs/plugins.md) にあります（中国語）。
+
 ## ライセンス
 
 [MIT](../../LICENSE)

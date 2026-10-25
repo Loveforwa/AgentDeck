@@ -108,6 +108,12 @@ pnpm dist    # genera los .dmg en apps/desktop/dist/
 
 El código es un monorepo de pnpm: Electron y React para la app, xterm.js para las terminales y React Flow para la pizarra. Cada paquete tiene un `AGENTS.md` que explica su función; la mayor parte de la documentación interna está en chino.
 
+## Contribuir
+
+Cualquier contribución es bienvenida: informes de errores, correcciones, soporte para más agentes y plugins nuevos. En [CONTRIBUTING.md](../../CONTRIBUTING.md) se explica cómo preparar el proyecto y enviar un pull request.
+
+Para escribir un plugin, empieza por [`.claude/skills/agentdeck-plugin/SKILL.md`](../../.claude/skills/agentdeck-plugin/SKILL.md). Recorre todo el proceso, desde la entrada del menú y la marca hasta el servicio del backend, y está escrito como una skill, así que un agente de programación también puede seguirlo. Claude Code la carga automáticamente en este repositorio; con Codex u otro agente, indícale el archivo. Las reglas de los plugins y la lista de los que ya existen están en [docs/plugins.md](../../docs/plugins.md) (en chino).
+
 ## Licencia
 
 [MIT](../../LICENSE)
