@@ -534,6 +534,29 @@
   flex: none;
 }
 
+/* 写全称以后条变长了：终端窄时先藏 Cache，再藏 Output、Input，Context 一直在（悬停仍然有全部数字） */
+.ad-usage-body {
+  container-type: inline-size;
+}
+
+@container (max-width: 500px) {
+  .ad-usage-field[data-field='cache'] {
+    display: none;
+  }
+}
+
+@container (max-width: 400px) {
+  .ad-usage-field[data-field='out'] {
+    display: none;
+  }
+}
+
+@container (max-width: 310px) {
+  .ad-usage-field[data-field='in'] {
+    display: none;
+  }
+}
+
 .ad-usage-ctx {
   display: flex;
   flex: none;

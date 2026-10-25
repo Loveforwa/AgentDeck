@@ -78,7 +78,7 @@ export function hasData(u: TerminalUsage | null): u is TerminalUsage & { state: 
 }
 
 export function contextAttention(u: TerminalUsage | null): boolean {
-  const p = u?.context?.percent;
+  const p = contextDisplay(u)?.percent;
   return typeof p === 'number' && p >= CONTEXT_ATTENTION_PERCENT;
 }
 
@@ -86,6 +86,63 @@ export function contextAttention(u: TerminalUsage | null): boolean {
 export function percentText(p: number | null | undefined): string | null {
   if (p === null || p === undefined || !Number.isFinite(p)) return null;
   return `${Math.round(Math.min(100, Math.max(0, p)))}%`;
+}
+
+/** 条上各项的悬停说明（不懂 input / output / cache 的人也看得明白）。 */
+export const FIELD_HINTS = {
+  input: 'Input: tokens sent to the model in this conversation, not counting cached ones',
+  output: 'Output: tokens the model wrote back, including its thinking',
+  cache: 'Cache: tokens the model re-read from its prompt cache instead of processing again (cheaper and faster)',
+  context:
+    'Context: how much of the model’s context window this conversation fills right now. When it is full the agent compacts the conversation or you start a new one',
+} as const;
+
+/** kimi 的写法：k 按 1024 算，100k 以上取整（977k），一位小数去掉多余的 .0（kimi-code src/utils/usage/usage-format.ts）。 */
+export function abbreviate1024(n: number | null | undefined): string {
+  if (n === null || n === undefined || !Number.isFinite(n) || n < 0) return '–';
+  const one = (x: number) => {
+    const s = x.toFixed(1);
+    return s.endsWith('.0') ? s.slice(0, -2) : s;
+  };
+  if (n >= 1024 * 1024) return `${one(n / (1024 * 1024))}M`;
+  if (n >= 1024) {
+    const k = n / 1024;
+    return `${k >= 100 ? Math.round(k) : one(k)}k`;
+  }
+  return String(Math.round(n));
+}
+
+/** codex 算上下文占比时先扣掉的基线（codex-rs protocol.rs 的 BASELINE_TOKENS）。 */
+export const CODEX_BASELINE_TOKENS = 12_000;
+
+export interface ContextDisplay {
+  used: string;
+  window: string | null;
+  /** 0–100 的整数；没有窗口大小时为 null。 */
+  percent: number | null;
+}
+
+/**
+ * 上下文那一格照 agent 自己界面上的写法算，和终端里看到的对得上：
+ * kimi 的 k 按 1024、百分比向上取整（68.8k/977k、8%）；codex 先扣 12000 的基线（它写的是 “x% context left”，这里是 100 - x）；
+ * 别的 agent 按 1000 进位、四舍五入。
+ */
+export function contextDisplay(u: TerminalUsage | null): ContextDisplay | null {
+  const ctx = u?.context;
+  if (!u || !ctx || ctx.tokens === null || ctx.tokens === undefined) return null;
+  const clamp = (p: number) => Math.min(100, Math.max(0, p));
+  if (u.agent === 'kimi') {
+    const percent = ctx.window ? clamp(Math.ceil((ctx.tokens / ctx.window) * 100)) : null;
+    return { used: abbreviate1024(ctx.tokens), window: ctx.window ? abbreviate1024(ctx.window) : null, percent };
+  }
+  if (u.agent === 'codex' && ctx.window && ctx.window > CODEX_BASELINE_TOKENS) {
+    const effective = ctx.window - CODEX_BASELINE_TOKENS;
+    const used = Math.max(0, ctx.tokens - CODEX_BASELINE_TOKENS);
+    const left = clamp(Math.round(((effective - used) / effective) * 100));
+    return { used: abbreviate(ctx.tokens), window: abbreviate(ctx.window), percent: 100 - left };
+  }
+  const p = ctx.percent ?? (ctx.window ? (ctx.tokens / ctx.window) * 100 : null);
+  return { used: abbreviate(ctx.tokens), window: ctx.window ? abbreviate(ctx.window) : null, percent: p === null ? null : clamp(Math.round(p)) };
 }
 
 export const INFERRED_NOTE = 'Session inferred from the folder and start time; it may be the wrong one';
@@ -108,19 +165,19 @@ export function stripTitle(u: TerminalUsage): string {
   }
   const ctx = u.context;
   if (ctx) {
-    const pct = percentText(ctx.percent);
-    lines.push(`Context ${exact(ctx.tokens)}${ctx.window !== null ? ` of ${exact(ctx.window)}` : ''}${pct ? ` (${pct})` : ''}`);
+    const p = contextDisplay(u)?.percent;
+    lines.push(`Context ${exact(ctx.tokens)}${ctx.window !== null ? ` of ${exact(ctx.window)}` : ''}${p !== null && p !== undefined ? ` (${p}%)` : ''}`);
   }
   if (u.model) lines.push(u.model);
   if (u.match === 'inferred') lines.push(INFERRED_NOTE);
   return lines.join('\n');
 }
 
-/** 小卡片里最近一次请求那一行：in 2.1k · out 640 · cache 94k（缓存写不为 0 时 94k / 1.2k）。 */
+/** 小卡片里最近一次请求那一行：Input 2.1k · Output 640 · Cache 94k（缓存写不为 0 时 94k / 1.2k）。 */
 export function lastRequestText(t: TokenCounts | null): string {
   if (!t) return '–';
   const cache = t.cacheWrite ? `${abbreviate(t.cacheRead)} / ${abbreviate(t.cacheWrite)}` : abbreviate(t.cacheRead);
-  return `in ${abbreviate(t.input)} · out ${abbreviate(t.output)} · cache ${cache}`;
+  return `Input ${abbreviate(t.input)} · Output ${abbreviate(t.output)} · Cache ${cache}`;
 }
 
 /** codex 的账号额度：300 分钟是 “5-hour limit”，10080 是 “Weekly limit”。 */

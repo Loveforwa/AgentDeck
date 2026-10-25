@@ -12,6 +12,8 @@ import { setUsage } from '../src/plugins/usage.tsx';
 import { createWindowRegistry } from '../src/registry.ts';
 import {
   CONTEXT_ATTENTION_PERCENT,
+  abbreviate1024,
+  contextDisplay,
   abbreviate,
   cacheText,
   lastRequestText,
@@ -194,10 +196,10 @@ describe('PL2 the strip', () => {
     expect(el.closest('.ad-window')).toBeNull();
     expect(el.parentElement?.classList.contains('ad-window-node')).toBe(true);
     const field = (f: string) => el.querySelector<HTMLElement>(`[data-field="${f}"]`)!.textContent;
-    expect(field('in')).toBe('in 312k');
-    expect(field('out')).toBe('out 18.4k');
-    expect(field('cache')).toBe('cache 1.4M / 86k');
-    expect(field('ctx')).toBe('ctx 96k48%');
+    expect(field('in')).toBe('Input 312k');
+    expect(field('out')).toBe('Output 18.4k');
+    expect(field('cache')).toBe('Cache 1.4M');
+    expect(field('ctx')).toBe('Context 96k / 200k48%');
     expect(el.querySelector<HTMLElement>('.ad-usage-meter > i')!.style.width).toBe('48%');
     expect(el.querySelector('.ad-usage-grip')).not.toBeNull();
     // 悬停：准确数和模型名
@@ -232,9 +234,9 @@ describe('PL2 the strip', () => {
         context: { tokens: 120_000, window: 200_000, percent: 60, windowSource: 'model-table' },
       });
     });
-    await waitFor(() => expect(el.querySelector('[data-field="in"]')!.textContent).toBe('in 1.3M'));
-    expect(el.querySelector('[data-field="out"]')!.textContent).toBe('out 1M');
-    expect(el.querySelector('[data-field="ctx"]')!.textContent).toBe('ctx 120k60%');
+    await waitFor(() => expect(el.querySelector('[data-field="in"]')!.textContent).toBe('Input 1.3M'));
+    expect(el.querySelector('[data-field="out"]')!.textContent).toBe('Output 1M');
+    expect(el.querySelector('[data-field="ctx"]')!.textContent).toBe('Context 120k / 200k60%');
     c.dispose();
   });
 
@@ -246,12 +248,13 @@ describe('PL2 the strip', () => {
     expect(ctx.dataset.attention).toBe('true');
     expect(el.className).toContain('ad-usage-strip--attention');
     // codex 不报缓存写：只写读
-    expect(el.querySelector('[data-field="cache"]')!.textContent).toBe('cache 5.8M');
+    expect(el.querySelector('[data-field="cache"]')!.textContent).toBe('Cache 5.8M');
     expect(declarations('.ad-usage-ctx[data-attention]')).toMatch(/color:\s*var\(--attention\)/);
     expect(declarations('.ad-usage-ctx[data-attention] .ad-usage-meter > i')).toMatch(/background:\s*var\(--attention\)/);
     act(() => void api.fakes.usage.set(T.loginCodex, { context: { tokens: 228_000, window: 272_000, percent: 84, windowSource: 'agent' } }));
     await waitFor(() => expect(ctx.dataset.attention).toBeUndefined());
-    act(() => void api.fakes.usage.set(T.loginCodex, { context: { tokens: 231_200, window: 272_000, percent: 85, windowSource: 'agent' } }));
+    // codex 照它自己的算法先扣 12000 的基线：(233500 - 12000) / (272000 - 12000) ≈ 85%
+    act(() => void api.fakes.usage.set(T.loginCodex, { context: { tokens: 233_500, window: 272_000, percent: 85, windowSource: 'agent' } }));
     await waitFor(() => expect(ctx.dataset.attention).toBe('true'));
     c.dispose();
   });
@@ -379,9 +382,9 @@ describe('PL2 the popover', () => {
     const card = await screen.findByRole('dialog', { name: 'Usage details' });
     const q = within(card);
     expect(q.getByText('claude-opus-5-5')).toBeTruthy();
-    expect(q.getByText('window 200k')).toBeTruthy();
-    expect(q.getByText('in 2.1k · out 640 · cache 94k')).toBeTruthy();
-    expect(card.querySelector('[data-row="requests"]')!.textContent).toBe('requests37');
+    expect(q.getByText('Context window 200k')).toBeTruthy();
+    expect(q.getByText('Input 2.1k · Output 640 · Cache 94k')).toBeTruthy();
+    expect(card.querySelector('[data-row="requests"]')!.textContent).toBe('Requests37');
     expect(card.querySelector('[data-row="limit"]')).toBeNull();
     fireEvent.click(q.getByRole('button', { name: 'Move to bottom' }));
     await waitFor(() => expect(strip(CLAUDE)?.dataset.position).toBe('bottom'));
@@ -406,7 +409,7 @@ describe('PL2 the popover', () => {
     const card = await screen.findByRole('dialog', { name: 'Usage details' });
     const rows = [...card.querySelectorAll('[data-row="limit"]')].map((r) => r.textContent);
     expect(rows).toEqual(['5-hour limit23% used', 'Weekly limit41% used']);
-    expect(within(card).getByText('in 8.4k · out 1.2k · cache 228k')).toBeTruthy();
+    expect(within(card).getByText('Input 8.4k · Output 1.2k · Cache 228k')).toBeTruthy();
     c.dispose();
   });
 
@@ -453,6 +456,18 @@ describe('PL2 watch / unwatch', () => {
 });
 
 describe('PL2 formatting', () => {
+  it('the context cell matches what each agent shows itself (kimi: 1024-based k, rounded up; codex: 12000 baseline)', () => {
+    const base = { state: 'ok', reason: null, match: 'exact', model: null, total: null, last: null, requests: 1, updatedAt: '' } as const;
+    // kimi 截图里的一组：70,450 / 1,000,000 → kimi 写 68.8k/977k、8%
+    const kimi = { ...base, agent: 'kimi', context: { tokens: 70_450, window: 1_000_000, percent: 7.045, windowSource: 'config' } } as unknown as TerminalUsage;
+    expect(contextDisplay(kimi)).toEqual({ used: '68.8k', window: '977k', percent: 8 });
+    expect(abbreviate1024(262_144)).toBe('256k');
+    const codex = { ...base, agent: 'codex', context: { tokens: 22_957, window: 475_000, percent: 4.8, windowSource: 'agent' } } as unknown as TerminalUsage;
+    expect(contextDisplay(codex)).toEqual({ used: '23k', window: '475k', percent: 2 });
+    const claude = { ...base, agent: 'claude', context: { tokens: 96_000, window: 200_000, percent: 48, windowSource: 'model-table' } } as unknown as TerminalUsage;
+    expect(contextDisplay(claude)).toEqual({ used: '96k', window: '200k', percent: 48 });
+  });
+
   it('abbreviates with k / M', () => {
     expect(abbreviate(640)).toBe('640');
     expect(abbreviate(2_100)).toBe('2.1k');
@@ -465,7 +480,7 @@ describe('PL2 formatting', () => {
     expect(abbreviate(null)).toBe('–');
     expect(cacheText({ input: 0, output: 0, cacheRead: 1_400_000, cacheWrite: 86_000, reasoning: null })).toBe('1.4M / 86k');
     expect(cacheText({ input: 0, output: 0, cacheRead: 1_400_000, cacheWrite: null, reasoning: null })).toBe('1.4M');
-    expect(lastRequestText({ input: 2_100, output: 640, cacheRead: 94_000, cacheWrite: 1_200, reasoning: null })).toBe('in 2.1k · out 640 · cache 94k / 1.2k');
+    expect(lastRequestText({ input: 2_100, output: 640, cacheRead: 94_000, cacheWrite: 1_200, reasoning: null })).toBe('Input 2.1k · Output 640 · Cache 94k / 1.2k');
   });
 
   it('names the codex limit windows and shows the reset time', () => {

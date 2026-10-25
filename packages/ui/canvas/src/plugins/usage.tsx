@@ -1,6 +1,7 @@
 // Usage 插件（PL2，设计画布“插件能力”页 PluginUsage，规则见 docs/plugins.md，数据来源见 DR-55）。
 // 贴在终端上（claude、codex、pi、omp、kimi；shell 和自定义命令灰掉）。开着时终端上方（或下方）贴一条细长的圆角条，
-// 和终端一样宽、隔 6px：拖动把手（点阵）、in、out、cache 读 / 写，右边 ctx + 小进度条 + 百分比；上下文到 85% 变黄。
+// 和终端一样宽、隔 6px：拖动把手（点阵）、Input、Output、Cache（读），右边 Context 用量 / 窗口 + 小进度条 + 百分比
+// （照 agent 自己的写法算，见 contextDisplay）；上下文到 85% 变黄。每一项悬停有说明。
 // 拖把手只能贴到这个终端的上边或下边（拖动中蓝色落点线）；点条弹出小卡片（模型、窗口、最近一次请求、请求次数、
 // codex 的 5 小时 / 每周额度、Move to bottom / top、Hide）。只在条画着时 watch，收起、关窗口、关插件时 unwatch。
 // 开关和位置写进 TerminalWindowData.usage，随白板保存。
@@ -15,14 +16,14 @@ import type { PluginDefinition } from './types.ts';
 import {
   USAGE_AGENTS,
   abbreviate,
-  cacheText,
   contextAttention,
+  contextDisplay,
+  FIELD_HINTS,
   hasData,
   INFERRED_NOTE,
   lastRequestText,
   limitRows,
   noDataReason,
-  percentText,
   stripTitle,
   usageSettings,
   usageShown,
@@ -141,7 +142,8 @@ function UsageStripOn({ windowId, terminalId, position, c }: { windowId: WindowI
   const attention = ok && contextAttention(usage);
   const reason = ok ? null : noDataReason(usage, error, terminalId);
   const title = ok ? stripTitle(usage) : `No usage data${reason ? `: ${reason}` : ''}${usage?.match === 'inferred' ? `\n${INFERRED_NOTE}` : ''}`;
-  const pct = ok ? percentText(usage.context?.percent) : null;
+  const ctx = ok ? contextDisplay(usage) : null;
+  const pct = ctx && ctx.percent !== null ? `${ctx.percent}%` : null;
   const cls = ['ad-usage-strip', drag ? 'ad-usage-strip--dragging' : null, attention ? 'ad-usage-strip--attention' : null, 'nopan', 'nodrag']
     .filter(Boolean)
     .join(' ');
@@ -186,17 +188,17 @@ function UsageStripOn({ windowId, terminalId, position, c }: { windowId: WindowI
         >
           {ok ? (
             <>
-              <span className="ad-usage-field" data-field="in">
-                <span className="ad-usage-k">in</span> {abbreviate(usage.total?.input)}
+              <span className="ad-usage-field" data-field="in" title={FIELD_HINTS.input}>
+                <span className="ad-usage-k">Input</span> {abbreviate(usage.total?.input)}
               </span>
-              <span className="ad-usage-field" data-field="out">
-                <span className="ad-usage-k">out</span> {abbreviate(usage.total?.output)}
+              <span className="ad-usage-field" data-field="out" title={FIELD_HINTS.output}>
+                <span className="ad-usage-k">Output</span> {abbreviate(usage.total?.output)}
               </span>
-              <span className="ad-usage-field" data-field="cache">
-                <span className="ad-usage-k">cache</span> {cacheText(usage.total)}
+              <span className="ad-usage-field" data-field="cache" title={FIELD_HINTS.cache}>
+                <span className="ad-usage-k">Cache</span> {abbreviate(usage.total?.cacheRead)}
               </span>
-              <span className="ad-usage-ctx" data-field="ctx" data-attention={attention || undefined}>
-                <span className="ad-usage-k">ctx</span> {abbreviate(usage.context?.tokens)}
+              <span className="ad-usage-ctx" data-field="ctx" data-attention={attention || undefined} title={FIELD_HINTS.context}>
+                <span className="ad-usage-k">Context</span> {ctx ? (ctx.window ? `${ctx.used} / ${ctx.window}` : ctx.used) : '–'}
                 {pct ? (
                   <>
                     <span className="ad-usage-meter" aria-hidden="true">
@@ -250,16 +252,16 @@ function UsageCard(props: { usage: TerminalUsage | null; reason: string | null; 
           <div className="ad-usage-card-head">
             <span className="ad-usage-card-model">{u.model ?? 'Unknown model'}</span>
             {u.context?.window !== null && u.context?.window !== undefined ? (
-              <span className="ad-usage-card-muted">window {abbreviate(u.context.window)}</span>
+              <span className="ad-usage-card-muted">Context window {contextDisplay(u)?.window ?? abbreviate(u.context.window)}</span>
             ) : null}
           </div>
           <div className="ad-usage-card-rows">
             <div className="ad-usage-card-row" data-row="last">
-              <span className="ad-usage-card-label">last request</span>
+              <span className="ad-usage-card-label">Last request</span>
               <span>{lastRequestText(u.last)}</span>
             </div>
             <div className="ad-usage-card-row" data-row="requests">
-              <span className="ad-usage-card-label">requests</span>
+              <span className="ad-usage-card-label">Requests</span>
               <span>{u.requests}</span>
             </div>
             {limits.map((l) => (
