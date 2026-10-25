@@ -14,6 +14,7 @@ AgentDeck 自己的 tmux 实例：`tmux -L agentdeck -f packages/tmux-host/tmux.
 | 文件 | 内容 |
 | --- | --- |
 | `src/host.ts` | `startTmuxHost(options)`：TerminalHost 的实现 |
+| `src/activity.ts` | `ActivityTracker`：一个终端的 activity / silence 计时，改大小后的重画不算活动（IS-72） |
 | `src/stream.ts` | 收 pipe-pane 输出和 pane-died 钩子的 Unix socket（tmux 那边用 `nc -U` 连上来） |
 | `src/tmux.ts` | 调 tmux（固定 `-L -f`）、`tmux -V` 检查、引号和格式转义 |
 | `src/env.ts` | 窗格环境（登录 shell 的环境去掉终端身份和宿主注入的变量）、tmux 服务的最小环境、在 PATH 里找命令 |
@@ -23,6 +24,7 @@ AgentDeck 自己的 tmux 实例：`tmux -L agentdeck -f packages/tmux-host/tmux.
 | `tmux.conf` | 最终配置（F7），每一项都有注释 |
 | `test/host.test.ts` | 真 tmux 的集成测试（`-L agentdeck-test-<pid>`，测完 kill-server） |
 | `test/pure.test.ts` | 纯函数 |
+| `test/activity.test.ts` | `ActivityTracker`（假计时器） |
 | `dev/bridge.ts` | 本地演示：把真 tmux-host 经 HTTP 交给终端窗口的 dev 页面（`?real=1`） |
 | `scripts/approve-keys.ts` | 用真 claude / codex 核对 Approve all 的按键 |
 | `scripts/perf.ts` | 6 个终端同时打字的延迟、attach 速度 |
@@ -41,7 +43,7 @@ const host = await startTmuxHost({
   onData: (m) => portOf(m.viewId)?.postMessage(m), // TerminalDataMessage，写进对应窗口的 MessagePort
   linkWatcher: () => createLinkWatcher(), // 不给就不发 terminal.link（服务包之间不能直接 import，所以由组装注入）
   // 可选：socketName（默认 'agentdeck'）、configPath（默认本包的 tmux.conf）、tmuxPath、runDir（默认 ~/.agentdeck/run）、
-  //       ncPath（默认 /usr/bin/nc）、silenceMs（3000）、healthIntervalMs（2000）
+  //       ncPath（默认 /usr/bin/nc）、silenceMs（3000）、resizeQuietMs（1000，见下面 IS-72）、healthIntervalMs（2000）
 });
 // host 实现 TerminalHost，另有：host.tmuxVersion、host.dispose()（不结束会话）、host.killServer()（Stop all and quit）
 ```
@@ -56,6 +58,9 @@ const host = await startTmuxHost({
 - `attachCommand`：`<tmux 绝对路径> -L agentdeck -f <tmux.conf> -u attach-session -t =<id>`（只带 `-u`，见 F7 问题 4）。
 - `recentLinks`：新的在前，最多 20 条，同一个链接再出现时挪到最前、不再发事件。重开应用后第一次调用时从 tmux 历史（最后 500 行）里补找一遍。
 - `terminal.silence`：最后一次输出**或输入**之后 3 秒发（输入也重新计时：用户按了 Esc 而程序什么都没输出时，状态机的兜底规则也能等到 silence）。一段连续输出只发一次 `terminal.activity`。
+- **改大小后的重画不算活动（IS-72）**：`attach` 给的大小和这个终端上次知道的不一样、或 `resize` 改了大小时，tmux 改窗口大小、程序收到 SIGWINCH 重画（shell 重画提示符，TUI 重画整屏）。这之后 `resizeQuietMs`（默认 1000ms）内、终端本来安静（上次 silence 之后还没发过 activity）时来的输出**不发 `terminal.activity`**，也不更新 `lastActivityAt`；静默计时照常，`terminal.silence` 的时机和以前一样。窗口过后还有输出就照常发 activity，所以真在输出的程序最多晚 1 秒被看到；只在窗口里输出一下就停的会被当成重画。
+  - 例外：新建的终端第一次 activity 不压（新建时 attach 和程序启动同时发生，状态机要靠它离开 starting）；重开应用接回的会话没有这个例外（状态机按 idle 接上，第一次 attach 的重画也不该变成 Running）。
+  - 为什么放在这里、不看 `pane_current_command`：只有 host 知道是不是自己改了大小；`pane_current_command` 对自定义命令永远“不是 shell”，也会让 dev server 一直显示 Running，和状态机现在“有输出才算运行”的规则不一样。状态机（agent-adapters）不用改：有钩子的 agent 只在 starting 时看 activity（第 13 行），这里不压第一次 activity，所以 agent 的状态逻辑不变；Shell、自定义命令（第 17 行）不再因为改大小变成 Running。
 
 ### 给组装（第 3 波）
 
