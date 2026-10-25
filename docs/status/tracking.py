@@ -428,6 +428,11 @@ ISSUES = [
     ('IS-70', 'P3', '缺陷', '右侧面板 · BOARD 列表', 'BOARD 列表里子 agent 终端只写 zsh / claude，没写侧边栏里的名字（sub-1 · api）', '开一组子 agent，单击空白处看 BOARD 列表', '分不清是哪个子 agent', 'BOARD 列表用和侧边栏一样的名字', 'TC-35'),
     ('IS-71', 'P3', '缺陷', 'Settings', '从某个项目的终端打开 Settings（齿轮或 ⌘,）时，Projects 默认选中第一个项目，不是当前项目', '聚焦 shop 的终端，点齿轮', '要再点一次才到当前项目', '打开时选中当前聚焦窗口所在的项目', 'TC-15、TC-29'),
     ('IS-72', 'P3', '缺陷', '终端状态', '改 shell 终端大小时，shell 重画提示符被当成输出，标题栏短暂显示 Running，顶栏的 running 数也跟着变', '拖一个空闲 shell 的边改大小', '状态灯闪一下，误以为在跑', '改大小后的一小段输出不算活动（或 shell 只按前台进程判断 Running）', 'TC-31'),
+    ('IS-73', 'P1', '风险', 'agent-adapters · 启动', '任何一个 agent 去掉或改名一个我们每次都带的参数（--settings、--mcp-config、--plugin-dir、-c hooks、-e、--skill、--skills-dir），这个 agent 的所有新终端都 Error · exit，没有自动退回，界面上也关不掉；版本号读不出时还当作够新', 'agent 升级后去掉了一个参数', '这个 agent 完全用不了', 'DR-60 P0：启动保底重开 + 版本未知不带 + --help 探测；内置 skill 不再让 Skills 参数成为硬依赖', ''),
+    ('IS-74', 'P1', '风险', 'agent-adapters · 状态', '有钩子的终端完全不看输出活动，钩子停了（升级、disableAllHooks、codex 信任哈希对不上、pi 扩展 API 变了）状态灯就卡住，等你的黄灯不亮', 'agent 升级后钩子事件名变了', '在等你却看不出来', 'DR-60：该来的 SessionStart 没来就退回按输出判断，并标 hooks not working', ''),
+    ('IS-75', 'P1', '风险', '插件 · Auto-approve', '回了 allow 就直接当已放行，不再进等待；agent 不认回复格式时终端一直显示 Running，还记一条假的自动批准记录。提问工具改名后可能被当成批准替你答掉', 'agent 升级改了钩子回复格式或提问工具名', 'agent 其实在等你，你却以为在跑', '回了 allow 后几秒内没有 PostToolUse / Stop 就退回 needs-approval；超过核对版本时关掉自动批准', 'TC-40'),
+    ('IS-76', 'P2', '缺陷', 'agent-adapters · pi/omp/kimi', 'generic 适配器没用 ctx.prompt，MCP 的 open_terminals / create_workspace 指定 pi、omp、kimi 时第一条消息被悄悄丢掉，终端空着启动', '让 claude 用 open_terminals 开 pi 并给 prompts', '子 agent 没收到任务', '照各 agent 的方式带上第一条消息（参数或启动后发送）', 'TC-34'),
+    ('IS-77', 'P2', '风险', 'agent-adapters · 兼容', '其他几处：codex 信任哈希缓存只按 notify 路径存，升级后不失效；重开接回终端时按当前适配器的钩子能力算，不是那次启动实际带没带；omp 认屏没检查 Approve 是第一项；AGENTS.md 写 claude 按 Enter、代码是 1；pi 1.4.0、omp 18.12.6、claude 2.1.310 没核对', '—', '升级后零散地出错', '按 DR-60 一并处理，先核对 pi 1.x（它可能已经有 MCP）', ''),
 ]
 
 # 用户在验收报告网页上填的验收结果（2026-10-24 从网页数据库同步的快照）。网页打开后以数据库为准；

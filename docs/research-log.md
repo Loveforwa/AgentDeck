@@ -3,7 +3,7 @@
 实现过程中和一开始设想不一样的地方：原来以为什么、实际是什么、怎么决定的、好处和代价。
 由 `docs/research/build.py` 从 `docs/research/entries.py` 生成，不要直接改这个文件。更新于 2026-10-25。
 
-共 59 条：已解决 38，进行中 13，推迟 5，待验证 3。
+共 60 条：已解决 38，进行中 13，推迟 5，待验证 4。
 
 编号规则（全项目统一）：DR-xx 调研记录 · TC-xx 端到端用例 · IS-xx 问题 · F1、T2、X3 等是 MVP 任务表的任务编号。用例和问题在 MVP 验收报告（docs/status/index.html）里；每条调研下面列出相关的用例和问题。
 
@@ -71,6 +71,7 @@
   - [DR-57 React Flow 手势的两个坑](#dr-57)（已解决）
   - [DR-58 各 agent 怎么在启动时挂上 AgentDeck 的 MCP](#dr-58)（已解决）
   - [DR-59 各 agent 怎么在启动时带上 skill](#dr-59)（已解决）
+  - [DR-60 agent 升级后会不会让 AgentDeck 的功能集体失效](#dr-60)（待验证）
   - [DR-42 claude 能不能把对话 fork 到另一个目录](#dr-42)（待验证）
   - [DR-43 Approve all 发的“允许一次”按键对不对](#dr-43)（待验证）
   - [DR-44 经过 tmux 后的手感，要人在真界面上确认](#dr-44)（待验证）
@@ -848,6 +849,18 @@
 - **决策**：claude、omp、pi、kimi 按上面带；codex 的 skill 行灰掉写 “Not supported for codex”。AgentDeck 在数据目录里按内容生成一套 skill 目录（skill-sets/），启动时指过去，不往用户配置和仓库里写东西。
 - **好处**：每个终端可以带不同的 skill，不影响用户全局配置。
 - **代价**：codex 加不了 skill；kimi 的做法没在真程序里核对；旧的 skill-sets 目录暂不清理。
+
+<a id="dr-60"></a>
+
+### DR-60 agent 升级后会不会让 AgentDeck 的功能集体失效
+
+状态：待验证 · 出处：packages/agent-adapters（known.ts、env.ts、runtime.ts、status/machine.ts、usage）· tools/agentdeck-notify · 旧编号 —
+
+相关：IS-73、IS-74、IS-75、IS-76、IS-77
+
+- **原来以为**：各 agent 的启动参数、钩子、会话文件、确认框都稳定；有 minVersion 下限就够了。
+- **实际情况**：耦合点分三类：启动参数（claude --settings/--mcp-config/--plugin-dir、codex -c hooks/mcp_servers、pi/omp -e/--skill/--plugin-dir、kimi --skills-dir）一变终端就起不来（Error · exit），没有自动退回；钩子事件、负载字段、扩展 API、批准回复格式一变，状态灯和 Auto-approve 静默出错（有钩子的终端完全不看输出活动，没有“钩子没来”的检测；回了 allow 就不再进等待）；会话文件、屏幕文字一变，用量和 omp 认屏只是关掉。版本门槛只有下限，版本号读不出时当作够新；内置 skill 默认勾选，让 --plugin-dir、--skill、--skills-dir 变成每次都带的硬依赖。npm 上已有 pi 1.4.0、omp 18.12.6、claude 2.1.310，都没核对、都会自动通过门槛。
+- **怎么验证**：（待定，建议）P0：启动保底（起不来就只带会话参数重开并标降级）、版本未知不带可能“挂”的参数、按 --help 探测参数、检测钩子是否活着并退回按输出判断、兼容表记“核对到哪个版本”且超过时关掉按键批准和认屏；P1：版本缓存按二进制修改时间刷新、用量解析报 format-changed、claude/codex 按键批准前也认屏、Settings › Agents 显示每项功能状态、每天跑一次装最新版的兼容检查。
 
 <a id="dr-42"></a>
 
