@@ -484,6 +484,10 @@ ACCEPTED = {
 
 # 已经处理的问题：处理状态和备注
 RESOLVED = {
+    'IS-36': '2026-10-25 已做（4d25382）：pnpm dist 出 arm64 / x64 两个 dmg（ad-hoc 签名，未公证），挂载后在最小环境下启动、开 zsh 都通过',
+    'IS-09': '2026-10-25 已修（d350faa）：pty.ts 的 require 改名 nodeRequire，去掉构建里的改名插件',
+    'IS-10': '2026-10-25 已修（f35d333）：打包后默认 tmux.conf 用 Resources 里那份',
+    'IS-11': '2026-10-25 已修（7c3e8f7）：从程序坞打开时补上 SHELL、USER 和常见安装目录的 PATH；打包版里开 claude 还没测',
     'IS-35': '2026-10-25 已做（X6，0480c99）：重开时 Restore your last session?，agent 按会话 id 接回，shell 填好命令不运行',
     'IS-68': '2026-10-25 已修（64d67f5）：只有 agent 终端有 Auto-approve；shell、自定义命令菜单里没有这一项、不挂书签，框上开时也只管 agent；kimi 在开着的框里也不挂',
     'IS-69': '2026-10-25 已修（a221001）：Usage 的数字、上下文、额度按各 agent 自己的写法（codex 写 “99% left” 并照它的取整，claude 小写 k/m，pi/omp 一位小数，kimi 1024 进位）',

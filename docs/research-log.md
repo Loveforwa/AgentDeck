@@ -3,7 +3,7 @@
 实现过程中和一开始设想不一样的地方：原来以为什么、实际是什么、怎么决定的、好处和代价。
 由 `docs/research/build.py` 从 `docs/research/entries.py` 生成，不要直接改这个文件。更新于 2026-10-26。
 
-共 60 条：已解决 39，进行中 13，推迟 5，待验证 3。
+共 60 条：已解决 40，进行中 13，推迟 4，待验证 3。
 
 编号规则（全项目统一）：DR-xx 调研记录 · TC-xx 端到端用例 · IS-xx 问题 · F1、T2、X3 等是 MVP 任务表的任务编号。用例和问题在 MVP 验收报告（docs/status/index.html）里；每条调研下面列出相关的用例和问题。
 
@@ -40,7 +40,7 @@
   - [DR-24 经过 tmux 后按键手感](#dr-24)（进行中）
   - [DR-25 tmux 先要求用户自己装，不随应用打包](#dr-25)（推迟）
   - [DR-26 dependency-cruiser 命令行拒绝在 Node 25 上运行](#dr-26)（已解决）
-  - [DR-27 SQLite 原生模块要按 Electron 重新编译](#dr-27)（推迟）
+  - [DR-27 SQLite 原生模块要按 Electron 重新编译](#dr-27)（已解决）
   - [DR-28 MVP 先只做 macOS](#dr-28)（已解决）
   - [DR-29 代码还没推到 GitHub](#dr-29)（推迟）
   - [DR-30 claude 的 --settings 钩子和用户自己的钩子是合并的](#dr-30)（已解决）
@@ -444,13 +444,13 @@
 
 ### DR-27 SQLite 原生模块要按 Electron 重新编译
 
-状态：推迟 · 出处：packages/store/AGENTS.md · 旧编号 E7
+状态：已解决 · 出处：packages/store/AGENTS.md · 旧编号 E7
 
 相关：TC-20、IS-36
 
 - **原来以为**：better-sqlite3 装上就能在应用里用。
 - **实际情况**：它是原生模块，Node 和 Electron 的 ABI 不同，在 Node 里测试通过不代表在 Electron 里能加载。
-- **决策**：store 包的测试在 Node 里跑；组装阶段用 electron-rebuild（或 electron-vite 的配置）重新编译。
+- **决策**：store 包的测试在 Node 里跑；组装阶段用 electron-rebuild（或 electron-vite 的配置）重新编译。。2026-10-25 打包实测：两个原生模块都是 N-API 预编译，不需要 electron-rebuild，asarUnpack 即可
 - **好处**：store 包可以独立开发和测试。
 - **代价**：组装阶段多一步构建配置；CI 也要覆盖 Electron 里加载的情况。
 
