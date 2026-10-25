@@ -52,7 +52,7 @@ import '@agentdeck/ui-kit/base.css';
   - `renderPanel` 的参数里有 `collapseButton`（Collapse panel 按钮）和 `collapse()`：面板内容把按钮放进自己的标题栏（源代码管理面板放在 Refresh 后面，`ScmPanel` 的 `headerActions`）。
   - `trafficLights`：macOS 的 hiddenInset 标题栏，顶栏左边给红黄绿按钮留位置（MVP v2 · V1）。
   - 拖动窗口（IS-63）：`.ad-workbench-drag` 是顶栏那么高的一条 `-webkit-app-region: drag`，DOM 里排最前、画在白板下面；窗口节点、框（含改大小把手）、面板、浮层（`.ad-popover` `.ad-dialog` `.ad-toast`）都 `no-drag`，压在这一条上时能点，空着的地方拖得动窗口。顶栏不接指针，点在它的空白处落到白板上。
-- `BoardController`：白板的全部行为，不依赖 React，测试里直接用。`Workbench` 可以传自己建的 `controller`。`runShortcut(id)` 可以接到应用菜单的快捷键上（焦点在网页窗口的 iframe 里时按键到不了白板）。
+- `BoardController`：白板的全部行为，不依赖 React，测试里直接用。X10 的 `undo()` / `redo()`（返回有没有做）、`history`（`BoardHistory`：`canUndo`、`canRedo`、`size`）、`setSelection` / `clearSelection` / `toggleSelected`。`Workbench` 可以传自己建的 `controller`。`runShortcut(id)` 可以接到应用菜单的快捷键上（焦点在网页窗口的 iframe 里时按键到不了白板）。
 - `addProject` 选项可以换掉默认的 Add project… 流程（线 3 的 W1 做好后接上）。
 - Settings 对话框（X12，TC-15）在白板里：`controller.openSettings({ section?: 'projects' | 'general', projectId? })`。入口：顶栏右边的齿轮、顶栏左边的项目菜单 › 项目 › Project settings…、⌘,（`ShortcutId` 的 `open-settings`，输入框里也生效；应用菜单的 Settings… 发这个快捷键）。组装方把终端窗口的 `agentdeck:open-settings` 事件接到 `openSettings`。
   - 没给 `projectId` 时（齿轮、⌘,、应用菜单）停在当前项目上（IS-71）：选中的框或聚焦窗口所在工作区的项目，和右侧面板跟随的是同一个（`activeWorkspaceId`）；什么都没聚焦、没选中，或聚焦的是散放窗口时，停在列表第一个项目上。
@@ -66,12 +66,13 @@ import '@agentdeck/ui-kit/base.css';
 | `src/registry.ts` | 窗口注册表（唯一对别的界面包开放的文件） |
 | `src/controller.ts` | `BoardController`：启动和事件、拖动、改大小、放大、新建、关闭、工作区、视口、快捷键 |
 | `src/store.ts` | zustand vanilla store：保存的部分（BoardState）+ 临时状态 |
-| `src/model/` | 纯函数：`groups`（N1 窗口组：`listGroups`、`dissolveGroups`；N2 侧边栏：`groupView`、`hiddenMembers`、`syncGroups` 停靠、`lampOf`、`memberName`）、`geometry`（框跟着长、框的最小尺寸、视口）、`attention`（S3 计数、⌘J ⌘⇧J 顺序、顶栏的第几个）、`navigation`（S3 ⌘⇧] ⌘⇧[ 按位置切窗口的顺序）、`autosave`（B5 防抖）、`shortcuts`（R1 按键表）、`drop`（W5 落点）、`snap`（V3 吸附和对齐线）、`avoid`（V3 松手避让、框之间 20px、挤开别的框）、`windows`（终端相关的判断）、`gestures`（N6 手势规则和 React Flow 参数）、`branch`（分支名检查）、`settings`（Settings 的草稿和补丁） |
-| `src/react/` | `Workbench`、`Board`（React Flow）、`WindowNodeView`、`FrameNodeView`、`GroupSidebar`（N2 窗口组的侧边栏节点）、`Guides`（V3 对齐线，屏幕坐标画；跟踪 ⌘）、`BoardMenu`（右键菜单，含 PLUGINS 一组）、`PluginMarks`（把登记表里插件的标记放到窗口节点和框标题上）、`approvals`（第一次开 Auto-approve 的确认、Approval history、Approve all 对话框）、`dialogs`（新建 / 删除工作区、W5、停止终端、改名）、`SettingsDialog`、`useShortcuts`、`gestures`（N6：空格平移、窗口上的缩放滚轮、盖层把滚轮交给内容） |
+| `src/model/` | 纯函数：`history`（X10 撤销：`diffLayout`、`applyStep`、`BoardHistory`）、`selection`（X10 多选：`boxFrom`、`windowsInBox`、`toggleSelection`、`byWorkspace`）、`groups`（N1 窗口组：`listGroups`、`dissolveGroups`；N2 侧边栏：`groupView`、`hiddenMembers`、`syncGroups` 停靠、`lampOf`、`memberName`）、`geometry`（框跟着长、框的最小尺寸、视口）、`attention`（S3 计数、⌘J ⌘⇧J 顺序、顶栏的第几个）、`navigation`（S3 ⌘⇧] ⌘⇧[ 按位置切窗口的顺序）、`autosave`（B5 防抖）、`shortcuts`（R1 按键表）、`drop`（W5 落点）、`snap`（V3 吸附和对齐线）、`avoid`（V3 松手避让、框之间 20px、挤开别的框）、`windows`（终端相关的判断）、`gestures`（N6 手势规则和 React Flow 参数）、`branch`（分支名检查）、`settings`（Settings 的草稿和补丁） |
+| `src/react/` | `Workbench`、`Board`（React Flow）、`WindowNodeView`、`FrameNodeView`、`GroupSidebar`（N2 窗口组的侧边栏节点）、`Guides`（V3 对齐线，屏幕坐标画；跟踪 ⌘）、`BoardMenu`（右键菜单，含 PLUGINS 一组）、`PluginMarks`（把登记表里插件的标记放到窗口节点和框标题上）、`approvals`（第一次开 Auto-approve 的确认、Approval history、Approve all 对话框）、`dialogs`（新建 / 删除工作区、W5、停止终端、改名）、`SettingsDialog`、`useShortcuts`、`gestures`（N6：空格平移、窗口上的缩放滚轮、盖层把滚轮交给内容）、`selection`（X10：Shift + 拖空白处框选、框选的矩形） |
 | `src/plugins/` | 插件（PL0，规则见 docs/plugins.md）：`types.ts`（`PluginDefinition`：能贴在 terminal / browser / frame / board 哪几种上、支持哪些 agent、能不能开和原因、开没开、开关、额外菜单项、窗口和框上的标记组件；`pluginMenuSection` 生成右键菜单的 PLUGINS 一组）、`index.ts`（登记表 `PLUGINS`，加插件就是加一行）、`auto-approve.tsx`（PL1：书签、小卡片、框标题的小标签）、`usage.tsx` + `usage-model.ts`（PL2：用量条、拖动换边、小卡片、watch / unwatch；纯函数） |
 | `src/approvals/` | 批准在界面这边的状态（PL1、X3）：`model.ts` 的 `ApprovalsModel`（`controller.approvals`，zustand vanilla store：服务报的开关、每种 agent 能不能开、needs-you、这次运行收到的自动批准、书签闪的次数、小卡片、Approval history、Approve all 的列表；开关、把开关写进白板、终端换 terminalId 时补推）、`text.ts`（原因、谁批的、时间、在等批准的请求） |
 | `src/canvas.css` | 白板、框、面板、对话框字段的样式，只用 tokens |
 | `src/group-sidebar.css` | N2 侧边栏的样式（单独一个文件，少和别的线在 canvas.css 里冲突） |
+| `src/selection.css` | X10 选中窗口的外圈、框选的矩形 |
 | `dev/` | dev 页面（Vite） |
 
 ## 行为要点
@@ -81,6 +82,7 @@ import '@agentdeck/ui-kit/base.css';
   - 缩放：双指捏合（`zoomOnPinch`，macOS 给 ctrlKey）和 ⌘ + 滚轮，25%–200%，以指针为不动点。空白处由 React Flow 做；窗口上由 `useWindowZoomWheel` 在捕获阶段先拿走、按 React Flow 同样的换算做（终端收不到）。焦点在网页里时，网页上的捏合进网页（事件到不了白板）。还有 ⌘0 100%，⌘1 Show all（最大 100%），⌘= ⌘−，左下角比例菜单。
   - 按住空格拖动平移（`useSpacePan`，React Flow 自带的 `panActivationKeyCode` 关掉了：它会在终端里吞掉 Shift+空格，而且窗口上拖不动）：按住时白板加 `ad-board--space-pan`，框和窗口都不接指针，拖哪里都平移，光标是手。单独的空格才算（不带修饰键、不在输入法组字中）；焦点在终端（`.xterm`）、输入框、contenteditable、按钮和链接、菜单、对话框、`.nokey` 里时空格照常给它们，网页里的按键本来到不了白板。松开空格、窗口失焦、页面隐藏时结束。
   - 左键或中键拖空白处平移（`panOnDrag={[0, 1]}`）。不响应双击缩放。
+  - Shift + 左键拖空白处（含框里的空白）是框选（X10），见下面「多选和撤销」。
 - 点阵 20px，缩到 50% 以下隐藏。
 - 框和窗口是不可拖的 React Flow 节点，移动和改大小走 window-shell 的手势（只能拖标题栏），所以节点要显式 `pointer-events: all`。屏幕坐标换算用 store 里的视口（`controller.clientToFlow`），不用 React Flow 的 `screenToFlowPosition`（受控视口动画后它会落后）。
 - 框里的窗口拖向框外：框跟着长（W3）；指针进了别的框：那个框虚线，松手时终端弹回原处并问“Open new”（W5），网页直接换框。
@@ -113,6 +115,15 @@ import '@agentdeck/ui-kit/base.css';
   - 停靠：控制器的 `set` 每次 windows 变了跑 `syncGroups`：收起的、和 lead 同框的子终端停在停靠处；显示的那个原来停靠着、这次没被别的操作挪过，就跟着 lead 到新的停靠处（拖 lead、改 lead 大小、拉回摘要卡）；用户把它拖走了就不再跟着。显示的子终端被关掉时换成它后面那个。和 lead 不在同一个框的子终端只收起 / 显示，不挪。
   - 避让：找空位时（V3）lead 连同侧边栏和停靠的子终端算一块（`withGroup`），收起的子终端不挡，别的组的侧边栏挡；框按这一块长。侧边栏 / 停靠的子终端新出现时盖住了框里别的窗口，就把那些窗口挪到最近的空位（`settleGroup`，例外于“不推别的窗口”：是新出现的东西要地方）。
   - 关 lead：先照 Show all 平铺开，再 `dissolveGroups`，子终端都是普通窗口，侧边栏消失。
+- 多选和撤销（X10，代码 `src/model/selection.ts`、`src/model/history.ts`、`src/react/selection.tsx`）：
+  - 框选：**Shift + 左键**拖空白处（白板底板，或框里没有窗口的地方；框标题、改大小的边、窗口上不算），碰到一点就选上（和访达、Figma 一样）；同时按着 ⌘ 时加在原来的选择上。左键拖空白处照旧平移（N6），不改老习惯，所以框选要按 Shift。按下时取消聚焦的窗口和选中的框、DOM 焦点离开终端，之后 Esc、⌘Z 都给白板。在 `.ad-board` 的捕获阶段拿事件，React Flow 收不到这次按下（不平移），松手后的 click 不当成“点空白处”。
+  - ⌘ / Shift + 单击标题栏：加进或去掉（不聚焦它）；原来什么都没选、有聚焦的别的窗口时，聚焦的也算进来。不带修饰键按在没选中的窗口上、单击（不拖）选中窗口的标题栏、单击空白处（含框里的空白）、单击框标题、Esc（没有窗口聚焦时）都取消多选。关掉的窗口从选择里去掉。
+  - 选中的窗口：`.ad-window-node[data-selected]`，外框外面 2px `--guide`（和对齐线一样是“正在摆白板”的颜色，不和聚焦的墨黑边框混）；框选的矩形 1px `--guide` 边、8% 的底。
+  - 一起拖动：拖任何一个选中的窗口，选中的（不含收起的子终端、放大中的）都按同一个位移走。吸附看所有选中窗口的外接矩形：对象是它们所在框里别的窗口，都在一个框里时还有框的内边，附近的框照 IS-65。**不换框、不弹 W5**：每个窗口留在自己的框里，指针进了别的框也一样（简单、不会误把一批终端弹回去），框按自己那一批长。松手时每个框里的那一批算一块（连同 lead 的侧边栏、用量条），盖住别的窗口就整块挪到最近的空位，然后各个框重新长、挤开别的框（V3）。
+  - 撤销 / 重做：⌘Z / ⌘⇧Z（`ShortcutId` 的 `undo` / `redo`，应用菜单 Edit › Undo / Redo 也发这两个）。能撤销的：移动窗口（含一起拖动、拖进别的框的网页）、改窗口大小（含拉小成摘要卡、单击摘要卡恢复）、放大 / 还原、关闭窗口、拖框、改框大小（连同被挤开的框和里面的窗口）、窗口组的显示方式（侧边栏点一行、Show all、Collapse group）、改窗口名、改工作区名（再调一次 `workspaces.rename`）。不撤销进程和 git：新建终端 / 网页 / 工作区、删工作区、W5 的 Open new、服务开的窗口都不记。
+  - 一次拖动（按下到松手）算一步；按实体记前后（窗口按 id、框按工作区），撤销时只改这一步动过的那几个：服务后来开的窗口不动，窗口的 data（终端重启后的 terminalId 等）用现在的。最多 100 步（`HISTORY_LIMIT`），新的一步清掉重做；只在这次运行里，重开应用就没了。拖动中按 ⌘Z 不做。这一步碰到的窗口和框都不在了（工作区删掉了）就跳过、接着撤销上一步。
+  - 撤销关闭：原样放回（同一个 id、位置、框、组，放在最上层，闪一下）。终端窗口自己按 `data.terminalId` 去接：tmux 里的会话还在就接回，进程已经没了（关闭时 Stop and close 结束了它）就显示 “Previous session ended”（X6 在那里加恢复）。重做关闭时，要是撤销后点过 Restart（terminalId 变了），不替用户结束正在跑的终端：提示 “Can’t redo: the terminal was restarted. Close it instead.”，这一步留在重做栈里。
+  - 焦点规则（`textUndoTarget`）：在白板上、**终端里**（xterm.js 不把 ⌘ 组合键发给 shell，终端的 keys.ts 本来就把它们交给白板，和 ⌘K ⌘W 一样；拖完窗口它就是聚焦的，不然撤销移动用不了）撤销白板；在输入框、文本框、contenteditable 里（包括窗口里面的，例如网页窗口的地址栏）、网页窗口的 iframe / webview 上、对话框开着时是文字的撤销，白板不拿。Ctrl+Z 永远是终端的（挂起）。
 - 保存：保存的部分（视口、框、窗口、面板）引用一变就排进防抖，半秒后 `board.save`；`pagehide` 时立刻写。启动时 `board.load` 恢复。
 - 恢复上次会话（X6，TC-14，`src/model/restore.ts`、`controller.checkRestore` / `restoreAll`、`dialogs.tsx` 的 RestoreSessionDialog）：白板画出来后、以及收到 `terminal.host-lost` 时，`terminals.list()` 一次，对每个窗口问它类型的 `WindowTypeDefinition.restore.describe(data, 还在的终端)`（contracts 的可选字段，现在只有终端有；白板不按 type 写特例）。有要恢复的就弹 “Restore your last session?”：一句 “5 terminals in 3 workspaces: 3 agents and 2 shells.”，下面每个窗口一行（名字 + 恢复后会怎样，最多 8 行），Not now / Restore all。tmux 会话都在（普通 ⌘Q 再打开）不弹；读不到终端列表不弹；正开着别的对话框不打断。Restore all 并发调每个窗口的 `restore.restore(data, { workspaceId, contentSize })`，把返回的 patch 合进 data（窗口 id、位置不变，跟着存盘），完成后 Toast：“Restored 5 terminals. codex had no saved conversation and started a new one.”，失败的写 “Couldn’t restore …: 原因”，那个窗口留着自己的 Restore。Not now 之后每个窗口自己有 Restore / Restart。收起的组成员也会恢复（不靠窗口组件在不在）。
 
@@ -146,6 +157,8 @@ import '@agentdeck/ui-kit/base.css';
 - `gestures.test.tsx`（N6）：React Flow 的手势参数、所有窗口节点和内容都是 `nowheel`（聚焦前后）、没聚焦的终端上滚轮转给终端且白板不动（单击仍只聚焦）、聚焦的终端滚动不平移（对照：空白处平移）、不自己处理滚轮的内容滚最近的 overflow 盒子、网页上盖层暂时让开、窗口上捏合和 ⌘ + 滚轮以指针为不动点缩放、空格在白板上拿、在终端和输入框里（含 Shift / Ctrl + 空格）不拿、失焦松开；纯函数 `zoomAtPoint` `wheelZoomDelta` `spaceBelongsTo`。
 - `auto-approve.test.tsx`（PL0、PL1、X3）：终端和框的 PLUGINS 一组（不套子菜单、打钩跟着服务、开关调的方法和参数、写进白板）、第一次开先问、kimi / shell 灰掉写原因、网页没有这一组、登记表加一项就出现在对应菜单里（Usage 的样子）；书签只在开着时出现、在外框外面、位置和颜色的 CSS、needs-you 变橙和悬停原因、终端不在等了变回红、每次自动批准闪、小卡片和 Turn off；框标题的小标签和框里每个终端的书签；Approval history 的列和顺序；顶栏 Approve all…、破坏性的默认不勾、couldnt-approve 那一行留下、勾上破坏性的再批、全批成后的提示；启动时不重复推、换 terminalId 补推。
 - `usage.test.tsx`（PL2，对着 `createFakeApi()` 的 `FakeUsageService`）：菜单里 Usage 在 Auto-approve 后面、点开默认贴上边并写进窗口数据、再点关掉；shell 灰掉、框和网页没有、五种 agent 都能开；条在外框外面、数字缩写和悬停的准确数、CSS 的位置和 tokens；usage.changed 实时更新；85% 变黄（84 不变）、codex 只写缓存读；No usage data 和原因、inferred 写明、unsupported；没有 terminalId 不 watch；拖把手的落点线、松手换边、拖到窗口外也只贴上边、保存后重启还在下边；放大时留位置；小卡片的内容、Move to bottom / top、Hide 后 unwatch；codex 额度；watch / unwatch 跟着开关、关窗口、换 terminalId；缩写和额度文字的纯函数（IS-69 的验收数字：codex 0.6% → 99% left、27,756 / 475,000 → 97% left，claude 52,476 / 1M → 5%，kimi 70,450 / 1M → 68.8k/977k、8%，pi / omp 的一位小数，Rust 的一半取偶）。
+- `select-undo.test.ts`（X10，对着 `createFakeApi()`）：框选碰到的窗口、⌘ + 框选加、跨框、Esc 取消、关掉的窗口去掉、选框清掉；一起拖动同一个位移、框跟着长、外接矩形吸到框的内边、松手整块避让不盖住别人、跨框各自留在自己的框里不弹 W5、拖没选中的只动它；撤销 / 重做：移动（12 次 pointermove 一步）、W5 弹回不算一步、改大小连同框、放大和还原、关闭运行中的终端放回原样且不碰进程、已退出的终端和网页、重启后重做关闭被拒、拖框和改框大小（挤开的框回去）、窗口组的三种显示方式、改窗口名和工作区名、新的一步清重做、100 步上限、拖动中不撤销、服务后开的窗口和 data 不动、工作区删掉后跳过；纯函数 `diffLayout` `applyStep` `BoardHistory` 和选择的几个。
+- `select-undo-ui.test.tsx`（X10，Workbench）：⌘Z / ⌘⇧Z 的按键表、终端里和白板上给白板、地址栏里不拿、Ctrl+Z 不管；`textUndoTarget`；⌘ / Shift + 单击标题栏加减（聚焦的算进来、不抢聚焦）、单击别的窗口取消；Shift + 拖空白处出框选矩形、松手后的 click 不清掉；框选只从空白处开始；选中的样式只用 tokens。
 - `workbench.test.tsx`：整个 Workbench 在 jsdom 里渲染：顶栏数字随假事件变化、框标题“1 running”绿灯和“2 waiting”黄灯（为 0 不显示）、终端聚焦时按键不被拦、⌘B ⌘J、顶栏“1/2 waiting”、⌘⇧J ⌘⇧]（⌘] 不拦）、Delete 打开删除对话框。
 
 React Flow 的真实拖动 jsdom 测不了（滚轮能测，见 `gestures.test.tsx`），在 dev 页面里手动试过；触控板的手感（捏合速度、惯性滚动进终端和网页）要在应用里手动试；Playwright 用例留给第 3 波 R2。

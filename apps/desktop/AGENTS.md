@@ -16,7 +16,7 @@ src/main/
   terminal-service.ts 主进程里的 TerminalHost 转发层：调用交给 utilityProcess，attach 带上发起的窗口
   host-process.ts   启动终端 utilityProcess，转交端口和控制消息、收回复
   terminal-ports.ts 每个窗口一条 MessageChannelMain：port1 给 preload，port2 给 utilityProcess
-  menu.ts           应用菜单：白板快捷键注册成 accelerator；不占 ⌘R ⌘[ ⌘] ⌘L
+  menu.ts           应用菜单：白板快捷键注册成 accelerator；不占 ⌘R ⌘[ ⌘] ⌘L；Edit › Undo / Redo（X10）也发给界面，不归白板时界面回 nativeEdit 让主进程 webContents.undo() / redo()
   screenshot.ts     AGENTDECK_SCREENSHOT 截图模式
   window-options.ts 主窗口选项：macOS 上 hiddenInset 标题栏，红黄绿按钮在 34px 顶栏里居中（MVP v2 · V1）；StartupInfo.trafficLights 告诉界面留位置
   services.ts / registry.ts / ipc.ts / events.ts   注册表、IPC 路由、事件广播（F3）

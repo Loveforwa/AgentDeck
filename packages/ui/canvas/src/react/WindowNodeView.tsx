@@ -1,4 +1,4 @@
-import { useMemo, type MouseEvent } from 'react';
+import { useMemo, useRef, type MouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import type { NodeProps } from '@xyflow/react';
 import type { OpenWindowRequest, WindowCommand, WindowComponentProps, WindowId, WindowStatusBadge } from '@agentdeck/contracts';
 import { WindowShell } from '@agentdeck/ui-window-shell';
@@ -23,6 +23,10 @@ export function WindowNodeView({ data }: NodeProps & { data: WindowNodeData }) {
   const focused = useBoardState((s) => s.focusedId === id);
   const badge = useBoardState((s) => s.badges[id] ?? null);
   const lifted = useBoardState((s) => s.lifted === id || s.resizing?.id === id);
+  // X10：多选
+  const selected = useBoardState((s) => s.selection.includes(id));
+  /** 这次按下是 ⌘ / Shift + 按在标题栏上（加减选择，不聚焦）。 */
+  const toggling = useRef(false);
   const flash = useBoardState((s) => s.flash[id] ?? 0);
   const stopConfirm = useBoardState((s) => (s.dialog?.kind === 'stop-terminal' && s.dialog.windowId === id ? s.dialog : null));
   const waiting = useBoardState((s) => {
@@ -64,6 +68,15 @@ export function WindowNodeView({ data }: NodeProps & { data: WindowNodeData }) {
 
   const flowPoint = (e: { clientX: number; clientY: number }) => c.clientToFlow({ x: e.clientX, y: e.clientY });
   const zoom = () => c.state.viewport.zoom;
+  // X10：不带修饰键按在窗口上，就不再是多选（拖选中窗口的标题栏除外：那是一起拖动，松手时没拖动才取消）。
+  // 外层的捕获阶段先于 window-shell 的 onActivate（聚焦）。
+  const onPointerDownCapture = (e: ReactPointerEvent) => {
+    const onTitle = !!(e.target as Element).closest?.('.ad-window-titlebar') && !(e.target as Element).closest?.('button');
+    toggling.current = onTitle && e.button === 0 && (e.metaKey || e.shiftKey);
+    if (toggling.current || e.button !== 0) return;
+    if (!(selected && onTitle)) c.clearSelection();
+  };
+
   const onTitleContextMenu = (e: MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -72,7 +85,13 @@ export function WindowNodeView({ data }: NodeProps & { data: WindowNodeData }) {
   };
 
   return (
-    <div className="ad-window-node" data-window-id={id} data-summary={summary || undefined}>
+    <div
+      className="ad-window-node"
+      data-window-id={id}
+      data-summary={summary || undefined}
+      data-selected={selected || undefined}
+      onPointerDownCapture={onPointerDownCapture}
+    >
       <WindowShell
         name={defaultName(node, def?.label)}
         label={node.title ?? groupLabel}
@@ -87,12 +106,16 @@ export function WindowNodeView({ data }: NodeProps & { data: WindowNodeData }) {
         contentClassName="nowheel"
         onActivate={() => {
           c.closeMenu();
-          if (!focused && !summary) c.focusWindow(id);
+          if (!focused && !summary && !toggling.current) c.focusWindow(id);
         }}
         onMoveStart={() => c.moveWindowStart(id)}
         onMove={(dx, dy, e) => c.moveWindow(id, dx / zoom(), dy / zoom(), flowPoint(e), { snap: !e.metaKey })}
-        onMoveEnd={(moved) => {
+        onMoveEnd={(moved, e) => {
           if (moved) c.moveWindowEnd(id);
+          // ⌘ / Shift + 单击标题栏：加进多选或去掉；不带修饰键单击选中的窗口：只剩它聚焦，不再多选
+          else if (toggling.current) c.toggleSelected(id);
+          else if (!e.metaKey && !e.shiftKey) c.clearSelection();
+          toggling.current = false;
         }}
         onResizeStart={(edge) => c.resizeWindowStart(id, edge)}
         onResize={(_edge, dx, dy) => c.resizeWindow(id, dx / zoom(), dy / zoom(), { snap: !metaHeld() })}

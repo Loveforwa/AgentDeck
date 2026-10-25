@@ -5,7 +5,7 @@ export default defineConfig({
     environment: 'jsdom',
     include: ['test/**/*.test.{ts,tsx}'],
     setupFiles: ['test/setup.ts'],
-    // 测试里用 ?raw 读 canvas.css 检查拖动区（IS-63）；不列进来时 Vitest 把 CSS 换成空串
-    css: { include: [/canvas\.css/] },
+    // 测试里用 ?raw 读 canvas.css 检查拖动区（IS-63）、selection.css 检查选中的边框（X10）；不列进来时 Vitest 把 CSS 换成空串
+    css: { include: [/canvas\.css/, /selection\.css/] },
   },
 });

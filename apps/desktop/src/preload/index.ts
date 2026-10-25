@@ -52,6 +52,7 @@ const desktop: DesktopBridge = {
   onShortcut: (listener) => {
     ipcRenderer.on(DESKTOP_IPC.shortcut, (_event, id: MenuShortcutId) => listener(id));
   },
+  nativeEdit: (action) => ipcRenderer.send(DESKTOP_IPC.nativeEdit, action),
 };
 contextBridge.exposeInMainWorld('agentdeckDesktop', desktop);
 contextBridge.exposeInMainWorld('agentdeckFiles', { pathFor: (file: File) => webUtils.getPathForFile(file) });

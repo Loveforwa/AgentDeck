@@ -103,6 +103,10 @@ export interface BoardStoreState extends SavedBoard {
   flash: Record<string, number>;
   /** 白板区域的像素大小。 */
   pane: Size;
+  /** X10：多选的窗口（框选、⌘ / Shift + 单击标题栏），拖其中一个时一起动。不保存。 */
+  selection: WindowId[];
+  /** X10：正在框选时的矩形，白板坐标。 */
+  selectionBox: Rect | null;
 }
 
 export function initialState(): BoardStoreState {
@@ -128,6 +132,8 @@ export function initialState(): BoardStoreState {
     menu: null,
     flash: {},
     pane: { w: 1200, h: 800 },
+    selection: [],
+    selectionBox: null,
   };
 }
 

@@ -19,6 +19,8 @@ export type ShortcutId =
   | 'zoom-out' // ⌘−
   | 'clear-terminal' // ⌘K
   | 'open-settings' // ⌘,
+  | 'undo' // ⌘Z（X10：白板上的操作）
+  | 'redo' // ⌘⇧Z
   | 'delete-selection' // Delete / Backspace
   | 'escape'; // Esc
 
@@ -37,6 +39,11 @@ export interface ShortcutContext {
   windowFocused: boolean;
   /** 焦点在输入框、对话框或菜单里。 */
   inEditable: boolean;
+  /**
+   * 焦点在编辑文字的地方，包括窗口里面的输入框（网页窗口的地址栏）和网页本身，但不包括终端（X10）：
+   * 这时 ⌘Z / ⌘⇧Z 是文字的撤销，白板不拿。见 textUndoTarget。
+   */
+  inTextField?: boolean;
   /** macOS 用 ⌘，其他平台用 Ctrl。MVP 只支持 macOS，默认 true。 */
   mac?: boolean;
 }
@@ -51,6 +58,7 @@ export function matchShortcut(e: KeyLike, mac = true): ShortcutId | null {
       if (key === 'Enter') return 'toggle-maximize';
       if (key === '+' || e.code === 'Equal') return 'zoom-in';
       if (key === 'j') return 'prev-waiting';
+      if (key === 'z') return 'redo';
       // 按住 ⇧ 时 key 是 } {（还随键盘布局变），按物理键认。不带 ⇧ 的 ⌘] ⌘[ 是网页窗口的前进后退，不碰
       if (e.code === 'BracketRight' || key === '}') return 'next-window';
       if (e.code === 'BracketLeft' || key === '{') return 'prev-window';
@@ -80,6 +88,8 @@ export function matchShortcut(e: KeyLike, mac = true): ShortcutId | null {
         return 'clear-terminal';
       case ',':
         return 'open-settings';
+      case 'z':
+        return 'undo';
     }
     return null;
   }
@@ -97,6 +107,7 @@ export function shouldHandle(id: ShortcutId, ctx: ShortcutContext): boolean {
   // ⌘, 在输入框里也打开 Settings（输入框不用它）；对话框开着时 useShortcuts 整个不处理
   if (id === 'open-settings') return true;
   if (ctx.inEditable) return false;
+  if (id === 'undo' || id === 'redo') return !ctx.inTextField;
   if (id === 'delete-selection' || id === 'escape') return !ctx.windowFocused;
   return true;
 }
@@ -123,4 +134,21 @@ export const SHORTCUT_LABELS = {
   'show-all': '⌘1',
   'clear-terminal': '⌘K',
   'open-settings': '⌘,',
+  undo: '⌘Z',
+  redo: '⌘⇧Z',
 } as const satisfies Partial<Record<ShortcutId, string>>;
+
+const TEXT_FIELD = 'input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"]';
+
+/**
+ * ⌘Z 该不该当文字的撤销（X10）：焦点在输入框、文本框、contenteditable 里（窗口里面的也算，例如网页窗口的地址栏），
+ * 或者在网页窗口的 iframe / webview 上。终端（xterm 的隐藏 textarea）不算：xterm.js 不把 ⌘ 组合键发给 shell
+ * （终端的 keys.ts 把它们交给白板，和 ⌘K ⌘W 一样），所以终端聚焦时 ⌘Z 撤销白板上的操作（拖完窗口它就是聚焦的）。
+ */
+export function textUndoTarget(el: Element | null): boolean {
+  if (!el || typeof el.closest !== 'function') return false;
+  if (el.closest('.xterm')) return false;
+  const tag = el.tagName;
+  if (tag === 'IFRAME' || tag === 'WEBVIEW') return true;
+  return el.closest(TEXT_FIELD) !== null;
+}
