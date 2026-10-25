@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { StatusSnapshot, TerminalId } from '@agentdeck/contracts';
 import { createAlerts } from '../src/main/alerts.ts';
 import { appleScriptString, editorArgs, openFileInEditor, resolveEditor, systemTerminalPlan } from '../src/main/app-service.ts';
-import { fallbackEnv, parseEnvOutput } from '../src/main/login-env.ts';
+import { fallbackEnv, loginShellLaunch, parseEnvOutput, readLoginEnv, withCommonPaths } from '../src/main/login-env.ts';
 import { buildMenuTemplate, MENU_ACCELERATORS, RESERVED_ACCELERATORS } from '../src/main/menu.ts';
 import { MAX_SOCKET_PATH, resolvePaths } from '../src/main/paths.ts';
 import { createScreenshotter } from '../src/main/screenshot.ts';
@@ -56,10 +56,35 @@ describe('login env', () => {
     expect(parseEnvOutput('PATH=/bin\0')).toBeNull();
     expect(parseEnvOutput('__AGENTDECK_ENV_BEGIN__\0A=1\0')).toBeNull();
   });
-  it('fallback adds the usual PATH entries', () => {
-    const env = fallbackEnv({ HOME: '/Users/me', PATH: '/usr/bin:/bin' });
-    expect(env.PATH).toBe('/usr/bin:/bin:/opt/homebrew/bin:/usr/local/bin:/Users/me/.local/bin');
+  const me = { username: 'me', homedir: '/Users/me', shell: '/bin/bash' };
+  it('fallback adds the usual PATH entries that exist', () => {
+    const exists = (d: string) => ['/opt/homebrew/bin', '/usr/local/bin', '/Users/me/.local/bin', '/Users/me/.bun/bin'].includes(d);
+    const env = fallbackEnv({ HOME: '/Users/me', PATH: '/usr/bin:/bin' }, { user: me, exists });
+    expect(env.PATH).toBe('/usr/bin:/bin:/opt/homebrew/bin:/usr/local/bin:/Users/me/.local/bin:/Users/me/.bun/bin');
     expect(env.LANG).toBe('en_US.UTF-8');
+    expect(env.SHELL).toBe('/bin/bash');
+  });
+  it('withCommonPaths keeps the order and does not duplicate (IS-11)', () => {
+    const env = withCommonPaths({ HOME: '/Users/me', PATH: '/Users/me/.bun/bin:/usr/bin' }, () => true);
+    const path = env.PATH!.split(':');
+    expect(path.slice(0, 2)).toEqual(['/Users/me/.bun/bin', '/usr/bin']);
+    expect(path.filter((d) => d === '/Users/me/.bun/bin')).toHaveLength(1);
+    expect(path).toContain('/opt/homebrew/bin');
+    expect(path).toContain('/Users/me/.local/bin');
+  });
+  it('launched from Finder with almost no environment: SHELL and USER come from the user record (IS-11)', () => {
+    const launch = loginShellLaunch({ HOME: '/Users/me' }, me);
+    expect(launch.shell).toBe('/bin/bash');
+    expect(launch.env).toEqual({ PATH: '/usr/bin:/bin:/usr/sbin:/sbin', HOME: '/Users/me', USER: 'me', LOGNAME: 'me', LANG: 'en_US.UTF-8', SHELL: '/bin/bash' });
+    // 环境里有的优先
+    expect(loginShellLaunch({ HOME: '/h', SHELL: '/bin/zsh', USER: 'u' }, me)).toMatchObject({ shell: '/bin/zsh', env: { HOME: '/h', USER: 'u' } });
+    expect(loginShellLaunch({}, null).shell).toBe('/bin/zsh');
+  });
+  it('reads a real login shell from a minimal environment (IS-11)', async () => {
+    const res = await readLoginEnv({ current: { HOME: process.env['HOME'] }, user: { ...me, homedir: process.env['HOME'] ?? '/', shell: '/bin/sh' } });
+    expect(res.warning).toBeNull();
+    expect(res.env.PATH).toContain('/usr/bin');
+    expect(res.env.HOME).toBe(process.env['HOME']);
   });
 });
 
