@@ -5,3 +5,5 @@ packages:
   - packages/ui/widgets/*
   - packages/ui/panels/*
   - tools/*
+  # 端到端测试（R2）：单独一个包，不在 pnpm test 里（见 e2e/AGENTS.md）
+  - e2e
