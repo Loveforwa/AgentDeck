@@ -5,6 +5,7 @@
   "packageManager": "pnpm@10.33.0",
   "scripts": {
     "dev": "pnpm --filter @agentdeck/desktop dev",
+    "dist": "pnpm --filter @agentdeck/desktop dist",
     "typecheck": "pnpm -r typecheck",
     "lint": "eslint . --max-warnings 0",
     "boundaries": "node scripts/boundaries.mjs",

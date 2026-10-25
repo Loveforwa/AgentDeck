@@ -6,6 +6,9 @@ Electron 应用：IPC 层（F3）加第 3 波组装。只有这个包能把服�
 
 ```
 electron.vite.config.ts   main / preload / renderer 三份构建；@agentdeck/* 打进产物，better-sqlite3 / node-pty 外部化；preload 输出 CJS
+electron-builder.config.cjs  打包配置（IS-36）：macOS .app / .dmg，ad-hoc 签名，asarUnpack 原生模块，Resources 里放 tmux.conf 和钩子脚本
+build-resources/          图标：icon.svg（源）、icon.icns、icon.png（scripts/make-icon.sh 生成，提交进仓库）
+scripts/                  dist.mjs（pnpm dist）、stage-app.mjs（准备 .stage/app）、after-pack.cjs（检查 .app）、make-icon.sh
 src/main/
   index.ts          入口：数据目录、登录 shell 环境、store、终端 utilityProcess、git / 工作区 / agent / browser 服务、菜单、窗口、退出
   paths.ts          数据目录、运行目录（socket 路径太长时挪到 /tmp）、tmux 名字、tmux.conf、agentdeck-notify 和 pi 扩展在哪（纯逻辑）
@@ -34,7 +37,7 @@ test/               Vitest：注册表、preload 代理、主进程接线、组�
 ## MCP（M1）
 
 `startAppMcp({ registry, emit })` 在 `app.whenReady` 后启动 `packages/mcp-server`，听 `127.0.0.1:47621`（被占用时随机端口），
-token 在 `~/.agentdeck/run/mcp-token`。工具用 `viaRegistry` 调注册表里的服务（发起者 senderId 为 0，不是任何窗口），
+token 在 `<数据目录>/run/mcp-token`（打包后默认就是 `~/.agentdeck/run/mcp-token`；开发、测试时跟着 `AGENTDECK_DATA_DIR` 走）。工具用 `viaRegistry` 调注册表里的服务（发起者 senderId 为 0，不是任何窗口），
 所以服务注册上之后工具就能用；没注册的返回 `Service not available: …`。白板事件（`board.add-frame`、`board.open-window`）走 `emit` 广播。
 
 已接好：`createAgentRuntime({ mcp: () => mcp?.endpoint ?? null })` 让 claude 启动时挂上它；`startAppMcp` 带 `workspaceOf`、`onInput`；`electron.vite.config.ts` 把 `@agentdeck/mcp-server` 打进主进程产物；退出时关掉。
@@ -72,7 +75,7 @@ pnpm --filter @agentdeck/desktop typecheck
 
 | 变量 | 作用 |
 | --- | --- |
-| `AGENTDECK_DATA_DIR` | 数据目录。默认：开发时 `<仓库>/.agentdeck-dev`，打包后 `~/.agentdeck` |
+| `AGENTDECK_DATA_DIR` | 数据目录。默认：开发时 `<仓库>/.agentdeck-dev`，打包后 `~/.agentdeck`。打包后照样认，测试打包版就靠它和下一条（见「打包」） |
 | `AGENTDECK_TMUX_SOCKET` | tmux `-L` 名字。默认：开发时 `agentdeck-desktop-dev`，打包后 `agentdeck` |
 | `AGENTDECK_DEMO=1` | 演示：见上 |
 | `AGENTDECK_SCREENSHOT=<png>` | 截图后退出；`AGENTDECK_SCREENSHOT_DELAY`（毫秒，默认 6000）是终端都有输出之后再等多久 |
@@ -84,9 +87,66 @@ pnpm --filter @agentdeck/desktop typecheck
 
 Electron 45 第一次运行时才下载二进制（pnpm 10 不跑依赖的 postinstall）：`node apps/desktop/node_modules/electron/install.js`（走代理时加 `ELECTRON_GET_USE_PROXY=1 GLOBAL_AGENT_HTTPS_PROXY=$https_proxy`）。
 
+## 打包（IS-36）
+
+```bash
+pnpm dist                                      # 根目录。arm64、x64 两个 dmg → apps/desktop/dist/（git 忽略）
+pnpm --filter @agentdeck/desktop dist:arm64    # 只打 arm64
+pnpm --filter @agentdeck/desktop dist:dir      # 只出 dist/mac-arm64/AgentDeck.app，不做 dmg（本机试用最快）
+```
+
+第一次要联网：electron-builder 下载对应架构的 Electron 和做 dmg 的工具（缓存在 `~/Library/Caches/electron`、`~/Library/Caches/electron-builder`）。只能在 macOS 上打。
+
+**大小**（0.1.0，Electron 45）：dmg arm64 约 113 MB、x64 约 120 MB；装好的 .app 约 254 MB，其中 Electron Framework 约 240 MB，我们自己的只有 app.asar 3 MB 加原生模块 2 MB。
+
+**流程**（`scripts/dist.mjs`）：
+1. `electron-vite build`（普通生产构建；e2e 的 `build-app.mjs` 那份带 `import.meta.env.DEV`，不能拿来打包）。
+2. `scripts/stage-app.mjs` 准备 `.stage/app/`：`out/`、只有运行字段的 `package.json`（dependencies 只有 better-sqlite3、node-pty）、
+   这两个模块的 lib 和 macOS 预编译（spawn-helper 补成 0755）、一份 `package-lock.json`。
+   为什么不直接打本包：本包的 dependencies 是 workspace 的 TS 源码包（已经打进 out/），electron-builder 认出 pnpm workspace 后会把
+   整棵依赖树（react、xterm、zod……）收进 app.asar（实测 app.asar 31 MB、unpacked 29 MB）。有 package-lock.json 时它按 npm 项目只收这两个。
+3. electron-builder（`electron-builder.config.cjs`，projectDir 是 `.stage/app`，所以配置里都是绝对路径）：
+   - 原生模块：两个都是 N-API 预编译（DR-27），**不重新编译**（`npmRebuild: false`），整个模块 `asarUnpack`。node-pty 自己会把
+     `app.asar` 换成 `app.asar.unpacked` 去找 spawn-helper；better-sqlite3 经 Electron 的 asar 支持读 unpacked 里的 .node。
+   - `extraResources`：`tmux.conf`、`agentdeck-notify.mjs`、`agentdeck-pi-extension.mjs` 放进 `Contents/Resources`（`process.resourcesPath`，
+     路径在 `src/main/paths.ts`）。MCP 插件目录、自带 skill 是代码里的字符串，启动时写进数据目录，不用随包带文件。
+   - `scripts/after-pack.cjs`（签名前）：缺 Resources 里的文件、缺这个架构的 .node 或 spawn-helper 就让打包失败；spawn-helper 保证 0755；删掉另一个架构的预编译。
+   - 签名：**ad-hoc**（`identity: '-'`），不开 hardened runtime，不公证。Apple 芯片上完全不签名的程序内核不让跑；ad-hoc 能跑，但 Gatekeeper 不认。
+   - Info.plist：`dev.agentdeck.app`，`NSAppleEventsUsageDescription`（Open in Terminal 用 osascript 驱动 Terminal / iTerm）。
+
+**没签名的应用怎么打开**（写进 README / Release 说明）：从浏览器下载的 dmg 带隔离标记，第一次打开会被拦下。
+- 访达里右键 AgentDeck › 打开 › 打开（macOS 15 起这一步不够：先双击一次被拦，再到 系统设置 › 隐私与安全性 最下面点“仍要打开”）；或者
+- 终端里：`xattr -dr com.apple.quarantine /Applications/AgentDeck.app`
+
+运行时还要用户自己装 tmux ≥ 3.5（`brew install tmux`）和 git（Xcode 命令行工具）；没有 tmux 时界面显示说明页和 Retry（TC-19）。
+
+**测试打包版**：一定带临时的数据目录、tmux 名字和 Electron userData，别碰用户真实的 `~/.agentdeck`、`~/Library/Application Support/AgentDeck`：
+
+```bash
+hdiutil attach -nobrowse -readonly -mountpoint /tmp/ad-mnt apps/desktop/dist/AgentDeck-0.1.0-arm64.dmg
+env -i HOME=$HOME AGENTDECK_DATA_DIR=/tmp/ad-test/data AGENTDECK_TMUX_SOCKET=agentdeck-pkgtest \
+  AGENTDECK_SCREENSHOT=/tmp/ad-test/shot.png /tmp/ad-mnt/AgentDeck.app/Contents/MacOS/AgentDeck --user-data-dir=/tmp/ad-test/ud
+tmux -L agentdeck-pkgtest kill-server; hdiutil detach /tmp/ad-mnt
+```
+
+`env -i` 模拟从访达 / 程序坞打开（launchd 给的环境很少）。打包版不开 `AGENTDECK_DEBUG_PORT`；要驱动界面用 Playwright 的
+`_electron.launch({ executablePath: '<AgentDeck.app>/Contents/MacOS/AgentDeck', args: ['--user-data-dir=…'], env })`（Electron 的 inspect 开关没关），
+页面里有 `window.agentdeck`，没有 `window.__board`（生产构建）。
+
+**发布**：
+1. 改 `apps/desktop/package.json` 的 `version`（dmg 文件名、Info.plist 的版本号都用它，和标签对上），提交。
+2. `pnpm dist`，按上面试一遍 arm64 的 dmg。
+3. 打标签 `v0.1.0` 并推上去：`.github/workflows/release.yml` 在 macOS 上 `pnpm check && pnpm dist`，
+   把两个 dmg 传到同名 Release（草稿）。也可以不用 Actions：`gh release create v0.1.0 apps/desktop/dist/*.dmg --draft --generate-notes`。
+4. 在 GitHub 上检查草稿、写说明（附上面“怎么打开”），Publish。README 的下载链接是 `https://github.com/Loveforwa/AgentDeck/releases/latest`，只指向已发布的最新版。
+
+还没做：Developer ID 签名和公证（要 Apple 开发者账号，做了以后不用 xattr；那时要开 hardened runtime 并配 entitlements）、自动更新、universal 包（两个 dmg 更小）、随应用带 tmux（docs/decisions.md 推迟到 MVP 之后）。
+
 ## 接线要点
 
 - **登录 shell 环境**：启动时读一次（`login-env.ts`），传给 tmux-host（窗格环境）、agent-adapters（检测、启动命令）、git-service、编辑器 / 系统终端。读失败时界面左下角提示。
+  从访达 / 程序坞打开时（IS-11）环境里可能连 SHELL、USER 都没有：从 `os.userInfo()` 补；读到的 PATH 末尾补上存在的常见目录
+  （`/opt/homebrew/bin`、`/usr/local/bin`、`~/.local/bin`、`~/.bun/bin`、`~/.npm-global/bin`、`~/Library/pnpm`、`~/.volta/bin`、`~/.cargo/bin`）。
 - **终端**：tmux-host 跑在 utilityProcess（`src/utility/tmux-host.ts`）。主进程的 `terminals` 服务是转发层，attach 时带上 `registry.context().senderId`；输出不经过主进程，直接写进那个窗口的 MessagePort。窗口刷新或关掉时 detach 它的所有 view。tmux 起不来时界面显示说明页和 Retry（再起一次）。
 - **状态机**：tmux-host 的 `terminal.*` 事件交给 agent runtime；`terminal.input` 时调 `noteInput`（claude 拒绝批准、Esc 打断没有钩子）。`agents.start` 之后把终端记进 store 的 terminals 表，重开应用时按记录 `track` 回来。
 - **钩子**：每次启动在 `<数据目录>/bin/agentdeck-notify` 写一个 sh 入口（带 `AGENTDECK_HOOK_SOCKET`；用登录 shell 里的 node，没有就用 Electron 当 node），把它的绝对路径交给适配器。pi、omp 的扩展 `tools/agentdeck-notify/bin/agentdeck-pi-extension.mjs`（打包后放 Resources）的路径作为 `agentExtension` 传给 agent runtime。

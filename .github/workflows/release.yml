@@ -1,0 +1,44 @@
+# 打 macOS 安装包（IS-36）：推 v* 标签时在 macOS 上跑 pnpm dist，把 arm64、x64 两个 .dmg 传到同名的 GitHub Release（草稿）。
+# 检查草稿、写好说明后在网页上点 Publish；README 的下载链接指向 releases/latest，只认已发布的那个。
+# 也可以在 Actions 页面手动跑（workflow_dispatch），这时只把 dmg 存成 artifact，不碰 Release。
+# 没有 Apple 开发者证书：ad-hoc 签名、不公证，见 apps/desktop/AGENTS.md「打包（IS-36）」。
+name: release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  dmg:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      # 版本取 package.json 的 packageManager
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - run: pnpm dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AgentDeck-dmg
+          path: apps/desktop/dist/*.dmg
+          if-no-files-found: error
+      - name: Upload to the GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" apps/desktop/dist/*.dmg --clobber
+          else
+            gh release create "$TAG" apps/desktop/dist/*.dmg --draft --title "AgentDeck $TAG" --generate-notes
+          fi

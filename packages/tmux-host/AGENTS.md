@@ -27,6 +27,7 @@ AgentDeck 自己的 tmux 实例：`tmux -L agentdeck -f packages/tmux-host/tmux.
 | `test/host.test.ts` | 真 tmux 的集成测试（`-L agentdeck-test-<pid>`，测完 kill-server） |
 | `test/pure.test.ts` | 纯函数 |
 | `test/activity.test.ts` | `ActivityTracker`（假计时器） |
+| `test/packaging.test.ts` | 打包相关：IS-09（顶层不许有 require 声明）、IS-10（默认 tmux.conf 退到 resources） |
 | `dev/bridge.ts` | 本地演示：把真 tmux-host 经 HTTP 交给终端窗口的 dev 页面（`?real=1`） |
 | `scripts/approve-keys.ts` | 用真 claude / codex 核对 Approve all 的按键 |
 | `scripts/perf.ts` | 6 个终端同时打字的延迟、attach 速度 |
@@ -72,7 +73,8 @@ const host = await startTmuxHost({
 1. **utilityProcess 入口**：在 `apps/desktop/src/utility/` 里换掉 echo-host，`startTmuxHost({ env, onEvent, onData, linkWatcher })`，服务调用（invoke）按方法名转给 host。`onData` 按 viewId 找到发起 attach 的那个窗口的 MessagePort（主进程转 invoke 时把 webContents.id 带过来，attach 返回后记下 viewId → 窗口）。
 2. **窗口刷新或关掉**（`window-closed`）：对这个窗口的所有 viewId 调 `detach`，否则 tmux 里会留着 attach 客户端（dev bridge 里实测：刷新三次页面就有三个客户端，窗口大小跟着乱）。
 3. **登录 shell 环境**：用干净的环境起登录 shell 读 env（`env -i HOME=… USER=… SHELL=… PATH=/usr/bin:/bin $SHELL -ilc 'env -0'`），不要把 Electron 自己的环境带进去。本机 claude 要靠登录 shell 里的 `http_proxy` 等代理变量才能连上（不带就是 403，F7 当时误以为是没登录，见下面「线 1 的新发现」）。
-4. **tmux.conf 路径**：打包后 `import.meta.url` 不再指向本包，`configPath` 要传 resources 里那份的绝对路径。
+4. **tmux.conf 路径**：打包后 `import.meta.url` 不再指向本包。`DEFAULT_TMUX_CONF` 先试本包的 `../tmux.conf`，不在就用 `process.resourcesPath/tmux.conf`（IS-10，`resolveDefaultTmuxConf`）；apps/desktop 仍显式传 `configPath`。
+   `src/` 里不要在顶层声明叫 `require` 的变量：electron-vite 的 vite:esm-shim 会往产物顶层注入 `const require`，重名就崩（IS-09，`pty.ts` 用 `nodeRequire`，`test/packaging.test.ts` 检查）。
 5. **node-pty**：标成 external，放进 `asar.unpacked`；打包后确认 `prebuilds/darwin-*/spawn-helper` 是 0755（预编译包里没有执行权限，开发时由本包的 postinstall 和 `src/pty.ts` 补，签名后的 .app 里改不了，见 F7 问题 14）。node-pty 是 N-API 预编译，Electron 里不用重新编译（`pnpm approve-builds` 提示的 node-pty 安装脚本可以不批准）。
 6. **nc**：用 macOS 自带的 `/usr/bin/nc`（要支持 `-U`）。
 7. **Stop all and quit**：`host.killServer()`；⌘Q 只 `host.dispose()`，会话留在 tmux 里。

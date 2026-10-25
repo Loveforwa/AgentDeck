@@ -235,6 +235,8 @@ async function main(): Promise<void> {
   startAppMcp({
     registry,
     emit,
+    // token 跟着数据目录走（默认数据目录下就是 ~/.agentdeck/run/mcp-token）：AGENTDECK_DATA_DIR 指向别处时（开发、测试打包版）不碰用户真实的 ~/.agentdeck
+    tokenPath: join(paths.dataDir, 'run', 'mcp-token'),
     workspaceOf: (id) => rt.status.get(id)?.workspaceId,
     onInput: (id) => rt.noteInput(id),
     // N1：open_terminals 超过 6 个先问；默认按钮是 Cancel（是 agent 发起的）

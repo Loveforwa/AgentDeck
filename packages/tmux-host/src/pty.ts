@@ -1,6 +1,6 @@
 // node-pty：真正的显示连接是一个跑 `tmux attach-session` 的 pty（F7 的结论）。
 // node-pty 1.1.0 的预编译 spawn-helper 装完没有执行权限（F7 问题 14），第一次用之前补上。
-// 打包时（第 3 波）：node-pty 要放进 asar.unpacked，spawn-helper 要保留 0755，见 AGENTS.md。
+// 打包（IS-36）：node-pty 整个放进 app.asar.unpacked，spawn-helper 在打包时就补成 0755（apps/desktop/scripts/stage-app.mjs、after-pack.cjs）。
 
 import { chmodSync, existsSync, statSync } from 'node:fs';
 import { createRequire } from 'node:module';
