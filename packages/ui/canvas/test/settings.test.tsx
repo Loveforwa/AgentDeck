@@ -211,6 +211,47 @@ describe('Settings dialog (TC-15)', () => {
     expect(c.state.dialog).toEqual({ kind: 'settings', section: 'projects', projectId: SAMPLE.projects.agentdeck });
   });
 
+  it('without a project it opens on the project of the focused window or the selected frame (IS-71)', async () => {
+    const { c } = await setup();
+    const shopWindow = c.state.windows.find((w) => w.workspaceId === SAMPLE.workspaces.shopCart)!;
+    act(() => c.focusWindow(shopWindow.id));
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+    expect(c.state.dialog).toEqual({ kind: 'settings', section: 'projects', projectId: SAMPLE.projects.shop });
+    expect(within(dialog()).getByRole('button', { name: 'shop' }).getAttribute('aria-current')).toBe('page');
+    act(() => c.closeDialog());
+
+    // ⌘, 也一样
+    expect(c.runShortcut('open-settings')).toBe(true);
+    expect(c.state.dialog).toEqual({ kind: 'settings', section: 'projects', projectId: SAMPLE.projects.shop });
+    act(() => c.closeDialog());
+
+    // 选中的框
+    act(() => c.selectFrame(SAMPLE.workspaces.agentdeckLogin));
+    act(() => c.selectFrame(SAMPLE.workspaces.shopCart));
+    act(() => c.openSettings());
+    expect(c.state.dialog).toEqual({ kind: 'settings', section: 'projects', projectId: SAMPLE.projects.shop });
+    act(() => c.closeDialog());
+
+    // 明确给了项目或页面时照给的
+    act(() => c.openSettings({ projectId: SAMPLE.projects.agentdeck }));
+    expect(c.state.dialog).toEqual({ kind: 'settings', section: 'projects', projectId: SAMPLE.projects.agentdeck });
+    act(() => c.closeDialog());
+    act(() => c.openSettings({ section: 'general' }));
+    expect(c.state.dialog).toEqual({ kind: 'settings', section: 'general' });
+    act(() => c.closeDialog());
+
+    // 散放的窗口、什么都没聚焦：第一个项目
+    await act(() => c.newTerminal({ agent: 'shell', workspaceId: null, at: { x: 3000, y: 3000 } }));
+    const loose = await waitFor(() => c.state.windows.find((w) => w.workspaceId === null)!);
+    act(() => c.focusWindow(loose.id));
+    act(() => c.openSettings());
+    expect(c.state.dialog).toEqual({ kind: 'settings', section: 'projects', projectId: SAMPLE.projects.agentdeck });
+    act(() => c.closeDialog());
+    act(() => c.focusWindow(null));
+    act(() => c.openSettings());
+    expect(c.state.dialog).toEqual({ kind: 'settings', section: 'projects', projectId: SAMPLE.projects.agentdeck });
+  });
+
   it('a missing project offers Locate…', async () => {
     const { api, c } = await setup();
     act(() => api.scenario.projectFolderMissing(SAMPLE.projects.shop));

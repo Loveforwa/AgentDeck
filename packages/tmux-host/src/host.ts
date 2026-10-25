@@ -22,6 +22,7 @@ import type {
   TerminalLink,
   ViewId,
 } from '@agentdeck/contracts';
+import { ActivityTracker } from './activity.ts';
 import { findExecutable, isDirectory, paneEnv, readEnv, serverEnv, type Env, type EnvSource } from './env.ts';
 import { classifyInput } from './input.ts';
 import { loadNodePty, type IPty, type PtyModule } from './pty.ts';
@@ -58,6 +59,8 @@ export interface TmuxHostOptions {
   ncPath?: string;
   /** 多久没有输出发 terminal.silence，默认 3000。 */
   silenceMs?: number;
+  /** 改大小（attach 换了尺寸、resize）之后多久内的重画不发 terminal.activity（IS-72），默认 1000；0 不压。 */
+  resizeQuietMs?: number;
   /** list-sessions 兜底检查的间隔，默认 2000。 */
   healthIntervalMs?: number;
   /** 每个终端一个链接识别器。不给就不发 terminal.link。 */
@@ -94,13 +97,12 @@ interface Entry {
   killing: boolean;
   addedAt: number;
   lastActivityAt: number | null;
-  /** 一段连续输出里只发一次 activity，停下 silenceMs 后发 silence。 */
-  active: boolean;
-  /** 上次 silence 之后有过输出或输入，静默计时器到点时才发 silence。 */
-  pendingSilence: boolean;
-  silenceTimer: ReturnType<typeof setTimeout> | null;
+  /** activity / silence 的计时，改大小后的重画不算活动（src/activity.ts）。 */
+  activity: ActivityTracker;
   lastInputEventAt: number;
   cols: number;
+  /** 最后一次知道的窗口大小（create 时给的、attach / resize 时设的）；接回的会话不知道，为 null。 */
+  size: TermSize | null;
   watcher: LinkWatcher | null;
   links: TerminalLink[];
   linkKeys: Set<string>;
@@ -156,6 +158,7 @@ class TmuxHostImpl implements TmuxHost {
   private stopping = false;
   private viewCounter = 0;
   private readonly silenceMs: number;
+  private readonly resizeQuietMs: number;
   private readonly pty: PtyModule;
   private readonly opts: TmuxHostOptions;
   private readonly tmux: TmuxRunner;
@@ -172,6 +175,7 @@ class TmuxHostImpl implements TmuxHost {
     this.socketPath = socketPath;
     this.socketName = tmux.socket;
     this.silenceMs = opts.silenceMs ?? 3000;
+    this.resizeQuietMs = opts.resizeQuietMs ?? 1000;
     this.pty = opts.pty ?? loadNodePty();
   }
 
@@ -202,7 +206,7 @@ class TmuxHostImpl implements TmuxHost {
     const target = `=${id}:`;
     // 只有一个参数时 tmux 会交给 default-shell -c 去跑；经 /usr/bin/env 直接 exec，不经 shell（F7 的做法）。
     const argv = req.args.length > 0 ? [exe, ...req.args] : ['/usr/bin/env', exe];
-    const entry = this.newEntry(id, req.cwd, size.cols);
+    const entry = this.newEntry(id, req.cwd, size, { adopted: false });
     this.entries.set(id, entry);
     try {
       await this.tmux.run([
@@ -276,10 +280,7 @@ class TmuxHostImpl implements TmuxHost {
       await this.adopt();
       entry = this.entries.get(id);
     }
-    if (entry) {
-      entry.cols = size.cols;
-      entry.watcher?.setWidth?.(size.cols);
-    }
+    if (entry) this.noteSize(entry, size);
     const viewId = `v-${(++this.viewCounter).toString(36)}-${randomBytes(3).toString('hex')}` as ViewId;
     const p = this.pty.spawn(this.tmux.path, this.tmux.argv(['-u', '-T', CLIENT_FEATURES, 'attach-session', '-t', `=${id}`]), {
       name: 'xterm-256color',
@@ -327,10 +328,7 @@ class TmuxHostImpl implements TmuxHost {
       // pty 刚好关了
     }
     const entry = this.entries.get(v.terminalId);
-    if (entry) {
-      entry.cols = size.cols;
-      entry.watcher?.setWidth?.(size.cols);
-    }
+    if (entry) this.noteSize(entry, size);
   }
 
   async sendKeys(id: TerminalId, keys: string[]): Promise<void> {
@@ -384,14 +382,14 @@ class TmuxHostImpl implements TmuxHost {
     if (this.healthTimer) clearInterval(this.healthTimer);
     if (this.healthSoon) clearTimeout(this.healthSoon);
     for (const v of [...this.views.values()]) this.closeView(v);
-    for (const e of this.entries.values()) this.clearSilence(e);
+    for (const e of this.entries.values()) e.activity.clear();
     await this.stream?.close();
   }
 
   async killServer(): Promise<void> {
     this.stopping = true;
     for (const v of [...this.views.values()]) this.closeView(v);
-    for (const e of this.entries.values()) this.clearSilence(e);
+    for (const e of this.entries.values()) e.activity.clear();
     this.entries.clear();
     await this.tmux.run(['kill-server']).catch(() => {});
     this.stopping = false;
@@ -403,10 +401,10 @@ class TmuxHostImpl implements TmuxHost {
     if (!this.disposed) this.opts.onEvent(event);
   }
 
-  private newEntry(id: TerminalId, cwd: string, cols: number): Entry {
+  private newEntry(id: TerminalId, cwd: string, size: TermSize | { cols: number; rows: null }, o: { adopted: boolean }): Entry {
     const watcher = this.opts.linkWatcher?.() ?? null;
-    watcher?.setWidth?.(cols);
-    return {
+    watcher?.setWidth?.(size.cols);
+    const entry: Entry = {
       id,
       cwd,
       alive: true,
@@ -414,20 +412,40 @@ class TmuxHostImpl implements TmuxHost {
       killing: false,
       addedAt: Date.now(),
       lastActivityAt: null,
-      active: false,
-      pendingSilence: false,
-      silenceTimer: null,
+      activity: new ActivityTracker(
+        {
+          silenceMs: this.silenceMs,
+          quietMs: this.resizeQuietMs,
+          alive: () => entry.alive,
+          onActivity: (at) => this.emit({ type: 'terminal.activity', id, at: new Date(at).toISOString() }),
+          onSilence: (at) => this.emit({ type: 'terminal.silence', id, at: new Date(at).toISOString() }),
+          onTimer: () => {
+            if (entry.watcher?.flush) for (const link of entry.watcher.flush()) this.rememberLink(entry, link, { emit: true, front: true });
+          },
+        },
+        { adopted: o.adopted },
+      ),
       lastInputEventAt: 0,
-      cols,
+      cols: size.cols,
+      size: size.rows === null ? null : { cols: size.cols, rows: size.rows },
       watcher,
       links: [],
       linkKeys: new Set(),
       historyScanned: true,
     };
+    return entry;
+  }
+
+  /** attach / resize 给了新的大小。和上次知道的不一样时 tmux 会改窗口大小、程序收到 SIGWINCH 重画，这段重画不算活动（IS-72）。 */
+  private noteSize(entry: Entry, size: TermSize): void {
+    if (!entry.size || entry.size.cols !== size.cols || entry.size.rows !== size.rows) entry.activity.resized();
+    entry.size = { cols: size.cols, rows: size.rows };
+    entry.cols = size.cols;
+    entry.watcher?.setWidth?.(size.cols);
   }
 
   private removeEntry(entry: Entry): void {
-    this.clearSilence(entry);
+    entry.activity.clear();
     this.entries.delete(entry.id);
   }
 
@@ -456,7 +474,7 @@ class TmuxHostImpl implements TmuxHost {
     if (fresh.length === 0) return;
     const args: string[] = [...this.hookArgs()];
     for (const r of fresh) {
-      const entry = this.newEntry(r.id, r.cwd, r.width || DEFAULT_SIZE.cols);
+      const entry = this.newEntry(r.id, r.cwd, { cols: r.width || DEFAULT_SIZE.cols, rows: null }, { adopted: true });
       entry.alive = !r.dead;
       entry.exitCode = r.dead ? r.exitCode : null;
       entry.lastActivityAt = r.activity > 0 ? r.activity * 1000 : null;
@@ -497,13 +515,8 @@ class TmuxHostImpl implements TmuxHost {
   private onOutput(id: TerminalId, data: string): void {
     const entry = this.entries.get(id);
     if (!entry || this.disposed) return;
-    const now = Date.now();
-    entry.lastActivityAt = now;
-    if (!entry.active) {
-      entry.active = true;
-      this.emit({ type: 'terminal.activity', id, at: new Date(now).toISOString() });
-    }
-    this.armSilence(entry);
+    // 改大小引起的重画不算活动，也不更新 lastActivityAt（IS-72）
+    if (entry.activity.output()) entry.lastActivityAt = Date.now();
     if (entry.watcher) for (const link of entry.watcher.push(data)) this.rememberLink(entry, link, { emit: true, front: true });
   }
 
@@ -526,34 +539,11 @@ class TmuxHostImpl implements TmuxHost {
     if (o.emit) this.emit({ type: 'terminal.link', id: entry.id, link });
   }
 
-  /** 3 秒没有输出（也没有输入）发 silence。输入也重新计时：用户按了 Esc 但程序什么都没输出时，状态机也要能等到 silence（docs/decisions.md 的兜底规则）。 */
-  private armSilence(entry: Entry): void {
-    entry.pendingSilence = true;
-    if (entry.silenceTimer) clearTimeout(entry.silenceTimer);
-    if (this.silenceMs <= 0) return;
-    entry.silenceTimer = setTimeout(() => {
-      entry.silenceTimer = null;
-      if (entry.watcher?.flush) for (const link of entry.watcher.flush()) this.rememberLink(entry, link, { emit: true, front: true });
-      if (!entry.pendingSilence || !entry.alive) return;
-      entry.pendingSilence = false;
-      entry.active = false;
-      this.emit({ type: 'terminal.silence', id: entry.id, at: new Date().toISOString() });
-    }, this.silenceMs);
-    entry.silenceTimer.unref?.();
-  }
-
-  private clearSilence(entry: Entry): void {
-    if (entry.silenceTimer) clearTimeout(entry.silenceTimer);
-    entry.silenceTimer = null;
-    entry.pendingSilence = false;
-    entry.active = false;
-  }
-
   private noteInput(id: TerminalId): void {
     const entry = this.entries.get(id);
     const now = Date.now();
     if (entry) {
-      if (entry.alive) this.armSilence(entry);
+      if (entry.alive) entry.activity.input();
       if (now - entry.lastInputEventAt < INPUT_EVENT_GAP_MS) return;
       entry.lastInputEventAt = now;
     }
@@ -565,7 +555,7 @@ class TmuxHostImpl implements TmuxHost {
     if (!entry || !entry.alive || entry.killing) return;
     entry.alive = false;
     entry.exitCode = code ?? 0;
-    this.clearSilence(entry);
+    entry.activity.clear();
     if (entry.watcher?.flush) for (const link of entry.watcher.flush()) this.rememberLink(entry, link, { emit: true, front: true });
     this.emit({ type: 'terminal.exit', id, code: entry.exitCode });
   }
@@ -642,7 +632,7 @@ class TmuxHostImpl implements TmuxHost {
         const had = [...this.entries.values()].some((e) => e.addedAt < startedAt && !e.killing);
         if (!had) return;
         for (const v of [...this.views.values()]) this.closeView(v);
-        for (const e of this.entries.values()) this.clearSilence(e);
+        for (const e of this.entries.values()) e.activity.clear();
         this.entries.clear();
         this.emit({ type: 'terminal.host-lost' });
         return;

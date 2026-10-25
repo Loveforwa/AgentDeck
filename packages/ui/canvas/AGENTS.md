@@ -55,6 +55,7 @@ import '@agentdeck/ui-kit/base.css';
 - `BoardController`：白板的全部行为，不依赖 React，测试里直接用。`Workbench` 可以传自己建的 `controller`。`runShortcut(id)` 可以接到应用菜单的快捷键上（焦点在网页窗口的 iframe 里时按键到不了白板）。
 - `addProject` 选项可以换掉默认的 Add project… 流程（线 3 的 W1 做好后接上）。
 - Settings 对话框（X12，TC-15）在白板里：`controller.openSettings({ section?: 'projects' | 'general', projectId? })`。入口：顶栏右边的齿轮、顶栏左边的项目菜单 › 项目 › Project settings…、⌘,（`ShortcutId` 的 `open-settings`，输入框里也生效；应用菜单的 Settings… 发这个快捷键）。组装方把终端窗口的 `agentdeck:open-settings` 事件接到 `openSettings`。
+  - 没给 `projectId` 时（齿轮、⌘,、应用菜单）停在当前项目上（IS-71）：选中的框或聚焦窗口所在工作区的项目，和右侧面板跟随的是同一个（`activeWorkspaceId`）；什么都没聚焦、没选中，或聚焦的是散放窗口时，停在列表第一个项目上。
   - 左边项目列表 + General。项目页：Name、Path（只读，找不到时 Locate… → `projects.locate`）、每个仓库的 Base branch（选项来自 `git.branches`）、Worktree location（Browse… 用 `app.pickFolder`）、Files to copy（一行一个）、Setup command。General：closeWindow、notifications、defaultAgent、editorCommand、terminalApp。
   - 各页改的是草稿（`src/model/settings.ts`），换页不丢；Save 把所有改过的页一起保存，只发改了的字段（`projects.update` / `app.updateSettings`），都成功才关；失败用 Toast 提示、对话框不关。Agents、Approvals 页以后再加。
 

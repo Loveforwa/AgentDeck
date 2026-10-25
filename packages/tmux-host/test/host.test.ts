@@ -206,6 +206,30 @@ describe.skipIf(!tmuxOk)('TmuxHost with real tmux', () => {
     expect(tmux('display-message', '-p', '-t', `=${t}:`, '#{window_width}x#{window_height}').trim()).toBe('70x20');
   });
 
+  it('the redraw after an attach or resize of a quiet terminal is not activity; later output is (IS-72)', async () => {
+    const t = id();
+    // 像 shell 一样：收到 SIGWINCH 就重画（这里打印 redraw）；USR1 模拟程序真的输出了东西
+    const script = 'echo ready; trap "echo redraw" WINCH; trap "echo work" USR1; while :; do sleep 0.05; done';
+    await host.create({ id: t, cmd: 'sh', args: ['-c', script], cwd: cwd(), size: { cols: 80, rows: 24 } });
+    await waitFor(() => eventsOf('terminal.silence', t).length > 0);
+    expect(eventsOf('terminal.activity', t)).toHaveLength(1);
+    const redraws = async () => (await host.lastLines(t, 20)).filter((l) => l === 'redraw').length;
+
+    const { viewId } = await host.attach(t, { cols: 90, rows: 25 });
+    await waitFor(async () => (await redraws()) >= 1);
+    host.resize(viewId, { cols: 70, rows: 20 });
+    await waitFor(async () => (await redraws()) >= 2);
+    await sleep(100);
+    expect(eventsOf('terminal.activity', t)).toHaveLength(1);
+
+    await sleep(1000); // resizeQuietMs 默认 1000
+    const pid = tmux('display-message', '-p', '-t', `=${t}:`, '#{pane_pid}').trim();
+    process.kill(Number(pid), 'SIGUSR1');
+    await waitFor(() => eventsOf('terminal.activity', t).length === 2);
+    await host.detach(viewId);
+    await host.kill(t);
+  });
+
   it('attach to a missing session throws not-found', async () => {
     await expect(host.attach('nope' as TerminalId, { cols: 80, rows: 24 })).rejects.toMatchObject({ code: 'not-found' });
   });
