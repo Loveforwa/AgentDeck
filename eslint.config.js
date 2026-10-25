@@ -27,6 +27,8 @@ export default defineConfig(
       '.claude/**',
       // 开发模式的数据目录：里面有新建的 worktree（IS-19），以及截图
       '.agentdeck-dev/**',
+      // 打包时 apps/desktop/scripts/stage-app.mjs 准备的目录（IS-36）
+      '**/.stage/**',
       // 故意违规的样例，由 tools/boundary-fixtures 的测试单独检查
       'tools/boundary-fixtures/cases/**',
       'tools/boundary-fixtures/eslint/**',
@@ -68,6 +70,12 @@ export default defineConfig(
         { selector: `TemplateElement[value.raw=${FUNC_COLOR}]`, message: COLOR_MESSAGE },
       ],
     },
+  },
+  {
+    // CommonJS 文件（electron-builder 的配置和钩子只能是 CJS，IS-36）
+    files: ['**/*.cjs'],
+    languageOptions: { sourceType: 'commonjs' },
+    rules: { '@typescript-eslint/no-require-imports': 'off' },
   },
   prettier,
 );

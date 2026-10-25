@@ -8,6 +8,10 @@
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
+    "stage": "node scripts/stage-app.mjs",
+    "dist": "node scripts/dist.mjs",
+    "dist:arm64": "node scripts/dist.mjs --arm64",
+    "dist:dir": "node scripts/dist.mjs --arm64 --dir",
     "typecheck": "tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.web.json --noEmit",
     "test": "vitest run"
   },
@@ -36,6 +40,7 @@
     "@types/react-dom": "18.3.7",
     "@vitejs/plugin-react": "^6.1.2",
     "electron": "45.0.0",
+    "electron-builder": "26.18.0",
     "electron-vite": "6.0.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",

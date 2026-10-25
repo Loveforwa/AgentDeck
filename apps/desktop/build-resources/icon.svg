@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- AgentDeck 的应用图标（IS-36）：暖灰底，墨黑的几张终端卡片叠成一副“牌”，最前面一张是提示符。不用渐变、发光。
+       颜色取自 packages/design-tokens 的亮色主题（hover、line-strong、ground、ink）。
+       改了以后运行 apps/desktop/scripts/make-icon.sh 重新生成 icon.icns 和 icon.png。 -->
+  <rect x="100" y="100" width="824" height="824" rx="184" fill="#EDEDEA" stroke="#D6D6D2" stroke-width="4"/>
+  <rect x="336" y="248" width="448" height="320" rx="32" fill="#F7F7F5" stroke="#1A1A1A" stroke-width="20"/>
+  <rect x="288" y="320" width="448" height="320" rx="32" fill="#F7F7F5" stroke="#1A1A1A" stroke-width="20"/>
+  <rect x="230" y="392" width="460" height="340" rx="34" fill="#1A1A1A"/>
+  <path d="M318 500 L398 562 L318 624" fill="none" stroke="#F7F7F5" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M442 628 L560 628" fill="none" stroke="#F7F7F5" stroke-width="34" stroke-linecap="round"/>
+</svg>
