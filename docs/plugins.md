@@ -67,3 +67,5 @@
 - 2026-10-25：PL1 后端：破坏性命令的默认名单补全（在整段命令里找，见 packages/agent-adapters 的 `DEFAULT_DESTRUCTIVE_PATTERNS`）。替你按不了的时候（破坏性、选择题 / 要你打字、没按成）服务只给原因（`approval.needs-you`），界面统一显示 “Needs you”。
 - 2026-10-25：PL2 界面：Usage 的开关和位置存在终端的 `TerminalWindowData.usage`（`{ on, position: 'top' | 'bottom' }`，contracts 只加了可选字段），随白板保存；关掉时记得上次贴在哪边。条画着（开着、窗口在白板上、终端有 terminalId）时 `usage.watch`，收起、Hide、关窗口、换 terminalId 时 `unwatch`；窗口滚出视口不 unwatch（来回平移不反复重读会话文件）。上下文按服务给的 percent ≥ 85 变黄（`--attention`）。放大窗口时给条留出 30px（条在上边就往下让）。下边同时挂着 Auto-approve 书签时，条放在书签下面。
 - 2026-10-25：Usage 条上写全称 Input / Output / Cache / Context，每项悬停有一句说明；Cache 只写读，缓存写放在悬停里；终端窄时先藏 Cache，再藏 Output、Input。Context 照 agent 自己界面的写法算，和终端里看到的一致：kimi 的 k 按 1024、百分比向上取整（68.8k/977k、8%）；codex 先扣 12000 的基线；别的按 1000 进位、四舍五入（`contextDisplay`）。
+- 2026-10-25（验收后）：只有 agent 窗口才有自动批准。shell、自定义命令的终端菜单里没有 Auto-approve，也不挂书签；框上开 Auto-approve 时只管框里的 agent 终端（IS-68）。
+- 2026-10-25（验收后）：Usage 里的额度、上下文百分比，取整方式和对应 agent 自己界面上的一致；各家额度设计不一样（codex 写 “x% left”，就照它的算法显示），不统一成一种写法（IS-69）。

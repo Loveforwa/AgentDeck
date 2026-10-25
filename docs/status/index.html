@@ -138,13 +138,13 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
 <header>
   <span class="eyebrow">AgentDeck · MVP 验收报告 · 2026-10-25 · main 22373c2</span>
   <h1>AgentDeck MVP 验收报告</h1>
-  <p class="lede">第一个能打开、能用的版本已经组装好：白板、tmux 托管的真终端、工作区和 Git 面板、agent 状态提醒、网页窗口接在了一起。下面的端到端用例可以直接在这页上验收，问题清单可以直接改处理状态，填的内容会保存下来。2026-10-24 第一轮验收：38 条通过，0 条阻塞或不通过（在调研），4 条等你验收。</p>
+  <p class="lede">第一个能打开、能用的版本已经组装好：白板、tmux 托管的真终端、工作区和 Git 面板、agent 状态提醒、网页窗口接在了一起。下面的端到端用例可以直接在这页上验收，问题清单可以直接改处理状态，填的内容会保存下来。2026-10-24 第一轮验收：39 条通过，0 条阻塞或不通过（在调研），3 条等你验收。</p>
   <p class="rules">编号：<b>TC-xx</b> 端到端用例（TC-01 到 TC-14 是 14 条验收场景）· <b>IS-xx</b> 问题 · <b>DR-xx</b> 调研记录 · <b>F1、T2</b> 等是任务编号。</p>
   <div class="bars">
     <div class="barbox"><span class="t">39 项基础功能（P0 任务）</span><div class="bar"><span class="seg seg-auto" style="flex:33" title="完成，有自动测试 33"></span><span class="seg seg-manual" style="flex:2" title="完成，只有手动验证 2"></span><span class="seg seg-partial" style="flex:4" title="部分完成 / 未做 4"></span></div>
       <div class="legend"><span><i class="dot seg-auto"></i>有自动测试 <b>33</b></span><span><i class="dot seg-manual"></i>只有手动验证 <b>2</b></span><span><i class="dot seg-partial"></i>部分完成 / 未做 <b>4</b></span></div></div>
-    <div class="barbox"><span class="t">42 条端到端用例的现状</span><div class="bar"><span class="seg seg-part" style="flex:4"></span><span class="seg seg-ok" style="flex:38"></span></div>
-      <div class="legend"><span><i class="dot seg-prob"></i>当前有问题 <b>0</b></span><span><i class="dot seg-no"></i>未验证 <b>0</b></span><span><i class="dot seg-part"></i>部分验证 <b>4</b></span><span><i class="dot seg-ok"></i>已验证 <b>38</b></span><span><i class="dot seg-todo"></i>未实现 <b>0</b></span></div></div>
+    <div class="barbox"><span class="t">42 条端到端用例的现状</span><div class="bar"><span class="seg seg-part" style="flex:3"></span><span class="seg seg-ok" style="flex:39"></span></div>
+      <div class="legend"><span><i class="dot seg-prob"></i>当前有问题 <b>0</b></span><span><i class="dot seg-no"></i>未验证 <b>0</b></span><span><i class="dot seg-part"></i>部分验证 <b>3</b></span><span><i class="dot seg-ok"></i>已验证 <b>39</b></span><span><i class="dot seg-todo"></i>未实现 <b>0</b></span></div></div>
     <div class="barbox"><span class="t">你的验收进度</span><div class="bar" id="acc-bar"></div>
       <div class="legend"><span><i class="dot seg-pass"></i>通过 <b id="n-pass">0</b></span><span><i class="dot seg-fail"></i>不通过或阻塞 <b id="n-fail">0</b></span><span>还没验收 <b id="n-open">42</b></span><span>问题已解决 <b id="n-solved">28</b> / 72</span></div></div>
   </div>
@@ -160,25 +160,7 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
 
 <section class="block">
   <div class="head"><h2>端到端用例</h2><p>42 条，按你的验收结果分组：还没验收的在最上面，阻塞和不通过的其次，已通过的收起来。展开看前置要求、步骤和预期；在右边选验收结果（选完会挪到对应的组），下面写备注。</p><span class="save-state" id="save-state">正在连接保存…</span></div>
-  <div id="cases"><div class="case-group" data-group="todo"><h3 class="group-title">等你验收 <span class="gcount" data-gcount="todo"></span></h3><div class="cases" data-cases="todo"><article class="case c-part" id="tc-29" data-case="TC-29" data-status="part" data-result="">
-  <div class="case-head">
-    <span class="mono cid">TC-29</span><span class="pri pri-P1">P1</span><span class="st st-part">部分验证</span>
-    <h4>顶栏只有一行，常用的东西在顺手的位置（V1）</h4>
-    <label class="field result"><span>验收结果</span><select id="res-TC-29" data-tc="TC-29" class="res"><option value="" selected>未验收</option><option>通过</option><option>不通过</option><option>阻塞</option><option>跳过</option></select></label>
-  </div>
-  <p class="now"><span class="label">当前情况</span>已做（V1，合进 main f95c6a7）：一行顶栏（macOS 用 hiddenInset，左边给红黄绿按钮留 76px）、项目菜单在左、“main · 2 windows”、齿轮在右、框 12 / 面板 10 / 窗口 8 / 菜单和对话框 8 的圆角。2026-10-25 在单独实例里截图确认（调试截图看不到系统按钮本身，红黄绿按钮是否竖直居中要你在真窗口里看）。2026-10-25 按用户要求去掉了横栏：顶栏背景透明、没有底边线，白板铺到最上面，按钮各自带底色浮在上面（c97f385）；最上面 34px 仍是窗口拖动区，压在那里的窗口内容点不到；2026-10-25 Claude 截图验收（部分通过）：一行透明顶栏：左边项目菜单（列出 api、shop、Add project…，New workspace… 在每个项目的子菜单里）、“main · 2 windows”；右边状态灯、Approve all…、齿轮，齿轮打开 Settings；圆角：框 12、面板 10、窗口 8、对话框 8。红黄绿按钮是否和顶栏同一行要看系统截图（另做）。小问题：从 shop 打开 Settings 时默认选中的是 api</p>
-  <details>
-    <summary>前置要求、操作步骤和预期</summary>
-    <div class="spec">
-      <div><span class="label">前置要求</span><p>MVP v2 合进 main 并重启 AgentDeck</p></div>
-      <div><span class="label">操作步骤</span><ol><li>看应用顶部</li><li>点左边的项目菜单</li><li>点右边的齿轮</li></ol></div>
-      <div class="wide-cell"><span class="label">UI / 后台预期表现</span><p>UI：系统的红黄绿按钮和顶栏在同一行；左边是项目菜单和当前工作区（例如 “main · 3 windows”），菜单里有各项目、New workspace…、Add project…；右边是状态灯和齿轮，齿轮打开 Settings；框、面板、窗口都是圆角。</p><p>后台：窗口用 hiddenInset 标题栏；圆角只在 design-tokens 里定义。</p></div>
-      <div class="wide-cell"><span class="label">最终效果</span><p>顶部只占一行，白板更大</p></div>
-    </div>
-  </details>
-  <p class="links">关联问题 <a class="ref" href="#is-51">IS-51</a></p>
-  <label class="field note"><span>验收备注</span><textarea id="note-TC-29" data-tc="TC-29" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
-</article><article class="case c-part" id="tc-37" data-case="TC-37" data-status="part" data-result="">
+  <div id="cases"><div class="case-group" data-group="todo"><h3 class="group-title">等你验收 <span class="gcount" data-gcount="todo"></span></h3><div class="cases" data-cases="todo"><article class="case c-part" id="tc-37" data-case="TC-37" data-status="part" data-result="">
   <div class="case-head">
     <span class="mono cid">TC-37</span><span class="pri pri-P1">P1</span><span class="st st-part">部分验证</span>
     <h4>白板手势（N6）</h4>
@@ -646,6 +628,24 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
   </details>
   <p class="links">关联问题 <a class="ref" href="#is-44">IS-44</a> · 相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-48" target="_blank" rel="noopener">DR-48</a></p>
   <label class="field note"><span>验收备注</span><textarea id="note-TC-28" data-tc="TC-28" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
+</article><article class="case c-ok" id="tc-29" data-case="TC-29" data-status="ok" data-result="通过">
+  <div class="case-head">
+    <span class="mono cid">TC-29</span><span class="pri pri-P1">P1</span><span class="st st-ok">已验证</span>
+    <h4>顶栏只有一行，常用的东西在顺手的位置（V1）</h4>
+    <label class="field result"><span>验收结果</span><select id="res-TC-29" data-tc="TC-29" class="res"><option value="">未验收</option><option selected>通过</option><option>不通过</option><option>阻塞</option><option>跳过</option></select></label>
+  </div>
+  <p class="now"><span class="label">当前情况</span>已做（V1，合进 main f95c6a7）：一行顶栏（macOS 用 hiddenInset，左边给红黄绿按钮留 76px）、项目菜单在左、“main · 2 windows”、齿轮在右、框 12 / 面板 10 / 窗口 8 / 菜单和对话框 8 的圆角。2026-10-25 在单独实例里截图确认（调试截图看不到系统按钮本身，红黄绿按钮是否竖直居中要你在真窗口里看）。2026-10-25 按用户要求去掉了横栏：顶栏背景透明、没有底边线，白板铺到最上面，按钮各自带底色浮在上面（c97f385）；最上面 34px 仍是窗口拖动区，压在那里的窗口内容点不到；2026-10-25 Claude 截图验收（部分通过）：一行透明顶栏：左边项目菜单（列出 api、shop、Add project…，New workspace… 在每个项目的子菜单里）、“main · 2 windows”；右边状态灯、Approve all…、齿轮，齿轮打开 Settings；圆角：框 12、面板 10、窗口 8、对话框 8。红黄绿按钮是否和顶栏同一行要看系统截图（另做）。小问题：从 shop 打开 Settings 时默认选中的是 api；2026-10-25 用户确认红黄绿按钮和顶栏同一行，算通过</p>
+  <details>
+    <summary>前置要求、操作步骤和预期</summary>
+    <div class="spec">
+      <div><span class="label">前置要求</span><p>MVP v2 合进 main 并重启 AgentDeck</p></div>
+      <div><span class="label">操作步骤</span><ol><li>看应用顶部</li><li>点左边的项目菜单</li><li>点右边的齿轮</li></ol></div>
+      <div class="wide-cell"><span class="label">UI / 后台预期表现</span><p>UI：系统的红黄绿按钮和顶栏在同一行；左边是项目菜单和当前工作区（例如 “main · 3 windows”），菜单里有各项目、New workspace…、Add project…；右边是状态灯和齿轮，齿轮打开 Settings；框、面板、窗口都是圆角。</p><p>后台：窗口用 hiddenInset 标题栏；圆角只在 design-tokens 里定义。</p></div>
+      <div class="wide-cell"><span class="label">最终效果</span><p>顶部只占一行，白板更大</p></div>
+    </div>
+  </details>
+  <p class="links">关联问题 <a class="ref" href="#is-51">IS-51</a></p>
+  <label class="field note"><span>验收备注</span><textarea id="note-TC-29" data-tc="TC-29" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
 </article><article class="case c-ok" id="tc-30" data-case="TC-30" data-status="ok" data-result="通过">
   <div class="case-head">
     <span class="mono cid">TC-30</span><span class="pri pri-P1">P1</span><span class="st st-ok">已验证</span>
@@ -1860,7 +1860,7 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
     <div class="spec">
       <div><span class="label">怎么复现 / 验证</span><p>右键框 › PLUGINS › Auto-approve，看框里的 shell 终端</p></div>
       <div><span class="label">影响</span><p>以为 shell 也会自动批准</p></div>
-      <div class="wide-cell"><span class="label">建议处理</span><p>不支持的终端挂灰色书签（或不挂），文字写 Not supported</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>用户定：只有 agent 窗口有自动批准，shell、自定义命令的菜单里没有这一项、也不挂书签，框上开时只管 agent 终端</p></div>
     </div>
   </details>
   <p class="links">关联用例 <a class="ref" href="#tc-40">TC-40</a></p>
@@ -2020,7 +2020,7 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
     <div class="spec">
       <div><span class="label">怎么复现 / 验证</span><p>打开 codex 终端的 Usage 卡片，对照 codex 的 /status</p></div>
       <div><span class="label">影响</span><p>两边数字对不上</p></div>
-      <div class="wide-cell"><span class="label">建议处理</span><p>额度百分比照 codex 自己的取整（显示 used = 100 - 它的 left）</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>用户定：额度和上下文的取整都和对应 agent 自己界面一致（各家额度设计不同，不统一）</p></div>
     </div>
   </details>
   <p class="links">关联用例 <a class="ref" href="#tc-41">TC-41</a></p>
