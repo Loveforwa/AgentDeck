@@ -12,13 +12,22 @@ import { setUsage } from '../src/plugins/usage.tsx';
 import { createWindowRegistry } from '../src/registry.ts';
 import {
   CONTEXT_ATTENTION_PERCENT,
+  AGENT_FORMATS,
   abbreviate1024,
+  claudeTokens,
+  codexLimitText,
+  codexResetTime,
+  codexTokens,
   contextDisplay,
   abbreviate,
   cacheText,
   lastRequestText,
   limitLabel,
   limitRows,
+  ompTokens,
+  piTokens,
+  rustFixed,
+  tokensText,
   usageOutset,
 } from '../src/plugins/usage-model.ts';
 import css from '../src/canvas.css?raw';
@@ -198,7 +207,8 @@ describe('PL2 the strip', () => {
     const field = (f: string) => el.querySelector<HTMLElement>(`[data-field="${f}"]`)!.textContent;
     expect(field('in')).toBe('Input 312k');
     expect(field('out')).toBe('Output 18.4k');
-    expect(field('cache')).toBe('Cache 1.4M');
+    // claude 自己的写法：小写 k / m（formatTokens）
+    expect(field('cache')).toBe('Cache 1.4m');
     expect(field('ctx')).toBe('Context 96k / 200k48%');
     expect(el.querySelector<HTMLElement>('.ad-usage-meter > i')!.style.width).toBe('48%');
     expect(el.querySelector('.ad-usage-grip')).not.toBeNull();
@@ -234,8 +244,8 @@ describe('PL2 the strip', () => {
         context: { tokens: 120_000, window: 200_000, percent: 60, windowSource: 'model-table' },
       });
     });
-    await waitFor(() => expect(el.querySelector('[data-field="in"]')!.textContent).toBe('Input 1.3M'));
-    expect(el.querySelector('[data-field="out"]')!.textContent).toBe('Output 1M');
+    await waitFor(() => expect(el.querySelector('[data-field="in"]')!.textContent).toBe('Input 1.3m'));
+    expect(el.querySelector('[data-field="out"]')!.textContent).toBe('Output 1m');
     expect(el.querySelector('[data-field="ctx"]')!.textContent).toBe('Context 120k / 200k60%');
     c.dispose();
   });
@@ -249,6 +259,9 @@ describe('PL2 the strip', () => {
     expect(el.className).toContain('ad-usage-strip--attention');
     // codex 不报缓存写：只写读
     expect(el.querySelector('[data-field="cache"]')!.textContent).toBe('Cache 5.8M');
+    // codex 的写法：大写 K、百分比写还剩多少（248000 / 272000 → 9% left，进度条按用了的 91%）
+    expect(ctx.textContent).toBe('Context 248K / 272K9% left');
+    expect(el.querySelector<HTMLElement>('.ad-usage-meter > i')!.style.width).toBe('91%');
     expect(declarations('.ad-usage-ctx[data-attention]')).toMatch(/color:\s*var\(--attention\)/);
     expect(declarations('.ad-usage-ctx[data-attention] .ad-usage-meter > i')).toMatch(/background:\s*var\(--attention\)/);
     act(() => void api.fakes.usage.set(T.loginCodex, { context: { tokens: 228_000, window: 272_000, percent: 84, windowSource: 'agent' } }));
@@ -401,15 +414,16 @@ describe('PL2 the popover', () => {
     c.dispose();
   });
 
-  it('codex adds the 5-hour and weekly limits', async () => {
+  it('codex adds the 5h and weekly limits, written like codex /status (% left)', async () => {
     const { c } = await setup();
     const el = await turnOn(c, CODEX);
     await waitFor(() => expect(el.dataset.state).toBe('ok'));
     fireEvent.click(el.querySelector('.ad-usage-body')!);
     const card = await screen.findByRole('dialog', { name: 'Usage details' });
     const rows = [...card.querySelectorAll('[data-row="limit"]')].map((r) => r.textContent);
-    expect(rows).toEqual(['5-hour limit23% used', 'Weekly limit41% used']);
-    expect(within(card).getByText('Input 8.4k · Output 1.2k · Cache 228k')).toBeTruthy();
+    expect(rows).toEqual(['5h limit77% left', 'Weekly limit59% left']);
+    expect(within(card).getByText('Input 8.4K · Output 1.2K · Cache 228K')).toBeTruthy();
+    expect(within(card).getByText('Context window 272K')).toBeTruthy();
     c.dispose();
   });
 
@@ -456,19 +470,90 @@ describe('PL2 watch / unwatch', () => {
 });
 
 describe('PL2 formatting', () => {
-  it('the context cell matches what each agent shows itself (kimi: 1024-based k, rounded up; codex: 12000 baseline)', () => {
-    const base = { state: 'ok', reason: null, match: 'exact', model: null, total: null, last: null, requests: 1, updatedAt: '' } as const;
-    // kimi 截图里的一组：70,450 / 1,000,000 → kimi 写 68.8k/977k、8%
-    const kimi = { ...base, agent: 'kimi', context: { tokens: 70_450, window: 1_000_000, percent: 7.045, windowSource: 'config' } } as unknown as TerminalUsage;
-    expect(contextDisplay(kimi)).toEqual({ used: '68.8k', window: '977k', percent: 8 });
+  const base = { state: 'ok', reason: null, match: 'exact', model: null, total: null, last: null, requests: 1, updatedAt: '' } as const;
+  const usageOf = (agent: string, tokens: number, window: number | null, percent: number | null = null) =>
+    ({ ...base, agent, context: { tokens, window, percent, windowSource: 'agent' } }) as unknown as TerminalUsage;
+
+  it('IS-69: the context cell reads like each agent’s own screen (acceptance numbers)', () => {
+    // kimi 截图里的一组：70,450 / 1,000,000 → kimi 写 68.8k/977k、8%（1024 进位，向上取整）
+    expect(contextDisplay(usageOf('kimi', 70_450, 1_000_000, 7.045))).toEqual({ used: '68.8k', window: '977k', percent: 8, percentText: '8%' });
     expect(abbreviate1024(262_144)).toBe('256k');
-    const codex = { ...base, agent: 'codex', context: { tokens: 22_957, window: 475_000, percent: 4.8, windowSource: 'agent' } } as unknown as TerminalUsage;
-    expect(contextDisplay(codex)).toEqual({ used: '23k', window: '475k', percent: 2 });
-    const claude = { ...base, agent: 'claude', context: { tokens: 96_000, window: 200_000, percent: 48, windowSource: 'model-table' } } as unknown as TerminalUsage;
-    expect(contextDisplay(claude)).toEqual({ used: '96k', window: '200k', percent: 48 });
+    // codex：27,756 / 475,000 → /status 写 “97% left (27.8K used / 475K)”，先扣 12000 的基线；条上用了 3%
+    expect(contextDisplay(usageOf('codex', 27_756, 475_000, 5.8))).toEqual({ used: '27.8K', window: '475K', percent: 3, percentText: '97% left' });
+    expect(contextDisplay(usageOf('codex', 22_957, 475_000, 4.8))).toEqual({ used: '23K', window: '475K', percent: 2, percentText: '98% left' });
+    // claude：52,476 / 1,000,000 → /context 写 “52.5k/1m tokens (5%)”
+    expect(contextDisplay(usageOf('claude', 52_476, 1_000_000, 5.2))).toEqual({ used: '52.5k', window: '1m', percent: 5, percentText: '5%' });
+    expect(contextDisplay(usageOf('claude', 96_000, 200_000, 48))).toEqual({ used: '96k', window: '200k', percent: 48, percentText: '48%' });
+    // pi：底栏 “5.2%/1.0M”（一位小数；1.0M 不去 .0）
+    expect(contextDisplay(usageOf('pi', 52_476, 1_000_000, 5.2))).toMatchObject({ used: '52k', window: '1.0M', percentText: '5.2%' });
+    expect(contextDisplay(usageOf('pi', 52_476, 1_000_000))?.percent).toBeCloseTo(5.2476, 6);
+    expect(contextDisplay(usageOf('pi', 1_234, 200_000, 0.6))).toMatchObject({ used: '1.2k', window: '200k', percentText: '0.6%' });
+    // omp：状态栏 “5.2%/1M”（大写 K / M，去 .0）
+    expect(contextDisplay(usageOf('omp', 52_476, 1_000_000, 5.2))).toMatchObject({ used: '52K', window: '1M', percentText: '5.2%' });
+    expect(contextDisplay(usageOf('omp', 1_500, 272_000, 0.6))?.used).toBe('1.5K');
   });
 
-  it('abbreviates with k / M', () => {
+  it('percent edge cases follow each agent', () => {
+    // codex 的窗口不大于基线时 codex 写 0% left
+    expect(contextDisplay(usageOf('codex', 5_000, 12_000))?.percentText).toBe('0% left');
+    // 不知道窗口：codex 只写用量；claude 用服务报的百分比
+    expect(contextDisplay(usageOf('codex', 27_756, null))).toEqual({ used: '27.8K', window: null, percent: null, percentText: null });
+    expect(contextDisplay(usageOf('claude', 52_476, null, 5.2))?.percentText).toBe('5%');
+    // kimi 有一点就至少 1%
+    expect(contextDisplay(usageOf('kimi', 10, 1_000_000))?.percentText).toBe('1%');
+    // 超过窗口：进度条夹在 100，字照 agent（claude 不夹）
+    expect(contextDisplay(usageOf('claude', 210_000, 200_000))).toMatchObject({ percent: 100, percentText: '105%' });
+    expect(AGENT_FORMATS.codex.contextPercent(600_000, 475_000, null)).toEqual({ value: 100, text: '0% left' });
+  });
+
+  it('token counts in each agent’s own style', () => {
+    // claude formatTokens：Intl compact，小写，去 .0
+    expect(claudeTokens(640)).toBe('640');
+    expect(claudeTokens(1_000)).toBe('1k');
+    expect(claudeTokens(52_476)).toBe('52.5k');
+    expect(claudeTokens(1_250_000)).toBe('1.3m');
+    expect(claudeTokens(999_950)).toBe('1m');
+    // codex format_tokens_compact：<10 两位、<100 一位，Rust 的一半取偶
+    expect(codexTokens(0)).toBe('0');
+    expect(codexTokens(640)).toBe('640');
+    expect(codexTokens(1_000)).toBe('1K');
+    expect(codexTokens(1_234)).toBe('1.23K');
+    expect(codexTokens(1_125)).toBe('1.12K');
+    expect(codexTokens(27_756)).toBe('27.8K');
+    expect(codexTokens(475_000)).toBe('475K');
+    expect(codexTokens(999_999)).toBe('1000K');
+    expect(codexTokens(1_500_000)).toBe('1.5M');
+    // pi formatTokens
+    expect(piTokens(999)).toBe('999');
+    expect(piTokens(1_000)).toBe('1.0k');
+    expect(piTokens(52_476)).toBe('52k');
+    expect(piTokens(1_000_000)).toBe('1.0M');
+    expect(piTokens(12_400_000)).toBe('12M');
+    // omp formatNumber
+    expect(ompTokens(1_000)).toBe('1K');
+    expect(ompTokens(1_500)).toBe('1.5K');
+    expect(ompTokens(52_476)).toBe('52K');
+    expect(ompTokens(1_000_000)).toBe('1M');
+    expect(ompTokens(2_500_000_000)).toBe('2.5B');
+    // 不认识的 agent 照旧
+    expect(tokensText(null, 18_400)).toBe('18.4k');
+    expect(tokensText('codex', null)).toBe('–');
+  });
+
+  it('rustFixed rounds like Rust format! (exact value, ties to even)', () => {
+    expect(rustFixed(2.5, 0)).toBe('2');
+    expect(rustFixed(3.5, 0)).toBe('4');
+    expect(rustFixed(0.5, 0)).toBe('0');
+    expect(rustFixed(1.125, 2)).toBe('1.12');
+    expect(rustFixed(1.135, 2)).toBe('1.14');
+    expect(rustFixed(12.25, 1)).toBe('12.2');
+    expect(rustFixed(27.756, 1)).toBe('27.8');
+    expect(rustFixed(99.95, 1)).toBe('100.0');
+    expect(rustFixed(9.995, 2)).toBe('9.99');
+    expect(rustFixed(0.05, 2)).toBe('0.05');
+  });
+
+  it('abbreviates with k / M (agents we do not know)', () => {
     expect(abbreviate(640)).toBe('640');
     expect(abbreviate(2_100)).toBe('2.1k');
     expect(abbreviate(18_400)).toBe('18.4k');
@@ -481,15 +566,59 @@ describe('PL2 formatting', () => {
     expect(cacheText({ input: 0, output: 0, cacheRead: 1_400_000, cacheWrite: 86_000, reasoning: null })).toBe('1.4M / 86k');
     expect(cacheText({ input: 0, output: 0, cacheRead: 1_400_000, cacheWrite: null, reasoning: null })).toBe('1.4M');
     expect(lastRequestText({ input: 2_100, output: 640, cacheRead: 94_000, cacheWrite: 1_200, reasoning: null })).toBe('Input 2.1k · Output 640 · Cache 94k / 1.2k');
+    expect(lastRequestText({ input: 2_100, output: 640, cacheRead: 94_000, cacheWrite: 1_200, reasoning: null }, 'codex')).toBe('Input 2.1K · Output 640 · Cache 94K / 1.2K');
   });
 
-  it('names the codex limit windows and shows the reset time', () => {
-    expect(limitLabel({ usedPercent: 1, windowMinutes: 300, resetsAt: null }, 'x')).toBe('5-hour limit');
-    expect(limitLabel({ usedPercent: 1, windowMinutes: 10080, resetsAt: null }, 'x')).toBe('Weekly limit');
-    expect(limitLabel({ usedPercent: 1, windowMinutes: null, resetsAt: null }, 'Primary limit')).toBe('Primary limit');
+  it('names the codex limit windows like codex (5h / Weekly …, ±5%)', () => {
+    const w = (windowMinutes: number | null) => ({ usedPercent: 1, windowMinutes, resetsAt: null });
+    expect(limitLabel(w(300))).toBe('5h limit');
+    expect(limitLabel(w(290))).toBe('5h limit');
+    expect(limitLabel(w(1440))).toBe('Daily limit');
+    expect(limitLabel(w(10080))).toBe('Weekly limit');
+    expect(limitLabel(w(43_200))).toBe('Monthly limit');
+    expect(limitLabel(w(120))).toBe('Usage limit');
+    expect(limitLabel(w(null))).toBe('Usage limit');
+    expect(limitLabel(w(null), true)).toBe('Secondary usage limit');
+  });
+
+  it('IS-69: codex limits read “% left” after codex rounds used_percent (0.6 → 99% left)', () => {
+    const lim = (usedPercent: number) => ({ usedPercent, windowMinutes: 300, resetsAt: null });
     const now = new Date(2026, 9, 25, 9, 0);
-    const resets = new Date(2026, 9, 25, 14, 5).toISOString();
-    const rows = limitRows({ ...(CODEX_USAGE as TerminalUsage), rateLimits: { primary: { usedPercent: 23.4, windowMinutes: 300, resetsAt: resets }, secondary: null } }, now);
-    expect(rows).toEqual([{ label: '5-hour limit', text: '23% used · resets 14:05' }]);
+    // 验收时：codex /status 写 “5h limit … 99% left”，会话文件里的 used_percent 是 0.x
+    expect(codexLimitText(lim(0.6), now, '24h')).toBe('99% left');
+    expect(codexLimitText(lim(0.5), now, '24h')).toBe('99% left');
+    // app-server 先四舍五入成整数：0.4 → 0 → codex 写 100% left
+    expect(codexLimitText(lim(0.4), now, '24h')).toBe('100% left');
+    expect(codexLimitText(lim(23.4), now, '24h')).toBe('77% left');
+    expect(codexLimitText(lim(100), now, '24h')).toBe('0% left');
+    expect(codexLimitText(lim(130), now, '24h')).toBe('0% left');
+  });
+
+  it('codex reset times: same day only the time, otherwise “on 27 Oct”; 12h or 24h like the system', () => {
+    const now = new Date(2026, 9, 25, 9, 0);
+    const today = new Date(2026, 9, 25, 14, 5).toISOString();
+    const later = new Date(2026, 9, 27, 8, 30).toISOString();
+    const midnight = new Date(2026, 9, 25, 0, 5).toISOString();
+    expect(codexResetTime(today, now, '24h')).toBe('14:05');
+    expect(codexResetTime(today, now, '12h')).toBe('2:05 PM');
+    expect(codexResetTime(later, now, '24h')).toBe('08:30 on 27 Oct');
+    expect(codexResetTime(later, now, '12h')).toBe('8:30 AM on 27 Oct');
+    expect(codexResetTime(midnight, now, '12h')).toBe('12:05 AM');
+    expect(codexResetTime('nope', now, '24h')).toBe('');
+    const rows = limitRows(
+      {
+        ...(CODEX_USAGE as TerminalUsage),
+        rateLimits: {
+          primary: { usedPercent: 0.6, windowMinutes: 300, resetsAt: today },
+          secondary: { usedPercent: 0.4, windowMinutes: 10080, resetsAt: later },
+        },
+      },
+      now,
+      '24h',
+    );
+    expect(rows).toEqual([
+      { label: '5h limit', text: '99% left (resets 14:05)' },
+      { label: 'Weekly limit', text: '100% left (resets 08:30 on 27 Oct)' },
+    ]);
   });
 });

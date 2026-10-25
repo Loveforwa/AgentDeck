@@ -3,7 +3,7 @@
 // 和终端一样宽、隔 6px：拖动把手（点阵）、Input、Output、Cache（读），右边 Context 用量 / 窗口 + 小进度条 + 百分比
 // （照 agent 自己的写法算，见 contextDisplay）；上下文到 85% 变黄。每一项悬停有说明。
 // 拖把手只能贴到这个终端的上边或下边（拖动中蓝色落点线）；点条弹出小卡片（模型、窗口、最近一次请求、请求次数、
-// codex 的 5 小时 / 每周额度、Move to bottom / top、Hide）。只在条画着时 watch，收起、关窗口、关插件时 unwatch。
+// codex 的 5h / Weekly 额度（照 codex 写 “99% left”）、Move to bottom / top、Hide）。只在条画着时 watch，收起、关窗口、关插件时 unwatch。
 // 开关和位置写进 TerminalWindowData.usage，随白板保存。
 
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
@@ -15,7 +15,6 @@ import { useBoardState, useController } from '../react/context.tsx';
 import type { PluginDefinition } from './types.ts';
 import {
   USAGE_AGENTS,
-  abbreviate,
   contextAttention,
   contextDisplay,
   FIELD_HINTS,
@@ -25,6 +24,7 @@ import {
   limitRows,
   noDataReason,
   stripTitle,
+  tokensText,
   usageSettings,
   usageShown,
   type StripPosition,
@@ -143,7 +143,9 @@ function UsageStripOn({ windowId, terminalId, position, c }: { windowId: WindowI
   const reason = ok ? null : noDataReason(usage, error, terminalId);
   const title = ok ? stripTitle(usage) : `No usage data${reason ? `: ${reason}` : ''}${usage?.match === 'inferred' ? `\n${INFERRED_NOTE}` : ''}`;
   const ctx = ok ? contextDisplay(usage) : null;
-  const pct = ctx && ctx.percent !== null ? `${ctx.percent}%` : null;
+  // 进度条按用了多少；右边的字照 agent 自己的写法（codex 是 “97% left”）
+  const meter = ctx && ctx.percent !== null ? `${ctx.percent}%` : null;
+  const pct = ctx?.percentText ?? null;
   const cls = ['ad-usage-strip', drag ? 'ad-usage-strip--dragging' : null, attention ? 'ad-usage-strip--attention' : null, 'nopan', 'nodrag']
     .filter(Boolean)
     .join(' ');
@@ -189,20 +191,20 @@ function UsageStripOn({ windowId, terminalId, position, c }: { windowId: WindowI
           {ok ? (
             <>
               <span className="ad-usage-field" data-field="in" title={FIELD_HINTS.input}>
-                <span className="ad-usage-k">Input</span> {abbreviate(usage.total?.input)}
+                <span className="ad-usage-k">Input</span> {tokensText(usage.agent, usage.total?.input)}
               </span>
               <span className="ad-usage-field" data-field="out" title={FIELD_HINTS.output}>
-                <span className="ad-usage-k">Output</span> {abbreviate(usage.total?.output)}
+                <span className="ad-usage-k">Output</span> {tokensText(usage.agent, usage.total?.output)}
               </span>
               <span className="ad-usage-field" data-field="cache" title={FIELD_HINTS.cache}>
-                <span className="ad-usage-k">Cache</span> {abbreviate(usage.total?.cacheRead)}
+                <span className="ad-usage-k">Cache</span> {tokensText(usage.agent, usage.total?.cacheRead)}
               </span>
               <span className="ad-usage-ctx" data-field="ctx" data-attention={attention || undefined} title={FIELD_HINTS.context}>
                 <span className="ad-usage-k">Context</span> {ctx ? (ctx.window ? `${ctx.used} / ${ctx.window}` : ctx.used) : '–'}
-                {pct ? (
+                {meter && pct ? (
                   <>
                     <span className="ad-usage-meter" aria-hidden="true">
-                      <i style={{ width: pct }} />
+                      <i style={{ width: meter }} />
                     </span>
                     <span className="ad-usage-pct">{pct}</span>
                   </>
@@ -252,13 +254,13 @@ function UsageCard(props: { usage: TerminalUsage | null; reason: string | null; 
           <div className="ad-usage-card-head">
             <span className="ad-usage-card-model">{u.model ?? 'Unknown model'}</span>
             {u.context?.window !== null && u.context?.window !== undefined ? (
-              <span className="ad-usage-card-muted">Context window {contextDisplay(u)?.window ?? abbreviate(u.context.window)}</span>
+              <span className="ad-usage-card-muted">Context window {contextDisplay(u)?.window ?? tokensText(u.agent, u.context.window)}</span>
             ) : null}
           </div>
           <div className="ad-usage-card-rows">
             <div className="ad-usage-card-row" data-row="last">
               <span className="ad-usage-card-label">Last request</span>
-              <span>{lastRequestText(u.last)}</span>
+              <span>{lastRequestText(u.last, u.agent)}</span>
             </div>
             <div className="ad-usage-card-row" data-row="requests">
               <span className="ad-usage-card-label">Requests</span>
