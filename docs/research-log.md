@@ -1,9 +1,9 @@
 # AgentDeck 调研记录
 
 实现过程中和一开始设想不一样的地方：原来以为什么、实际是什么、怎么决定的、好处和代价。
-由 `docs/research/build.py` 从 `docs/research/entries.py` 生成，不要直接改这个文件。更新于 2026-10-25。
+由 `docs/research/build.py` 从 `docs/research/entries.py` 生成，不要直接改这个文件。更新于 2026-10-26。
 
-共 60 条：已解决 38，进行中 13，推迟 5，待验证 4。
+共 60 条：已解决 39，进行中 13，推迟 5，待验证 3。
 
 编号规则（全项目统一）：DR-xx 调研记录 · TC-xx 端到端用例 · IS-xx 问题 · F1、T2、X3 等是 MVP 任务表的任务编号。用例和问题在 MVP 验收报告（docs/status/index.html）里；每条调研下面列出相关的用例和问题。
 
@@ -72,7 +72,7 @@
   - [DR-58 各 agent 怎么在启动时挂上 AgentDeck 的 MCP](#dr-58)（已解决）
   - [DR-59 各 agent 怎么在启动时带上 skill](#dr-59)（已解决）
   - [DR-60 agent 升级后会不会让 AgentDeck 的功能集体失效](#dr-60)（待验证）
-  - [DR-42 claude 能不能把对话 fork 到另一个目录](#dr-42)（待验证）
+  - [DR-42 claude 能不能把对话 fork 到另一个目录](#dr-42)（已解决）
   - [DR-43 Approve all 发的“允许一次”按键对不对](#dr-43)（待验证）
   - [DR-44 经过 tmux 后的手感，要人在真界面上确认](#dr-44)（待验证）
 
@@ -866,11 +866,13 @@
 
 ### DR-42 claude 能不能把对话 fork 到另一个目录
 
-状态：待验证 · 出处：P1 · X4 · 旧编号 F1
+状态：已解决 · 出处：P1 · X4 · 旧编号 F1
 
 - **原来以为**：claude --resume <id> --fork-session 在任何目录都能用。
-- **实际情况**：claude 的会话记录按目录存放，换目录后可能找不到原会话。
-- **怎么验证**：P1 做 Fork 前先实测；不行就先把记录复制到新目录对应的位置。
+- **实际情况**：2026-10-25 实测（X4）：claude 2.1.291 在另一个目录用 --resume <id> --fork-session 能接上原对话，副本写在新目录对应的 projects 文件夹里，原文件不变；codex 0.164 能 fork，但 TUI 不加 -C 会先弹框、默认用原目录；pi 0.83 的 --fork 先找本目录、再找所有目录；omp 18.0.4 能找到并复制（TUI 没核对）；kimi 要两步，先不支持。claude、pi、omp 只有在第一条消息之后才写会话文件，对没说过话的会话 fork 会报 No conversation found 退出。
+- **决策**：不用复制记录：claude 直接 --resume --fork-session，codex 用 fork -C <目录> <id>，pi / omp 用 --fork；fork 前先找会话文件，没有就提示先发一条消息，不开终端；kimi 灰掉。
+- **好处**：换框、换分支时带着原来的上下文，原对话不受影响。
+- **代价**：omp 的 TUI 没在真终端里核对；kimi 暂不支持。
 
 <a id="dr-43"></a>
 
