@@ -1,0 +1,56 @@
+# 端到端测试（R2）：Playwright 的 Electron 模式驱动真的 AgentDeck，终端跑在真的 tmux 里，agent 是假的（e2e/fake-agent）。
+# 不在 pnpm check 里（慢、要 tmux 和图形环境），单独一个 workflow。Linux 上用 xvfb-run 给 Electron 一个虚拟屏幕。
+# 跑法和夹具见 e2e/AGENTS.md。
+name: e2e
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    env:
+      CI: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Install tmux and a virtual display (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y tmux xvfb netcat-openbsd
+      - name: Install tmux (macOS)
+        if: runner.os == 'macOS'
+        run: brew install tmux
+      - run: pnpm install --frozen-lockfile
+      # pnpm 10 不跑依赖的 postinstall：Electron 的二进制要自己下（Playwright 不用下浏览器，用的是 Electron）
+      - run: node apps/desktop/node_modules/electron/install.js
+      - name: Run e2e (Linux)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a --server-args="-screen 0 1600x1000x24" pnpm e2e
+      - name: Run e2e (macOS)
+        if: runner.os == 'macOS'
+        run: pnpm e2e
+      - name: Upload screenshots and traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-${{ matrix.os }}
+          path: |
+            e2e/test-results/
+            e2e/playwright-report/
+          if-no-files-found: ignore
