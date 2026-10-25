@@ -10,6 +10,7 @@
     "boundaries": "node scripts/boundaries.mjs",
     "test": "vitest run",
     "check": "pnpm typecheck && pnpm lint && pnpm colors && pnpm boundaries && pnpm test",
+    "e2e": "pnpm --filter @agentdeck/e2e e2e",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "colors": "pnpm --filter @agentdeck/design-tokens lint:colors"

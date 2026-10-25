@@ -1,0 +1,16 @@
+{
+  "name": "@agentdeck/e2e",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:app": "node scripts/build-app.mjs",
+    "e2e": "node scripts/build-app.mjs && playwright test",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@types/node": "^26.6.5",
+    "typescript": "5.6.3"
+  }
+}

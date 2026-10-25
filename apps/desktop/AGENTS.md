@@ -78,6 +78,8 @@ pnpm --filter @agentdeck/desktop typecheck
 | `AGENTDECK_SCREENSHOT=<png>` | 截图后退出；`AGENTDECK_SCREENSHOT_DELAY`（毫秒，默认 6000）是终端都有输出之后再等多久 |
 | `AGENTDECK_DEBUG_PORT` | 只在开发时：界面开 Chrome DevTools 协议端口，脚本驱动界面用；控制台里 `__board` 是白板控制器 |
 
+端到端测试（R2）：根目录 `pnpm e2e`，用 Playwright 启动 `out/` 里的应用，每个测试单独的 `AGENTDECK_DATA_DIR`、`AGENTDECK_TMUX_SOCKET`、HOME 和 `--user-data-dir`，agent 是假 claude。见 `e2e/AGENTS.md`。
+
 清掉开发数据：退出应用，`tmux -L agentdeck-desktop-dev kill-server`，删 `.agentdeck-dev/`。
 
 Electron 45 第一次运行时才下载二进制（pnpm 10 不跑依赖的 postinstall）：`node apps/desktop/node_modules/electron/install.js`（走代理时加 `ELECTRON_GET_USE_PROXY=1 GLOBAL_AGENT_HTTPS_PROXY=$https_proxy`）。
