@@ -4,6 +4,8 @@
 //   焦点在白板页面里时，白板自己先处理并 preventDefault，菜单不会再触发；界面那边还按时间去一次重（见 renderer 的 menu-shortcuts）。
 // - 不用 Electron 的默认菜单：它把 ⌘R 设成重载整个应用、⌘W 关掉应用窗口，⌘[ ⌘] ⌘L 也不能占（网页窗口自己用）。
 // - 编辑菜单必须有：macOS 上没有 Edit 菜单的 copy / paste 角色，⌘C ⌘V 在页面里不起作用。
+// - Undo / Redo（X10）不用 role：它们也发给界面，焦点在白板上时撤销白板上的操作，在输入框、网页里时界面再请主进程做
+//   系统的 undo / redo（DESKTOP_IPC.nativeEdit → webContents.undo()），文字的撤销照旧。
 
 import type { MenuItemConstructorOptions } from 'electron';
 import type { MenuShortcutId } from '../shared/desktop-bridge.ts';
@@ -29,6 +31,8 @@ export const MENU_ACCELERATORS: Record<MenuShortcutId, string> = {
   'zoom-out': 'CmdOrCtrl+-',
   'clear-terminal': 'CmdOrCtrl+K',
   'open-settings': 'CmdOrCtrl+,',
+  undo: 'CmdOrCtrl+Z',
+  redo: 'Shift+CmdOrCtrl+Z',
 };
 
 /** 菜单里绝对不能出现的 accelerator（网页窗口和 Electron 默认行为要用）。 */
@@ -98,8 +102,8 @@ export function buildMenuTemplate(appName: string, actions: MenuActions): MenuIt
     {
       label: 'Edit',
       submenu: [
-        { role: 'undo' },
-        { role: 'redo' },
+        sc('undo', 'Undo'),
+        sc('redo', 'Redo'),
         { type: 'separator' },
         { role: 'cut' },
         { role: 'copy' },

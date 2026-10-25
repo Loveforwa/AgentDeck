@@ -474,6 +474,12 @@ async function main(): Promise<void> {
   ipcMain.on(DESKTOP_IPC.boardReady, (e, info: BoardReadyInfo) => {
     if (fromTop(e)) screenshotter?.boardReady(info);
   });
+  // X10：Edit › Undo / Redo 这次不归白板（焦点在输入框、网页里）：对聚焦的 frame 做系统的撤销 / 重做
+  ipcMain.on(DESKTOP_IPC.nativeEdit, (e, action: unknown) => {
+    if (!fromTop(e)) return;
+    if (action === 'undo') e.sender.undo();
+    else if (action === 'redo') e.sender.redo();
+  });
 
   // ---- 菜单 ----
   const sendShortcut = (id: MenuShortcutId) => {

@@ -21,7 +21,10 @@ export type MenuShortcutId =
   | 'zoom-in'
   | 'zoom-out'
   | 'clear-terminal'
-  | 'open-settings';
+  | 'open-settings'
+  /** X10：Edit › Undo / Redo。焦点在白板（或终端）上时撤销白板上的操作，在输入框、网页里时照系统的撤销（nativeEdit）。 */
+  | 'undo'
+  | 'redo';
 
 export const DESKTOP_IPC = {
   startup: 'agentdeck-desktop:startup',
@@ -31,6 +34,8 @@ export const DESKTOP_IPC = {
   notice: 'agentdeck-desktop:notice',
   boardReady: 'agentdeck-desktop:board-ready',
   shortcut: 'agentdeck-desktop:shortcut',
+  /** 界面 → 主进程：Edit › Undo / Redo 这次是文字的撤销，让主进程对聚焦的 frame 做 webContents.undo() / redo()。 */
+  nativeEdit: 'agentdeck-desktop:native-edit',
 } as const;
 
 export interface StartupInfo {
@@ -61,6 +66,8 @@ export interface DesktopBridge {
   onNotice(listener: (message: string) => void): void;
   boardReady(info: BoardReadyInfo): void;
   onShortcut(listener: (id: MenuShortcutId) => void): void;
+  /** 系统的撤销 / 重做（输入框、网页里的文字），菜单的 Undo / Redo 不归白板时用。 */
+  nativeEdit(action: 'undo' | 'redo'): void;
 }
 
 declare global {
