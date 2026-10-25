@@ -45,7 +45,9 @@ import {
   syncGroups,
   type WindowGroup,
 } from './model/groups.ts';
+import { BoardHistory, applyStep, diffLayout, type BoardLayout, type Direction, type HistoryStep } from './model/history.ts';
 import { adjacentWindow, windowOrder } from './model/navigation.ts';
+import { boxFrom, boxSelection, byWorkspace, toggleSelection, translate, windowsInBox } from './model/selection.ts';
 import type { ShortcutId } from './model/shortcuts.ts';
 import { NEAR_FRAME_PX, SNAP_PX, snapMove, snapResize, type Guide } from './model/snap.ts';
 import {
@@ -110,6 +112,19 @@ interface LayoutBase {
 
 type DragSession =
   | { kind: 'move-window'; id: WindowId; start: Rect; frameStart: Rect | null }
+  /**
+   * X10：拖选中的一个，选中的都跟着动（同一个位移）。不换框（不弹 W5），每个框按自己那一批长；吸附看所有选中窗口的外接矩形。
+   * frameLast：拖动中最后一次给各个框设的大小（松手时看它有没有被别的框挤开过）。
+   */
+  | {
+      kind: 'move-group';
+      id: WindowId;
+      ids: WindowId[];
+      starts: Map<WindowId, Rect>;
+      bbox: Rect;
+      frameStarts: Map<WorkspaceId, Rect>;
+      frameLast: Map<WorkspaceId, Rect>;
+    }
   | { kind: 'resize-window'; id: WindowId; edge: ResizeEdge; start: Rect; frameStart: Rect | null; base: LayoutBase }
   | { kind: 'move-frame'; ws: WorkspaceId; start: Rect; windows: Map<WindowId, Rect>; last: Rect }
   | { kind: 'resize-frame'; ws: WorkspaceId; edge: ResizeEdge; start: Rect; content: Rect | null; base: LayoutBase };
@@ -160,6 +175,15 @@ export class BoardController {
   private pendingSeq = 0;
   /** 批准（PL1 Auto-approve、Approval history、X3 Approve all），见 approvals/model.ts。 */
   readonly approvals: ApprovalsModel;
+  /** X10：撤销 / 重做（只在这次运行里）。 */
+  readonly history = new BoardHistory();
+  /** 正在拖动（移动、改大小）时，按下那一刻的白板；松手时和现在比，算成一步。 */
+  private dragBase: BoardLayout | null = null;
+  /** record() 嵌套时只在最外层记一步。 */
+  private recordBase: BoardLayout | null = null;
+  private recordDepth = 0;
+  /** 框选开始时已经选中的（⌘ + 框选加在上面）。 */
+  private boxBase: { start: Point; base: WindowId[]; additive: boolean } | null = null;
 
   constructor(opts: BoardControllerOptions) {
     this.opts = opts;
@@ -528,6 +552,7 @@ export class BoardController {
     this.set((s) => ({
       selectedFrame: ws,
       focusedId: null,
+      selection: s.selection.length > 0 ? [] : s.selection,
       frames: f.z === top ? s.frames : s.frames.map((n) => (n.workspaceId === ws ? { ...n, z: top + 1 } : n)),
     }));
   }
@@ -553,15 +578,19 @@ export class BoardController {
   }
 
   renameWindow(id: WindowId, title: string): void {
-    this.patchWindow(id, { title: title.trim() || null });
+    this.record('Rename window', () => this.patchWindow(id, { title: title.trim() || null }));
   }
 
   async renameWorkspace(ws: WorkspaceId, name: string): Promise<void> {
     const trimmed = name.trim();
     if (!trimmed) return;
+    const before = this.state.workspaces[ws]?.name;
     try {
       const updated = await this.api.workspaces.rename(ws, trimmed);
       this.set((s) => ({ workspaces: { ...s.workspaces, [ws]: updated } }));
+      if (before !== undefined && before !== updated.name) {
+        this.history.push({ label: 'Rename workspace', windows: [], frames: [], name: { ws, before, after: updated.name } });
+      }
     } catch (e) {
       this.notify(errorMessage(e));
     }
@@ -572,6 +601,28 @@ export class BoardController {
   moveWindowStart(id: WindowId): void {
     const w = this.windowById(id);
     if (!w) return;
+    this.dragBase = this.layout();
+    // X10：拖的是选中的窗口之一，选中的都一起动
+    const group = this.movableSelection(id);
+    if (group.length > 1) {
+      const starts = new Map(group.map((g) => [g.id, g.rect]));
+      const frameStarts = new Map<WorkspaceId, Rect>();
+      for (const g of group) {
+        const f = this.frameOf(g.workspaceId);
+        if (f) frameStarts.set(f.workspaceId, f.rect);
+      }
+      this.drag = {
+        kind: 'move-group',
+        id,
+        ids: group.map((g) => g.id),
+        starts,
+        bbox: bounds([...starts.values()])!,
+        frameStarts,
+        frameLast: new Map(frameStarts),
+      };
+      this.set({ lifted: id });
+      return;
+    }
     this.drag = { kind: 'move-window', id, start: w.rect, frameStart: this.frameOf(w.workspaceId)?.rect ?? null };
     this.set({ lifted: id });
   }
@@ -582,6 +633,7 @@ export class BoardController {
    */
   moveWindow(id: WindowId, dx: number, dy: number, pointer: Point, opts: DragOptions = {}): void {
     const d = this.drag;
+    if (d?.kind === 'move-group' && d.id === id) return this.moveGroup(d, dx, dy, opts);
     if (d?.kind !== 'move-window' || d.id !== id) return;
     const w = this.windowById(id);
     if (!w) return;
@@ -617,9 +669,18 @@ export class BoardController {
     this.drag = null;
     const target = this.state.dropTarget;
     this.set({ lifted: null, dropTarget: null, guides: [] });
-    if (d?.kind !== 'move-window' || d.id !== id) return;
+    if (d?.kind === 'move-group' && d.id === id) {
+      this.moveGroupEnd(d);
+      return this.finishDrag(`Move ${d.ids.length} windows`);
+    }
+    if (d?.kind !== 'move-window' || d.id !== id) return this.finishDrag('Move window');
     const w = this.windowById(id);
-    if (!w) return;
+    if (!w) return this.finishDrag('Move window');
+    this.moveWindowSettle(id, d, w, target);
+    this.finishDrag('Move window');
+  }
+
+  private moveWindowSettle(id: WindowId, d: Extract<DragSession, { kind: 'move-window' }>, w: WindowNode, target: WorkspaceId | null): void {
     const decision = decideDrop(w, target);
     const maximized = this.isMaximized(w);
     if (decision.kind === 'bounce') {
@@ -644,6 +705,7 @@ export class BoardController {
   resizeWindowStart(id: WindowId, edge: ResizeEdge): void {
     const w = this.windowById(id);
     if (!w) return;
+    this.dragBase = this.layout();
     this.drag = { kind: 'resize-window', id, edge, start: w.rect, frameStart: this.frameOf(w.workspaceId)?.rect ?? null, base: this.layoutBase() };
     this.set({ resizing: { id, rect: w.rect } });
   }
@@ -677,9 +739,14 @@ export class BoardController {
     const live = this.state.resizing;
     this.drag = null;
     this.set({ resizing: null, guides: [] });
-    if (d?.kind !== 'resize-window' || d.id !== id || !live) return;
+    if (d?.kind !== 'resize-window' || d.id !== id || !live) return this.finishDrag('Resize window');
     const w = this.windowById(id);
-    if (!w) return;
+    if (!w) return this.finishDrag('Resize window');
+    this.resizeWindowSettle(id, d, w, live);
+    this.finishDrag('Resize window');
+  }
+
+  private resizeWindowSettle(id: WindowId, d: Extract<DragSession, { kind: 'resize-window' }>, w: WindowNode, live: { rect: Rect }): void {
     const def = this.definitionOf(w);
     // 拉小到摘要卡：记下拉小前的大小，单击摘要卡时恢复
     let restoreRect = w.restoreRect;
@@ -701,8 +768,10 @@ export class BoardController {
     const def = this.definitionOf(w);
     if (def && isSummarySize(def, w.rect) && w.restoreRect) {
       const rect = { ...w.rect, w: w.restoreRect.w, h: w.restoreRect.h };
-      this.patchWindow(id, { rect, restoreRect: null });
-      this.fitFrameTo(w.workspaceId, rect);
+      this.record('Resize window', () => {
+        this.patchWindow(id, { rect, restoreRect: null });
+        this.fitFrameTo(w.workspaceId, rect);
+      });
       this.focusWindow(id);
       if (this.state.viewport.zoom < SUMMARY_ZOOM) this.centerOn(rect, 1);
       return;
@@ -736,7 +805,7 @@ export class BoardController {
     if (!w) return;
     if (this.isMaximized(w)) {
       const back = w.restoreRect!;
-      this.patchWindow(id, { rect: back, restoreRect: null });
+      this.record('Restore window', () => this.patchWindow(id, { rect: back, restoreRect: null }));
       this.focusWindow(id);
       // 还原后窗口回到原来的位置（不挪出它的框），视口平移过去让它停在屏幕中间；不然视口还停在放大时的左上角
       const { pane, viewport } = this.state;
@@ -753,7 +822,7 @@ export class BoardController {
       w: Math.max(w.rect.w, pane.w - MAXIMIZE_MARGIN * 2),
       h: Math.max(w.rect.h, pane.h - MAXIMIZE_MARGIN * 2 - out.top - out.bottom),
     };
-    this.patchWindow(id, { rect, restoreRect: w.rect });
+    this.record('Maximize window', () => this.patchWindow(id, { rect, restoreRect: w.rect }));
     this.focusWindow(id);
     this.setViewport({ x: -rect.x + MAXIMIZE_MARGIN, y: -rect.y + MAXIMIZE_MARGIN + out.top, zoom: 1 }, 200);
   }
@@ -764,6 +833,7 @@ export class BoardController {
   moveFrameStart(ws: WorkspaceId): void {
     const f = this.frameOf(ws);
     if (!f) return;
+    this.dragBase = this.layout();
     this.drag = {
       kind: 'move-frame',
       ws,
@@ -802,11 +872,13 @@ export class BoardController {
   moveFrameEnd(): void {
     this.drag = null;
     if (this.state.guides.length > 0) this.set({ guides: [] });
+    this.finishDrag('Move workspace');
   }
 
   resizeFrameStart(ws: WorkspaceId, edge: ResizeEdge): void {
     const f = this.frameOf(ws);
     if (!f) return;
+    this.dragBase = this.layout();
     this.drag = { kind: 'resize-frame', ws, edge, start: f.rect, content: this.contentBounds(ws), base: this.layoutBase() };
   }
 
@@ -840,6 +912,7 @@ export class BoardController {
   resizeFrameEnd(): void {
     this.drag = null;
     if (this.state.guides.length > 0) this.set({ guides: [] });
+    this.finishDrag('Resize workspace');
   }
 
   // ---- 视口 ----
@@ -1168,7 +1241,7 @@ export class BoardController {
 
   /** 侧边栏单击一行：只显示这个子终端（贴在侧边栏右边），其余收起；跳过去并聚焦。 */
   selectGroupMember(id: WindowId): void {
-    this.showGroupMember(id);
+    this.record('Show subagent', () => this.showGroupMember(id));
     this.jumpToWindow(id);
   }
 
@@ -1190,6 +1263,10 @@ export class BoardController {
 
   /** Show all：子终端都显示，平铺在侧边栏右边（列数 ⌈√n⌉），盖住别的窗口时挪到最近的空位；框跟着长。 */
   showAllGroup(groupId: WindowGroupId): void {
+    this.record('Show all subagents', () => this.tileGroup(groupId));
+  }
+
+  private tileGroup(groupId: WindowGroupId): void {
     const s = this.state;
     const g = listGroups(s.windows).find((x) => x.id === groupId);
     if (!g) return;
@@ -1226,6 +1303,10 @@ export class BoardController {
 
   /** Collapse group：子终端都收起，只剩侧边栏。聚焦在子终端上时取消聚焦。 */
   collapseGroup(groupId: WindowGroupId): void {
+    this.record('Collapse group', () => this.foldGroup(groupId));
+  }
+
+  private foldGroup(groupId: WindowGroupId): void {
     this.set((s) => {
       const windows = setGroupView(s.windows, groupId, { mode: 'collapsed' });
       return { windows, focusedId: s.focusedId && hiddenMembers(windows).has(s.focusedId) ? null : s.focusedId };
@@ -1355,7 +1436,7 @@ export class BoardController {
       }
       void this.api.terminals.kill(terminalIdOf(w)!).catch(() => {});
     }
-    this.removeWindows([id]);
+    this.record('Close window', () => this.removeWindows([id]));
   }
 
   /** “Stop and close”。 */
@@ -1365,14 +1446,14 @@ export class BoardController {
     if (!w) return;
     const tid = terminalIdOf(w);
     if (tid) await this.api.terminals.kill(tid).catch((e: unknown) => this.notify(errorMessage(e)));
-    this.removeWindows([id]);
+    this.record('Close window', () => this.removeWindows([id]));
   }
 
   private removeWindows(ids: WindowId[]): void {
     // N2：关掉 lead，子终端变回普通窗口：先照 Show all 平铺开（收起的都显示出来），再拆组
     for (const id of ids) {
       const g = this.leadGroup(id);
-      if (g && groupView(g).mode !== 'all') this.showAllGroup(g.id);
+      if (g && groupView(g).mode !== 'all') this.tileGroup(g.id);
     }
     const gone = new Set(ids);
     this.set((s) => {
@@ -1382,6 +1463,7 @@ export class BoardController {
         windows: dissolveGroups(s.windows.filter((w) => !gone.has(w.id))),
         badges,
         focusedId: s.focusedId && gone.has(s.focusedId) ? null : s.focusedId,
+        selection: s.selection.some((x) => gone.has(x)) ? s.selection.filter((x) => !gone.has(x)) : s.selection,
       };
     });
   }
@@ -1657,6 +1739,274 @@ export class BoardController {
     }
   }
 
+  // ---- 多选和一起拖动（X10） ----
+
+  /** 换掉多选。收起的子终端、已经关掉的窗口不算。 */
+  setSelection(ids: readonly WindowId[]): void {
+    const s = this.state;
+    const hidden = hiddenMembers(s.windows);
+    const exists = new Set(s.windows.map((w) => w.id));
+    const next = [...new Set(ids)].filter((id) => exists.has(id) && !hidden.has(id));
+    const cur = s.selection;
+    if (next.length === cur.length && next.every((x, i) => x === cur[i])) return;
+    this.set({ selection: next });
+  }
+
+  clearSelection(): void {
+    if (this.state.selection.length > 0) this.set({ selection: [] });
+  }
+
+  /** ⌘ / Shift + 单击标题栏：选上或去掉这个窗口。 */
+  toggleSelected(id: WindowId): void {
+    this.setSelection(toggleSelection(this.state.selection, id, this.state.focusedId));
+  }
+
+  isSelected(id: WindowId): boolean {
+    return this.state.selection.includes(id);
+  }
+
+  /**
+   * 框选开始（Shift + 左键在空白处按下，白板坐标）。additive（同时按着 ⌘）时加在已经选中的上面。
+   * 取消聚焦的窗口和选中的框：框选完焦点在白板上，Esc 取消选择、⌘Z 撤销白板。
+   */
+  boxSelectStart(p: Point, additive = false): void {
+    this.boxBase = { start: p, base: additive ? this.state.selection : [], additive };
+    this.set({
+      selectionBox: { x: p.x, y: p.y, w: 0, h: 0 },
+      menu: null,
+      focusedId: null,
+      selectedFrame: null,
+      ...(additive ? {} : { selection: [] }),
+    });
+  }
+
+  boxSelectMove(p: Point): void {
+    const b = this.boxBase;
+    if (!b) return;
+    const box = boxFrom(b.start, p);
+    const hit = windowsInBox(box, this.state.windows, hiddenMembers(this.state.windows));
+    this.set({ selectionBox: box });
+    this.setSelection(boxSelection(b.base, hit, b.additive));
+  }
+
+  boxSelectEnd(): void {
+    if (!this.boxBase) return;
+    this.boxBase = null;
+    this.set({ selectionBox: null });
+  }
+
+  /** 拖 id 时一起动的窗口：id 在多选里（且不只它一个）时是选中的那些（没收起、没放大），否则空。 */
+  private movableSelection(id: WindowId): WindowNode[] {
+    const s = this.state;
+    if (!s.selection.includes(id)) return [];
+    const self = this.windowById(id);
+    if (!self || this.isMaximized(self)) return [];
+    const hidden = hiddenMembers(s.windows);
+    const set = new Set(s.selection);
+    return s.windows.filter((w) => set.has(w.id) && !hidden.has(w.id) && !this.isMaximized(w));
+  }
+
+  /** 找空位、对齐线不看的：收起的子终端，和选中的 lead 停靠在旁边的子终端（跟着 lead 走）。 */
+  private selectionSkip(ids: readonly WindowId[]): Set<WindowId> {
+    const skip = hiddenMembers(this.state.windows);
+    for (const id of ids) for (const x of this.groupSkip(id)) skip.add(x);
+    return skip;
+  }
+
+  /** ws 里的选中窗口放在 rects 时占的地方（连同 lead 的侧边栏、停靠的子终端、用量条）。 */
+  private blockOf(ws: WorkspaceId | null, rects: ReadonlyMap<WindowId, Rect>): Rect | null {
+    const parts: Rect[] = [];
+    for (const [id, r] of rects) {
+      const w = this.windowById(id);
+      if (!w || w.workspaceId !== ws) continue;
+      parts.push(union(this.withGroup(id, r), this.obstacleRect(w, r)));
+    }
+    return bounds(parts);
+  }
+
+  /** 一起拖动：所有选中的同一个位移；snap 时外接矩形吸到它们所在框里别的窗口（只在一个框里时还有框的内边）和附近的框。 */
+  private moveGroup(d: Extract<DragSession, { kind: 'move-group' }>, dx: number, dy: number, opts: DragOptions): void {
+    let box = translate(d.bbox, dx, dy);
+    let guides: Guide[] = [];
+    const moving = new Set(d.ids);
+    const wss = [...new Set(d.ids.map((i) => this.windowById(i)?.workspaceId ?? null))];
+    if (opts.snap) {
+      const s = this.state;
+      const only = wss.length === 1 ? wss[0]! : null;
+      const area = only ? (d.frameStarts.get(only) ?? null) : null;
+      const skip = this.selectionSkip(d.ids);
+      const targets = s.windows
+        .filter((w) => !moving.has(w.id) && !skip.has(w.id) && wss.includes(w.workspaceId) && (w.workspaceId !== null || this.isVisible(w.rect, s)))
+        .map((w) => this.footprint(w));
+      const res = snapMove(box, targets, {
+        threshold: this.snapThreshold(),
+        gap: GAP,
+        area: area ? innerArea(area) : null,
+        alignTo: this.nearbyFrames(area ? union(area, box) : box, wss),
+      });
+      box = res.rect;
+      guides = res.guides;
+    }
+    const mx = box.x - d.bbox.x;
+    const my = box.y - d.bbox.y;
+    const rects = new Map([...d.starts].map(([id, r]) => [id, translate(r, mx, my)]));
+    // 每个框按自己那一批长（只变大，松手时再挤开别的框）
+    const frameRects = new Map<WorkspaceId, Rect>();
+    for (const [ws, start] of d.frameStarts) {
+      const block = this.blockOf(ws, rects);
+      frameRects.set(ws, block ? growFrame(start, block) : start);
+    }
+    d.frameLast = frameRects;
+    this.set((s) => ({
+      guides,
+      windows: s.windows.map((w) => {
+        const r = rects.get(w.id);
+        return r ? { ...w, rect: r } : w;
+      }),
+      frames: s.frames.map((f) => {
+        const r = frameRects.get(f.workspaceId);
+        return r && !sameRect(r, f.rect) ? { ...f, rect: r } : f;
+      }),
+    }));
+  }
+
+  /**
+   * 一起拖动松手（V3）：每个框里的那一批算一块，盖住别的窗口就整块挪到最近的空位（优先在框里）；
+   * 然后每个框按挪好的位置重新长，挤到的框挪开。
+   */
+  private moveGroupEnd(d: Extract<DragSession, { kind: 'move-group' }>): void {
+    const moving = new Set(d.ids);
+    const skip = this.selectionSkip(d.ids);
+    for (const [ws, list] of byWorkspace(this.state.windows, d.ids)) {
+      const rects = new Map(list.map((w) => [w.id, w.rect]));
+      const block = this.blockOf(ws, rects);
+      if (!block) continue;
+      const frameStart = ws ? (d.frameStarts.get(ws) ?? null) : null;
+      const s = this.state;
+      const obstacles = [
+        ...s.windows.filter((w) => w.workspaceId === ws && !moving.has(w.id) && !skip.has(w.id)).map((w) => this.obstacleRect(w)),
+        ...listGroups(s.windows)
+          .filter((g) => g.lead.workspaceId === ws && !moving.has(g.lead.id) && !this.isMaximized(g.lead))
+          .map((g) => sidebarRect(g.lead.rect)),
+      ];
+      const spot = findFreeSpot(block, obstacles, { gap: GAP, area: frameStart ? innerArea(growFrame(frameStart, block)) : null });
+      const mx = spot.x - block.x;
+      const my = spot.y - block.y;
+      if (mx !== 0 || my !== 0) {
+        this.set((st) => ({ windows: st.windows.map((w) => (rects.has(w.id) ? { ...w, rect: translate(w.rect, mx, my) } : w)) }));
+      }
+    }
+    for (const [ws, start] of d.frameStarts) {
+      const cur = this.frameOf(ws);
+      if (!cur) continue;
+      // 前面一个框长大时把这个框挤开过：起点跟着挪
+      const last = d.frameLast.get(ws) ?? start;
+      const from = translate(start, cur.rect.x - last.x, cur.rect.y - last.y);
+      const rects = new Map(this.state.windows.filter((w) => moving.has(w.id) && w.workspaceId === ws).map((w) => [w.id, w.rect]));
+      const block = this.blockOf(ws, rects);
+      this.applyFrameChange(this.layoutBase(), ws, from, block ? growFrame(from, block) : from);
+    }
+  }
+
+  // ---- 撤销 / 重做（X10） ----
+
+  private layout(): BoardLayout {
+    const s = this.state;
+    return { frames: s.frames, windows: s.windows };
+  }
+
+  /** 拖动松手：按下时到现在改了的算一步。 */
+  private finishDrag(label: string): void {
+    const base = this.dragBase;
+    this.dragBase = null;
+    if (base) this.commit(base, label);
+  }
+
+  private commit(base: BoardLayout, label: string): void {
+    const step = diffLayout(base, this.layout(), label);
+    if (step) this.history.push(step);
+  }
+
+  /** 做 fn，它改了的白板算一步。嵌套时只在最外层记；拖动中不单独记（松手时算进拖动那一步）。 */
+  private record<T>(label: string, fn: () => T): T {
+    if (this.recordDepth++ === 0) this.recordBase = this.layout();
+    try {
+      return fn();
+    } finally {
+      if (--this.recordDepth === 0) {
+        const base = this.recordBase;
+        this.recordBase = null;
+        if (base && !this.dragBase) this.commit(base, label);
+      }
+    }
+  }
+
+  /** ⌘Z：撤销白板上的上一步。没有可撤销的、正在拖动时返回 false。 */
+  undo(): boolean {
+    return this.replay('undo');
+  }
+
+  /** ⌘⇧Z：重做。 */
+  redo(): boolean {
+    return this.replay('redo');
+  }
+
+  private replay(dir: Direction): boolean {
+    if (this.drag || this.boxBase) return false;
+    for (;;) {
+      const step = this.history.take(dir);
+      if (!step) return false;
+      if (dir === 'redo' && this.restartedSince(step)) {
+        // 撤销关闭后终端重启过：重做会把正在跑的终端从白板上拿掉，不替用户做
+        this.history.putBack(dir, step);
+        this.notify('Can’t redo: the terminal was restarted. Close it instead.');
+        return false;
+      }
+      const res = applyStep(this.layout(), step, dir);
+      // 这一步碰到的东西都不在了（工作区删掉了）：丢掉，接着下一步
+      if (!res.changed) continue;
+      const removed = new Set(res.removed.map((w) => w.id));
+      this.set((s) => {
+        let badges = s.badges;
+        if (removed.size > 0) {
+          badges = { ...s.badges };
+          for (const id of removed) delete badges[id];
+        }
+        return {
+          frames: res.frames,
+          windows: res.windows,
+          badges,
+          focusedId: s.focusedId && removed.has(s.focusedId) ? null : s.focusedId,
+          selection: removed.size > 0 ? s.selection.filter((x) => !removed.has(x)) : s.selection,
+        };
+      });
+      if (step.name) void this.renameTo(step.name.ws, dir === 'undo' ? step.name.before : step.name.after);
+      // 撤销关闭：放回来的窗口闪一下（终端窗口自己按 terminalId 接回，进程没了显示 Previous session ended）
+      for (const w of res.restored) this.flashWindow(w.id);
+      this.history.done(dir, step);
+      return true;
+    }
+  }
+
+  /** 重做“关闭”时，那个终端窗口现在接的是另一个终端（撤销后点了 Restart）。 */
+  private restartedSince(step: HistoryStep): boolean {
+    return step.windows.some((ch) => {
+      if (ch.after) return false;
+      const w = this.windowById(ch.id);
+      const now = w ? terminalIdOf(w) : null;
+      return now !== null && now !== terminalIdOf(ch.before);
+    });
+  }
+
+  private async renameTo(ws: WorkspaceId, name: string): Promise<void> {
+    try {
+      const updated = await this.api.workspaces.rename(ws, name);
+      this.set((s) => ({ workspaces: { ...s.workspaces, [ws]: updated } }));
+    } catch (e) {
+      this.notify(errorMessage(e));
+    }
+  }
+
   // ---- 快捷键 ----
 
   /** 默认 agent（Settings 里的 defaultAgent），取不到时用第一个装好的。 */
@@ -1730,7 +2080,16 @@ export class BoardController {
         return true;
       case 'escape':
         if (s.menu) this.closeMenu();
-        else this.focusWindow(null);
+        else {
+          this.focusWindow(null);
+          this.clearSelection();
+        }
+        return true;
+      case 'undo':
+        this.undo();
+        return true;
+      case 'redo':
+        this.redo();
         return true;
     }
   }

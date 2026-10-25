@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import type { BoardController } from '../controller.ts';
-import { resolveShortcut } from '../model/shortcuts.ts';
+import { resolveShortcut, textUndoTarget } from '../model/shortcuts.ts';
 
 
 const EDITABLE = 'input, textarea, select, [contenteditable=""], [contenteditable="true"], [role="dialog"], [role="menu"]';
@@ -19,7 +19,8 @@ export function useShortcuts(c: BoardController, target: Window | null = typeof 
       const inEditable = !inWindow && !!el?.closest(EDITABLE);
       const s = c.state;
       if (s.dialog) return;
-      const id = resolveShortcut(e, { windowFocused: s.focusedId !== null, inEditable });
+      // ⌘Z / ⌘⇧Z（X10）：在输入框、网页里是文字的撤销；在白板上和终端里撤销白板上的操作
+      const id = resolveShortcut(e, { windowFocused: s.focusedId !== null, inEditable, inTextField: textUndoTarget(el) });
       if (!id) return;
       if (!c.runShortcut(id)) return;
       e.preventDefault();

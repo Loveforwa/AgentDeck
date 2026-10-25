@@ -29,6 +29,7 @@ import { ShortcutHints } from './ShortcutHints.tsx';
 import { Guides, useTrackMeta } from './Guides.tsx';
 import { FLOW_GESTURES, WINDOW_NODE_CLASS } from '../model/gestures.ts';
 import { useSpacePan, useWindowZoomWheel } from './gestures.ts';
+import { SelectionBox, useBoxSelect } from './selection.tsx';
 import '../canvas.css';
 
 const nodeTypes: NodeTypes = {
@@ -54,6 +55,8 @@ export function Board() {
   useTrackMeta();
   const spacePan = useSpacePan();
   useWindowZoomWheel(wrapper, c);
+  // X10：Shift + 左键拖空白处框选
+  const boxSelect = useBoxSelect(c, spacePan);
 
   // 让控制器能做带动画的平移缩放（⌘J、⌘1、放大窗口）
   useEffect(() => {
@@ -156,6 +159,7 @@ export function Board() {
     <div
       ref={wrapper}
       className={spacePan ? 'ad-board ad-board--space-pan' : 'ad-board'}
+      {...boxSelect}
       onDoubleClick={(e) => {
         // 双击空白处也弹出菜单（不直接创建，避免误触）
         if ((e.target as Element).classList.contains('react-flow__pane')) openPaneMenu(e);
@@ -185,6 +189,7 @@ export function Board() {
           onPaneClick={() => {
             c.closeMenu();
             c.focusWindow(null);
+            c.clearSelection();
           }}
           onPaneContextMenu={openPaneMenu}
         >
@@ -192,6 +197,7 @@ export function Board() {
         </ReactFlow>
       ) : null}
       <Guides />
+      <SelectionBox />
       <EmptyState />
       <ZoomControl />
       <ShortcutHints />

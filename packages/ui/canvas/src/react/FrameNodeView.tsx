@@ -6,6 +6,7 @@ import { RESIZE_EDGES, usePointerDrag, type ResizeEdge } from '@agentdeck/ui-win
 import { runningLabel, waitingLabel, summarize } from '../model/attention.ts';
 import { useBoardState, useController } from './context.tsx';
 import { FramePluginMarks } from './PluginMarks.tsx';
+import { isEmptyBoardTarget } from './selection.tsx';
 
 export type FrameNodeData = { workspaceId: WorkspaceId };
 export type PendingNodeData = { pendingId: string };
@@ -47,7 +48,14 @@ export function FrameNodeView({ data }: NodeProps & { data: FrameNodeData }) {
   const cls = ['ad-frame', selected && 'ad-frame--selected', dropTarget && 'ad-frame--drop'].filter(Boolean).join(' ');
 
   return (
-    <div className={cls} onContextMenu={(e) => menuAt(e, 'frame-body')}>
+    <div
+      className={cls}
+      onContextMenu={(e) => menuAt(e, 'frame-body')}
+      // X10：单击框里的空白处和单击白板空白处一样，取消多选
+      onClick={(e) => {
+        if (isEmptyBoardTarget(e.target as Element)) c.clearSelection();
+      }}
+    >
       <div
         className="ad-frame-header nopan"
         onPointerDown={onTitlePointerDown}

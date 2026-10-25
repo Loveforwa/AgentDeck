@@ -1,0 +1,16 @@
+/* X10：多选。选中的窗口和框选的矩形用 --guide（和对齐线、拖进别的框时的虚线一样，是“正在摆白板”的颜色），不和聚焦的墨黑边框混。 */
+
+.ad-selection-box {
+  position: absolute;
+  z-index: 3;
+  box-sizing: border-box;
+  border: 1px solid var(--guide);
+  background: color-mix(in srgb, var(--guide) 8%, transparent);
+  pointer-events: none;
+}
+
+/* 选中的窗口：外框外面一圈 2px，跟着窗口移动、改大小 */
+.ad-window-node[data-selected] > .ad-window {
+  outline: 2px solid var(--guide);
+  outline-offset: 2px;
+}
