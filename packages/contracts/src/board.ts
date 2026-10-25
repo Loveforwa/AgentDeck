@@ -90,6 +90,11 @@ export interface TerminalWindowData {
   /** Shell 恢复时填进输入行但不运行的命令，例如 'pnpm dev'。 */
   startCommand: string | null;
   /**
+   * X6：Shell 上次跑的命令（终端窗口从 TerminalInfo.foregroundCommand 记下，跑了几秒以上的才记得到），例如在 zsh 里手动敲的 'pnpm dev'。
+   * 恢复上次会话时优先填它，没有再用 startCommand。不填或 null 是没记到。X6 加。
+   */
+  lastCommand?: string | null;
+  /**
    * PL1：这个终端单独的 Auto-approve 设置（ApprovalService.setTerminalAutoApprove）。
    * true 单独开，false 框开着但它单独关；不填或 null 跟着框（FrameNode.autoApprove）。
    */
@@ -280,4 +285,41 @@ export interface WindowTypeDefinition<TData, TComponent = unknown> {
   titleBar?: 'board' | 'none';
   /** 由内容区像素大小算行列数，白板新开终端时传给 agents.start。没有就由白板粗估、attach 后由窗口校正。 */
   termSize?(contentSize: Size): TermSize;
+  /**
+   * X6：窗口背后的进程没了（Stop all and quit、电脑重启、tmux 服务被结束）之后怎么恢复。
+   * 白板启动时（和收到 terminal.host-lost 后）对每个窗口问 describe，有要恢复的就弹 “Restore your last session?”，
+   * 选 Restore all 时逐个调 restore 并把返回的改动合进 data。窗口位置、id 不变。现在只有终端窗口有。X6 加。
+   */
+  restore?: WindowRestoreSupport<TData>;
+}
+
+/** WindowTypeDefinition.restore。X6 加。 */
+export interface WindowRestoreSupport<TData> {
+  /** 要恢复时说明恢复后是什么样；进程还在（或这个窗口没有进程）时返回 null。live 是 terminals.list() 里还在的终端。 */
+  describe(data: TData, live: ReadonlySet<TerminalId>): WindowRestoreItem | null;
+  /** 重新启动，返回要合进 data 的改动（例如新的 terminalId）。失败时抛 AgentDeckError，message 给人看。 */
+  restore(data: TData, ctx: WindowRestoreContext): Promise<WindowRestoreResult<TData>>;
+}
+
+export interface WindowRestoreItem {
+  /** 恢复提示里分开数：agent（claude、codex……）和 shell（Shell、自定义命令）。 */
+  kind: 'agent' | 'shell';
+  /** 名字，例如 'claude'、'zsh'。英文原样。 */
+  label: string;
+  /** 恢复后会怎样，一句英文，例如 'Resumes the conversation'、'Opens zsh with “pnpm dev” typed in, not run'。 */
+  detail: string;
+  /** true：接不回原来的东西，会重新开始（例如 agent 没记下会话 id）。 */
+  fresh: boolean;
+}
+
+export interface WindowRestoreContext {
+  workspaceId: WorkspaceId | null;
+  /** 窗口内容区的像素大小，用来算终端的行列数。 */
+  contentSize: Size;
+}
+
+export interface WindowRestoreResult<TData> {
+  patch: Partial<TData>;
+  /** 实际是不是重新开始的（例如记下的会话接不回，退回了新对话）。 */
+  fresh: boolean;
 }

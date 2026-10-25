@@ -18,6 +18,7 @@ import type {
   WorkspaceId,
 } from '@agentdeck/contracts';
 import type { Point } from './model/geometry.ts';
+import type { RestoreSessionItem } from './model/restore.ts';
 import type { Guide } from './model/snap.ts';
 
 /** 正在创建的工作区：框先出现，后台建 worktree（需求「4 · 工作区框 · 新建工作区」）。 */
@@ -46,7 +47,12 @@ export type DialogState =
   | { kind: 'rename-window'; windowId: WindowId }
   | { kind: 'rename-workspace'; workspaceId: WorkspaceId }
   /** Settings（TC-15）：左边项目列表和 General，右边那一页。section 为 projects 时 projectId 是选中的项目。 */
-  | { kind: 'settings'; section: SettingsSection; projectId?: ProjectId };
+  | { kind: 'settings'; section: SettingsSection; projectId?: ProjectId }
+  /**
+   * X6：重开应用时（或 tmux 服务没了之后）有窗口的进程没了：“Restore your last session?”。
+   * items 是要恢复的窗口和恢复后的样子（WindowTypeDefinition.restore.describe）。Not now 之后各窗口自己有 Restore。
+   */
+  | { kind: 'restore-session'; items: RestoreSessionItem[] };
 
 /** Settings 的页面。Agents、Approvals 以后再加。 */
 export type SettingsSection = 'projects' | 'general';

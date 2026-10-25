@@ -762,6 +762,43 @@
   font-size: var(--text-xs);
 }
 
+/* 恢复上次会话（X6）的列表：名字等宽，后面一句恢复后的样子 */
+.ad-restore-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  max-height: 240px;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+
+.ad-restore-row {
+  display: flex;
+  gap: var(--space-sm);
+  min-width: 0;
+  font-size: var(--text-sm);
+}
+
+.ad-restore-name {
+  flex: none;
+  min-width: 56px;
+  font-family: var(--font-mono);
+}
+
+.ad-restore-detail {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ad-restore-detail--fresh {
+  color: var(--ink);
+}
+
 /* 没聚焦时盖在内容上：第一下单击只聚焦；滚轮由 passWheelToContent 交给下面的内容（N6） */
 .ad-window-cover {
   position: absolute;

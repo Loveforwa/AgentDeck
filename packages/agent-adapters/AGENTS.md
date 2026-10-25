@@ -77,6 +77,7 @@ tmuxHostEvents.on((e) => rt.onTerminalEvent(e));  // terminal.activity / silence
 | kimi | `kimi` | `-S <id>` | 不支持 | 无 | 先不支持（2.3.1 是 `1`，见 known.ts） |
 
 - 用户在 Settings 里加的启动参数放在最后。claude 的 LaunchSpec.env 带 `CLAUDE_CODE_TMUX_TRUECOLOR=1`。
+- 恢复上次会话（X6）：白板按记下的会话 id 用上表的 resume 重开（`test/agent-service.test.ts` 逐个 agent 核对进 tmux 的参数）。`StartAgentRequest.prefill` 只对不带 command 的 shell 转给 `terminals.create`（Shell 在输入行里填好上次的命令、不运行），agent 和 `-c` 跑命令的 shell 忽略它。
 - `--settings` 的值是一整段 JSON，**线 1 的 tmux-host 建会话时要按参数数组传**（`new-session … -- cmd arg1 arg2`），不要拼成一行 shell 命令，否则要自己转义。
 - 检测：在传入环境的 PATH 里找命令，跑 `--version` 取 x.y.z。版本取不到时按“够新”处理。
 - claude 的钩子要 2.0 以上（粗略下限），StopFailure 事件只在 2.1 以上加；codex 的钩子要 0.159 以上（本机实测的版本，更早的没验证）。

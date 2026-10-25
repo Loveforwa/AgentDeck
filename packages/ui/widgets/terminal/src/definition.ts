@@ -3,6 +3,7 @@
 import type { ComponentType } from 'react';
 import type { TerminalWindowData, WindowComponentProps, WindowMenuItem, WindowTypeDefinition } from '@agentdeck/contracts';
 import { termSizeFor } from './metrics.ts';
+import { needsRestore, planRestore, restoreTerminal } from './restore.ts';
 import { TerminalWindow } from './TerminalWindow.tsx';
 import { commandName } from './title.ts';
 
@@ -38,6 +39,7 @@ export const terminalWindowType: TerminalWindowDefinition = {
     cwd: init.cwd ?? '',
     sessionId: init.sessionId ?? null,
     startCommand: init.startCommand ?? null,
+    ...(init.lastCommand ? { lastCommand: init.lastCommand } : {}),
   }),
   pinnedToWorkspace: true,
   title: (data) => commandName(data),
@@ -53,4 +55,13 @@ export const terminalWindowType: TerminalWindowDefinition = {
   },
   menu: TERMINAL_MENU,
   termSize: (content) => termSizeFor(content),
+  // X6：白板启动时（和 tmux 服务没了之后）问每个终端要不要恢复，Restore all 时调 restore（见 restore.ts）
+  restore: {
+    describe: (data, live) => {
+      if (!needsRestore(data, live)) return null;
+      const { kind, label, detail, fresh } = planRestore(data);
+      return { kind, label, detail, fresh };
+    },
+    restore: (data, ctx) => restoreTerminal(window.agentdeck, data, ctx),
+  },
 };

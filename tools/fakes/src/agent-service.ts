@@ -78,6 +78,8 @@ export class FakeAgentService implements AgentService {
       cwd: req.cwd,
       env: { AGENTDECK_AGENT: req.agent },
       ...(req.size ? { size: req.size } : {}),
+      // X6：和真实现一样，只有交互的 shell 收 prefill
+      ...(req.agent === 'shell' && req.prefill && req.command === undefined ? { prefill: req.prefill } : {}),
     });
     this.status?.track(terminalId, { agent: req.agent, workspaceId: req.workspaceId });
     const result: StartAgentResult = { terminalId, sessionId, cmd, args };

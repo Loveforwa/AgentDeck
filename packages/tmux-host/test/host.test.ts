@@ -2,7 +2,7 @@
 // 没装 tmux 或版本低于 3.5 时整组跳过。
 
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, realpathSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
@@ -306,4 +306,55 @@ describe.skipIf(!tmuxOk)('TmuxHost with real tmux', () => {
     await waitFor(() => events.some((e) => e.type === 'terminal.host-lost'), 3000);
     expect(await host.list()).toEqual([]);
   });
+
+  it('X6: list() reports the command a shell is running, and null at the prompt', async () => {
+    const t = id();
+    await host.create({ id: t, cmd: 'sh', args: [], cwd: cwd(), env: { PS1: '$ ' } });
+    await waitFor(async () => (await host.lastLines(t, 1)).some((l) => l.includes('$')));
+    expect((await host.list()).find((i) => i.id === t)?.foregroundCommand).toBeNull();
+    await host.sendKeys(t, ['sleep 30', 'Enter']);
+    await waitFor(async () => (await host.list()).find((i) => i.id === t)?.foregroundCommand === 'sleep 30');
+    await host.sendKeys(t, ['C-c']);
+    await waitFor(async () => (await host.list()).find((i) => i.id === t)?.foregroundCommand === null);
+    // 窗格的进程本身就是程序（agent、-c 跑的命令）：没有“正在跑的命令”
+    const p = id();
+    await host.create({ id: p, cmd: 'sleep', args: ['30'], cwd: cwd() });
+    expect((await host.list()).find((i) => i.id === p)?.foregroundCommand).toBeNull();
+    await host.kill(t);
+    await host.kill(p);
+  }, 20_000);
+
+  it('X6: after the tmux server is killed, a shell comes back in the same folder with the last command typed in, not run', async () => {
+    const dir = realpathSync(mkdtempSync(join(tmpdir(), 'adt-restore-')));
+    try {
+      const before = id();
+      await host.create({ id: before, cmd: 'sh', args: [], cwd: dir, env: { PS1: '$ ' } });
+      await host.sendKeys(before, ['sleep 31', 'Enter']);
+      // 终端窗口每隔几秒记下 foregroundCommand（TerminalWindowData.lastCommand）
+      const last = await waitFor(async () => (await host.list()).find((i) => i.id === before)?.foregroundCommand);
+      expect(last).toBe('sleep 31');
+
+      // Stop all and quit / 电脑重启：tmux 服务没了
+      events.length = 0;
+      tmux('kill-server');
+      await waitFor(() => events.some((e) => e.type === 'terminal.host-lost'), 3000);
+      expect(await host.list()).toEqual([]);
+
+      // Restore：同一个目录、新的终端 id，把会留下痕迹的命令填进输入行
+      const after = id();
+      await host.create({ id: after, cmd: 'sh', args: [], cwd: dir, env: { PS1: '$ ' }, prefill: 'touch ran-marker\n' });
+      const line = await waitFor(async () => (await host.lastLines(after, 1)).find((l) => l.includes('touch ran-marker')), 8000);
+      expect(line).toMatch(/\$ touch ran-marker$/);
+      await sleep(500);
+      const info = (await host.list()).find((i) => i.id === after);
+      expect(info).toMatchObject({ alive: true, cwd: dir, foregroundCommand: null });
+      expect(existsSync(join(dir, 'ran-marker'))).toBe(false); // 填了，没运行（换行被去掉了）
+      // 按回车才运行
+      await host.sendKeys(after, ['Enter']);
+      await waitFor(() => existsSync(join(dir, 'ran-marker')));
+      await host.kill(after);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }, 20_000);
 });

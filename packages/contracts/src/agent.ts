@@ -106,6 +106,11 @@ export interface StartAgentRequest {
   size?: TermSize;
   /** agent 启动后的第一条消息（claude、codex 作为命令行参数传入）。shell / custom 忽略。 */
   prompt?: string;
+  /**
+   * X6：只对 shell 有意义（其他 agent 忽略）：shell 起来后在输入行里填好这条命令但不运行，转给 CreateTerminalRequest.prefill。
+   * 恢复上次会话时用；不要和 command 一起给（command 会直接运行）。X6 加。
+   */
+  prefill?: string;
 }
 
 export interface StartAgentResult {

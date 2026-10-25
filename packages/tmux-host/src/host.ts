@@ -24,6 +24,7 @@ import type {
 } from '@agentdeck/contracts';
 import { ActivityTracker } from './activity.ts';
 import { findExecutable, isDirectory, paneEnv, readEnv, serverEnv, type Env, type EnvSource } from './env.ts';
+import { foregroundCommands, runPs, sanitizePrefill, type PsRunner } from './foreground.ts';
 import { classifyInput } from './input.ts';
 import { loadNodePty, type IPty, type PtyModule } from './pty.ts';
 import { exitCodeOf, KILLED_EXIT_CODE } from './signals.ts';
@@ -67,6 +68,12 @@ export interface TmuxHostOptions {
   linkWatcher?: () => LinkWatcher;
   /** 测试替换 node-pty。 */
   pty?: PtyModule;
+  /** X6 prefill：第一段输出之后安静多久才填，默认 400。 */
+  prefillQuietMs?: number;
+  /** X6 prefill：从创建算起最多等多久（一直有输出、或者一直没输出），默认 5000。 */
+  prefillMaxMs?: number;
+  /** 测试替换 ps（foregroundCommand）。 */
+  ps?: PsRunner;
 }
 
 export interface TmuxHost extends TerminalHost {
@@ -108,6 +115,16 @@ interface Entry {
   linkKeys: Set<string>;
   /** recentLinks 是否已经从 tmux 历史里补过（重开应用接回的会话，之前的输出没经过 watcher）。 */
   historyScanned: boolean;
+  /** X6：等着填进输入行的字（CreateTerminalRequest.prefill）。填过、或者进程没了就是 null。 */
+  prefill: Prefill | null;
+}
+
+interface Prefill {
+  text: string;
+  /** 每段输出后重新计时，安静 prefillQuietMs 就填。 */
+  quiet: ReturnType<typeof setTimeout> | null;
+  /** 最多等这么久。 */
+  deadline: ReturnType<typeof setTimeout>;
 }
 
 interface View {
@@ -179,6 +196,10 @@ class TmuxHostImpl implements TmuxHost {
     this.pty = opts.pty ?? loadNodePty();
   }
 
+  private get prefillQuietMs(): number {
+    return this.opts.prefillQuietMs ?? 400;
+  }
+
   async start(): Promise<void> {
     this.stream = await startStreamServer(this.socketPath, {
       onPipeData: (id, data) => this.onOutput(id, data),
@@ -224,6 +245,11 @@ class TmuxHostImpl implements TmuxHost {
       }
       throw toAgentDeckError(e, 'Could not start the terminal');
     }
+    const text = sanitizePrefill(req.prefill);
+    if (text) {
+      entry.prefill = { text, quiet: null, deadline: setTimeout(() => void this.sendPrefill(entry), this.opts.prefillMaxMs ?? 5000) };
+      entry.prefill.deadline.unref?.();
+    }
     return { id };
   }
 
@@ -254,6 +280,11 @@ class TmuxHostImpl implements TmuxHost {
   async list(): Promise<TerminalInfo[]> {
     const rows = await this.listSessions();
     if (rows === null) return [];
+    const fg = await foregroundCommands(
+      rows.filter((r) => !r.dead).map((r) => r.pid),
+      readEnv(this.opts.env),
+      this.opts.ps ?? runPs,
+    ).catch(() => new Map<number, string>());
     return rows.map((r) => {
       const entry = this.entries.get(r.id);
       const activity = entry?.lastActivityAt ?? (r.activity > 0 ? r.activity * 1000 : null);
@@ -265,6 +296,7 @@ class TmuxHostImpl implements TmuxHost {
         exitCode: r.dead ? r.exitCode : null,
         lastActivityAt: activity === null ? null : new Date(activity).toISOString(),
         title: r.title,
+        foregroundCommand: r.dead ? null : (fg.get(r.pid) ?? null),
       };
     });
   }
@@ -382,14 +414,20 @@ class TmuxHostImpl implements TmuxHost {
     if (this.healthTimer) clearInterval(this.healthTimer);
     if (this.healthSoon) clearTimeout(this.healthSoon);
     for (const v of [...this.views.values()]) this.closeView(v);
-    for (const e of this.entries.values()) e.activity.clear();
+    for (const e of this.entries.values()) {
+      e.activity.clear();
+      this.dropPrefill(e);
+    }
     await this.stream?.close();
   }
 
   async killServer(): Promise<void> {
     this.stopping = true;
     for (const v of [...this.views.values()]) this.closeView(v);
-    for (const e of this.entries.values()) e.activity.clear();
+    for (const e of this.entries.values()) {
+      e.activity.clear();
+      this.dropPrefill(e);
+    }
     this.entries.clear();
     await this.tmux.run(['kill-server']).catch(() => {});
     this.stopping = false;
@@ -432,6 +470,7 @@ class TmuxHostImpl implements TmuxHost {
       links: [],
       linkKeys: new Set(),
       historyScanned: true,
+      prefill: null,
     };
     return entry;
   }
@@ -446,7 +485,26 @@ class TmuxHostImpl implements TmuxHost {
 
   private removeEntry(entry: Entry): void {
     entry.activity.clear();
+    this.dropPrefill(entry);
     this.entries.delete(entry.id);
+  }
+
+  /** X6：把等着的 prefill 原样打进输入行（send-keys -l，不按回车）。不算用户输入，不发 terminal.input。 */
+  private async sendPrefill(entry: Entry): Promise<void> {
+    const p = entry.prefill;
+    if (!p) return;
+    this.dropPrefill(entry);
+    if (!entry.alive || this.disposed || this.entries.get(entry.id) !== entry) return;
+    const t = `=${entry.id}:`;
+    await this.tmux.run(['send-keys', '-t', t, '-l', '--', p.text]).catch(() => {});
+  }
+
+  private dropPrefill(entry: Entry): void {
+    const p = entry.prefill;
+    if (!p) return;
+    if (p.quiet) clearTimeout(p.quiet);
+    clearTimeout(p.deadline);
+    entry.prefill = null;
   }
 
   /** pane-died 钩子：`run-shell -b` 把一行 “exit <id> <status> <signal>” 发回 socket。 */
@@ -517,6 +575,12 @@ class TmuxHostImpl implements TmuxHost {
     if (!entry || this.disposed) return;
     // 改大小引起的重画不算活动，也不更新 lastActivityAt（IS-72）
     if (entry.activity.output()) entry.lastActivityAt = Date.now();
+    const p = entry.prefill;
+    if (p) {
+      if (p.quiet) clearTimeout(p.quiet);
+      p.quiet = setTimeout(() => void this.sendPrefill(entry), this.prefillQuietMs);
+      p.quiet.unref?.();
+    }
     if (entry.watcher) for (const link of entry.watcher.push(data)) this.rememberLink(entry, link, { emit: true, front: true });
   }
 
@@ -556,6 +620,7 @@ class TmuxHostImpl implements TmuxHost {
     entry.alive = false;
     entry.exitCode = code ?? 0;
     entry.activity.clear();
+    this.dropPrefill(entry);
     if (entry.watcher?.flush) for (const link of entry.watcher.flush()) this.rememberLink(entry, link, { emit: true, front: true });
     this.emit({ type: 'terminal.exit', id, code: entry.exitCode });
   }
@@ -632,7 +697,10 @@ class TmuxHostImpl implements TmuxHost {
         const had = [...this.entries.values()].some((e) => e.addedAt < startedAt && !e.killing);
         if (!had) return;
         for (const v of [...this.views.values()]) this.closeView(v);
-        for (const e of this.entries.values()) e.activity.clear();
+        for (const e of this.entries.values()) {
+          e.activity.clear();
+          this.dropPrefill(e);
+        }
         this.entries.clear();
         this.emit({ type: 'terminal.host-lost' });
         return;
@@ -665,6 +733,8 @@ const SESSION_FORMAT = [
   '#{pane_dead_signal}',
   '#{window_activity}',
   '#{window_width}',
+  // X6：窗格自己的进程，用来找 shell 正在跑的命令（foreground.ts）
+  '#{pane_pid}',
   '#{host}',
   // 放最后：标题里可能有任何字符
   '#{pane_title}',
@@ -679,6 +749,8 @@ export interface SessionRow {
   /** 秒级时间戳。 */
   activity: number;
   width: number;
+  /** 窗格自己的进程（pane_pid），没有时为 0。 */
+  pid: number;
   /** 程序设的终端标题（见 cleanTitle）。 */
   title: string | null;
 }
@@ -698,7 +770,7 @@ export function parseSessions(out: string): SessionRow[] {
   const rows: SessionRow[] = [];
   for (const line of out.split('\n')) {
     if (!line) continue;
-    const [id = '', cwd = '', command = '', dead = '', status = '', signal = '', activity = '', width = '', host = '', ...rest] = line.split('\t');
+    const [id = '', cwd = '', command = '', dead = '', status = '', signal = '', activity = '', width = '', pid = '', host = '', ...rest] = line.split('\t');
     if (!id) continue;
     const isDead = dead === '1';
     rows.push({
@@ -709,6 +781,7 @@ export function parseSessions(out: string): SessionRow[] {
       exitCode: isDead ? (exitCodeOf(status, signal) ?? 0) : null,
       activity: Number(activity) || 0,
       width: Number(width) || 0,
+      pid: Number(pid) || 0,
       title: cleanTitle(rest.join('\t'), host),
     });
   }

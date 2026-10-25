@@ -22,6 +22,7 @@ registerTerminalWindow(); // = registerWindow(terminalWindowType)，registerWind
 | `onClose(data)` | `terminals.kill(terminalId)` |
 | `menu` | Clear（⌘K）、Restart、Restart and resume conversation、Open in system terminal（命令 id：`clear`、`restart`、`restart-resume`、`open-in-system-terminal`）。Rename 由白板做 |
 | `termSize(contentSize)` | 13px JetBrains Mono（7.8×17）加内边距 8/4 算行列数；attach 时按 xterm 实际量到的格子再校正 |
+| `restore`（X6） | `describe(data, live)`：terminalId 为 null 或不在 `terminals.list()` 里时说明恢复后的样子；`restore(data, ctx)`：按 `src/restore.ts` 重开，返回新的 terminalId 等。白板的 “Restore your last session?” 用它 |
 
 ## 行为
 
@@ -32,7 +33,12 @@ registerTerminalWindow(); // = registerWindow(terminalWindowType)，registerWind
 - **标题栏状态**：`status.snapshot()` 取一次，之后 `status.changed` 按 terminalId 对上，`setStatus`：Starting / Running · 4m / Needs approval · 3m（attention）/ Needs reply · 3m（attention）/ Idle · 12m / Exited / Error · exit 1，每 30 秒刷新时间。没有状态机的数据时，进程退出用 Exited / Error · exit N。`status.changed` 带 `sessionId` 且和 data 里不同时 `updateData({ sessionId })`。
 - **cd 出了工作区（IS-57，MVP v3 · N7）**：只是提示。在框里的终端（`props.workspace` 不为 null）、进程还活着时，盯着 `TerminalInfo.cwd`（tmux 的 `pane_current_path`）：挂上时取一次，之后所有终端窗口共用一个 3 秒的定时器 `terminals.list()`，这个终端 `terminal.silence` 时也取；窗口看不见时不取。cwd 不在 `workspace.path` 里面时，标题栏状态带 `tag: { text: 'outside workspace', detail: 'Now in …\nWorkspace: …' }`（contracts 的 `WindowStatusBadge.tag`，window-shell 画成淡色小标签），回到里面就去掉。散放的终端、还没有状态文字时不显示。不拦、不改源代码管理面板、不锁目录。路径比较见 `src/cwd.ts`：去掉末尾 /、. 和 ..；macOS 上 `/tmp` `/var` `/etc` 当作 `/private/...`、不分大小写；拿不到 realpath，其他符号链接认不出（只会多提示，不会漏）。
 - **退出（T5）**：`terminal.exit` 或 list() 里 `alive: false` → 内容保留，底部 “Process exited (code 1)”（0 时 “Process exited”）+ Restart / Close。Restart = 先 kill 旧会话，再 `agents.start({ agent, cwd, workspaceId, mode: new, size, command: startCommand })`，`updateData({ terminalId, cmd, args, sessionId })`。`command-not-found` → “Command not found: claude” + Open Settings（发冒泡的 `agentdeck:open-settings` 事件）/ Use Shell instead（`agents.start({ agent: 'shell' })`，data 改成 shell）。
-- **重开应用（T6）**：按保存的 terminalId 在 `terminals.list()` 里找（同一时刻多个窗口合成一次调用）。找到就接回；没有（或 terminalId 为 null）→ “Previous session ended” + Restart ▾（有 sessionId 时菜单：Resume conversation / New conversation），否则 Restart。`terminal.host-lost` → “Session ended”。
+- **重开应用（T6）**：按保存的 terminalId 在 `terminals.list()` 里找（同一时刻多个窗口合成一次调用；合并的结果里没有时再直接问一次，免得连着新建、Restore all 换上新 id 时拿到旧列表，IS-07）。找到就接回；没有（或 terminalId 为 null）→ “Previous session ended”，`terminal.host-lost` → “Session ended”。下面一行灰字写 Restore 会怎样，按钮 Restore（主按钮）+ Restart（新对话 / 按原命令重跑）；Restore 和 Restart 一样时（agent 没记下会话 id、Shell 没有可填的命令）只有 Restart。
+- **恢复上次会话（X6，`src/restore.ts`，需求 DR-14 / TC-14）**：
+  - agent（claude、codex、pi、omp、kimi）：有 `sessionId` 就 `agents.start({ mode: { kind: 'resume', sessionId } })`，命令由各自的适配器拼（claude `--resume <id>`、codex `resume <id>`、pi `--session <id>`、omp `--resume <id>`、kimi `-S <id>`）；没有会话 id 就新开，Restore 时标题栏状态后面挂 60 秒的 “new conversation” 标签（Restore all 时由白板的提示说）。适配器报 `unsupported`（不能接回）时退回新对话。
+  - Shell：`agents.start({ agent: 'shell', mode: new, prefill })`，不带 command，在原目录（`data.cwd`）开交互的 shell，把 `lastCommand`（没有就 `startCommand`）填进输入行、不运行（tmux-host 等提示符画出来再 `send-keys -l`，去掉换行）。自定义命令（custom）也这样恢复：变成 Shell（`agent: 'shell'`，`startCommand` 记那条命令），命令填好、不直接再跑。
+  - 窗口 id 和位置不变，终端换新 id。
+  - **记下 Shell 上次跑的命令**：`agent === 'shell'`、进程活着时（看不见也盯，电脑随时可能重启），`watchTerminalInfo` 读 `TerminalInfo.foregroundCommand`（tmux-host 用 ps 看前台进程组，见 tmux-host/AGENTS.md），有值且和 `lastCommand` 不同就 `updateData({ lastCommand })`；回到提示符（null）时保留上一次的。共用 3 秒的定时器，`terminal.silence` 时、用户输入 1.5 秒后也取，所以跑了 1.5 秒以上的命令（dev server、测试）记得到，`ls` 这种记不到。agent 窗口不记。
 - **摘要卡（T8）**：`summary` 为 true 时不 attach、不改行列数，显示 `lastLines(id, 3)`；有 activity / silence / exit 时最多每秒重读一次。在等你时最后一行用 attention 色。恢复原大小由白板做（单击摘要卡）。
 - **命令（onCommand）**：`clear` → xterm `clear()` + `sendKeys(['C-l'])`（tmux 历史清不掉，见 CONTRACT_NOTES.md 第 2 条）；`restart`（新对话）；`restart-resume`（带原来的会话 id 重启，对话接着、启动参数换成最新的；没有会话 id 时同 restart）；`open-in-system-terminal` → `app.openInSystemTerminal`。
 
@@ -43,7 +49,8 @@ registerTerminalWindow(); // = registerWindow(terminalWindowType)，registerWind
 | `src/definition.ts` | `terminalWindowType` |
 | `src/TerminalWindow.tsx` | 组件：状态（checking / live / starting / ended / not-found / failed）、退出条、提示页、摘要卡 |
 | `src/session.ts` | `TerminalSession`：xterm、插件、attach / detach / resize、输入扣留、按键、链接。不依赖 React |
-| `src/router.ts` | 终端输出按 viewId 分发（早到的先缓存）；`list()` 合并调用；`watchTerminalCwd`（共用定时器盯当前目录） |
+| `src/router.ts` | 终端输出按 viewId 分发（早到的先缓存）；`list()` 合并调用；`watchTerminalInfo` / `watchTerminalCwd`（共用定时器盯当前目录、正在跑的命令） |
+| `src/restore.ts` | X6：`needsRestore`、`planRestore`（每种终端怎么恢复）、`refillCommand`、`restoreTerminal` |
 | `src/cwd.ts` | 纯函数：路径规范、`isPathInside`、`outsideWorkspaceTag`（IS-57） |
 | `src/queries.ts` `keys.ts` `links.ts` `status.ts` `theme.ts` `metrics.ts` `title.ts` | 纯函数 |
 | `test/` | jsdom + `createFakeApi()`；xterm 用 `@xterm/headless` 垫（`test/setup.ts`） |

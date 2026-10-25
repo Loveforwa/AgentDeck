@@ -74,6 +74,8 @@ interface Term {
   lastActivityAt: IsoTime | null;
   /** 程序设的终端标题（TerminalInfo.title）。 */
   title: string | null;
+  /** X6：shell 正在跑的命令（TerminalInfo.foregroundCommand）。 */
+  foregroundCommand: string | null;
   output: string;
   inputs: string[];
   keys: string[][];
@@ -189,6 +191,7 @@ export class FakeTerminalHost implements TerminalHost {
       exitCode: t.exitCode,
       lastActivityAt: t.lastActivityAt,
       title: t.title,
+      foregroundCommand: t.alive ? t.foregroundCommand : null,
     }));
   }
 
@@ -268,7 +271,9 @@ export class FakeTerminalHost implements TerminalHost {
       exitCode: o.exited ?? null,
       lastActivityAt: o.history ? nowIso() : null,
       title: o.title ?? null,
-      output: o.history ?? '',
+      foregroundCommand: null,
+      // X6：prefill 像是在提示符后面敲好了、没按回车（真 tmux 要等 shell 画出提示符；这里直接放进输出）
+      output: (o.history ?? '') + (req.prefill ? req.prefill.replace(/[\u0000-\u001f\u007f]+/g, ' ').trim() : ''),
       inputs: [],
       keys: [],
       recording,
@@ -328,6 +333,11 @@ export class FakeTerminalHost implements TerminalHost {
 
   has(id: TerminalId): boolean {
     return this.terms.has(id);
+  }
+
+  /** X6：模拟 shell 里正在跑一条命令（null：回到提示符）。 */
+  setForegroundCommand(id: TerminalId, command: string | null): void {
+    this.require(id).foregroundCommand = command;
   }
 
   /** 模拟程序改了终端标题（OSC 0/2）。 */

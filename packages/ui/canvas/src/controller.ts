@@ -46,6 +46,7 @@ import {
   type WindowGroup,
 } from './model/groups.ts';
 import { adjacentWindow, windowOrder } from './model/navigation.ts';
+import { restoreResultMessage, type RestoreOutcome, type RestoreSessionItem } from './model/restore.ts';
 import type { ShortcutId } from './model/shortcuts.ts';
 import { NEAR_FRAME_PX, SNAP_PX, snapMove, snapResize, type Guide } from './model/snap.ts';
 import {
@@ -228,6 +229,8 @@ export class BoardController {
       api.on('board.open-group', (e) => void this.openGroupFromService(e.lead, e.members, e.highlight)),
       api.on('board.focus-window', (e) => this.focusFromService(e.target)),
       api.on('board.notify', (e) => this.notifyFromService(e.from, e.message)),
+      // X6：tmux 服务没了（被结束、崩了）：窗口都显示 Session ended，问一次要不要全部恢复
+      api.on('terminal.host-lost', () => void this.checkRestore()),
     );
     // 用户在哪儿打字（终端的 xterm、对话框的输入框……）都会经过 window 的 keydown（捕获阶段）。网页窗口的 iframe 里的按键收不到。
     if (typeof window !== 'undefined') {
@@ -264,6 +267,66 @@ export class BoardController {
       loaded: true,
     }));
     this.separateOverlappingFrames();
+    // X6：Stop all and quit、电脑重启之后，保存的窗口还在、进程没了。不等它，白板先画出来
+    void this.checkRestore();
+  }
+
+  // ---- X6：恢复上次会话 ----
+
+  /** 进程没了、要恢复的窗口（各窗口类型的 restore.describe）。live 是 terminals.list() 里还在的终端。 */
+  restoreCandidates(live: ReadonlySet<TerminalId>): RestoreSessionItem[] {
+    const out: RestoreSessionItem[] = [];
+    for (const w of this.state.windows) {
+      const item = this.definitionOf(w)?.restore?.describe(w.data, live);
+      if (item) out.push({ ...item, windowId: w.id, workspaceId: w.workspaceId });
+    }
+    return out;
+  }
+
+  /**
+   * 有窗口要恢复时弹 “Restore your last session?”。tmux 会话都在（普通的 ⌘Q 再打开）时什么都不做：窗口自己接上。
+   * 读不到终端列表（tmux 不可用）时也不弹，窗口自己会显示原因。用户正开着别的对话框时不打断。
+   */
+  async checkRestore(): Promise<void> {
+    let ids: TerminalId[];
+    try {
+      ids = (await this.api.terminals.list()).map((t) => t.id);
+    } catch {
+      return;
+    }
+    if (!this.started) return;
+    const items = this.restoreCandidates(new Set(ids));
+    const open = this.state.dialog;
+    if (items.length === 0) {
+      if (open?.kind === 'restore-session') this.closeDialog();
+      return;
+    }
+    if (open && open.kind !== 'restore-session') return;
+    this.openDialog({ kind: 'restore-session', items });
+  }
+
+  /** Restore all：逐个窗口按它的类型恢复（agent 接回对话、Shell 填好命令），位置和窗口 id 不变。完成后提示一句。 */
+  async restoreAll(): Promise<RestoreOutcome[]> {
+    const dialog = this.state.dialog;
+    const items = dialog?.kind === 'restore-session' ? dialog.items : [];
+    if (dialog?.kind === 'restore-session') this.closeDialog();
+    const outcomes = await Promise.all(items.map((item) => this.restoreOne(item)));
+    const done = outcomes.filter((o): o is RestoreOutcome => o !== null);
+    if (done.length) this.notify(restoreResultMessage(done));
+    return done;
+  }
+
+  private async restoreOne(item: RestoreSessionItem): Promise<RestoreOutcome | null> {
+    const w = this.windowById(item.windowId);
+    const support = w ? this.definitionOf(w)?.restore : undefined;
+    if (!w || !support) return null;
+    try {
+      const res = await support.restore(w.data, { workspaceId: w.workspaceId, contentSize: this.contentSizeOf(w.rect) });
+      if (this.windowById(w.id)) this.updateData(w.id, res.patch as object);
+      return { item, fresh: res.fresh, error: null };
+    } catch (e) {
+      return { item, fresh: false, error: errorMessage(e) };
+    }
   }
 
   /** 老布局里互相盖住的框（IS-53、IS-54）启动时分开，框里的窗口跟着走；没有重叠时什么都不改。 */

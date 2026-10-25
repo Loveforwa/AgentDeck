@@ -7,6 +7,7 @@ AgentDeck 自己的 tmux 实例：`tmux -L agentdeck -f packages/tmux-host/tmux.
 - `TerminalHost`（contracts 0.1.3 `packages/contracts/src/terminal.ts`）的真实实现：会话的建、结束、列出、接上显示、按键、最后几行、链接（T1）。
 - 输出抄送（pipe-pane）→ `terminal.activity` / `terminal.silence`（默认 3 秒）/ `terminal.link`（链接识别由组装注入 port-watch）。
 - 进程退出（pane-died 钩子）→ `terminal.exit`；tmux 服务没了 → `terminal.host-lost`；用户输入 → `terminal.input`。
+- X6 恢复上次会话要的两样：`list()` 报 shell 正在跑的命令（`foregroundCommand`），`create` 的 `prefill` 把命令填进输入行但不运行。
 - 以后跑在 Electron 的 utilityProcess 里。这个包只导出入口，接线留给第 3 波组装（不改 apps/desktop）。
 
 ## 文件
@@ -20,6 +21,7 @@ AgentDeck 自己的 tmux 实例：`tmux -L agentdeck -f packages/tmux-host/tmux.
 | `src/env.ts` | 窗格环境（登录 shell 的环境去掉终端身份和宿主注入的变量）、tmux 服务的最小环境、在 PATH 里找命令 |
 | `src/input.ts` | 判断 write() 的字节是不是用户输入（xterm 的查询回答、焦点、滚轮不算） |
 | `src/signals.ts` | `pane_dead_signal`（名字）→ 退出码 128 + 编号 |
+| `src/foreground.ts` | X6：shell 正在跑的命令（`ps` 看前台进程组）、解释器跑的脚本还原成命令名、prefill 去控制字符 |
 | `src/pty.ts` | 加载 node-pty，补 spawn-helper 的执行权限 |
 | `tmux.conf` | 最终配置（F7），每一项都有注释 |
 | `test/host.test.ts` | 真 tmux 的集成测试（`-L agentdeck-test-<pid>`，测完 kill-server） |
@@ -43,7 +45,8 @@ const host = await startTmuxHost({
   onData: (m) => portOf(m.viewId)?.postMessage(m), // TerminalDataMessage，写进对应窗口的 MessagePort
   linkWatcher: () => createLinkWatcher(), // 不给就不发 terminal.link（服务包之间不能直接 import，所以由组装注入）
   // 可选：socketName（默认 'agentdeck'）、configPath（默认本包的 tmux.conf）、tmuxPath、runDir（默认 ~/.agentdeck/run）、
-  //       ncPath（默认 /usr/bin/nc）、silenceMs（3000）、resizeQuietMs（1000，见下面 IS-72）、healthIntervalMs（2000）
+  //       ncPath（默认 /usr/bin/nc）、silenceMs（3000）、resizeQuietMs（1000，见下面 IS-72）、healthIntervalMs（2000）、
+  //       prefillQuietMs（400）、prefillMaxMs（5000）、ps（测试替换 ps，X6）
 });
 // host 实现 TerminalHost，另有：host.tmuxVersion、host.dispose()（不结束会话）、host.killServer()（Stop all and quit）
 ```
@@ -55,6 +58,8 @@ const host = await startTmuxHost({
 - `write`：用户输入时发 `terminal.input`（同一终端 250ms 内只发一次）；xterm 的查询回答、焦点事件、滚轮和鼠标移动不算。发过鼠标事件之后的第一个按键会先让 tmux 退出回滚再写（F7 问题 9）；PageUp / PageDown 留在回滚里。
 - `sendKeys`：先退出回滚再 `send-keys`；发 `terminal.input`。
 - `lastLines(id, n)`：`capture-pane -p -J`，去掉末尾空行后取最后 n 行。
+- `list()` 的 `foregroundCommand`（X6）：`list-sessions` 多取一列 `#{pane_pid}`，再用两次 `ps -ww`：先看每个窗格进程的 `tpgid`（终端的前台进程组），不是它自己时 shell 正在跑命令，再取那个进程组组长的 `args`。`node /opt/homebrew/bin/pnpm dev` 这种（shebang 脚本经解释器跑）在 PATH 里找得到同一个文件时还原成 `pnpm dev`。shell 在提示符下、窗格进程本身就是程序（agent、`-c` 跑的命令、`/usr/bin/env` exec 的命令）、进程已退出时为 null。ps 失败当作 null。代价：引号丢了、管道只看第一段、比轮询间隔（终端窗口 3 秒）短的命令记不到。为什么不用别的办法：`pane_current_command` 只有进程名；shell 的历史文件分不清是哪个终端敲的；往用户的 shell 配置里加 preexec 钩子违反“不改用户配置”。
+- `create` 的 `prefill`（X6）：先去掉控制字符（换行会直接运行、Tab 会补全），等这个终端的第一段输出之后安静 `prefillQuietMs`（400ms，每段输出重新计时），最多等 `prefillMaxMs`（5 秒），然后 `send-keys -l -- <字>`，不按回车，也不算用户输入（不发 `terminal.input`）。进程先退出、被 kill、服务没了就不填。shell 初始化时清掉了预先输入（少见的 rc 写法）会填不上；p10k instant prompt 实测没问题（本机 zsh）。
 - `attachCommand`：`<tmux 绝对路径> -L agentdeck -f <tmux.conf> -u attach-session -t =<id>`（只带 `-u`，见 F7 问题 4）。
 - `recentLinks`：新的在前，最多 20 条，同一个链接再出现时挪到最前、不再发事件。重开应用后第一次调用时从 tmux 历史（最后 500 行）里补找一遍。
 - `terminal.silence`：最后一次输出**或输入**之后 3 秒发（输入也重新计时：用户按了 Esc 而程序什么都没输出时，状态机的兜底规则也能等到 silence）。一段连续输出只发一次 `terminal.activity`。
