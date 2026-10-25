@@ -140,3 +140,4 @@ repo.cleanup();
 - 状态服务的规则很简单：activity 让 starting / idle 变 running，silence 让 running 变 idle，exit 变 exited / error，等待状态只被 approve、turnEnd、set 改。线 4 的真状态机以钩子为准。
 - `approvals.approve`：一次批多条记为 `approve-all`，一条记为 `user`。卡住（`simulateStuck`）时等 2 秒返回 `couldnt-approve`。
 - 删除工作区的文件夹总是 force，见 CONTRACT_NOTES.md 第 5 条。
+- X6：`create` 的 `prefill` 直接接在已有输出后面（真 tmux 要等 shell 画出提示符再填），存在 `get(id).request.prefill`；`foregroundCommand` 默认 null，用 `terminals.setForegroundCommand(id, 'pnpm dev')` 模拟 shell 正在跑命令。`agents.start` 和真实现一样只对不带 command 的 shell 转 prefill。

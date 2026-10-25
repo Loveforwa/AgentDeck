@@ -9,3 +9,4 @@ export { CLIENT_FEATURES, MIN_TMUX_VERSION, checkTmux, parseTmuxVersion } from '
 export { classifyInput } from './input.ts';
 export { exitCodeOf, signalNumber, KILLED_EXIT_CODE } from './signals.ts';
 export { ensureSpawnHelperExecutable } from './pty.ts';
+export { displayCommandLine, foregroundCommands, parsePsColumns, sanitizePrefill, type PsRunner } from './foreground.ts';

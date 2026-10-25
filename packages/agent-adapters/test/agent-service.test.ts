@@ -168,3 +168,57 @@ describe('AgentServiceImpl', () => {
     expect(started[0]!.hooks).toBe(false);
   });
 });
+
+// X6：恢复上次会话时，白板按记下的会话 id 用 resume 重开每个 agent；Shell 不带命令重开，把上次的命令交给 prefill。
+describe('AgentServiceImpl: restoring the last session (X6)', () => {
+  let agentsBin: string;
+  beforeAll(() => {
+    agentsBin = mkdtempSync(join(tmpdir(), 'ads-x6-'));
+    // 只打印版本（假的，不会真的启动 agent）。codex 用没有钩子的旧版本，免得 prepare() 去起 app-server。
+    for (const [name, out] of [
+      ['claude', '2.1.291 (Claude Code)'],
+      ['codex', 'codex-cli 0.100.0'],
+      ['pi', '0.83.0'],
+      ['omp', 'omp/18.0.4'],
+      ['kimi', '0.29.1'],
+    ]) {
+      writeFileSync(join(agentsBin, name!), `#!/bin/sh\necho "${out}"\n`);
+      chmodSync(join(agentsBin, name!), 0o755);
+    }
+  });
+  afterAll(() => rmSync(agentsBin, { recursive: true, force: true }));
+
+  const resume = (sessionId: string): StartAgentRequest['mode'] => ({ kind: 'resume', sessionId: sessionId as AgentSessionId });
+
+  it.each([
+    ['claude', ['--resume', 's-claude']],
+    ['codex', ['resume', 's-codex']],
+    ['pi', ['--session', 's-pi']],
+    ['omp', ['--resume', 's-omp']],
+    ['kimi', ['-S', 's-kimi']],
+  ] as const)('%s resumes the recorded conversation by id', async (agent, head) => {
+    const s = service({ PATH: agentsBin, SHELL: '/bin/sh' });
+    const res = await s.start(req({ agent, mode: resume(`s-${agent}`) }));
+    expect(res.sessionId).toBe(`s-${agent}`);
+    const i = res.args.indexOf(head[0]);
+    expect(res.args.slice(i, i + 2)).toEqual([...head]);
+    // 进了 tmux 的就是这条命令
+    expect(terminals.get(res.terminalId).request.args).toEqual(res.args);
+    expect(terminals.get(res.terminalId).request.prefill).toBeUndefined();
+  });
+
+  it('a shell reopens interactively with the last command handed to prefill, not run', async () => {
+    const s = service();
+    const sh = await s.start(req({ agent: 'shell', cwd: '/repo/web', prefill: 'pnpm dev' }));
+    expect([sh.cmd, sh.args]).toEqual(['/bin/sh', ['-l']]);
+    expect(terminals.get(sh.terminalId).request).toMatchObject({ cwd: '/repo/web', prefill: 'pnpm dev' });
+  });
+
+  it('prefill is ignored for agents and for a shell that runs a command', async () => {
+    const s = service();
+    const claude = await s.start(req({ agent: 'claude', prefill: 'rm -rf /' }));
+    expect(terminals.get(claude.terminalId).request.prefill).toBeUndefined();
+    const run = await s.start(req({ agent: 'shell', command: 'pnpm dev', prefill: 'pnpm dev' }));
+    expect(terminals.get(run.terminalId).request.prefill).toBeUndefined();
+  });
+});

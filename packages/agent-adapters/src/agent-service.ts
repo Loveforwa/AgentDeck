@@ -115,6 +115,8 @@ export class AgentServiceImpl implements AgentService {
       cwd: req.cwd,
       ...(spec.env ? { env: spec.env } : {}),
       ...(req.size ? { size: req.size } : {}),
+      // X6：恢复 Shell 时把上次的命令填进输入行、不运行。只对交互的 shell 有意义（agent 的输入框、-c 跑的命令都不该收到）
+      ...(req.agent === 'shell' && req.prefill && req.command === undefined ? { prefill: req.prefill } : {}),
     });
     this.opts.onStarted?.({
       terminalId: id,
