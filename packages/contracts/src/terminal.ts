@@ -15,6 +15,11 @@ export interface CreateTerminalRequest {
   /** 会和 TERMINAL_ID_ENV 合并；不能覆盖它。 */
   env?: Record<string, string>;
   size?: TermSize;
+  /**
+   * X6：程序准备好接收输入后（第一段输出之后安静一小会儿，最多等几秒），替用户在输入行里打上这段字，不按回车。
+   * Shell 恢复上次会话时用它把上次的命令填好但不运行。换行、制表符等控制字符会换成空格，不会被执行。X6 加。
+   */
+  prefill?: string;
 }
 
 export interface TerminalInfo {
@@ -23,6 +28,13 @@ export interface TerminalInfo {
   cwd: AbsPath;
   /** 当前前台命令（tmux 的 pane_current_command）。 */
   command: string;
+  /**
+   * X6：窗格里的 shell 正在跑的那条命令的完整命令行（终端的前台进程组不是窗格自己的进程时，取前台进程组组长的参数），
+   * 例如 'pnpm dev'。shell 在提示符下（前台就是它自己）、窗格的进程本身就是程序（agent、-c 跑的命令）、进程已退出时为 null。
+   * 参数用空格连起来，原来的引号丢了；脚本经解释器运行时（node /opt/homebrew/bin/pnpm dev）还原成命令名（pnpm dev）。
+   * 终端窗口据此记下 Shell 上次跑的命令（TerminalWindowData.lastCommand）。X6 加。
+   */
+  foregroundCommand?: string | null;
   alive: boolean;
   /** 进程已退出时的退出码。 */
   exitCode: number | null;

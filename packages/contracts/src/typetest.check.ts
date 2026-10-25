@@ -1,7 +1,7 @@
 // 只用于类型检查：确认接口能被实现、事件能按 type 收窄。不会被打包。
 import type {
   AgentDeckApi, ApproveResult, AutoApproveState, CommitInfo, EventOf, GitService, LogOptions, SkillItemId, TerminalHost, TerminalId,
-  TerminalSkills, TerminalUsage, TerminalWindowData, UsageService, WindowGroupId, WindowId, WindowNode, WorkspaceId,
+  TerminalSkills, TerminalUsage, TerminalWindowData, UsageService, WindowGroupId, WindowId, WindowNode, WindowRestoreSupport, WorkspaceId,
 } from './index.ts';
 import { effectiveSkillSelection, FIRE_AND_FORGET, isAutoApproveOn, skillsRestartNeeded } from './index.ts';
 
@@ -98,3 +98,14 @@ const termData: TerminalWindowData = {
   terminalId: null, agent: 'claude', cmd: 'claude', args: [], cwd: '/r', sessionId: null, startCommand: null, skills: ['skill:library:xlsx'],
 };
 void termData;
+
+// X6：恢复上次会话。都是可选字段，老数据没有它们
+const restoredData: TerminalWindowData = { ...termData, lastCommand: 'pnpm dev' };
+void restoredData;
+void api.agents.start({ agent: 'shell', cwd: '/r', workspaceId: null, mode: { kind: 'new' }, prefill: 'pnpm dev' });
+void api.terminals.list().then((l) => l.map((t) => t.foregroundCommand ?? null));
+const restoreSupport: WindowRestoreSupport<TerminalWindowData> = {
+  describe: (d, live) => (d.terminalId && live.has(d.terminalId) ? null : { kind: 'shell', label: 'zsh', detail: 'Opens zsh', fresh: false }),
+  restore: async () => ({ patch: { terminalId: 't2' as TerminalId }, fresh: false }),
+};
+void restoreSupport;
