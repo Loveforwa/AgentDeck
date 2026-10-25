@@ -12,6 +12,7 @@ import type {
   TerminalId,
   TerminalStatus,
   TerminalWindowData,
+  WindowGroupId,
   WindowId,
   WindowNode,
   WindowStatusBadge,
@@ -46,6 +47,11 @@ export interface NavWindow {
   /** 终端的名字用等宽字体；其他窗口前面画一个窗口小图标。 */
   kind: 'terminal' | 'other';
   name: string;
+  /**
+   * 窗口组（N2）里的身份，和标题栏的灰字一样：lead 是 “lead”，子终端是 “sub-2 · ui”（和组的侧边栏同名）。
+   * 不在组里、或用户改过名（标题栏也只显示改的名）时为 null。
+   */
+  group: string | null;
   /** null：没有状态（网页窗口），显示图标。 */
   lamp: Lamp | null;
   waiting: boolean;
@@ -119,6 +125,32 @@ export function windowName(node: WindowNode): string {
   return node.type;
 }
 
+/**
+ * 窗口组里每个窗口的名字（MVP v3 · N2，IS-70），和白板一致（ui/canvas 的 model/groups.ts：listGroups、memberName、groupTitle；
+ * 那边没从注册表入口导出，这里照抄同一条规则）：lead 是 “lead”；子终端按在 windows 里的先后编号 “sub-1”，
+ * 有 label 时 “sub-1 · api”。没有 lead 或没有子终端的组不算。
+ */
+export function groupNames(windows: readonly WindowNode[]): Map<WindowId, string> {
+  const leads = new Map<WindowGroupId, WindowNode>();
+  const members = new Map<WindowGroupId, WindowNode[]>();
+  for (const w of windows) {
+    if (!w.group) continue;
+    if (w.group.role === 'lead') leads.set(w.group.id, w);
+    else members.set(w.group.id, [...(members.get(w.group.id) ?? []), w]);
+  }
+  const out = new Map<WindowId, string>();
+  for (const [id, lead] of leads) {
+    const list = members.get(id);
+    if (!list?.length) continue;
+    out.set(lead.id, 'lead');
+    list.forEach((m, i) => {
+      const label = m.group?.label?.trim();
+      out.set(m.id, `sub-${i + 1}${label ? ` · ${label}` : ''}`);
+    });
+  }
+  return out;
+}
+
 const STATUS_LAMP: Record<TerminalStatus, Lamp> = {
   starting: 'idle',
   running: 'running',
@@ -142,22 +174,24 @@ function badgeLamp(badge: WindowStatusBadge | undefined): Lamp | null {
   }
 }
 
-export function navWindow(node: WindowNode, input: Pick<BoardNavInput, 'statuses' | 'badges'>): NavWindow {
+export function navWindow(node: WindowNode, input: Pick<BoardNavInput, 'statuses' | 'badges'>, groups?: ReadonlyMap<WindowId, string>): NavWindow {
   const badge = input.badges[node.id];
+  const group = node.title ? null : (groups?.get(node.id) ?? null);
   if (node.type === 'terminal') {
     const terminalId = (node.data as Partial<TerminalWindowData> | null)?.terminalId ?? null;
     const snap = terminalId ? input.statuses[terminalId] : undefined;
     const waiting = snap ? WAITING_STATUSES.includes(snap.status) : badge?.tone === 'attention';
     const lamp: Lamp = snap ? STATUS_LAMP[snap.status] : (badgeLamp(badge) ?? (terminalId ? 'idle' : 'exited'));
     const detail = snap?.status === 'needs-approval' ? 'Needs approval' : snap?.status === 'needs-reply' ? 'Needs reply' : waiting ? (badge?.detail ?? null) : null;
-    return { id: node.id, kind: 'terminal', name: windowName(node), lamp, waiting, detail, terminalId };
+    return { id: node.id, kind: 'terminal', name: windowName(node), group, lamp, waiting, detail, terminalId };
   }
   const lamp = badgeLamp(badge);
   const waiting = lamp === 'waiting';
-  return { id: node.id, kind: 'other', name: windowName(node), lamp, waiting, detail: waiting ? (badge?.detail ?? null) : null, terminalId: null };
+  return { id: node.id, kind: 'other', name: windowName(node), group, lamp, waiting, detail: waiting ? (badge?.detail ?? null) : null, terminalId: null };
 }
 
 export function buildTree(input: BoardNavInput): NavTree {
+  const groups = groupNames(input.windows);
   const placed = new Set<WindowId>();
   const byProject = new Map<ProjectId, NavWorkspace[]>();
   for (const frame of readingOrder(input.frames, (f) => f.rect)) {
@@ -170,14 +204,14 @@ export function buildTree(input: BoardNavInput): NavTree {
       id: ws.id,
       label: ws.branch ?? ws.name,
       isBranch: ws.branch !== null,
-      windows: readingOrder(inside, (w) => w.rect).map((w) => navWindow(w, input)),
+      windows: readingOrder(inside, (w) => w.rect).map((w) => navWindow(w, input, groups)),
     });
     byProject.set(ws.projectId, list);
   }
   const loose = readingOrder(
     input.windows.filter((w) => !placed.has(w.id)),
     (w) => w.rect,
-  ).map((w) => navWindow(w, input));
+  ).map((w) => navWindow(w, input, groups));
   return {
     projects: input.projects.map((p) => ({ id: p.id, name: p.name, workspaces: byProject.get(p.id) ?? [] })),
     loose,

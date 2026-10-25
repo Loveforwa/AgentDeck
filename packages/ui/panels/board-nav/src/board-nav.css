@@ -126,6 +126,16 @@
   white-space: nowrap;
 }
 
+/* 窗口组里的身份（lead / sub-1 · api），和标题栏的灰字一样 */
+.bnav-group {
+  flex: none;
+  max-width: 40%;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .bnav-waiting {
   flex: none;
   color: var(--attention);

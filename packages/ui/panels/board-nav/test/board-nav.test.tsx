@@ -1,4 +1,4 @@
-import type { Project, ProjectId, StatusSnapshot, WindowId, WindowNode } from '@agentdeck/contracts';
+import type { Project, ProjectId, StatusSnapshot, WindowGroupId, WindowId, WindowNode } from '@agentdeck/contracts';
 import { SAMPLE, createFakeApi, type FakeApi } from '@agentdeck/fakes';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -156,6 +156,36 @@ describe('BoardNav', () => {
     expect(within(looseGroup).getByText('scratch')).toBeTruthy();
     const regions = screen.getAllByRole('region').map((r) => r.getAttribute('aria-label'));
     expect(regions).toEqual(['agentdeck', 'shop', 'api-server', 'Not in a workspace']);
+  });
+
+  it('IS-70: window-group terminals carry the sidebar’s names (“sub-1 · api”) and the lead is marked “lead”', async () => {
+    const fake = createFakeApi();
+    const input = await boardFrom(fake);
+    const G = 'grp-x' as WindowGroupId;
+    const base = input.windows.find((w) => w.type === 'terminal')!;
+    const lead: WindowNode = { ...base, group: { id: G, role: 'lead', label: null } };
+    const sub = (id: string, label: string | null, agent: string, x: number): WindowNode => ({
+      ...base,
+      id: id as WindowId,
+      rect: { ...base.rect, x: base.rect.x + x },
+      group: { id: G, role: 'member', label },
+      data: { ...(base.data as object), terminalId: null, agent, cmd: agent === 'shell' ? '/bin/zsh' : agent },
+    });
+    const windows = input.windows.map((w) => (w.id === base.id ? lead : w));
+    windows.push(sub('win-sub-api', 'api', 'shell', 5000), sub('win-sub-ui', 'ui', 'claude', 6000));
+    render(<BoardNav {...input} windows={windows} api={fake} onJump={() => {}} />);
+
+    const api = document.querySelector<HTMLElement>('[data-window-id="win-sub-api"]')!;
+    expect(api.querySelector('.bnav-name')?.textContent).toBe('zsh');
+    expect(api.querySelector('.bnav-group')?.textContent).toBe('sub-1 · api');
+    expect(api.getAttribute('aria-label')).toMatch(/^zsh sub-1 · api, /);
+    const ui = document.querySelector<HTMLElement>('[data-window-id="win-sub-ui"]')!;
+    expect(ui.querySelector('.bnav-group')?.textContent).toBe('sub-2 · ui');
+    const leadRow = document.querySelector<HTMLElement>(`[data-window-id="${base.id}"]`)!;
+    expect(leadRow.querySelector('.bnav-group')?.textContent).toBe('lead');
+    // 不在组里的窗口没有
+    const other = input.windows.find((w) => w.id !== base.id)!;
+    expect(document.querySelector(`[data-window-id="${other.id}"] .bnav-group`)).toBeNull();
   });
 
   it('says so when the board is empty', () => {

@@ -67,8 +67,9 @@ function WindowRows({ windows, topics, onJump }: { windows: NavWindow[]; topics:
     <ul className="bnav-windows">
       {windows.map((w) => {
         const topic = w.terminalId ? (topics[w.terminalId] ?? null) : null;
-        // 读屏念的名字：“claude, Running, Check local git history”
-        const label = [w.name, w.detail ?? (w.lamp ? LAMP_LABEL[w.lamp] : null), topic].filter(Boolean).join(', ');
+        // 读屏念的名字：“claude, Running, Check local git history”；窗口组里 “claude sub-1 · api, Running”
+        const name = w.group ? `${w.name} ${w.group}` : w.name;
+        const label = [name, w.detail ?? (w.lamp ? LAMP_LABEL[w.lamp] : null), topic].filter(Boolean).join(', ');
         return (
           <li key={w.id}>
             <button
@@ -84,6 +85,8 @@ function WindowRows({ windows, topics, onJump }: { windows: NavWindow[]; topics:
                 <WindowIcon />
               )}
               <span className={`bnav-name${w.kind === 'terminal' ? ' bnav-mono' : ''}`}>{w.name}</span>
+              {/* 窗口组（N2）：和标题栏一样，名字后面灰字 “lead” / “sub-1 · api” */}
+              {w.group ? <span className="bnav-group bnav-mono">{w.group}</span> : null}
               {w.waiting ? (
                 <span className="bnav-waiting" title={w.detail ?? undefined}>
                   · Waiting
