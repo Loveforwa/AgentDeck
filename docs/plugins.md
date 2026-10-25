@@ -37,7 +37,7 @@
 
 | 插件 | 终端窗口 | 网页窗口 | 工作区框 | 白板 | 标记 | 状态 |
 | --- | --- | --- | --- | --- | --- | --- |
-| Auto-approve | ✓ claude、codex 走钩子；omp 看屏幕发键；pi 从不问。kimi 暂不支持（DR-56） | ✗ | ✓ 框里所有终端 | ✗ | 终端底边左侧的红色小书签 “Auto-approve”；需要你处理时临时变橙 “Needs you”；框上开着时框标题里红色小标签 | 后端和界面都做完（PL1），等真应用里验收 |
+| Auto-approve | ✓ 只给 agent 终端：claude、codex 走钩子；omp 看屏幕发键；pi 从不问。kimi 暂不支持，灰掉 “Not supported for kimi yet”（DR-56）；shell、自定义命令的菜单里没有这一项，也从不挂书签（IS-68） | ✗ | ✓ 框里能自动批准的 agent 终端（shell、自定义命令、kimi 不算，不打钩、不挂书签） | ✗ | 终端底边左侧的红色小书签 “Auto-approve”；需要你处理时临时变橙 “Needs you”；框上开着时框标题里红色小标签 | 后端和界面都做完（PL1），等真应用里验收 |
 | Usage 用量记录 | ✓ claude、codex、pi、omp、kimi（自己读各 agent 的会话文件，见 DR-55；kimi 新建会话靠推断，悬停写明）；shell、自定义命令灰掉 “Not supported for shell” | ✗ | 以后（项目用量） | 以后（整台电脑） | 终端上方（默认）或下方一条 24px 圆角条，和终端一样宽、隔 6px：in、out、cache 读 / 写、ctx + 进度条 + 百分比，85% 起变黄；拖左边的点阵只能换到上 / 下边；点开小卡片 | 后端和界面都做完（PL2），等真应用里验收 |
 
 ## 代码在哪里（PL0）
@@ -68,4 +68,6 @@
 - 2026-10-25：PL2 界面：Usage 的开关和位置存在终端的 `TerminalWindowData.usage`（`{ on, position: 'top' | 'bottom' }`，contracts 只加了可选字段），随白板保存；关掉时记得上次贴在哪边。条画着（开着、窗口在白板上、终端有 terminalId）时 `usage.watch`，收起、Hide、关窗口、换 terminalId 时 `unwatch`；窗口滚出视口不 unwatch（来回平移不反复重读会话文件）。上下文按服务给的 percent ≥ 85 变黄（`--attention`）。放大窗口时给条留出 30px（条在上边就往下让）。下边同时挂着 Auto-approve 书签时，条放在书签下面。
 - 2026-10-25：Usage 条上写全称 Input / Output / Cache / Context，每项悬停有一句说明；Cache 只写读，缓存写放在悬停里；终端窄时先藏 Cache，再藏 Output、Input。Context 照 agent 自己界面的写法算，和终端里看到的一致：kimi 的 k 按 1024、百分比向上取整（68.8k/977k、8%）；codex 先扣 12000 的基线；别的按 1000 进位、四舍五入（`contextDisplay`）。
 - 2026-10-25（验收后）：只有 agent 窗口才有自动批准。shell、自定义命令的终端菜单里没有 Auto-approve，也不挂书签；框上开 Auto-approve 时只管框里的 agent 终端（IS-68）。
+  - 实现：`PluginDefinition.agentsOnly`（shell、自定义命令的终端菜单里不列这一项，不是灰掉）；`ApprovalsModel.canAutoApprove` 是唯一的判断：agent 终端、而且服务的 `autoApproveSupport()` 不是 unsupported（没取到时按 claude、codex、omp、pi）。`windowOn` / `since` / `needsYouOf` 都先过它，所以服务的开关状态即使把 shell 算进框里（服务按框记开关，`isAutoApproveOn` 对框里任何终端都是 true），界面也不打钩、不挂书签。
+  - kimi 在开着的框里：不挂书签，“Needs you” 也不挂（它不能替你批准，挂了像是开着）；右键菜单照旧灰掉写 “Not supported for kimi yet”。框标题的小标签悬停写 “Auto-approve is on for the agents in this workspace”。
 - 2026-10-25（验收后）：Usage 里的额度、上下文百分比，取整方式和对应 agent 自己界面上的一致；各家额度设计不一样（codex 写 “x% left”，就照它的算法显示），不统一成一种写法（IS-69）。

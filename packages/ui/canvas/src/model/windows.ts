@@ -28,6 +28,12 @@ export function agentOf(node: WindowNode): AgentKind | null {
   return (node.data as Partial<TerminalWindowData> | null)?.agent ?? null;
 }
 
+/** 跑的是 agent（claude、codex、kimi……），不是 shell 或自定义命令。只有 agent 终端有 Auto-approve（IS-68）。 */
+export function isAgentTerminal(node: WindowNode): boolean {
+  const agent = agentOf(node);
+  return agent !== null && agent !== 'shell' && agent !== 'custom';
+}
+
 /** 终端创建后工作目录就固定了，不能换框（需求「5 · 终端窗口」）。其他窗口可以换框。 */
 export function isPinnedToWorkspace(node: WindowNode): boolean {
   return isTerminal(node);

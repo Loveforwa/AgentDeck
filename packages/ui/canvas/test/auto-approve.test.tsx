@@ -135,9 +135,19 @@ describe('PL0 plugin entry in the context menus', () => {
     const k = item(windowMenu(c, kimi), 'Auto-approve');
     expect(k.disabled).toBe(true);
     expect(k.hint).toBe('Not supported for kimi yet');
-    const shell = item(windowMenu(c, 'win-dev-server' as WindowId), 'Auto-approve');
-    expect(shell.disabled).toBe(true);
-    expect(shell.hint).toBe('Not supported for shell');
+    // IS-68：shell、自定义命令根本没有 Auto-approve 这一项（不是灰掉）；Usage 还在，照常灰掉
+    const shellMenu = windowMenu(c, 'win-dev-server' as WindowId);
+    const shellLabels = shellMenu.map((i) => (i.type === 'separator' ? '-' : i.label));
+    expect(shellLabels).not.toContain('Auto-approve');
+    expect(shellLabels).toContain('PLUGINS');
+    expect(item(shellMenu, 'Usage')).toMatchObject({ disabled: true, hint: 'Not supported for shell' });
+    const custom = c.addWindow<Partial<TerminalWindowData>>({
+      type: 'terminal',
+      workspaceId: W.agentdeckLogin,
+      rect: { x: 1300, y: 1000, w: 400, h: 300 },
+      data: { terminalId: 'term-custom' as TerminalId, agent: 'custom', cmd: 'htop', args: [], cwd: '/tmp' },
+    });
+    expect(windowMenu(c, custom).map((i) => (i.type === 'separator' ? '-' : i.label))).not.toContain('Auto-approve');
     const browser = windowMenu(c, 'win-browser' as WindowId).map((i) => (i.type === 'separator' ? '-' : i.label));
     expect(browser).not.toContain('PLUGINS');
     c.dispose();
@@ -288,6 +298,44 @@ describe('PL1 bookmark, frame tag, history', () => {
     expect(bookmark(CODEX)).not.toBeNull();
     // 别的框里的终端没有
     expect(bookmark('win-shop-claude' as WindowId)).toBeNull();
+  });
+
+  it('IS-68: frame on only covers the agents inside — shells never get a bookmark, a check or a since', async () => {
+    const { api, c } = setup();
+    await waitFor(() => expect(c.state.loaded).toBe(true));
+    await waitFor(() => expect(c.approvals.state.support).not.toBeNull());
+    const SHOP_SHELL = 'win-shop-shell' as WindowId;
+    const SHOP_CLAUDE = 'win-shop-claude' as WindowId;
+    const kimi = c.addWindow<Partial<TerminalWindowData>>({
+      type: 'terminal',
+      workspaceId: W.shopCart,
+      rect: { x: 1300, y: 1400, w: 400, h: 300 },
+      data: { terminalId: 'term-shop-kimi' as TerminalId, agent: 'kimi', cmd: 'kimi', args: [], cwd: '/tmp' },
+    });
+    await act(() => api.approvals.setAutoApprove(W.shopCart, true));
+    // 服务的开关状态按框算，shell 也在框里
+    await waitFor(() => expect(c.approvals.frameOn(W.shopCart)).toBe(true));
+    await waitFor(() => expect(bookmark(SHOP_CLAUDE)).not.toBeNull());
+    expect(bookmark(SHOP_SHELL)).toBeNull();
+    // kimi 是 agent 但不能自动批准：框上开着也不挂书签（菜单里照常灰掉）
+    expect(bookmark(kimi)).toBeNull();
+    expect(item(windowMenu(c, kimi), 'Auto-approve')).toMatchObject({ disabled: true, checked: false, hint: 'Not supported for kimi yet' });
+    const shellNode = c.windowById(SHOP_SHELL)!;
+    expect(c.approvals.windowOn(shellNode)).toBe(false);
+    expect(c.approvals.since(shellNode)).toBeNull();
+    expect(c.approvals.windowOn(c.windowById(kimi)!)).toBe(false);
+    expect(c.approvals.since(c.windowById(SHOP_CLAUDE)!)).not.toBeNull();
+    // 服务说 shell 在等你（假如它报了）：也不挂 Needs you
+    act(() => {
+      const request = api.scenario.agentNeedsApproval(T.shopShell, { command: 'rm -rf dist' });
+      api.bus.emit({ type: 'approval.needs-you', terminalId: T.shopShell, reason: 'unsupported', request });
+    });
+    expect(bookmark(SHOP_SHELL)).toBeNull();
+    expect(c.approvals.needsYouOf(shellNode)).toBeNull();
+    // 单独设置也一样：存着的 true 不让 shell 挂书签
+    await act(() => api.approvals.setTerminalAutoApprove(T.shopShell, true).catch(() => undefined));
+    expect(bookmark(SHOP_SHELL)).toBeNull();
+    expect(windowMenu(c, SHOP_SHELL).map((i) => (i.type === 'separator' ? '-' : i.label))).not.toContain('Auto-approve');
   });
 
   it('Approval history lists records newest first with terminal, request and who approved', async () => {

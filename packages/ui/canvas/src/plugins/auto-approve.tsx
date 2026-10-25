@@ -1,5 +1,6 @@
 // Auto-approve 插件（PL1，设计画布“插件能力”页 PluginApprove，规则见 docs/plugins.md）。
-// 贴在终端上（claude、codex、omp、pi；kimi 暂不支持）或整个工作区框上（框里的终端，包括之后新开的）。
+// 贴在 agent 终端上（claude、codex、omp、pi；kimi 暂不支持，灰掉）或整个工作区框上（框里的 agent 终端，包括之后新开的）。
+// shell、自定义命令的终端没有这一项，也从不挂书签，框上开着也不算它们（IS-68，ApprovalsModel.canAutoApprove）。
 // 标记：终端底边左侧垂下的红色小书签 “Auto-approve”；要你自己处理时临时变橙 “Needs you”，悬停写原因；
 // 每次自动批准闪一下；点它弹出小卡片（从几点开着、最近批准了什么、Approval history…、Turn off）。
 // 框上开着时框标题里一个红色小标签 “Auto-approve”。
@@ -8,7 +9,7 @@ import { useRef } from 'react';
 import { WAITING_STATUSES } from '@agentdeck/contracts';
 import type { WindowId, WorkspaceId } from '@agentdeck/contracts';
 import { Button, Popover } from '@agentdeck/ui-kit';
-import type { AutoApproveTarget } from '../approvals/model.ts';
+import { AUTO_APPROVE_AGENTS, type AutoApproveTarget } from '../approvals/model.ts';
 import { clockTime, needsYouReasonText } from '../approvals/text.ts';
 import type { BoardController } from '../controller.ts';
 import { agentOf, terminalIdOf } from '../model/windows.ts';
@@ -23,8 +24,9 @@ export const autoApprovePlugin: PluginDefinition = {
   id: 'auto-approve',
   label: 'Auto-approve',
   attachesTo: ['terminal', 'frame'],
+  agentsOnly: true,
   // 真正能不能开以服务的 autoApproveSupport() 为准（availability 里查）；这是取不到时的兜底
-  agents: ['claude', 'codex', 'omp', 'pi'],
+  agents: AUTO_APPROVE_AGENTS,
   availability: (c, t) => c.approvals.availability(toTarget(t)),
   isOn: (c, t) => c.approvals.isOn(toTarget(t)),
   toggle: (c, t) => c.approvals.toggle(toTarget(t)),
@@ -166,7 +168,7 @@ export function AutoApproveFrameTag({ workspaceId }: { workspaceId: WorkspaceId 
     <span
       className="ad-plugin-tag ad-auto-approve-tag"
       data-plugin="auto-approve"
-      title={`Auto-approve is on for this workspace${since ? ` · since ${clockTime(since)}` : ''}`}
+      title={`Auto-approve is on for the agents in this workspace${since ? ` · since ${clockTime(since)}` : ''}`}
     >
       Auto-approve
     </span>
