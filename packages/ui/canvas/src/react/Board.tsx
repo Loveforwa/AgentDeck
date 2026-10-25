@@ -72,11 +72,34 @@ export function Board() {
   useEffect(() => {
     const el = wrapper.current;
     if (!el) return;
-    const measure = () => c.setPane({ w: el.clientWidth, h: el.clientHeight });
+    // 面板浮在白板右边（canvas.css）：白板能用的宽度减掉面板占的部分（面板左边到白板右边）
+    const panelOf = () => el.parentElement?.querySelector<HTMLElement>(':scope > .ad-panel, :scope > .ad-panel-rail') ?? null;
+    const measure = () => {
+      const panel = panelOf();
+      const inset = panel ? Math.max(0, Math.round(el.getBoundingClientRect().right - panel.getBoundingClientRect().left)) : 0;
+      el.style.setProperty('--pane-inset-right', `${inset}px`);
+      c.setPane({ w: Math.max(0, el.clientWidth - inset), h: el.clientHeight });
+    };
     measure();
-    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
-    ro?.observe(el);
-    return () => ro?.disconnect();
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    // 面板收起、展开时换成另一个元素，拖宽度时变宽：跟着换要量的元素
+    let watched = panelOf();
+    if (watched) ro.observe(watched);
+    const mo = typeof MutationObserver === 'undefined' ? null : new MutationObserver(() => {
+      const now = panelOf();
+      if (now === watched) return;
+      if (watched) ro.unobserve(watched);
+      watched = now;
+      if (watched) ro.observe(watched);
+      measure();
+    });
+    if (el.parentElement) mo?.observe(el.parentElement, { childList: true });
+    return () => {
+      ro.disconnect();
+      mo?.disconnect();
+    };
   }, [c]);
 
   const nodes = useMemo<Node[]>(() => {

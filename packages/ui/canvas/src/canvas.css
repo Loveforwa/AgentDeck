@@ -50,6 +50,7 @@
 }
 
 .ad-workbench-main {
+  position: relative;
   display: flex;
   flex: 1;
   min-height: 0;
@@ -77,6 +78,7 @@
 }
 
 .ad-board .react-flow__attribution {
+  right: var(--pane-inset-right, 0px);
   background: transparent;
   font-size: var(--text-xs);
 }
@@ -133,7 +135,7 @@
 
 .ad-shortcut-hints {
   position: absolute;
-  right: 112px;
+  right: calc(112px + var(--pane-inset-right, 0px));
   bottom: var(--space-sm);
   left: calc(var(--clawd-left) + var(--clawd-range) + var(--space-lg));
   z-index: 4;
@@ -1017,6 +1019,20 @@
   height: 100%;
   overflow: hidden;
   border-radius: inherit;
+}
+
+/*
+ * 面板浮在白板上（和顶栏一样）：白板铺到窗口右边缘，面板四周的空隙里也是白板的点阵，不会露出一圈没有点的底色。
+ * 白板能用的宽度（controller 的 pane）由 Board 量出来时减掉面板占的部分，所以放大、居中、⌘1 都不会算到面板底下；
+ * 量出来的宽度也写成 --pane-inset-right，底部的快捷键提示和 React Flow 水印据此让开面板。
+ */
+.ad-workbench-main > .ad-panel,
+.ad-workbench-main > .ad-panel-rail {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
 }
 
 /* 收起后的竖条（MVP v2 · V4） */
