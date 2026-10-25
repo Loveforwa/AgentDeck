@@ -341,13 +341,13 @@ CASES = [
          rel=''),
 
     # ---- 未实现（P1 功能）----
-    dict(id='TC-14', p='P2', status='未实现',
+    dict(id='TC-14', p='P2', status='已验证',
          scene='重启电脑后恢复上次的工作区和 agent 对话',
          pre='电脑重启过（或 tmux kill-server 模拟）',
          steps='1. 打开应用\n2. 在 “Restore your last session?” 里选 Restore all',
          expect='UI：弹出恢复提示；恢复后工作区和窗口在原位，claude 接回原来的对话，Shell 在原目录打开并填好命令。\n后台：按记录的会话 id 运行 claude --resume <id>、codex resume <id>。',
          result='重启不丢上下文',
-         issue='属于 MVP 完整版（M4 · X6），还没做',
+         issue='已做（X6，0480c99）：2026-10-25 Claude 在隔离实例里验收通过：杀掉 tmux 后重开，弹出 “Restore your last session?”（10 terminals in 5 workspaces: 2 agents and 8 shells），Restore all 后 claude、codex 接回原来的对话，shell 在原目录打开，setup 那个 shell 的命令填在输入行里没运行。新增的 shell 命令记录（上次跑的命令）只对 X6 之后跑过的命令有效',
          rel='IS-35'),
 ]
 
@@ -438,6 +438,7 @@ ISSUES = [
 # 用户在验收报告网页上填的验收结果（2026-10-24 从网页数据库同步的快照）。网页打开后以数据库为准；
 # 这里决定生成的网页里每条用例默认在哪一组（等你验收 / 阻塞或不通过 / 已通过）。
 ACCEPTED = {
+    'TC-14': '通过',
     'TC-05': '通过',
     'TC-29': '通过',
     'TC-07': '通过',
@@ -480,6 +481,7 @@ ACCEPTED = {
 
 # 已经处理的问题：处理状态和备注
 RESOLVED = {
+    'IS-35': '2026-10-25 已做（X6，0480c99）：重开时 Restore your last session?，agent 按会话 id 接回，shell 填好命令不运行',
     'IS-68': '2026-10-25 已修（64d67f5）：只有 agent 终端有 Auto-approve；shell、自定义命令菜单里没有这一项、不挂书签，框上开时也只管 agent；kimi 在开着的框里也不挂',
     'IS-69': '2026-10-25 已修（a221001）：Usage 的数字、上下文、额度按各 agent 自己的写法（codex 写 “99% left” 并照它的取整，claude 小写 k/m，pi/omp 一位小数，kimi 1024 进位）',
     'IS-70': '2026-10-25 已修（32f28f9）：BOARD 列表里子 agent 写 “sub-1 · api”，主 agent 写 lead，和侧边栏、标题栏一致',
