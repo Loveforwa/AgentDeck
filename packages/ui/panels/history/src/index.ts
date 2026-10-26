@@ -1,4 +1,4 @@
-export { FIRST_ROWS, HISTORY_REFRESH_MS, HistoryPanel, type HistoryPanelProps } from './HistoryPanel.tsx';
+export { FIRST_ROWS, HISTORY_REFRESH_MS, HistoryPanel, OTHER_OPEN_KEY, type HistoryPanelProps } from './HistoryPanel.tsx';
 export {
   buildHistory,
   LAMP_LABEL,

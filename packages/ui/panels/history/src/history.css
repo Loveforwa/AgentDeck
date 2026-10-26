@@ -132,6 +132,11 @@
   outline-offset: -2px;
 }
 
+.hist-other-row {
+  padding-left: 0;
+  font-weight: var(--weight-strong);
+}
+
 .hist-caret {
   width: 10px;
   color: var(--muted);

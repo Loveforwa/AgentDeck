@@ -1,9 +1,9 @@
 // N11：左边栏历史会话——分组（项目 → 工作路径 → agent）、排序、筛选，以及界面上的行、跳转、Resume、⋯ 菜单、轮询。
 import { act, fireEvent, render, screen, waitFor, within as inside } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Project, ProjectId, SessionSummary, Workspace, WorkspaceId } from '@agentdeck/contracts';
 import { fakeSession } from '@agentdeck/fakes';
-import { HistoryPanel, buildHistory, relativeTime, sessionKey, shortPath, type HistoryPanelProps } from '../src/index.ts';
+import { HistoryPanel, OTHER_OPEN_KEY, buildHistory, relativeTime, sessionKey, shortPath, type HistoryPanelProps } from '../src/index.ts';
 
 const project = (id: string, path: string, name = id): Project => ({
   id: id as ProjectId,
@@ -114,6 +114,8 @@ describe('history · grouping', () => {
 });
 
 describe('history · panel', () => {
+  beforeEach(() => window.localStorage.clear());
+
   function mount(over: Partial<HistoryPanelProps> = {}) {
     const props: HistoryPanelProps = {
       projects: PROJECTS,
@@ -181,7 +183,27 @@ describe('history · panel', () => {
     expect(document.querySelector('.hist-agent-name[data-agent="claude"] .hist-agent-mark')).not.toBeNull();
   });
 
+  it('Other folders starts collapsed with its total, opens on click, and remembers it', async () => {
+    mount();
+    const other = await screen.findByRole('button', { name: /Other folders/ });
+    expect(other.getAttribute('aria-expanded')).toBe('false');
+    expect(other.textContent).toContain('1');
+    expect(screen.queryByRole('group', { name: 'Other folders · /tmp/demo' })).toBeNull();
+    // 搜索时照常展开
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search sessions' }), { target: { value: 'hello' } });
+    await waitFor(() => expect(screen.getByRole('group', { name: 'Other folders · /tmp/demo' })).toBeTruthy());
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search sessions' }), { target: { value: '' } });
+    await waitFor(() => expect(screen.queryByRole('group', { name: 'Other folders · /tmp/demo' })).toBeNull());
+    fireEvent.click(other);
+    expect(screen.getByRole('group', { name: 'Other folders · /tmp/demo' })).toBeTruthy();
+    expect(window.localStorage.getItem(OTHER_OPEN_KEY)).toBe('1');
+    fireEvent.click(other);
+    expect(screen.queryByRole('group', { name: 'Other folders · /tmp/demo' })).toBeNull();
+    expect(window.localStorage.getItem(OTHER_OPEN_KEY)).toBe('0');
+  });
+
   it('kimi cannot fork', async () => {
+    window.localStorage.setItem(OTHER_OPEN_KEY, '1');
     mount({ onBoard: new Set() });
     await waitFor(() => expect(screen.getByRole('group', { name: 'Other folders · /tmp/demo' })).toBeTruthy());
     fireEvent.click(inside(screen.getByRole('group', { name: 'Other folders · /tmp/demo' })).getByRole('button', { expanded: false }));
