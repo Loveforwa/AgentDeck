@@ -14,6 +14,8 @@ import { detectCommand, NO_CAPABILITIES } from './types.ts';
 const MIN_HOOKS_VERSION = '2.0.0';
 /** StopFailure（API 出错结束一轮）是较新的事件，老版本遇到不认识的事件名可能整份 settings 作废，所以按版本加。粗略下限。 */
 const MIN_STOP_FAILURE_VERSION = '2.1.0';
+/** SubagentStart / SubagentStop（N10 后台 agent）。2.1.291 实测有；确知更老的版本不带（没核对过，免得认不出的钩子让设置报错）。不知道版本时照 atLeast 的规矩按新版带上。 */
+const MIN_SUBAGENT_HOOKS_VERSION = '2.1.0';
 
 /** PermissionRequest 等 AgentDeck 回答；notify 自己 2 秒超时，这里给 claude 的上限留点余量（秒）。 */
 const PERMISSION_HOOK_TIMEOUT_S = 5;
@@ -98,10 +100,14 @@ export class ClaudeAdapter implements AgentAdapterExt {
   }
 }
 
-/** 注入的钩子事件。PostToolUse 用来在批准、回答之后回到 running；它是同步的，保证比同一轮的 Stop 先到。 */
+/**
+ * 注入的钩子事件。PostToolUse 用来在批准、回答之后回到 running；它是同步的，保证比同一轮的 Stop 先到。
+ * SubagentStart / SubagentStop 只给后台 agent 模块（N10）用，状态机不认它们。
+ */
 export function claudeHookEvents(version: string | null): string[] {
   const events = ['SessionStart', 'UserPromptSubmit', 'PermissionRequest', 'PostToolUse', 'Notification', 'Stop', 'SessionEnd'];
   if (atLeast(version, MIN_STOP_FAILURE_VERSION)) events.push('StopFailure');
+  if (atLeast(version, MIN_SUBAGENT_HOOKS_VERSION)) events.push('SubagentStart', 'SubagentStop');
   return events;
 }
 

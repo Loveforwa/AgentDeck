@@ -7,7 +7,9 @@ import type { Rect, WindowGroupId, WindowNode } from '@agentdeck/contracts';
 import { Button } from '@agentdeck/ui-kit';
 import type { BoardController } from '../controller.ts';
 import { LAMP_LABEL, groupView, lampOf, listGroups, memberName, sidebarRect } from '../model/groups.ts';
+import { terminalIdOf } from '../model/windows.ts';
 import { WINDOW_NODE_CLASS } from '../model/gestures.ts';
+import { BackgroundAgentRows } from './Background.tsx';
 import { useBoardState, useController } from './context.tsx';
 import '../group-sidebar.css';
 
@@ -52,11 +54,18 @@ export function GroupSidebar({ groupId }: { groupId: WindowGroupId }) {
   const statuses = useBoardState((s) => s.statuses);
   const badges = useBoardState((s) => s.badges);
   const focusedId = useBoardState((s) => s.focusedId);
+  const panels = useBoardState((s) => s.backgroundPanels);
+  const backgroundAgents = useBoardState((s) => s.backgroundAgents);
   const g = listGroups(windows).find((x) => x.id === groupId);
   if (!g) return null;
   const view = groupView(g);
-  const n = g.members.length;
-  const selectedId = view.mode === 'one' ? view.shown : view.mode === 'all' ? focusedId : null;
+  // N10：lead 的后台 agent 面板开着时，BACKGROUND 一组并进这一列
+  const panel = panels[g.lead.id];
+  const leadTid = terminalIdOf(g.lead);
+  const bg = panel && leadTid ? (backgroundAgents[leadTid] ?? []) : [];
+  const n = g.members.length + bg.length;
+  const bgSelected = panel?.selected ?? null;
+  const selectedId = bgSelected ? null : view.mode === 'one' ? view.shown : view.mode === 'all' ? focusedId : null;
   return (
     <div
       className="ad-group-sidebar nopan nodrag nowheel"
@@ -66,7 +75,8 @@ export function GroupSidebar({ groupId }: { groupId: WindowGroupId }) {
       onContextMenu={(e) => e.preventDefault()}
     >
       <div className="ad-group-sidebar-head">{n === 1 ? '1 subagent' : `${n} subagents`}</div>
-      <ul className="ad-group-sidebar-rows" aria-label="Subagents">
+      {bg.length > 0 ? <div className="ad-bg-section">TERMINALS</div> : null}
+      <ul className={bg.length > 0 ? 'ad-group-sidebar-rows ad-bg-rows' : 'ad-group-sidebar-rows'} aria-label="Subagents">
         {g.members.map((m) => {
           const lamp = lampOf(m, statuses, badges);
           const selected = m.id === selectedId;
@@ -91,6 +101,12 @@ export function GroupSidebar({ groupId }: { groupId: WindowGroupId }) {
           );
         })}
       </ul>
+      {bg.length > 0 ? (
+        <>
+          <div className="ad-bg-section">BACKGROUND · READ-ONLY</div>
+          <BackgroundAgentRows windowId={g.lead.id} agents={bg} selected={bgSelected} />
+        </>
+      ) : null}
       <div className="ad-group-sidebar-actions">
         <Button size="sm" variant="ghost" disabled={view.mode === 'all'} onClick={() => c.showAllGroup(groupId)}>
           Show all

@@ -65,6 +65,17 @@ export {
 } from './usage/index.ts';
 export type { KimiQuery, Located, ParsedUsage, UsageParser, UsageRoots, UsageServiceOptions, UsageTarget } from './usage/index.ts';
 export {
+  ClaudeTranscriptParser,
+  claudeSubagentFile,
+  isClaudeSyntheticPrompt,
+  parseClaudeBackgroundTasks,
+  parseClaudeSubagentMeta,
+  parseClaudeTaskNotification,
+  SUBAGENT_AGENTS,
+  SubagentServiceImpl,
+} from './subagents/index.ts';
+export type { SubagentServiceOptions } from './subagents/index.ts';
+export {
   AGENTDECK_MCP_ID,
   agentdeckMcpItem,
   builtinSkillFiles,

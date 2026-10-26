@@ -29,6 +29,8 @@ export type { FakeApprovalServiceOptions, FakeStatusServiceOptions, TrackedTermi
 export { FakeUsageService, emptyUsage } from './usage-service.ts';
 export type { FakeUsageServiceOptions } from './usage-service.ts';
 export { FAKE_BUILTIN, FakeSkillsService } from './skills-service.ts';
+export { FakeSubagentService, fakeBackgroundAgent } from './subagent-service.ts';
+export type { FakeSubagentServiceOptions } from './subagent-service.ts';
 export type { FakeSkillsServiceOptions } from './skills-service.ts';
 export { Scenario, createFakeApi, createFakeServices, defaultRecordingFor } from './api.ts';
 export type { CreateFakeApiOptions, FakeApi, FakeServices } from './api.ts';

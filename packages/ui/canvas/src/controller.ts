@@ -1,7 +1,7 @@
 // BoardController：白板的全部行为。React 组件只负责画和把手势交给它；它只通过 window.agentdeck（AgentDeckApi）调服务。
 // 不依赖 React，测试里直接拿 createFakeApi() 跑。
 
-import type { AgentDeckApi, AgentDeckErrorData, AgentKind, BoardState, LaunchMode, CreateWorkspaceRequest, ErrorCode, FrameNode, OpenWindowRequest, ProjectId, ProjectPatch, Rect, Settings, Size, TerminalId, TerminalWindowData, Unsubscribe, Viewport, WindowCommand, WindowGroupId, WindowGroupMemberRequest, WindowId, WindowNode, WindowStatusBadge, Workspace, WorkspaceId } from '@agentdeck/contracts';
+import type { AgentDeckApi, AgentDeckErrorData, BackgroundAgent, AgentKind, BoardState, LaunchMode, CreateWorkspaceRequest, ErrorCode, FrameNode, OpenWindowRequest, ProjectId, ProjectPatch, Rect, Settings, Size, TerminalId, TerminalWindowData, Unsubscribe, Viewport, WindowCommand, WindowGroupId, WindowGroupMemberRequest, WindowId, WindowNode, WindowStatusBadge, Workspace, WorkspaceId } from '@agentdeck/contracts';
 import { TITLE_BAR_HEIGHT, resizeRect, type ResizeEdge } from '@agentdeck/ui-window-shell';
 import { isSummarySize, windowRegistry, type WindowDefinition, type WindowRegistry } from './registry.ts';
 import { ApprovalsModel } from './approvals/model.ts';
@@ -254,6 +254,8 @@ export class BoardController {
       api.on('board.open-group', (e) => void this.openGroupFromService(e.lead, e.members, e.highlight)),
       api.on('board.focus-window', (e) => this.focusFromService(e.target)),
       api.on('board.notify', (e) => this.notifyFromService(e.from, e.message)),
+      // N10：agent 自带的后台子 agent
+      api.on('subagents.changed', (e) => this.setBackgroundAgents(e.agents.terminalId, e.agents.agents)),
       // X6：tmux 服务没了（被结束、崩了）：窗口都显示 Session ended，问一次要不要全部恢复
       api.on('terminal.host-lost', () => void this.checkRestore()),
     );
@@ -292,6 +294,13 @@ export class BoardController {
       loaded: true,
     }));
     this.separateOverlappingFrames();
+    // N10：界面重开时主进程里已经有的后台 agent（之后靠 subagents.changed）
+    void api.subagents
+      .list()
+      .then((all) => {
+        for (const t of all) if (!this.state.backgroundAgents[t.terminalId]) this.setBackgroundAgents(t.terminalId, t.agents);
+      })
+      .catch(() => undefined);
     // X6：Stop all and quit、电脑重启之后，保存的窗口还在、进程没了。不等它，白板先画出来
     void this.checkRestore();
   }
@@ -1305,6 +1314,78 @@ export class BoardController {
     return ids;
   }
 
+  // ---- 后台 agent（N10） ----
+
+  private setBackgroundAgents(terminalId: TerminalId, agents: BackgroundAgent[]): void {
+    this.set((s) => {
+      const backgroundAgents = { ...s.backgroundAgents };
+      if (agents.length > 0) backgroundAgents[terminalId] = agents;
+      else delete backgroundAgents[terminalId];
+      // 一个都没有了（终端关了、agent 退出了）：它的面板也收起
+      let backgroundPanels = s.backgroundPanels;
+      if (agents.length === 0) {
+        const gone = s.windows.filter((w) => terminalIdOf(w) === terminalId && s.backgroundPanels[w.id]).map((w) => w.id);
+        if (gone.length > 0) {
+          backgroundPanels = { ...s.backgroundPanels };
+          for (const id of gone) delete backgroundPanels[id];
+        }
+      } else {
+        // 选中的那个不在了：只收起记录窗口
+        for (const w of s.windows) {
+          const p = s.backgroundPanels[w.id];
+          if (p?.selected && terminalIdOf(w) === terminalId && !agents.some((a) => a.id === p.selected)) {
+            backgroundPanels = { ...backgroundPanels, [w.id]: { selected: null } };
+          }
+        }
+      }
+      return { backgroundAgents, backgroundPanels };
+    });
+  }
+
+  /** 这个主终端的后台 agent（按开始的先后）。不是终端、没有时为空。 */
+  backgroundAgentsOf(windowId: WindowId): BackgroundAgent[] {
+    const w = this.windowById(windowId);
+    const tid = w ? terminalIdOf(w) : null;
+    return tid ? (this.state.backgroundAgents[tid] ?? []) : [];
+  }
+
+  /** 点小提示：面板开着就收起，收着就打开。 */
+  toggleBackgroundPanel(windowId: WindowId): void {
+    if (this.state.backgroundPanels[windowId]) this.closeBackgroundPanel(windowId);
+    else this.openBackgroundPanel(windowId);
+  }
+
+  /** 打开后台 agent 的侧边栏（右键菜单的 Background agents… 也走这里）。 */
+  openBackgroundPanel(windowId: WindowId): void {
+    if (!this.windowById(windowId) || this.state.backgroundPanels[windowId]) return;
+    this.set((s) => ({ backgroundPanels: { ...s.backgroundPanels, [windowId]: { selected: null } } }));
+  }
+
+  closeBackgroundPanel(windowId: WindowId): void {
+    if (!this.state.backgroundPanels[windowId]) return;
+    this.set((s) => {
+      const backgroundPanels = { ...s.backgroundPanels };
+      delete backgroundPanels[windowId];
+      return { backgroundPanels };
+    });
+  }
+
+  /**
+   * 侧边栏单击一个后台 agent：右边打开它的记录（只读），再点一次收起。主终端是窗口组的 lead 时，
+   * 记录窗口占的是子终端的停靠处，所以先把子终端收起（Collapse group，进程照常运行）。
+   */
+  selectBackgroundAgent(windowId: WindowId, agentId: string): void {
+    const panel = this.state.backgroundPanels[windowId] ?? { selected: null };
+    const selected = panel.selected === agentId ? null : agentId;
+    const g = groupOf(this.state.windows, windowId);
+    this.set((s) => ({
+      backgroundPanels: { ...s.backgroundPanels, [windowId]: { selected } },
+      ...(selected && g && g.lead.id === windowId && groupView(g).mode !== 'collapsed'
+        ? { windows: setGroupView(s.windows, g.id, { mode: 'collapsed' }) }
+        : {}),
+    }));
+  }
+
   // ---- 窗口组的侧边栏（N2） ----
 
   /** 侧边栏单击一行：只显示这个子终端（贴在侧边栏右边），其余收起；跳过去并聚焦。 */
@@ -1324,7 +1405,13 @@ export class BoardController {
       const windows = setGroupView(s.windows, g.id, { mode: 'one', shown: id }).map((w) =>
         w.id === id && dock ? { ...w, rect: { ...w.rect, x: slot.x, y: slot.y } } : w,
       );
-      return { windows, focusedId: s.focusedId && s.focusedId !== id && hiddenMembers(windows).has(s.focusedId) ? null : s.focusedId };
+      // N10：停靠处换成子终端，后台 agent 的记录窗口收起
+      const panel = s.backgroundPanels[g.lead.id];
+      return {
+        windows,
+        focusedId: s.focusedId && s.focusedId !== id && hiddenMembers(windows).has(s.focusedId) ? null : s.focusedId,
+        ...(panel?.selected ? { backgroundPanels: { ...s.backgroundPanels, [g.lead.id]: { selected: null } } } : {}),
+      };
     });
     this.settleGroup(g.id);
   }

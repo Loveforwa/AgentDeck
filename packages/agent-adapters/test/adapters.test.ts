@@ -120,12 +120,15 @@ describe('ClaudeAdapter', () => {
       'Stop',
       'SessionEnd',
       'StopFailure',
+      'SubagentStart',
+      'SubagentStop',
     ]);
     expect(hooks.Stop).toEqual([
       { hooks: [{ type: 'command', command: `'${NOTIFY}' claude Stop`, timeout: 3 }] },
     ]);
     expect((hooks.PermissionRequest as { hooks: { timeout: number }[] }[])[0]!.hooks[0]!.timeout).toBe(5);
     expect(Object.keys(claudeHookSettings(NOTIFY, '2.0.5').hooks)).not.toContain('StopFailure');
+    expect(Object.keys(claudeHookSettings(NOTIFY, '2.0.5').hooks)).not.toContain('SubagentStart');
   });
 
   it('parses the real hook payloads', () => {

@@ -129,6 +129,10 @@ export function menuItems(c: BoardController, menu: MenuState, available: { term
         );
       }
       items.push(...plugins({ kind: 'window', windowId: id }));
+      // N10：agent 自带的后台子 agent（小提示消失以后也能从这里打开）
+      if (c.backgroundAgentsOf(id).length > 0) {
+        items.push({ id: 'background-agents', label: 'Background agents…', onSelect: () => c.openBackgroundPanel(id) });
+      }
       if (isTerminal(w)) {
         const data = w.data as Partial<TerminalWindowData>;
         const others = s.frames.filter((f) => f.workspaceId !== w.workspaceId);

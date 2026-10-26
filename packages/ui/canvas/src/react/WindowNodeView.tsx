@@ -10,6 +10,7 @@ import { useBoardState, useController, useWindowType } from './context.tsx';
 import { WindowStopConfirm } from './dialogs.tsx';
 import { metaHeld } from './Guides.tsx';
 import { passWheelToContent } from './gestures.ts';
+import { BackgroundHint } from './Background.tsx';
 import { WindowPluginMarks } from './PluginMarks.tsx';
 
 export type WindowNodeData = { id: WindowId };
@@ -139,6 +140,8 @@ export function WindowNodeView({ data }: NodeProps & { data: WindowNodeData }) {
       </WindowShell>
       {/* 插件的标记（PL0）：贴在外框外面（Auto-approve 的书签在底边左侧），不盖住内容 */}
       <WindowPluginMarks windowId={id} />
+      {/* N10：有后台 agent 时底边右侧的小提示 */}
+      <BackgroundHint windowId={id} />
     </div>
   );
 }
