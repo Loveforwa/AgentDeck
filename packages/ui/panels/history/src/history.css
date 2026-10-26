@@ -40,7 +40,7 @@
   flex: none;
   flex-direction: column;
   gap: var(--space-xs);
-  padding: var(--space-sm) var(--space-sm) var(--space-xs);
+  padding: var(--space-sm);
   border-bottom: 1px solid var(--line-subtle);
 }
 
@@ -59,29 +59,6 @@
 .hist-search:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: -1px;
-}
-
-.hist-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2xs);
-}
-
-.hist-chip {
-  height: 18px;
-  padding: 0 7px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--muted);
-  font-size: var(--text-xs);
-  cursor: pointer;
-}
-
-.hist-chip[aria-pressed='true'] {
-  border-color: var(--ink);
-  background: var(--ink);
-  color: var(--on-ink);
 }
 
 .hist-mono {
@@ -150,7 +127,6 @@
 .hist-path-row:focus-visible,
 .hist-row-main:focus-visible,
 .hist-more:focus-visible,
-.hist-chip:focus-visible,
 .hist-btn:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: -2px;
@@ -177,11 +153,43 @@
 }
 
 .hist-agent-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   padding: var(--space-2xs) var(--space-xs) 0 28px;
-  color: var(--muted);
+  color: var(--agent-color, var(--muted));
   font-size: 10px;
   font-weight: var(--weight-strong);
   letter-spacing: 0.04em;
+}
+
+/* agent 的身份色：小方块（圆点是状态灯，不混） */
+.hist-agent-mark {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  background: var(--agent-color, var(--muted));
+}
+
+.hist-agent-name[data-agent='claude'] {
+  --agent-color: var(--agent-claude);
+}
+
+.hist-agent-name[data-agent='codex'] {
+  --agent-color: var(--agent-codex);
+}
+
+.hist-agent-name[data-agent='pi'] {
+  --agent-color: var(--agent-pi);
+}
+
+.hist-agent-name[data-agent='omp'] {
+  --agent-color: var(--agent-omp);
+}
+
+.hist-agent-name[data-agent='kimi'] {
+  --agent-color: var(--agent-kimi);
 }
 
 .hist-rows {

@@ -162,7 +162,7 @@ describe('history · panel', () => {
     expect(props.onCopyId).toHaveBeenCalledWith(expect.objectContaining({ id: 'c2' }));
   });
 
-  it('expands a collapsed path, searches, filters by agent, and shows more than five', async () => {
+  it('expands a collapsed path, searches, marks each agent, and shows more than five', async () => {
     const many = Array.from({ length: 7 }, (_, i) => fakeSession({ id: `m${i}`, agent: 'claude', cwd: '/work/api', title: `Task ${i}`, updatedAt: at(i) }));
     mount({ load: async () => [...SESSIONS, ...many] });
     await waitFor(() => expect(row('claude', 'c1')).not.toBeNull());
@@ -176,10 +176,9 @@ describe('history · panel', () => {
     fireEvent.change(screen.getByRole('searchbox', { name: 'Search sessions' }), { target: { value: 'oauth' } });
     await waitFor(() => expect(row('claude', 'c3')).not.toBeNull());
     expect(row('claude', 'c1')).toBeNull();
-    fireEvent.change(screen.getByRole('searchbox', { name: 'Search sessions' }), { target: { value: '' } });
-    fireEvent.click(screen.getByRole('button', { name: 'codex' }));
-    await waitFor(() => expect(row('claude', 'c1')).toBeNull());
-    expect(row('codex', 'x1')).not.toBeNull();
+    // 没有按 agent 筛选的一栏（2026-10-26 用户去掉了），agent 靠小标题的颜色区分
+    expect(screen.queryByRole('group', { name: 'Filter by agent' })).toBeNull();
+    expect(document.querySelector('.hist-agent-name[data-agent="claude"] .hist-agent-mark')).not.toBeNull();
   });
 
   it('kimi cannot fork', async () => {

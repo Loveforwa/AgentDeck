@@ -4,7 +4,7 @@ AgentDeck 的样子只在这里定：颜色（亮 / 暗两套）、字体、字�
 
 ## 方向（别换）
 
-- 暖灰加墨黑。颜色只表达状态（MVP v2 · V2 红绿灯）：`--status-running` 绿（运行中，也是 Running 的文字色）、`--status-waiting` 黄（等你的灯和窗口边框）、`--attention` 黄色系文字（Waiting、需要你处理、会丢东西的风险提示）、`--status-error` 红（出错，也是 Error 的文字色）。状态灯是图形，和底色对比至少 3:1；文字 4.5:1，测试里都有。另外 `--guide` 蓝色只给白板拖动时临时出现的对齐线和间距、尺寸标注（MVP v2 · V3）；`--plugin-auto-approve`（红底，字用 `--plugin-auto-approve-fg`）只给 Auto-approve 插件的标记（终端底边的书签、框标题的小标签，PL1，见 docs/plugins.md），书签“需要你处理”时改用 `--attention` / `--on-attention`。其他地方不用彩色。
+- 暖灰加墨黑。颜色只表达状态（MVP v2 · V2 红绿灯）：`--status-running` 绿（运行中，也是 Running 的文字色）、`--status-waiting` 黄（等你的灯和窗口边框）、`--attention` 黄色系文字（Waiting、需要你处理、会丢东西的风险提示）、`--status-error` 红（出错，也是 Error 的文字色）。状态灯是图形，和底色对比至少 3:1；文字 4.5:1，测试里都有。另外 `--guide` 蓝色只给白板拖动时临时出现的对齐线和间距、尺寸标注（MVP v2 · V3）；`--plugin-auto-approve`（红底，字用 `--plugin-auto-approve-fg`）只给 Auto-approve 插件的标记（终端底边的书签、框标题的小标签，PL1，见 docs/plugins.md），书签“需要你处理”时改用 `--attention` / `--on-attention`。`--agent-claude` `--agent-codex` `--agent-pi` `--agent-omp` `--agent-kimi` 是各 code agent 的身份色（2026-10-26 用户定），只用在区分 agent 的小标记上（左边栏的 agent 小标题），不表示状态；色相和明暗都和状态色、Auto-approve 的红、对齐线的蓝错开，作文字过 4.5:1（测试里有）。其他地方不用彩色。
 - 不用渐变、发光、毛玻璃、emoji。用 1px 线分隔；只有浮起来的东西（菜单、弹出框、对话框、提示、拖动中的窗口）有 `--shadow-float`。
 - 字号只有 11 / 12 / 13 / 15；圆角控件 6、窗口 8、菜单和对话框 8、右侧面板 10、工作区框 12（`--radius-inset` 4 只给嵌在圆角容器里的高亮）；界面上不留直角（MVP v2 · V1）。
 - 动效一种：`--motion`（140ms 减速曲线），系统开了减少动效时时长为 0。

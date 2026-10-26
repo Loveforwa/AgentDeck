@@ -66,6 +66,12 @@ describe.each([
     ['guide', 'surface'],
     // 插件标记（PL1 书签 “Auto-approve”，9.5px 字）
     ['pluginAutoApproveFg', 'pluginAutoApprove'],
+    // agent 身份色作文字（左边栏的 agent 小标题）
+    ...(['agentClaude', 'agentCodex', 'agentPi', 'agentOmp', 'agentKimi'] as const).flatMap((k) => [
+      [k, 'surface'] as [keyof ThemeColors, keyof ThemeColors],
+      [k, 'raised'] as [keyof ThemeColors, keyof ThemeColors],
+      [k, 'hover'] as [keyof ThemeColors, keyof ThemeColors],
+    ]),
   ];
   it.each(textPairs)('%s on %s >= 4.5', (fg, bg) => {
     expect(contrast(t[fg], t[bg])).toBeGreaterThanOrEqual(4.5);

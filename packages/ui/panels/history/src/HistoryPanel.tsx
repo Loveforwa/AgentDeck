@@ -13,7 +13,6 @@ export const HISTORY_REFRESH_MS = 15_000;
 /** 每个 agent 先显示几条。 */
 export const FIRST_ROWS = 5;
 
-const AGENTS: AgentKind[] = ['claude', 'codex', 'pi', 'omp', 'kimi'];
 /** 不能 fork 的 agent（X4：kimi 没有 fork 参数）。 */
 const NO_FORK = new Set<AgentKind>(['kimi']);
 
@@ -76,13 +75,11 @@ export function HistoryPanel(props: HistoryPanelProps) {
   const defaultLoad = useCallback(() => window.agentdeck.history.list(), []);
   const { sessions, error } = useSessions(props.load ?? defaultLoad, props.refreshMs ?? HISTORY_REFRESH_MS);
   const [query, setQuery] = useState('');
-  const [agent, setAgent] = useState<AgentKind | null>(null);
-  const filter: HistoryFilter = useMemo(() => ({ query, agent }), [query, agent]);
+  const filter: HistoryFilter = useMemo(() => ({ query, agent: null }), [query]);
   const tree = useMemo(
     () => (sessions ? buildHistory({ sessions, projects, workspaces, onBoard, activeProjectId, filter, home: props.home ?? null }) : []),
     [sessions, projects, workspaces, onBoard, activeProjectId, filter, props.home],
   );
-  const present = useMemo(() => AGENTS.filter((a) => sessions?.some((s) => s.agent === a)), [sessions]);
   // 展开 / 收起记在这里（按工作路径）；没动过的照默认：白板上有框的、在搜索时都展开
   const [toggled, setToggled] = useState<Record<string, boolean>>({});
   const expanded = (p: PathGroup) => toggled[p.key] ?? (query.trim() !== '' || p.onBoard);
@@ -104,23 +101,11 @@ export function HistoryPanel(props: HistoryPanelProps) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
-        {present.length > 1 ? (
-          <div className="hist-chips" role="group" aria-label="Filter by agent">
-            <button type="button" className="hist-chip" aria-pressed={agent === null} onClick={() => setAgent(null)}>
-              All
-            </button>
-            {present.map((a) => (
-              <button key={a} type="button" className="hist-chip hist-mono" aria-pressed={agent === a} onClick={() => setAgent(agent === a ? null : a)}>
-                {a}
-              </button>
-            ))}
-          </div>
-        ) : null}
       </div>
       <div className="hist-body">
         {sessions === null && !error ? <p className="hist-note">Reading sessions…</p> : null}
         {error && sessions === null ? <p className="hist-note">Couldn’t read the session history.</p> : null}
-        {sessions !== null && tree.length === 0 ? <p className="hist-note">{query || agent ? 'No matching sessions.' : 'No sessions yet.'}</p> : null}
+        {sessions !== null && tree.length === 0 ? <p className="hist-note">{query ? 'No matching sessions.' : 'No sessions yet.'}</p> : null}
         {tree.map((p) => (
           <section className="hist-project" key={p.id} aria-label={p.name}>
             <h3 className="hist-project-name" title={p.path ?? undefined}>
@@ -162,7 +147,9 @@ function AgentRows(props: HistoryPanelProps & { path: PathGroup; agent: AgentKin
   const shown = all ? sessions : sessions.slice(0, FIRST_ROWS);
   return (
     <div className="hist-agent" role="group" aria-label={agent}>
-      <div className="hist-agent-name">
+      {/* agent 的身份色（2026-10-26 用户定）：方块标记加小标题的字，和圆形的状态灯分开 */}
+      <div className="hist-agent-name" data-agent={agent}>
+        <span className="hist-agent-mark" aria-hidden="true" />
         {agent.toUpperCase()} · {sessions.length}
       </div>
       <ul className="hist-rows">
