@@ -100,6 +100,8 @@ async function main(): Promise<void> {
     return;
   }
   await app.whenReady();
+  // 开发时（pnpm dev）程序坞里默认是 Electron 的图标：换成和打包版、README 一样的 AgentDeck 图标。打包版用 build-resources/icon.icns
+  if (isDev && process.platform === 'darwin') app.dock?.setIcon(join(app.getAppPath(), 'build-resources', 'icon.png'));
 
   const repoRoot = isDev ? resolve(app.getAppPath(), '../..') : null;
   const paths = resolvePaths({
