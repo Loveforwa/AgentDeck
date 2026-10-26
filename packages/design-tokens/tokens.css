@@ -65,6 +65,11 @@
   --guide: #2563EB;
   --plugin-auto-approve: #CF222E;
   --plugin-auto-approve-fg: #FFFFFF;
+  --agent-claude: #A8503A;
+  --agent-codex: #2F5E9E;
+  --agent-pi: #7347A8;
+  --agent-omp: #0F6F7F;
+  --agent-kimi: #4A4F7A;
   --focus: #1A1A1A;
   --scrim: rgba(26, 26, 26, 0.18);
   --shadow-float: 0 8px 24px rgba(0, 0, 0, 0.08);
@@ -97,6 +102,11 @@
   --guide: #58A6FF;
   --plugin-auto-approve: #DA3633;
   --plugin-auto-approve-fg: #FFFFFF;
+  --agent-claude: #E0896A;
+  --agent-codex: #8FA9CF;
+  --agent-pi: #B99AEB;
+  --agent-omp: #56BFCC;
+  --agent-kimi: #A4A7C4;
   --focus: #EDEDEA;
   --scrim: rgba(0, 0, 0, 0.45);
   --shadow-float: 0 8px 24px rgba(0, 0, 0, 0.32);
@@ -131,6 +141,11 @@
     --guide: #58A6FF;
     --plugin-auto-approve: #DA3633;
     --plugin-auto-approve-fg: #FFFFFF;
+    --agent-claude: #E0896A;
+    --agent-codex: #8FA9CF;
+    --agent-pi: #B99AEB;
+    --agent-omp: #56BFCC;
+    --agent-kimi: #A4A7C4;
     --focus: #EDEDEA;
     --scrim: rgba(0, 0, 0, 0.45);
     --shadow-float: 0 8px 24px rgba(0, 0, 0, 0.32);

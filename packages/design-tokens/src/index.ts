@@ -1,5 +1,7 @@
 // AgentDeck 的样子只在这里定。tokens.css 由 scripts/gen-css.ts 从这个文件生成，不要手改 tokens.css。
-// 方向：暖灰加墨黑；颜色只用来表达状态（MVP v2 · V2 红绿灯）：运行中绿、等你黄（attention）、出错红，其他地方不用彩色；不用渐变、发光、毛玻璃。
+// 方向：暖灰加墨黑；颜色只用来表达状态（MVP v2 · V2 红绿灯）：运行中绿、等你黄（attention）、出错红；
+// 另外每种 code agent 有一个身份色（2026-10-26 用户定），只用在区分 agent 的小标记上（左边栏历史会话的 agent 小标题）。
+// 其他地方不用彩色；不用渐变、发光、毛玻璃。
 // 例外：拖动时临时出现的对齐线用蓝色（guide，MVP v2 · V3，照设计画布画板 11）。
 
 /** 一套主题里所有随明暗变化的值。键名转成 kebab-case 就是 CSS 变量名：lineStrong → --line-strong。 */
@@ -47,6 +49,15 @@ export interface ThemeColors {
   pluginAutoApprove: string;
   /** pluginAutoApprove 底上的字 */
   pluginAutoApproveFg: string;
+  /**
+   * 各 code agent 的身份色（N11 左边栏，2026-10-26 用户定）：只用来区分是哪个 agent（小方块标记、agent 小标题的字），
+   * 不表示状态。和状态色（绿红黄）、Auto-approve 的红、对齐线的蓝分开：色相和明暗都错开，偏灰、不刺眼。作文字时要过 4.5:1。
+   */
+  agentClaude: string;
+  agentCodex: string;
+  agentPi: string;
+  agentOmp: string;
+  agentKimi: string;
   /** 键盘焦点环 */
   focus: string;
   /** 对话框背后的遮罩 */
@@ -86,6 +97,12 @@ export const light: ThemeColors = {
   guide: '#2563EB',
   pluginAutoApprove: '#CF222E',
   pluginAutoApproveFg: '#FFFFFF',
+  // 陶土、深蓝、紫、青、蓝灰：明暗也错开，和绿 / 黄 / 红的状态色、蓝色对齐线分得开
+  agentClaude: '#A8503A',
+  agentCodex: '#2F5E9E',
+  agentPi: '#7347A8',
+  agentOmp: '#0F6F7F',
+  agentKimi: '#4A4F7A',
   focus: '#1A1A1A',
   scrim: 'rgba(26, 26, 26, 0.18)',
   shadowFloat: '0 8px 24px rgba(0, 0, 0, 0.08)',
@@ -119,6 +136,12 @@ export const dark: ThemeColors = {
   // 暗色下 statusError（#F85149）配白字只有 3.4:1，书签的字只有 9.5px，用深一档的红
   pluginAutoApprove: '#DA3633',
   pluginAutoApproveFg: '#FFFFFF',
+  // codex 用偏灰的钢蓝，和暗色的对齐线（#58A6FF）分开
+  agentClaude: '#E0896A',
+  agentCodex: '#8FA9CF',
+  agentPi: '#B99AEB',
+  agentOmp: '#56BFCC',
+  agentKimi: '#A4A7C4',
   focus: '#EDEDEA',
   scrim: 'rgba(0, 0, 0, 0.45)',
   shadowFloat: '0 8px 24px rgba(0, 0, 0, 0.32)',

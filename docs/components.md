@@ -7,7 +7,7 @@
 ## 全局规则
 
 1. **暖灰加墨黑。** 底色 `--ground` `--surface` `--raised`，文字 `--ink` `--muted`，线 `--line` `--line-strong` `--line-subtle`。深色是暖深灰不是纯黑，靠 `--raised` 比 `--surface` 亮一档表现“浮起来”。
-2. **颜色只表达状态。** 绿 `--status-running` = 运行中；黄 `--status-waiting`（灯、边框）+ `--attention`（文字）= 等你；红 `--status-error` = 出错。另外只有：红色 `--plugin-auto-approve`（Auto-approve 书签和框标签）、蓝色 `--guide`（拖动、多选时的排版反馈）、Clawd 的 `--mascot*`。分支、agent、项目、文件类型都不上色。
+2. **颜色只表达状态。** 绿 `--status-running` = 运行中；黄 `--status-waiting`（灯、边框）+ `--attention`（文字）= 等你；红 `--status-error` = 出错。另外只有：红色 `--plugin-auto-approve`（Auto-approve 书签和框标签）、蓝色 `--guide`（拖动、多选时的排版反馈）、Clawd 的 `--mascot*`，以及各 code agent 的身份色 `--agent-claude` `--agent-codex` `--agent-pi` `--agent-omp` `--agent-kimi`（2026-10-26 用户定：只用在区分 agent 的小标记上，例如左边栏的 agent 小标题前的小方块和字；方块不是圆点，免得和状态灯混）。分支、项目、文件类型都不上色，agent 也只在这些身份标记上用颜色。
 3. **不用渐变、发光、毛玻璃、emoji。** 用 1px 线分隔。只有浮起来的东西（菜单、弹出框、对话框、提示、聚焦或拖动中的窗口）有 `--shadow-float`；贴在窗口边上的标记用更轻的 `--shadow-mark`。✓ ▸ · ⌘ 这类文字符号可以用。
 4. **界面文字用英文。** 注释、文档、提交说明可以用中文。
 5. **组件里不写颜色值。** `packages/ui/**` 只用 `var(--token)`，`pnpm colors` 和 ESLint 会拦。要新颜色就在 `packages/design-tokens/src/index.ts` 加 token（两套主题都给值，文字类进对比度测试），再 `pnpm --filter @agentdeck/design-tokens gen`。
