@@ -5,6 +5,7 @@
 ## 先读这些
 
 - 需求（设计画布，带配图和操作流程，以它为准）：https://claude.ai/artifact/2GtB5izXeQSV3NecUYuLAo
+- 组件库（设计系统：tokens、每个界面零件的样子、状态、尺寸、交互规则和代码位置，预览直接用仓库里的 CSS）：https://claude.ai/artifact/MhtbtWuttcdQ4b7uEjvbPN ，文字版 `docs/components.md`（两边内容一致）。画新界面、画需求配图、做插件前先查它，已有的零件不要重画；改了 `packages/design-tokens` 或 `packages/ui/**` 的样子，同步更新它。
 - 插件（Auto-approve、Usage 用量记录）：**做插件前先读 `docs/plugins.md`（插件手册：能贴在哪些东西上、登记表、决定记录）**；样子在设计画布的“插件能力”页，任务是 MVP 任务表的 M7（PL0–PL2）
 - 实施方案（技术选型、模块、风险）：https://claude.ai/artifact/QrjHF5gpT6zdHJr6wdFaWp ，本地副本 `docs/design/agentdeck-plan.html`
 - MVP 任务表（任务编号、依赖、完成标准）：https://claude.ai/artifact/8UAh7Quj23xxk7oEikgdEg ，本地副本 `docs/design/agentdeck-mvp-plan.html`

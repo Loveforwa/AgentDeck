@@ -107,6 +107,8 @@ const FALLBACK_SIZE: Size = { w: 560, h: 360 };
 export const SUMMARY_ZOOM = 0.5;
 /** 窗口放大时离视口边的距离。 */
 const MAXIMIZE_MARGIN = 16;
+/** 放大 / 还原的视口动画（200ms）再留一点余量：这期间视口变了不触发“平移缩放时自动还原”。 */
+const MAXIMIZE_MOTION_MS = 400;
 const STOPPED = new Set(['exited', 'error']);
 
 /** 挪框之前各框、各框里窗口的位置（V3：框变大时把挤到的框挪开，拖动中每次都从这里重新算）。 */
@@ -913,6 +915,7 @@ export class BoardController {
       const back = w.restoreRect!;
       this.record('Restore window', () => this.patchWindow(id, { rect: back, restoreRect: null }));
       this.focusWindow(id);
+      this.maximizeMotionUntil = Date.now() + MAXIMIZE_MOTION_MS;
       // 还原后窗口回到原来的位置（不挪出它的框），视口平移过去让它停在屏幕中间；不然视口还停在放大时的左上角
       const { pane, viewport } = this.state;
       const zoom = viewport.zoom;
@@ -930,6 +933,7 @@ export class BoardController {
     };
     this.record('Maximize window', () => this.patchWindow(id, { rect, restoreRect: w.rect }));
     this.focusWindow(id);
+    this.maximizeMotionUntil = Date.now() + MAXIMIZE_MOTION_MS;
     this.setViewport({ x: -rect.x + MAXIMIZE_MARGIN, y: -rect.y + MAXIMIZE_MARGIN + out.top, zoom: 1 }, 200);
   }
 
@@ -1028,10 +1032,23 @@ export class BoardController {
     if (p.w !== size.w || p.h !== size.h) this.set({ pane: size });
   }
 
-  /** React Flow 的视口变了（平移、缩放）。 */
+  /** 放大 / 还原自己带的视口动画到这个时间为止（毫秒），这期间视口变了不算你在平移缩放。 */
+  private maximizeMotionUntil = 0;
+
+  /**
+   * React Flow 的视口变了（平移、缩放，含 ⌘1、⌘J、⌘−）。白板上有放大的窗口、又不是放大 / 还原自己的动画时：
+   * 把它还原到原来的位置（视口不动），算一步可以撤销（2026-10-26 用户定）。
+   */
   viewportChanged(vp: Viewport): void {
     const cur = this.state.viewport;
-    if (cur.x !== vp.x || cur.y !== vp.y || cur.zoom !== vp.zoom) this.set({ viewport: vp });
+    if (cur.x === vp.x && cur.y === vp.y && cur.zoom === vp.zoom) return;
+    this.set({ viewport: vp });
+    if (Date.now() < this.maximizeMotionUntil) return;
+    const maximized = this.state.windows.filter((w) => this.isMaximized(w));
+    if (maximized.length === 0) return;
+    this.record('Restore window', () => {
+      for (const w of maximized) this.patchWindow(w.id, { rect: w.restoreRect!, restoreRect: null });
+    });
   }
 
   private setViewport(vp: Viewport, duration = 0): void {
@@ -1513,11 +1530,11 @@ export class BoardController {
     return this.frameOf(ws)?.arrange ?? { auto: false, layout: null };
   }
 
-  /** 框标题右上角的 Tidy / Columns / Rows：排好、框缩到正好装下，记成一步（⌘Z 回到排之前）。 */
+  /** 框标题右上角的 Tidy / Columns / Rows：排好、框缩到正好装下（右上角不动，图标留在指针底下），记成一步（⌘Z 回到排之前）。 */
   arrangeFrame(ws: WorkspaceId, layout: FrameLayout): void {
     if (!this.frameOf(ws)) return;
     this.record(`Arrange windows (${LAYOUT_LABEL[layout]})`, () => {
-      this.layoutFrame(ws, layout, new Set());
+      this.layoutFrame(ws, layout, new Set(), 'right');
       this.patchFrame(ws, { arrange: { ...this.frameArrange(ws), layout } });
     });
   }
@@ -1526,7 +1543,7 @@ export class BoardController {
   setAutoArrange(ws: WorkspaceId, on: boolean): void {
     if (!this.frameOf(ws)) return;
     this.patchFrame(ws, { arrange: { ...this.frameArrange(ws), auto: on } });
-    if (on) this.record('Arrange windows', () => this.layoutFrame(ws, this.frameArrange(ws).layout ?? 'tidy', new Set()));
+    if (on) this.record('Arrange windows', () => this.layoutFrame(ws, this.frameArrange(ws).layout ?? 'tidy', new Set(), 'right'));
   }
 
   /** 每个框里有哪些窗口（上一次看到的），Auto-arrange 据此知道新开、关掉了窗口。 */
@@ -1571,7 +1588,7 @@ export class BoardController {
    * 排一个框：框里每个窗口连同贴着它的东西（withGroup）算一块，按 layout 排到框内区域的左上角起，然后框缩到正好装下
    * （挤到或空出来的旁边的框照 V3 的规则）。放大中的、收起的子终端不动；停靠的子终端跟着 lead 走。last：新开的，排在最后。
    */
-  private layoutFrame(ws: WorkspaceId, layout: FrameLayout, last: ReadonlySet<WindowId>): void {
+  private layoutFrame(ws: WorkspaceId, layout: FrameLayout, last: ReadonlySet<WindowId>, anchor: 'left' | 'right' = 'left'): void {
     const f = this.frameOf(ws);
     if (!f) return;
     const s = this.state;
@@ -1603,14 +1620,23 @@ export class BoardController {
         return r && !sameRect(r, w.rect) ? { ...w, rect: r } : w;
       }),
     }));
-    // 框缩到正好装下（不小于 FRAME_MIN），左上角不动
+    // 框缩到正好装下（不小于 FRAME_MIN）。anchor 是 left 时左上角不动；right 时右上角不动（点标题右上角的图标排版：
+    // 图标停在指针底下，2026-10-26 用户要求），整个框连同里面的窗口往右挪到右边和原来对齐
     const st = this.state;
     const hid = hiddenMembers(st.windows);
     const content = bounds(st.windows.filter((w) => w.workspaceId === ws && !hid.has(w.id)).map((w) => this.withGroup(w.id, this.footprint(w))));
     const before = this.frameOf(ws)?.rect;
     if (!content || !before) return;
     const fit = frameAround(content);
-    const after = { ...fit, w: Math.max(FRAME_MIN.w, fit.w), h: Math.max(FRAME_MIN.h, fit.h) };
+    let after = { ...fit, w: Math.max(FRAME_MIN.w, fit.w), h: Math.max(FRAME_MIN.h, fit.h) };
+    const dx = anchor === 'right' ? before.x + before.w - (after.x + after.w) : 0;
+    if (dx !== 0) {
+      after = { ...after, x: after.x + dx };
+      const mv = (r: Rect): Rect => ({ ...r, x: r.x + dx });
+      this.set((s2) => ({
+        windows: s2.windows.map((w) => (w.workspaceId === ws ? { ...w, rect: mv(w.rect), restoreRect: w.restoreRect ? mv(w.restoreRect) : null } : w)),
+      }));
+    }
     if (!sameRect(after, before)) this.applyFrameChange(this.layoutBase(), ws, before, after);
   }
 
