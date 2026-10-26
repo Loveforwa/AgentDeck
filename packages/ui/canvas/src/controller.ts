@@ -1530,11 +1530,11 @@ export class BoardController {
     return this.frameOf(ws)?.arrange ?? { auto: false, layout: null };
   }
 
-  /** 框标题右上角的 Tidy / Columns / Rows：排好、框缩到正好装下，记成一步（⌘Z 回到排之前）。 */
+  /** 框标题右上角的 Tidy / Columns / Rows：排好、框缩到正好装下（右上角不动，图标留在指针底下），记成一步（⌘Z 回到排之前）。 */
   arrangeFrame(ws: WorkspaceId, layout: FrameLayout): void {
     if (!this.frameOf(ws)) return;
     this.record(`Arrange windows (${LAYOUT_LABEL[layout]})`, () => {
-      this.layoutFrame(ws, layout, new Set());
+      this.layoutFrame(ws, layout, new Set(), 'right');
       this.patchFrame(ws, { arrange: { ...this.frameArrange(ws), layout } });
     });
   }
@@ -1543,7 +1543,7 @@ export class BoardController {
   setAutoArrange(ws: WorkspaceId, on: boolean): void {
     if (!this.frameOf(ws)) return;
     this.patchFrame(ws, { arrange: { ...this.frameArrange(ws), auto: on } });
-    if (on) this.record('Arrange windows', () => this.layoutFrame(ws, this.frameArrange(ws).layout ?? 'tidy', new Set()));
+    if (on) this.record('Arrange windows', () => this.layoutFrame(ws, this.frameArrange(ws).layout ?? 'tidy', new Set(), 'right'));
   }
 
   /** 每个框里有哪些窗口（上一次看到的），Auto-arrange 据此知道新开、关掉了窗口。 */
@@ -1588,7 +1588,7 @@ export class BoardController {
    * 排一个框：框里每个窗口连同贴着它的东西（withGroup）算一块，按 layout 排到框内区域的左上角起，然后框缩到正好装下
    * （挤到或空出来的旁边的框照 V3 的规则）。放大中的、收起的子终端不动；停靠的子终端跟着 lead 走。last：新开的，排在最后。
    */
-  private layoutFrame(ws: WorkspaceId, layout: FrameLayout, last: ReadonlySet<WindowId>): void {
+  private layoutFrame(ws: WorkspaceId, layout: FrameLayout, last: ReadonlySet<WindowId>, anchor: 'left' | 'right' = 'left'): void {
     const f = this.frameOf(ws);
     if (!f) return;
     const s = this.state;
@@ -1620,14 +1620,23 @@ export class BoardController {
         return r && !sameRect(r, w.rect) ? { ...w, rect: r } : w;
       }),
     }));
-    // 框缩到正好装下（不小于 FRAME_MIN），左上角不动
+    // 框缩到正好装下（不小于 FRAME_MIN）。anchor 是 left 时左上角不动；right 时右上角不动（点标题右上角的图标排版：
+    // 图标停在指针底下，2026-10-26 用户要求），整个框连同里面的窗口往右挪到右边和原来对齐
     const st = this.state;
     const hid = hiddenMembers(st.windows);
     const content = bounds(st.windows.filter((w) => w.workspaceId === ws && !hid.has(w.id)).map((w) => this.withGroup(w.id, this.footprint(w))));
     const before = this.frameOf(ws)?.rect;
     if (!content || !before) return;
     const fit = frameAround(content);
-    const after = { ...fit, w: Math.max(FRAME_MIN.w, fit.w), h: Math.max(FRAME_MIN.h, fit.h) };
+    let after = { ...fit, w: Math.max(FRAME_MIN.w, fit.w), h: Math.max(FRAME_MIN.h, fit.h) };
+    const dx = anchor === 'right' ? before.x + before.w - (after.x + after.w) : 0;
+    if (dx !== 0) {
+      after = { ...after, x: after.x + dx };
+      const mv = (r: Rect): Rect => ({ ...r, x: r.x + dx });
+      this.set((s2) => ({
+        windows: s2.windows.map((w) => (w.workspaceId === ws ? { ...w, rect: mv(w.rect), restoreRect: w.restoreRect ? mv(w.restoreRect) : null } : w)),
+      }));
+    }
     if (!sameRect(after, before)) this.applyFrameChange(this.layoutBase(), ws, before, after);
   }
 

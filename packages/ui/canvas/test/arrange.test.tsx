@@ -126,7 +126,12 @@ describe('arrange · controller', () => {
     await boot();
     scatter(3);
     const before = layout();
+    const f0 = c.frameOf(WS)!.rect;
     c.arrangeFrame(WS, 'tidy');
+    // 点的是标题右上角的图标：框的右上角不动，图标还在指针底下
+    const f1 = c.frameOf(WS)!.rect;
+    expect(f1.x + f1.w).toBe(f0.x + f0.w);
+    expect(f1.y).toBe(f0.y);
     const ws = inFrame();
     for (const a of ws) for (const b of ws) if (a.id !== b.id) expect(overlaps(a.rect, b.rect)).toBe(false);
     expect(c.frameOf(WS)!.rect).toEqual(frameAround(bounds(ws.map((w) => w.rect))!));
