@@ -867,12 +867,12 @@
 
 ### DR-61 agent 自带的后台子 agent 能不能读出来、怎么读
 
-状态：待验证 · 出处：v3 N10 · 设计画布画板 13 · packages/agent-adapters（钩子、记录读取）· ui/canvas（侧边栏） · 旧编号 —
+状态：待验证 · 出处：v3 N10 · 设计画布画板 13 · packages/agent-adapters/src/subagents · ui/canvas 的 react/Background.tsx、model/background.ts（claude 已做，其他 agent 待调研） · 旧编号 —
 
 相关：IS-85
 
 - **原来以为**：agent 开 subagent 是它自己的事；要在白板上看见，就让它用 open_terminals 开成终端（N2）。
-- **实际情况**：用户实测：让 claude 并行查 5 件事时，它用的是自带的后台 agent，窗口组没出现，只在主终端底部列了 5 行。本机 claude 2.1.291 核对：有 SubagentStart / SubagentStop 钩子；每个子 agent 在 <会话 id>/subagents/ 下有 agent-<id>.jsonl（记录，isSidechain、agentId）和 agent-<id>.meta.json（agentType、description、toolUseId、requestShape: background）。codex、pi、omp、kimi 有没有子 agent、记在哪里还没查。
+- **实际情况**：用户实测：让 claude 并行查 5 件事时，它用的是自带的后台 agent，窗口组没出现，只在主终端底部列了 5 行。本机 claude 2.1.291 核对：有 SubagentStart / SubagentStop 钩子；每个子 agent 在 <会话 id>/subagents/ 下有 agent-<id>.jsonl（记录，isSidechain、agentId）和 agent-<id>.meta.json（agentType、description、toolUseId、requestShape: background）。codex、pi、omp、kimi 有没有子 agent、记在哪里还没查。实现时（2026-10-26，真 claude 跑过）又发现：后台 agent 做完时 claude 用 UserPromptSubmit 给主 agent 发 <task-notification>（带 status、subagent_tokens、duration_ms），所以这个钩子不一定是用户发的消息；claude 自己的内部查询每轮会单独发一两个没有 Start、没有 agent_type 的 SubagentStop，不能列出来；Stop / SubagentStop 的负载带 background_tasks（带任务描述）。我们算的 token 和 claude 自己列表里的一致（27.1k）。
 - **怎么验证**：2026-10-26 用户定（画板 13，N10）：用钩子和记录读出来。平时只在主终端底边右侧挂一个小提示，有后台 agent 才出现；点开是 N2 的同一列侧边栏，后台 agent 单独一组，选中看它的记录，只读，不能打字、批准、停止。先做 claude，其他 agent 调研后再定，读不到的不显示。
 
 <a id="dr-42"></a>

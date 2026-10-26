@@ -6,7 +6,9 @@ import type { BackgroundAgent, TerminalId, TerminalWindowData, WindowComponentPr
 import { createFakeApi, fakeBackgroundAgent, SAMPLE, type FakeApi } from '@agentdeck/fakes';
 import { BoardController } from '../src/controller.ts';
 import { agentElapsedMs, formatElapsed, formatTokens, hintOf, transcriptRect } from '../src/model/background.ts';
+import { innerArea } from '../src/model/geometry.ts';
 import { dockSlot, groupView, hiddenMembers, listGroups, sidebarRect } from '../src/model/groups.ts';
+import { PLUGIN_MARK_HEIGHT } from '../src/plugins/types.ts';
 import { Workbench } from '../src/react/Workbench.tsx';
 import { createWindowRegistry } from '../src/registry.ts';
 
@@ -211,3 +213,53 @@ describe('background agents · with a window group (N2)', () => {
     expect(groupView(g())).toEqual({ mode: 'one', shown: g().members[1]!.id });
   });
 });
+
+describe('background agents · the frame holds the panel and the marks', () => {
+  const frameOfLead = () => c.frameOf(lead().workspaceId)!.rect;
+  const contains = (outer: { x: number; y: number; w: number; h: number }, inner: { x: number; y: number; w: number; h: number }) =>
+    inner.x >= outer.x && inner.y >= outer.y && inner.x + inner.w <= outer.x + outer.w && inner.y + inner.h <= outer.y + outer.h;
+  const layout = () => JSON.stringify([c.state.frames.map((f) => f.rect), c.state.windows.map((w) => [w.id, w.rect])]);
+
+  it('opening the panel grows the frame around the sidebar and the transcript; closing puts everything back', async () => {
+    await mount();
+    act(() => api.fakes.subagents.set(TID, five()));
+    await waitFor(() => expect(hint()).not.toBeNull());
+    await act(async () => {});
+    const before = layout();
+    const f0 = frameOfLead();
+
+    act(() => c.openBackgroundPanel(lead().id));
+    const r = lead().rect;
+    expect(contains(innerArea(frameOfLead()), sidebarRect(r))).toBe(true);
+    const sidebarOnly = layout();
+    act(() => c.selectBackgroundAgent(lead().id, 'a1'));
+    expect(contains(innerArea(frameOfLead()), transcriptRect(r))).toBe(true);
+    // 框里被盖住的窗口挪开了
+    for (const w of c.state.windows) {
+      if (w.id === lead().id || w.workspaceId !== lead().workspaceId) continue;
+      expect(overlaps(w.rect, sidebarRect(r)) || overlaps(w.rect, transcriptRect(r))).toBe(false);
+    }
+    expect(frameOfLead().w).toBeGreaterThan(f0.w);
+    // 收起记录窗口：回到只开侧边栏时的样子
+    await act(async () => {});
+    act(() => c.selectBackgroundAgent(lead().id, 'a1'));
+    expect(layout()).toBe(sidebarOnly);
+    act(() => c.closeBackgroundPanel(lead().id));
+    expect(layout()).toBe(before);
+  });
+
+  it('a frame grows to hold the hint under a terminal at its bottom edge', async () => {
+    await mount();
+    const f = frameOfLead();
+    const inner = innerArea(f);
+    // 把主终端放到框的最下面，正好贴着内边
+    act(() => c.store.setState((s) => ({ windows: s.windows.map((w) => (w.id === lead().id ? { ...w, rect: { ...w.rect, y: inner.y + inner.h - w.rect.h } } : w)) })));
+    await act(async () => {});
+    expect(frameOfLead().h).toBe(f.h);
+    act(() => api.fakes.subagents.set(TID, five()));
+    await waitFor(() => expect(frameOfLead().h).toBe(f.h + PLUGIN_MARK_HEIGHT));
+  });
+});
+
+const overlaps = (a: { x: number; y: number; w: number; h: number }, b: { x: number; y: number; w: number; h: number }) =>
+  a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;

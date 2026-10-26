@@ -6,6 +6,8 @@ import { TITLE_BAR_HEIGHT, resizeRect, type ResizeEdge } from '@agentdeck/ui-win
 import { isSummarySize, windowRegistry, type WindowDefinition, type WindowRegistry } from './registry.ts';
 import { ApprovalsModel } from './approvals/model.ts';
 import { usageOutset } from './plugins/usage-model.ts';
+import { PLUGIN_MARK_HEIGHT } from './plugins/types.ts';
+import { hintOf, transcriptRect } from './model/background.ts';
 import { startableAgents } from './model/agents.ts';
 import { nextWaiting, prevWaiting, summarize, statusOf, type AttentionSummary } from './model/attention.ts';
 import { createAutosave, type Autosave } from './model/autosave.ts';
@@ -266,6 +268,17 @@ export class BoardController {
       this.unsubs.push(() => window.removeEventListener('keydown', onKey, true));
     }
     void this.approvals.start();
+    // 标记（书签、后台 agent 的小提示）、Usage 条出现了：框长到装得下（N10，只变大）。两个 store 都可能让它变，合并到下一个微任务里查一次
+    let marksQueued = false;
+    const checkMarks = () => {
+      if (marksQueued) return;
+      marksQueued = true;
+      queueMicrotask(() => {
+        marksQueued = false;
+        if (this.started) this.keepMarksInFrames();
+      });
+    };
+    this.unsubs.push(this.store.subscribe(checkMarks), this.approvals.store.subscribe(checkMarks));
     // 存档：保存的那部分一变就排进防抖
     this.unsubs.push(
       this.store.subscribe((s, prev) => {
@@ -484,8 +497,10 @@ export class BoardController {
     return this.state.windows.filter((w) => w.workspaceId === ws);
   }
 
+  /** 框里的东西占的范围（改框大小时不能小于它）：窗口连同标记、Usage 条、侧边栏、后台 agent 面板。 */
   private contentBounds(ws: WorkspaceId): Rect | null {
-    return bounds(this.windowsIn(ws).map((w) => w.rect));
+    const hidden = hiddenMembers(this.state.windows);
+    return bounds(this.windowsIn(ws).map((w) => (hidden.has(w.id) || this.isMaximized(w) ? w.rect : this.withGroup(w.id, w.rect))));
   }
 
   // ---- 修改窗口和框 ----
@@ -515,10 +530,24 @@ export class BoardController {
     return this.isMaximized(w) && w.restoreRect ? w.restoreRect : w.rect;
   }
 
-  /** 避让时窗口占的地方：footprint 再加上开着的 Usage 用量条（PL2，贴在上边或下边）。对齐线仍然只看窗口本身。 */
+  /**
+   * 避让时窗口占的地方：footprint 再加上挂在外框外面的东西——Usage 用量条（PL2，上边或下边）、底边的标记
+   * （Auto-approve 书签、N10 后台 agent 的小提示）。对齐线仍然只看窗口本身。
+   */
   private obstacleRect(w: WindowNode, rect: Rect = this.footprint(w)): Rect {
-    const out = usageOutset(w);
+    const out = this.markOutset(w);
     return out.top || out.bottom ? { ...rect, y: rect.y - out.top, h: rect.h + out.top + out.bottom } : rect;
+  }
+
+  /**
+   * 挂在窗口外框外面的东西占多高：底边的标记（Auto-approve 书签、后台 agent 的小提示）一行，
+   * Usage 条在上边或下边（下边时排在标记下面，见 canvas.css）。框要装下它们（N10，2026-10-26 用户定）。
+   */
+  markOutset(w: WindowNode): { top: number; bottom: number } {
+    const u = usageOutset(w);
+    const tid = terminalIdOf(w);
+    const marks = this.approvals.windowOn(w) || (tid !== null && hintOf(this.state.backgroundAgents[tid] ?? []) !== null);
+    return { top: u.top, bottom: u.bottom + (marks ? PLUGIN_MARK_HEIGHT : 0) };
   }
 
   /** 对齐线看的窗口：同一个框里别的窗口；散放的窗口看视口里别的散放窗口。 */
@@ -888,8 +917,8 @@ export class BoardController {
       return;
     }
     const { pane } = this.state;
-    // PL2：开着 Usage 的终端给上边或下边的用量条留出位置
-    const out = usageOutset(w);
+    // PL2：开着 Usage 的终端给上边或下边的用量条留出位置（还有底边的标记）
+    const out = this.markOutset(w);
     const rect = {
       x: w.rect.x,
       y: w.rect.y,
@@ -1318,6 +1347,7 @@ export class BoardController {
   // ---- 后台 agent（N10） ----
 
   private setBackgroundAgents(terminalId: TerminalId, agents: BackgroundAgent[]): void {
+    const before = this.state.backgroundPanels;
     this.set((s) => {
       const backgroundAgents = { ...s.backgroundAgents };
       if (agents.length > 0) backgroundAgents[terminalId] = agents;
@@ -1341,6 +1371,11 @@ export class BoardController {
       }
       return { backgroundAgents, backgroundPanels };
     });
+    const after = this.state.backgroundPanels;
+    for (const id of Object.keys(before) as WindowId[]) {
+      if (!after[id]) this.unfitPanel(id);
+      else if (after[id] !== before[id]) this.fitPanel(id);
+    }
   }
 
   /** 这个主终端的后台 agent（按开始的先后）。不是终端、没有时为空。 */
@@ -1360,6 +1395,7 @@ export class BoardController {
   openBackgroundPanel(windowId: WindowId): void {
     if (!this.windowById(windowId) || this.state.backgroundPanels[windowId]) return;
     this.set((s) => ({ backgroundPanels: { ...s.backgroundPanels, [windowId]: { selected: null } } }));
+    this.fitPanel(windowId);
   }
 
   closeBackgroundPanel(windowId: WindowId): void {
@@ -1369,6 +1405,7 @@ export class BoardController {
       delete backgroundPanels[windowId];
       return { backgroundPanels };
     });
+    this.unfitPanel(windowId);
   }
 
   /**
@@ -1385,6 +1422,85 @@ export class BoardController {
         ? { windows: setGroupView(s.windows, g.id, { mode: 'collapsed' }) }
         : {}),
     }));
+    this.fitPanel(windowId);
+  }
+
+  /** 面板打开时框原来的样子；收起时还原（这期间布局没被别的操作改过才还原）。 */
+  private panelFits = new Map<WindowId, { ws: WorkspaceId; before: Rect; base: LayoutBase; moved: Map<WindowId, Rect>; applied: string }>();
+
+  private layoutKey(): string {
+    const s = this.state;
+    return JSON.stringify([s.frames.map((f) => [f.workspaceId, f.rect]), s.windows.map((w) => [w.id, w.workspaceId, w.rect])]);
+  }
+
+  /**
+   * 后台 agent 面板开了、换了选中的：框长到装下侧边栏和记录窗口，挤到的框挪开，框里被盖住的窗口挪到最近的空位。
+   * 记下打开前的框和布局，收起时（unfitPanel）照原样放回去。
+   */
+  private fitPanel(windowId: WindowId): void {
+    const w = this.windowById(windowId);
+    const ws = w?.workspaceId ?? null;
+    const f = this.frameOf(ws);
+    if (!w || !ws || !f || this.isMaximized(w)) return;
+    let rec = this.panelFits.get(windowId);
+    if (!rec || rec.applied !== this.layoutKey()) rec = { ws, before: f.rect, base: this.layoutBase(), moved: new Map(), applied: '' };
+    // 上次挪开的窗口先放回原处，再按现在的面板重新算
+    const back = rec.moved;
+    if (back.size > 0) this.set((s) => ({ windows: s.windows.map((x) => (back.has(x.id) ? { ...x, rect: back.get(x.id)! } : x)) }));
+    const anchor = this.footprint(w);
+    const own = this.withGroup(windowId, anchor);
+    const panel = this.state.backgroundPanels[windowId];
+    const g = this.leadGroup(windowId);
+    const parts = [...(panel && !g ? [sidebarRect(anchor)] : []), ...(panel?.selected ? [transcriptRect(anchor)] : [])];
+    const moved = new Map<WindowId, Rect>();
+    const placed: Rect[] = [];
+    if (parts.length > 0) {
+      const hidden = hiddenMembers(this.state.windows);
+      const skip = new Set(g ? [g.lead.id, ...g.members.map((m) => m.id)] : [windowId]);
+      const grownFrame = growFrame(rec.before, own);
+      for (const o of this.state.windows) {
+        if (o.workspaceId !== ws || skip.has(o.id) || hidden.has(o.id) || this.isMaximized(o)) continue;
+        if (!parts.some((p) => intersects(p, this.obstacleRect(o)))) continue;
+        const others = this.state.windows
+          .filter((x) => x.id !== o.id && x.workspaceId === ws && !skip.has(x.id) && !hidden.has(x.id) && !moved.has(x.id))
+          .map((x) => this.obstacleRect(x));
+        const at = this.obstacleRect(o);
+        const spot = findFreeSpot(at, [own, ...others, ...placed, ...this.sidebarObstacles(ws, o.id)], { gap: GAP, area: innerArea(grownFrame) });
+        const r = { ...o.rect, x: o.rect.x + spot.x - at.x, y: o.rect.y + spot.y - at.y };
+        moved.set(o.id, o.rect);
+        placed.push(spot);
+        this.patchWindow(o.id, { rect: r });
+      }
+    }
+    const need = bounds([own, ...placed]) ?? own;
+    this.applyFrameChange(rec.base, ws, rec.before, growFrame(rec.before, need));
+    rec.moved = moved;
+    rec.applied = this.layoutKey();
+    this.panelFits.set(windowId, rec);
+  }
+
+  /** 面板收起了：框缩回打开前的大小，挤开的框、挪开的窗口回原处。期间布局被别的操作改过就不动（以免把东西挪乱）。 */
+  private unfitPanel(windowId: WindowId): void {
+    const rec = this.panelFits.get(windowId);
+    this.panelFits.delete(windowId);
+    if (!rec || rec.applied !== this.layoutKey()) return;
+    const back = rec.moved;
+    if (back.size > 0) this.set((s) => ({ windows: s.windows.map((x) => (back.has(x.id) ? { ...x, rect: back.get(x.id)! } : x)) }));
+    this.applyFrameChange(rec.base, rec.ws, rec.before, rec.before);
+  }
+
+  /** 框里每个窗口连同标记、Usage 条、侧边栏、面板都要装得下；装不下就让框长（只变大）。拖动中不管（拖动自己会长框）。 */
+  private keepMarksInFrames(): void {
+    const s = this.state;
+    if (!s.loaded || this.drag) return;
+    const hidden = hiddenMembers(s.windows);
+    for (const w of s.windows) {
+      if (!w.workspaceId || hidden.has(w.id) || this.isMaximized(w)) continue;
+      const f = this.frameOf(w.workspaceId);
+      if (!f) continue;
+      const ext = this.withGroup(w.id, w.rect);
+      if (!sameRect(growFrame(f.rect, ext), f.rect)) this.fitFrameTo(w.workspaceId, ext);
+    }
   }
 
   // ---- 窗口组的侧边栏（N2） ----
@@ -1482,13 +1598,26 @@ export class BoardController {
     return m && dockable(g.lead, m) && atSlot(m.rect, dockSlot(this.footprint(g.lead))) ? m : null;
   }
 
-  /** lead 在 rect 时，它连同侧边栏和停靠的子终端占的地方。不是 lead（或 lead 放大中）时就是 rect。 */
+  /**
+   * 窗口在 rect 时，它连同贴着它的东西占的地方（框要装下这些）：外框外面的标记和 Usage 条；lead 的侧边栏和停靠的子终端（N2）；
+   * 开着的后台 agent 面板和记录窗口（N10）。放大中的窗口就是 rect。
+   */
   private withGroup(id: WindowId, rect: Rect): Rect {
+    const w = this.windowById(id);
+    if (!w || this.isMaximized(w)) return rect;
+    const out = this.markOutset(w);
+    let ext = out.top || out.bottom ? { ...rect, y: rect.y - out.top, h: rect.h + out.top + out.bottom } : rect;
     const g = this.leadGroup(id);
-    if (!g || this.isMaximized(g.lead)) return rect;
-    let ext = union(rect, sidebarRect(rect));
-    const m = this.dockedMember(g);
-    if (m) ext = union(ext, { ...m.rect, ...dockSlot(rect) });
+    if (g) {
+      ext = union(ext, sidebarRect(rect));
+      const m = this.dockedMember(g);
+      if (m) ext = union(ext, { ...m.rect, ...dockSlot(rect) });
+    }
+    const panel = this.state.backgroundPanels[id];
+    if (panel) {
+      if (!g) ext = union(ext, sidebarRect(rect));
+      if (panel.selected) ext = union(ext, transcriptRect(rect));
+    }
     return ext;
   }
 

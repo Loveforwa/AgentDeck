@@ -38,3 +38,5 @@
 - 2026-10-25：X4（Fork 对话）做：用 agent 自己的接回参数复制对话（claude `--resume <id> --fork-session`、codex `fork <id>`、pi / omp `--fork`），原来的对话不动。
 - 2026-10-25：打包成 macOS APP（.dmg），README 顶部（语言链接上方）放下载链接，指向 GitHub Releases。
 - 2026-10-25：GitHub 仓库名 AgentDeck（账号 Loveforwa），用户审完 README 再建仓库、推送。README 正文英文，另有中文、日文等共 7 种语言版本，配截图和 GIF；语气平实，只说工具做什么、举几个例子。
+- 2026-10-26：N10 后台 agent（画板 13）先做 claude：钩子加 SubagentStart / SubagentStop，读子 agent 自己的记录，只读、不保存（重开应用后从空开始）。
+- 2026-10-26：后台 agent 面板打开时项目框跟着长到装下侧边栏和记录窗口，挤到的框、盖住的窗口挪开；收起时照原样放回（这期间布局被别的操作改过就不动）。插件挂在窗口外框外面的东西（Auto-approve 书签、后台 agent 的小提示、Usage 条）也算进框里，框只变大。

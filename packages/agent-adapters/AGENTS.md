@@ -253,6 +253,16 @@ token 本身只放进 `LaunchSpec.env`，不进命令行。和用户自己配的
 - 版本门槛：codex 的库里 MCP 同 N1（0.164.0），omp 的 setDir 同 N1（18.0.4）。版本取不到时按够新处理。running 记的是选中的 id，版本太低被适配器跳过的也算在里面（只影响 “Changes apply after restart” 的提示）。
 - 测试：`test/skills.test.ts`（临时目录里的库、repo、每种 agent 列出什么、prepareLaunch 写的目录、每种 agent 的启动参数、running 存档、选择规则）。
 
+## 后台 agent（N10，DR-61，2026-10-26 实测 claude 2.1.291）
+
+`src/subagents/`：agent 自带的子 agent（claude 的 Agent / Task 工具开的），按终端列出来，只读，不保存。现在只有 claude，别的 agent 的钩子直接忽略。
+
+- 钩子：`SubagentStart`（agent_id、agent_type）、`SubagentStop`（再加 agent_transcript_path、last_assistant_message）。只在 claude ≥ 2.1 时注入（`MIN_SUBAGENT_HOOKS_VERSION`）。
+- **只认见过 SubagentStart 的**：claude 自己的内部查询每轮会单独发一两个 `SubagentStop`，没有 agent_type、没有 Start，不能列出来。
+- 后台 agent 做完时 claude 给主 agent 发一条 `<task-notification>`（task-id、status、subagent_tokens、duration_ms），走的是 `UserPromptSubmit`，所以 UserPromptSubmit 不一定是用户发的消息（`isClaudeSyntheticPrompt`）。真的用户消息才把做完的标成“不是这一轮”（`current: false`）。
+- `Stop` / `SubagentStop` 的负载带 `background_tasks`（id、description、status），meta.json 还没写时先从这里补任务描述。
+- 记录：`<会话文件去掉 .jsonl>/subagents/agent-<id>.jsonl`，旁边 `agent-<id>.meta.json`（agentType、description、requestShape）。跑着的、有人看着记录的每秒读一次新增部分。
+
 ## agentdeck-notify 怎么打包（组装阶段）
 
 现在是 `tools/agentdeck-notify/bin/agentdeck-notify.mjs`，开头 `#!/usr/bin/env node`，要求 tmux 会话的 PATH 里有 node。
