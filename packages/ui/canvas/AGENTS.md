@@ -141,6 +141,8 @@ import '@agentdeck/ui-kit/base.css';
   - 每个窗口连同贴着它的东西（`withGroup`：标记、Usage 条、侧边栏、停靠的子终端、后台 agent 面板）算一块，整块挪；带着停靠子终端的 lead 只挪不改大小；放大中的、收起的不动。顺序按原来的位置先上后下、先左后右（上下差 40 以内算一行），新开的排最后。排到框内区域的左上角起，框缩到正好装下（不小于 FRAME_MIN），挤到的框照 V3 挪。点图标记成一步（⌘Z）。
   - Auto-arrange：`noteFrameMembers` 看每个框里窗口的增减（store 订阅），开着的框在下一个微任务里按上次的排法（没点过 Tidy）重排；拖动中先不排，松手后排。这次重排不单独记撤销。框的右键菜单（标题、空白处）也有 Auto-arrange new windows。
 
+- 放大的窗口（2026-10-26）：平移、缩放白板时自动还原（`viewportChanged` 里，放大 / 还原自己的动画期间 `maximizeMotionUntil` 不算），视口不动，记成一步 Restore window。
+
 ## dev 页面
 
 `pnpm --filter @agentdeck/ui-canvas dev` → http://localhost:5320

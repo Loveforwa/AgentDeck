@@ -107,6 +107,8 @@ const FALLBACK_SIZE: Size = { w: 560, h: 360 };
 export const SUMMARY_ZOOM = 0.5;
 /** 窗口放大时离视口边的距离。 */
 const MAXIMIZE_MARGIN = 16;
+/** 放大 / 还原的视口动画（200ms）再留一点余量：这期间视口变了不触发“平移缩放时自动还原”。 */
+const MAXIMIZE_MOTION_MS = 400;
 const STOPPED = new Set(['exited', 'error']);
 
 /** 挪框之前各框、各框里窗口的位置（V3：框变大时把挤到的框挪开，拖动中每次都从这里重新算）。 */
@@ -913,6 +915,7 @@ export class BoardController {
       const back = w.restoreRect!;
       this.record('Restore window', () => this.patchWindow(id, { rect: back, restoreRect: null }));
       this.focusWindow(id);
+      this.maximizeMotionUntil = Date.now() + MAXIMIZE_MOTION_MS;
       // 还原后窗口回到原来的位置（不挪出它的框），视口平移过去让它停在屏幕中间；不然视口还停在放大时的左上角
       const { pane, viewport } = this.state;
       const zoom = viewport.zoom;
@@ -930,6 +933,7 @@ export class BoardController {
     };
     this.record('Maximize window', () => this.patchWindow(id, { rect, restoreRect: w.rect }));
     this.focusWindow(id);
+    this.maximizeMotionUntil = Date.now() + MAXIMIZE_MOTION_MS;
     this.setViewport({ x: -rect.x + MAXIMIZE_MARGIN, y: -rect.y + MAXIMIZE_MARGIN + out.top, zoom: 1 }, 200);
   }
 
@@ -1028,10 +1032,23 @@ export class BoardController {
     if (p.w !== size.w || p.h !== size.h) this.set({ pane: size });
   }
 
-  /** React Flow 的视口变了（平移、缩放）。 */
+  /** 放大 / 还原自己带的视口动画到这个时间为止（毫秒），这期间视口变了不算你在平移缩放。 */
+  private maximizeMotionUntil = 0;
+
+  /**
+   * React Flow 的视口变了（平移、缩放，含 ⌘1、⌘J、⌘−）。白板上有放大的窗口、又不是放大 / 还原自己的动画时：
+   * 把它还原到原来的位置（视口不动），算一步可以撤销（2026-10-26 用户定）。
+   */
   viewportChanged(vp: Viewport): void {
     const cur = this.state.viewport;
-    if (cur.x !== vp.x || cur.y !== vp.y || cur.zoom !== vp.zoom) this.set({ viewport: vp });
+    if (cur.x === vp.x && cur.y === vp.y && cur.zoom === vp.zoom) return;
+    this.set({ viewport: vp });
+    if (Date.now() < this.maximizeMotionUntil) return;
+    const maximized = this.state.windows.filter((w) => this.isMaximized(w));
+    if (maximized.length === 0) return;
+    this.record('Restore window', () => {
+      for (const w of maximized) this.patchWindow(w.id, { rect: w.restoreRect!, restoreRect: null });
+    });
   }
 
   private setViewport(vp: Viewport, duration = 0): void {

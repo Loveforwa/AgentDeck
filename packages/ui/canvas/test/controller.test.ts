@@ -359,6 +359,28 @@ describe('window frame (B2)', () => {
     expect(c.state.focusedId).toBe(wid);
   });
 
+  it('panning or zooming the board restores a maximized window in place; the maximize animation itself does not', () => {
+    const now = vi.spyOn(Date, 'now');
+    let t = 1_000_000;
+    now.mockImplementation(() => t);
+    const start = win('win-dev-server').rect;
+    c.toggleMaximize(id('win-dev-server'));
+    // 放大自己的视口动画：不还原
+    c.viewportChanged({ x: c.state.viewport.x + 5, y: c.state.viewport.y, zoom: 1 });
+    expect(c.isMaximized(win('win-dev-server'))).toBe(true);
+    // 之后你缩小白板：还原，视口不动
+    t += 1000;
+    const vp = { x: 40, y: 30, zoom: 0.5 };
+    c.viewportChanged(vp);
+    expect(win('win-dev-server').rect).toEqual(start);
+    expect(win('win-dev-server').restoreRect).toBeNull();
+    expect(c.state.viewport).toEqual(vp);
+    // 算一步：⌘Z 回到放大
+    expect(c.undo()).toBe(true);
+    expect(c.isMaximized(win('win-dev-server'))).toBe(true);
+    now.mockRestore();
+  });
+
   it('respects the minimum size of the window type', () => {
     c.resizeWindowStart(id('win-shop-claude'), 'nw');
     c.resizeWindow(id('win-shop-claude'), 5000, 5000);
