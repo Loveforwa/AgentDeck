@@ -52,6 +52,7 @@ export const SERVICE_METHODS = {
   browser: ['prepare', 'fileUrl', 'openExternal', 'ping'],
   usage: ['get', 'watch', 'unwatch'],
   skills: ['forTerminal', 'library', 'addSkill', 'addMcp'],
+  subagents: ['list', 'watchTranscript', 'unwatchTranscript'],
 } as const satisfies { readonly [S in ServiceName]: readonly MethodsOf<S>[] };
 
 // 穷尽检查：漏掉的方法名会出现在报错信息里。

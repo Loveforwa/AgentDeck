@@ -132,6 +132,11 @@ import '@agentdeck/ui-kit/base.css';
 - 保存：保存的部分（视口、框、窗口、面板）引用一变就排进防抖，半秒后 `board.save`；`pagehide` 时立刻写。启动时 `board.load` 恢复。
 - 恢复上次会话（X6，TC-14，`src/model/restore.ts`、`controller.checkRestore` / `restoreAll`、`dialogs.tsx` 的 RestoreSessionDialog）：白板画出来后、以及收到 `terminal.host-lost` 时，`terminals.list()` 一次，对每个窗口问它类型的 `WindowTypeDefinition.restore.describe(data, 还在的终端)`（contracts 的可选字段，现在只有终端有；白板不按 type 写特例）。有要恢复的就弹 “Restore your last session?”：一句 “5 terminals in 3 workspaces: 3 agents and 2 shells.”，下面每个窗口一行（名字 + 恢复后会怎样，最多 8 行），Not now / Restore all。tmux 会话都在（普通 ⌘Q 再打开）不弹；读不到终端列表不弹；正开着别的对话框不打断。Restore all 并发调每个窗口的 `restore.restore(data, { workspaceId, contentSize })`，把返回的 patch 合进 data（窗口 id、位置不变，跟着存盘），完成后 Toast：“Restored 5 terminals. codex had no saved conversation and started a new one.”，失败的写 “Couldn’t restore …: 原因”，那个窗口留着自己的 Restore。Not now 之后每个窗口自己有 Restore / Restart。收起的组成员也会恢复（不靠窗口组件在不在）。
 
+- 后台 agent（N10，画板 13，`src/model/background.ts`、`src/react/Background.tsx`、`background.css`）：agent 自带的子 agent（SubagentService，`subagents.changed`），存在 store 的 `backgroundAgents`（按 terminalId，不保存）。
+  - 小提示：主终端底边右侧（左侧是 Auto-approve 书签），只数这一轮的（`current` 或还在跑）：“5 background agents · 3 running”，有出错的红点 “1 failed”，全部做完灰色 “✓ 5 done”；没有就不画。点它开 / 关面板（`backgroundPanels`，按主终端的 windowId，不保存）。右键菜单在有后台 agent 时多一项 Background agents…（提示消失以后也能打开）。
+  - 面板：不是窗口组 lead 的主终端，侧边栏是单独的节点（`bg-sidebar:<windowId>`，位置同 N2 的 `sidebarRect`）；是 lead 时 BACKGROUND 一组并进 N2 的侧边栏（TERMINALS / BACKGROUND · READ-ONLY 两个小标题）。选中一行在停靠处开只读的记录窗口（`bg-transcript:<windowId>`，`watchTranscript` / `unwatchTranscript`），lead 的子终端先收起；侧边栏点子终端时记录窗口收起。
+  - 框装得下（2026-10-26 用户定）：`withGroup` 算窗口占的地方时加上面板、记录窗口、底边标记和 Usage 条（`markOutset`）。面板打开时 `fitPanel` 让框长、盖住的窗口挪开，记下打开前的布局；收起时 `unfitPanel` 原样放回（期间布局被别的操作改过就不动）。标记、Usage 条出现时 `keepMarksInFrames` 让框长（只变大，拖动中不管）。
+
 ## dev 页面
 
 `pnpm --filter @agentdeck/ui-canvas dev` → http://localhost:5320

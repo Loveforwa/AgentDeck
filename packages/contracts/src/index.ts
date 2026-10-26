@@ -11,4 +11,5 @@ export * from './app.ts';
 export * from './mcp.ts';
 export * from './usage.ts';
 export * from './skills.ts';
+export * from './subagents.ts';
 export * from './ipc.ts';

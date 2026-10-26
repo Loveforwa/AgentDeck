@@ -26,6 +26,7 @@ import { seedSample } from './sample.ts';
 import { FakeApprovalService, FakeStatusService } from './status-service.ts';
 import { FakeSkillsService } from './skills-service.ts';
 import { FakeTerminalHost } from './terminal-host.ts';
+import { FakeSubagentService } from './subagent-service.ts';
 import { FakeUsageService } from './usage-service.ts';
 import { bindMethods, sleep } from './util.ts';
 import { FakeWorkspaceService } from './workspace-service.ts';
@@ -44,6 +45,7 @@ export interface FakeServices {
   browser: FakeBrowserService;
   usage: FakeUsageService;
   skills: FakeSkillsService;
+  subagents: FakeSubagentService;
 }
 
 export interface CreateFakeApiOptions {
@@ -109,6 +111,7 @@ export function createFakeServices(opts: CreateFakeApiOptions = {}): { bus: Fake
     board: new FakeBoardStore(),
     browser: new FakeBrowserService(),
     usage: new FakeUsageService({ bus }),
+    subagents: new FakeSubagentService({ bus }),
     // 终端的 agent 看状态机里 track 的，目录看建终端时的 cwd
     skills: new FakeSkillsService({
       bus,
@@ -144,6 +147,7 @@ export function createFakeApi(opts: CreateFakeApiOptions = {}): FakeApi {
     browser: svc('browser'),
     usage: svc('usage'),
     skills: svc('skills'),
+    subagents: svc('subagents'),
     on: (type, listener) => bus.on(type, listener),
     onTerminalData: (listener) => bus.onTerminalData(listener),
     contractsVersion: CONTRACTS_VERSION,

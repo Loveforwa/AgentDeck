@@ -21,6 +21,13 @@ import { BoardDialogs } from './dialogs.tsx';
 import { ApprovalDialogs } from './approvals.tsx';
 import { FrameNodeView, PendingFrameView } from './FrameNodeView.tsx';
 import { WindowNodeView } from './WindowNodeView.tsx';
+import {
+  BACKGROUND_SIDEBAR_TYPE,
+  BACKGROUND_TRANSCRIPT_TYPE,
+  BackgroundSidebarNode,
+  BackgroundTranscriptNode,
+  backgroundNodes,
+} from './Background.tsx';
 import { GROUP_SIDEBAR_TYPE, GroupSidebarNode, groupSidebarNodes } from './GroupSidebar.tsx';
 import { hiddenMembers } from '../model/groups.ts';
 import { useBoardState, useController } from './context.tsx';
@@ -37,6 +44,8 @@ const nodeTypes: NodeTypes = {
   frame: FrameNodeView as NodeTypes[string],
   pending: PendingFrameView as NodeTypes[string],
   [GROUP_SIDEBAR_TYPE]: GroupSidebarNode as NodeTypes[string],
+  [BACKGROUND_SIDEBAR_TYPE]: BackgroundSidebarNode as NodeTypes[string],
+  [BACKGROUND_TRANSCRIPT_TYPE]: BackgroundTranscriptNode as NodeTypes[string],
 };
 
 /** 窗口永远在框上面。 */
@@ -50,6 +59,7 @@ export function Board() {
   const windows = useBoardState((s) => s.windows);
   const resizing = useBoardState((s) => s.resizing);
   const pending = useBoardState((s) => s.pending);
+  const backgroundPanels = useBoardState((s) => s.backgroundPanels);
   const viewport = useBoardState((s) => s.viewport);
   const loaded = useBoardState((s) => s.loaded);
   useTrackMeta();
@@ -143,8 +153,10 @@ export function Board() {
         };
       }),
       ...groupSidebarNodes(c, windows, resizing, WINDOW_Z),
+      // N10：后台 agent 的侧边栏和记录窗口
+      ...backgroundNodes(c, windows, backgroundPanels, resizing, hidden, WINDOW_Z),
     ];
-  }, [c, frames, windows, resizing, pending]);
+  }, [c, frames, windows, resizing, pending, backgroundPanels]);
 
   const openPaneMenu = (e: ReactMouseEvent | MouseEvent) => {
     e.preventDefault();

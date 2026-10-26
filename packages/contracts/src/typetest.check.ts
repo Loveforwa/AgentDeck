@@ -1,6 +1,6 @@
 // 只用于类型检查：确认接口能被实现、事件能按 type 收窄。不会被打包。
 import type {
-  AgentDeckApi, ApproveResult, AutoApproveState, CommitInfo, EventOf, GitService, LogOptions, SkillItemId, TerminalHost, TerminalId,
+  AgentDeckApi, ApproveResult, BackgroundAgent, TerminalBackgroundAgents, TranscriptLine, AutoApproveState, CommitInfo, EventOf, GitService, LogOptions, SkillItemId, TerminalHost, TerminalId,
   TerminalSkills, TerminalUsage, TerminalWindowData, UsageService, WindowGroupId, WindowId, WindowNode, WindowRestoreSupport, WorkspaceId,
 } from './index.ts';
 import { effectiveSkillSelection, FIRE_AND_FORGET, isAutoApproveOn, skillsRestartNeeded } from './index.ts';
@@ -109,3 +109,11 @@ const restoreSupport: WindowRestoreSupport<TerminalWindowData> = {
   restore: async () => ({ patch: { terminalId: 't2' as TerminalId }, fresh: false }),
 };
 void restoreSupport;
+// N10：agent 自带的后台子 agent，只读。
+api.on('subagents.changed', (e: EventOf<'subagents.changed'>) => {
+  const a: BackgroundAgent | undefined = e.agents.agents[0];
+  if (a?.state === 'running' && a.current) void a.description?.length;
+});
+api.on('subagents.transcript-changed', (e) => void e.transcript.lines.map((l: TranscriptLine) => l.kind));
+void api.subagents.list().then((all: TerminalBackgroundAgents[]) => all.length);
+void api.subagents.watchTranscript('t1' as TerminalId, 'a1').then((t) => t.omitted);

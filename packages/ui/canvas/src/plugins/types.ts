@@ -11,6 +11,9 @@ import { BROWSER_TYPE, agentOf, isAgentTerminal, isTerminal } from '../model/win
 /** 白板上插件能贴的几种东西（docs/plugins.md「第一件事」）。 */
 export type PluginThing = 'terminal' | 'browser' | 'frame' | 'board';
 
+/** 底边标记（书签、小提示）的高度，和 design-tokens 的 --plugin-mark-height 一致。框要给它留地方。 */
+export const PLUGIN_MARK_HEIGHT = 16;
+
 /** 右键的是什么。board 以后再加（整块白板的插件，例如整台电脑的用量）。 */
 export type PluginTarget = { kind: 'window'; windowId: WindowId } | { kind: 'frame'; workspaceId: WorkspaceId };
 

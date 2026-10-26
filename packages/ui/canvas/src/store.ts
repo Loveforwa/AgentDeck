@@ -5,6 +5,7 @@ import { createStore, type StoreApi } from 'zustand/vanilla';
 import type {
   AgentDeckErrorData,
   AgentInfo,
+  BackgroundAgent,
   BoardState,
   CreateWorkspaceRequest,
   Project,
@@ -17,6 +18,7 @@ import type {
   Workspace,
   WorkspaceId,
 } from '@agentdeck/contracts';
+import type { BackgroundPanel } from './model/background.ts';
 import type { Point } from './model/geometry.ts';
 import type { RestoreSessionItem } from './model/restore.ts';
 import type { Guide } from './model/snap.ts';
@@ -107,6 +109,10 @@ export interface BoardStoreState extends SavedBoard {
   selection: WindowId[];
   /** X10：正在框选时的矩形，白板坐标。 */
   selectionBox: Rect | null;
+  /** N10：每个终端的后台 agent（SubagentService，按 terminalId），不保存。 */
+  backgroundAgents: Record<string, BackgroundAgent[]>;
+  /** N10：开着的后台 agent 面板（按主终端的 windowId），不保存。 */
+  backgroundPanels: Record<string, BackgroundPanel>;
 }
 
 export function initialState(): BoardStoreState {
@@ -134,6 +140,8 @@ export function initialState(): BoardStoreState {
     pane: { w: 1200, h: 800 },
     selection: [],
     selectionBox: null,
+    backgroundAgents: {},
+    backgroundPanels: {},
   };
 }
 

@@ -38,6 +38,7 @@ import {
   defaultUsageRoots,
   findExecutable,
   SkillsServiceImpl,
+  SubagentServiceImpl,
   UsageServiceImpl,
   type UsageTarget,
 } from '@agentdeck/agent-adapters';
@@ -142,6 +143,9 @@ async function main(): Promise<void> {
     }
   };
 
+  // agent 自带的后台子 agent（N10）：只靠钩子和 agent 自己的记录，不保存
+  const subagents = new SubagentServiceImpl({ emit });
+
   // ---- 终端：utilityProcess 跑 tmux-host ----
   const host = startHostProcess<MessagePortMain>({
     fork: () => utilityProcess.fork(tmuxHostPath, [], { serviceName: 'agentdeck-terminal-host' }),
@@ -216,8 +220,11 @@ async function main(): Promise<void> {
     onStarted: (s) => {
       if (s.skills) skills.noteLaunched(s.terminalId, s.skills.ids);
     },
-    tapHook: (h) =>
-      usage?.noteHook({ terminalId: h.terminalId, agent: h.agent, hookName: h.hookName, payload: h.envelope.payload }) ?? false,
+    tapHook: (h) => {
+      const hook = { terminalId: h.terminalId, agent: h.agent, hookName: h.hookName, payload: h.envelope.payload };
+      subagents.noteHook(hook);
+      return usage?.noteHook(hook) ?? false;
+    },
     env: () => loginEnv,
     mcp: () => mcp?.endpoint ?? null,
     ...(mcpPluginDir ? { mcpPluginDir } : {}),
@@ -268,6 +275,8 @@ async function main(): Promise<void> {
     rt.onTerminalEvent(event);
     // 状态机的兜底规则（claude 拒绝批准、Esc 打断都没有钩子）要知道用户输入过，tmux-host 在 write / sendKeys 时发 terminal.input
     if (event.type === 'terminal.input') rt.noteInput(event.id);
+    // agent 进程没了，它的后台子 agent 也没了
+    if (event.type === 'terminal.exit') subagents.noteTerminalGone(event.id);
   });
 
   // 本次运行里启动的终端的启动时间：kimi 新建会话没有 id，用量模块按目录和启动时间推断是哪个会话
@@ -382,6 +391,7 @@ async function main(): Promise<void> {
     for (const win of BrowserWindow.getAllWindows()) win.destroy();
     await rt.close().catch(() => undefined);
     usage?.close();
+    subagents.close();
     // ⌘Q 只断开（会话留在 tmux 里继续跑）；Stop all and quit 才结束 tmux 服务
     await terminals.stop(stopTerminals);
     host.stop();
@@ -427,6 +437,7 @@ async function main(): Promise<void> {
   registry.register('board', store.board);
   registry.register('usage', usage);
   registry.register('skills', skills);
+  registry.register('subagents', subagents);
   registerBrowserService(registry);
 
   // ---- 应用壳自己的 IPC（src/shared/desktop-bridge.ts）----
