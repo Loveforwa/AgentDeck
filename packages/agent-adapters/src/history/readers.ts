@@ -4,7 +4,8 @@
 //                   标题 custom-title（customTitle，/rename）> ai-title（aiTitle，写好几次取最后一个），都在结尾 64KB 里。
 //   codex 0.164     ~/.codex/sessions/年/月/日/rollout-*-<id>.jsonl：第一行 session_meta（id、cwd、git.branch、source、originator）；
 //                   标题在 ~/.codex/session_index.jsonl（thread_name），第一条消息在 history.jsonl 或文件里的 UserMessage。
-//   pi 0.83 / omp 18  ~/.pi/agent/sessions、~/.omp/agent/sessions：第一行 session（id、cwd、timestamp）；omp 另有 title 行。
+//   pi 0.83 / omp 18  ~/.pi/agent/sessions、~/.omp/agent/sessions：session 行（id、cwd、timestamp），pi 在第一行；
+//                   omp 第一行是 title 行（固定位置、后面补空格），session 在第二行，改名时另有 title_change。
 //   kimi 2.3        ~/.kimi-code/sessions/wd_*/session_<id>/state.json：id、cwd、title、lastPrompt、createdAt、updatedAt。
 
 import { open } from 'node:fs/promises';
@@ -99,7 +100,8 @@ export async function readClaudeSession(file: string): Promise<ParsedSession | n
       if (!j) continue;
       if (isHead) {
         cwd = cwd ?? str(j['cwd']);
-        branch = branch ?? str(j['gitBranch']);
+        // 不是 git 仓库的目录 claude 记成 HEAD
+        if (!branch && str(j['gitBranch']) !== 'HEAD') branch = str(j['gitBranch']);
         entrypoint = entrypoint ?? str(j['entrypoint']);
         startedAt = startedAt ?? isoOf(j['timestamp']);
         if (!firstPrompt && j['type'] === 'user' && j['isMeta'] !== true && j['isSidechain'] !== true) {
@@ -206,8 +208,9 @@ export async function readCodexSession(file: string, index: CodexIndex): Promise
 
 export async function readPiSession(file: string): Promise<ParsedSession | null> {
   const { head, tail } = await readHeadTail(file, 64 * 1024, true);
-  const first = parseLine(head[0] ?? '');
-  if (!first || first['type'] !== 'session') return null;
+  // pi 第一行就是 session；omp 第一行是固定位置的 title 行，session 在第二行
+  const first = head.slice(0, 5).map((l) => parseLine(l)).find((j) => j?.['type'] === 'session') ?? null;
+  if (!first) return null;
   const id = str(first['id']);
   if (!id) return null;
   let firstPrompt: string | null = null;
