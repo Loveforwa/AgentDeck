@@ -2,7 +2,7 @@
 // 白板上开着的会话（按终端窗口的 agent + 会话 id）带状态灯，单击跳过去；Resume / Fork 在白板上新开终端，
 // 用 agent 自己的接回参数（X4、X6 那一套）。
 
-import { useMemo, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { SessionSummary, TerminalWindowData, WindowId, WindowNode, WorkspaceId } from '@agentdeck/contracts';
 import { navWindow } from '@agentdeck/board-nav-panel';
 import { HistoryPanel, sessionKey, type OpenSession, type PathGroup } from '@agentdeck/history-panel';
@@ -19,6 +19,12 @@ export function HistorySidebar({ controller, headerActions }: { controller: Boar
     const id = controller.activeWorkspaceId(s);
     return id ? (s.workspaces[id]?.projectId ?? null) : null;
   });
+
+  // 家目录：Other folders 里的目录写成 ~ 开头
+  const [home, setHome] = useState<string | null>(null);
+  useEffect(() => {
+    void window.agentdeck.app.homeDir().then(setHome, () => undefined);
+  }, []);
 
   const onBoard = useMemo(() => new Set<string>(frames.map((f) => f.workspaceId)), [frames]);
   // 白板上开着的会话：终端窗口记着的会话 id，没有时看状态机报的（codex、omp 启动后才知道 id）
@@ -81,6 +87,7 @@ export function HistorySidebar({ controller, headerActions }: { controller: Boar
       onCopyId={(s) => void navigator.clipboard?.writeText(s.id)}
       onReveal={(s) => void window.agentdeck.app.revealInFinder(s.file)}
       headerActions={headerActions}
+      home={home}
     />
   );
 }

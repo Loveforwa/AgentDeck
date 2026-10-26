@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen, waitFor, within as inside } from '@test
 import { describe, expect, it, vi } from 'vitest';
 import type { Project, ProjectId, SessionSummary, Workspace, WorkspaceId } from '@agentdeck/contracts';
 import { fakeSession } from '@agentdeck/fakes';
-import { HistoryPanel, buildHistory, relativeTime, sessionKey, type HistoryPanelProps } from '../src/index.ts';
+import { HistoryPanel, buildHistory, relativeTime, sessionKey, shortPath, type HistoryPanelProps } from '../src/index.ts';
 
 const project = (id: string, path: string, name = id): Project => ({
   id: id as ProjectId,
@@ -83,6 +83,24 @@ describe('history · grouping', () => {
     expect(q.flatMap((p) => p.paths.flatMap((x) => x.agents.flatMap((a) => a.sessions.map((s) => s.id))))).toEqual(['c3']);
     const codex = buildHistory(input({ filter: { query: '', agent: 'codex' } }));
     expect(codex.flatMap((p) => p.paths.flatMap((x) => x.agents.map((a) => a.agent)))).toEqual(['codex']);
+  });
+
+  it('treats /tmp and /private/tmp as the same folder and shortens long folders', () => {
+    const ws = { 'w-tmp': workspace('w-tmp', 'p-tmp', '/private/tmp/demo/repo', 'main', 'main-folder') };
+    const tree = buildHistory(
+      input({
+        sessions: [
+          fakeSession({ id: 't1', agent: 'claude', cwd: '/tmp/demo/repo', title: 'Tmp' }),
+          fakeSession({ id: 't2', agent: 'claude', cwd: '/Users/me/code/a-long-folder/another-long-folder/deep/folder/name', title: 'Deep' }),
+        ],
+        projects: [project('p-tmp', '/private/tmp/demo/repo', 'tmp')],
+        workspaces: ws,
+        home: '/Users/me',
+      }),
+    );
+    expect(tree[0]!.paths[0]).toMatchObject({ workspaceId: 'w-tmp', count: 1 });
+    expect(tree[1]!.paths[0]!.label).toBe('…/folder/name');
+    expect(shortPath('/Users/me/code/x', '/Users/me')).toBe('~/code/x');
   });
 
   it('relative times', () => {

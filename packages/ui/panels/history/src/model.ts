@@ -70,12 +70,30 @@ export interface HistoryInput {
   onBoard: ReadonlySet<string>;
   activeProjectId: ProjectId | null;
   filter: HistoryFilter;
+  /** 家目录，目录写成 ~ 开头。 */
+  home?: string | null;
 }
 
-/** path 等于 dir 或在它下面。 */
+/** macOS 上 /tmp、/var、/etc 是 /private/… 的链接，agent 记下的目录两种写法都有：统一去掉 /private。 */
+export function normalizePath(path: string): string {
+  const p = path.replace(/^\/private(?=\/(tmp|var|etc)(\/|$))/, '');
+  return p.length > 1 && p.endsWith('/') ? p.slice(0, -1) : p;
+}
+
+/** path 等于 dir 或在它下面（按 normalizePath 比）。 */
 export function within(path: string, dir: string): boolean {
-  const d = dir.endsWith('/') ? dir.slice(0, -1) : dir;
-  return path === d || path.startsWith(`${d}/`);
+  const p = normalizePath(path);
+  const d = normalizePath(dir);
+  return p === d || p.startsWith(`${d}/`);
+}
+
+/** 列表里的目录：家目录写成 ~，还太长时只留最后两层（完整的在悬停里）。 */
+export function shortPath(path: string, home: string | null): string {
+  let p = normalizePath(path);
+  if (home && within(p, home)) p = `~${p.slice(normalizePath(home).length)}`;
+  if (p.length <= 36) return p;
+  const parts = p.split('/').filter(Boolean);
+  return parts.length > 2 ? `…/${parts.slice(-2).join('/')}` : p;
 }
 
 export function matches(s: SessionSummary, filter: HistoryFilter): boolean {
@@ -123,11 +141,18 @@ export function buildHistory(input: HistoryInput): ProjectGroup[] {
     } else {
       const p = cwd ? input.projects.find((x) => within(cwd, x.path) || within(cwd, x.worktreeRoot)) : undefined;
       projectId = p?.id ?? 'other';
-      key = `dir:${projectId}:${cwd ?? ''}`;
+      key = `dir:${projectId}:${cwd ? normalizePath(cwd) : ''}`;
       // 写成相对项目目录（或项目的 worktree 目录）的路径
       const root = p && cwd ? [p.path, p.worktreeRoot].find((r) => within(cwd, r)) : undefined;
-      const rel = root && cwd ? cwd.slice(root.replace(/\/$/, '').length).replace(/^\//, '') : cwd;
-      base = { label: rel || cwd || 'Unknown folder', detail: null, mono: true, workspaceId: null, cwd, onBoard: false };
+      const rel = root && cwd ? normalizePath(cwd).slice(normalizePath(root).length).replace(/^\//, '') : null;
+      base = {
+        label: rel || (cwd ? shortPath(cwd, input.home ?? null) : 'Unknown folder'),
+        detail: null,
+        mono: true,
+        workspaceId: null,
+        cwd,
+        onBoard: false,
+      };
     }
     let g = paths.get(key);
     if (!g) {

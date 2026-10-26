@@ -3,6 +3,8 @@ export {
   buildHistory,
   LAMP_LABEL,
   matches,
+  normalizePath,
+  shortPath,
   relativeTime,
   sessionDetails,
   sessionKey,

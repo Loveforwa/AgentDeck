@@ -491,6 +491,7 @@ ACCEPTED = {
 
 # 已经处理的问题：处理状态和备注
 RESOLVED = {
+    'IS-86': '2026-10-26 已做（N11）：顶栏最左边的按钮开左边栏 HISTORY，按项目 → 工作路径 → agent 列出这台电脑上的历史会话（claude、codex、pi、omp、kimi），搜索、按 agent 筛选；开着的有状态灯、单击跳过去，没开着的 Resume / Fork / Copy session id / Reveal in Finder；真窗口里 Resume 过一段 claude 对话',
     'IS-84': '2026-10-26 已修：顶栏加回成一条横栏，白板在它下面，放大的窗口也从顶栏下面开始',
     'IS-87': '2026-10-26 已做（N12）：框标题右上角 Tidy / Columns / Rows 和 Auto-arrange 开关，框缩到正好装下，⌘Z 撤销；真窗口里用 4、5 个 shell 试过',
     'IS-85': '2026-10-26 claude 已做（N10，feat/N10-background-agents）：底边右侧的小提示、侧边栏 BACKGROUND 一组、只读的记录窗口，面板打开时项目框跟着长；真 claude 跑过两轮。codex、pi、omp、kimi 待 DR-61 调研',

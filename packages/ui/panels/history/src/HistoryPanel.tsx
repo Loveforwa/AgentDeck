@@ -41,6 +41,8 @@ export interface HistoryPanelProps {
   now?: () => number;
   /** 标题栏右边的按钮（收起左边栏）。 */
   headerActions?: ReactNode;
+  /** 家目录，目录写成 ~ 开头。 */
+  home?: string | null;
 }
 
 function useSessions(load: () => Promise<SessionSummary[]>, refreshMs: number): { sessions: SessionSummary[] | null; error: boolean } {
@@ -77,8 +79,8 @@ export function HistoryPanel(props: HistoryPanelProps) {
   const [agent, setAgent] = useState<AgentKind | null>(null);
   const filter: HistoryFilter = useMemo(() => ({ query, agent }), [query, agent]);
   const tree = useMemo(
-    () => (sessions ? buildHistory({ sessions, projects, workspaces, onBoard, activeProjectId, filter }) : []),
-    [sessions, projects, workspaces, onBoard, activeProjectId, filter],
+    () => (sessions ? buildHistory({ sessions, projects, workspaces, onBoard, activeProjectId, filter, home: props.home ?? null }) : []),
+    [sessions, projects, workspaces, onBoard, activeProjectId, filter, props.home],
   );
   const present = useMemo(() => AGENTS.filter((a) => sessions?.some((s) => s.agent === a)), [sessions]);
   // 展开 / 收起记在这里（按工作路径）；没动过的照默认：白板上有框的、在搜索时都展开

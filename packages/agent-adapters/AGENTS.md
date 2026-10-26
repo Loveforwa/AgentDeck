@@ -253,6 +253,15 @@ token 本身只放进 `LaunchSpec.env`，不进命令行。和用户自己配的
 - 版本门槛：codex 的库里 MCP 同 N1（0.164.0），omp 的 setDir 同 N1（18.0.4）。版本取不到时按够新处理。running 记的是选中的 id，版本太低被适配器跳过的也算在里面（只影响 “Changes apply after restart” 的提示）。
 - 测试：`test/skills.test.ts`（临时目录里的库、repo、每种 agent 列出什么、prepareLaunch 写的目录、每种 agent 的启动参数、running 存档、选择规则）。
 
+## 历史会话（N11，DR-62，2026-10-26 本机核对）
+
+`src/history/`：`HistoryServiceImpl.list()` 列出这台电脑上各 agent 的历史会话（只读）。每种 agent 一个读取器（`readers.ts`），只读文件开头（claude 还读结尾 64KB 找标题）；按“路径 + 修改时间 + 大小”缓存，第一次扫全机（本机 1200 多个文件）约 0.3 秒，之后几毫秒。
+
+- 不列：claude 的 sdk-*（claude -p、SDK）、codex 的 exec / mcp / 子 agent（source 是对象）、没说过话的空会话；claude 只看 `projects/*/*.jsonl`，不进 `<id>/subagents/`。
+- 标题：自己起的名字（claude custom-title、kimi isCustomTitle）> agent 起的（claude ai-title、codex session_index.jsonl 的 thread_name、omp title / title_change、kimi title）> 第一条消息。
+- omp 文件第一行是 title 行（固定位置补空格），session 行在第二行；claude 在不是 git 仓库的目录里把分支记成 HEAD，按没有分支处理。
+- 测试：`test/history.test.ts`（手写的小样例）。
+
 ## 后台 agent（N10，DR-61，2026-10-26 实测 claude 2.1.291）
 
 `src/subagents/`：agent 自带的子 agent（claude 的 Agent / Task 工具开的），按终端列出来，只读，不保存。现在只有 claude，别的 agent 的钩子直接忽略。
