@@ -1,13 +1,14 @@
 // BoardController：白板的全部行为。React 组件只负责画和把手势交给它；它只通过 window.agentdeck（AgentDeckApi）调服务。
 // 不依赖 React，测试里直接拿 createFakeApi() 跑。
 
-import type { AgentDeckApi, AgentDeckErrorData, BackgroundAgent, AgentKind, BoardState, LaunchMode, CreateWorkspaceRequest, ErrorCode, FrameNode, OpenWindowRequest, ProjectId, ProjectPatch, Rect, Settings, Size, TerminalId, TerminalWindowData, Unsubscribe, Viewport, WindowCommand, WindowGroupId, WindowGroupMemberRequest, WindowId, WindowNode, WindowStatusBadge, Workspace, WorkspaceId } from '@agentdeck/contracts';
+import type { AgentDeckApi, AgentDeckErrorData, BackgroundAgent, FrameArrange, FrameLayout, AgentKind, BoardState, LaunchMode, CreateWorkspaceRequest, ErrorCode, FrameNode, OpenWindowRequest, ProjectId, ProjectPatch, Rect, Settings, Size, TerminalId, TerminalWindowData, Unsubscribe, Viewport, WindowCommand, WindowGroupId, WindowGroupMemberRequest, WindowId, WindowNode, WindowStatusBadge, Workspace, WorkspaceId } from '@agentdeck/contracts';
 import { TITLE_BAR_HEIGHT, resizeRect, type ResizeEdge } from '@agentdeck/ui-window-shell';
 import { isSummarySize, windowRegistry, type WindowDefinition, type WindowRegistry } from './registry.ts';
 import { ApprovalsModel } from './approvals/model.ts';
 import { usageOutset } from './plugins/usage-model.ts';
 import { PLUGIN_MARK_HEIGHT } from './plugins/types.ts';
 import { hintOf, transcriptRect } from './model/background.ts';
+import { LAYOUT_LABEL, arrangeBlocks, type ArrangeBlock } from './model/arrange.ts';
 import { startableAgents } from './model/agents.ts';
 import { nextWaiting, prevWaiting, summarize, statusOf, type AttentionSummary } from './model/attention.ts';
 import { createAutosave, type Autosave } from './model/autosave.ts';
@@ -279,6 +280,8 @@ export class BoardController {
       });
     };
     this.unsubs.push(this.store.subscribe(checkMarks), this.approvals.store.subscribe(checkMarks));
+    // N12：开着 Auto-arrange 的框里多了、少了窗口：下一个微任务里重排
+    this.unsubs.push(this.store.subscribe(() => this.noteFrameMembers()));
     // 存档：保存的那部分一变就排进防抖
     this.unsubs.push(
       this.store.subscribe((s, prev) => {
@@ -1501,6 +1504,114 @@ export class BoardController {
       const ext = this.withGroup(w.id, w.rect);
       if (!sameRect(growFrame(f.rect, ext), f.rect)) this.fitFrameTo(w.workspaceId, ext);
     }
+  }
+
+  // ---- 项目框一键排版（N12，画板 15） ----
+
+  /** 框的排版设置（老数据没有，按关着、没点过）。 */
+  frameArrange(ws: WorkspaceId): FrameArrange {
+    return this.frameOf(ws)?.arrange ?? { auto: false, layout: null };
+  }
+
+  /** 框标题右上角的 Tidy / Columns / Rows：排好、框缩到正好装下，记成一步（⌘Z 回到排之前）。 */
+  arrangeFrame(ws: WorkspaceId, layout: FrameLayout): void {
+    if (!this.frameOf(ws)) return;
+    this.record(`Arrange windows (${LAYOUT_LABEL[layout]})`, () => {
+      this.layoutFrame(ws, layout, new Set());
+      this.patchFrame(ws, { arrange: { ...this.frameArrange(ws), layout } });
+    });
+  }
+
+  /** Auto-arrange 开关。打开时马上按上次的排法（没点过按 Tidy）排一次。 */
+  setAutoArrange(ws: WorkspaceId, on: boolean): void {
+    if (!this.frameOf(ws)) return;
+    this.patchFrame(ws, { arrange: { ...this.frameArrange(ws), auto: on } });
+    if (on) this.record('Arrange windows', () => this.layoutFrame(ws, this.frameArrange(ws).layout ?? 'tidy', new Set()));
+  }
+
+  /** 每个框里有哪些窗口（上一次看到的），Auto-arrange 据此知道新开、关掉了窗口。 */
+  private frameMembers = new Map<WorkspaceId, Set<WindowId>>();
+  /** 等着重排的框和新开的窗口（拖动中先不排，松手后再排）。 */
+  private pendingArrange = new Map<WorkspaceId, Set<WindowId>>();
+  private arrangeQueued = false;
+
+  private noteFrameMembers(): void {
+    const s = this.state;
+    if (!s.loaded) return;
+    const now = new Map<WorkspaceId, Set<WindowId>>();
+    for (const w of s.windows) if (w.workspaceId) (now.get(w.workspaceId) ?? now.set(w.workspaceId, new Set()).get(w.workspaceId)!).add(w.id);
+    for (const f of s.frames) {
+      const ws = f.workspaceId;
+      const cur = now.get(ws) ?? new Set<WindowId>();
+      const prev = this.frameMembers.get(ws);
+      this.frameMembers.set(ws, cur);
+      if (!prev || !f.arrange?.auto) continue;
+      const added = [...cur].filter((id) => !prev.has(id));
+      const removed = [...prev].some((id) => !cur.has(id));
+      if (added.length === 0 && !removed) continue;
+      const pending = this.pendingArrange.get(ws) ?? new Set<WindowId>();
+      for (const id of added) pending.add(id);
+      this.pendingArrange.set(ws, pending);
+    }
+    if (this.pendingArrange.size === 0 || this.arrangeQueued) return;
+    this.arrangeQueued = true;
+    queueMicrotask(() => {
+      this.arrangeQueued = false;
+      if (!this.started || this.drag) return;
+      const jobs = [...this.pendingArrange];
+      this.pendingArrange.clear();
+      for (const [ws, added] of jobs) {
+        const a = this.frameArrange(ws);
+        if (a.auto && this.frameOf(ws)) this.layoutFrame(ws, a.layout ?? 'tidy', added);
+      }
+    });
+  }
+
+  /**
+   * 排一个框：框里每个窗口连同贴着它的东西（withGroup）算一块，按 layout 排到框内区域的左上角起，然后框缩到正好装下
+   * （挤到或空出来的旁边的框照 V3 的规则）。放大中的、收起的子终端不动；停靠的子终端跟着 lead 走。last：新开的，排在最后。
+   */
+  private layoutFrame(ws: WorkspaceId, layout: FrameLayout, last: ReadonlySet<WindowId>): void {
+    const f = this.frameOf(ws);
+    if (!f) return;
+    const s = this.state;
+    const hidden = hiddenMembers(s.windows);
+    const docked = new Set<WindowId>();
+    for (const g of listGroups(s.windows)) {
+      const m = this.dockedMember(g);
+      if (m) docked.add(m.id);
+    }
+    const blocks: ArrangeBlock[] = [];
+    for (const w of s.windows) {
+      if (w.workspaceId !== ws || hidden.has(w.id) || docked.has(w.id) || this.isMaximized(w)) continue;
+      const g = this.leadGroup(w.id);
+      blocks.push({
+        id: w.id,
+        ext: this.withGroup(w.id, w.rect),
+        rect: w.rect,
+        min: this.definitionOf(w)?.minSize ?? FRAME_MIN,
+        resizable: !(g && this.dockedMember(g)),
+        last: last.has(w.id),
+      });
+    }
+    if (blocks.length === 0) return;
+    const inner = innerArea(f.rect);
+    const placed = arrangeBlocks(layout, blocks, { x: inner.x, y: inner.y }, GAP);
+    this.set((st) => ({
+      windows: st.windows.map((w) => {
+        const r = placed.get(w.id);
+        return r && !sameRect(r, w.rect) ? { ...w, rect: r } : w;
+      }),
+    }));
+    // 框缩到正好装下（不小于 FRAME_MIN），左上角不动
+    const st = this.state;
+    const hid = hiddenMembers(st.windows);
+    const content = bounds(st.windows.filter((w) => w.workspaceId === ws && !hid.has(w.id)).map((w) => this.withGroup(w.id, this.footprint(w))));
+    const before = this.frameOf(ws)?.rect;
+    if (!content || !before) return;
+    const fit = frameAround(content);
+    const after = { ...fit, w: Math.max(FRAME_MIN.w, fit.w), h: Math.max(FRAME_MIN.h, fit.h) };
+    if (!sameRect(after, before)) this.applyFrameChange(this.layoutBase(), ws, before, after);
   }
 
   // ---- 窗口组的侧边栏（N2） ----

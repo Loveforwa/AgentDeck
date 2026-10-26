@@ -927,6 +927,52 @@
   flex: 1;
 }
 
+/* 框标题右上角的排版图标（N12）：平时灰，悬停变深；上次用的排法、开着的 Auto-arrange 墨黑底 */
+.ad-frame-arrange {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 2px;
+  align-self: center;
+  margin-top: calc(var(--space-sm) * -1);
+}
+
+.ad-frame-arrange-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.ad-frame-arrange-btn:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+
+.ad-frame-arrange-btn[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--on-ink);
+}
+
+.ad-frame-arrange-btn:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.ad-frame-arrange-sep {
+  width: 1px;
+  height: 14px;
+  margin: 0 2px;
+  background: var(--line);
+}
+
 /* 框标题右侧的状态灯（MVP v2 · V2）：绿 running、黄 waiting，样子同顶栏 */
 .ad-frame-count {
   display: inline-flex;
