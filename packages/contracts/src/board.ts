@@ -31,6 +31,18 @@ export interface FrameNode {
   z: number;
   /** 按工作区开的 Auto-approve（P1）。 */
   autoApprove: boolean;
+  /** 一键排版（MVP v3 · N12，画板 15）。老数据没有它，按 { auto: false, layout: null }。 */
+  arrange?: FrameArrange;
+}
+
+/** 框里窗口的排法：tidy 紧凑网格（窗口大小不变）、columns 并排一样高、rows 上下叠一样宽。 */
+export type FrameLayout = 'tidy' | 'columns' | 'rows';
+
+export interface FrameArrange {
+  /** 开着时在这个框里新开、关掉窗口都按 layout 重排（没点过排法时按 tidy）。 */
+  auto: boolean;
+  /** 最近一次点的排法；没点过为 null。 */
+  layout: FrameLayout | null;
 }
 
 export interface WindowNode<TData = unknown> {

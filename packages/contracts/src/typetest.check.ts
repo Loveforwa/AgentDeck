@@ -1,6 +1,6 @@
 // 只用于类型检查：确认接口能被实现、事件能按 type 收窄。不会被打包。
 import type {
-  AgentDeckApi, ApproveResult, BackgroundAgent, TerminalBackgroundAgents, TranscriptLine, AutoApproveState, CommitInfo, EventOf, GitService, LogOptions, SkillItemId, TerminalHost, TerminalId,
+  AgentDeckApi, ApproveResult, FrameArrange, BackgroundAgent, TerminalBackgroundAgents, TranscriptLine, AutoApproveState, CommitInfo, EventOf, GitService, LogOptions, SkillItemId, TerminalHost, TerminalId,
   TerminalSkills, TerminalUsage, TerminalWindowData, UsageService, WindowGroupId, WindowId, WindowNode, WindowRestoreSupport, WorkspaceId,
 } from './index.ts';
 import { effectiveSkillSelection, FIRE_AND_FORGET, isAutoApproveOn, skillsRestartNeeded } from './index.ts';
@@ -117,3 +117,6 @@ api.on('subagents.changed', (e: EventOf<'subagents.changed'>) => {
 api.on('subagents.transcript-changed', (e) => void e.transcript.lines.map((l: TranscriptLine) => l.kind));
 void api.subagents.list().then((all: TerminalBackgroundAgents[]) => all.length);
 void api.subagents.watchTranscript('t1' as TerminalId, 'a1').then((t) => t.omitted);
+// N12：框的排版设置，可选字段，老数据没有它
+const arrange: FrameArrange = { auto: true, layout: 'tidy' };
+void arrange;
