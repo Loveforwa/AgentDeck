@@ -18,6 +18,7 @@
 | usage.ts | UsageService（终端的 token 用量，插件 PL2） | 线 4 · agent-adapters 的 usage 模块 | 终端窗口上的用量条 |
 | skills.ts | SkillsService（终端的 Skills · MCP，N9）和选择的规则 | 线 4 · agent-adapters 的 skills 模块 | 源代码管理面板的 SKILLS · MCP 小节 |
 | subagents.ts | SubagentService（agent 自带的后台子 agent，N10，只读） | 线 4 · agent-adapters 的 subagents 模块 | 终端窗口底边的小提示、侧边栏、记录窗口 |
+| history.ts | HistoryService（各 agent 的历史会话，N11，只读） | 线 4 · agent-adapters 的 history 模块 | 左边栏（ui/panels/history） |
 | app.ts | AppService、Settings | 组装（apps/desktop） | 所有界面 |
 | ipc.ts | AgentDeckApi、事件总表、线路约定 | M0 · F3 IPC 层 | 所有界面 |
 

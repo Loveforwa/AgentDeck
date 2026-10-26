@@ -8,6 +8,7 @@ import type { BoardEvent, BoardStore } from './board.ts';
 import type { BrowserService } from './browser.ts';
 import type { Unsubscribe } from './common.ts';
 import type { GitEvent, GitService } from './git.ts';
+import type { HistoryService } from './history.ts';
 import type { ProjectEvent, ProjectService } from './project.ts';
 import type { ApprovalService, StatusEvent, StatusService } from './status.ts';
 import type { TerminalDataMessage, TerminalEvent, TerminalHost } from './terminal.ts';
@@ -16,7 +17,7 @@ import type { SubagentEvent, SubagentService } from './subagents.ts';
 import type { UsageEvent, UsageService } from './usage.ts';
 import type { WorkspaceEvent, WorkspaceService } from './workspace.ts';
 
-export const CONTRACTS_VERSION = '0.1.10';
+export const CONTRACTS_VERSION = '0.1.11';
 
 /** 所有从服务推给界面的事件。新增事件只能往这里加，不能改已有事件的形状。 */
 export type AgentDeckEvent =
@@ -51,6 +52,8 @@ export interface Services {
   skills: SkillsService;
   /** agent 自带的后台子 agent（MVP v3 · N10），只读。 */
   subagents: SubagentService;
+  /** 各 agent 的历史会话（MVP v3 · N11），只读。 */
+  history: HistoryService;
 }
 
 export type ServiceName = keyof Services;
