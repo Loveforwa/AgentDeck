@@ -3,7 +3,7 @@
 实现过程中和一开始设想不一样的地方：原来以为什么、实际是什么、怎么决定的、好处和代价。
 由 `docs/research/build.py` 从 `docs/research/entries.py` 生成，不要直接改这个文件。更新于 2026-10-26。
 
-共 60 条：已解决 40，进行中 13，推迟 4，待验证 3。
+共 61 条：已解决 40，进行中 13，推迟 4，待验证 4。
 
 编号规则（全项目统一）：DR-xx 调研记录 · TC-xx 端到端用例 · IS-xx 问题 · F1、T2、X3 等是 MVP 任务表的任务编号。用例和问题在 MVP 验收报告（docs/status/index.html）里；每条调研下面列出相关的用例和问题。
 
@@ -72,6 +72,7 @@
   - [DR-58 各 agent 怎么在启动时挂上 AgentDeck 的 MCP](#dr-58)（已解决）
   - [DR-59 各 agent 怎么在启动时带上 skill](#dr-59)（已解决）
   - [DR-60 agent 升级后会不会让 AgentDeck 的功能集体失效](#dr-60)（待验证）
+  - [DR-61 agent 自带的后台子 agent 能不能读出来、怎么读](#dr-61)（待验证）
   - [DR-42 claude 能不能把对话 fork 到另一个目录](#dr-42)（已解决）
   - [DR-43 Approve all 发的“允许一次”按键对不对](#dr-43)（待验证）
   - [DR-44 经过 tmux 后的手感，要人在真界面上确认](#dr-44)（待验证）
@@ -861,6 +862,18 @@
 - **原来以为**：各 agent 的启动参数、钩子、会话文件、确认框都稳定；有 minVersion 下限就够了。
 - **实际情况**：耦合点分三类：启动参数（claude --settings/--mcp-config/--plugin-dir、codex -c hooks/mcp_servers、pi/omp -e/--skill/--plugin-dir、kimi --skills-dir）一变终端就起不来（Error · exit），没有自动退回；钩子事件、负载字段、扩展 API、批准回复格式一变，状态灯和 Auto-approve 静默出错（有钩子的终端完全不看输出活动，没有“钩子没来”的检测；回了 allow 就不再进等待）；会话文件、屏幕文字一变，用量和 omp 认屏只是关掉。版本门槛只有下限，版本号读不出时当作够新；内置 skill 默认勾选，让 --plugin-dir、--skill、--skills-dir 变成每次都带的硬依赖。npm 上已有 pi 1.4.0、omp 18.12.6、claude 2.1.310，都没核对、都会自动通过门槛。
 - **怎么验证**：（待定，建议）P0：启动保底（起不来就只带会话参数重开并标降级）、版本未知不带可能“挂”的参数、按 --help 探测参数、检测钩子是否活着并退回按输出判断、兼容表记“核对到哪个版本”且超过时关掉按键批准和认屏；P1：版本缓存按二进制修改时间刷新、用量解析报 format-changed、claude/codex 按键批准前也认屏、Settings › Agents 显示每项功能状态、每天跑一次装最新版的兼容检查。
+
+<a id="dr-61"></a>
+
+### DR-61 agent 自带的后台子 agent 能不能读出来、怎么读
+
+状态：待验证 · 出处：v3 N10 · 设计画布画板 13 · packages/agent-adapters（钩子、记录读取）· ui/canvas（侧边栏） · 旧编号 —
+
+相关：IS-85
+
+- **原来以为**：agent 开 subagent 是它自己的事；要在白板上看见，就让它用 open_terminals 开成终端（N2）。
+- **实际情况**：用户实测：让 claude 并行查 5 件事时，它用的是自带的后台 agent，窗口组没出现，只在主终端底部列了 5 行。本机 claude 2.1.291 核对：有 SubagentStart / SubagentStop 钩子；每个子 agent 在 <会话 id>/subagents/ 下有 agent-<id>.jsonl（记录，isSidechain、agentId）和 agent-<id>.meta.json（agentType、description、toolUseId、requestShape: background）。codex、pi、omp、kimi 有没有子 agent、记在哪里还没查。
+- **怎么验证**：2026-10-26 用户定（画板 13，N10）：用钩子和记录读出来。平时只在主终端底边右侧挂一个小提示，有后台 agent 才出现；点开是 N2 的同一列侧边栏，后台 agent 单独一组，选中看它的记录，只读，不能打字、批准、停止。先做 claude，其他 agent 调研后再定，读不到的不显示。
 
 <a id="dr-42"></a>
 
