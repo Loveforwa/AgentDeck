@@ -39,6 +39,7 @@ import {
   findExecutable,
   SkillsServiceImpl,
   SubagentServiceImpl,
+  HistoryServiceImpl,
   UsageServiceImpl,
   type UsageTarget,
 } from '@agentdeck/agent-adapters';
@@ -438,6 +439,8 @@ async function main(): Promise<void> {
   registry.register('usage', usage);
   registry.register('skills', skills);
   registry.register('subagents', subagents);
+  // N11：各 agent 的历史会话（左边栏），只读它们自己的会话文件
+  registry.register('history', new HistoryServiceImpl({ roots: defaultUsageRoots(homedir(), loginEnv) }));
   registerBrowserService(registry);
 
   // ---- 应用壳自己的 IPC（src/shared/desktop-bridge.ts）----
