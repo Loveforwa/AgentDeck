@@ -56,6 +56,11 @@ export function menuItems(c: BoardController, menu: MenuState, available: { term
     const section = pluginMenuSection(c, t, PLUGINS);
     return section.length ? [{ type: 'separator' }, ...section] : [];
   };
+  // N12：框的 Auto-arrange 开关（框标题右上角也有）
+  const autoArrangeItem = (ws: WorkspaceId): MenuEntry => {
+    const on = c.frameArrange(ws).auto;
+    return { id: 'auto-arrange', label: 'Auto-arrange new windows', checked: on, onSelect: () => c.setAutoArrange(ws, !on) };
+  };
   const create = (ws: WorkspaceId | null, at: typeof flow | null): MenuEntry[] => [
     {
       id: 'new-terminal',
@@ -81,6 +86,7 @@ export function menuItems(c: BoardController, menu: MenuState, available: { term
         { id: 'new-workspace', label: 'New workspace…', shortcut: SHORTCUT_LABELS['new-workspace'], onSelect: () => c.openNewWorkspace({ at: flow }) },
         { id: 'add-project', label: 'Add project…', onSelect: () => void c.addProject(flow) },
         ...(ws ? plugins({ kind: 'frame', workspaceId: ws }) : []),
+        ...(ws ? [autoArrangeItem(ws)] : []),
         { type: 'separator' },
         { id: 'show-all', label: 'Show all', shortcut: SHORTCUT_LABELS['show-all'], onSelect: () => c.showAll() },
       ];
@@ -96,6 +102,8 @@ export function menuItems(c: BoardController, menu: MenuState, available: { term
         { id: 'reveal', label: 'Reveal in Finder', disabled: !path, onSelect: () => path && void c.api.app.revealInFinder(path) },
         { id: 'copy-path', label: 'Copy path', disabled: !path, onSelect: () => path && copyText(path) },
         ...plugins({ kind: 'frame', workspaceId: ws }),
+        { type: 'separator' },
+        autoArrangeItem(ws),
         { type: 'separator' },
         { id: 'rename', label: 'Rename…', onSelect: () => c.openDialog({ kind: 'rename-workspace', workspaceId: ws }) },
         { id: 'delete', label: 'Delete workspace…', onSelect: () => c.askRemoveWorkspace(ws) },

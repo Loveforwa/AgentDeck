@@ -1,8 +1,9 @@
 import type { MouseEvent } from 'react';
 import type { NodeProps } from '@xyflow/react';
-import type { WorkspaceId } from '@agentdeck/contracts';
+import type { FrameLayout, WorkspaceId } from '@agentdeck/contracts';
 import { Button } from '@agentdeck/ui-kit';
 import { RESIZE_EDGES, usePointerDrag, type ResizeEdge } from '@agentdeck/ui-window-shell';
+import { LAYOUT_LABEL } from '../model/arrange.ts';
 import { runningLabel, waitingLabel, summarize } from '../model/attention.ts';
 import { useBoardState, useController } from './context.tsx';
 import { FramePluginMarks } from './PluginMarks.tsx';
@@ -81,6 +82,8 @@ export function FrameNodeView({ data }: NodeProps & { data: FrameNodeData }) {
             {waitingLabel(waiting)}
           </span>
         ) : null}
+        {/* N12：一键排版和 Auto-arrange，框里有窗口时才有 */}
+        {!empty ? <FrameArrangeButtons ws={ws} /> : null}
       </div>
       {empty ? <div className="ad-frame-empty">Right-click to add a terminal</div> : null}
       {RESIZE_EDGES.map((edge) => (
@@ -131,5 +134,80 @@ export function PendingFrameView({ data }: NodeProps & { data: PendingNodeData }
         </div>
       ) : null}
     </div>
+  );
+}
+
+const LAYOUT_HINT: Record<FrameLayout, string> = {
+  tidy: 'Tidy · compact grid, sizes unchanged',
+  columns: 'Columns · side by side, same height',
+  rows: 'Rows · stacked, same width',
+};
+
+/** 框标题右上角的排版图标（N12，画板 15）：Tidy、Columns、Rows，竖线后面是 Auto-arrange 开关。上次用的排法深色底。 */
+function FrameArrangeButtons({ ws }: { ws: WorkspaceId }) {
+  const c = useController();
+  const arrange = useBoardState((s) => s.frames.find((f) => f.workspaceId === ws)?.arrange ?? null);
+  const layout = arrange?.layout ?? null;
+  const auto = arrange?.auto ?? false;
+  const stop = (e: { stopPropagation(): void }) => e.stopPropagation();
+  return (
+    <span className="ad-frame-arrange" onPointerDown={stop} onDoubleClick={stop}>
+      {(['tidy', 'columns', 'rows'] as const).map((l) => (
+        <button
+          key={l}
+          type="button"
+          className="ad-frame-arrange-btn"
+          data-layout={l}
+          aria-pressed={layout === l}
+          aria-label={LAYOUT_LABEL[l]}
+          title={LAYOUT_HINT[l]}
+          onClick={() => c.arrangeFrame(ws, l)}
+        >
+          <LayoutIcon layout={l} />
+        </button>
+      ))}
+      <span className="ad-frame-arrange-sep" aria-hidden="true" />
+      <button
+        type="button"
+        className="ad-frame-arrange-btn"
+        data-layout="auto"
+        aria-pressed={auto}
+        aria-label="Auto-arrange new windows"
+        title={auto ? `Auto-arrange is on · ${LAYOUT_LABEL[layout ?? 'tidy']}` : 'Auto-arrange new windows'}
+        onClick={() => c.setAutoArrange(ws, !auto)}
+      >
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden="true">
+          <rect x="1.5" y="1.5" width="11" height="11" rx="2" />
+          <path d="M4.5 7.2l1.8 1.8 3.4-3.6" />
+        </svg>
+      </button>
+    </span>
+  );
+}
+
+function LayoutIcon({ layout }: { layout: FrameLayout }) {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden="true">
+      {layout === 'tidy' ? (
+        <>
+          <rect x="1.5" y="1.5" width="4.5" height="4.5" rx="1" />
+          <rect x="8" y="1.5" width="4.5" height="4.5" rx="1" />
+          <rect x="1.5" y="8" width="4.5" height="4.5" rx="1" />
+          <rect x="8" y="8" width="4.5" height="4.5" rx="1" />
+        </>
+      ) : layout === 'columns' ? (
+        <>
+          <rect x="1.5" y="1.5" width="3" height="11" rx="1" />
+          <rect x="5.5" y="1.5" width="3" height="11" rx="1" />
+          <rect x="9.5" y="1.5" width="3" height="11" rx="1" />
+        </>
+      ) : (
+        <>
+          <rect x="1.5" y="1.5" width="11" height="3" rx="1" />
+          <rect x="1.5" y="5.5" width="11" height="3" rx="1" />
+          <rect x="1.5" y="9.5" width="11" height="3" rx="1" />
+        </>
+      )}
+    </svg>
   );
 }

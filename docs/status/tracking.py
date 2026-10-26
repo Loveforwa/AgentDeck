@@ -491,6 +491,7 @@ ACCEPTED = {
 
 # 已经处理的问题：处理状态和备注
 RESOLVED = {
+    'IS-87': '2026-10-26 已做（N12）：框标题右上角 Tidy / Columns / Rows 和 Auto-arrange 开关，框缩到正好装下，⌘Z 撤销；真窗口里用 4、5 个 shell 试过',
     'IS-85': '2026-10-26 claude 已做（N10，feat/N10-background-agents）：底边右侧的小提示、侧边栏 BACKGROUND 一组、只读的记录窗口，面板打开时项目框跟着长；真 claude 跑过两轮。codex、pi、omp、kimi 待 DR-61 调研',
     'IS-36': '2026-10-25 已做（02013a6）：pnpm dist 出 arm64 / x64 两个 dmg（ad-hoc 签名，未公证），挂载后在最小环境下启动、开 zsh 都通过',
     'IS-09': '2026-10-25 已修（d016bf7）：pty.ts 的 require 改名 nodeRequire，去掉构建里的改名插件',

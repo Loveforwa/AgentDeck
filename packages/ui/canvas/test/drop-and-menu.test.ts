@@ -95,6 +95,8 @@ describe('context menus (B3)', () => {
       'Auto-approve',
       'Approval history…',
       '-',
+      'Auto-arrange new windows',
+      '-',
       'Rename…',
       'Delete workspace…',
     ]);

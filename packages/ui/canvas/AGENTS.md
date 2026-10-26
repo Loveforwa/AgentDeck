@@ -137,6 +137,10 @@ import '@agentdeck/ui-kit/base.css';
   - 面板：不是窗口组 lead 的主终端，侧边栏是单独的节点（`bg-sidebar:<windowId>`，位置同 N2 的 `sidebarRect`）；是 lead 时 BACKGROUND 一组并进 N2 的侧边栏（TERMINALS / BACKGROUND · READ-ONLY 两个小标题）。选中一行在停靠处开只读的记录窗口（`bg-transcript:<windowId>`，`watchTranscript` / `unwatchTranscript`），lead 的子终端先收起；侧边栏点子终端时记录窗口收起。
   - 框装得下（2026-10-26 用户定）：`withGroup` 算窗口占的地方时加上面板、记录窗口、底边标记和 Usage 条（`markOutset`）。面板打开时 `fitPanel` 让框长、盖住的窗口挪开，记下打开前的布局；收起时 `unfitPanel` 原样放回（期间布局被别的操作改过就不动）。标记、Usage 条出现时 `keepMarksInFrames` 让框长（只变大，拖动中不管）。
 
+- 项目框一键排版（N12，画板 15，`src/model/arrange.ts`、controller 的 `arrangeFrame` / `setAutoArrange` / `layoutFrame`，`FrameNodeView` 的 `FrameArrangeButtons`）：框标题右上角 Tidy（紧凑网格，⌈√n⌉ 列，窗口大小不变）、Columns（一行最多 6 个，一样高取最高、一样宽取平均）、Rows（一样宽取最宽、一样高取平均），竖线后面是 Auto-arrange 开关；上次用的排法、开着的开关墨黑底。设置在 `FrameNode.arrange`（contracts 0.1.10，可选，随白板保存）。
+  - 每个窗口连同贴着它的东西（`withGroup`：标记、Usage 条、侧边栏、停靠的子终端、后台 agent 面板）算一块，整块挪；带着停靠子终端的 lead 只挪不改大小；放大中的、收起的不动。顺序按原来的位置先上后下、先左后右（上下差 40 以内算一行），新开的排最后。排到框内区域的左上角起，框缩到正好装下（不小于 FRAME_MIN），挤到的框照 V3 挪。点图标记成一步（⌘Z）。
+  - Auto-arrange：`noteFrameMembers` 看每个框里窗口的增减（store 订阅），开着的框在下一个微任务里按上次的排法（没点过 Tidy）重排；拖动中先不排，松手后排。这次重排不单独记撤销。框的右键菜单（标题、空白处）也有 Auto-arrange new windows。
+
 ## dev 页面
 
 `pnpm --filter @agentdeck/ui-canvas dev` → http://localhost:5320
