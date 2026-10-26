@@ -1,4 +1,4 @@
-// 应用页面：顶栏 + 白板（@agentdeck/ui-canvas）+ 右侧源代码管理面板（@agentdeck/scm-panel；什么都没选中时是 @agentdeck/board-nav-panel 的快速定位列表）。
+// 应用页面：顶栏 + 左边栏历史会话（@agentdeck/history-panel，N11）+ 白板（@agentdeck/ui-canvas）+ 右侧源代码管理面板（@agentdeck/scm-panel；什么都没选中时是 @agentdeck/board-nav-panel 的快速定位列表）。
 // tmux 起不来时显示说明页和 Retry；读登录 shell 环境失败等提示显示在左下角。
 // AGENTDECK_DEMO=1 时自动把本仓库加成项目、建主目录工作区、开一个 Shell 和一个 claude（见 demo.ts）。
 
@@ -11,6 +11,7 @@ import { Button } from '@agentdeck/ui-kit';
 import { OPEN_SETTINGS_EVENT } from '@agentdeck/ui-widget-terminal';
 import type { StartupInfo } from '../../shared/desktop-bridge.ts';
 import { reportBoardReady, runDemo } from './demo.ts';
+import { HistorySidebar } from './HistorySidebar.tsx';
 
 /** 进程已经结束的状态。其余（starting / running / 在等你 / idle）都算“开着”。 */
 const ENDED = new Set(['exited', 'error']);
@@ -172,6 +173,7 @@ export function App({ controller, loaded, startup }: { controller: BoardControll
         onOpenSettingsFile={openSettingsFile}
         trafficLights={startup.trafficLights === true}
         renderPanel={({ workspace, collapseButton }) => <SidePanel workspace={workspace} controller={controller} headerActions={collapseButton} />}
+        renderLeftPanel={({ collapseButton }) => <HistorySidebar controller={controller} headerActions={collapseButton} />}
       />
       {notices.length > 0 ? (
         <div className="app-notices" role="status">

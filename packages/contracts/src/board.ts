@@ -146,6 +146,8 @@ export interface BoardState {
   frames: FrameNode[];
   windows: WindowNode[];
   panel: { open: boolean; width: number };
+  /** 左边栏（MVP v3 · N11 历史会话）。老数据没有它，按收着、宽 280。 */
+  leftPanel?: { open: boolean; width: number };
   savedAt: IsoTime;
 }
 

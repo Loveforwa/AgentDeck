@@ -23,12 +23,20 @@ export interface PanelContext {
   collapse(): void;
 }
 
+/** 左边栏（N11）：收起按钮放在内容自己的标题栏右边。 */
+export interface LeftPanelContext {
+  collapseButton: ReactNode;
+  collapse(): void;
+}
+
 export interface WorkbenchProps extends Omit<BoardControllerOptions, 'api' | 'notify'> {
   api: AgentDeckApi;
   /** 自己建的控制器（测试、dev 页面要直接操作它时）。给了就忽略 api 等选项。 */
   controller?: BoardController;
   /** 右侧面板的内容。 */
   renderPanel?(ctx: PanelContext): ReactNode;
+  /** 左边栏的内容（N11 历史会话）。不给就没有左边栏，顶栏也没有它的按钮。 */
+  renderLeftPanel?(ctx: LeftPanelContext): ReactNode;
   /** Settings 对话框底部的 Open settings.json。不给就不显示这个按钮。 */
   onOpenSettingsFile?(): void;
   boardName?: string;
@@ -49,7 +57,7 @@ function WorkbenchInner(props: WorkbenchProps) {
   const toast = useToast();
   const toastRef = useRef(toast);
   toastRef.current = toast;
-  const { api, controller: given, renderPanel, onOpenSettingsFile, boardName, trafficLights, ...options } = props;
+  const { api, controller: given, renderPanel, renderLeftPanel, onOpenSettingsFile, boardName, trafficLights, ...options } = props;
   const [controller] = useState(
     () => given ?? new BoardController({ ...options, api, notify: (message) => toastRef.current.show({ message }) }),
   );
@@ -78,8 +86,9 @@ function WorkbenchInner(props: WorkbenchProps) {
             空着的地方仍然拖得动窗口。
           */}
           <div className="ad-workbench-drag" aria-hidden="true" />
-          <BoardTopbar boardName={boardName} trafficLights={trafficLights === true} />
+          <BoardTopbar boardName={boardName} trafficLights={trafficLights === true} hasLeftPanel={!!renderLeftPanel} />
           <div className="ad-workbench-main">
+            <LeftPanel renderLeftPanel={renderLeftPanel} />
             <Board />
             <Panel renderPanel={renderPanel} />
           </div>
@@ -90,8 +99,9 @@ function WorkbenchInner(props: WorkbenchProps) {
   );
 }
 
-function BoardTopbar({ boardName, trafficLights }: { boardName: string | undefined; trafficLights: boolean }) {
+function BoardTopbar({ boardName, trafficLights, hasLeftPanel }: { boardName: string | undefined; trafficLights: boolean; hasLeftPanel: boolean }) {
   const c = useController();
+  const leftOpen = useBoardState((s) => s.leftPanel.open);
   const frames = useBoardState((s) => s.frames.length);
   const windows = useBoardState((s) => s.windows.length);
   // 左边：聚焦的窗口（或选中的框）所在的项目和工作区（“main · 3 windows”）；都没有时是整块白板
@@ -137,7 +147,35 @@ function BoardTopbar({ boardName, trafficLights }: { boardName: string | undefin
       approvable={approvable}
       onApproveAll={() => c.approvals.openApproveAll()}
       onSettings={() => c.openSettings()}
+      {...(hasLeftPanel ? { leftPanelOpen: leftOpen, onToggleLeftPanel: () => c.toggleLeftPanel() } : {})}
     />
+  );
+}
+
+/** 左边栏（N11，画板 14）：和右边栏一个样子，在白板左边占一列（白板跟着变窄）；收起时整个不画，只剩顶栏最左边的按钮。 */
+function LeftPanel({ renderLeftPanel }: { renderLeftPanel: WorkbenchProps['renderLeftPanel'] }) {
+  const c = useController();
+  const open = useBoardState((s) => s.leftPanel.open);
+  const width = useBoardState((s) => s.leftPanel.width);
+  const startWidth = useRef(width);
+  const onPointerDown = usePointerDrag({
+    onStart: () => {
+      startWidth.current = c.state.leftPanel.width;
+    },
+    onMove: (dx) => c.setLeftPanelWidth(startWidth.current + dx),
+  });
+  if (!renderLeftPanel || !open) return null;
+  const collapse = () => c.toggleLeftPanel();
+  const collapseButton = (
+    <button type="button" className="ad-panel-toggle" aria-label="Hide history" title="Hide history" onClick={collapse}>
+      <ExpandIcon />
+    </button>
+  );
+  return (
+    <aside className="ad-left-panel" style={{ width }} aria-label="History panel">
+      <div className="ad-panel-body">{renderLeftPanel({ collapseButton, collapse })}</div>
+      <div className="ad-left-panel-resizer" onPointerDown={onPointerDown} role="separator" aria-orientation="vertical" aria-label="Resize history panel" />
+    </aside>
   );
 }
 

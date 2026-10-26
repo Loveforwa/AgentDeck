@@ -1,6 +1,6 @@
 // 只用于类型检查：确认接口能被实现、事件能按 type 收窄。不会被打包。
 import type {
-  AgentDeckApi, ApproveResult, FrameArrange, BackgroundAgent, TerminalBackgroundAgents, TranscriptLine, AutoApproveState, CommitInfo, EventOf, GitService, LogOptions, SkillItemId, TerminalHost, TerminalId,
+  AgentDeckApi, ApproveResult, BoardState, FrameArrange, SessionSummary, BackgroundAgent, TerminalBackgroundAgents, TranscriptLine, AutoApproveState, CommitInfo, EventOf, GitService, LogOptions, SkillItemId, TerminalHost, TerminalId,
   TerminalSkills, TerminalUsage, TerminalWindowData, UsageService, WindowGroupId, WindowId, WindowNode, WindowRestoreSupport, WorkspaceId,
 } from './index.ts';
 import { effectiveSkillSelection, FIRE_AND_FORGET, isAutoApproveOn, skillsRestartNeeded } from './index.ts';
@@ -120,3 +120,8 @@ void api.subagents.watchTranscript('t1' as TerminalId, 'a1').then((t) => t.omitt
 // N12：框的排版设置，可选字段，老数据没有它
 const arrange: FrameArrange = { auto: true, layout: 'tidy' };
 void arrange;
+// N11：历史会话，只读
+void api.history.list().then((all: SessionSummary[]) => all.filter((x) => x.agent === 'claude' && x.source === 'terminal').map((x) => x.title));
+// N11：左边栏的开关和宽度随白板保存，可选字段
+const left: BoardState['leftPanel'] = { open: true, width: 280 };
+void left;

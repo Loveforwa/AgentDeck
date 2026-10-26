@@ -75,6 +75,8 @@ export {
   SubagentServiceImpl,
 } from './subagents/index.ts';
 export type { SubagentServiceOptions } from './subagents/index.ts';
+export { HistoryServiceImpl, oneLine, parseCodexIndex, parseKimiState, readClaudeSession, readCodexSession, readPiSession } from './history/index.ts';
+export type { CodexIndex, HistoryServiceOptions, ParsedSession } from './history/index.ts';
 export {
   AGENTDECK_MCP_ID,
   agentdeckMcpItem,

@@ -121,6 +121,7 @@ TRY = [
 ]
 
 NEXT = [
+    'N11 左边栏历史会话已合进 main：点顶栏最左边的按钮打开 HISTORY，看自己项目下的会话分得对不对（项目 → 分支 / 目录 → agent）、标题是不是认得出；点一个没开着的 Resume，看它在对应的框里接着那段对话。',
     'N12 项目框一键排版已合进 main：在一个框里开几个终端，点框标题右上角的 Tidy / Columns / Rows，看排得齐不齐、框是不是缩到正好装下，⌘Z 能不能回去；打开 Auto-arrange 后新开、关掉终端看会不会自动重排。',
     'N10 后台 agent（claude）已合进 main：让 claude 用自带的 Agent 工具开几个后台 agent，看主终端底边右侧的小提示、点开的侧边栏和记录窗口，打开时项目框是否跟着长、收起时是否缩回。',
     'MVP v3（N1、N2、N5、N6、N7、N9）和插件（PL0 入口、PL1 Auto-approve、PL2 Usage、X3 Approve all）都已合进 main，请按 TC-34～TC-42 在真应用里验收；这些都只在 dev 页面和测试里看过，没跑过真 agent。',

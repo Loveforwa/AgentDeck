@@ -67,6 +67,7 @@ import {
 } from './model/windows.ts';
 import {
   createBoardStore,
+  DEFAULT_LEFT_PANEL,
   savedPart,
   savedPartChanged,
   type BoardStore,
@@ -304,6 +305,7 @@ export class BoardController {
       frames: board.frames,
       windows: board.windows,
       panel: board.panel,
+      leftPanel: board.leftPanel ?? { ...DEFAULT_LEFT_PANEL },
       workspaces: Object.fromEntries(workspaces.map((w) => [w.id, w])),
       projects,
       agents,
@@ -1140,6 +1142,17 @@ export class BoardController {
 
   togglePanel(): void {
     this.set((s) => ({ panel: { ...s.panel, open: !s.panel.open } }));
+  }
+
+  /** 左边栏（N11 历史会话）：顶栏最左边的按钮开关，随白板保存。 */
+  toggleLeftPanel(): void {
+    this.set((s) => ({ leftPanel: { ...s.leftPanel, open: !s.leftPanel.open } }));
+  }
+
+  /** 左边栏宽度 240–480（画板 14）。 */
+  setLeftPanelWidth(width: number): void {
+    const w = Math.round(Math.min(480, Math.max(240, width)));
+    if (w !== this.state.leftPanel.width) this.set((s) => ({ leftPanel: { ...s.leftPanel, width: w } }));
   }
 
   /** 右侧面板宽度 280–480（需求「1 · 整体布局」）。 */
