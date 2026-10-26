@@ -294,9 +294,10 @@ export class BoardController {
       loaded: true,
     }));
     this.separateOverlappingFrames();
-    // N10：界面重开时主进程里已经有的后台 agent（之后靠 subagents.changed）
-    void api.subagents
-      .list()
+    // N10：界面重开时主进程里已经有的后台 agent（之后靠 subagents.changed）。
+    // 开发时界面热更新了、主进程还是旧的（没有 subagents）也不能让启动失败
+    void Promise.resolve()
+      .then(() => api.subagents.list())
       .then((all) => {
         for (const t of all) if (!this.state.backgroundAgents[t.terminalId]) this.setBackgroundAgents(t.terminalId, t.agents);
       })
