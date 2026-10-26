@@ -3,7 +3,7 @@
 实现过程中和一开始设想不一样的地方：原来以为什么、实际是什么、怎么决定的、好处和代价。
 由 `docs/research/build.py` 从 `docs/research/entries.py` 生成，不要直接改这个文件。更新于 2026-10-26。
 
-共 61 条：已解决 40，进行中 13，推迟 4，待验证 4。
+共 62 条：已解决 40，进行中 13，推迟 4，待验证 5。
 
 编号规则（全项目统一）：DR-xx 调研记录 · TC-xx 端到端用例 · IS-xx 问题 · F1、T2、X3 等是 MVP 任务表的任务编号。用例和问题在 MVP 验收报告（docs/status/index.html）里；每条调研下面列出相关的用例和问题。
 
@@ -73,6 +73,7 @@
   - [DR-59 各 agent 怎么在启动时带上 skill](#dr-59)（已解决）
   - [DR-60 agent 升级后会不会让 AgentDeck 的功能集体失效](#dr-60)（待验证）
   - [DR-61 agent 自带的后台子 agent 能不能读出来、怎么读](#dr-61)（待验证）
+  - [DR-62 各 agent 的历史会话存在哪、怎么列出来](#dr-62)（待验证）
   - [DR-42 claude 能不能把对话 fork 到另一个目录](#dr-42)（已解决）
   - [DR-43 Approve all 发的“允许一次”按键对不对](#dr-43)（待验证）
   - [DR-44 经过 tmux 后的手感，要人在真界面上确认](#dr-44)（待验证）
@@ -874,6 +875,18 @@
 - **原来以为**：agent 开 subagent 是它自己的事；要在白板上看见，就让它用 open_terminals 开成终端（N2）。
 - **实际情况**：用户实测：让 claude 并行查 5 件事时，它用的是自带的后台 agent，窗口组没出现，只在主终端底部列了 5 行。本机 claude 2.1.291 核对：有 SubagentStart / SubagentStop 钩子；每个子 agent 在 <会话 id>/subagents/ 下有 agent-<id>.jsonl（记录，isSidechain、agentId）和 agent-<id>.meta.json（agentType、description、toolUseId、requestShape: background）。codex、pi、omp、kimi 有没有子 agent、记在哪里还没查。实现时（2026-10-26，真 claude 跑过）又发现：后台 agent 做完时 claude 用 UserPromptSubmit 给主 agent 发 <task-notification>（带 status、subagent_tokens、duration_ms），所以这个钩子不一定是用户发的消息；claude 自己的内部查询每轮会单独发一两个没有 Start、没有 agent_type 的 SubagentStop，不能列出来；Stop / SubagentStop 的负载带 background_tasks（带任务描述）。我们算的 token 和 claude 自己列表里的一致（27.1k）。
 - **怎么验证**：2026-10-26 用户定（画板 13，N10）：用钩子和记录读出来。平时只在主终端底边右侧挂一个小提示，有后台 agent 才出现；点开是 N2 的同一列侧边栏，后台 agent 单独一组，选中看它的记录，只读，不能打字、批准、停止。先做 claude，其他 agent 调研后再定，读不到的不显示。
+
+<a id="dr-62"></a>
+
+### DR-62 各 agent 的历史会话存在哪、怎么列出来
+
+状态：待验证 · 出处：v3 N11 · 设计画布画板 14 · packages/agent-adapters（会话列表）· 新的 ui/panels/history · 旧编号 —
+
+相关：IS-86
+
+- **原来以为**：（N11 之前没考虑过：白板只管开着的终端）
+- **实际情况**：已知的（做 Usage 时找文件的代码 packages/agent-adapters/src/usage/locate.ts）：claude 在 ~/.claude/projects/<目录名>/<id>.jsonl，每行带 cwd、gitBranch；codex 在 ~/.codex/sessions/年/月/日/rollout-*.jsonl，session_meta 带 cwd；pi、omp 有 sessions 目录；kimi 新建会话没有 id。待核对：标题字段（claude 的 summary 行、codex 的 thread 名）、每个文件只读开头和结尾能不能拿到第一条消息和最后活动时间、几千个文件第一次扫要多久、子 agent 和子任务的记录怎么排除、各 agent 的接回参数能不能按 id 接回在别的目录开的会话。
+- **怎么验证**：2026-10-26 用户定（画板 14，N11）：左边栏按项目 → 工作路径 → agent 列出，只读各 agent 自己的文件，第一次扫一遍、之后按修改时间增量更新。具体字段实现前逐个 agent 核对，写回这一条。
 
 <a id="dr-42"></a>
 
