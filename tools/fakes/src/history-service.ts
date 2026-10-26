@@ -3,7 +3,7 @@
 import type { AgentKind, AgentSessionId, HistoryService, SessionSummary } from '@agentdeck/contracts';
 
 /** 一条历史会话，没给的字段按“终端里开的、用第一条消息当标题”填。 */
-export function fakeSession(patch: Partial<SessionSummary> & { id: string; agent: AgentKind }): SessionSummary {
+export function fakeSession(patch: Omit<Partial<SessionSummary>, 'id'> & { id: string; agent: AgentKind }): SessionSummary {
   return {
     cwd: null,
     branch: null,

@@ -56,6 +56,9 @@ importers:
       '@agentdeck/git-service':
         specifier: workspace:*
         version: link:../../packages/git-service
+      '@agentdeck/history-panel':
+        specifier: workspace:*
+        version: link:../../packages/ui/panels/history
       '@agentdeck/mcp-server':
         specifier: workspace:*
         version: link:../../packages/mcp-server

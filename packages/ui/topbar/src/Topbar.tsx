@@ -35,6 +35,9 @@ export interface TopbarProps {
    * 不给时（浏览器里的 dev 页面、其他平台）不留。
    */
   trafficLights?: boolean;
+  /** 左边栏（N11 历史会话）开着没有。给了 onToggleLeftPanel 才显示最左边的按钮。 */
+  leftPanelOpen?: boolean;
+  onToggleLeftPanel?(): void;
 }
 
 /** “2 workspaces · 5 windows” */
@@ -70,6 +73,19 @@ export function Topbar(props: TopbarProps) {
 
   return (
     <header className={`ad-topbar${props.trafficLights ? ' ad-topbar--traffic-lights' : ''}`}>
+      {props.onToggleLeftPanel ? (
+        <Button
+          size="sm"
+          variant="ghost"
+          className="ad-topbar-icon"
+          aria-label={props.leftPanelOpen ? 'Hide history' : 'Show history'}
+          aria-pressed={props.leftPanelOpen === true}
+          title={props.leftPanelOpen ? 'Hide history' : 'Show history'}
+          onClick={() => props.onToggleLeftPanel?.()}
+        >
+          <SidebarIcon />
+        </Button>
+      ) : null}
       <Button
         ref={projectsRef}
         size="sm"
@@ -127,6 +143,16 @@ export function Topbar(props: TopbarProps) {
         <GearIcon />
       </Button>
     </header>
+  );
+}
+
+/** 左边一栏的窗口图标（开关左边栏）。 */
+function SidebarIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden="true">
+      <rect x="1.5" y="2" width="11" height="10" rx="1.5" />
+      <line x1="5.5" y1="2" x2="5.5" y2="12" />
+    </svg>
   );
 }
 

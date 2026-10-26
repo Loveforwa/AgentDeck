@@ -74,7 +74,13 @@ export interface MenuState {
   target: MenuTarget;
 }
 
-export type SavedBoard = Pick<BoardState, 'viewport' | 'frames' | 'windows' | 'panel'>;
+export type SavedBoard = Pick<BoardState, 'viewport' | 'frames' | 'windows' | 'panel'> & {
+  /** 左边栏（N11 历史会话），contracts 里是可选的，这里总有。 */
+  leftPanel: { open: boolean; width: number };
+};
+
+/** 左边栏默认收着、宽 280。 */
+export const DEFAULT_LEFT_PANEL = { open: false, width: 280 } as const;
 
 export interface BoardStoreState extends SavedBoard {
   /** board.load() 完成之前为 false，不保存、不显示空白状态。 */
@@ -121,6 +127,7 @@ export function initialState(): BoardStoreState {
     frames: [],
     windows: [],
     panel: { open: true, width: 320 },
+    leftPanel: { ...DEFAULT_LEFT_PANEL },
     loaded: false,
     focusedId: null,
     selectedFrame: null,
@@ -153,9 +160,9 @@ export function createBoardStore(init: Partial<BoardStoreState> = {}): BoardStor
 
 /** 要保存的那部分。引用没变就是没改。 */
 export function savedPart(s: BoardStoreState): SavedBoard {
-  return { viewport: s.viewport, frames: s.frames, windows: s.windows, panel: s.panel };
+  return { viewport: s.viewport, frames: s.frames, windows: s.windows, panel: s.panel, leftPanel: s.leftPanel };
 }
 
 export function savedPartChanged(a: BoardStoreState, b: BoardStoreState): boolean {
-  return a.viewport !== b.viewport || a.frames !== b.frames || a.windows !== b.windows || a.panel !== b.panel;
+  return a.viewport !== b.viewport || a.frames !== b.frames || a.windows !== b.windows || a.panel !== b.panel || a.leftPanel !== b.leftPanel;
 }
