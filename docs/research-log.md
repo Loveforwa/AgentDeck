@@ -3,7 +3,7 @@
 实现过程中和一开始设想不一样的地方：原来以为什么、实际是什么、怎么决定的、好处和代价。
 由 `docs/research/build.py` 从 `docs/research/entries.py` 生成，不要直接改这个文件。更新于 2026-10-26。
 
-共 62 条：已解决 40，进行中 13，推迟 4，待验证 5。
+共 62 条：已解决 41，进行中 13，推迟 4，待验证 4。
 
 编号规则（全项目统一）：DR-xx 调研记录 · TC-xx 端到端用例 · IS-xx 问题 · F1、T2、X3 等是 MVP 任务表的任务编号。用例和问题在 MVP 验收报告（docs/status/index.html）里；每条调研下面列出相关的用例和问题。
 
@@ -73,7 +73,7 @@
   - [DR-59 各 agent 怎么在启动时带上 skill](#dr-59)（已解决）
   - [DR-60 agent 升级后会不会让 AgentDeck 的功能集体失效](#dr-60)（待验证）
   - [DR-61 agent 自带的后台子 agent 能不能读出来、怎么读](#dr-61)（待验证）
-  - [DR-62 各 agent 的历史会话存在哪、怎么列出来](#dr-62)（待验证）
+  - [DR-62 各 agent 的历史会话存在哪、怎么列出来](#dr-62)（已解决）
   - [DR-42 claude 能不能把对话 fork 到另一个目录](#dr-42)（已解决）
   - [DR-43 Approve all 发的“允许一次”按键对不对](#dr-43)（待验证）
   - [DR-44 经过 tmux 后的手感，要人在真界面上确认](#dr-44)（待验证）
@@ -880,13 +880,15 @@
 
 ### DR-62 各 agent 的历史会话存在哪、怎么列出来
 
-状态：待验证 · 出处：v3 N11 · 设计画布画板 14 · packages/agent-adapters（会话列表）· 新的 ui/panels/history · 旧编号 —
+状态：已解决 · 出处：v3 N11 · 设计画布画板 14 · packages/agent-adapters/src/history · ui/panels/history · 旧编号 —
 
 相关：IS-86
 
 - **原来以为**：（N11 之前没考虑过：白板只管开着的终端）
-- **实际情况**：已知的（做 Usage 时找文件的代码 packages/agent-adapters/src/usage/locate.ts）：claude 在 ~/.claude/projects/<目录名>/<id>.jsonl，每行带 cwd、gitBranch；codex 在 ~/.codex/sessions/年/月/日/rollout-*.jsonl，session_meta 带 cwd；pi、omp 有 sessions 目录；kimi 新建会话没有 id。待核对：标题字段（claude 的 summary 行、codex 的 thread 名）、每个文件只读开头和结尾能不能拿到第一条消息和最后活动时间、几千个文件第一次扫要多久、子 agent 和子任务的记录怎么排除、各 agent 的接回参数能不能按 id 接回在别的目录开的会话。
-- **怎么验证**：2026-10-26 用户定（画板 14，N11）：左边栏按项目 → 工作路径 → agent 列出，只读各 agent 自己的文件，第一次扫一遍、之后按修改时间增量更新。具体字段实现前逐个 agent 核对，写回这一条。
+- **实际情况**：2026-10-26 本机核对（只读）。claude 2.1.291：~/.claude/projects/<目录名>/<id>.jsonl，142 个文件 381MB；每行带 cwd、gitBranch、timestamp、entrypoint；标题是 ai-title 行（aiTitle，会写好几次，取最后一个）或 custom-title 行（customTitle，/rename 起的，优先），142 个里 96 个有标题、都在文件最后 64KB 里，没有的用第一条 user 消息；entrypoint 有 cli、claude-desktop（Claude 桌面版）、sdk-cli / sdk-ts（脚本里跑的 claude -p）。只读每个文件头尾各 64KB，142 个用 47ms。codex 0.164：~/.codex/sessions/年/月/日/rollout-<时间>-<id>.jsonl，1125 个 2.8GB；第一行 session_meta（20–47KB，带 id、cwd、git.branch、source、originator），读第一行 1125 个 63ms；source 里 exec 692、subagent 124、mcp 10 是脚本和子 agent，vscode 284（Codex 桌面版 / IDE）、cli 15 是交互的；标题在 ~/.codex/session_index.jsonl（thread_name，交互的 299 个里 214 个有），第一条消息在 ~/.codex/history.jsonl 或文件里的 UserMessage（在第 200KB 左右，前面是很长的系统提示）。pi 0.83：~/.pi/agent/sessions/<目录名>/<时间>_<id>.jsonl，第一行 session 带 id、cwd，没有标题，用第一条 user 消息。omp 18：~/.omp/agent/sessions/…，同 pi，另有 title / title_change 行。kimi 2.3：~/.kimi-code/sessions/wd_*/session_<id>/state.json 最省事：id、cwd、title、lastPrompt、createdAt、updatedAt 都在里面。接回：claude --resume、codex resume、pi --session、omp --resume、kimi -S 都按 id 接回，kimi 不能 fork（X4 的结论不变）。
+- **决策**：每种 agent 一个读取器，只读文件开头（和 claude 的结尾）、按“路径 + 修改时间 + 大小”缓存，最后活动时间用文件的修改时间（kimi 用 state.json 的 updatedAt）。脚本跑的和子 agent 的不列（claude 的 sdk-*、codex 的 exec / mcp / subagent）；桌面版、IDE 里开的照样列，悬停写明来源。标题优先级：自己起的名字 > agent 起的标题 > 第一条消息。会话的目录落在哪个工作区（路径相同或在它下面，取最长的）就归到哪；都不在的归到 Other folders。悬停卡片不写消息数（要读整个文件，几 GB）。
+- **好处**：第一次扫全机（1200 多个文件）不到半秒，之后只读改过的；标题和白板上终端的标题一致；所有会话都能用现有的 Resume / Fork（X4、X6）接回。
+- **代价**：依赖各 agent 的私有文件格式，升级后要核对（并入 DR-60 的兼容表）；codex 有三成交互会话没有标题，要读到 200KB 处才找得到第一条消息；脚本跑的会话看不到（以后可以加开关）。
 
 <a id="dr-42"></a>
 
