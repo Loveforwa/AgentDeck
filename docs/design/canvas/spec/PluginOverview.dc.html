@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>插件：入口和规则</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.at{position:absolute}
+.cap{margin:0;font-size:13px;line-height:1.55}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1200px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.tag{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;background:#F2F2EF;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.win{box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;overflow:hidden;font-size:11px}
+.wt{display:flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-bottom:1px solid #EEEEEB}
+.wb{padding:6px 9px;font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.7;color:#6B6B6B}
+.dot{width:7px;height:7px;border-radius:50%;flex:none}
+.menu{background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;box-shadow:0 8px 20px rgba(0,0,0,0.08);padding:4px;font-size:11.5px;display:flex;flex-direction:column}
+.mi{display:flex;align-items:center;gap:8px;padding:4px 9px;border-radius:5px;white-space:nowrap}
+.ms{padding:4px 9px 2px;font-size:10px;font-weight:600;color:#8A8A85;letter-spacing:0.04em}
+.sep{height:1px;background:#EEEEEB;margin:3px 4px}
+.mark{position:absolute;height:16px;padding:0 7px;display:flex;align-items:center;font-size:9.5px;font-weight:600;border-radius:0 0 4px 4px;white-space:nowrap;background:#CF222E;color:#FFFFFF}
+.strip{position:absolute;height:22px;display:flex;align-items:center;gap:12px;padding:0 10px;background:#FFFFFF;border:1px solid #D6D6D2;border-radius:11px;font-size:10px;color:#3D3D3A;box-sizing:border-box;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.05)}
+.yes{font-weight:600}
+.no{color:#A3A39E}
+</style>
+</helmet>
+<div style="width: 1760px; height: 1040px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">PL0 · 插件：入口和规则</h1>
+      <span class="tag">2026-10-25 定</span>
+    </div>
+    <p class="lead">插件是贴在终端（或整个工作区框）上的小功能，开着时旁边有一个看得见的标记。第一批两个：Auto-approve（PL1，底边左侧的红色小书签）和 Usage 用量记录（PL2，贴在上方或下方的细长条，我们自己读各 agent 的记录）。规则和登记表在仓库的 docs/plugins.md（插件手册），做插件前先读。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">入口：右键终端，菜单里的插件项</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start">
+      <div class="fig" style="width: 860px; height: 400px">
+        <div class="strip" style="left: 30px; top: 30px; width: 400px"><span>Input 312k</span><span>Output 18k</span><span>Cache 1.4M</span><span style="margin-left: auto">Context 96k / 200k · 48%</span></div>
+        <div class="at win" style="left: 30px; top: 58px; width: 400px; height: 270px; border: 1.5px solid #1A1A1A">
+          <div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="mono" style="font-weight: 500">claude</span><span style="color: #6B6B6B">· Fix the login bug</span><span style="flex: 1"></span><span style="color: #1A7F37">Running</span></div>
+          <div class="wb">⏺ Edit src/auth/oauth.ts<br>⏺ Bash pnpm test auth<br>  ✓ approved by Auto-approve<br>  18 passed</div>
+        </div>
+        <div class="mark" style="left: 46px; top: 328px">Auto-approve</div>
+        <div class="at menu" style="left: 470px; top: 46px; width: 250px">
+          <span class="mi">Rename…</span><span class="mi">Maximize<span style="flex: 1"></span><span style="color: #8A8A85">⌘⇧↩</span></span>
+          <span class="sep"></span>
+          <span class="mi">Clear<span style="flex: 1"></span><span style="color: #8A8A85">⌘K</span></span><span class="mi">Restart</span><span class="mi">Restart and resume conversation</span>
+          <span class="sep"></span>
+          <span class="ms">PLUGINS</span>
+          <span class="mi" style="background: #EDEDEA"><span style="width: 12px">✓</span>Auto-approve</span>
+          <span class="mi"><span style="width: 12px">✓</span>Usage</span>
+          <span class="sep"></span>
+          <span class="mi">Copy folder path</span><span class="mi">Open in system terminal</span>
+          <span class="sep"></span>
+          <span class="mi">Close<span style="flex: 1"></span><span style="color: #8A8A85">⌘W</span></span>
+        </div>
+      </div>
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 10px; font-size: 13.5px; line-height: 1.65">
+        <span>右键终端标题栏，菜单中间有一组 <b>PLUGINS</b>，直接列出插件，不套子菜单。打钩表示在这个终端上开着，再点一次关掉。</span>
+        <span>开着就有标记：Auto-approve 是底边左侧的红色小书签（需要你处理时临时变橙，写 Needs you），Usage 是贴在上方或下方的细长圆角条。</span>
+        <span>用不了的插件项灰掉，并写原因。</span>
+        <span>右键工作区框也有这一组，列出能贴在框上的插件（目前只有 Auto-approve）。</span>
+        <span style="color: #5F5F5A">开关状态随白板保存，重启后还在。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">每个插件先回答：能贴在哪些东西上</span>
+    <p class="lead">白板上有终端窗口、网页窗口、工作区框（项目框，里面放终端和网页），还有整块白板。每个插件开工前要先定它能贴在哪几种上，写进插件手册的登记表。</p>
+    <div class="tbl" style="grid-template-columns: 200px 200px 140px 200px 140px minmax(0, 1fr)">
+      <span class="th">插件</span><span class="th">终端窗口</span><span class="th">网页窗口</span><span class="th">工作区框</span><span class="th">白板</span><span class="th">标记</span>
+      <span class="td"><b>Auto-approve</b>（PL1）</span><span class="td yes">✓ claude、codex、omp、pi</span><span class="td no">✗</span><span class="td yes">✓ 框里所有终端</span><span class="td no">✗</span><span class="td">终端底边左侧的红色小书签 “Auto-approve”</span>
+      <span class="td"><b>Usage</b>（PL2）</span><span class="td yes">✓ 读得到数据的 agent</span><span class="td no">✗</span><span class="td no">以后（项目用量）</span><span class="td no">以后（整台电脑）</span><span class="td">终端上方或下方的细长圆角条，可拖</span>
+    </div>
+    <p class="cap" style="color: #5F5F5A">贴在框上和贴在窗口上同时存在时：在窗口上单独关掉，只关它自己；在框上关掉，框里的都关。Skills · MCP 不是插件，放在源代码管理面板里（画板 12 · N9）；子 agent 窗口组是 v3 的 N2（侧边栏）。</p>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":1040}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

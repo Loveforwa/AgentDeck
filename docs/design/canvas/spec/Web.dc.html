@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>网页窗口零件</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: {{w}}; height: {{h}}; box-sizing: border-box; display: flex; flex-direction: column; background: #FFFFFF; border: {{border}}; border-radius: 5px; box-shadow: {{shadow}}; overflow: hidden; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; color: #1A1A1A">
+  <div style="display: flex; align-items: center; gap: 5px; height: 20px; padding: 0 5px; border-bottom: 1px solid #EEEEEB; font-size: 9px; color: #6B6B6B; flex: none; white-space: nowrap">
+    <sc-if value="{{full}}" hint-placeholder-val="{{ true }}"><span>‹ › ↻</span></sc-if>
+    <span style="flex: 1; min-width: 0; background: #F2F2EF; border-radius: 4px; padding: 1px 6px; font-family: 'IBM Plex Mono', monospace; color: #1A1A1A; overflow: hidden; text-overflow: ellipsis">{{u}}</span>
+    <sc-if value="{{full}}" hint-placeholder-val="{{ true }}">
+      <span style="overflow: hidden; text-overflow: ellipsis; max-width: 40%">{{from}}</span>
+      <span>↗ ⤢ ×</span>
+    </sc-if>
+  </div>
+  <div style="flex: 1; min-height: 0; background: #FAFAF9; display: flex; align-items: center; justify-content: center; overflow: hidden">
+    <sc-if value="{{isLogin}}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; flex-direction: column; gap: 4px; width: 62%; font-size: 9px">
+        <span style="font-size: 10.5px; font-weight: 600">Sign in</span>
+        <span style="height: 11px; border: 1px solid #D6D6D2; border-radius: 3px; background: #FFFFFF"></span>
+        <span style="height: 11px; border: 1px solid #D6D6D2; border-radius: 3px; background: #FFFFFF"></span>
+        <span style="height: 13px; border-radius: 3px; background: #1A1A1A; color: #FFFFFF; font-size: 8px; display: flex; align-items: center; justify-content: center">Sign in</span>
+        <span style="height: 13px; box-sizing: border-box; border: 1px solid #D6D6D2; border-radius: 3px; background: #FFFFFF; font-size: 8px; display: flex; align-items: center; justify-content: center">Sign in with GitHub</span>
+      </div>
+    </sc-if>
+    <sc-if value="{{isJson}}" hint-placeholder-val="{{ false }}">
+      <div style="align-self: flex-start; padding: 10px 12px; font-family: 'IBM Plex Mono', monospace; font-size: 9px; line-height: 1.6; white-space: pre">{{json}}</div>
+    </sc-if>
+    <sc-if value="{{isErr}}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 0 12px; text-align: center; font-size: 9.5px; line-height: 1.55; white-space: pre-line">{{errText}}<span style="display: inline-flex; align-items: center; height: 17px; padding: 0 7px; border: 1px solid #D6D6D2; border-radius: 4px; background: #FFFFFF; font-size: 9px">Retry</span></div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":260,"height":170}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props;
+    const page = p.page || 'login';
+    let border = '1px solid #E3E3E0', shadow = 'none';
+    if (p.f) { border = '1.5px solid #1A1A1A'; shadow = '0 6px 16px rgba(0,0,0,0.10)'; }
+    if (p.flash) { border = '2px solid #1A1A1A'; shadow = '0 0 0 4px rgba(26,26,26,0.14)'; }
+    if (p.drag) shadow = '0 14px 30px rgba(0,0,0,0.16)';
+    return {
+      w: (p.w || 260) + 'px', h: (p.h || 170) + 'px', border, shadow,
+      full: !p.mini, u: p.u || 'localhost:3000/login', from: p.from || '',
+      isLogin: page === 'login', isJson: page === 'json', isErr: page === 'err',
+      json: '{\n  "ok": true,\n  "provider": "github",\n  "user": "octocat"\n}',
+      errText: (p.u || 'localhost:3000') + ' isn’t responding.\nThe dev server may not have started yet, or it stopped.'
+    };
+  }
+}
+</script>
+</body>
+</html>

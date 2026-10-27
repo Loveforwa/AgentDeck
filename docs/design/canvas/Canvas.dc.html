@@ -1,0 +1,719 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Board</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F7F5}
+a{color:#1A1A1A}a:hover{color:#000}
+</style>
+</helmet>
+<div data-board="1" ref="{{rootRef}}" onContextMenu="{{openMenu}}" onClick="{{closeMenu}}" style="position: relative; width: 1440px; height: 900px; overflow: hidden; background-color: #F7F7F5; background-image: radial-gradient(#D6D6D2 1px, transparent 1px); background-size: 20px 20px; color: #1A1A1A; font-family: Inter, 'PingFang SC', 'Noto Sans SC', system-ui, sans-serif; user-select: none">
+
+  <div style="position: absolute; left: 24px; top: 20px; display: flex; align-items: center; gap: 14px; font-size: 13px">
+    <span style="font-weight: 600">My Board</span>
+    <span style="color: #6B6B6B">{{summary}}</span>
+    <span style="color: #6B6B6B; font-size: 12px">Right-click to add a terminal, browser or workspace · drag a title bar to move · drag a corner to resize</span>
+  </div>
+  <div style="position: absolute; left: 860px; top: 20px; width: 216px; display: flex; justify-content: flex-end; gap: 16px; font-size: 13px; color: #6B6B6B">
+    <span>3 running</span><span style="color: #C2410C">1 waiting</span>
+  </div>
+
+  <sc-for list="{{frames}}" as="f" hint-placeholder-count="3">
+    <section aria-label="{{f.name}} {{f.branch}}" style="position: absolute; left: {{f.x}}; top: {{f.y}}; width: {{f.w}}; height: {{f.h}}; box-sizing: border-box; border: 1px solid {{f.border}}; border-radius: 12px; background: rgba(255,255,255,0.55)">
+      <button type="button" aria-label="Move workspace {{f.name}}" onPointerDown="{{f.grab}}" style="display: flex; align-items: baseline; gap: 10px; width: 100%; padding: 12px 16px 8px; border: 0; background: transparent; font: inherit; font-size: 13px; color: #1A1A1A; text-align: left; cursor: grab; touch-action: none">
+        <span style="font-weight: 600">{{f.name}}</span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #6B6B6B">{{f.branch}}</span>
+      </button>
+      <button type="button" aria-label="Resize workspace" onPointerDown="{{f.resize}}" style="position: absolute; right: 2px; bottom: 2px; width: 18px; height: 18px; padding: 0; border: 0; background: transparent; cursor: nwse-resize; touch-action: none">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#A3A39E" stroke-width="1.2" stroke-linecap="round" aria-hidden="true"><path d="M14 8l-6 6M14 12l-2 2"></path></svg>
+      </button>
+    </section>
+  </sc-for>
+
+  <sc-for list="{{terms}}" as="t" hint-placeholder-count="6">
+    <div onPointerDown="{{t.pick}}" style="position: absolute; left: {{t.x}}; top: {{t.y}}; width: {{t.w}}; height: {{t.h}}; z-index: {{t.z}}; box-sizing: border-box; display: flex; flex-direction: column; background: #FFFFFF; border: {{t.border}}; border-radius: 8px; box-shadow: {{t.shadow}}; overflow: hidden">
+      <div style="display: flex; align-items: center; height: 30px; border-bottom: 1px solid #EEEEEB; flex: none">
+        <button type="button" onClick="{{t.pick}}" onPointerDown="{{t.grab}}" style="flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 4px 0 10px; border: 0; background: #FFFFFF; font: inherit; font-size: 12px; color: #1A1A1A; text-align: left; cursor: grab; touch-action: none">
+          <span style="width: 6px; height: 6px; border-radius: 50%; background: {{t.dot}}; box-shadow: {{t.ring}}; flex: none"></span>
+          <span style="font-family: 'JetBrains Mono', monospace; font-weight: 500">{{t.agent}}</span>
+          <span style="color: #6B6B6B; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{t.role}}</span>
+          <span style="color: {{t.sc}}; white-space: nowrap">{{t.status}}</span>
+        </button>
+        <button type="button" aria-label="{{t.maxLabel}}" onClick="{{t.toggleMax}}" style="width: 30px; height: 30px; padding: 0; border: 0; background: #FFFFFF; display: grid; place-items: center; cursor: pointer; flex: none">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#6B6B6B" stroke-width="1.3" stroke-linecap="round" aria-hidden="true"><path d="{{t.maxIcon}}"></path></svg>
+        </button>
+      </div>
+      <div style="flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 1px; padding: 10px 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.6; overflow: hidden; cursor: text">
+        <sc-for list="{{t.lines}}" as="l" hint-placeholder-count="4">
+          <span style="color: {{l.c}}; white-space: pre-wrap; min-height: 19px">{{l.t}}<sc-if value="{{l.hasLink}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{l.open}}" style="padding: 0; border: 0; background: transparent; font: inherit; color: #1A1A1A; text-decoration: underline; text-underline-offset: 2px; cursor: pointer">{{l.lt}}</button></sc-if></span>
+        </sc-for>
+      </div>
+      <sc-if value="{{t.focused}}" hint-placeholder-val="{{ false }}">
+        <label style="display: flex; align-items: center; gap: 8px; padding: 8px 24px 8px 12px; border-top: 1px solid #EEEEEB; font-family: 'JetBrains Mono', monospace; font-size: 12px; flex: none">
+          <span style="color: #6B6B6B">›</span>
+          <input type="text" aria-label="{{t.inputLabel}}" defaultValue="{{t.draft}}" style="flex: 1; min-width: 0; border: 0; outline: none; background: transparent; font: inherit; color: #1A1A1A; user-select: text">
+        </label>
+      </sc-if>
+      <sc-if value="{{t.resizable}}" hint-placeholder-val="{{ true }}">
+        <button type="button" aria-label="Resize terminal" onPointerDown="{{t.resize}}" style="position: absolute; right: 0; bottom: 0; width: 18px; height: 18px; padding: 0; border: 0; background: transparent; cursor: nwse-resize; touch-action: none">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#A3A39E" stroke-width="1.2" stroke-linecap="round" aria-hidden="true"><path d="M14 8l-6 6M14 12l-2 2"></path></svg>
+        </button>
+      </sc-if>
+    </div>
+  </sc-for>
+
+  <sc-for list="{{webs}}" as="w" hint-placeholder-count="1">
+    <div onPointerDown="{{w.pick}}" style="position: absolute; left: {{w.x}}; top: {{w.y}}; width: {{w.w}}; height: {{w.h}}; z-index: {{w.z}}; box-sizing: border-box; display: flex; flex-direction: column; background: #FFFFFF; border: {{w.border}}; border-radius: 8px; box-shadow: {{w.shadow}}; overflow: hidden">
+      <div style="display: flex; align-items: center; gap: 2px; height: 34px; padding: 0 4px; border-bottom: 1px solid #EEEEEB; flex: none">
+        <button type="button" aria-label="Back" onClick="{{w.back}}" disabled="{{w.noBack}}" style="width: 26px; height: 26px; padding: 0; border: 0; border-radius: 5px; background: transparent; font: inherit; font-size: 15px; color: {{w.backFg}}; cursor: pointer">‹</button>
+        <button type="button" aria-label="Reload" style="width: 26px; height: 26px; padding: 0; border: 0; border-radius: 5px; background: transparent; font: inherit; font-size: 13px; color: #6B6B6B; cursor: pointer">↻</button>
+        <button type="button" aria-label="Move browser" onPointerDown="{{w.grab}}" style="flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; height: 24px; margin: 0 4px; padding: 0 10px; border: 0; border-radius: 6px; background: #F2F2EF; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #1A1A1A; text-align: left; cursor: grab; touch-action: none">
+          <span style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{w.urlText}}</span>
+          <span style="font-family: Inter, 'PingFang SC', sans-serif; font-size: 11px; color: #6B6B6B; white-space: nowrap">{{w.from}}</span>
+        </button>
+        <button type="button" aria-label="Open in browser" style="width: 26px; height: 26px; padding: 0; border: 0; border-radius: 5px; background: transparent; display: grid; place-items: center; cursor: pointer">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#6B6B6B" stroke-width="1.3" stroke-linecap="round" aria-hidden="true"><path d="M7 1h4v4M11 1L6 6M9 7v4H1V3h4"></path></svg>
+        </button>
+        <button type="button" aria-label="{{w.maxLabel}}" onClick="{{w.toggleMax}}" style="width: 26px; height: 26px; padding: 0; border: 0; border-radius: 5px; background: transparent; display: grid; place-items: center; cursor: pointer">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#6B6B6B" stroke-width="1.3" stroke-linecap="round" aria-hidden="true"><path d="{{w.maxIcon}}"></path></svg>
+        </button>
+        <button type="button" aria-label="Close" onClick="{{w.close}}" style="width: 26px; height: 26px; padding: 0; border: 0; border-radius: 5px; background: transparent; font: inherit; font-size: 14px; color: #6B6B6B; cursor: pointer">×</button>
+      </div>
+
+      <div style="flex: 1; min-height: 0; overflow: auto; background: #FFFFFF; user-select: text">
+        <sc-if value="{{w.isLogin}}" hint-placeholder-val="{{ true }}">
+          <div style="min-height: 100%; display: flex; align-items: center; justify-content: center; padding: 24px; box-sizing: border-box; background: #FAFAF9">
+            <div style="width: 280px; display: flex; flex-direction: column; gap: 12px; font-size: 13px">
+              <span style="font-size: 18px; font-weight: 600">Sign in</span>
+              <label style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 12px; color: #6B6B6B">Email</span><input type="email" aria-label="Email" style="height: 32px; border: 1px solid #D6D6D2; border-radius: 6px; padding: 0 8px; font: inherit; background: #FFFFFF"></label>
+              <label style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 12px; color: #6B6B6B">Password</span><input type="password" aria-label="Password" style="height: 32px; border: 1px solid #D6D6D2; border-radius: 6px; padding: 0 8px; font: inherit; background: #FFFFFF"></label>
+              <button type="button" style="height: 34px; border: 0; border-radius: 6px; background: #1A1A1A; color: #FFFFFF; font: inherit; cursor: pointer">Sign in</button>
+              <button type="button" onClick="{{w.goCallback}}" style="height: 34px; border: 1px solid #D6D6D2; border-radius: 6px; background: #FFFFFF; font: inherit; color: #1A1A1A; cursor: pointer">Sign in with GitHub</button>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{w.isCallback}}" hint-placeholder-val="{{ false }}">
+          <div style="padding: 16px 18px; font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.7; white-space: pre; color: #1A1A1A">{{w.json}}</div>
+        </sc-if>
+        <sc-if value="{{w.isStart}}" hint-placeholder-val="{{ false }}">
+          <div style="padding: 18px 20px; display: flex; flex-direction: column; gap: 6px; font-size: 13px">
+            <span style="font-size: 11px; color: #6B6B6B; padding-bottom: 2px">Running on this machine</span>
+            <sc-for list="{{services}}" as="s" hint-placeholder-count="2">
+              <button type="button" onClick="{{s.go}}" style="display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 10px; border: 1px solid #EEEEEB; border-radius: 6px; background: #FFFFFF; font: inherit; color: #1A1A1A; text-align: left; cursor: pointer">
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; flex: 1">{{s.url}}</span><span style="font-size: 11px; color: #6B6B6B">{{s.note}}</span>
+              </button>
+            </sc-for>
+            <span style="font-size: 11px; color: #6B6B6B; padding: 10px 0 2px">HTML files in this workspace</span>
+            <sc-for list="{{htmlFiles}}" as="s" hint-placeholder-count="2">
+              <button type="button" onClick="{{s.go}}" style="display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 10px; border: 1px solid #EEEEEB; border-radius: 6px; background: #FFFFFF; font: inherit; color: #1A1A1A; text-align: left; cursor: pointer">
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; flex: 1">{{s.url}}</span><span style="font-size: 11px; color: #6B6B6B">{{s.note}}</span>
+              </button>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{w.isCoverage}}" hint-placeholder-val="{{ false }}">
+          <div style="padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; font-size: 13px">
+            <span style="font-size: 16px; font-weight: 600">Coverage report</span>
+            <span style="font-size: 12px; color: #6B6B6B">All files · statements 87.4%</span>
+            <div style="display: flex; flex-direction: column; border-top: 1px solid #EEEEEB">
+              <sc-for list="{{coverage}}" as="c" hint-placeholder-count="4">
+                <div style="display: flex; align-items: center; gap: 12px; height: 30px; border-bottom: 1px solid #EEEEEB; font-size: 12px">
+                  <span style="font-family: 'JetBrains Mono', monospace; flex: 1">{{c.file}}</span>
+                  <span style="width: 120px; height: 6px; background: #EEEEEB; border-radius: 3px; overflow: hidden"><span style="display: block; width: {{c.pct}}; height: 6px; background: #1A1A1A"></span></span>
+                  <span style="font-family: 'JetBrains Mono', monospace; width: 40px; text-align: right">{{c.pct}}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+
+      <sc-if value="{{w.resizable}}" hint-placeholder-val="{{ true }}">
+        <button type="button" aria-label="Resize browser" onPointerDown="{{w.resize}}" style="position: absolute; right: 0; bottom: 0; width: 18px; height: 18px; padding: 0; border: 0; background: transparent; cursor: nwse-resize; touch-action: none">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#A3A39E" stroke-width="1.2" stroke-linecap="round" aria-hidden="true"><path d="M14 8l-6 6M14 12l-2 2"></path></svg>
+        </button>
+      </sc-if>
+    </div>
+  </sc-for>
+
+  <sc-if value="{{menuOpen}}" hint-placeholder-val="{{ false }}">
+    <div role="menu" aria-label="Board menu" style="position: absolute; left: {{menuX}}; top: {{menuY}}; z-index: 50; width: 220px; box-sizing: border-box; background: #FFFFFF; border: 1px solid #E3E3E0; border-radius: 10px; box-shadow: 0 12px 32px rgba(0,0,0,0.08); padding: 6px; display: flex; flex-direction: column">
+      <div style="padding: 6px 10px 4px; font-size: 11px; color: #6B6B6B">New terminal</div>
+      <sc-for list="{{menuAgents}}" as="a" hint-placeholder-count="6">
+        <button type="button" role="menuitem" onClick="{{a.add}}" style="display: flex; align-items: center; justify-content: space-between; height: 30px; padding: 0 10px; border: 0; border-radius: 6px; background: transparent; font: inherit; font-size: 13px; color: #1A1A1A; text-align: left; cursor: pointer">
+          <span style="font-family: 'JetBrains Mono', monospace">{{a.cmd}}</span><span style="font-size: 11px; color: #6B6B6B">{{a.note}}</span>
+        </button>
+      </sc-for>
+      <div style="height: 1px; background: #EEEEEB; margin: 6px 4px"></div>
+      <button type="button" role="menuitem" onClick="{{addWeb}}" style="height: 30px; padding: 0 10px; border: 0; border-radius: 6px; background: transparent; font: inherit; font-size: 13px; color: #1A1A1A; text-align: left; cursor: pointer">New browser</button>
+      <button type="button" role="menuitem" onClick="{{addFrame}}" style="height: 30px; padding: 0 10px; border: 0; border-radius: 6px; background: transparent; font: inherit; font-size: 13px; color: #1A1A1A; text-align: left; cursor: pointer">New workspace here</button>
+    </div>
+  </sc-if>
+
+  <aside aria-label="Side panel" style="position: absolute; right: 16px; top: 16px; bottom: 16px; width: 316px; z-index: 30; box-sizing: border-box; background: #FFFFFF; border: 1px solid #E3E3E0; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; font-size: 12px">
+    <div role="tablist" style="display: flex; align-items: center; gap: 2px; padding: 8px 8px 0; border-bottom: 1px solid #EEEEEB">
+      <sc-for list="{{panelTabs}}" as="pt" hint-placeholder-count="2">
+        <button type="button" role="tab" onClick="{{pt.pick}}" style="height: 32px; padding: 0 10px; border: 0; border-bottom: 2px solid {{pt.line}}; background: transparent; font: inherit; font-size: 12px; font-weight: 500; color: {{pt.fg}}; cursor: pointer">{{pt.t}}</button>
+      </sc-for>
+      <span style="flex: 1"></span>
+      <span style="font-size: 11px; color: #6B6B6B; padding-right: 6px">{{g.agent}}</span>
+    </div>
+
+    <sc-if value="{{g.noRepo}}" hint-placeholder-val="{{ false }}">
+      <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 8px; padding: 24px; font-size: 13px; color: #6B6B6B; text-align: center">
+        <span>This window isn’t in a workspace</span>
+        <span style="font-size: 12px">Open a terminal inside a workspace to see its git status here.</span>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{showScm}}" hint-placeholder-val="{{ true }}">
+      <div style="flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column">
+        <div style="padding: 10px 12px 8px; display: flex; flex-direction: column; gap: 8px">
+          <div style="display: flex; align-items: center; gap: 6px">
+            <button type="button" onClick="{{toggleBranches}}" aria-label="Switch branch" style="flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 8px; border: 1px solid #E3E3E0; border-radius: 6px; background: #FFFFFF; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #1A1A1A; cursor: pointer">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1A1A1A" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="6" cy="5" r="2"></circle><circle cx="6" cy="19" r="2"></circle><circle cx="18" cy="8" r="2"></circle><path d="M6 7v10M18 10c0 4-6 3-12 7"></path></svg>
+              <span style="flex: 1; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{g.branch}}</span>
+              <span style="color: #6B6B6B">▾</span>
+            </button>
+            <button type="button" aria-label="Sync" style="height: 28px; padding: 0 8px; border: 1px solid #E3E3E0; border-radius: 6px; background: #FFFFFF; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #1A1A1A; cursor: pointer">↑{{g.ahead}} ↓0</button>
+          </div>
+          <sc-if value="{{branchOpen}}" hint-placeholder-val="{{ false }}">
+            <div role="listbox" aria-label="Branches" style="border: 1px solid #E3E3E0; border-radius: 8px; padding: 4px; display: flex; flex-direction: column; box-shadow: 0 8px 20px rgba(0,0,0,0.06)">
+              <sc-for list="{{branches}}" as="b" hint-placeholder-count="4">
+                <button type="button" role="option" onClick="{{b.pick}}" disabled="{{b.disabled}}" style="display: flex; align-items: center; gap: 8px; height: 28px; padding: 0 8px; border: 0; border-radius: 5px; background: {{b.bg}}; font: inherit; font-size: 12px; color: {{b.fg}}; text-align: left; cursor: pointer">
+                  <span style="width: 10px">{{b.mark}}</span>
+                  <span style="font-family: 'JetBrains Mono', monospace; flex: 1">{{b.name}}</span>
+                  <span style="font-size: 11px; color: #6B6B6B">{{b.note}}</span>
+                </button>
+              </sc-for>
+              <button type="button" style="height: 28px; padding: 0 8px 0 26px; border: 0; border-top: 1px solid #EEEEEB; background: transparent; font: inherit; font-size: 12px; color: #1A1A1A; text-align: left; cursor: pointer">New branch…</button>
+            </div>
+          </sc-if>
+          <textarea rows="2" aria-label="Commit message" placeholder="Message" value="{{msg}}" onChange="{{setMsg}}" style="resize: none; border: 1px solid #E3E3E0; border-radius: 6px; padding: 6px 8px; font: inherit; font-size: 12px; color: #1A1A1A; background: #FFFFFF; user-select: text"></textarea>
+          <button type="button" onClick="{{commit}}" style="height: 30px; border: 0; border-radius: 6px; background: #1A1A1A; color: #FFFFFF; font: inherit; font-size: 12px; font-weight: 500; cursor: pointer">{{commitLabel}}</button>
+        </div>
+
+        <sc-if value="{{hasStaged}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; align-items: center; padding: 6px 12px; font-size: 11px; font-weight: 600; color: #1A1A1A">
+            <span style="flex: 1">▾ Staged Changes</span><span style="color: #6B6B6B; font-weight: 400">{{stagedCount}}</span>
+          </div>
+          <sc-for list="{{stagedRows}}" as="r" hint-placeholder-count="2">
+            <sc-if value="{{r.isDir}}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; align-items: center; gap: 6px; height: 24px; padding-left: 20px; color: #6B6B6B; font-family: 'JetBrains Mono', monospace; font-size: 11px">▾ {{r.label}}</div>
+            </sc-if>
+            <sc-if value="{{r.isFile}}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; align-items: center; gap: 6px; height: 24px; padding: 0 8px 0 36px; font-family: 'JetBrains Mono', monospace; font-size: 12px">
+                <span style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{r.label}}</span>
+                <button type="button" aria-label="{{r.actLabel}}" onClick="{{r.act}}" style="width: 22px; height: 22px; padding: 0; border: 0; border-radius: 4px; background: transparent; font: inherit; font-size: 14px; color: #6B6B6B; cursor: pointer">−</button>
+                <span style="width: 12px; text-align: center; font-weight: 600; color: {{r.kc}}">{{r.k}}</span>
+              </div>
+            </sc-if>
+          </sc-for>
+        </sc-if>
+
+        <div style="display: flex; align-items: center; padding: 6px 12px; font-size: 11px; font-weight: 600; color: #1A1A1A">
+          <span style="flex: 1">▾ Changes</span>
+          <button type="button" aria-label="Stage all" onClick="{{stageAll}}" style="width: 22px; height: 22px; padding: 0; border: 0; border-radius: 4px; background: transparent; font: inherit; font-size: 14px; color: #6B6B6B; cursor: pointer">+</button>
+          <span style="color: #6B6B6B; font-weight: 400; width: 16px; text-align: right">{{changeCount}}</span>
+        </div>
+        <sc-for list="{{changeRows}}" as="r" hint-placeholder-count="4">
+          <sc-if value="{{r.isDir}}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; align-items: center; gap: 6px; height: 24px; padding-left: 20px; color: #6B6B6B; font-family: 'JetBrains Mono', monospace; font-size: 11px">▾ {{r.label}}</div>
+          </sc-if>
+          <sc-if value="{{r.isFile}}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; align-items: center; gap: 6px; height: 24px; padding: 0 8px 0 36px; font-family: 'JetBrains Mono', monospace; font-size: 12px">
+              <span style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{r.label}}</span>
+              <button type="button" aria-label="{{r.actLabel}}" onClick="{{r.act}}" style="width: 22px; height: 22px; padding: 0; border: 0; border-radius: 4px; background: transparent; font: inherit; font-size: 14px; color: #6B6B6B; cursor: pointer">+</button>
+              <span style="width: 12px; text-align: center; font-weight: 600; color: {{r.kc}}">{{r.k}}</span>
+            </div>
+          </sc-if>
+        </sc-for>
+        <sc-if value="{{noChanges}}" hint-placeholder-val="{{ false }}">
+          <div style="padding: 4px 12px 8px 36px; color: #6B6B6B">No unstaged changes</div>
+        </sc-if>
+
+        <div style="padding: 12px 12px 6px; font-size: 11px; font-weight: 600; border-top: 1px solid #EEEEEB; margin-top: 8px">▾ Repository</div>
+        <sc-for list="{{repoTree}}" as="w" hint-placeholder-count="4">
+          <sc-if value="{{w.isRepo}}" hint-placeholder-val="{{ false }}">
+            <div style="padding: 4px 12px 2px 20px; font-weight: 600">{{w.label}}</div>
+          </sc-if>
+          <sc-if value="{{w.isWt}}" hint-placeholder-val="{{ true }}">
+            <button type="button" onClick="{{w.pick}}" style="display: flex; align-items: center; gap: 6px; width: 100%; height: 24px; padding: 0 12px 0 32px; border: 0; background: {{w.bg}}; font: inherit; font-size: 12px; color: #1A1A1A; text-align: left; cursor: pointer">
+              <span style="color: #A3A39E">{{w.glyph}}</span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-weight: {{w.weight}}">{{w.label}}</span>
+              <span style="flex: 1; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #6B6B6B; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{w.path}}</span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #6B6B6B">{{w.ahead}}</span>
+            </button>
+          </sc-if>
+        </sc-for>
+
+        <div style="padding: 12px 12px 6px; font-size: 11px; font-weight: 600; border-top: 1px solid #EEEEEB; margin-top: 8px">▾ Graph</div>
+        <div style="display: flex; flex-direction: column; padding: 0 12px 12px">
+          <sc-for list="{{graph}}" as="r" hint-placeholder-count="6">
+            <div style="display: flex; align-items: center; gap: 6px; height: 26px">
+              <span style="position: relative; width: 28px; height: 26px; flex: none">
+                <span style="position: absolute; left: 6px; top: {{r.l0t}}; width: 1.5px; height: {{r.l0h}}; background: #A3A39E"></span>
+                <span style="position: absolute; left: 18px; top: {{r.l1t}}; width: 1.5px; height: {{r.l1h}}; background: #1A1A1A"></span>
+                <span style="position: absolute; left: 7px; top: 12px; width: {{r.joinW}}; height: 1.5px; background: #1A1A1A"></span>
+                <span style="position: absolute; left: {{r.dx}}; top: {{r.dy}}; width: {{r.ds}}; height: {{r.ds}}; border-radius: 50%; background: {{r.dbg}}; box-shadow: {{r.dring}}"></span>
+              </span>
+              <span style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: {{r.mc}}">{{r.msg}}</span>
+              <sc-for list="{{r.refs}}" as="x" hint-placeholder-count="1">
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; padding: 1px 5px; border: 1px solid {{x.bd}}; border-radius: 4px; color: #1A1A1A; white-space: nowrap">{{x.t}}</span>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{showSkills}}" hint-placeholder-val="{{ false }}">
+      <div style="flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column">
+        <div style="padding: 12px 12px 4px; display: flex; flex-direction: column; gap: 2px">
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #6B6B6B; word-break: break-all">{{g.path}}</span>
+          <span style="font-size: 11px; color: #6B6B6B">Shared with {{g.members}}</span>
+        </div>
+
+        <div style="display: flex; align-items: center; padding: 10px 12px 6px; font-size: 11px; font-weight: 600"><span style="flex: 1">▾ Skills in this workspace</span><span style="color: #6B6B6B; font-weight: 400">{{skillCount}}</span></div>
+        <sc-for list="{{wsSkills}}" as="s" hint-placeholder-count="4">
+          <label style="display: flex; align-items: center; gap: 8px; height: 28px; padding: 0 12px 0 20px">
+            <input type="checkbox" checked="{{s.on}}" onChange="{{s.toggle}}" style="accent-color: #1A1A1A">
+            <span style="font-family: 'JetBrains Mono', monospace; flex: 1; color: {{s.fg}}">{{s.name}}</span>
+            <span style="font-size: 11px; color: #6B6B6B">{{s.src}}</span>
+          </label>
+        </sc-for>
+
+        <div style="display: flex; align-items: center; padding: 12px 12px 6px; font-size: 11px; font-weight: 600"><span style="flex: 1">▾ MCP</span></div>
+        <sc-for list="{{mcps}}" as="m" hint-placeholder-count="3">
+          <label style="display: flex; align-items: center; gap: 8px; height: 28px; padding: 0 12px 0 20px">
+            <input type="checkbox" checked="{{m.on}}" onChange="{{m.toggle}}" style="accent-color: #1A1A1A">
+            <span style="font-family: 'JetBrains Mono', monospace; flex: 1; color: {{m.fg}}">{{m.name}}</span>
+            <span style="font-size: 11px; color: #6B6B6B">{{m.note}}</span>
+          </label>
+        </sc-for>
+
+        <div style="display: flex; align-items: center; padding: 14px 12px 6px; font-size: 11px; font-weight: 600; border-top: 1px solid #EEEEEB; margin-top: 8px">
+          <span style="flex: 1">▾ Library</span><span style="font-family: 'JetBrains Mono', monospace; font-weight: 400; color: #6B6B6B">~/.agentdeck/skills</span>
+        </div>
+        <sc-for list="{{library}}" as="s" hint-placeholder-count="5">
+          <div style="display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px 0 20px">
+            <span style="display: flex; flex-direction: column; flex: 1; min-width: 0">
+              <span style="font-family: 'JetBrains Mono', monospace">{{s.name}}</span>
+            </span>
+            <span style="font-size: 11px; color: #6B6B6B">{{s.used}}</span>
+            <sc-if value="{{s.canAdd}}" hint-placeholder-val="{{ true }}">
+              <button type="button" onClick="{{s.add}}" style="height: 24px; padding: 0 8px; border: 1px solid #E3E3E0; border-radius: 5px; background: #FFFFFF; font: inherit; font-size: 11px; color: #1A1A1A; cursor: pointer">Add</button>
+            </sc-if>
+            <sc-if value="{{s.added}}" hint-placeholder-val="{{ false }}">
+              <span style="font-size: 11px; color: #6B6B6B; width: 40px; text-align: right">Added</span>
+            </sc-if>
+          </div>
+        </sc-for>
+        <div style="display: flex; gap: 6px; padding: 10px 12px 14px">
+          <button type="button" style="flex: 1; height: 28px; border: 1px solid #E3E3E0; border-radius: 6px; background: #FFFFFF; font: inherit; font-size: 12px; color: #1A1A1A; cursor: pointer">Download skill…</button>
+          <button type="button" style="flex: 1; height: 28px; border: 1px solid #E3E3E0; border-radius: 6px; background: #FFFFFF; font: inherit; font-size: 12px; color: #1A1A1A; cursor: pointer">Add MCP…</button>
+        </div>
+      </div>
+    </sc-if>
+  </aside>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      focus: 'w1', max: null, menu: null, extraTerms: [], extraFrames: [],
+      webs: [{ id: 'w1', url: 'localhost:3000/login', hist: [], from: 'from zsh · pnpm dev' }],
+      panel: 'scm', branchOpen: false, msg: '',
+      scm: {
+        f1: { branch: 'feat/oauth', staged: ['src/auth/oauth.ts'], done: [], commits: [] },
+        f2: { branch: 'fix/rate-limit', staged: [], done: [], commits: [] },
+        f3: { branch: 'feat/timeline', staged: [], done: [], commits: [] }
+      },
+      skills: {}, mcp: {},
+      rects: {
+        f1: { x: 24, y: 64, w: 688, h: 820 }, f2: { x: 736, y: 64, w: 340, h: 272 }, f3: { x: 736, y: 360, w: 340, h: 340 },
+        t1: { x: 40, y: 108, w: 448, h: 418 }, t2: { x: 500, y: 108, w: 196, h: 202 }, t6: { x: 500, y: 324, w: 196, h: 202 },
+        t3: { x: 752, y: 108, w: 308, h: 212 }, t4: { x: 752, y: 404, w: 308, h: 280 }, t5: { x: 736, y: 724, w: 340, h: 150 },
+        w1: { x: 40, y: 540, w: 656, h: 330 }
+      }
+    };
+    this.drag = null;
+    this.root = null;
+  }
+  componentDidMount() {
+    this.onMove = (e) => {
+      const d = this.drag;
+      if (!d) return;
+      const dx = (e.clientX - d.sx) / d.s, dy = (e.clientY - d.sy) / d.s;
+      const rects = Object.assign({}, this.state.rects);
+      if (d.kind === 'resize') {
+        rects[d.id] = Object.assign({}, d.r0[d.id], { w: Math.max(d.minW, d.r0[d.id].w + dx), h: Math.max(d.minH, d.r0[d.id].h + dy) });
+      } else {
+        Object.keys(d.r0).forEach((id) => { rects[id] = Object.assign({}, d.r0[id], { x: d.r0[id].x + dx, y: d.r0[id].y + dy }); });
+      }
+      this.setState({ rects });
+    };
+    this.onUp = () => { this.drag = null; };
+    window.addEventListener('pointermove', this.onMove);
+    window.addEventListener('pointerup', this.onUp);
+  }
+  componentWillUnmount() {
+    window.removeEventListener('pointermove', this.onMove);
+    window.removeEventListener('pointerup', this.onUp);
+  }
+  scale() { return this.root ? this.root.getBoundingClientRect().width / 1440 : 1; }
+  startDrag(e, kind, ids, minW, minH) {
+    if (e.button !== 0) return;
+    e.stopPropagation();
+    if (!this.root && e.currentTarget && e.currentTarget.closest) this.root = e.currentTarget.closest('[data-board]');
+    const r0 = {};
+    ids.forEach((id) => { r0[id] = this.state.rects[id]; });
+    this.drag = { kind, id: ids[0], r0, sx: e.clientX, sy: e.clientY, s: this.scale(), minW, minH };
+  }
+  renderVals() {
+    const px = (n) => Math.round(n) + 'px';
+    const INK = '#1A1A1A', MUTED = '#6B6B6B', WARN = '#C2410C';
+    const st = this.state;
+    const R = st.rects;
+    const frameDefs = [
+      { id: 'f1', name: 'api-server', base: 'feat/oauth' },
+      { id: 'f2', name: 'api-server', base: 'fix/rate-limit' },
+      { id: 'f3', name: 'video-editor', base: 'feat/timeline' }
+    ].concat(st.extraFrames);
+    const scmOf = (fid) => st.scm[fid] || { branch: (frameDefs.find((f) => f.id === fid) || {}).base, staged: [], done: [], commits: [] };
+    const setScm = (fid, patch) => this.setState({ scm: Object.assign({}, this.state.scm, { [fid]: Object.assign({}, scmOf(fid), patch) }) });
+
+    // —— 浏览器 ——
+    const setWeb = (id, fn) => this.setState({ webs: this.state.webs.map((w) => (w.id === id ? fn(w) : w)) });
+    const nav = (id, url) => setWeb(id, (w) => Object.assign({}, w, { url, hist: w.hist.concat([w.url]) }));
+    const openUrl = (url, from) => {
+      const cur = this.state.webs.find((w) => w.id === 'w1');
+      if (cur) { nav('w1', url); this.setState({ focus: 'w1', max: null }); return; }
+      const f1 = this.state.rects.f1;
+      const rects = Object.assign({}, this.state.rects, {
+        w1: { x: f1.x + 16, y: f1.y + 476, w: Math.max(400, f1.w - 32), h: 330 },
+        f1: Object.assign({}, f1, { h: Math.max(f1.h, 820) })
+      });
+      this.setState({ rects, focus: 'w1', max: null, webs: this.state.webs.concat([{ id: 'w1', url, hist: [], from }]) });
+    };
+
+    const L = (c, t) => ({ c: { i: INK, m: MUTED, w: WARN }[c], t, hasLink: false });
+    const LK = (c, t, lt, url, from) => ({ c: { i: INK, m: MUTED, w: WARN }[c], t, lt, hasLink: true, open: () => openUrl(url, from) });
+    const termDefs = [
+      { id: 't1', agent: 'claude', role: 'lead', status: 'Needs reply', st: 'idle', draft: 'Yes, and add tests', lines: [
+        L('i', '› Add GitHub OAuth to login; keep password login working'), L('i', 'Let me look at the current auth setup first.'),
+        L('m', '  Read  src/auth/session.ts'), L('m', '  Write src/auth/oauth.ts  +86'),
+        L('m', '  Bash  pnpm test auth --coverage'), L('m', '        18 passed'), L('m', ''),
+        L('i', 'Callback is wired up; the session reuses createSession().'),
+        LK('i', 'Login page: ', 'localhost:3000/login', 'localhost:3000/login', 'from claude'),
+        LK('i', 'Coverage: ', 'coverage/index.html', 'file://coverage/index.html', 'from claude'),
+        L('i', 'Add state validation too?')] },
+      { id: 't2', agent: 'zsh', role: 'pnpm dev', status: 'Running', st: 'run', draft: '', lines: [
+        L('i', '$ pnpm dev'), LK('m', 'ready on ', 'localhost:3000', 'localhost:3000/login', 'from zsh · pnpm dev'),
+        L('m', 'GET /login 200'), L('m', 'GET /auth/github 302')] },
+      { id: 't6', agent: 'codex', role: 'review (read-only)', status: 'Running', st: 'run', draft: '', lines: [
+        L('i', '› Review the changes on this branch'), L('m', 'oauth.ts:44'), L('m', 'missing state check'), L('m', 'token exchange has no try')] },
+      { id: 't3', agent: 'codex', role: 'rate limit fix', status: 'Needs approval', st: 'wait', draft: 'y', lines: [
+        L('i', '› Fix broken rate limiting on /search'), L('m', 'Edited middleware/limiter.ts'), L('m', 'Needs to run redis-cli FLUSHDB'), L('w', 'Allow? y / n')] },
+      { id: 't4', agent: 'gemini', role: 'timeline snapping', status: 'Running', st: 'run', draft: '', lines: [
+        L('i', '› Snap clips to neighbors while dragging'), L('m', 'Read  Timeline.tsx'), L('m', 'Write snap.ts'), L('m', 'Threshold 8px, hold Alt to disable'), L('m', 'Writing tests…')] },
+      { id: 't5', agent: 'opencode', role: '', status: 'Idle', st: 'idle', draft: '', lines: [
+        L('i', '› What is a good plugin system design?'), L('m', '1. Folder convention + dynamic import'), L('m', '2. Child process + RPC')] }
+    ].concat(st.extraTerms);
+
+    const REPO = {
+      f1: { path: '~/code/api-server/.worktrees/oauth', ahead: 2, files: [
+        ['A', 'src/auth/oauth.ts'], ['M', 'src/routes/index.ts'], ['M', 'src/config/index.ts'], ['A', 'test/auth/oauth.test.ts'], ['M', 'package.json']],
+        graph: [
+          { at: 1, auto: true, msg: 'Checkpoint · write oauth.ts' },
+          { at: 1, msg: 'feat(auth): GitHub OAuth callback' },
+          { at: 1, auto: true, msg: 'Checkpoint · routes/index.ts' },
+          { at: 1, msg: 'chore: add oauth config' },
+          { at: 0, msg: 'refactor: lazy-load db pool', refs: ['main'] },
+          { at: 0, msg: 'fix: redact login logs', fork: true },
+          { at: 0, msg: 'chore: bump dependencies' }] },
+      f2: { path: '~/code/api-server/.worktrees/rate-limit', ahead: 1, files: [
+        ['M', 'src/middleware/limiter.ts'], ['M', 'src/config/index.ts']],
+        graph: [
+          { at: 1, auto: true, msg: 'Checkpoint · limiter.ts' },
+          { at: 1, msg: 'fix: include route in rate-limit key' },
+          { at: 0, msg: 'refactor: lazy-load db pool', refs: ['main'] },
+          { at: 0, msg: 'fix: redact login logs', fork: true },
+          { at: 0, msg: 'chore: bump dependencies' }] },
+      f3: { path: '~/code/video-editor', ahead: 0, files: [
+        ['A', 'src/timeline/snap.ts'], ['M', 'src/timeline/Timeline.tsx'], ['A', 'src/timeline/snap.test.ts']],
+        graph: [
+          { at: 1, auto: true, msg: 'Checkpoint · write snap.ts' },
+          { at: 1, auto: true, msg: 'Checkpoint · Timeline.tsx' },
+          { at: 0, msg: 'feat: basic timeline dragging', refs: ['main'], fork: true },
+          { at: 0, msg: 'fix: audio/video drift' }] }
+    };
+    const repoOf = (f) => REPO[f.id] || { path: '~/code/api-server/.worktrees/' + f.base.split('/').pop(), ahead: 0, files: [],
+      graph: [{ at: 0, msg: 'refactor: lazy-load db pool', refs: ['main'], fork: true }] };
+
+    const allIds = termDefs.map((t) => t.id).concat(st.webs.map((w) => w.id));
+    const frameOf = (id) => {
+      const r = R[id];
+      if (!r) return null;
+      const cx = r.x + r.w / 2, cy = r.y + Math.min(r.h / 2, 60);
+      let hit = null;
+      frameDefs.forEach((f) => { const q = R[f.id]; if (cx >= q.x && cx <= q.x + q.w && cy >= q.y && cy <= q.y + q.h) hit = f; });
+      return hit;
+    };
+    const membersOf = (fid) => allIds.filter((id) => { const f = frameOf(id); return f && f.id === fid; });
+    const focusFrame = frameOf(st.focus);
+    const dotOf = { run: INK, wait: WARN, idle: '#FFFFFF' };
+    const AREA = { x: 24, y: 56, w: 1060, h: 828 };
+    const winLook = (id, i) => {
+      const on = id === st.focus, isMax = st.max === id;
+      return {
+        on, isMax, r: isMax ? AREA : R[id], z: isMax ? 25 : (on ? 20 : 10 + i),
+        shadow: on ? '0 8px 24px rgba(0,0,0,0.08)' : 'none',
+        maxLabel: isMax ? 'Restore' : 'Maximize',
+        maxIcon: isMax ? 'M5 1v4H1M7 11V7h4' : 'M7 1h4v4M5 11H1V7'
+      };
+    };
+
+    const terms = termDefs.map((t, i) => {
+      const k = winLook(t.id, i), r = k.r;
+      const fr = frameOf(t.id);
+      const lines = t.fresh ? [L('m', '$ cd ' + (fr ? repoOf(fr).path : '~')), L('i', t.agent + ' is ready'), L('m', fr ? 'Loaded skills, MCP and AGENTS.md for this workspace' : 'Not in a workspace')] : t.lines;
+      return Object.assign({}, t, {
+        lines, x: px(r.x), y: px(r.y), w: px(r.w), h: px(r.h), focused: k.on, resizable: !k.isMax, z: k.z,
+        role: t.role || (fr ? fr.name + ' · ' + scmOf(fr.id).branch : '~'),
+        border: k.on ? '1.5px solid #1A1A1A' : '1px solid ' + (t.st === 'wait' ? '#E9B48F' : '#E3E3E0'),
+        shadow: k.shadow, maxLabel: k.maxLabel, maxIcon: k.maxIcon,
+        dot: dotOf[t.st], ring: t.st === 'idle' ? 'inset 0 0 0 1.5px #6B6B6B' : 'none',
+        sc: t.st === 'wait' ? WARN : MUTED,
+        inputLabel: 'Message ' + t.agent,
+        pick: () => { if (this.state.focus !== t.id) this.setState({ focus: t.id, branchOpen: false }); },
+        toggleMax: () => this.setState({ focus: t.id, max: k.isMax ? null : t.id }),
+        grab: (e) => { this.setState({ focus: t.id, branchOpen: false }); if (!k.isMax) this.startDrag(e, 'move', [t.id]); },
+        resize: (e) => this.startDrag(e, 'resize', [t.id], 180, 120)
+      });
+    });
+
+    const PAGES = {
+      'localhost:3000/login': 'login',
+      'localhost:3000/auth/github/callback': 'callback',
+      'about:blank': 'start',
+      'file://coverage/index.html': 'coverage'
+    };
+    const webs = st.webs.map((w, i) => {
+      const k = winLook(w.id, termDefs.length + i), r = k.r;
+      const page = PAGES[w.url] || 'start';
+      const fr = frameOf(w.id);
+      return {
+        id: w.id, x: px(r.x), y: px(r.y), w: px(r.w), h: px(r.h), z: k.z, resizable: !k.isMax,
+        border: k.on ? '1.5px solid #1A1A1A' : '1px solid #E3E3E0', shadow: k.shadow,
+        maxLabel: k.maxLabel, maxIcon: k.maxIcon,
+        urlText: w.url === 'file://coverage/index.html' ? 'file://' + (fr ? repoOf(fr).path : '~') + '/coverage/index.html' : (w.url === 'about:blank' ? 'Type a URL or pick one below' : 'http://' + w.url),
+        from: w.from || '',
+        isLogin: page === 'login', isCallback: page === 'callback', isStart: page === 'start', isCoverage: page === 'coverage',
+        json: '{\n  "ok": true,\n  "provider": "github",\n  "user": "octocat",\n  "session": "s_8f2c…e91"\n}',
+        noBack: w.hist.length === 0, backFg: w.hist.length ? INK : '#C4C4BF',
+        back: () => setWeb(w.id, (x) => Object.assign({}, x, { url: x.hist[x.hist.length - 1], hist: x.hist.slice(0, -1) })),
+        goCallback: () => nav(w.id, 'localhost:3000/auth/github/callback'),
+        pick: () => { if (this.state.focus !== w.id) this.setState({ focus: w.id, branchOpen: false }); },
+        toggleMax: () => this.setState({ focus: w.id, max: k.isMax ? null : w.id }),
+        close: () => this.setState({ webs: this.state.webs.filter((x) => x.id !== w.id), focus: 't1', max: null }),
+        grab: (e) => { this.setState({ focus: w.id, branchOpen: false }); if (!k.isMax) this.startDrag(e, 'move', [w.id]); },
+        resize: (e) => this.startDrag(e, 'resize', [w.id], 280, 180)
+      };
+    });
+    const startTarget = () => (this.state.webs.find((w) => w.url === 'about:blank') || {}).id;
+    const services = [['localhost:3000', 'api-server · pnpm dev', 'localhost:3000/login'], ['localhost:5173', 'web-app · vite', 'localhost:3000/login']]
+      .map((s) => ({ url: s[0], note: s[1], go: () => nav(startTarget(), s[2]) }));
+    const htmlFiles = [['coverage/index.html', 'api-server', 'file://coverage/index.html']]
+      .map((s) => ({ url: s[0], note: s[1], go: () => nav(startTarget(), s[2]) }));
+    const coverage = [['src/auth/oauth.ts', '92%'], ['src/auth/session.ts', '88%'], ['src/routes/index.ts', '76%'], ['src/config/index.ts', '100%']]
+      .map((c) => ({ file: c[0], pct: c[1] }));
+
+    const frames = frameDefs.map((f) => {
+      const r = R[f.id];
+      return Object.assign({}, f, {
+        branch: scmOf(f.id).branch,
+        x: px(r.x), y: px(r.y), w: px(r.w), h: px(r.h),
+        border: focusFrame && focusFrame.id === f.id ? '#8A8A85' : '#DCDCD8',
+        grab: (e) => this.startDrag(e, 'move', [f.id].concat(membersOf(f.id))),
+        resize: (e) => this.startDrag(e, 'resize', [f.id], 220, 140)
+      });
+    });
+
+    // —— 源代码管理 ——
+    const ft = termDefs.find((t) => t.id === st.focus);
+    const focusName = ft ? ft.agent : 'browser';
+    const fid = focusFrame ? focusFrame.id : null;
+    const repo = focusFrame ? repoOf(focusFrame) : { path: '~', ahead: 0, files: [], graph: [] };
+    const scm = fid ? scmOf(fid) : { branch: '', staged: [], done: [], commits: [] };
+    const KC = { M: '#9A6700', A: '#1A7F37', D: '#CF222E' };
+    const live = repo.files.filter((f) => scm.done.indexOf(f[1]) < 0);
+    const staged = live.filter((f) => scm.staged.indexOf(f[1]) >= 0);
+    const unstaged = live.filter((f) => scm.staged.indexOf(f[1]) < 0);
+    const tree = (list, isStaged) => {
+      const rows = [], dirs = {};
+      list.forEach((f) => { const i = f[1].lastIndexOf('/'); const d = i < 0 ? '.' : f[1].slice(0, i); (dirs[d] = dirs[d] || []).push(f); });
+      Object.keys(dirs).forEach((d) => {
+        if (d !== '.') rows.push({ isDir: true, isFile: false, label: d });
+        dirs[d].forEach((f) => rows.push({
+          isDir: false, isFile: true, label: f[1].split('/').pop(), k: f[0], kc: KC[f[0]],
+          actLabel: (isStaged ? 'Unstage ' : 'Stage ') + f[1],
+          act: () => setScm(fid, { staged: isStaged ? scm.staged.filter((p) => p !== f[1]) : scm.staged.concat([f[1]]) })
+        }));
+      });
+      return rows;
+    };
+    const SEG = { none: ['0px', '0px'], full: ['0px', '26px'], top: ['0px', '13px'], bottom: ['13px', '13px'] };
+    const base = scm.commits.map((m) => ({ at: 1, msg: m })).concat(repo.graph);
+    const mainIdx = base.findIndex((r) => r.at === 0);
+    const forkIdx = base.findIndex((r) => r.fork);
+    const headIdx = base.findIndex((r) => r.at === 1 && !r.auto);
+    const graph = base.map((r, i) => {
+      const l0 = i < mainIdx ? 'none' : (i === mainIdx ? 'bottom' : 'full');
+      const l1 = i < forkIdx ? 'full' : (i === forkIdx ? 'top' : 'none');
+      const refs = (r.refs || []).map((t) => ({ t, bd: '#E3E3E0' }));
+      if (i === headIdx) refs.unshift({ t: scm.branch, bd: '#1A1A1A' });
+      const size = r.auto ? 7 : 9;
+      return {
+        msg: r.msg, refs, mc: r.auto ? MUTED : INK,
+        l0t: SEG[l0][0], l0h: SEG[l0][1], l1t: SEG[l1][0], l1h: SEG[l1][1],
+        joinW: i === forkIdx ? '12px' : '0px',
+        dx: px((r.at === 1 ? 18 : 6) - size / 2 + 0.75), dy: px(13 - size / 2), ds: px(size),
+        dbg: r.auto ? '#FFFFFF' : (r.at === 1 ? INK : '#A3A39E'),
+        dring: r.auto ? 'inset 0 0 0 1.5px #1A1A1A' : 'none'
+      };
+    });
+    const busy = frameDefs.filter((f) => f.id !== fid && f.name === (focusFrame || {}).name).map((f) => scmOf(f.id).branch);
+    const allBranches = { 'api-server': ['main', 'feat/oauth', 'fix/rate-limit', 'refactor/db-pool'], 'video-editor': ['main', 'feat/timeline', 'feat/export-gif'] };
+    const branches = (focusFrame ? (allBranches[focusFrame.name] || ['main']) : []).concat(
+      frameDefs.filter((f) => focusFrame && f.name === focusFrame.name && !(allBranches[f.name] || []).includes(scmOf(f.id).branch)).map((f) => scmOf(f.id).branch)
+    ).filter((b, i, a) => a.indexOf(b) === i).map((b) => {
+      const cur = b === scm.branch, taken = busy.indexOf(b) >= 0;
+      return {
+        name: b, mark: cur ? '✓' : '', disabled: taken && !cur,
+        note: taken && !cur ? 'in another workspace' : (b === 'main' ? 'main folder' : ''),
+        fg: taken && !cur ? MUTED : INK, bg: cur ? '#F2F2EF' : 'transparent',
+        pick: () => { setScm(fid, { branch: b }); this.setState({ branchOpen: false }); }
+      };
+    });
+    const repoTree = [];
+    ['api-server', 'video-editor'].forEach((name) => {
+      repoTree.push({ isRepo: true, isWt: false, label: name });
+      frameDefs.filter((f) => f.name === name).forEach((f) => {
+        const on = fid === f.id, rp = repoOf(f), sc = scmOf(f.id);
+        repoTree.push({
+          isRepo: false, isWt: true, label: sc.branch, glyph: '⎇',
+          path: rp.path.replace('~/code/' + name, '') || '/',
+          ahead: (rp.ahead + sc.commits.length) ? '↑' + (rp.ahead + sc.commits.length) : '',
+          weight: on ? '600' : '400', bg: on ? '#F2F2EF' : 'transparent',
+          pick: () => { const m = membersOf(f.id); if (m.length) this.setState({ focus: m[0], branchOpen: false }); }
+        });
+      });
+    });
+    const commit = () => {
+      if (!fid) return;
+      const pick = staged.length ? staged : unstaged;
+      if (!pick.length) return;
+      const names = pick.map((f) => f[1]);
+      const msg = (this.state.msg || '').trim() || ('feat: update ' + names[0].split('/').pop() + (names.length > 1 ? ' and ' + (names.length - 1) + ' more' : ''));
+      setScm(fid, { done: scm.done.concat(names), staged: scm.staged.filter((p) => names.indexOf(p) < 0), commits: [msg].concat(scm.commits) });
+      this.setState({ msg: '' });
+    };
+
+    // —— Skills / MCP ——
+    const WS = {
+      f1: [['code-review', 'library'], ['testing-strategy', 'library'], ['api-conventions', 'project'], ['deploy-checklist', 'library']],
+      f2: [['code-review', 'library'], ['api-conventions', 'project']],
+      f3: [['ffmpeg-recipes', 'library'], ['testing-strategy', 'library']]
+    };
+    const MCP = { f1: [['github', 'connected'], ['postgres', 'connected'], ['sentry', 'off']], f2: [['github', 'connected'], ['redis', 'connected']], f3: [['github', 'connected'], ['filesystem', 'connected']] };
+    const LIB = ['code-review', 'testing-strategy', 'deploy-checklist', 'api-conventions', 'debug', 'docs-writer', 'ffmpeg-recipes', 'figma-to-code'];
+    const sk = (fid && st.skills[fid]) || { off: [], added: [] };
+    const mc = (fid && st.mcp[fid]) || { off: ['sentry'] };
+    const setSk = (patch) => this.setState({ skills: Object.assign({}, this.state.skills, { [fid]: Object.assign({}, sk, patch) }) });
+    const wsList = fid ? (WS[fid] || []).concat(sk.added.map((n) => [n, 'library'])) : [];
+    const wsSkills = wsList.map((s) => {
+      const on = sk.off.indexOf(s[0]) < 0;
+      return { name: s[0], src: s[1], on, fg: on ? INK : MUTED,
+        toggle: () => setSk({ off: on ? sk.off.concat([s[0]]) : sk.off.filter((n) => n !== s[0]) }) };
+    });
+    const mcps = (fid ? (MCP[fid] || []) : []).map((m) => {
+      const on = mc.off.indexOf(m[0]) < 0;
+      return { name: m[0], note: on ? (m[1] === 'off' ? 'connected' : m[1]) : 'off', on, fg: on ? INK : MUTED,
+        toggle: () => this.setState({ mcp: Object.assign({}, this.state.mcp, { [fid]: { off: on ? mc.off.concat([m[0]]) : mc.off.filter((n) => n !== m[0]) } }) }) };
+    });
+    const library = LIB.map((n) => {
+      const inWs = wsList.some((s) => s[0] === n);
+      const uses = frameDefs.filter((f) => (WS[f.id] || []).some((s) => s[0] === n)).length;
+      return { name: n, used: uses ? 'used in ' + uses : '', canAdd: !!fid && !inWs, added: inWs,
+        add: () => setSk({ added: sk.added.concat([n]) }) };
+    });
+    const memberAgents = fid ? membersOf(fid).map((id) => termDefs.find((t) => t.id === id)).filter((t) => t && t.agent !== 'zsh').map((t) => t.agent) : [];
+
+    const g = {
+      agent: 'Following ' + focusName, branch: scm.branch, path: repo.path,
+      ahead: repo.ahead + scm.commits.length, noRepo: !focusFrame,
+      members: memberAgents.length ? memberAgents.join(', ') : 'agents'
+    };
+    const toLocal = (e) => {
+      this.root = this.root || e.currentTarget;
+      const b = this.root.getBoundingClientRect(), s = b.width / 1440;
+      return { x: (e.clientX - b.left) / s, y: (e.clientY - b.top) / s };
+    };
+    const menu = st.menu;
+    const addTerm = (cmd) => () => {
+      const id = 'n' + (st.extraTerms.length + 1);
+      const rects = Object.assign({}, R, { [id]: { x: menu.x, y: menu.y, w: 300, h: 190 } });
+      this.setState({ rects, focus: id, menu: null, extraTerms: st.extraTerms.concat([{ id, agent: cmd, role: '', status: 'Idle', st: 'idle', draft: '', fresh: true }]) });
+    };
+    const menuAgents = [['claude', 'Claude Code'], ['codex', 'Codex'], ['gemini', 'Gemini CLI'], ['aider', 'Aider'], ['opencode', 'OpenCode'], ['zsh', 'Shell']]
+      .map((a) => ({ cmd: a[0], note: a[1], add: addTerm(a[0]) }));
+    const panelTabs = [['scm', 'Source Control'], ['skills', 'Skills · MCP']].map((p) => ({
+      t: p[1], fg: st.panel === p[0] ? INK : MUTED, line: st.panel === p[0] ? INK : 'transparent',
+      pick: () => this.setState({ panel: p[0], branchOpen: false })
+    }));
+    return {
+      frames, terms, webs, services, htmlFiles, coverage, g, menuAgents, panelTabs, branches, repoTree, graph,
+      showScm: !!focusFrame && st.panel === 'scm',
+      showSkills: !!focusFrame && st.panel === 'skills',
+      branchOpen: st.branchOpen,
+      toggleBranches: () => this.setState({ branchOpen: !this.state.branchOpen }),
+      msg: st.msg,
+      setMsg: (e) => this.setState({ msg: e.target.value }),
+      commit,
+      commitLabel: staged.length ? '✓ Commit ' + staged.length + ' staged' : '✓ Commit all changes',
+      stageAll: () => setScm(fid, { staged: scm.staged.concat(unstaged.map((f) => f[1])) }),
+      hasStaged: staged.length > 0, stagedCount: staged.length, stagedRows: tree(staged, true),
+      changeCount: unstaged.length, changeRows: tree(unstaged, false), noChanges: unstaged.length === 0,
+      wsSkills, mcps, library, skillCount: wsSkills.filter((s) => s.on).length,
+      summary: frameDefs.length + ' workspaces · ' + termDefs.length + ' terminals · ' + st.webs.length + ' browsers',
+      rootRef: (el) => { this.root = el; },
+      openMenu: (e) => { e.preventDefault(); const p = toLocal(e); this.setState({ menu: { x: Math.min(p.x, 1084 - 220), y: Math.min(p.y, 900 - 360) } }); },
+      closeMenu: () => { if (this.state.menu) this.setState({ menu: null }); },
+      menuOpen: !!menu, menuX: menu ? px(menu.x) : '0px', menuY: menu ? px(menu.y) : '0px',
+      addWeb: () => {
+        const id = 'b' + (st.webs.length + 1) + '_' + Date.now();
+        const rects = Object.assign({}, R, { [id]: { x: menu.x, y: menu.y, w: 420, h: 300 } });
+        this.setState({ rects, focus: id, menu: null, webs: st.webs.concat([{ id, url: 'about:blank', hist: [], from: '' }]) });
+      },
+      addFrame: () => {
+        const n = st.extraFrames.length + 1, id = 'g' + n;
+        const rects = Object.assign({}, R, { [id]: { x: menu.x, y: menu.y, w: 360, h: 240 } });
+        this.setState({ rects, menu: null, extraFrames: st.extraFrames.concat([{ id, name: 'api-server', base: 'agent/new-' + n }]) });
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

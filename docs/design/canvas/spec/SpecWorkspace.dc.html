@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>需求：工作区框</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:8px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.at{position:absolute}
+.step{display:flex;flex-direction:column;gap:8px;flex:none}
+.cap{margin:0;font-size:13px;line-height:1.55}
+</style>
+</helmet>
+<div style="width: 1760px; height: 2520px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 44px">
+  <div style="display: flex; flex-direction: column; gap: 8px; max-width: 900px">
+    <h1 style="margin: 0; font-size: 28px; font-weight: 600">4 · 工作区框</h1>
+    <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #5F5F5A">白板上的一个框，代表“这个仓库的这个分支”。框里的终端都在这个目录里运行，右侧面板显示的也是这个目录的 git 状态。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px">
+    <span style="font-size: 15px; font-weight: 600">结构图</span>
+    <div style="display: flex; gap: 48px; align-items: flex-start">
+      <div class="fig" style="width: 520px; height: 260px">
+        <div class="at" style="left: 20px; top: 24px"><dc-import name="Frame" w="480" h="218" branch="feat/oauth" wait="1 waiting" hint-size="480px,218px"></dc-import></div>
+        <div class="at" style="left: 34px; top: 56px"><dc-import name="Term" w="220" h="172" st="wait" lbl="lead" s="Needs approval · 2m" lines="› Add GitHub OAuth to login|~  Write src/auth/oauth.ts|~  Bash  pnpm test||!Allow running pnpm test? (y/n)" hint-size="220px,172px"></dc-import></div>
+        <div class="at" style="left: 266px; top: 56px"><dc-import name="Term" w="220" h="80" cmd="zsh" lbl="pnpm dev" s="Running" lines="$ pnpm dev|~ready on localhost:3000" hint-size="220px,80px"></dc-import></div>
+        <div class="at" style="left: 266px; top: 146px"><dc-import name="Web" w="220" h="82" u="localhost:3000/login" from="from zsh" hint-size="220px,82px"></dc-import></div>
+        <svg class="at" style="left: 487px; top: 229px" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M10 4L4 10M10 8L8 10" stroke="#8A8A85" stroke-width="1.2" stroke-linecap="round"></path></svg>
+        <div class="at" style="left: 26px; top: 10px; z-index: 40"><dc-import name="Callout" n="1" hint-size="17px,17px"></dc-import></div>
+        <div class="at" style="left: 94px; top: 10px; z-index: 40"><dc-import name="Callout" n="2" hint-size="17px,17px"></dc-import></div>
+        <div class="at" style="left: 472px; top: 10px; z-index: 40"><dc-import name="Callout" n="3" hint-size="17px,17px"></dc-import></div>
+        <div class="at" style="left: 250px; top: 46px; z-index: 40"><dc-import name="Callout" n="4" hint-size="17px,17px"></dc-import></div>
+        <div class="at" style="left: 498px; top: 236px; z-index: 40"><dc-import name="Callout" n="5" hint-size="17px,17px"></dc-import></div>
+      </div>
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 10px; font-size: 14px; line-height: 1.65">
+        <div style="display: flex; gap: 10px"><span style="flex: none; width: 20px; height: 20px; border-radius: 50%; background: #1A1A1A; color: #FFFFFF; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center">1</span><span>项目名</span></div>
+        <div style="display: flex; gap: 10px"><span style="flex: none; width: 20px; height: 20px; border-radius: 50%; background: #1A1A1A; color: #FFFFFF; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center">2</span><span>分支名，单击打开切换分支菜单（规则见 8 · 源代码管理面板）</span></div>
+        <div style="display: flex; gap: 10px"><span style="flex: none; width: 20px; height: 20px; border-radius: 50%; background: #1A1A1A; color: #FFFFFF; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center">3</span><span>有窗口在等你时显示数量；平时为空，不显示改动行数之类的信息</span></div>
+        <div style="display: flex; gap: 10px"><span style="flex: none; width: 20px; height: 20px; border-radius: 50%; background: #1A1A1A; color: #FFFFFF; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center">4</span><span>这个工作区里的终端和网页窗口；没有窗口时中间显示“Right-click to add a terminal”</span></div>
+        <div style="display: flex; gap: 10px"><span style="flex: none; width: 20px; height: 20px; border-radius: 50%; background: #1A1A1A; color: #FFFFFF; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center">5</span><span>拖动边或角改大小，不能小于里面窗口占的范围再加 16px</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <span style="font-size: 15px; font-weight: 600">新建工作区</span>
+    <div style="display: flex; align-items: flex-start">
+      <div class="step" style="width: 280px">
+        <div class="fig" style="width: 280px; height: 200px">
+          <div class="at" style="left: 86px; top: 60px"><dc-import name="Menu" items="New terminal ▸|New browser|*New workspace…|Add project…|-|Show all" hint-size="106px,130px"></dc-import></div>
+          <div class="at" style="left: 142px; top: 102px; z-index: 45"><dc-import name="Cursor" hint-size="24px,24px"></dc-import></div>
+        </div>
+        <p class="cap">右键空白处 › “New workspace…”</p>
+      </div>
+      <dc-import name="Arrow" label="单击" pad="76" hint-size="104px,110px"></dc-import>
+      <div class="step" style="width: 280px">
+        <div class="fig" style="width: 280px; height: 200px">
+          <div class="at" style="left: 22px; top: 14px"><dc-import name="Dialog" w="236" t="New workspace" body="#Project#api-server ▾|Folder　◉ New worktree　○ Main folder|Branch　◉ New branch　○ Existing|# #feat/oauth#from#main ▾" btns="Cancel|*Create" hint-size="236px,150px"></dc-import></div>
+        </div>
+        <p class="cap">选项目，填新分支名，选从哪个分支分出</p>
+      </div>
+      <dc-import name="Arrow" label="Create" pad="76" hint-size="104px,110px"></dc-import>
+      <div class="step" style="width: 280px">
+        <div class="fig" style="width: 280px; height: 200px">
+          <div class="at" style="left: 20px; top: 24px"><dc-import name="Frame" w="240" h="150" branch="feat/oauth" note="Creating worktree…" hint-size="240px,150px"></dc-import></div>
+        </div>
+        <p class="cap">框立刻出现在对话框的位置，后台创建 worktree</p>
+      </div>
+      <dc-import name="Arrow" label="完成" pad="76" hint-size="104px,110px"></dc-import>
+      <div class="step" style="width: 280px">
+        <div class="fig" style="width: 280px; height: 200px">
+          <div class="at" style="left: 20px; top: 24px"><dc-import name="Frame" w="240" h="150" branch="feat/oauth" hint-size="240px,150px"></dc-import></div>
+          <div class="at" style="left: 30px; top: 52px"><dc-import name="Term" w="220" h="112" cmd="zsh" lbl="setup" s="Running" lines="$ pnpm install|~Progress: resolved 812|~+ 64 packages|~Done in 6.2s" hint-size="220px,112px"></dc-import></div>
+        </div>
+        <p class="cap">复制 .env，并在框里自动运行初始化命令</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 64px; align-items: flex-start">
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <span style="font-size: 15px; font-weight: 600">移动工作区</span>
+      <div style="display: flex; align-items: flex-start">
+        <div class="step" style="width: 300px">
+          <div class="fig" style="width: 300px; height: 190px">
+            <div class="at" style="left: 20px; top: 34px"><dc-import name="Frame" w="170" h="120" branch="feat/oauth" hint-size="170px,120px"></dc-import></div>
+            <div class="at" style="left: 30px; top: 62px"><dc-import name="Term" w="150" h="82" lines="› Add OAuth|~Write oauth.ts" hint-size="150px,82px"></dc-import></div>
+            <div class="at" style="left: 74px; top: 32px; z-index: 45"><dc-import name="Cursor" ring="1" hint-size="24px,24px"></dc-import></div>
+          </div>
+          <p class="cap">按住框的标题栏</p>
+        </div>
+        <dc-import name="Arrow" label="拖动" pad="71" hint-size="104px,110px"></dc-import>
+        <div class="step" style="width: 300px">
+          <div class="fig" style="width: 300px; height: 190px">
+            <div class="at" style="left: 20px; top: 34px; width: 170px; height: 120px; box-sizing: border-box; border: 1px dashed #A3A39E; border-radius: 8px"></div>
+            <div class="at" style="left: 112px; top: 52px"><dc-import name="Frame" w="170" h="120" branch="feat/oauth" hint-size="170px,120px"></dc-import></div>
+            <div class="at" style="left: 122px; top: 80px"><dc-import name="Term" w="150" h="82" lines="› Add OAuth|~Write oauth.ts" hint-size="150px,82px"></dc-import></div>
+            <div class="at" style="left: 166px; top: 50px; z-index: 45"><dc-import name="Cursor" hint-size="24px,24px"></dc-import></div>
+          </div>
+          <p class="cap">框和里面的窗口一起移动</p>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <span style="font-size: 15px; font-weight: 600">把终端拖到框的边缘</span>
+      <div style="display: flex; align-items: flex-start">
+        <div class="step" style="width: 300px">
+          <div class="fig" style="width: 300px; height: 190px">
+            <div class="at" style="left: 20px; top: 30px"><dc-import name="Frame" w="200" h="136" branch="feat/oauth" hint-size="200px,136px"></dc-import></div>
+            <div class="at" style="left: 112px; top: 60px"><dc-import name="Term" w="104" h="96" cmd="zsh" s="" lines="$ ls|~src  test" hint-size="104px,96px"></dc-import></div>
+            <div class="at" style="left: 152px; top: 58px; z-index: 45"><dc-import name="Cursor" hint-size="24px,24px"></dc-import></div>
+            <span class="at" style="left: 228px; top: 98px; font-size: 12px; color: #6B6B6B">→</span>
+          </div>
+          <p class="cap">拖着终端的标题栏往框外移</p>
+        </div>
+        <dc-import name="Arrow" label="继续往外拖" pad="71" hint-size="104px,110px"></dc-import>
+        <div class="step" style="width: 300px">
+          <div class="fig" style="width: 300px; height: 190px">
+            <div class="at" style="left: 20px; top: 30px"><dc-import name="Frame" w="262" h="136" branch="feat/oauth" hint-size="262px,136px"></dc-import></div>
+            <div class="at" style="left: 172px; top: 60px"><dc-import name="Term" w="104" h="96" cmd="zsh" s="" lines="$ ls|~src  test" hint-size="104px,96px"></dc-import></div>
+          </div>
+          <p class="cap">框跟着变大，终端出不去</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <span style="font-size: 15px; font-weight: 600">删除工作区</span>
+    <div style="display: flex; align-items: flex-start">
+      <div class="step" style="width: 280px">
+        <div class="fig" style="width: 280px; height: 200px">
+          <div class="at" style="left: 30px; top: 30px"><dc-import name="Frame" w="220" h="130" branch="feat/oauth" v="sel" hint-size="220px,130px"></dc-import></div>
+          <div class="at" style="left: 40px; top: 58px"><dc-import name="Term" w="200" h="92" s="Running · 4m" lines="› Add OAuth|~Write oauth.ts" hint-size="200px,92px"></dc-import></div>
+          <div class="at" style="left: 116px; top: 172px"><dc-import name="Note" v="key" text="Delete" hint-size="48px,18px"></dc-import></div>
+        </div>
+        <p class="cap">选中框，按 Delete</p>
+      </div>
+      <dc-import name="Arrow" label="Delete" pad="76" hint-size="104px,110px"></dc-import>
+      <div class="step" style="width: 280px">
+        <div class="fig" style="width: 280px; height: 200px">
+          <div class="at" style="left: 18px; top: 30px"><dc-import name="Dialog" w="244" t="Delete workspace api-server · feat/oauth" body="~claude and zsh will be stopped|◉ Remove from board|>Keeps the folder and branch|○ Also delete the worktree folder" btns="Cancel|*Delete" hint-size="244px,130px"></dc-import></div>
+        </div>
+        <p class="cap">默认只从白板移除</p>
+      </div>
+      <dc-import name="Arrow" label="Delete" pad="76" hint-size="104px,110px"></dc-import>
+      <div class="step" style="width: 280px">
+        <div class="fig" style="width: 280px; height: 200px">
+          <div class="at" style="left: 26px; top: 150px"><dc-import name="Note" v="toast" text="Removed api-server · feat/oauth from the board" act="Undo" hint-size="230px,30px"></dc-import></div>
+        </div>
+        <p class="cap">框消失，目录和分支都还在；可以撤销</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <span style="font-size: 15px; font-weight: 600">删除工作区并删除目录 <span style="font-weight: 400; font-size: 13px; color: #6B6B6B">另一种情况</span></span>
+    <div style="display: flex; align-items: flex-start">
+      <div class="step" style="width: 280px">
+        <div class="fig" style="width: 280px; height: 220px">
+          <div class="at" style="left: 18px; top: 14px"><dc-import name="Dialog" w="244" t="Delete workspace api-server · feat/oauth" body="○ Remove from board|◉ Also delete the worktree folder|>!3 uncommitted changes will be lost|>☐ I understand these changes will be lost|>☐ Also delete branch feat/oauth|>!The branch has 2 commits not merged into main" btns="Cancel|-Delete" hint-size="244px,190px"></dc-import></div>
+        </div>
+        <p class="cap">有未提交的更改时，删除按钮不可用</p>
+      </div>
+      <dc-import name="Arrow" label="勾选“I understand…”" pad="86" hint-size="104px,110px"></dc-import>
+      <div class="step" style="width: 280px">
+        <div class="fig" style="width: 280px; height: 220px">
+          <div class="at" style="left: 18px; top: 14px"><dc-import name="Dialog" w="244" t="Delete workspace api-server · feat/oauth" body="○ Remove from board|◉ Also delete the worktree folder|>!3 uncommitted changes will be lost|>☑ I understand these changes will be lost|>☐ Also delete branch feat/oauth|>!The branch has 2 commits not merged into main" btns="Cancel|*Delete" hint-size="244px,190px"></dc-import></div>
+        </div>
+        <p class="cap">勾选后才能删除；分支默认保留</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 48px; font-size: 14px; line-height: 1.65">
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 10px">
+      <span style="font-size: 15px; font-weight: 600">新建规则</span>
+      <ul style="margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px">
+        <li>入口：右键空白处 › “New workspace…”；顶栏“Projects ▾” › 某个项目 › “New workspace…”；⌘⇧N。后两种对话框出现在视口中心。</li>
+        <li>“Project”下拉里最近用过的在前，最后一项是“Add project…”。</li>
+        <li>项目主目录已经在白板上时，“Main folder”不可选，旁边写“Already on board”。</li>
+        <li>“Existing”只列出没被其他工作区检出的分支。</li>
+        <li>worktree 目录名由分支名生成，/ 换成 -，例如 feat/oauth 对应 …/api-server/feat-oauth。</li>
+        <li>新分支名已存在：在对话框里提示“Branch oauth already exists”，并提供“Use existing branch”。</li>
+      </ul>
+    </div>
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 10px">
+      <span style="font-size: 15px; font-weight: 600">操作规则</span>
+      <ul style="margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px">
+        <li>单击标题栏：选中这个框，右侧面板切到这个工作区，不改变聚焦的窗口。</li>
+        <li>双击标题栏：缩放并平移，让这个框占满视口（最大 100%）。</li>
+        <li>右键标题栏：“New terminal ▸”“New browser”“Open in editor”“Reveal in Finder”“Copy path”“Delete workspace…”</li>
+        <li>右键框里的空白处：和白板的右键菜单相同，但新建的东西放进这个框。</li>
+        <li>框和框可以重叠，最后选中的在上面；框不能嵌套。</li>
+      </ul>
+    </div>
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 10px">
+      <span style="font-size: 15px; font-weight: 600">删除与边界情况</span>
+      <ul style="margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px">
+        <li>“Remove from board”：结束框里的终端，关闭网页窗口，目录和分支保留；以后可以在右侧面板的“Repository”区加回白板；可以 ⌘Z 撤销。</li>
+        <li>删除目录不能撤销。项目主目录工作区只有“Remove from board”。</li>
+        <li>创建 worktree 失败：框里显示 git 的错误，按钮“Retry”“Delete”。</li>
+        <li>目录在命令行里被删掉：框显示“Folder no longer exists”，按钮“Recreate”“Remove from board”。</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":2520}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

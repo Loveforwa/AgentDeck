@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>流程箭头零件</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 104px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: {{pad}} 6px 0; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; color: #1A1A1A">
+  <span style="font-size: 12px; line-height: 1.4; font-weight: 500; text-align: center">{{label}}</span>
+  <svg width="84" height="12" viewBox="0 0 84 12" aria-hidden="true"><path d="M2 6H80" fill="none" stroke="#1A1A1A" stroke-width="1.4"></path><polyline points="74,1.5 80,6 74,10.5" fill="none" stroke="#1A1A1A" stroke-width="1.4"></polyline></svg>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":104,"height":80}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props;
+    return { label: p.label || '单击', pad: (p.pad === undefined ? 24 : p.pad) + 'px' };
+  }
+}
+</script>
+</body>
+</html>

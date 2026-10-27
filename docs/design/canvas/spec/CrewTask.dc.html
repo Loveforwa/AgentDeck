@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Agent 集群 · 任务和调度</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.at{position:absolute}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1240px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#8A8A85}
+.st{position:absolute;box-sizing:border-box;width:170px;height:62px;background:#FFFFFF;border:1px solid #D6D6D2;border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:2px;font-size:11.5px;line-height:1.4}
+.st b{font-size:13px}
+.gate{position:absolute;box-sizing:border-box;background:#FFF8E5;border:1px dashed #BF8700;border-radius:8px;padding:8px 10px;font-size:11.5px;line-height:1.45;color:#5C4400;display:flex;flex-direction:column;gap:2px}
+.arr{position:absolute;font-size:18px;color:#8A8A85}
+.back{position:absolute;font-size:11px;color:#5F5F5A;line-height:1.45}
+.line{position:absolute;border-color:#8A8A85;border-style:dashed;border-width:0}
+.term{box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;overflow:hidden;font-size:11px}
+.wt{display:flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-bottom:1px solid #EEEEEB}
+.wb{padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.7;color:#3D3D3A}
+.am{width:6px;height:6px;border-radius:1.5px;flex:none}
+.ex{display:flex;flex-direction:column;gap:10px;font-size:13.5px;line-height:1.65}
+</style>
+</helmet>
+<div style="width: 1760px; height: 2400px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">C3 · 一个任务的一生：调度器怎么排、怎么守规矩，agent 用哪些工具</h1>
+      <span class="concept">草案</span>
+    </div>
+    <p class="lead">任务的状态只由调度器改，agent 通过 AgentDeck MCP 里的 crew 工具告诉调度器“我做完了”“我卡住了”。检查是调度器自己跑的，不信 agent 嘴上说的“测试都过了”；越界改动、锁住的接口也由调度器看 diff 拦下来。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 状态</span>
+    <div class="fig" style="width: 1632px; height: 440px">
+      <div class="st" style="left: 24px; top: 60px"><b>Waiting</b><span class="muted">依赖还没合进去</span></div>
+      <span class="arr" style="left: 200px; top: 76px">→</span>
+      <div class="st" style="left: 222px; top: 60px"><b>Ready</b><span class="muted">能做，等空位</span></div>
+      <span class="arr" style="left: 398px; top: 76px">→</span>
+      <div class="st" style="left: 420px; top: 60px; border-color: #1A1A1A"><b>Working</b><span class="muted">实现者在自己的 worktree 里做</span></div>
+      <span class="arr" style="left: 596px; top: 76px">→</span>
+      <div class="st" style="left: 618px; top: 60px"><b>Check</b><span class="muted">调度器跑检查、看目录</span></div>
+      <span class="arr" style="left: 794px; top: 76px">→</span>
+      <div class="st" style="left: 816px; top: 60px"><b>Review</b><span class="muted">换一家审 diff</span></div>
+      <span class="arr" style="left: 992px; top: 76px">→</span>
+      <div class="st" style="left: 1014px; top: 60px"><b>Merge</b><span class="muted">合进集群分支再跑检查</span></div>
+      <span class="arr" style="left: 1190px; top: 76px">→</span>
+      <div class="st" style="left: 1212px; top: 60px; color: #8A8A85"><b>Merged</b><span>任务框收成标签</span></div>
+
+      <span class="at muted" style="left: 24px; top: 34px; font-size: 11px">调度器</span>
+      <span class="at muted" style="left: 420px; top: 34px; font-size: 11px">Worker · codex</span>
+      <span class="at muted" style="left: 618px; top: 34px; font-size: 11px">调度器</span>
+      <span class="at muted" style="left: 816px; top: 34px; font-size: 11px">Reviewer · claude</span>
+      <span class="at muted" style="left: 1014px; top: 34px; font-size: 11px">调度器 · 冲突时 Integrator</span>
+
+      <div class="line" style="left: 505px; top: 122px; width: 200px; height: 40px; border-left-width: 1px; border-bottom-width: 1px; border-right-width: 1px"></div>
+      <span class="back" style="left: 516px; top: 168px; width: 220px">检查没过 / 改了别人的目录：把输出末尾发回实现者</span>
+      <div class="line" style="left: 480px; top: 122px; width: 422px; height: 110px; border-left-width: 1px; border-bottom-width: 1px; border-right-width: 1px"></div>
+      <span class="back" style="left: 720px; top: 238px; width: 260px">审查要改：意见发回实现者，最多 2 轮</span>
+      <div class="line" style="left: 1100px; top: 122px; width: 0; height: 60px; border-left-width: 1px"></div>
+      <span class="back" style="left: 1110px; top: 150px; width: 300px">冲突：在集群 worktree 开 Integrator 终端解决；合完检查没过就撤回这次合并，回到 Working</span>
+
+      <div class="gate" style="left: 24px; top: 300px; width: 380px"><b>Stuck → 收件箱</b><span>检查或审查失败两次：先按模板换一家 / 更强的模型再试一次，还不行就停下来问你（C4）</span></div>
+      <div class="gate" style="left: 430px; top: 300px; width: 360px"><b>Needs you</b><span>终端在等批准（Auto-approve 没放过的）、选择题、agent 调了 crew_ask_human、申请改接口</span></div>
+      <div class="st" style="left: 816px; top: 300px; width: 380px; height: auto; color: #5F5F5A"><b style="color: #1A1A1A">Paused</b><span>这家额度用完：模板写了下一家就交给下一家接着做（同一个 worktree）；没写就等恢复 + 1 分钟再接着做（PL3 的规则）</span></div>
+      <div class="st" style="left: 1222px; top: 300px; width: 380px; height: auto; color: #5F5F5A"><b style="color: #1A1A1A">Paused by you</b><span>你点了 Pause task / Pause crew：做完这一轮就停，不派新的</span></div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 调度规则</span>
+    <div class="tbl" style="grid-template-columns: 220px minmax(0, 1fr)">
+      <span class="th">情况</span><span class="th">怎么做</span>
+      <span class="td">先派哪个</span><span class="td">波次小的先；同一波里依赖先满足的先，再按编号。一波没全合进去，下一波里依赖已满足的也可以先开（不用死等整波）。</span>
+      <span class="td">同时开几个</span><span class="td">在干活的 agent（实现者、审查者、集成者、验收者）不超过 Limits 里的数，也不超过还有额度的 agent 数。空着的总设计不占位。</span>
+      <span class="td">开一个任务</span><span class="td">从集群分支现在的位置切出 <span class="mono">crew/&lt;name&gt;/T4</span> 和它的 worktree，在里面按角色开终端（带角色的 skill、MCP、Auto-approve），把任务提示词发进去（见 3）。</span>
+      <span class="td">怎么算做完</span><span class="td">只认 <span class="mono">crew_report_done</span>。agent 回到空闲却没交付：提醒一次 “If you’re done, call crew_report_done. If you’re stuck, call crew_ask_human.”；再空闲就算等你。</span>
+      <span class="td">检查</span><span class="td">交付后调度器自己在任务 worktree 里跑 Check 命令。没过：把输出最后一段发回实现者，任务回 Working。</span>
+      <span class="td">目录归属</span><span class="td">交付时看这个任务的 diff：改了 Owns 以外的文件就打回，写清是哪些文件。锁住的接口目录只有批准过的接口改动能改。</span>
+      <span class="td">审查</span><span class="td">审查者默认不和实现者同一家。它用 <span class="mono">crew_get_diff</span> 看改动、能在同一个 worktree 里只读地跑命令，最后 <span class="mono">crew_review</span> 给 approve 或 changes。</span>
+      <span class="td">合并</span><span class="td">调度器把任务分支 <span class="mono">--no-ff</span> 合进集群分支，再跑一次检查。冲突才开 Integrator 终端。合并顺序按交付先后，一次一个。</span>
+      <span class="td">接口改动</span><span class="td">实现者调 <span class="mono">crew_request_contract_change</span> 写清要改什么、为什么。关卡通过后由总设计改接口、单独合进集群分支，其他在做的任务收到一条提示 “Interfaces changed: …”。</span>
+      <span class="td">关掉应用、重启</span><span class="td">集群状态存在 AgentDeck 的数据里，终端在 tmux 里接着跑。重开后先对账：每个 Working 任务的终端还在不在、有没有已经交付。</span>
+      <span class="td">集群结束</span><span class="td">验收全过、或者你点 Stop：出汇报（C4），任务 worktree 清掉，分支都留着；集群分支等你合回 main。</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · 发给实现者的第一条提示词</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start">
+      <div class="term" style="width: 860px">
+        <div class="wt"><span class="am" style="background: #2F5E9E"></span><span class="mono" style="font-weight: 500">Worker · codex · T4</span><span style="flex: 1"></span><span class="muted">sent by the crew scheduler</span></div>
+        <div class="wb">You are a Worker in crew “history-sidebar” (template: Contract-first build).<br>Your task is T4 “Sidebar list UI”. Read it first with crew_get_task.<br><br>Rules:<br>- Only change files under packages/ui/panels/history/**.<br>- packages/contracts/** is locked. If you need a change there,<br>  call crew_request_contract_change and wait.<br>- Write anything the others should know with crew_note.<br>- When the task’s “Done when” is met and tests pass, call<br>  crew_report_done with a short summary. The scheduler runs<br>  pnpm check itself.<br>- If you are stuck, call crew_ask_human.</div>
+      </div>
+      <div class="ex" style="flex: 1">
+        <span>角色提示词来自模板（C5），任务的具体内容（编号、目录、检查命令）由调度器填进去。</span>
+        <span>仓库里的 AGENTS.md、CLAUDE.md 照常由 agent 自己读，集群不改它们。</span>
+        <span>发送方式和 PL3 一样：整段用 bracketed paste 送进输入框，再单独按回车。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · agent 用的 crew 工具（加在 AgentDeck MCP 里）</span>
+    <div class="tbl" style="grid-template-columns: 330px 200px minmax(0, 1fr)">
+      <span class="th">工具</span><span class="th">谁能用</span><span class="th">做什么</span>
+      <span class="td mono">crew_get_task(id?)</span><span class="td">所有角色</span><span class="td">读任务卡：目标、依赖、Owns、Done when、锁住的目录、检查命令。不写 id 就是自己手上的任务。</span>
+      <span class="td mono">crew_get_plan()</span><span class="td">Lead、Integrator、QA</span><span class="td">读整张任务表和每个任务的状态。</span>
+      <span class="td mono">crew_add_task · crew_update_task</span><span class="td">Lead</span><span class="td">写任务表。开始以后只能加新任务、改还没开始的任务。</span>
+      <span class="td mono">crew_plan_ready()</span><span class="td">Lead</span><span class="td">任务表写完了，交给你确认（关卡）。</span>
+      <span class="td mono">crew_report_done(summary)</span><span class="td">Worker</span><span class="td">交付。调度器接着跑检查、看目录。</span>
+      <span class="td mono">crew_get_diff(id)</span><span class="td">Reviewer、Integrator</span><span class="td">拿这个任务相对集群分支的 diff。</span>
+      <span class="td mono">crew_review(id, verdict, comments)</span><span class="td">Reviewer</span><span class="td">approve 或 changes，意见原样发回实现者。</span>
+      <span class="td mono">crew_note(text)</span><span class="td">所有角色</span><span class="td">记一条发现（相当于 CONTRACT_NOTES），汇总进汇报，Lead 和后开的任务能读到。</span>
+      <span class="td mono">crew_raise_issue(title, detail)</span><span class="td">所有角色，主要是 QA</span><span class="td">记一个问题；Lead 把它拆成新任务。</span>
+      <span class="td mono">crew_request_contract_change(paths, why)</span><span class="td">Worker</span><span class="td">申请改锁住的接口（关卡）。</span>
+      <span class="td mono">crew_ask_human(question, options?)</span><span class="td">所有角色</span><span class="td">问你一个问题，进收件箱；你的回答原样发回这个终端。</span>
+    </div>
+    <span style="font-size: 12.5px; color: #5F5F5A">工具按角色给：调度器开终端时已经知道它是哪个集群、哪个任务、什么角色（沿用 N1 的 <span class="mono">x-agentdeck-terminal</span>），别的角色的工具看不到。只给接了 AgentDeck MCP 的 agent（claude、codex、omp）；pi、kimi 先不能进集群。</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":2400}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

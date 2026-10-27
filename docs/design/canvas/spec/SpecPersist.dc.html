@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>需求：保存与重启</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:8px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.at{position:absolute}
+.step{display:flex;flex-direction:column;gap:8px;flex:none}
+.cap{margin:0;font-size:13px;line-height:1.55}
+</style>
+</helmet>
+<div style="width: 1760px; height: 2000px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 44px">
+  <div style="display: flex; flex-direction: column; gap: 8px; max-width: 1000px">
+    <h1 style="margin: 0; font-size: 28px; font-weight: 600">9 · 保存与重启</h1>
+    <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #5F5F5A">布局一直自动保存。终端进程由 tmux 托管，所以“关”分三种：只关窗口（应用和 agent 都在后台继续）、退出应用（agent 继续，应用不在）、全部停止（agent 也结束）。全部停止或电脑重启后，下次打开能把上次的工作区和 agent 对话接回来。</p>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <span style="font-size: 15px; font-weight: 600">三种关闭方式</span>
+      <div style="display: grid; grid-template-columns: 150px 150px 150px minmax(0, 1.2fr) 130px minmax(0, 1.4fr); border: 1px solid #E3E3E0; border-radius: 10px; overflow: hidden; font-size: 13px; line-height: 1.55">
+        <span style="padding: 7px 10px; background: #F2F2EF; font-size: 12px; color: #6B6B6B; font-weight: 600">关闭方式</span><span style="padding: 7px 10px; background: #F2F2EF; font-size: 12px; color: #6B6B6B; font-weight: 600">怎么触发</span><span style="padding: 7px 10px; background: #F2F2EF; font-size: 12px; color: #6B6B6B; font-weight: 600">AgentDeck</span><span style="padding: 7px 10px; background: #F2F2EF; font-size: 12px; color: #6B6B6B; font-weight: 600">终端和 agent</span><span style="padding: 7px 10px; background: #F2F2EF; font-size: 12px; color: #6B6B6B; font-weight: 600">提醒</span><span style="padding: 7px 10px; background: #F2F2EF; font-size: 12px; color: #6B6B6B; font-weight: 600">再打开</span>
+        <span style="padding: 7px 10px; border-top: 1px solid #E3E3E0; font-weight: 600">Close window</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">红色关闭按钮、⌘⇧W</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">留在后台，不画任何界面</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">继续跑</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">系统通知和程序坞角标照常</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">单击程序坞图标，立刻回来，什么都不用重连</span>
+        <span style="padding: 7px 10px; border-top: 1px solid #E3E3E0; font-weight: 600">Quit</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">⌘Q</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">退出</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">在 tmux 里继续跑</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">没有</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">自动接上，历史输出和状态都在</span>
+        <span style="padding: 7px 10px; border-top: 1px solid #E3E3E0; font-weight: 600">Stop all and quit</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">应用菜单，或退出对话框里的按钮</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">退出</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">全部结束；先记下每个终端的命令、目录和 agent 会话</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">没有</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">问一次“Restore all”：agent 接回原来的对话，Shell 在原目录打开</span>
+        <span style="padding: 7px 10px; border-top: 1px solid #E3E3E0; font-weight: 600">电脑重启</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">—</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">—</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">tmux 跟着结束；记录早已写好</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">—</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">同上</span>
+      </div>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <span style="font-size: 15px; font-weight: 600">关掉窗口，后台继续 <span style="font-weight: 400; font-size: 13px; color: #6B6B6B">和最小化一样，只是不占程序坞的窗口位置</span></span>
+    <div style="display: flex; align-items: flex-start">
+      <div class="step" style="width: 300px">
+        <div class="fig" style="width: 300px; height: 190px">
+          <div class="at" style="left: 0px; top: 0px; z-index: 5"><dc-import name="Top" w="300" r="2 running" hint-size="300px,20px"></dc-import></div>
+          <div class="at" style="left: 14px; top: 30px"><dc-import name="Frame" w="272" h="150" branch="feat/oauth" hint-size="272px,150px"></dc-import></div>
+          <div class="at" style="left: 24px; top: 58px"><dc-import name="Term" w="166" h="112" s="Running · 14m" lines="› Add GitHub OAuth to login|~  Bash  pnpm test|~        18 passed|Callback is wired up. Add state validation?" hint-size="166px,112px"></dc-import></div>
+          <div class="at" style="left: 198px; top: 58px"><dc-import name="Term" w="80" h="112" cmd="zsh" s="" lines="$ pnpm dev|~GET / 200|~GET /login" hint-size="80px,112px"></dc-import></div>
+          <div class="at" style="left: 268px; top: 26px; z-index: 45"><dc-import name="Cursor" hint-size="24px,24px"></dc-import></div>
+        </div>
+        <p class="cap">⌘⇧W 或单击窗口的关闭按钮</p>
+      </div>
+      <dc-import name="Arrow" label="窗口关闭" pad="71" hint-size="104px,110px"></dc-import>
+      <div class="step" style="width: 300px">
+        <div class="fig" style="width: 300px; height: 190px">
+          <div class="at" style="left: 34px; top: 40px"><dc-import name="Note" v="notif" w="230" title="AgentDeck" text="claude in api-server · feat/oauth needs approval" hint-size="230px,54px"></dc-import></div>
+          <div class="at" style="left: 34px; top: 112px; font-size: 11px; color: #6B6B6B; width: 230px">Dock: AgentDeck ● 1</div>
+        </div>
+        <p class="cap">没有窗口，也不画任何界面；agent 照常跑，等你时照常通知</p>
+      </div>
+      <dc-import name="Arrow" label="单击通知或程序坞图标" pad="71" hint-size="104px,110px"></dc-import>
+      <div class="step" style="width: 300px">
+        <div class="fig" style="width: 300px; height: 190px">
+          <div class="at" style="left: 0px; top: 0px; z-index: 5"><dc-import name="Top" w="300" r="1 running|!1 waiting" hint-size="300px,20px"></dc-import></div>
+          <div class="at" style="left: 14px; top: 30px"><dc-import name="Frame" w="272" h="150" branch="feat/oauth" hint-size="272px,150px"></dc-import></div>
+          <div class="at" style="left: 24px; top: 58px"><dc-import name="Term" w="166" h="112" st="wait" f="1" s="Needs approval" lines="› Run the tests|~Bash pnpm test|!Allow running pnpm test?|!(y/n)" hint-size="166px,112px"></dc-import></div>
+          <div class="at" style="left: 198px; top: 58px"><dc-import name="Term" w="80" h="112" cmd="zsh" s="" lines="$ pnpm dev|~GET / 200|~GET /login" hint-size="80px,112px"></dc-import></div>
+        </div>
+        <p class="cap">窗口立刻回来，跳到在等你的那个终端</p>
+      </div>
+    </div>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <span style="font-size: 15px; font-weight: 600">退出（⌘Q）再打开</span>
+    <div style="display: flex; align-items: flex-start">
+      <div class="step" style="width: 300px">
+        <div class="fig" style="width: 300px; height: 190px">
+          <div class="at" style="left: 34px; top: 44px"><dc-import name="Dialog" w="232" t="Quit AgentDeck?" body="~3 terminals will keep running in the background. You won’t get notifications until you reopen.|>☐ Don’t ask again" btns="Stop all and quit|*Quit" hint-size="232px,104px"></dc-import></div>
+        </div>
+        <p class="cap">第一次退出时说明一下；之后直接退出</p>
+      </div>
+      <dc-import name="Arrow" label="退出，再打开" pad="71" hint-size="104px,110px"></dc-import>
+      <div class="step" style="width: 300px">
+        <div class="fig" style="width: 300px; height: 190px">
+          <div class="at" style="left: 0px; top: 0px; z-index: 5"><dc-import name="Top" w="300" r="2 running" hint-size="300px,20px"></dc-import></div>
+          <div class="at" style="left: 14px; top: 30px"><dc-import name="Frame" w="272" h="150" branch="feat/oauth" hint-size="272px,150px"></dc-import></div>
+          <div class="at" style="left: 24px; top: 58px"><dc-import name="Term" w="166" h="112" s="Running · 14m" lines="› Add GitHub OAuth to login|~  Bash  pnpm test|~        18 passed|Callback is wired up. Add state validation?" hint-size="166px,112px"></dc-import></div>
+          <div class="at" style="left: 198px; top: 58px"><dc-import name="Term" w="80" h="112" cmd="zsh" s="" lines="$ pnpm dev|~GET / 200|~GET /login" hint-size="80px,112px"></dc-import></div>
+        </div>
+        <p class="cap">布局、终端内容和状态都还在；agent 一直在跑</p>
+      </div>
+    </div>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <span style="font-size: 15px; font-weight: 600">全部停止或电脑重启后再打开 <span style="font-weight: 400; font-size: 13px; color: #6B6B6B">记住上次开着的工作区和 agent 会话</span></span>
+    <div style="display: flex; align-items: flex-start">
+      <div class="step" style="width: 300px">
+        <div class="fig" style="width: 300px; height: 190px">
+          <div class="at" style="left: 0px; top: 0px; z-index: 5"><dc-import name="Top" w="300" r="[Restore all]" hint-size="300px,20px"></dc-import></div>
+          <div class="at" style="left: 14px; top: 30px"><dc-import name="Frame" w="272" h="150" branch="feat/oauth" hint-size="272px,150px"></dc-import></div>
+          <div class="at" style="left: 24px; top: 58px"><dc-import name="Term" w="166" h="112" st="exit" s="" lines="~Stopped" exit="Stopped" exit-btns="Restore ▾" hint-size="166px,112px"></dc-import></div>
+          <div class="at" style="left: 198px; top: 58px"><dc-import name="Term" w="80" h="112" cmd="zsh" st="exit" s="" lines="~Stopped" exit=" " exit-btns="Restore" hint-size="80px,112px"></dc-import></div>
+          <div class="at" style="left: 40px; top: 70px; z-index: 30"><dc-import name="Note" v="pop" w="220" text="Restore your last session? 3 terminals in 2 workspaces." btns="Not now|*Restore all" hint-size="220px,80px"></dc-import></div>
+        </div>
+        <p class="cap">工作区和窗口都在原位；问一次要不要全部恢复</p>
+      </div>
+      <dc-import name="Arrow" label="Restore all" pad="71" hint-size="104px,110px"></dc-import>
+      <div class="step" style="width: 300px">
+        <div class="fig" style="width: 300px; height: 190px">
+          <div class="at" style="left: 0px; top: 0px; z-index: 5"><dc-import name="Top" w="300" r="2 running" hint-size="300px,20px"></dc-import></div>
+          <div class="at" style="left: 14px; top: 30px"><dc-import name="Frame" w="272" h="150" branch="feat/oauth" hint-size="272px,150px"></dc-import></div>
+          <div class="at" style="left: 24px; top: 58px"><dc-import name="Term" w="166" h="112" s="Idle" lines="~Resumed conversation|› Add GitHub OAuth to login|Callback is wired up. Add state validation?" hint-size="166px,112px"></dc-import></div>
+          <div class="at" style="left: 198px; top: 58px"><dc-import name="Term" w="80" h="112" cmd="zsh" s="" lines="~~/…/feat-oauth|$ pnpm dev" hint-size="80px,112px"></dc-import></div>
+        </div>
+        <p class="cap">claude 接回原来那个对话；Shell 在原目录打开，填好上次的命令但不运行</p>
+      </div>
+      <dc-import name="Arrow" label="只想恢复其中一个" pad="71" hint-size="104px,110px"></dc-import>
+      <div class="step" style="width: 300px">
+        <div class="fig" style="width: 300px; height: 190px">
+          <div class="at" style="left: 0px; top: 0px; z-index: 5"><dc-import name="Top" w="300" r="[Restore all]" hint-size="300px,20px"></dc-import></div>
+          <div class="at" style="left: 14px; top: 30px"><dc-import name="Frame" w="272" h="150" branch="feat/oauth" hint-size="272px,150px"></dc-import></div>
+          <div class="at" style="left: 24px; top: 58px"><dc-import name="Term" w="166" h="112" st="exit" s="" lines="~Stopped" exit="Stopped" exit-btns="Restore ▾" hint-size="166px,112px"></dc-import></div>
+          <div class="at" style="left: 198px; top: 58px"><dc-import name="Term" w="80" h="112" cmd="zsh" st="exit" s="" lines="~Stopped" exit=" " exit-btns="Restore" hint-size="80px,112px"></dc-import></div>
+          <div class="at" style="left: 84px; top: 104px; z-index: 20"><dc-import name="Menu" items="*Resume conversation|New conversation" hint-size="150px,50px"></dc-import></div>
+          <div class="at" style="left: 122px; top: 118px; z-index: 45"><dc-import name="Cursor" hint-size="24px,24px"></dc-import></div>
+        </div>
+        <p class="cap">选“Not now”后，每个终端上都能单独恢复</p>
+      </div>
+    </div>
+  </div>
+  <div style="display: flex; gap: 48px; font-size: 14px; line-height: 1.65">
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 10px">
+      <span style="font-size: 15px; font-weight: 600">记住什么</span>
+      <ul style="margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px">
+        <li>一直自动保存，没有保存按钮，改动后半秒内写入：白板的平移缩放位置、所有工作区框、所有窗口的位置大小、类型、名字、网页地址、右侧面板的宽度和开关。</li>
+        <li>每个终端还记下：启动命令和参数、工作目录、是哪个 agent、agent 的会话 id（claude 是我们启动时传的 --session-id，codex 从钩子事件里读）。</li>
+        <li>工作区就是磁盘上的文件夹，总是恢复。文件夹不见了，框显示“Folder not found”，提供“Locate…”和“Remove”。</li>
+      </ul>
+    </div>
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 10px">
+      <span style="font-size: 15px; font-weight: 600">怎么恢复</span>
+      <ul style="margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px">
+        <li>agent 用会话 id 精确接回：claude --resume &lt;id&gt;、codex resume &lt;id&gt;。不用“继续最近一次”，这样同一个目录里有两个 claude 也不会接错。</li>
+        <li>不支持续聊的 agent 重新启动，标题栏注明“New conversation”。</li>
+        <li>Shell 在原目录打开，把它当初的启动命令（例如 pnpm dev）填进输入行，不自动运行，按回车才跑。</li>
+        <li>网页窗口重新加载原地址。</li>
+        <li>选“Not now”后，停止的终端以“Stopped”卡片留在原位，可以单独“Restore ▾”，也可以直接关掉。</li>
+      </ul>
+    </div>
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 10px">
+      <span style="font-size: 15px; font-weight: 600">关闭窗口的细节</span>
+      <ul style="margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px">
+        <li>窗口关掉时，界面整个销毁（所有 xterm 和白板都不渲染），只留主进程连着 tmux 和钩子，占用很小。再打开时从内存里的状态重建，不到半秒。</li>
+        <li>Settings › General › “When you close the window”：“Keep running in the background”（默认）或“Quit AgentDeck”。</li>
+        <li>菜单栏图标可选：显示在等你的数量，单击打开窗口。</li>
+        <li>AgentDeck 退出期间没有提醒；重新打开后，在等你的终端立刻显示为橙色。</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":2000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

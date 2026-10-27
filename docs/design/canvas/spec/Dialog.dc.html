@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>对话框零件</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: {{w}}; box-sizing: border-box; display: flex; flex-direction: column; gap: 5px; padding: 10px 11px; background: #FFFFFF; border: 1px solid #E3E3E0; border-radius: 8px; box-shadow: 0 10px 28px rgba(0,0,0,0.12); font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; font-size: 10px; line-height: 1.5; color: #1A1A1A">
+  <span style="font-size: 11px; font-weight: 600; margin-bottom: 2px">{{t}}</span>
+  <sc-for list="{{rows}}" as="r" hint-placeholder-count="3">
+    <sc-if value="{{r.isField}}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; align-items: center; gap: 6px; white-space: nowrap">
+        <span style="width: 44px; flex: none; color: #6B6B6B">{{r.lb}}</span>
+        <span style="flex: 1; min-width: 0; border: 1px solid #E3E3E0; border-radius: 4px; padding: 1px 6px; font-family: 'IBM Plex Mono', monospace; font-size: 9px">{{r.f1}}</span>
+        <sc-if value="{{r.hasF2}}" hint-placeholder-val="{{ false }}">
+          <span style="color: #6B6B6B">{{r.mid}}</span>
+          <span style="width: 48px; flex: none; border: 1px solid #E3E3E0; border-radius: 4px; padding: 1px 6px; font-family: 'IBM Plex Mono', monospace; font-size: 9px">{{r.f2}}</span>
+        </sc-if>
+      </div>
+    </sc-if>
+    <sc-if value="{{r.isText}}" hint-placeholder-val="{{ true }}">
+      <div style="color: {{r.c}}; padding-left: {{r.ind}}; font-size: {{r.fs}}">{{r.t}}</div>
+    </sc-if>
+  </sc-for>
+  <div style="display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 5px; margin-top: 5px">
+    <sc-for list="{{btns}}" as="b" hint-placeholder-count="2">
+      <span style="display: inline-flex; align-items: center; height: 17px; padding: 0 7px; border: 1px solid {{b.bd}}; border-radius: 4px; background: {{b.bg}}; color: {{b.fg}}; opacity: {{b.op}}; font-size: 9px; white-space: nowrap">{{b.t}}</span>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":240,"height":160}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props;
+    const body = p.body === undefined ? '~claude and zsh will be stopped|◉ Remove from board|>Keeps the folder and branch|○ Also delete the worktree folder' : String(p.body);
+    const rows = body === '' ? [] : body.split('|').map((x) => {
+      if (x[0] === '#') {
+        const s = x.slice(1).split('#');
+        return { isField: true, isText: false, lb: s[0], f1: s[1] || '', hasF2: s.length > 2, mid: s[2] || '', f2: s[3] || '' };
+      }
+      let c = '#1A1A1A', ind = '0', fs = '10px', t = x;
+      if (t[0] === '>') { ind = '14px'; fs = '9px'; c = '#6B6B6B'; t = t.slice(1); }
+      if (t[0] === '~') { c = '#6B6B6B'; t = t.slice(1); }
+      else if (t[0] === '!') { c = '#C2410C'; t = t.slice(1); }
+      return { isField: false, isText: true, c, ind, fs, t };
+    });
+    const btns = String(p.btns || 'Cancel|*Delete').split('|').map((x) => {
+      const pri = x[0] === '*' || x[0] === '-';
+      return {
+        t: pri ? x.slice(1) : x, op: x[0] === '-' ? '0.35' : '1',
+        bg: pri ? '#1A1A1A' : '#FFFFFF', fg: pri ? '#FFFFFF' : '#1A1A1A', bd: pri ? '#1A1A1A' : '#D6D6D2'
+      };
+    });
+    return { w: (p.w || 240) + 'px', t: p.t || 'Delete workspace api-server · feat/oauth', rows, btns };
+  }
+}
+</script>
+</body>
+</html>

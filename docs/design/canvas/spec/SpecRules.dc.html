@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>需求：全局规则</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1760px; height: 1640px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 44px">
+  <div style="display: flex; flex-direction: column; gap: 8px; max-width: 900px">
+    <h1 style="margin: 0; font-size: 28px; font-weight: 600">10 · 全局规则</h1>
+    <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #5F5F5A">跨组件的规则：删除和撤销、快捷键、不在 MVP 里的功能，以及 MVP 完成时要能走通的验收场景。</p>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 48px 56px; font-size: 14px; line-height: 1.6">
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <span style="font-size: 18px; font-weight: 600">删除与撤销</span>
+      <div style="display: grid; grid-template-columns: 120px minmax(0, 1fr) 110px 90px; border: 1px solid #E3E3E0; border-radius: 10px; overflow: hidden">
+        <span style="padding: 8px 12px; background: #F2F2EF; font-size: 12px; color: #6B6B6B; font-weight: 600">对象</span><span style="padding: 8px 12px; background: #F2F2EF; font-size: 12px; color: #6B6B6B; font-weight: 600">结果</span><span style="padding: 8px 12px; background: #F2F2EF; font-size: 12px; color: #6B6B6B; font-weight: 600">确认</span><span style="padding: 8px 12px; background: #F2F2EF; font-size: 12px; color: #6B6B6B; font-weight: 600">能否 ⌘Z</span>
+        <span style="padding: 8px 12px; border-top: 1px solid #E3E3E0; font-weight: 500">网页窗口</span><span style="padding: 8px 12px; border-top: 1px solid #E3E3E0">关闭</span><span style="padding: 8px 12px; border-top: 1px solid #E3E3E0">不确认</span><span style="padding: 8px 12px; border-top: 1px solid #E3E3E0">能</span>
+        <span style="padding: 8px 12px; border-top: 1px solid #E3E3E0; font-weight: 500">已退出的终端</span><span style="padding: 8px 12px; border-top: 1px solid #E3E3E0">关闭</span><span style="padding: 8px 12px; border-top: 1px solid #E3E3E0">不确认</span><span style="padding: 8px 12px; border-top: 1px solid #E3E3E0">能</span>
+        <span style="padding: 8px 12px; border-top: 1px solid #E3E3E0; font-weight: 500">运行中的终端</span><span style="padding: 8px 12px; border-top: 1px solid #E3E3E0">结束进程并关闭</span><span style="padding: 8px 12px; border-top: 1px solid #E3E3E0">确认</span><span style="padding: 8px 12px; border-top: 1px solid #E3E3E0">不能</span>
+        <span style="padding: 8px 12px; border-top: 1px solid #E3E3E0; font-weight: 500">工作区框</span><span style="padding: 8px 12px; border-top: 1px solid #E3E3E0">“Remove from board”，或“Also delete the worktree folder”</span><span style="padding: 8px 12px; border-top: 1px solid #E3E3E0">对话框</span><span style="padding: 8px 12px; border-top: 1px solid #E3E3E0">只有前者能</span>
+        <span style="padding: 8px 12px; border-top: 1px solid #E3E3E0; font-weight: 500">多选</span><span style="padding: 8px 12px; border-top: 1px solid #E3E3E0">工作区一律按“Remove from board”处理</span><span style="padding: 8px 12px; border-top: 1px solid #E3E3E0">有运行中的就确认一次</span><span style="padding: 8px 12px; border-top: 1px solid #E3E3E0">能，进程恢复为已退出</span>
+        <span style="padding: 8px 12px; border-top: 1px solid #E3E3E0; font-weight: 500">项目</span><span style="padding: 8px 12px; border-top: 1px solid #E3E3E0">只从应用里移除，磁盘不动</span><span style="padding: 8px 12px; border-top: 1px solid #E3E3E0">确认</span><span style="padding: 8px 12px; border-top: 1px solid #E3E3E0">不能</span>
+      </div>
+      <p style="margin: 0; color: #5F5F5A">⌘Z 撤销的是白板上的操作：移动、改大小、放大还原、新建和关闭窗口、用“Remove from board”移除的工作区。结束进程、git 操作和删除磁盘上的目录不能撤销。焦点在网页或输入框里时，⌘Z 交给它们。</p>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <span style="font-size: 18px; font-weight: 600">快捷键</span>
+      <p style="margin: 0; color: #5F5F5A">终端聚焦时，所有不带 ⌘ 的按键都交给终端，所以应用自己的快捷键都带 ⌘。Windows 和 Linux 上 ⌘ 换成 Ctrl。</p>
+      <div style="display: grid; grid-template-columns: 170px minmax(0, 1fr); border: 1px solid #E3E3E0; border-radius: 10px; overflow: hidden">
+        <span style="padding: 7px 12px; font-family: 'IBM Plex Mono', monospace">⌘N</span><span style="padding: 7px 12px">新建默认 agent 终端（放在聚焦窗口所在的工作区）</span>
+        <span style="padding: 7px 12px; border-top: 1px solid #E3E3E0; font-family: 'IBM Plex Mono', monospace">⌘T</span><span style="padding: 7px 12px; border-top: 1px solid #E3E3E0">新建网页窗口</span>
+        <span style="padding: 7px 12px; border-top: 1px solid #E3E3E0; font-family: 'IBM Plex Mono', monospace">⌘⇧N</span><span style="padding: 7px 12px; border-top: 1px solid #E3E3E0">新建工作区</span>
+        <span style="padding: 7px 12px; border-top: 1px solid #E3E3E0; font-family: 'IBM Plex Mono', monospace">⌘W</span><span style="padding: 7px 12px; border-top: 1px solid #E3E3E0">关闭聚焦的窗口</span>
+        <span style="padding: 7px 12px; border-top: 1px solid #E3E3E0; font-family: 'IBM Plex Mono', monospace">⌘⇧↩</span><span style="padding: 7px 12px; border-top: 1px solid #E3E3E0">放大或还原聚焦的窗口</span>
+        <span style="padding: 7px 12px; border-top: 1px solid #E3E3E0; font-family: 'IBM Plex Mono', monospace">⌘J</span><span style="padding: 7px 12px; border-top: 1px solid #E3E3E0">跳到下一个在等你的窗口</span>
+        <span style="padding: 7px 12px; border-top: 1px solid #E3E3E0; font-family: 'IBM Plex Mono', monospace">⌘⇧J</span><span style="padding: 7px 12px; border-top: 1px solid #E3E3E0">Approve all…：列出所有在等批准的请求，确认后一起批准</span>
+        <span style="padding: 7px 12px; border-top: 1px solid #E3E3E0; font-family: 'IBM Plex Mono', monospace">⌘B</span><span style="padding: 7px 12px; border-top: 1px solid #E3E3E0">显示或隐藏右侧面板</span>
+        <span style="padding: 7px 12px; border-top: 1px solid #E3E3E0; font-family: 'IBM Plex Mono', monospace">⌘0 / ⌘1</span><span style="padding: 7px 12px; border-top: 1px solid #E3E3E0">缩放到 100% / 显示全部</span>
+        <span style="padding: 7px 12px; border-top: 1px solid #E3E3E0; font-family: 'IBM Plex Mono', monospace">⌘= / ⌘−</span><span style="padding: 7px 12px; border-top: 1px solid #E3E3E0">放大 / 缩小白板</span>
+        <span style="padding: 7px 12px; border-top: 1px solid #E3E3E0; font-family: 'IBM Plex Mono', monospace">⌘K</span><span style="padding: 7px 12px; border-top: 1px solid #E3E3E0">清空聚焦终端的显示</span>
+        <span style="padding: 7px 12px; border-top: 1px solid #E3E3E0; font-family: 'IBM Plex Mono', monospace">⌘L ⌘[ ⌘] ⌘R</span><span style="padding: 7px 12px; border-top: 1px solid #E3E3E0">网页窗口：地址栏、后退、前进、刷新</span>
+        <span style="padding: 7px 12px; border-top: 1px solid #E3E3E0; font-family: 'IBM Plex Mono', monospace">⌘↩</span><span style="padding: 7px 12px; border-top: 1px solid #E3E3E0">在提交框里提交</span>
+        <span style="padding: 7px 12px; border-top: 1px solid #E3E3E0; font-family: 'IBM Plex Mono', monospace">⌘Z / ⌘⇧Z</span><span style="padding: 7px 12px; border-top: 1px solid #E3E3E0">撤销 / 重做白板操作</span>
+        <span style="padding: 7px 12px; border-top: 1px solid #E3E3E0; font-family: 'IBM Plex Mono', monospace">Delete</span><span style="padding: 7px 12px; border-top: 1px solid #E3E3E0">没有窗口聚焦时，删除选中的对象</span>
+        <span style="padding: 7px 12px; border-top: 1px solid #E3E3E0; font-family: 'IBM Plex Mono', monospace">Esc</span><span style="padding: 7px 12px; border-top: 1px solid #E3E3E0">有窗口聚焦时交给它；没有时取消选中、关闭菜单</span>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <span style="font-size: 18px; font-weight: 600">不在 MVP 里的</span>
+      <div style="display: grid; grid-template-columns: minmax(0, 1fr) 80px; border: 1px solid #E3E3E0; border-radius: 10px; overflow: hidden">
+        <span style="padding: 7px 12px">Skills · MCP 面板、本地 skill 库、同步到各 agent</span><span style="padding: 7px 12px; font-family: 'IBM Plex Mono', monospace; color: #6B6B6B">v0.2</span>
+        <span style="padding: 7px 12px; border-top: 1px solid #E3E3E0">自动存档（写文件后的快照和回滚）</span><span style="padding: 7px 12px; border-top: 1px solid #E3E3E0; font-family: 'IBM Plex Mono', monospace; color: #6B6B6B">v0.2</span>
+        <span style="padding: 7px 12px; border-top: 1px solid #E3E3E0">提交图、和 main 对比、推送与拉取、自动生成提交信息</span><span style="padding: 7px 12px; border-top: 1px solid #E3E3E0; font-family: 'IBM Plex Mono', monospace; color: #6B6B6B">v0.2</span>
+        <span style="padding: 7px 12px; border-top: 1px solid #E3E3E0">终端内搜索、给多个终端同时发消息</span><span style="padding: 7px 12px; border-top: 1px solid #E3E3E0; font-family: 'IBM Plex Mono', monospace; color: #6B6B6B">v0.2</span>
+        <span style="padding: 7px 12px; border-top: 1px solid #E3E3E0">折叠工作区框、小地图、按状态筛选、对齐吸附</span><span style="padding: 7px 12px; border-top: 1px solid #E3E3E0; font-family: 'IBM Plex Mono', monospace; color: #6B6B6B">v0.2</span>
+        <span style="padding: 7px 12px; border-top: 1px solid #E3E3E0">网页窗口的独立窗口模式、开发者工具</span><span style="padding: 7px 12px; border-top: 1px solid #E3E3E0; font-family: 'IBM Plex Mono', monospace; color: #6B6B6B">v0.2</span>
+        <span style="padding: 7px 12px; border-top: 1px solid #E3E3E0">合并回 main、创建 PR、两个工作区改同一文件时提示</span><span style="padding: 7px 12px; border-top: 1px solid #E3E3E0; font-family: 'IBM Plex Mono', monospace; color: #6B6B6B">v0.3</span>
+        <span style="padding: 7px 12px; border-top: 1px solid #E3E3E0">多块白板、搜索</span><span style="padding: 7px 12px; border-top: 1px solid #E3E3E0; font-family: 'IBM Plex Mono', monospace; color: #6B6B6B">v0.3</span>
+      </div>
+      <span style="font-size: 15px; font-weight: 600; margin-top: 8px">和实施方案相比的调整</span>
+      <ul style="margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px">
+        <li>终端拉小后显示摘要卡提前到 MVP，否则一屏放不下多个窗口。放下更多窗口靠拖边框改大小，不靠双指捏合缩放白板。</li>
+        <li>自动生成提交信息放到 v0.2，MVP 里提交信息必须手写。</li>
+        <li>原型里“把终端拖进框就自动切换目录”改为不能换框（见 5 · 终端窗口）。</li>
+        <li>终端进程改由 tmux 托管，从 v0.3 提前到 MVP：关掉应用后 agent 继续运行、重开后历史还在、可以在系统终端里接上，都随之进入 MVP。</li>
+        <li>去掉文件监听：右侧面板只在切换聚焦、agent 一轮结束、你自己操作 git 之后刷新。</li>
+        <li>产品界面文案统一用英文；需求说明保持中文，引号里的英文是界面上实际显示的文字。</li>
+      </ul>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <span style="font-size: 18px; font-weight: 600">验收场景</span>
+      <p style="margin: 0; color: #5F5F5A">MVP 完成时，每一条都要能从头走到尾。</p>
+      <ol style="margin: 0; padding-left: 1.4em; display: flex; flex-direction: column; gap: 6px">
+        <li>第一次打开应用，右键 › “Add project…”，选 api-server 文件夹，直接进入新建工作区对话框。</li>
+        <li>在对话框里基于 main 新建分支 feat/oauth；框出现，worktree 建好，.env 已复制，pnpm install 在框里的终端中自动运行。</li>
+        <li>同一个仓库再建 fix/rate-limit 工作区；两个框里各开一个 claude，同时改代码，互不影响。</li>
+        <li>其中一个 claude 请求批准命令：2 秒内它的窗口变橙，框和顶栏显示“1 waiting”；应用在后台时收到系统通知。</li>
+        <li>按 ⌘J 跳到那个窗口，直接按 y 批准，状态回到运行中。</li>
+        <li>在框里开普通终端运行 pnpm dev，单击输出里的 localhost:3000，网页窗口出现在它右边、同一个框里。</li>
+        <li>聚焦 claude，右侧面板显示 feat/oauth 的更改；暂存两个文件，写提交信息，⌘↩ 提交，提交记录里出现这一条。</li>
+        <li>在面板里尝试切换到 fix/rate-limit：它显示“in fix/rate-limit”，单击后白板跳到那个框。</li>
+        <li>把两个终端的右下角往里拉：变成摘要卡，显示最后 3 行和状态；单击其中一个，恢复原来的大小并聚焦它。</li>
+        <li>退出应用再打开：所有框和窗口的位置不变，终端还在运行，历史输出都在。</li>
+        <li>在 claude 的标题栏右键 › “Open in system terminal”：系统终端里出现同一个会话，两边输入同步。</li>
+        <li>删除 fix/rate-limit 工作区并勾选删除目录：有未提交更改时必须先勾选确认；完成后磁盘上的目录消失，分支还在。</li>
+        <li>关掉窗口：claude 继续跑，需要批准时收到系统通知，单击通知窗口回来并跳到它。</li>
+        <li>重启电脑后打开应用：弹出“Restore your last session?”，单击“Restore all”，工作区和窗口都在原位，claude 接回原来那个对话，Shell 在原目录打开。</li>
+      </ol>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":1640}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

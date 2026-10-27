@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>插件：Auto-approve</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.at{position:absolute}
+.cap{margin:0;font-size:13px;line-height:1.55}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1200px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.tag{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;background:#F2F2EF;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.win{box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;overflow:hidden;font-size:11px}
+.wt{display:flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-bottom:1px solid #EEEEEB}
+.wb{padding:6px 9px;font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.7;color:#6B6B6B}
+.dot{width:7px;height:7px;border-radius:50%;flex:none}
+.menu{background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;box-shadow:0 8px 20px rgba(0,0,0,0.08);padding:4px;font-size:11.5px;display:flex;flex-direction:column}
+.mi{display:flex;align-items:center;gap:8px;padding:4px 9px;border-radius:5px;white-space:nowrap}
+.sep{height:1px;background:#EEEEEB;margin:3px 4px}
+.mark{position:absolute;height:16px;padding:0 7px;display:flex;align-items:center;font-size:9.5px;font-weight:600;letter-spacing:0.01em;border-radius:0 0 4px 4px;white-space:nowrap}
+.ink{background:#CF222E;color:#FFFFFF}
+.orange{background:#B45309;color:#FFFFFF}
+.num{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:#1A1A1A;color:#FFFFFF;font-size:11px;font-weight:600;flex:none}
+</style>
+</helmet>
+<div style="width: 1760px; height: 1660px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">PL1 · Auto-approve：替你按“允许一次”</h1>
+      <span class="tag">插件 · 窗口 / 工作区框</span>
+    </div>
+    <p class="lead">开在一个终端上，或者开在整个工作区框上。开着的时候，agent 请求权限（跑命令、改文件、联网）就直接回“允许一次”，不用你切过去按。只有三种情况照常停下来等你：agent 让你在几个选项里挑一个、破坏性命令、要你打字回答。</p>
+  </div>
+
+  <!-- 操作流程 -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">打开、看到、关掉</span>
+    <div style="display: flex; gap: 28px">
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <div class="fig" style="width: 520px; height: 340px">
+          <div class="at win" style="left: 24px; top: 30px; width: 300px; height: 230px; border: 1.5px solid #1A1A1A">
+            <div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="mono" style="font-weight: 500">claude</span><span style="color: #6B6B6B">· Fix the login bug</span></div>
+            <div class="wb">⏺ Edit src/auth/oauth.ts<br>⏺ Bash pnpm test auth</div>
+          </div>
+          <div class="at menu" style="left: 170px; top: 60px; width: 200px">
+            <span class="mi">Rename…</span><span class="mi">Restart</span><span class="sep"></span>
+            <span class="mi" style="padding: 4px 9px 2px; font-size: 10px; font-weight: 600; color: #8A8A85">PLUGINS</span>
+            <span class="mi" style="background: #EDEDEA"><span style="width: 12px"></span>Auto-approve</span>
+            <span class="mi"><span style="width: 12px"></span>CC Switch</span>
+            <span class="sep"></span><span class="mi">Close</span>
+          </div>
+        </div>
+        <span class="cap"><span class="num">1</span> 右键标题栏，PLUGINS 里点 Auto-approve。第一次开会问一句：“Approve permission requests in this terminal without asking? Option questions and destructive commands still wait for you.”</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <div class="fig" style="width: 520px; height: 340px">
+          <div class="at win" style="left: 24px; top: 30px; width: 300px; height: 210px; border: 1.5px solid #1A1A1A">
+            <div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="mono" style="font-weight: 500">claude</span><span style="color: #6B6B6B">· Fix the login bug</span><span style="flex: 1"></span><span style="color: #1A7F37">Running</span></div>
+            <div class="wb">⏺ Bash pnpm test auth<br>  <span style="color: #1A1A1A">✓ approved by Auto-approve</span><br>  18 passed<br>⏺ Write src/auth/session.ts<br>  <span style="color: #1A1A1A">✓ approved by Auto-approve</span></div>
+          </div>
+          <div class="mark ink" style="left: 40px; top: 240px">Auto-approve</div>
+          <div class="at" style="left: 340px; top: 186px; width: 160px; font-size: 11px; line-height: 1.6; color: #5F5F5A">书签挂在终端底边左侧，紧贴下边框，跟着窗口走。</div>
+        </div>
+        <span class="cap"><span class="num">2</span> 终端底边左侧垂下一个红色小书签 “Auto-approve”。状态一直是 Running，不会再变成等待；每次批准书签闪一下。</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <div class="fig" style="width: 520px; height: 340px">
+          <div class="at win" style="left: 24px; top: 20px; width: 300px; height: 150px; border: 1.5px solid #1A1A1A">
+            <div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="mono" style="font-weight: 500">claude</span><span style="color: #6B6B6B">· Fix the login bug</span></div>
+            <div class="wb">⏺ Write src/auth/session.ts</div>
+          </div>
+          <div class="mark ink" style="left: 40px; top: 170px">Auto-approve</div>
+          <div class="at menu" style="left: 40px; top: 198px; width: 300px; font-size: 11px">
+            <span class="mi" style="font-weight: 600">Auto-approve<span style="flex: 1"></span><span style="color: #6B6B6B; font-weight: 400">since 14:02</span></span>
+            <span class="mi mono" style="color: #6B6B6B; font-size: 10px">14:21  Bash  pnpm test auth</span>
+            <span class="mi mono" style="color: #6B6B6B; font-size: 10px">14:22  Write src/auth/session.ts</span>
+            <span class="sep"></span>
+            <span class="mi">Approval history…<span style="flex: 1"></span><span class="mi" style="padding: 0; font-weight: 600">Turn off</span></span>
+          </div>
+        </div>
+        <span class="cap"><span class="num">3</span> 点书签弹出小卡片：从几点开着、最近批准了什么、Approval history…、Turn off。再从 Plugins 菜单点一次也能关。</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 规则 -->
+  <div style="display: flex; gap: 48px; align-items: flex-start">
+    <div style="display: flex; flex-direction: column; gap: 14px; width: 900px">
+      <span class="h2">替你按的，和照常等你的</span>
+      <div class="tbl" style="grid-template-columns: 250px 190px minmax(0, 1fr)">
+        <span class="th">agent 在等什么</span><span class="th">开着时</span><span class="th">说明</span>
+        <span class="td">权限请求：跑命令、改文件、联网、调 MCP 工具</span><span class="td"><b>允许一次</b></span><span class="td">只选“Yes”，从不选“Yes, and don’t ask again”，不替你改 agent 自己的权限设置。</span>
+        <span class="td">破坏性命令（<span class="mono">rm -rf</span>、<span class="mono">git push --force</span>、<span class="mono">git reset --hard</span>…）</span><span class="td">照常等你</span><span class="td">名单就是 Settings 里的 <span class="mono">approvals.destructivePatterns</span>，和 Approve all 共用。</span>
+        <span class="td">选择题：agent 列出几个选项让你挑（AskUserQuestion、计划要你选方案）</span><span class="td">照常等你</span><span class="td">这是你的决定，不是权限。</span>
+        <span class="td">要你打字回答（Needs reply）</span><span class="td">照常等你</span><span class="td">同上。</span>
+        <span class="td">批准没生效（2 秒内状态没变）</span><span class="td">停下来</span><span class="td">书签临时变成橙色 “Needs you”，终端照常亮橙色等你。</span>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 14px; width: 680px">
+      <span class="h2">等你的时候</span>
+      <div class="fig" style="width: 680px; height: 220px">
+        <div class="at win" style="left: 24px; top: 24px; width: 330px; height: 150px; border: 1.5px solid #B45309">
+          <div class="wt"><span class="dot" style="background: #B45309"></span><span class="mono" style="font-weight: 500">claude</span><span style="flex: 1"></span><span style="color: #B45309; font-weight: 600">Waiting · approval</span></div>
+          <div class="wb">⏺ Bash rm -rf dist node_modules<br>  Do you want to proceed?<br>  <span style="color: #1A1A1A">❯ 1. Yes</span><br>    2. No</div>
+        </div>
+        <div class="mark orange" style="left: 40px; top: 174px">Needs you</div>
+        <div class="at" style="left: 384px; top: 30px; width: 270px; font-size: 12px; line-height: 1.65; color: #5F5F5A">书签临时变橙，只写 Needs you；悬停能看到原因（破坏性命令、选择题、要打字回答、没按成功）。你处理完，书签变回红色。⌘J 跳到等待中的窗口照常能找到它。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 范围、实现 -->
+  <div style="display: flex; gap: 48px; align-items: flex-start">
+    <div style="display: flex; flex-direction: column; gap: 14px; width: 800px">
+      <span class="h2">开在整个工作区框上</span>
+      <div class="fig" style="width: 800px; height: 250px">
+        <div class="at" style="left: 24px; top: 24px; width: 752px; height: 200px; border: 1px solid #DCDCD8; border-radius: 12px; background: rgba(255,255,255,0.55)">
+          <div style="display: flex; align-items: center; gap: 8px; padding: 7px 10px; font-size: 11px"><b>agenduck</b><span class="mono" style="color: #6B6B6B">feat/login</span><span style="display: inline-flex; align-items: center; height: 18px; padding: 0 7px; border-radius: 4px; background: #1A1A1A; color: #FFFFFF; font-size: 10px">Auto-approve</span></div>
+          <div class="at win" style="left: 12px; top: 36px; width: 230px; height: 120px"><div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="mono">claude</span></div></div>
+          <div class="mark ink" style="left: 24px; top: 156px">Auto-approve</div>
+          <div class="at win" style="left: 260px; top: 36px; width: 230px; height: 120px"><div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="mono">codex</span></div></div>
+          <div class="mark ink" style="left: 272px; top: 156px">Auto-approve</div>
+          <div class="at win" style="left: 508px; top: 36px; width: 230px; height: 120px"><div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="mono">omp</span></div></div>
+          <div class="mark ink" style="left: 520px; top: 156px">Auto-approve</div>
+        </div>
+      </div>
+      <p class="cap" style="color: #5F5F5A">右键框，PLUGINS 里点 Auto-approve：框标题出现小标签，框里每个终端挂书签，之后在框里新开的终端也自动开上。单独在某个终端上关掉，只关它自己。</p>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 14px; width: 780px">
+      <span class="h2">每个 agent 怎么替它按（DR-56）</span>
+      <div class="tbl" style="grid-template-columns: 90px 300px minmax(0, 1fr)">
+        <span class="th">agent</span><span class="th">它弹的确认框</span><span class="th">怎么替它按“允许一次”</span>
+        <span class="td mono">claude</span><span class="td">1. Yes / 2. Yes, and don’t ask again / 3. … / 4. No</span><span class="td">PermissionRequest 钩子到 HookServer，<span class="mono">decide</span> 回 allow（只这一次，不留规则）。提问和计划确认也走这个钩子，已经单独分出来，不答。</span>
+        <span class="td mono">codex</span><span class="td">Yes, proceed (y) / Yes, and don’t ask again… (p / a) / No…</span><span class="td">同样走 PermissionRequest 钩子回 allow。开关前就在等的，补发 <span class="mono">y</span>；永远不发 p、a。</span>
+        <span class="td mono">kimi</span><span class="td">1. Approve once / … / 4. Reject with feedback</span><span class="td">暂不支持（只能看屏幕，先不做）。菜单里灰掉，写 “Not supported for kimi yet”。</span>
+        <span class="td mono">omp</span><span class="td">Allow tool: … / Approve · Deny</span><span class="td">扩展先报 PermissionRequest，屏幕出现 Allow tool: 后发 <span class="mono">↑ ↵</span>（先在真终端里核对）。</span>
+        <span class="td mono">pi</span><span class="td">没有确认框（pi 从不问）</span><span class="td">不用按。书签照常显示，悬停写 “pi never asks for approval”。</span>
+      </div>
+      <p class="cap" style="color: #5F5F5A">contracts 里已经有 <span class="mono">setAutoApprove</span>、<span class="mono">approval.auto-approved</span> 事件、<span class="mono">ApprovalRecord.by = 'auto-approve'</span> 和 <span class="mono">history()</span>，现在都是占位实现。每次自动批准写一条记录，Approval history（右键框，或点书签）按时间列出：哪个终端、什么请求、谁批的（你 / Approve all / Auto-approve）。Approve all 还是顶栏上一次性的操作（不设快捷键），规则和这里共用。</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":1660}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

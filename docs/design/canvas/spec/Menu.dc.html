@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>菜单零件</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="display: inline-flex; flex-direction: column; min-width: {{mw}}; box-sizing: border-box; padding: 3px; background: #FFFFFF; border: 1px solid #E3E3E0; border-radius: 6px; box-shadow: 0 8px 20px rgba(0,0,0,0.08); font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; font-size: 10px; color: #1A1A1A">
+  <sc-for list="{{items}}" as="it" hint-placeholder-count="4">
+    <sc-if value="{{it.div}}" hint-placeholder-val="{{ false }}">
+      <span style="display: block; height: 1px; background: #EEEEEB; margin: 3px 2px"></span>
+    </sc-if>
+    <sc-if value="{{it.row}}" hint-placeholder-val="{{ true }}">
+      <span style="display: flex; justify-content: space-between; gap: 10px; padding: 3px 7px; border-radius: 4px; white-space: nowrap; background: {{it.bg}}">{{it.t}}<span style="color: #6B6B6B; font-size: 9px">{{it.note}}</span></span>
+    </sc-if>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":120,"height":120}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props;
+    const raw = p.items || '*New terminal ▸|New browser|New workspace…|Add project…|-|Show all';
+    const items = String(raw).split('|').map((x) => {
+      if (x === '-') return { div: true, row: false };
+      const on = x[0] === '*';
+      const parts = x.replace(/^\*/, '').split('~');
+      return { div: false, row: true, t: parts[0], note: parts[1] || '', bg: on ? '#EDEDEA' : 'transparent' };
+    });
+    return { items, mw: p.sm ? '70px' : '104px' };
+  }
+}
+</script>
+</body>
+</html>

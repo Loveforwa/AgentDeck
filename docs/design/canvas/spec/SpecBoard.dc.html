@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>需求：白板</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:8px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.at{position:absolute}
+.step{display:flex;flex-direction:column;gap:8px;flex:none}
+.cap{margin:0;font-size:13px;line-height:1.55}
+.zoom{position:absolute;left:8px;bottom:6px;font-size:9px;color:#6B6B6B}
+</style>
+</helmet>
+<div style="width: 1760px; height: 1020px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 32px">
+  <div style="display: flex; flex-direction: column; gap: 8px; max-width: 900px">
+    <h1 style="margin: 0; font-size: 28px; font-weight: 600">3 · 白板</h1>
+    <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #5F5F5A">承载所有工作区和窗口的背景板。背景是 20px 间距的浅色点阵，缩放到 50% 以下时点阵隐藏。</p>
+  </div>
+
+  <div style="display: flex; gap: 56px; align-items: flex-start">
+    <div style="display: flex; flex-direction: column; gap: 40px">
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <span style="font-size: 15px; font-weight: 600">右键新建终端</span>
+        <div style="display: flex; align-items: flex-start">
+          <div class="step" style="width: 320px">
+            <div class="fig" style="width: 320px; height: 200px">
+              <div class="at" style="left: 122px; top: 76px; z-index: 45"><dc-import name="Cursor" ring="1" hint-size="24px,24px"></dc-import></div>
+            </div>
+            <p class="cap">在白板空白处右键</p>
+          </div>
+          <dc-import name="Arrow" label="右键" pad="76" hint-size="104px,110px"></dc-import>
+          <div class="step" style="width: 320px">
+            <div class="fig" style="width: 320px; height: 200px">
+              <div class="at" style="left: 132px; top: 60px"><dc-import name="Menu" items="*New terminal ▸|New browser|New workspace…|Add project…|-|Show all" hint-size="106px,130px"></dc-import></div>
+              <div class="at" style="left: 240px; top: 60px"><dc-import name="Menu" sm="1" items="*claude|codex|gemini|Shell" hint-size="72px,88px"></dc-import></div>
+              <div class="at" style="left: 258px; top: 60px; z-index: 45"><dc-import name="Cursor" hint-size="24px,24px"></dc-import></div>
+            </div>
+            <p class="cap">“New terminal ▸” › claude</p>
+          </div>
+          <dc-import name="Arrow" label="单击 claude" pad="76" hint-size="104px,110px"></dc-import>
+          <div class="step" style="width: 320px">
+            <div class="fig" style="width: 320px; height: 200px">
+              <div class="at" style="left: 130px; top: 84px"><dc-import name="Term" w="176" h="104" f="1" st="start" s="Starting" lines="" hint-size="176px,104px"></dc-import></div>
+            </div>
+            <p class="cap">终端出现在右键的位置，已经聚焦，可以直接打字</p>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <span style="font-size: 15px; font-weight: 600">把终端拉小，放下更多窗口</span>
+        <div style="display: flex; align-items: flex-start">
+          <div class="step" style="width: 320px">
+            <div class="fig" style="width: 320px; height: 200px">
+              <div class="at" style="left: 16px; top: 16px"><dc-import name="Frame" w="288" h="168" branch="feat/oauth" hint-size="288px,168px"></dc-import></div>
+              <div class="at" style="left: 26px; top: 44px"><dc-import name="Term" w="134" h="128" s="Running · 4m" lines="› Add OAuth|~Read session.ts|~Write oauth.ts|~Bash pnpm test|~18 passed" hint-size="134px,128px"></dc-import></div>
+              <svg class="at" style="left: 147px; top: 159px" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M10 4L4 10M10 8L8 10" stroke="#8A8A85" stroke-width="1.2" stroke-linecap="round"></path></svg>
+              <div class="at" style="left: 170px; top: 44px"><dc-import name="Term" w="124" h="128" cmd="zsh" lbl="pnpm dev" s="" lines="$ pnpm dev|~ready on :3000|~GET /login 200" hint-size="124px,128px"></dc-import></div>
+              <div class="at" style="left: 150px; top: 162px; z-index: 45"><dc-import name="Cursor" ring="1" hint-size="24px,24px"></dc-import></div>
+            </div>
+            <p class="cap">按住终端的右下角（任意一条边也可以）</p>
+          </div>
+          <dc-import name="Arrow" label="往里拉，小于 320×200" pad="76" hint-size="104px,110px"></dc-import>
+          <div class="step" style="width: 320px">
+            <div class="fig" style="width: 320px; height: 200px">
+              <div class="at" style="left: 16px; top: 16px"><dc-import name="Frame" w="288" h="168" branch="feat/oauth" hint-size="288px,168px"></dc-import></div>
+              <div class="at" style="left: 26px; top: 44px; width: 134px; height: 128px; box-sizing: border-box; border: 1px dashed #A3A39E; border-radius: 5px"></div>
+              <div class="at" style="left: 26px; top: 44px"><dc-import name="Term" w="110" h="64" s="Running" lines="~pnpm test|~18 passed|Add validation?" hint-size="110px,64px"></dc-import></div>
+              <div class="at" style="left: 170px; top: 44px"><dc-import name="Term" w="124" h="128" cmd="zsh" lbl="pnpm dev" s="" lines="$ pnpm dev|~ready on :3000|~GET /login 200" hint-size="124px,128px"></dc-import></div>
+              <div class="at" style="left: 128px; top: 100px; z-index: 45"><dc-import name="Cursor" hint-size="24px,24px"></dc-import></div>
+            </div>
+            <p class="cap">变成摘要卡：只显示最后 3 行和状态，在等你的仍然是橙色；腾出来的地方可以放别的窗口</p>
+          </div>
+          <dc-import name="Arrow" label="单击摘要卡" pad="76" hint-size="104px,110px"></dc-import>
+          <div class="step" style="width: 320px">
+            <div class="fig" style="width: 320px; height: 200px">
+              <div class="at" style="left: 16px; top: 16px"><dc-import name="Frame" w="288" h="168" branch="feat/oauth" hint-size="288px,168px"></dc-import></div>
+              <div class="at" style="left: 26px; top: 44px"><dc-import name="Term" w="134" h="128" f="1" s="Running · 4m" lines="› Add OAuth|~Read session.ts|~Write oauth.ts|~Bash pnpm test|~18 passed|Add validation?" hint-size="134px,128px"></dc-import></div>
+              <div class="at" style="left: 170px; top: 44px"><dc-import name="Term" w="124" h="128" cmd="zsh" lbl="pnpm dev" s="" lines="$ pnpm dev|~ready on :3000|~GET /login 200" hint-size="124px,128px"></dc-import></div>
+            </div>
+            <p class="cap">恢复到拉小之前的大小并聚焦，可以直接打字；再拉小又变回摘要卡</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 10px; font-size: 14px; line-height: 1.65">
+      <span style="font-size: 15px; font-weight: 600">操作与表现</span>
+      <ul style="margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 7px">
+        <li><b>两指滑动 / 滚轮</b>：平移白板。光标停在已聚焦的窗口上时，改为滚动那个窗口的内容。</li>
+        <li><b>空格 + 拖动 / 中键拖动</b>：在任何位置平移。有终端聚焦时空格会输入到终端，只能用中键或两指。</li>
+        <li><b>想放下更多窗口</b>：拖窗口或框的边、角，直接改大小，不靠缩放白板。</li>
+        <li><b>⌘ + 滚轮</b>：缩放整块白板（25%–200%），作为备用；不响应双指捏合。</li>
+        <li><b>单击空白处</b>：取消选中、取消聚焦，关闭菜单。</li>
+        <li><b>在空白处按住拖动</b>：拉出选框，完全框住的窗口和框被选中；按住 ⇧ 追加。</li>
+        <li><b>右键或双击空白处</b>：弹出菜单（“New terminal ▸”“New browser”“New workspace…”“Add project…”“Show all”），新建的东西放在这个位置。双击不会直接创建，避免误触。</li>
+        <li><b>拖入 .html 文件</b>：在放下的位置打开网页窗口。</li>
+        <li><b>拖到视口边缘</b>：白板自动向那个方向平移，越靠近越快。</li>
+        <li><b>⌘1</b> “Show all”（最大 100%）；<b>⌘0</b> 缩放到 100%。</li>
+        <li><b>终端被拉到小于 320×200</b>：换成摘要卡（最小 110×60），只显示最后 3 行和状态；单击恢复到拉小之前的大小并聚焦。网页窗口拉小时同理，只显示标题和地址。字不跟着缩小，所以不会发糊。摘要的最后几行直接从 tmux 读取，不需要为它打开终端界面。</li>
+        <li><b>用 ⌘ + 滚轮把整块白板缩到 75% 以下</b>：所有终端同样换成摘要卡。</li>
+        <li><b>不在视口里的终端</b>：不打开终端界面，只在 tmux 里继续运行；移进视口时再接上显示。</li>
+        <li><b>空白状态</b>：视口中间写“Add a project to get started, or right-click to open a terminal.”，下面两个按钮：“Add project”“New terminal”。</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":1020}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

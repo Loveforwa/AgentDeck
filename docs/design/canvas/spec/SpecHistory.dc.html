@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>左边栏：历史会话</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.at{position:absolute}
+.cap{margin:0;font-size:13px;line-height:1.55}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1240px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.tag{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;background:#F2F2EF;color:#5F5F5A}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.win{box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;overflow:hidden;font-size:11px}
+.wt{display:flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-bottom:1px solid #EEEEEB}
+.wb{padding:6px 9px;font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.7;color:#6B6B6B}
+.dot{width:7px;height:7px;border-radius:50%;flex:none;box-sizing:border-box}
+.side{box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:11.5px;display:flex;flex-direction:column}
+.sh{display:flex;align-items:center;height:30px;padding:0 10px;border-bottom:1px solid #EEEEEB;font-size:10.5px;font-weight:600;letter-spacing:0.05em;color:#3D3D3A}
+.srch{margin:8px 10px 6px;height:24px;border:1px solid #E3E3E0;border-radius:6px;display:flex;align-items:center;padding:0 8px;color:#A3A39E;font-size:11px}
+.chips{display:flex;gap:4px;padding:0 10px 8px;flex-wrap:wrap}
+.chip{height:18px;padding:0 7px;border-radius:999px;border:1px solid #E3E3E0;font-size:10px;display:inline-flex;align-items:center;color:#5F5F5A;font-family:'IBM Plex Mono',monospace}
+.chip.on{background:#1A1A1A;border-color:#1A1A1A;color:#FFFFFF}
+.proj{display:flex;align-items:baseline;gap:6px;padding:8px 10px 2px;font-weight:600;font-size:12px}
+.path{display:flex;align-items:center;gap:6px;padding:3px 10px 3px 14px;font-size:11px;white-space:nowrap}
+.ag{display:flex;align-items:center;gap:6px;padding:4px 10px 2px 26px;font-size:10px;font-weight:600;color:#8A8A85;letter-spacing:0.03em}
+.row{display:flex;align-items:center;gap:7px;padding:3px 10px 3px 28px;white-space:nowrap}
+.rt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.time{color:#8A8A85;font-size:10px;font-variant-numeric:tabular-nums}
+.muted{color:#8A8A85}
+.btn{display:inline-flex;align-items:center;height:18px;padding:0 6px;border:1px solid #D6D6D2;border-radius:5px;font-size:10px;background:#FFFFFF;color:#1A1A1A}
+.state{font-size:12px;font-weight:600;color:#3D3D3A}
+</style>
+</helmet>
+<div style="width: 1760px; height: 2240px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">14 · 左边栏：历史会话，按工作路径再按 agent 分</h1>
+      <span class="tag">2026-10-26 定</span>
+      <span class="mono" style="font-size: 12px; color: #6B6B6B">N11 · IS-86 · DR-62</span>
+    </div>
+    <p class="lead">白板左边加一栏，和右边的源代码管理面板一个样子：列出这台电脑上每个工作路径（项目的主目录、各个 worktree）里所有 agent 的历史会话，在一个工作路径下面再按 claude、codex、pi、omp、kimi 分组，最近的在前。会话是各 agent 自己存的记录，在普通终端里开的也算。单击跳到白板上开着的那个终端；没开着的可以 Resume（照 agent 自己的接回参数在这个工作区新开一个终端）或 Fork 到别的工作区。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 整体：左边一栏，和右边栏对称</span>
+    <p class="lead">顶栏最左边一个按钮开关左边栏（右边栏是右上角的 →|）。宽度能拖，收起时白板占满。左边栏只管“找会话”，右边栏照旧跟着聚焦的终端看 Git。</p>
+    <div class="fig" style="width: 1632px; height: 640px; background-color: #FAFAF8">
+      <!-- 顶栏 -->
+      <div class="at" style="left: 0; top: 0; right: 0; height: 36px; display: flex; align-items: center; gap: 12px; padding: 0 14px; font-size: 12px; border-bottom: 1px solid #EEEEEB; background: #FFFFFF">
+        <span style="display: flex; gap: 6px"><span class="dot" style="background: #E3E3E0"></span><span class="dot" style="background: #E3E3E0"></span><span class="dot" style="background: #E3E3E0"></span></span>
+        <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 5px; background: #EDEDEA" title="Show history">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#1A1A1A" stroke-width="1.3" aria-hidden="true"><rect x="1.5" y="2" width="11" height="10" rx="1.5"></rect><line x1="5" y1="2" x2="5" y2="12"></line></svg>
+        </span>
+        <b>agenduck ▾</b><span class="muted">feat/N10 · 3 windows</span>
+        <span style="flex: 1"></span>
+        <span style="color: #1A7F37">● 2 running</span>
+        <span class="muted">⚙</span>
+      </div>
+      <!-- 左边栏 -->
+      <div class="at side" style="left: 12px; top: 48px; width: 290px; height: 580px">
+        <div class="sh">HISTORY<span style="flex: 1"></span><span class="muted" style="font-weight: 400">|←</span></div>
+        <div class="srch">Search sessions</div>
+        <div class="chips"><span class="chip on">All</span><span class="chip">claude</span><span class="chip">codex</span><span class="chip">pi</span><span class="chip">omp</span><span class="chip">kimi</span></div>
+        <div style="flex: 1; overflow: hidden; border-top: 1px solid #EEEEEB">
+          <div class="proj">agenduck<span class="mono muted" style="font-weight: 400; font-size: 10px">~/2026/agenduck</span></div>
+          <div class="path"><span class="muted">▾</span><span class="mono">main</span><span class="muted">main folder</span><span style="flex: 1"></span><span class="time">23</span></div>
+          <div class="ag">CLAUDE · 14</div>
+          <div class="row"><span class="dot" style="background: #1A7F37"></span><span class="rt">Weather comparison Beijing</span><span class="time">now</span></div>
+          <div class="row" style="background: #EDEDEA"><span class="dot" style="border: 1px solid #8A8A85"></span><span class="rt">Explain the ui/canvas package</span><span class="time">2h</span></div>
+          <div class="row"><span style="width: 7px"></span><span class="rt">Publish to GitHub</span><span class="time">17h</span></div>
+          <div class="row"><span style="width: 7px"></span><span class="rt">Fix IS-68 to IS-72</span><span class="time">2d</span></div>
+          <div class="row muted" style="padding-left: 28px; font-size: 10.5px">Show 10 more</div>
+          <div class="ag">CODEX · 6</div>
+          <div class="row"><span style="width: 7px"></span><span class="rt">Review the commit graph</span><span class="time">1d</span></div>
+          <div class="ag">KIMI · 3 <span style="font-weight: 400">▸</span></div>
+          <div class="path"><span class="muted">▸</span><span class="mono">feat/N10-background-agents</span><span style="flex: 1"></span><span class="time">9</span></div>
+          <div class="path"><span class="muted">▸</span><span class="mono">feat/N9-skills-mcp</span><span style="flex: 1"></span><span class="time">4</span></div>
+          <div class="proj">shop<span class="mono muted" style="font-weight: 400; font-size: 10px">~/code/shop</span></div>
+          <div class="path"><span class="muted">▸</span><span class="mono">main</span><span class="muted">main folder</span><span style="flex: 1"></span><span class="time">12</span></div>
+          <div class="proj">Other folders<span class="muted" style="font-weight: 400; font-size: 10px">not in AgentDeck</span></div>
+          <div class="path"><span class="muted">▸</span><span class="mono">~/Downloads/demo</span><span style="flex: 1"></span><span class="time">2</span></div>
+        </div>
+      </div>
+      <!-- 白板 -->
+      <div class="at" style="left: 320px; top: 70px; width: 940px; height: 520px; border: 1px solid #DCDCD8; border-radius: 8px; background: rgba(255,255,255,0.55)">
+        <div style="padding: 7px 10px; font-size: 11px"><b>agenduck</b> <span class="mono muted" style="font-size: 10px">main</span></div>
+        <div class="at win" style="left: 16px; top: 36px; width: 420px; height: 250px; border: 1.5px solid #1A1A1A">
+          <div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="mono" style="font-weight: 500">claude</span><span class="muted">· Weather comparison Beijing</span><span style="flex: 1"></span><span style="color: #1A7F37">Running</span></div>
+          <div class="wb">⏺ 3 background agents launched<br>✻ Waiting for 3 background agents to finish</div>
+        </div>
+        <div class="at win" style="left: 456px; top: 36px; width: 420px; height: 250px">
+          <div class="wt"><span class="dot" style="border: 1px solid #8A8A85"></span><span class="mono" style="font-weight: 500">claude</span><span class="muted">· Explain the ui/canvas package</span><span style="flex: 1"></span><span class="muted">Idle</span></div>
+          <div class="wb">● The canvas package is the whiteboard…</div>
+        </div>
+      </div>
+      <!-- 右边栏 -->
+      <div class="at side" style="left: 1280px; top: 48px; width: 340px; height: 580px">
+        <div class="sh">SOURCE CONTROL<span style="flex: 1"></span><span class="muted" style="font-weight: 400">→|</span></div>
+        <div style="padding: 10px; font-size: 11.5px; line-height: 1.8; color: #5F5F5A"><b style="color: #1A1A1A">agenduck · main</b><br>⎇ main · 2 ahead<br>Changes 0<br>Graph …</div>
+      </div>
+    </div>
+    <span class="cap">左边栏选中的行（浅灰底）就是白板上聚焦的那个终端；单击开着的会话（有状态灯）跳过去并聚焦。</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 一行会话：标题、状态、时间；悬停出操作</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start">
+      <div class="fig" style="width: 760px; height: 300px">
+        <div class="at side" style="left: 24px; top: 24px; width: 300px; height: 250px">
+          <div class="ag" style="padding-top: 10px">CLAUDE · 14</div>
+          <div class="row"><span class="dot" style="background: #1A7F37"></span><span class="rt">Weather comparison Beijing</span><span class="time">now</span></div>
+          <div class="row" style="background: #EDEDEA"><span style="width: 7px"></span><span class="rt">Publish to GitHub</span><span class="btn">Resume</span><span class="btn">⋯</span></div>
+          <div class="row"><span style="width: 7px"></span><span class="rt">Fix IS-68 to IS-72</span><span class="time">2d</span></div>
+          <div class="row"><span style="width: 7px"></span><span class="rt">Package the macOS app</span><span class="time">3d</span></div>
+        </div>
+        <div class="at win" style="left: 340px; top: 60px; width: 390px; height: 170px; box-shadow: 0 8px 20px rgba(0,0,0,0.08); font-size: 11.5px; line-height: 1.7; padding: 10px 12px">
+          <b>Publish to GitHub</b><br>
+          <span class="muted">claude · haiku-4-5</span><br>
+          <span class="muted">Started 25 Oct 23:10 · last active 17h ago</span><br>
+          <span class="muted mono" style="font-size: 10px">~/2026/agenduck · main · 45dba628…</span><br>
+          <span style="color: #5F5F5A">“许可就 mit 吧 然后发布吧”</span>
+        </div>
+      </div>
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 10px; font-size: 13.5px; line-height: 1.65">
+        <span><b>标题</b>：agent 给对话起的标题（claude、codex 会写），没有就用第一条消息的第一行。</span>
+        <span><b>状态灯</b>：在白板上开着的会话才有，和终端标题栏一套（绿在跑、黄等你、空心空闲）。没开着的不画灯。</span>
+        <span><b>时间</b>：最后活动，“now / 5m / 2h / 3d / 12 Oct”。</span>
+        <span><b>悬停</b>：开着的写 “On board”；没开着的出 Resume 和 ⋯（Fork into… ▸ 别的工作区、Copy session id、Reveal file in Finder）。悬停久一点出说明：模型、来源（桌面版 / 编辑器）、开始和最后活动的时间、目录和分支、第一条消息。不写消息数：要读整个会话文件（几 GB），见 DR-62（2026-10-26 实现时改）。</span>
+        <span style="color: #5F5F5A">不支持接回的（kimi 新建的会话、文件里没有会话 id 的）Resume 灰掉，悬停写原因。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · 怎么分组、怎么排</span>
+    <div class="tbl" style="grid-template-columns: 220px minmax(0, 1fr)">
+      <span class="th">层</span><span class="th">规则</span>
+      <span class="td">第一层 · 项目</span><span class="td">AgentDeck 里加过的项目，按最近有会话的排；当前项目（顶栏选中的）放最上面。会话的目录不在任何项目里的放到最后的 <b>Other folders</b>；它默认收起，只露标题和会话总数，点一下展开，开着没有记在这台电脑上（2026-10-26 定）。</span>
+      <span class="td">第二层 · 工作路径</span><span class="td">项目的主目录（main folder）和每个 worktree 各一行，写分支名，后面是会话数；能折起来。白板上有框的工作路径默认展开，别的默认收起。</span>
+      <span class="td">第三层 · agent</span><span class="td">claude、codex、pi、omp、kimi 各一组（小标题带个数），组之间按最近活动排，没有会话的不显示；每组先显示 5 条，Show N more 展开。</span>
+      <span class="td">会话</span><span class="td">按最后活动时间倒序。只列主对话：claude 的子 agent 记录（subagents/）、codex 的子任务不算。</span>
+      <span class="td">搜索、筛选</span><span class="td">顶上的搜索框按标题、第一条消息、分支找（搜索时 Other folders 也展开）。没有按 agent 筛选的一栏（2026-10-26 用户去掉了），agent 小标题前一个身份色的小方块、字也用那个颜色来区分。</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · 数据从哪来</span>
+    <div class="tbl" style="grid-template-columns: 140px 520px minmax(0, 1fr)">
+      <span class="th">agent</span><span class="th">会话文件</span><span class="th">目录、标题从哪看</span>
+      <span class="td mono">claude</span><span class="td mono">~/.claude/projects/&lt;目录名&gt;/&lt;id&gt;.jsonl</span><span class="td">每行的 cwd、gitBranch；标题是 summary / 第一条 user 消息</span>
+      <span class="td mono">codex</span><span class="td mono">~/.codex/sessions/年/月/日/rollout-*.jsonl</span><span class="td">session_meta 的 cwd；标题是第一条消息</span>
+      <span class="td mono">pi、omp</span><span class="td mono">~/.pi、~/.omp 的 sessions 目录</span><span class="td">session 行的 cwd</span>
+      <span class="td mono">kimi</span><span class="td mono">~/.kimi-code 的会话目录</span><span class="td">按目录归类；没有 id 的不能接回</span>
+    </div>
+    <p class="cap" style="color: #5F5F5A">和 Usage（PL2）用同一套找文件的代码，只读，不改、不删 agent 的任何文件。第一次打开时扫一遍（只读每个文件的开头和结尾），之后看文件的修改时间增量更新。具体路径和字段实现前逐个 agent 核对（DR-62）。</p>
+  </div>
+
+  <div style="display: flex; gap: 40px; align-items: flex-start">
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 14px">
+      <span class="h2">和右边栏一样的地方</span>
+      <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; line-height: 1.65">
+        <span>圆角白底一栏，小标题全大写（HISTORY），宽度能拖（240–480），收起后顶栏的按钮还在。</span>
+        <span>开关、宽度随白板保存，重启后还在。</span>
+        <span>颜色给状态灯和 agent 的身份色小方块（--agent-*），别处黑白灰。</span>
+      </div>
+    </div>
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 14px">
+      <span class="h2">不做的</span>
+      <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; line-height: 1.65">
+        <span>不在左边栏里看对话内容（要看就 Resume 开终端）。</span>
+        <span>不删、不改名会话文件；不改 agent 的配置。</span>
+        <span>不同步到别的电脑。</span>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":2240}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>源代码管理面板零件</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: {{w}}; height: {{h}}; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden; background: #FFFFFF; border: 1px solid #E3E3E0; border-radius: 8px; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; font-size: 9.5px; color: #1A1A1A">
+  <sc-for list="{{secs}}" as="s" hint-placeholder-count="4">
+    <div style="padding: 6px 9px; border-bottom: {{s.bb}}; height: {{s.h}}; flex: {{s.fl}}; box-sizing: border-box; overflow: hidden">
+      <sc-if value="{{s.isHead}}" hint-placeholder-val="{{ false }}">
+        <span style="font-weight: 600">{{s.a}}</span>
+        <div style="color: #6B6B6B; font-family: 'IBM Plex Mono', monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{s.b}}</div>
+      </sc-if>
+      <sc-if value="{{s.isBranch}}" hint-placeholder-val="{{ false }}">
+        <span style="display: inline-flex; gap: 4px; align-items: center; border: 1px solid {{s.bd}}; border-radius: 4px; padding: 1px 7px; font-family: 'IBM Plex Mono', monospace">⎇ {{s.a}} <span style="color: #6B6B6B">▾</span></span>
+        <div style="color: #6B6B6B">{{s.b}}</div>
+      </sc-if>
+      <sc-if value="{{s.isDD}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; border: 1px solid #E3E3E0; border-radius: 5px; padding: 3px; box-shadow: 0 6px 14px rgba(0,0,0,0.06)">
+          <sc-for list="{{s.rows}}" as="r" hint-placeholder-count="4">
+            <sc-if value="{{r.isSearch}}" hint-placeholder-val="{{ false }}">
+              <span style="display: block; margin: 2px 4px; border: 1px solid #E3E3E0; border-radius: 4px; padding: 1px 6px; color: #A3A39E">{{r.n}}</span>
+            </sc-if>
+            <sc-if value="{{r.isDiv}}" hint-placeholder-val="{{ false }}">
+              <span style="display: block; height: 1px; background: #EEEEEB; margin: 2px"></span>
+            </sc-if>
+            <sc-if value="{{r.isOpt}}" hint-placeholder-val="{{ true }}">
+              <span style="display: flex; gap: 5px; align-items: center; padding: 2px 4px; border-radius: 3px; white-space: nowrap; background: {{r.bg}}; color: {{r.fg}}">
+                <span style="width: 8px">{{r.ck}}</span><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 500">{{r.n}}</span>
+                <span style="margin-left: auto; font-size: 8.5px; color: #6B6B6B">{{r.note}}</span>
+              </span>
+            </sc-if>
+          </sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{s.isCommit}}" hint-placeholder-val="{{ false }}">
+        <div style="height: 24px; box-sizing: border-box; border: 1px solid #E3E3E0; border-radius: 4px; padding: 3px 6px; font-size: 9px; color: {{s.mc}}">{{s.a}}</div>
+        <span style="display: flex; align-items: center; justify-content: center; height: 17px; margin-top: 4px; border-radius: 4px; background: #1A1A1A; color: #FFFFFF; font-size: 9px; opacity: {{s.op}}">{{s.b}}</span>
+      </sc-if>
+      <sc-if value="{{s.isFiles}}" hint-placeholder-val="{{ false }}">
+        <div style="font-weight: 600; font-size: 9px; padding-bottom: 2px">{{s.a}} <span style="color: #6B6B6B; font-weight: 400">{{s.n}}</span></div>
+        <sc-for list="{{s.rows}}" as="r" hint-placeholder-count="3">
+          <div style="display: flex; gap: 6px; align-items: center; height: 15px; margin: 0 -5px; padding: 0 5px; border-radius: 3px; background: {{r.bg}}; font-size: 9px; white-space: nowrap">
+            <span style="font-family: 'IBM Plex Mono', monospace">{{r.n}}</span>
+            <span style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: #6B6B6B">{{r.d}}</span>
+            <span style="font-weight: 700; letter-spacing: 3px">{{r.act}}</span>
+            <span style="width: 9px; text-align: center; font-family: 'IBM Plex Mono', monospace; font-weight: 600; color: {{r.kc}}">{{r.k}}</span>
+          </div>
+        </sc-for>
+      </sc-if>
+      <sc-if value="{{s.isRepo}}" hint-placeholder-val="{{ false }}">
+        <div style="font-weight: 600; font-size: 9px; padding-bottom: 2px">Repository</div>
+        <div style="height: 15px; font-weight: 600; font-size: 9px">api-server</div>
+        <sc-for list="{{s.rows}}" as="r" hint-placeholder-count="3">
+          <div style="display: flex; gap: 6px; align-items: center; height: 15px; padding-left: 10px; font-size: 9px; white-space: nowrap; font-weight: {{r.fw}}; color: {{r.fg}}">
+            <span style="font-family: 'IBM Plex Mono', monospace">⎇ {{r.b}}</span>
+            <span style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: #6B6B6B; font-weight: 400">{{r.p}}</span>
+            <span style="color: #6B6B6B">{{r.a}}</span>
+          </div>
+        </sc-for>
+      </sc-if>
+      <sc-if value="{{s.isLog}}" hint-placeholder-val="{{ false }}">
+        <div style="font-weight: 600; font-size: 9px; padding-bottom: 2px">Commits</div>
+        <sc-for list="{{s.rows}}" as="r" hint-placeholder-count="3">
+          <sc-if value="{{r.sep}}" hint-placeholder-val="{{ false }}">
+            <div style="height: 15px; margin-top: 2px; border-top: 1px dashed #E3E3E0; color: #6B6B6B; font-size: 9px">On main</div>
+          </sc-if>
+          <sc-if value="{{r.row}}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; gap: 6px; align-items: center; height: 15px; margin: 0 -5px; padding: 0 5px; border-radius: 3px; background: {{r.bg}}; font-size: 9px; white-space: nowrap">
+              <span style="font-family: 'IBM Plex Mono', monospace; color: #6B6B6B">{{r.h}}</span>
+              <span style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis">{{r.m}}</span>
+              <span style="color: #6B6B6B">{{r.t}}</span>
+            </div>
+          </sc-if>
+        </sc-for>
+      </sc-if>
+    </div>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":220,"height":300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props;
+    const KC = { M: '#9A6700', A: '#1A7F37', D: '#CF222E' };
+    const F = (k, n, d, hov) => ({ k, n, d, hov });
+    const FILES4 = [F('A', 'oauth.ts', 'src/auth'), F('M', 'index.ts', 'src/routes'), F('M', 'index.ts', 'src/config'), F('A', 'oauth.test.ts', 'test/auth')];
+    const FILES3 = FILES4.slice(1);
+    const OAUTH = F('A', 'oauth.ts', 'src/auth');
+    const head = (a, b) => ({ t: 'head', a, b });
+    const branch = (a, b, hi) => ({ t: 'branch', a, b, hi });
+    const commit = (msg, btn, off) => ({ t: 'commit', a: msg || 'Message', mc: msg ? '#1A1A1A' : '#A3A39E', b: btn, op: off ? '0.35' : '1' });
+    const files = (title, rows) => ({ t: 'files', a: title, rows });
+    const HA = head('api-server', '…/feat-oauth');
+    const BA = branch('feat/oauth', '3 ahead of main');
+    const P = {
+      layout: [HA, BA, commit('', 'Commit all 4 changes'), files('Changes', FILES4)],
+      anatomy: [
+        Object.assign(head('api-server', '~/.agentdeck/worktrees/api-server/feat-oauth'), { h: 40 }),
+        Object.assign(branch('feat/oauth', '3 ahead of main'), { h: 42 }),
+        Object.assign(commit('', 'Commit 1 file'), { h: 62 }),
+        Object.assign(files('Staged Changes', [OAUTH]), { h: 40 }),
+        Object.assign(files('Changes', [F('M', 'index.ts', 'src/routes', true), F('M', 'index.ts', 'src/config'), F('A', 'oauth.test.ts', 'test/auth'), F('M', 'package.json', '')]), { h: 90 }),
+        { t: 'repo', h: 104, rows: [{ b: 'main', p: '/' }, { b: 'feat/oauth', p: '…/feat-oauth', a: '↑3', on: true }, { b: 'fix/rate-limit', p: '…/fix-rate-limit', a: '↑1' }, { b: 'refactor/db-pool', p: 'not on board', off: true }] },
+        { t: 'log', rows: [{ h: '9e1c0ab', m: 'feat(auth): GitHub OAuth callback', t: '4m' }, { h: '2d41f8e', m: 'chore: add oauth config', t: '9m' }, { sep: true }, { h: 'a3f9c21', m: 'refactor: lazy-load db pool', t: '1h' }, { h: '4b2e7f1', m: 'fix: redact login logs', t: 'yesterday' }] }
+      ],
+      followA: [HA, BA, files('Changes', FILES4)],
+      followB: [head('api-server', '…/fix-rate-limit'), branch('fix/rate-limit', '1 ahead of main'), files('Changes', [F('M', 'limiter.ts', 'src/middleware'), F('M', 'index.ts', 'src/config')])],
+      stage1: [commit('', 'Commit all 4 changes'), files('Changes', [F('A', 'oauth.ts', 'src/auth', true)].concat(FILES3))],
+      stage2: [commit('', 'Commit 1 file', true), files('Staged Changes', [OAUTH]), files('Changes', FILES3)],
+      stage3: [commit('feat(auth): add GitHub OAuth', 'Commit 1 file'), files('Staged Changes', [OAUTH]), files('Changes', FILES3)],
+      stage4: [commit('', 'Commit all 3 changes'), files('Changes', FILES3), { t: 'log', rows: [{ h: 'a1b2c3d', m: 'feat(auth): add GitHub OAuth', t: 'now', hi: true }, { h: '9e1c0ab', m: 'feat(auth): OAuth callback', t: '4m' }] }],
+      branch1: [HA, branch('feat/oauth', '3 ahead of main', true), commit('', 'Commit all 4 changes')],
+      multi: [head('shop', '…/feat-checkout · 2 repositories'), commit('', 'Commit 5 changes in 2 repos'),
+        head('web', '⎇ feat/checkout · ↑2'), files('Changes', [F('M', 'Cart.tsx', 'src/cart'), F('A', 'Checkout.tsx', 'src/cart'), F('M', 'api.ts', 'src/lib')]),
+        head('api', '⎇ feat/checkout · ↑1'), files('Changes', [F('A', 'checkout.ts', 'src/routes'), F('M', 'schema.sql', 'db')])],
+      branchDD: [HA, branch('feat/oauth', '3 ahead of main', true), { t: 'dd', rows: [{ search: 'Search branches' }, { ck: '✓', n: 'feat/oauth', on: true }, { n: 'main', note: 'in main folder', off: true }, { n: 'fix/rate-limit', note: 'in fix/rate-limit', off: true }, { n: 'refactor/db-pool' }, '-', { n: 'New branch…' }] }]
+    };
+    const list = P[p.preset] || P.layout;
+    const secs = list.map((s, k) => {
+      const last = k === list.length - 1;
+      const o = {
+        isHead: s.t === 'head', isBranch: s.t === 'branch', isDD: s.t === 'dd', isCommit: s.t === 'commit',
+        isFiles: s.t === 'files', isRepo: s.t === 'repo', isLog: s.t === 'log',
+        a: s.a || '', b: s.b || '', mc: s.mc || '#1A1A1A', op: s.op || '1', bd: s.hi ? '#1A1A1A' : '#E3E3E0',
+        h: s.h ? s.h + 'px' : 'auto', fl: last ? '1' : 'none', bb: last ? '0' : '1px solid #EEEEEB', n: '', rows: []
+      };
+      if (s.t === 'files') {
+        o.n = String(s.rows.length);
+        o.rows = s.rows.map((r) => ({ n: r.n, d: r.d, k: r.k, kc: KC[r.k], act: r.hov ? '+↶' : '', bg: r.hov ? '#F2F2EF' : 'transparent' }));
+      }
+      if (s.t === 'repo') o.rows = s.rows.map((r) => ({ b: r.b, p: r.p, a: r.a || '', fw: r.on ? '600' : '400', fg: r.off ? '#A3A39E' : '#1A1A1A' }));
+      if (s.t === 'log') o.rows = s.rows.map((r) => ({ sep: !!r.sep, row: !r.sep, h: r.h || '', m: r.m || '', t: r.t || '', bg: r.hi ? '#F2F2EF' : 'transparent' }));
+      if (s.t === 'dd') o.rows = s.rows.map((r) => r === '-' ? { isDiv: true, isSearch: false, isOpt: false }
+        : (r.search ? { isSearch: true, isDiv: false, isOpt: false, n: r.search }
+          : { isOpt: true, isDiv: false, isSearch: false, ck: r.ck || '', n: r.n, note: r.note || '', fg: r.off ? '#A3A39E' : '#1A1A1A', bg: r.on ? '#EDEDEA' : 'transparent' }));
+      return o;
+    });
+    return { w: (p.w || 220) + 'px', h: (p.h || 300) + 'px', secs };
+  }
+}
+</script>
+</body>
+</html>

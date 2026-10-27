@@ -1,0 +1,25 @@
+<!-- @dsCard group="Agents" height=330 -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>GroupSidebar — preview</title></head>
+<body style="margin:0">
+<div class="ds-stage">
+<div class="ad-group-sidebar" style="width:200px;height:300px">
+<div class="ad-group-sidebar-head">3 subagents</div>
+<div class="ad-bg-section">TERMINALS</div>
+<ul class="ad-group-sidebar-rows ad-bg-rows" aria-label="Subagents">
+<li><button type="button" class="ad-group-row ad-group-row--selected"><span class="ad-group-lamp ad-group-lamp--running" role="img" aria-label="Running"></span><span class="ad-group-row-name">sub-1 · api</span></button></li>
+<li><button type="button" class="ad-group-row ad-group-row--waiting"><span class="ad-group-lamp ad-group-lamp--waiting" role="img" aria-label="Waiting"></span><span class="ad-group-row-name">sub-2 · ui</span></button></li>
+<li><button type="button" class="ad-group-row"><span class="ad-group-lamp ad-group-lamp--idle" role="img" aria-label="Idle"></span><span class="ad-group-row-name">sub-3 · tests</span></button></li>
+</ul>
+<div class="ad-bg-section">BACKGROUND · READ-ONLY</div>
+<ul class="ad-group-sidebar-rows ad-bg-rows" aria-label="Background agents">
+<li><button type="button" class="ad-group-row ad-bg-row" data-state="running"><span class="ad-bg-lamp ad-bg-lamp--running"></span><span class="ad-group-row-name">Weather today</span><span class="ad-bg-time">12s</span></button></li>
+<li><button type="button" class="ad-group-row ad-bg-row" data-state="failed"><span class="ad-bg-lamp ad-bg-lamp--failed"></span><span class="ad-group-row-name">Weather 1 year ago</span><span class="ad-bg-time">Failed</span></button></li>
+<li><button type="button" class="ad-group-row ad-bg-row" data-state="done"><span class="ad-bg-check">✓</span><span class="ad-group-row-name">Weather 10 years ago</span><span class="ad-bg-time">1m 2s</span></button></li>
+</ul>
+<div class="ad-group-sidebar-actions"><button type="button" class="ad-button ad-button--ghost ad-button--sm">Show all</button><button type="button" class="ad-button ad-button--ghost ad-button--sm">Collapse group</button></div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<!-- @dsCard height=288 -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>AgentDeck — cover</title>
+<style>
+  html, body { margin: 0; background: var(--ground); }
+  .cover { position: relative; width: 960px; height: 288px; overflow: hidden; background: var(--ground); }
+  .cover svg { position: absolute; left: 0; top: 0; }
+  .ink { fill: var(--ink); }
+  .frame { fill: var(--line-strong); }
+  .window { rx: var(--radius-window); ry: var(--radius-window); }
+  .framebox { rx: var(--radius-frame); ry: var(--radius-frame); }
+  .dot { fill: var(--muted); }
+  .run { fill: var(--status-running); }
+  .wait { fill: var(--status-waiting); }
+  .err { fill: var(--status-error); }
+  .title { position: absolute; left: 48px; bottom: 44px; width: 440px; }
+  .name { margin: 0; font-family: var(--font-ui); font-size: 80px; line-height: 0.92; font-weight: 600; letter-spacing: -0.02em; color: var(--ink); }
+  .tag { margin: 16px 0 0; font-family: var(--font-ui); font-size: 13px; line-height: 1.45; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="cover">
+  <!--
+    blocks: ink window slab 220×150 (radius-window) · line-strong frame 196×240 (radius-frame) · three status discs r=6 (status-running, status-waiting, status-error), kept small because they only ever mean a state
+    arrangement: one tall frame slab on the right with a focused window beside it, the way a workspace frame and its terminal sit on the board
+    pattern: precise, technical, mono, 20px grid → the board's own dot grid at space-xl (20px) pitch in muted, 12×4 = 48 dots under the window
+    scales: pitch space-xl 20 · gaps space-xl 20 · radii radius-window 8 and radius-frame 12 · everything right of x = 480
+  -->
+  <svg width="960" height="288" viewBox="0 0 960 288" aria-hidden="true">
+    <rect class="frame framebox" x="740" y="24" width="196" height="240"></rect>
+    <rect class="ink window" x="500" y="24" width="220" height="150"></rect>
+    <circle class="run" cx="766" cy="50" r="6"></circle>
+    <circle class="wait" cx="786" cy="50" r="6"></circle>
+    <circle class="err" cx="806" cy="50" r="6"></circle>
+    <g id="grid"></g>
+  </svg>
+  <div class="title">
+    <h1 class="name">AgentDeck</h1>
+    <p class="tag">Real agent terminals on one whiteboard, one frame per branch.</p>
+  </div>
+</div>
+<script>
+  (function () {
+    var g = document.getElementById('grid');
+    for (var r = 0; r < 4; r++) for (var c = 0; c < 12; c++) {
+      var d = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      d.setAttribute('class', 'dot'); d.setAttribute('cx', 502 + c * 20); d.setAttribute('cy', 198 + r * 20); d.setAttribute('r', 1.5);
+      g.appendChild(d);
+    }
+  })();
+</script>
+</body>
+</html>

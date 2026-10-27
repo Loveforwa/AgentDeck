@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>同仓多 Agent 合并台</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E0F11}
+a{color:#9CC8FF}a:hover{color:#C4DEFF}
+</style>
+</helmet>
+<div style="min-height: 1060px; background: #0E0F11; color: #E6E7EA; font-family: Inter, 'PingFang SC', 'Noto Sans SC', system-ui, sans-serif; display: flex; flex-direction: column">
+
+  <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 12px 20px; border-bottom: 1px solid #262A31; background: #121417">
+    <span style="font-weight: 700; font-size: 16px">AgentDeck</span>
+    <nav aria-label="视图切换" style="display: flex; background: #1C1F24; border: 1px solid #262A31; border-radius: 8px; padding: 3px">
+      <a href="Main.dc.html" style="padding: 6px 12px; border-radius: 6px; color: #9AA0A9; font-size: 13px; text-decoration: none">网格</a>
+      <a href="Focus.dc.html" style="padding: 6px 12px; border-radius: 6px; color: #9AA0A9; font-size: 13px; text-decoration: none">聚焦</a>
+      <a href="Board.dc.html" style="padding: 6px 12px; border-radius: 6px; color: #9AA0A9; font-size: 13px; text-decoration: none">看板</a>
+      <a href="Merge.dc.html" style="padding: 6px 12px; border-radius: 6px; background: #2A2F37; color: #E6E7EA; font-size: 13px; text-decoration: none">合并台</a>
+    </nav>
+    <div style="flex: 1"></div>
+    <button type="button" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #262A31; background: #16181C; color: #E6E7EA; font: inherit; font-size: 12px">项目：api-server ▾</button>
+  </header>
+
+  <div style="padding: 20px; display: flex; flex-direction: column; gap: 16px">
+    <div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px">
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <h1 style="margin: 0; font-size: 22px; font-weight: 700">api-server · 3 个 agent 正在并行</h1>
+        <p style="margin: 0; font-size: 13px; color: #9AA0A9">每个会话都在自己的 git worktree 和分支里改代码，互不覆盖；做完后排队合回 main。</p>
+      </div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap">
+        <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #F2A33A; background: rgba(242,163,58,0.12); border: 1px solid rgba(242,163,58,0.4); padding: 6px 10px; border-radius: 8px">1 处冲突</span>
+        <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #5AA9FF; background: rgba(90,169,255,0.12); border: 1px solid rgba(90,169,255,0.4); padding: 6px 10px; border-radius: 8px">2 处可自动合并的重叠</span>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 16px">
+      <section style="flex: 999 1 640px; min-width: 0; background: #16181C; border: 1px solid #262A31; border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 14px">
+        <div style="display: flex; justify-content: space-between; align-items: center">
+          <h2 style="margin: 0; font-size: 14px; font-weight: 600">分支泳道</h2>
+          <span style="font-size: 11px; color: #9AA0A9">● 检查点　■ commit　◆ 合入 main</span>
+        </div>
+        <sc-for list="{{lanes}}" as="ln" hint-placeholder-count="4">
+          <div style="display: flex; align-items: center; gap: 14px; height: 44px">
+            <div style="width: 220px; flex: none; display: flex; align-items: center; gap: 8px">
+              <span style="width: 22px; height: 22px; border-radius: 5px; background: {{ln.color}}; color: #0B0C0E; font-size: 9px; font-weight: 700; display: grid; place-items: center">{{ln.short}}</span>
+              <div style="display: flex; flex-direction: column; min-width: 0">
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{ln.branch}}</span>
+                <span style="font-size: 11px; color: {{ln.stc}}">{{ln.state}}</span>
+              </div>
+            </div>
+            <div style="flex: 1; position: relative; height: 20px">
+              <div style="position: absolute; top: 9px; left: {{ln.from}}; right: {{ln.toRight}}; height: 2px; background: {{ln.line}}"></div>
+              <sc-for list="{{ln.dots}}" as="d" hint-placeholder-count="4">
+                <span style="position: absolute; top: {{d.top}}; left: {{d.left}}; width: {{d.size}}; height: {{d.size}}; border-radius: {{d.radius}}; background: {{d.color}}; transform: {{d.rot}}"></span>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+        <div style="display: flex; justify-content: space-between; padding-left: 234px; font-size: 11px; color: #9AA0A9; font-family: 'JetBrains Mono', monospace">
+          <span>40 分钟前</span><span>30</span><span>20</span><span>10</span><span>现在</span>
+        </div>
+      </section>
+
+      <section style="flex: 1 1 420px; min-width: 0; background: #16181C; border: 1px solid #262A31; border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; justify-content: space-between; align-items: center">
+          <h2 style="margin: 0; font-size: 14px; font-weight: 600">合并队列</h2>
+          <span style="font-size: 11px; color: #9AA0A9">按顺序 rebase → 测试 → 快进合并</span>
+        </div>
+        <sc-for list="{{queue}}" as="q" hint-placeholder-count="3">
+          <div style="display: flex; gap: 12px; padding: 12px; border-radius: 10px; background: #0E0F11; border: 1px solid {{q.border}}">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #9AA0A9; padding-top: 1px">{{q.n}}</span>
+            <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+              <div style="display: flex; align-items: center; gap: 8px">
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 500">{{q.branch}}</span>
+                <span style="font-size: 11px; color: #9AA0A9">{{q.agent}}</span>
+              </div>
+              <span style="font-size: 12px; color: {{q.stc}}">{{q.state}}</span>
+              <sc-if value="{{q.conflict}}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px">
+                  <button type="button" style="height: 28px; padding: 0 10px; border-radius: 6px; border: 0; background: #F2A33A; color: #0B0C0E; font: inherit; font-size: 12px; font-weight: 600">交给 Claude Code 解决</button>
+                  <button type="button" style="height: 28px; padding: 0 10px; border-radius: 6px; border: 1px solid #343944; background: transparent; color: #E6E7EA; font: inherit; font-size: 12px">三方对比</button>
+                  <button type="button" style="height: 28px; padding: 0 10px; border-radius: 6px; border: 1px solid #343944; background: transparent; color: #E6E7EA; font: inherit; font-size: 12px">我自己改</button>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+        </sc-for>
+        <div style="border: 1px dashed #343944; border-radius: 10px; padding: 12px; text-align: center; font-size: 12px; color: #9AA0A9">把会话卡片拖到这里加入队列</div>
+      </section>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 16px">
+      <section style="flex: 999 1 640px; min-width: 0; background: #16181C; border: 1px solid #262A31; border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px">
+        <div style="display: flex; justify-content: space-between; align-items: center">
+          <h2 style="margin: 0; font-size: 14px; font-weight: 600">文件重叠</h2>
+          <span style="font-size: 11px; color: #9AA0A9">实时：任一 agent 写文件时就重新计算</span>
+        </div>
+        <div style="overflow-x: auto">
+          <div style="min-width: 620px; display: flex; flex-direction: column; font-size: 12px">
+            <div style="display: grid; grid-template-columns: 2fr 48px 48px 48px 3fr; color: #9AA0A9; border-bottom: 1px solid #262A31">
+              <span style="padding: 8px 10px">文件</span><span style="padding: 8px 0; text-align: center">AD</span><span style="padding: 8px 0; text-align: center">CC</span><span style="padding: 8px 0; text-align: center">CX</span><span style="padding: 8px 10px">判断</span>
+            </div>
+            <sc-for list="{{files}}" as="f" hint-placeholder-count="6">
+              <div style="display: grid; grid-template-columns: 2fr 48px 48px 48px 3fr; background: {{f.bg}}; border-bottom: 1px solid #1C1F24">
+                <span style="padding: 9px 10px; font-family: 'JetBrains Mono', monospace">{{f.path}}</span>
+                <span style="padding: 9px 0; text-align: center; color: #56C48B">{{f.ad}}</span>
+                <span style="padding: 9px 0; text-align: center; color: #D97757">{{f.cc}}</span>
+                <span style="padding: 9px 0; text-align: center; color: #8B9CF7">{{f.cx}}</span>
+                <span style="padding: 9px 10px; color: {{f.vc}}">{{f.verdict}}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </section>
+
+      <section style="flex: 1 1 420px; min-width: 0; background: #16181C; border: 1px solid #262A31; border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 14px">
+        <h2 style="margin: 0; font-size: 14px; font-weight: 600">并行策略</h2>
+        <sc-for list="{{policies}}" as="p" hint-placeholder-count="4">
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <span style="font-size: 12px; color: #9AA0A9">{{p.label}}</span>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px">
+              <sc-for list="{{p.opts}}" as="o" hint-placeholder-count="3">
+                <button type="button" style="height: 30px; padding: 0 10px; border-radius: 6px; border: 1px solid {{o.border}}; background: {{o.bg}}; color: {{o.fg}}; font: inherit; font-size: 12px">{{o.t}}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+        <label style="display: flex; gap: 10px; align-items: flex-start; font-size: 12px; padding-top: 4px">
+          <input type="checkbox" checked="{{ true }}" style="margin-top: 2px; accent-color: #5AA9FF">
+          <span>同文件软锁：一个 agent 正在写某文件时，在另一个 agent 的终端里注入提醒，让它先改别处</span>
+        </label>
+      </section>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1060}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const dot = (left, kind, color) => {
+      const k = {
+        ck: { size: '10px', radius: '50%', top: '5px', rot: 'none' },
+        cm: { size: '12px', radius: '2px', top: '4px', rot: 'none' },
+        mg: { size: '12px', radius: '2px', top: '4px', rot: 'rotate(45deg)' },
+        root: { size: '8px', radius: '50%', top: '6px', rot: 'none' }
+      }[kind];
+      return Object.assign({ left: 'calc(' + left + ' - 5px)', color }, k);
+    };
+    const lanes = [
+      { short: 'main', color: '#C5C9D0', branch: 'main', state: '受保护 · 只接受队列合并', stc: '#9AA0A9', from: '0%', toRight: '0%', line: '#4A505B',
+        dots: [dot('4%', 'cm', '#C5C9D0'), dot('20%', 'cm', '#C5C9D0'), dot('74%', 'mg', '#56C48B')] },
+      { short: 'AD', color: '#56C48B', branch: 'refactor/db-pool', state: '已合入 main', stc: '#56C48B', from: '8%', toRight: '26%', line: '#56C48B',
+        dots: [dot('8%', 'root', '#9AA0A9'), dot('30%', 'ck', '#56C48B'), dot('46%', 'ck', '#56C48B'), dot('60%', 'cm', '#56C48B'), dot('74%', 'mg', '#56C48B')] },
+      { short: 'CC', color: '#D97757', branch: 'feat/oauth-login', state: '运行中 · rebase 有冲突', stc: '#F2A33A', from: '70%', toRight: '0%', line: '#D97757',
+        dots: [dot('70%', 'root', '#9AA0A9'), dot('78%', 'ck', '#D97757'), dot('84%', 'ck', '#D97757'), dot('90%', 'cm', '#D97757'), dot('99%', 'ck', '#D97757')] },
+      { short: 'CX', color: '#8B9CF7', branch: 'fix/rate-limit', state: '等待你批准命令', stc: '#F2A33A', from: '82%', toRight: '0%', line: '#8B9CF7',
+        dots: [dot('82%', 'root', '#9AA0A9'), dot('88%', 'ck', '#8B9CF7'), dot('95%', 'ck', '#8B9CF7')] }
+    ];
+    const queue = [
+      { n: '1', branch: 'refactor/db-pool', agent: 'Aider', state: '✓ 已快进合并到 main（a3f9c21）· 10 分钟前', stc: '#56C48B', border: '#262A31', conflict: false },
+      { n: '2', branch: 'feat/oauth-login', agent: 'Claude Code', state: '⚠ rebase 到最新 main 时 src/auth/session.ts 第 30–48 行冲突', stc: '#F2A33A', border: 'rgba(242,163,58,0.55)', conflict: true },
+      { n: '3', branch: 'fix/rate-limit', agent: 'Codex CLI', state: '等会话完成 · 预检：与 #2 在 config/index.ts 有重叠，但可自动合并', stc: '#9AA0A9', border: '#262A31', conflict: false }
+    ];
+    const V = { c: '#F2A33A', a: '#5AA9FF', n: '#9AA0A9', m: '#56C48B' };
+    const files = [
+      ['src/auth/session.ts', '●', '●', '', 'c', '冲突：两边都改了第 30–48 行'],
+      ['src/config/index.ts', '', '●', '●', 'a', '同文件不同区块，可自动合并'],
+      ['package.json', '', '●', '●', 'a', '都新增了依赖，自动合并并重建 lockfile'],
+      ['db/pool.ts', '●', '', '', 'm', '已合入 main'],
+      ['src/auth/oauth.ts', '', '●', '', 'n', '无重叠'],
+      ['src/middleware/limiter.ts', '', '', '●', 'n', '无重叠']
+    ].map((f) => ({ path: f[0], ad: f[1], cc: f[2], cx: f[3], vc: V[f[4]], verdict: f[5], bg: f[4] === 'c' ? 'rgba(242,163,58,0.08)' : 'transparent' }));
+    const opt = (t, on) => ({ t, bg: on ? 'rgba(90,169,255,0.16)' : 'transparent', border: on ? '#5AA9FF' : '#343944', fg: on ? '#C4DEFF' : '#C5C9D0' });
+    const policies = [
+      { label: '隔离方式', opts: [opt('每会话独立 worktree', true), opt('共享目录 + 文件软锁', false), opt('共享目录', false)] },
+      { label: '合并方式', opts: [opt('rebase + 快进', true), opt('squash', false), opt('merge commit', false)] },
+      { label: '合并前必须', opts: [opt('测试通过', true), opt('无冲突', true), opt('人工审查', false)] },
+      { label: '遇到冲突', opts: [opt('交给改动方 agent 解决', true), opt('暂停并通知我', false)] }
+    ];
+    return { lanes, queue, files, policies };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>需求：终端窗口</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:8px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.at{position:absolute}
+.step{display:flex;flex-direction:column;gap:8px;flex:none}
+.cap{margin:0;font-size:13px;line-height:1.55}
+</style>
+</helmet>
+<div style="width: 1760px; height: 3000px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 44px">
+  <div style="display: flex; flex-direction: column; gap: 8px; max-width: 960px">
+    <h1 style="margin: 0; font-size: 28px; font-weight: 600">5 · 终端窗口</h1>
+    <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #5F5F5A">运行一个命令的终端，例如 claude、codex 或你的 shell。终端本身是标准终端，不加额外的输入框或按钮；它的用处来自和外部的连接：所在的工作区决定目录和右侧面板，输出里的链接和文件路径可以点，它的状态会变成提醒。</p>
+    <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #5F5F5A">进程由 tmux 托管，不归 AgentDeck 管：关掉 AgentDeck，agent 照样在后台运行，重新打开就接上；你也可以在自己的 iTerm 或系统终端里接上同一个会话。白板上只为看得见的终端打开显示。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px">
+    <span style="font-size: 15px; font-weight: 600">结构图</span>
+    <div style="display: flex; gap: 48px; align-items: flex-start">
+      <div class="fig" style="width: 560px; height: 270px">
+        <div class="at" style="left: 20px; top: 30px"><dc-import name="Term" w="300" h="218" f="1" lbl="lead" s="Running · 4m" hov="⤢ ×" lines="› Add GitHub OAuth to the login API|~  Read  src/auth/session.ts|~  Write src/auth/oauth.ts  +86|~  Bash  pnpm test auth|~        18 passed||Callback is wired up. Add state validation too?|>> Yes, and add tests▍" hint-size="300px,218px"></dc-import></div>
+        <svg class="at" style="left: 306px; top: 234px" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M10 4L4 10M10 8L8 10" stroke="#8A8A85" stroke-width="1.2" stroke-linecap="round"></path></svg>
+        <div class="at" style="left: 340px; top: 30px"><dc-import name="Term" w="200" h="122" cmd="codex" st="err" s="Error · exit 1" lines="$ codex|~Error: not logged in" exit="Process exited (code 1)" exit-btns="Restart|Close" hint-size="200px,122px"></dc-import></div>
+        <div class="at" style="left: 18px; top: 11px; z-index: 40"><dc-import name="Callout" n="1" hint-size="17px,17px"></dc-import></div>
+        <div class="at" style="left: 40px; top: 11px; z-index: 40"><dc-import name="Callout" n="2" hint-size="17px,17px"></dc-import></div>
+        <div class="at" style="left: 82px; top: 11px; z-index: 40"><dc-import name="Callout" n="3" hint-size="17px,17px"></dc-import></div>
+        <div class="at" style="left: 244px; top: 11px; z-index: 40"><dc-import name="Callout" n="4" hint-size="17px,17px"></dc-import></div>
+        <div class="at" style="left: 296px; top: 11px; z-index: 40"><dc-import name="Callout" n="5" hint-size="17px,17px"></dc-import></div>
+        <div class="at" style="left: 1px; top: 166px; z-index: 40"><dc-import name="Callout" n="6" hint-size="17px,17px"></dc-import></div>
+        <div class="at" style="left: 324px; top: 236px; z-index: 40"><dc-import name="Callout" n="7" hint-size="17px,17px"></dc-import></div>
+        <div class="at" style="left: 541px; top: 132px; z-index: 40"><dc-import name="Callout" n="8" hint-size="17px,17px"></dc-import></div>
+      </div>
+      <div style="flex: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 32px; font-size: 14px; line-height: 1.65">
+        <div style="display: flex; gap: 10px"><span style="flex: none; width: 20px; height: 20px; border-radius: 50%; background: #1A1A1A; color: #FFFFFF; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center">1</span><span>状态点（见 6 · 状态与提醒）</span></div>
+        <div style="display: flex; gap: 10px"><span style="flex: none; width: 20px; height: 20px; border-radius: 50%; background: #1A1A1A; color: #FFFFFF; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center">2</span><span>命令名，等宽字体</span></div>
+        <div style="display: flex; gap: 10px"><span style="flex: none; width: 20px; height: 20px; border-radius: 50%; background: #1A1A1A; color: #FFFFFF; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center">3</span><span>标签，默认为空，右键标题栏可以重命名</span></div>
+        <div style="display: flex; gap: 10px"><span style="flex: none; width: 20px; height: 20px; border-radius: 50%; background: #1A1A1A; color: #FFFFFF; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center">4</span><span>状态和时间</span></div>
+        <div style="display: flex; gap: 10px"><span style="flex: none; width: 20px; height: 20px; border-radius: 50%; background: #1A1A1A; color: #FFFFFF; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center">5</span><span>鼠标悬停时出现：放大、关闭</span></div>
+        <div style="display: flex; gap: 10px"><span style="flex: none; width: 20px; height: 20px; border-radius: 50%; background: #1A1A1A; color: #FFFFFF; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center">6</span><span>程序自己画的输入框，不是我们加的</span></div>
+        <div style="display: flex; gap: 10px"><span style="flex: none; width: 20px; height: 20px; border-radius: 50%; background: #1A1A1A; color: #FFFFFF; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center">7</span><span>拖边或右下角改大小；拉到小于 320×200 时变成摘要卡（见 3 · 白板）</span></div>
+        <div style="display: flex; gap: 10px"><span style="flex: none; width: 20px; height: 20px; border-radius: 50%; background: #1A1A1A; color: #FFFFFF; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center">8</span><span>程序退出后出现：“Restart”“Close”</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <span style="font-size: 15px; font-weight: 600">聚焦</span>
+    <div style="display: flex; align-items: flex-start">
+      <div class="step" style="width: 300px">
+        <div class="fig" style="width: 300px; height: 180px">
+          <div class="at" style="left: 18px; top: 30px"><dc-import name="Term" w="126" h="118" st="idle" s="Idle" lines="› Explain this regex|~It matches…" hint-size="126px,118px"></dc-import></div>
+          <div class="at" style="left: 156px; top: 30px"><dc-import name="Term" w="126" h="118" cmd="codex" s="Running" lines="› Fix rate limiting|~Edit limiter.ts" hint-size="126px,118px"></dc-import></div>
+          <div class="at" style="left: 206px; top: 90px; z-index: 45"><dc-import name="Cursor" ring="1" hint-size="24px,24px"></dc-import></div>
+        </div>
+        <p class="cap">两个终端都没有聚焦</p>
+      </div>
+      <dc-import name="Arrow" label="单击窗口任意位置" pad="66" hint-size="104px,110px"></dc-import>
+      <div class="step" style="width: 300px">
+        <div class="fig" style="width: 300px; height: 180px">
+          <div class="at" style="left: 18px; top: 30px"><dc-import name="Term" w="126" h="118" st="idle" s="Idle" lines="› Explain this regex|~It matches…" hint-size="126px,118px"></dc-import></div>
+          <div class="at" style="left: 156px; top: 30px"><dc-import name="Term" w="126" h="118" cmd="codex" f="1" s="Running" lines="› Fix rate limiting|~Edit limiter.ts" hint-size="126px,118px"></dc-import></div>
+        </div>
+        <p class="cap">边框变深、带阴影，键盘输入进入它；点击也会传给支持鼠标的程序</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <span style="font-size: 15px; font-weight: 600">把散放的终端拖进框</span>
+    <div style="display: flex; align-items: flex-start">
+      <div class="step" style="width: 300px">
+        <div class="fig" style="width: 300px; height: 200px">
+          <div class="at" style="left: 14px; top: 72px; width: 120px; height: 84px; box-sizing: border-box; border: 1px dashed #A3A39E; border-radius: 5px"></div>
+          <div class="at" style="left: 140px; top: 18px"><dc-import name="Frame" w="150" h="166" branch="feat/oauth" hint-size="150px,166px"></dc-import></div>
+          <div class="at" style="left: 104px; top: 66px"><dc-import name="Term" w="120" h="84" st="idle" lbl="~" s="Idle" drag="1" lines="› Plugin system design?|~1. Folder convention" hint-size="120px,84px"></dc-import></div>
+          <div class="at" style="left: 144px; top: 66px; z-index: 45"><dc-import name="Cursor" hint-size="24px,24px"></dc-import></div>
+        </div>
+        <p class="cap">拖着散放的 claude 进入框</p>
+      </div>
+      <dc-import name="Arrow" label="松手" pad="76" hint-size="104px,110px"></dc-import>
+      <div class="step" style="width: 300px">
+        <div class="fig" style="width: 300px; height: 200px">
+          <div class="at" style="left: 140px; top: 18px"><dc-import name="Frame" w="150" h="166" branch="feat/oauth" hint-size="150px,166px"></dc-import></div>
+          <div class="at" style="left: 14px; top: 72px"><dc-import name="Term" w="120" h="84" st="idle" lbl="~" s="Idle" lines="› Plugin system design?|~1. Folder convention" hint-size="120px,84px"></dc-import></div>
+          <div class="at" style="left: 86px; top: 70px"><dc-import name="Note" v="pop" w="208" text="This claude runs in ~ and can’t change folders. Open it in api-server · feat/oauth?" btns="Cancel|New conversation|*Fork conversation" hint-size="208px,100px"></dc-import></div>
+        </div>
+        <p class="cap">终端弹回原处，询问怎么新开：空白的新对话，或 fork 当前对话带过去</p>
+      </div>
+      <dc-import name="Arrow" label="Fork conversation" pad="76" hint-size="104px,110px"></dc-import>
+      <div class="step" style="width: 300px">
+        <div class="fig" style="width: 300px; height: 200px">
+          <div class="at" style="left: 140px; top: 18px"><dc-import name="Frame" w="150" h="166" branch="feat/oauth" hint-size="150px,166px"></dc-import></div>
+          <div class="at" style="left: 14px; top: 72px"><dc-import name="Term" w="120" h="84" st="idle" lbl="~" s="Idle" lines="› Plugin system design?|~1. Folder convention" hint-size="120px,84px"></dc-import></div>
+          <div class="at" style="left: 148px; top: 46px"><dc-import name="Term" w="134" h="126" f="1" st="idle" s="Idle" lines="~Forked from claude in ~|› Plugin system design?|~1. Folder convention|~2. Loader" hint-size="134px,126px"></dc-import></div>
+        </div>
+        <p class="cap">框里新开一个 claude，带着同样的对话在新目录继续；原来的保持不动，两边以后各聊各的。选“New conversation”则是空白开始</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <span style="font-size: 15px; font-weight: 600">单击输出里的本地链接</span>
+    <div style="display: flex; align-items: flex-start">
+      <div class="step" style="width: 330px">
+        <div class="fig" style="width: 330px; height: 200px">
+          <div class="at" style="left: 14px; top: 20px"><dc-import name="Frame" w="200" h="162" branch="feat/oauth" hint-size="200px,162px"></dc-import></div>
+          <div class="at" style="left: 24px; top: 48px"><dc-import name="Term" w="180" h="124" cmd="zsh" lbl="pnpm dev" s="Running" lines="$ pnpm dev|~ready on [[localhost:3000]]|~GET / 200" hint-size="180px,124px"></dc-import></div>
+          <div class="at" style="left: 102px; top: 80px; z-index: 45"><dc-import name="Cursor" hint-size="24px,24px"></dc-import></div>
+        </div>
+        <p class="cap">单击输出里的 localhost:3000</p>
+      </div>
+      <dc-import name="Arrow" label="单击链接" pad="76" hint-size="104px,110px"></dc-import>
+      <div class="step" style="width: 330px">
+        <div class="fig" style="width: 330px; height: 200px">
+          <div class="at" style="left: 14px; top: 20px"><dc-import name="Frame" w="306" h="162" branch="feat/oauth" hint-size="306px,162px"></dc-import></div>
+          <div class="at" style="left: 24px; top: 48px"><dc-import name="Term" w="136" h="124" cmd="zsh" lbl="pnpm dev" s="Running" lines="$ pnpm dev|~ready on [[localhost:3000]]|~GET / 200" hint-size="136px,124px"></dc-import></div>
+          <div class="at" style="left: 168px; top: 48px"><dc-import name="Web" w="144" h="124" f="1" u="localhost:3000" from="from zsh" hint-size="144px,124px"></dc-import></div>
+        </div>
+        <p class="cap">网页窗口开在它右边、同一个框里，框变大</p>
+      </div>
+      <dc-import name="Arrow" label="再单击一次同一个端口的链接" pad="76" hint-size="104px,110px"></dc-import>
+      <div class="step" style="width: 330px">
+        <div class="fig" style="width: 330px; height: 200px">
+          <div class="at" style="left: 14px; top: 20px"><dc-import name="Frame" w="306" h="162" branch="feat/oauth" hint-size="306px,162px"></dc-import></div>
+          <div class="at" style="left: 24px; top: 48px"><dc-import name="Term" w="136" h="124" cmd="zsh" lbl="pnpm dev" s="Running" lines="$ pnpm dev|~ready on [[localhost:3000]]|~GET / 200" hint-size="136px,124px"></dc-import></div>
+          <div class="at" style="left: 168px; top: 48px"><dc-import name="Web" w="144" h="124" flash="1" u="localhost:3000" from="from zsh" hint-size="144px,124px"></dc-import></div>
+          <div class="at" style="left: 72px; top: 80px; z-index: 45"><dc-import name="Cursor" hint-size="24px,24px"></dc-import></div>
+        </div>
+        <p class="cap">不再新开：在已有的窗口里打开，边框闪一下</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <span style="font-size: 15px; font-weight: 600">关闭运行中的终端</span>
+    <div style="display: flex; align-items: flex-start">
+      <div class="step" style="width: 280px">
+        <div class="fig" style="width: 280px; height: 190px">
+          <div class="at" style="left: 20px; top: 24px"><dc-import name="Frame" w="240" h="146" branch="feat/oauth" hint-size="240px,146px"></dc-import></div>
+          <div class="at" style="left: 30px; top: 52px"><dc-import name="Term" w="220" h="108" s="Running · 4m" hov="⤢" hov-bold="×" lines="› Add OAuth|~Write oauth.ts" hint-size="220px,108px"></dc-import></div>
+          <div class="at" style="left: 232px; top: 50px; z-index: 45"><dc-import name="Cursor" ring="1" hint-size="24px,24px"></dc-import></div>
+        </div>
+        <p class="cap">悬停出现 ×，单击它</p>
+      </div>
+      <dc-import name="Arrow" label="单击 ×" pad="71" hint-size="104px,110px"></dc-import>
+      <div class="step" style="width: 280px">
+        <div class="fig" style="width: 280px; height: 190px">
+          <div class="at" style="left: 20px; top: 24px; opacity: 0.4"><dc-import name="Frame" w="240" h="146" branch="feat/oauth" hint-size="240px,146px"></dc-import></div>
+          <div class="at" style="left: 30px; top: 52px; opacity: 0.4"><dc-import name="Term" w="220" h="108" s="Running · 4m" lines="› Add OAuth|~Write oauth.ts" hint-size="220px,108px"></dc-import></div>
+          <div class="at" style="left: 30px; top: 56px"><dc-import name="Dialog" w="220" t="Stop claude?" body="~The current task will be interrupted." btns="Cancel|*Stop and close" hint-size="220px,80px"></dc-import></div>
+        </div>
+        <p class="cap">程序还在运行，需要确认</p>
+      </div>
+      <dc-import name="Arrow" label="Stop and close" pad="71" hint-size="104px,110px"></dc-import>
+      <div class="step" style="width: 280px">
+        <div class="fig" style="width: 280px; height: 190px">
+          <div class="at" style="left: 20px; top: 24px"><dc-import name="Frame" w="240" h="146" branch="feat/oauth" empty="Right-click to add a terminal" hint-size="240px,146px"></dc-import></div>
+        </div>
+        <p class="cap">进程结束，窗口关闭；不能撤销</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <span style="font-size: 15px; font-weight: 600">程序退出与重新启动</span>
+    <div style="display: flex; align-items: flex-start">
+      <div class="step" style="width: 260px">
+        <div class="fig" style="width: 260px; height: 170px">
+          <div class="at" style="left: 20px; top: 22px"><dc-import name="Term" w="220" h="124" cmd="codex" s="Running · 1m" lines="$ codex|~Loading…" hint-size="220px,124px"></dc-import></div>
+        </div>
+        <p class="cap">运行中</p>
+      </div>
+      <dc-import name="Arrow" label="程序退出" pad="61" hint-size="104px,110px"></dc-import>
+      <div class="step" style="width: 260px">
+        <div class="fig" style="width: 260px; height: 170px">
+          <div class="at" style="left: 20px; top: 22px"><dc-import name="Term" w="220" h="124" cmd="codex" st="err" s="Error · exit 1" lines="$ codex|~Error: not logged in" exit="Process exited (code 1)" exit-btns="Restart|Close" hint-size="220px,124px"></dc-import></div>
+        </div>
+        <p class="cap">内容保留，底部出现退出提示</p>
+      </div>
+      <dc-import name="Arrow" label="Restart" pad="61" hint-size="104px,110px"></dc-import>
+      <div class="step" style="width: 260px">
+        <div class="fig" style="width: 260px; height: 170px">
+          <div class="at" style="left: 20px; top: 22px"><dc-import name="Term" w="220" h="124" cmd="codex" f="1" st="start" s="Starting" lines="" hint-size="220px,124px"></dc-import></div>
+        </div>
+        <p class="cap">同一个命令、同一个目录重新运行</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 48px; font-size: 14px; line-height: 1.65">
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 10px">
+      <span style="font-size: 15px; font-weight: 600">新建与输入</span>
+      <ul style="margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px">
+        <li>右键白板或框 › “New terminal ▸” 选 agent 或“Shell”。在框里新建时目录是工作区目录；散放时是 ~。</li>
+        <li>⌘N 用默认 agent 新建：放在聚焦窗口所在的工作区、它的右边；没有聚焦时散放在视口中心。默认 560×360。</li>
+        <li>聚焦时，除了带 ⌘ 的组合，所有按键都交给终端，包括 Esc、⌃C、Tab、方向键和空格。</li>
+        <li>⌘V 粘贴，多行作为一次粘贴发送。从访达拖入文件：输入带引号的路径。</li>
+        <li>在内容区拖选文字，⌘C 复制；所以移动窗口只能拖标题栏。</li>
+      </ul>
+    </div>
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 10px">
+      <span style="font-size: 15px; font-weight: 600">窗口操作</span>
+      <ul style="margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px">
+        <li>改大小时，松手后才把新的行列数告诉程序，避免拖动中反复重绘。变成摘要卡时不改程序的行列数，恢复时它的画面不会乱。</li>
+        <li>双击标题栏、放大按钮或 ⌘⇧↩：占满视口（不盖住右侧面板和顶栏）；再做一次还原。</li>
+        <li>滚动：已聚焦且光标在窗口上时滚动终端历史；否则平移白板。</li>
+        <li>其他网址用系统浏览器打开。文件路径（如 src/auth/oauth.ts:44）在设置里选的编辑器中打开到那一行。</li>
+        <li>右键标题栏：“Rename”“Copy folder path”“Clear”“Restart”“Open in another workspace ▸”“Open in system terminal”“Close”。</li>
+        <li>“Open in system terminal”：打开你设置的终端 App 并接上同一个 tmux 会话，两边的输入和输出同步。</li>
+      </ul>
+    </div>
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 10px">
+      <span style="font-size: 15px; font-weight: 600">为什么终端不能换框</span>
+      <p style="margin: 0">程序启动后，它的工作目录就固定了，外部改不了。如果允许把运行中的终端拖进别的框，界面上它属于新框，实际上还在旧目录里改文件，右侧面板显示的 git 状态就对不上。所以终端在哪个框里创建，就一直属于那个框。</p>
+      <span style="font-size: 15px; font-weight: 600; margin-top: 8px">带着对话换框（Fork conversation）</span>
+      <ul style="margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px">
+        <li>拖进别的框，或右键标题栏 › “Open in another workspace ▸”，都给两个选项：“New conversation”空白开始；“Fork conversation”把当前对话复制成一个新会话，在新框的目录里接着聊。原终端不受影响。</li>
+        <li>靠 agent 自己的命令实现：claude 用 claude --resume &lt;id&gt; --fork-session，codex 用 codex fork &lt;id&gt;。不支持的 agent 和 Shell 不显示这个按钮，弹窗里写“gemini can’t fork a conversation”。</li>
+        <li>会话 id：AgentDeck 启动 claude 时自己传 --session-id，所以一直知道；codex 从它的 notify 事件里读。拿不到 id 时同样不显示 Fork。</li>
+        <li>带过去的只是对话，不是文件。原目录里没提交的改动不会跟过去，弹窗里多一行“3 uncommitted changes stay in feat/rate-limit”。新会话第一次输入前，在输入框上方提示一次“Now in api-server · feat/oauth”。</li>
+        <li>待验证：claude 的会话记录按目录存放，fork 到另一个目录时可能需要先把记录复制到新目录对应的位置。M1 先用真实的 claude 和 codex 各试一次再定做法。</li>
+      </ul>
+      <span style="font-size: 15px; font-weight: 600; margin-top: 8px">边界情况</span>
+      <ul style="margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px">
+        <li>命令找不到：内容区显示“Command not found: claude”，按钮“Open Settings”“Use Shell instead”。</li>
+        <li>没有找到 tmux：第一次新建终端时提示，并改用随应用打包的 tmux。</li>
+        <li>tmux 服务意外退出：所有终端显示“Session ended”，顶栏出现“Restart all”。</li>
+        <li>AgentDeck 自己用一个单独的 tmux 实例和配置，关掉 tmux 的快捷键前缀，不会和 agent 的按键冲突，也不影响你自己的 tmux。</li>
+        <li>重新启动时，支持续聊的 agent 多一项“Resume conversation”：用记下的会话 id 接回原来那个对话（claude --resume &lt;id&gt;、codex resume &lt;id&gt;），见 9 · 保存与重启。</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":3000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

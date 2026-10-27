@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>工作区框零件</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="position: relative; width: {{w}}; height: {{h}}; box-sizing: border-box; border: {{border}}; outline: {{outline}}; outline-offset: 2px; border-radius: 8px; background: {{bg}}; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; color: #1A1A1A">
+  <div style="display: flex; align-items: baseline; gap: 6px; padding: 6px 9px; font-size: 10px; white-space: nowrap">
+    <span style="font-weight: 600">{{project}}</span>
+    <span style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: #6B6B6B">{{branch}}</span>
+    <span style="flex: 1"></span>
+    <span style="color: #C2410C; font-size: 9px">{{wait}}</span>
+    <span style="color: #6B6B6B; font-size: 9px">{{note}}</span>
+  </div>
+  <sc-if value="{{hasEmpty}}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; left: 0; right: 0; top: 26px; bottom: 0; display: flex; align-items: center; justify-content: center; color: #6B6B6B; font-size: 9.5px">{{empty}}</div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":300,"height":200}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props;
+    const v = p.v || '';
+    return {
+      w: (p.w || 300) + 'px', h: (p.h || 200) + 'px',
+      border: v === 'drop' ? '1.5px dashed #1A1A1A' : (v === 'hl' ? '1px solid #8A8A85' : '1px solid #DCDCD8'),
+      outline: v === 'sel' ? '1.5px solid #1A1A1A' : '0 solid transparent',
+      bg: v === 'drop' ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.55)',
+      project: p.project || 'api-server', branch: p.branch === undefined ? 'feat/oauth' : p.branch,
+      wait: p.wait || '', note: p.note || '',
+      hasEmpty: !!p.empty, empty: p.empty || ''
+    };
+  }
+}
+</script>
+</body>
+</html>

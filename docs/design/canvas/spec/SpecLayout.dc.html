@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>需求：整体布局</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:8px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.at{position:absolute}
+.zoom{position:absolute;left:8px;bottom:6px;font-size:9px;color:#6B6B6B}
+</style>
+</helmet>
+<div style="width: 1760px; height: 760px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 32px">
+  <div style="display: flex; flex-direction: column; gap: 8px; max-width: 900px">
+    <h1 style="margin: 0; font-size: 28px; font-weight: 600">1 · 整体布局</h1>
+    <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #5F5F5A">顶栏、白板、右侧面板三块。白板上没有工具栏，新建东西都靠右键菜单和快捷键。</p>
+  </div>
+
+  <div style="display: flex; gap: 48px; align-items: flex-start">
+    <div class="fig" style="width: 640px; height: 320px">
+      <div class="at" style="left: 0px; top: 0px; z-index: 5"><dc-import name="Top" w="640" sum="2 workspaces · 4 terminals" r="[Projects ▾]|3 running|!1 waiting|Settings" hint-size="640px,20px"></dc-import></div>
+      <div class="at" style="left: 14px; top: 34px"><dc-import name="Frame" w="300" h="200" branch="feat/oauth" wait="1 waiting" hint-size="300px,200px"></dc-import></div>
+      <div class="at" style="left: 24px; top: 62px"><dc-import name="Term" w="170" h="162" st="wait" lbl="lead" s="Needs approval" lines="› Add GitHub OAuth to login|~  Write src/auth/oauth.ts|~  Bash  pnpm test||!Allow running pnpm test?|!(y/n)" hint-size="170px,162px"></dc-import></div>
+      <div class="at" style="left: 204px; top: 62px"><dc-import name="Term" w="100" h="74" cmd="zsh" lbl="pnpm dev" s="" lines="$ pnpm dev|~ready on :3000" hint-size="100px,74px"></dc-import></div>
+      <div class="at" style="left: 204px; top: 144px"><dc-import name="Web" w="100" h="80" mini="1" u="localhost:3000" hint-size="100px,80px"></dc-import></div>
+      <div class="at" style="left: 324px; top: 34px"><dc-import name="Frame" w="144" h="132" branch="fix/rate-limit" hint-size="144px,132px"></dc-import></div>
+      <div class="at" style="left: 332px; top: 62px"><dc-import name="Term" w="128" h="94" cmd="codex" s="Running · 6m" lines="› Fix rate limiting on /search|~Edit limiter.ts" hint-size="128px,94px"></dc-import></div>
+      <div class="at" style="left: 324px; top: 182px"><dc-import name="Term" w="144" h="96" cmd="opencode" st="idle" lbl="~" s="Idle" lines="› How should plugins work?|~1. Folder convention + import" hint-size="144px,96px"></dc-import></div>
+      <div class="at" style="left: 478px; top: 28px"><dc-import name="Panel" preset="layout" w="154" h="286" hint-size="154px,286px"></dc-import></div>
+      <span class="zoom">100%</span>
+      <div class="at" style="left: 168px; top: 2px; z-index: 40"><dc-import name="Callout" n="1" hint-size="17px,17px"></dc-import></div>
+      <div class="at" style="left: 400px; top: 290px; z-index: 40"><dc-import name="Callout" n="2" hint-size="17px,17px"></dc-import></div>
+      <div class="at" style="left: 296px; top: 25px; z-index: 40"><dc-import name="Callout" n="3" hint-size="17px,17px"></dc-import></div>
+      <div class="at" style="left: 452px; top: 174px; z-index: 40"><dc-import name="Callout" n="4" hint-size="17px,17px"></dc-import></div>
+      <div class="at" style="left: 470px; top: 21px; z-index: 40"><dc-import name="Callout" n="5" hint-size="17px,17px"></dc-import></div>
+      <div class="at" style="left: 46px; top: 300px; z-index: 40"><dc-import name="Callout" n="6" hint-size="17px,17px"></dc-import></div>
+    </div>
+
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 12px; font-size: 14px; line-height: 1.65">
+      <div style="display: flex; gap: 10px"><span style="flex: none; width: 20px; height: 20px; border-radius: 50%; background: #1A1A1A; color: #FFFFFF; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center">1</span><span><b>顶栏</b>：左侧是白板名“My Board”和数量“2 workspaces · 4 terminals”；右侧是“Projects ▾”菜单（添加项目、按项目新建工作区，见 2 · 项目）、“3 running”、“1 waiting”（可以点击，见 6 · 提醒）和“Settings”。MVP 没有搜索。</span></div>
+      <div style="display: flex; gap: 10px"><span style="flex: none; width: 20px; height: 20px; border-radius: 50%; background: #1A1A1A; color: #FFFFFF; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center">2</span><span><b>白板</b>：顶栏下方、右侧面板左边的全部区域，可以平移和缩放（见 3 · 白板）。</span></div>
+      <div style="display: flex; gap: 10px"><span style="flex: none; width: 20px; height: 20px; border-radius: 50%; background: #1A1A1A; color: #FFFFFF; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center">3</span><span><b>工作区框</b>：一个仓库的一个分支（见 4 · 工作区框）。</span></div>
+      <div style="display: flex; gap: 10px"><span style="flex: none; width: 20px; height: 20px; border-radius: 50%; background: #1A1A1A; color: #FFFFFF; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center">4</span><span><b>散放的终端</b>：不属于任何工作区，工作目录是 ~。</span></div>
+      <div style="display: flex; gap: 10px"><span style="flex: none; width: 20px; height: 20px; border-radius: 50%; background: #1A1A1A; color: #FFFFFF; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center">5</span><span><b>右侧面板</b>：默认宽 320px，拖左边缘可以调到 280–480px，<span style="font-family: 'IBM Plex Mono', monospace">⌘B</span> 显示或隐藏。显示聚焦窗口所在工作区的 git 状态（见 8 · 源代码管理面板）。</span></div>
+      <div style="display: flex; gap: 10px"><span style="flex: none; width: 20px; height: 20px; border-radius: 50%; background: #1A1A1A; color: #FFFFFF; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center">6</span><span><b>缩放比例</b>：单击弹出 25%、50%、100%、200%、“Show all”。</span></div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":760}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

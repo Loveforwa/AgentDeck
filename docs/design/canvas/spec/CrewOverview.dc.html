@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Agent 集群 · 总览</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.at{position:absolute}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1240px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.tag{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;background:#F2F2EF;color:#5F5F5A}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#8A8A85}
+.node{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #D6D6D2;border-radius:8px;padding:10px 12px;font-size:12.5px;line-height:1.5;display:flex;flex-direction:column;gap:3px}
+.node b{font-size:13px}
+.gate{position:absolute;box-sizing:border-box;background:#FFF8E5;border:1px dashed #BF8700;border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.45;color:#5C4400;display:flex;flex-direction:column;gap:2px}
+.arr{position:absolute;font-size:18px;color:#8A8A85}
+.who{position:absolute;font-size:10.5px;color:#6B6B6B}
+.col{flex:1;box-sizing:border-box;border:1px solid #E3E3E0;border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;font-size:13.5px;line-height:1.6;background:#FFFFFF}
+.col b{font-size:15px}
+</style>
+</helmet>
+<div style="width: 1760px; height: 1560px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">C0 · Agent 集群：按模板组一队 agent，做一个人盯不过来的复杂任务</h1>
+      <span class="concept">2026-10-27 草案 · 待你定</span>
+    </div>
+    <p class="lead">做一个大功能、一次大迁移、一个查不出原因的 bug：一个 agent 做不完，自己开一堆窗口又盯不过来。选一个集群模板，写一句目标，AgentDeck 按模板组一队 agent：总设计拆任务、定接口，几个实现者在各自的 worktree 里并行做，换一家模型来审，合进集群分支，最后验收、出汇报。排活、开窗口、跑检查、守规矩、等额度由 AgentDeck 里一段确定的代码负责，不靠某个 agent 自觉；你只在关卡上出现。</p>
+    <p class="lead" style="color: #1A1A1A">这就是 AgentDeck 自己的开发方式（MVP 任务表、contracts 先冻结、每条线只改自己的目录、集成负责人合并、TC 用例验收），做成产品。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 名词</span>
+    <div class="tbl" style="grid-template-columns: 230px 160px minmax(0, 1fr)">
+      <span class="th">界面上叫</span><span class="th">中文</span><span class="th">是什么</span>
+      <span class="td mono">Crew</span><span class="td">集群</span><span class="td">按一个模板、为一个目标组起来的一队 agent。一次运行就是一个集群，在白板上是一个集群框（C2），在一个项目里，有自己的集群分支。</span>
+      <span class="td mono">Crew template</span><span class="td">集群模板</span><span class="td">集群的形状：有哪些角色、分几个阶段、在哪停下来叫你、守哪些规矩。存成文件，能复用、能分享（C5）。</span>
+      <span class="td mono">Role</span><span class="td">角色</span><span class="td">总设计（Lead）、实现者（Worker）、审查者（Reviewer）、集成者（Integrator）、验收者（QA）。每个角色写明用哪家 agent、带哪些 skill 和 MCP、角色提示词。</span>
+      <span class="td mono">Plan · Task</span><span class="td">任务表 · 任务</span><span class="td">总设计拆出来的任务表，每个任务有编号、依赖、负责的目录、完成标准、分在第几波。存成数据，不藏在某个 agent 的对话里。</span>
+      <span class="td mono">Gate</span><span class="td">关卡</span><span class="td">流程里停下来等你的地方：确认任务表、批准改接口、任务失败两次、合并回主分支（C4）。</span>
+      <span class="td mono">Scheduler</span><span class="td">调度器</span><span class="td">AgentDeck 里的代码，不是 agent。派任务、开 worktree 和终端、把任务发进去、跑检查、拦越界改动、等额度恢复、记录、叫你（C3）。</span>
+      <span class="td mono">Crew branch</span><span class="td">集群分支</span><span class="td"><span class="mono">crew/&lt;name&gt;</span>，从你选的分支切出来；每个任务在 <span class="mono">crew/&lt;name&gt;/T3</span> 的 worktree 里做，做完合进集群分支。集群分支合回 main 永远由你来。</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 主流程（“接口先行、分头实现”模板）</span>
+    <div class="fig" style="width: 1632px; height: 330px">
+      <div class="node" style="left: 24px; top: 40px; width: 170px"><b>1 · 选模板、写目标</b><span>选项目和分支、分工、上限</span></div>
+      <span class="who" style="left: 24px; top: 20px">你</span>
+      <span class="arr" style="left: 202px; top: 58px">→</span>
+      <div class="node" style="left: 226px; top: 40px; width: 180px"><b>2 · 拆任务</b><span>出任务表：编号、依赖、目录、完成标准、分波</span></div>
+      <span class="who" style="left: 226px; top: 20px">总设计 · claude</span>
+      <div class="gate" style="left: 246px; top: 150px; width: 140px"><b>关卡</b><span>你确认任务表</span></div>
+      <span class="arr" style="left: 414px; top: 58px">→</span>
+      <div class="node" style="left: 438px; top: 40px; width: 170px"><b>3 · 定接口</b><span>写接口文件，然后锁住</span></div>
+      <span class="who" style="left: 438px; top: 20px">总设计</span>
+      <span class="arr" style="left: 616px; top: 58px">→</span>
+      <div class="node" style="left: 640px; top: 40px; width: 420px; background: #FBFBFA"><b>4 · 分波并行</b><span>依赖满足的任务派给空着、有额度的 agent，每个任务：</span>
+        <span class="mono" style="font-size: 11.5px">实现 → 自检（跑检查） → 换家审 → 合进集群分支</span>
+        <span class="muted">一波做完开下一波；改接口要申请</span></div>
+      <span class="who" style="left: 640px; top: 20px">实现者 · codex ×3 · 审查者 · claude · 调度器</span>
+      <div class="gate" style="left: 660px; top: 190px; width: 180px"><b>关卡</b><span>申请改接口 · 任务失败两次</span></div>
+      <span class="arr" style="left: 1068px; top: 58px">→</span>
+      <div class="node" style="left: 1092px; top: 40px; width: 200px"><b>5 · 验收</b><span>按完成标准和用例逐条跑，不过的变成新任务回到 4</span></div>
+      <span class="who" style="left: 1092px; top: 20px">验收者 · codex</span>
+      <span class="arr" style="left: 1300px; top: 58px">→</span>
+      <div class="node" style="left: 1324px; top: 40px; width: 140px"><b>6 · 汇报</b><span>做了什么、过没过、待你看</span></div>
+      <span class="arr" style="left: 1472px; top: 58px">→</span>
+      <div class="gate" style="left: 1496px; top: 40px; width: 116px"><b>关卡</b><span>你把集群分支合回 main</span></div>
+      <div class="at" style="left: 1092px; top: 150px; width: 380px; height: 0; border-top: 1px dashed #8A8A85"></div>
+      <span class="at" style="left: 1092px; top: 160px; width: 500px; font-size: 12px; color: #5F5F5A">验收不过 → 记成问题 → 总设计拆成新任务 → 回到第 4 步</span>
+      <span class="at" style="left: 24px; top: 270px; width: 1580px; font-size: 12.5px; color: #5F5F5A">整个过程可以跑好几个小时、跨过额度恢复（和 PL3 一样等到点再接着派）、关掉应用再开接着跑；黄色虚线框是停下来等你的地方，其余时间不打扰你。</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · 谁做什么</span>
+    <div style="display: flex; gap: 24px">
+      <div class="col"><b>你</b><span>选模板、写目标、定分工和上限。</span><span>在关卡上做决定：任务表行不行、接口能不能改、卡住的任务怎么办。</span><span>最后看汇报、把集群分支合回 main。</span><span class="muted">其余时间不用盯着。</span></div>
+      <div class="col"><b>agent</b><span>想和做：拆任务、定接口、写代码、审 diff、解决合并冲突、跑验收。</span><span>通过 AgentDeck 的 MCP 和调度器打交道：领任务、交付、报问题、申请改接口、叫你（C3）。</span><span class="muted">不负责排活，也不负责记进度。</span></div>
+      <div class="col"><b>AgentDeck 调度器</b><span>派活：依赖满足的任务给空着、有额度的 agent，在对应 worktree 里按角色开终端。</span><span>守规矩：自己跑检查、拦越界改动、锁接口、限制同时开几个。</span><span>记录和恢复：任务状态存在 AgentDeck 里，额度用完等恢复，重启接着跑。</span><span>只在关卡上叫你。</span></div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · 和“让 claude 自己当总指挥、开几个 codex”比</span>
+    <div class="tbl" style="grid-template-columns: 220px minmax(0, 1fr) minmax(0, 1fr)">
+      <span class="th"></span><span class="th">一个 agent 当总指挥</span><span class="th">Agent 集群</span>
+      <span class="td">进度记在哪</span><span class="td">它的对话里；几个小时后上下文满了、压缩一次就忘了谁做到哪</span><span class="td">任务表是 AgentDeck 里的数据，谁也忘不了，白板上一眼看到</span>
+      <span class="td">断了怎么办</span><span class="td">额度用完、它卡住、应用重启，整队都停</span><span class="td">调度器等额度恢复接着派，重启接着跑；一个任务卡住不影响别的</span>
+      <span class="td">规矩谁守</span><span class="td">“只改自己的目录”“改接口先停下”靠它自觉</span><span class="td">调度器检查每次交付的 diff，越界就打回，接口目录锁着</span>
+      <span class="td">能用几家</span><span class="td">它会开谁就开谁，额度全压在一家</span><span class="td">每个角色选哪家，claude 用完了按模板交给 codex 接着做</span>
+      <span class="td">你怎么看</span><span class="td">去问它</span><span class="td">集群框、任务看板、收件箱、汇报</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px; font-size: 13.5px; line-height: 1.65">
+    <span class="h2">这一页的画板</span>
+    <span><b>C1</b> 新建集群 · <b>C2</b> 白板上的集群 · <b>C3</b> 一个任务的一生、调度规则、agent 用的工具 · <b>C4</b> 关卡、收件箱、汇报 · <b>C5</b> 模板、分期、待你定的事</span>
+    <span style="color: #5F5F5A">和已有的关系：集群用到 N1 的 AgentDeck MCP（加一组 crew 工具）、N12 的项目框排版、PL3 的“等额度恢复再发”和发送方式、PL1 的 Auto-approve（每个角色可以开）、PL2 的 Usage（汇报里的用量）。</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":1560}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

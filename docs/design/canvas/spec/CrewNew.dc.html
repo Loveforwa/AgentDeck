@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Agent 集群 · 新建</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.at{position:absolute}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1240px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.tag{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;background:#F2F2EF;color:#5F5F5A}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#8A8A85}
+.dlg{box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,0.10);font-size:12px;display:flex;flex-direction:column}
+.dh{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid #EEEEEB;font-size:13px}
+.lbl{font-size:10.5px;font-weight:600;color:#8A8A85;letter-spacing:0.04em}
+.tpl{box-sizing:border-box;border:1px solid #E3E3E0;border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:2px;line-height:1.45}
+.tpl.on{border:1.5px solid #1A1A1A}
+.field{box-sizing:border-box;border:1px solid #D6D6D2;border-radius:6px;padding:6px 8px;line-height:1.5}
+.sel{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border:1px solid #D6D6D2;border-radius:6px;font-size:11.5px;background:#FFFFFF}
+.am{width:6px;height:6px;border-radius:1.5px;flex:none}
+.rr{display:grid;grid-template-columns:110px 1fr 70px;align-items:center;gap:8px;padding:5px 0;border-top:1px solid #F0F0ED}
+.btn{display:inline-flex;align-items:center;height:26px;padding:0 10px;border:1px solid #D6D6D2;border-radius:6px;font-size:12px;background:#FFFFFF;color:#1A1A1A}
+.btn.pri{background:#1A1A1A;border-color:#1A1A1A;color:#FFFFFF}
+.ck{display:flex;align-items:center;gap:6px;line-height:1.5}
+.box{width:11px;height:11px;border:1px solid #8A8A85;border-radius:2px;flex:none;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;font-size:9px}
+.box.on{background:#1A1A1A;border-color:#1A1A1A;color:#FFFFFF}
+.menu{background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;box-shadow:0 8px 20px rgba(0,0,0,0.08);padding:4px;font-size:11.5px;display:flex;flex-direction:column}
+.mi{display:flex;align-items:center;gap:8px;padding:4px 9px;border-radius:5px;white-space:nowrap}
+.sep{height:1px;background:#EEEEEB;margin:3px 4px}
+.ex{display:flex;flex-direction:column;gap:10px;font-size:13.5px;line-height:1.65}
+</style>
+</helmet>
+<div style="width: 1760px; height: 1500px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">C1 · 新建集群：选模板、写目标、定分工和上限</h1>
+      <span class="concept">草案</span>
+    </div>
+    <p class="lead">入口：项目框标题栏的菜单 › <b>New crew…</b>，或者在白板空白处右键 › <b>New crew…</b>（这时先选项目）。一个对话框写完就开始，总设计先出任务表，你确认了才真正开 worktree 派活。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · New crew 对话框</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start">
+      <div class="fig" style="width: 1060px; height: 820px">
+        <div class="at menu" style="left: 24px; top: 24px; width: 190px">
+          <span class="mi">Arrange</span><span class="mi">Auto-arrange new windows</span>
+          <span class="sep"></span>
+          <span class="mi">New terminal</span><span class="mi">New worktree…</span>
+          <span class="mi" style="background: #EDEDEA">New crew…</span>
+          <span class="sep"></span>
+          <span class="mi">Close frame</span>
+        </div>
+        <span class="at muted" style="left: 24px; top: 200px; width: 190px; font-size: 11px; line-height: 1.5">项目框标题栏的 ⋯ 菜单</span>
+
+        <div class="at dlg" style="left: 236px; top: 24px; width: 800px">
+          <div class="dh"><b>New crew</b><span class="muted">in agenduck</span><span style="flex: 1"></span><span class="muted">×</span></div>
+          <div style="display: flex">
+            <div style="width: 250px; box-sizing: border-box; padding: 12px; border-right: 1px solid #EEEEEB; display: flex; flex-direction: column; gap: 8px">
+              <span class="lbl">TEMPLATE</span>
+              <div class="tpl on"><b>Contract-first build</b><span class="muted">Plan, lock interfaces, build in parallel, review, merge, accept.</span></div>
+              <div class="tpl"><b>Migration</b><span class="muted">Do one by hand, then fan out over files.</span></div>
+              <div class="tpl"><b>Bug hunt</b><span class="muted">Several hypotheses at once, then fix and test.</span></div>
+              <div class="tpl"><b>Spec to app</b><span class="muted">Acceptance cases first, build until they pass.</span></div>
+              <div class="tpl"><b>Design bake-off</b><span class="muted">Independent designs, cross-critique, merge.</span></div>
+              <span class="muted" style="font-size: 11px">From library · From this repo</span>
+            </div>
+            <div style="flex: 1; box-sizing: border-box; padding: 12px 16px; display: flex; flex-direction: column; gap: 10px">
+              <span class="lbl">GOAL</span>
+              <div class="field" style="height: 76px">Add a history sidebar: list past sessions per folder and per agent, open one to resume it on the board. Keep the panel collapsible and remember its width.</div>
+              <div style="display: flex; gap: 12px">
+                <div style="flex: 1; display: flex; flex-direction: column; gap: 4px"><span class="lbl">NAME</span><div class="field">history-sidebar</div></div>
+                <div style="flex: 1; display: flex; flex-direction: column; gap: 4px"><span class="lbl">START FROM</span><div class="field mono" style="font-size: 11.5px">main</div></div>
+              </div>
+              <span class="muted" style="font-size: 11px">Branch: <span class="mono">crew/history-sidebar</span> · each task gets <span class="mono">crew/history-sidebar/T1</span>…</span>
+
+              <span class="lbl" style="margin-top: 4px">ROLES</span>
+              <div>
+                <div class="rr"><span>Lead</span><span><span class="sel"><span class="am" style="background: #A8503A"></span>claude ▾</span></span><span class="muted">1</span></div>
+                <div class="rr"><span>Workers</span><span><span class="sel"><span class="am" style="background: #2F5E9E"></span>codex ▾</span> <span class="muted" style="font-size: 11px">then</span> <span class="sel"><span class="am" style="background: #A8503A"></span>claude ▾</span></span><span><span class="sel">up to 3 ▾</span></span></div>
+                <div class="rr"><span>Reviewer</span><span><span class="sel"><span class="am" style="background: #A8503A"></span>claude ▾</span> <span class="muted" style="font-size: 11px">not the worker’s agent</span></span><span class="muted">1</span></div>
+                <div class="rr"><span>QA</span><span><span class="sel"><span class="am" style="background: #2F5E9E"></span>codex ▾</span></span><span class="muted">1</span></div>
+              </div>
+
+              <div style="display: flex; gap: 24px">
+                <div style="flex: 1; display: flex; flex-direction: column; gap: 6px">
+                  <span class="lbl">CHECK</span>
+                  <div class="field mono" style="font-size: 11.5px">pnpm check</div>
+                  <span class="lbl" style="margin-top: 4px">LIMITS</span>
+                  <span class="ck">At most <span class="sel">3 ▾</span> agents at once</span>
+                  <span class="ck">Stop after <span class="sel">8 h ▾</span></span>
+                  <span class="ck"><span class="box on">✓</span>Wait for usage limits to reset</span>
+                  <span class="ck"><span class="box on">✓</span>Keep Mac awake</span>
+                </div>
+                <div style="flex: 1; display: flex; flex-direction: column; gap: 6px">
+                  <span class="lbl">ASK ME</span>
+                  <span class="ck"><span class="box on">✓</span>Before work starts (approve the plan)</span>
+                  <span class="ck"><span class="box on">✓</span>When an interface needs to change</span>
+                  <span class="ck"><span class="box"></span>Before each merge into the crew branch</span>
+                  <span class="ck muted"><span class="box on" style="opacity: 0.5">✓</span>When a task fails twice (always)</span>
+                  <span class="ck muted"><span class="box on" style="opacity: 0.5">✓</span>Merging into main (always you)</span>
+                  <span class="lbl" style="margin-top: 4px">PLUGINS FOR EVERY AGENT</span>
+                  <span class="ck"><span class="box on">✓</span>Auto-approve</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-top: 1px solid #EEEEEB"><span class="muted" style="font-size: 11px">claude has 5-hour quota left · codex ok</span><span style="flex: 1"></span><span class="btn">Cancel</span><span class="btn pri">Start crew</span></div>
+        </div>
+      </div>
+      <div class="ex" style="flex: 1">
+        <span><b>Template</b>：左边选形状。第一期只有 Contract-first build，其余灰着写 “Coming later”。下面能切到库里和仓库里的模板（C5）。</span>
+        <span><b>Goal</b>：一段话说清要做成什么。总设计拿它和仓库里的 AGENTS.md、文档去拆任务。</span>
+        <span><b>Roles</b>：每个角色选 agent，按模板给默认值。实现者可以写两家，按顺序：前一家额度用完时交给后一家接着做。审查者默认不能和实现者同一家。</span>
+        <span><b>Check</b>：每个任务交付后调度器自己在它的 worktree 里跑的命令；默认从仓库里猜（package.json 的 check / test）。</span>
+        <span><b>Limits</b>：同时最多开几个 agent、最长跑多久；额度用完时等恢复（和 PL3 一样），等的时候不让电脑睡着。</span>
+        <span><b>Ask me</b>：哪些关卡停下来等你。“失败两次”和“合回 main”总是问你，不能关。</span>
+        <span><b>Start crew</b>：白板上出现集群框，里面先只有总设计的终端，它开始写任务表（C2）。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 按下 Start crew 以后</span>
+    <div class="tbl" style="grid-template-columns: 60px 260px minmax(0, 1fr)">
+      <span class="th">步</span><span class="th">白板上</span><span class="th">背后</span>
+      <span class="td">1</span><span class="td">项目框里多出一个集群框，标题写 Crew · history-sidebar，阶段停在 Plan</span><span class="td">从 main 切出 <span class="mono">crew/history-sidebar</span> 和它的 worktree；集群的设置和状态存进 AgentDeck 的数据（不写进你的仓库和 agent 配置）</span>
+      <span class="td">2</span><span class="td">集群框里开总设计的 claude 终端</span><span class="td">带上模板里 Lead 的角色提示词、目标和 crew 工具（AgentDeck MCP），提示词用 PL3 那套发送方式送进去</span>
+      <span class="td">3</span><span class="td">任务看板（C2）一条条长出来</span><span class="td">总设计用 <span class="mono">crew_add_task</span> 写任务表，写完调 <span class="mono">crew_plan_ready</span></span>
+      <span class="td">4</span><span class="td">收件箱亮起 “Approve plan”（C4）</span><span class="td">你确认之前不开任何实现者；你可以直接改任务表，或者写一句意见让总设计重拆</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":1500}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

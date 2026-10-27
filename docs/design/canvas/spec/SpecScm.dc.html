@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>需求：源代码管理面板</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:8px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.at{position:absolute}
+.step{display:flex;flex-direction:column;gap:8px;flex:none}
+.cap{margin:0;font-size:13px;line-height:1.55}
+</style>
+</helmet>
+<div style="width: 1760px; height: 2560px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 44px">
+  <div style="display: flex; flex-direction: column; gap: 8px; max-width: 900px">
+    <h1 style="margin: 0; font-size: 28px; font-weight: 600">8 · 源代码管理面板</h1>
+    <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #5F5F5A">右侧面板，显示当前工作区的 git 状态，操作方式参照 VS Code 的源代码管理。</p>
+  </div>
+
+  <div style="display: flex; gap: 48px; align-items: flex-start">
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <span style="font-size: 15px; font-weight: 600">结构图</span>
+      <div class="fig" style="width: 360px; height: 500px">
+        <div class="at" style="left: 24px; top: 14px"><dc-import name="Panel" preset="anatomy" w="316" h="470" hint-size="316px,470px"></dc-import></div>
+        <div class="at" style="left: 4px; top: 20px; z-index: 40"><dc-import name="Callout" n="1" hint-size="17px,17px"></dc-import></div>
+        <div class="at" style="left: 4px; top: 62px; z-index: 40"><dc-import name="Callout" n="2" hint-size="17px,17px"></dc-import></div>
+        <div class="at" style="left: 4px; top: 104px; z-index: 40"><dc-import name="Callout" n="3" hint-size="17px,17px"></dc-import></div>
+        <div class="at" style="left: 4px; top: 164px; z-index: 40"><dc-import name="Callout" n="4" hint-size="17px,17px"></dc-import></div>
+        <div class="at" style="left: 4px; top: 204px; z-index: 40"><dc-import name="Callout" n="5" hint-size="17px,17px"></dc-import></div>
+        <div class="at" style="left: 342px; top: 219px; z-index: 40"><dc-import name="Callout" n="6" hint-size="17px,17px"></dc-import></div>
+        <div class="at" style="left: 4px; top: 294px; z-index: 40"><dc-import name="Callout" n="7" hint-size="17px,17px"></dc-import></div>
+        <div class="at" style="left: 4px; top: 398px; z-index: 40"><dc-import name="Callout" n="8" hint-size="17px,17px"></dc-import></div>
+      </div>
+    </div>
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 36px">
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 32px; font-size: 14px; line-height: 1.65; padding-top: 32px">
+        <div style="display: flex; gap: 10px"><span style="flex: none; width: 20px; height: 20px; border-radius: 50%; background: #1A1A1A; color: #FFFFFF; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center">1</span><span>当前工作区：项目名和工作目录，单击路径复制</span></div>
+        <div style="display: flex; gap: 10px"><span style="flex: none; width: 20px; height: 20px; border-radius: 50%; background: #1A1A1A; color: #FFFFFF; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center">2</span><span>分支按钮：切换或新建分支；下面写“3 ahead of main”</span></div>
+        <div style="display: flex; gap: 10px"><span style="flex: none; width: 20px; height: 20px; border-radius: 50%; background: #1A1A1A; color: #FFFFFF; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center">3</span><span>提交框：写提交信息，⌘↩ 提交；信息为空时按钮不可用</span></div>
+        <div style="display: flex; gap: 10px"><span style="flex: none; width: 20px; height: 20px; border-radius: 50%; background: #1A1A1A; color: #FFFFFF; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center">4</span><span>“Staged Changes”：暂存的更改</span></div>
+        <div style="display: flex; gap: 10px"><span style="flex: none; width: 20px; height: 20px; border-radius: 50%; background: #1A1A1A; color: #FFFFFF; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center">5</span><span>“Changes”：按文件夹列出；状态字母 M 修改、A 新增、D 删除、R 重命名、U 未跟踪、! 冲突</span></div>
+        <div style="display: flex; gap: 10px"><span style="flex: none; width: 20px; height: 20px; border-radius: 50%; background: #1A1A1A; color: #FFFFFF; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center">6</span><span>悬停在文件上：暂存（+）、放弃更改（↶）</span></div>
+        <div style="display: flex; gap: 10px"><span style="flex: none; width: 20px; height: 20px; border-radius: 50%; background: #1A1A1A; color: #FFFFFF; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center">7</span><span>“Repository”：这个项目的所有工作目录，单击跳到对应的框；不在白板上的灰显并写“not on board”，单击出现“Add to board”</span></div>
+        <div style="display: flex; gap: 10px"><span style="flex: none; width: 20px; height: 20px; border-radius: 50%; background: #1A1A1A; color: #FFFFFF; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center">8</span><span>“Commits”：最近 20 个，分隔线“On main”以下是 main 上的提交；单击一行复制哈希</span></div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <span style="font-size: 15px; font-weight: 600">面板跟随聚焦的窗口</span>
+        <div style="display: flex; align-items: flex-start">
+          <div class="step" style="width: 380px">
+            <div class="fig" style="width: 380px; height: 210px">
+              <div class="at" style="left: 10px; top: 24px"><dc-import name="Frame" w="166" h="84" branch="feat/oauth" v="hl" hint-size="166px,84px"></dc-import></div>
+              <div class="at" style="left: 18px; top: 50px"><dc-import name="Term" w="150" h="50" f="1" s="Running" lines="~Write oauth.ts" hint-size="150px,50px"></dc-import></div>
+              <div class="at" style="left: 10px; top: 118px"><dc-import name="Frame" w="166" h="80" branch="fix/rate-limit" hint-size="166px,80px"></dc-import></div>
+              <div class="at" style="left: 18px; top: 144px"><dc-import name="Term" w="150" h="46" cmd="codex" s="Running" lines="~Edit limiter.ts" hint-size="150px,46px"></dc-import></div>
+              <div class="at" style="left: 188px; top: 14px"><dc-import name="Panel" preset="followA" w="182" h="184" hint-size="182px,184px"></dc-import></div>
+              <div class="at" style="left: 88px; top: 162px; z-index: 45"><dc-import name="Cursor" ring="1" hint-size="24px,24px"></dc-import></div>
+            </div>
+            <p class="cap">聚焦 feat/oauth 里的终端，面板显示 feat/oauth</p>
+          </div>
+          <dc-import name="Arrow" label="单击 codex" pad="81" hint-size="104px,110px"></dc-import>
+          <div class="step" style="width: 380px">
+            <div class="fig" style="width: 380px; height: 210px">
+              <div class="at" style="left: 10px; top: 24px"><dc-import name="Frame" w="166" h="84" branch="feat/oauth" hint-size="166px,84px"></dc-import></div>
+              <div class="at" style="left: 18px; top: 50px"><dc-import name="Term" w="150" h="50" s="Running" lines="~Write oauth.ts" hint-size="150px,50px"></dc-import></div>
+              <div class="at" style="left: 10px; top: 118px"><dc-import name="Frame" w="166" h="80" branch="fix/rate-limit" v="hl" hint-size="166px,80px"></dc-import></div>
+              <div class="at" style="left: 18px; top: 144px"><dc-import name="Term" w="150" h="46" cmd="codex" f="1" s="Running" lines="~Edit limiter.ts" hint-size="150px,46px"></dc-import></div>
+              <div class="at" style="left: 188px; top: 14px"><dc-import name="Panel" preset="followB" w="182" h="184" hint-size="182px,184px"></dc-import></div>
+            </div>
+            <p class="cap">面板切到 fix/rate-limit；聚焦散放的窗口时显示“This window isn’t in a workspace.”</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <span style="font-size: 15px; font-weight: 600">暂存并提交</span>
+    <div style="display: flex; align-items: flex-start">
+      <div class="step" style="width: 240px">
+        <div class="fig" style="width: 240px; height: 250px">
+          <div class="at" style="left: 10px; top: 10px"><dc-import name="Panel" preset="stage1" w="220" h="230" hint-size="220px,230px"></dc-import></div>
+          <div class="at" style="left: 180px; top: 86px; z-index: 45"><dc-import name="Cursor" hint-size="24px,24px"></dc-import></div>
+        </div>
+        <p class="cap">悬停在文件上，单击 +</p>
+      </div>
+      <dc-import name="Arrow" label="单击 +" pad="101" hint-size="104px,110px"></dc-import>
+      <div class="step" style="width: 240px">
+        <div class="fig" style="width: 240px; height: 250px">
+          <div class="at" style="left: 10px; top: 10px"><dc-import name="Panel" preset="stage2" w="220" h="230" hint-size="220px,230px"></dc-import></div>
+        </div>
+        <p class="cap">进入暂存；提交信息为空时按钮不可用</p>
+      </div>
+      <dc-import name="Arrow" label="写提交信息" pad="101" hint-size="104px,110px"></dc-import>
+      <div class="step" style="width: 240px">
+        <div class="fig" style="width: 240px; height: 250px">
+          <div class="at" style="left: 10px; top: 10px"><dc-import name="Panel" preset="stage3" w="220" h="230" hint-size="220px,230px"></dc-import></div>
+          <div class="at" style="left: 176px; top: 46px; z-index: 45"><dc-import name="Note" v="key" text="⌘↩" hint-size="36px,18px"></dc-import></div>
+        </div>
+        <p class="cap">写好以后按 ⌘↩</p>
+      </div>
+      <dc-import name="Arrow" label="⌘↩" pad="101" hint-size="104px,110px"></dc-import>
+      <div class="step" style="width: 240px">
+        <div class="fig" style="width: 240px; height: 250px">
+          <div class="at" style="left: 10px; top: 10px"><dc-import name="Panel" preset="stage4" w="220" h="230" hint-size="220px,230px"></dc-import></div>
+        </div>
+        <p class="cap">提交完成，提交记录里多了一条</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 56px; align-items: flex-start">
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <span style="font-size: 15px; font-weight: 600">切换分支</span>
+      <div style="display: flex; align-items: flex-start">
+        <div class="step" style="width: 250px">
+          <div class="fig" style="width: 250px; height: 240px">
+            <div class="at" style="left: 10px; top: 10px"><dc-import name="Panel" preset="branch1" w="230" h="220" hint-size="230px,220px"></dc-import></div>
+            <div class="at" style="left: 52px; top: 52px; z-index: 45"><dc-import name="Cursor" ring="1" hint-size="24px,24px"></dc-import></div>
+          </div>
+          <p class="cap">单击分支按钮</p>
+        </div>
+        <dc-import name="Arrow" label="单击" pad="96" hint-size="104px,110px"></dc-import>
+        <div class="step" style="width: 250px">
+          <div class="fig" style="width: 250px; height: 240px">
+            <div class="at" style="left: 10px; top: 10px"><dc-import name="Panel" preset="branchDD" w="230" h="220" hint-size="230px,220px"></dc-import></div>
+            <div class="at" style="left: 72px; top: 162px; z-index: 45"><dc-import name="Cursor" hint-size="24px,24px"></dc-import></div>
+          </div>
+          <p class="cap">被其他工作区占用的分支灰显</p>
+        </div>
+        <dc-import name="Arrow" label="选 refactor/db-pool" pad="96" hint-size="104px,110px"></dc-import>
+        <div class="step" style="width: 250px">
+          <div class="fig" style="width: 250px; height: 240px">
+            <div class="at" style="left: 10px; top: 44px"><dc-import name="Dialog" w="230" t="3 uncommitted changes" body="!claude is running in this folder. Switching branches changes the files it sees." btns="Cancel|Stash and switch|*Switch with changes" hint-size="230px,110px"></dc-import></div>
+          </div>
+          <p class="cap">有未提交的更改时，先问怎么处理</p>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <span style="font-size: 15px; font-weight: 600">单击被占用的分支 <span style="font-weight: 400; font-size: 13px; color: #6B6B6B">另一种情况</span></span>
+      <div style="display: flex; align-items: flex-start">
+        <div class="step" style="width: 250px">
+          <div class="fig" style="width: 250px; height: 240px">
+            <div class="at" style="left: 10px; top: 10px"><dc-import name="Panel" preset="branchDD" w="230" h="220" hint-size="230px,220px"></dc-import></div>
+            <div class="at" style="left: 72px; top: 146px; z-index: 45"><dc-import name="Cursor" hint-size="24px,24px"></dc-import></div>
+          </div>
+          <p class="cap">单击灰显的 fix/rate-limit</p>
+        </div>
+        <dc-import name="Arrow" label="单击" pad="96" hint-size="104px,110px"></dc-import>
+        <div class="step" style="width: 250px">
+          <div class="fig" style="width: 250px; height: 240px">
+            <div class="at" style="left: 34px; top: 34px"><dc-import name="Frame" w="182" h="170" branch="fix/rate-limit" v="hl" hint-size="182px,170px"></dc-import></div>
+            <div class="at" style="left: 46px; top: 62px"><dc-import name="Term" w="158" h="130" cmd="codex" f="1" s="Running · 6m" lines="› Fix rate limiting on /search|~Edit limiter.ts" hint-size="158px,130px"></dc-import></div>
+          </div>
+          <p class="cap">白板平移到那个框，并聚焦它里面的窗口</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 48px; font-size: 14px; line-height: 1.65">
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 10px">
+      <span style="font-size: 15px; font-weight: 600">文件操作</span>
+      <ul style="margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px">
+        <li>单击文件：面板内显示它的差异（只读），顶部有“Back”和“Open in editor”。</li>
+        <li>双击文件：在编辑器中打开。</li>
+        <li>组标题上的 + / −：全部暂存或全部取消暂存。</li>
+        <li>放弃更改要确认“Discard changes to oauth.ts? This can’t be undone.”；未跟踪的文件改为“Move notes.md to Trash?”。</li>
+        <li>没有暂存时按钮写“Commit all n changes”，第一次使用会确认一次。</li>
+      </ul>
+    </div>
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 10px">
+      <span style="font-size: 15px; font-weight: 600">切换分支前的检查</span>
+      <ul style="margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px">
+        <li>有未提交的更改：“Switch with changes”（git 允许时才出现）、“Stash and switch”（切回来时提示恢复）、“Cancel”。</li>
+        <li>有 agent 正在这个目录里运行：额外提示它看到的文件会变。</li>
+        <li>git 拒绝切换：显示 git 的原始错误。</li>
+        <li>“New branch…”从当前提交新建并切换过去。</li>
+      </ul>
+    </div>
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 10px">
+      <span style="font-size: 15px; font-weight: 600">刷新与边界情况</span>
+      <ul style="margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px">
+        <li>只在三种时候刷新：切换聚焦的窗口或工作区；agent 一轮结束（钩子通知）；你自己提交、暂存、切换分支之后。</li>
+        <li>不监听文件变化。在外部编辑器里改了文件，下次聚焦或 agent 一轮结束时更新；右上角有手动刷新按钮。</li>
+        <li>提交失败（如 pre-commit 钩子不通过）：提交框下方显示命令输出，可以展开。</li>
+        <li>仓库在合并或变基中：分支旁显示“Merging”，冲突文件排在最上面，按钮变成“Complete merge”。</li>
+      </ul>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <span style="font-size: 15px; font-weight: 600">一个工作区里有多个仓库 <span style="font-weight: 400; font-size: 13px; color: #6B6B6B">例如 shop 文件夹下有 web 和 api 两个仓库</span></span>
+    <div style="display: flex; align-items: flex-start">
+      <div class="step" style="width: 280px">
+        <div class="fig" style="width: 280px; height: 240px">
+          <div class="at" style="left: 24px; top: 24px"><dc-import name="Dialog" w="232" t="shop contains 2 Git repositories" body="~shop/|>web/　Git repository|>api/　Git repository|Add them as one project? Each workspace gets its own copy of the repositories you pick, on one branch." btns="Add separately|*Add as one project" hint-size="232px,170px"></dc-import></div>
+        </div>
+        <p class="cap">shop 本身不是 git 仓库，但里面的 web、api 各是一个仓库。问你要不要把它们当成一个项目；选“Add separately”就是两个独立项目</p>
+      </div>
+      <dc-import name="Arrow" label="Add as one project" pad="96" hint-size="104px,110px"></dc-import>
+      <div class="step" style="width: 280px">
+        <div class="fig" style="width: 280px; height: 240px">
+          <div class="at" style="left: 22px; top: 30px"><dc-import name="Dialog" w="236" t="New workspace" body="#Project#shop ▾|Branch　◉ New branch　○ Existing|# #feat/checkout#from#main ▾|Repositories　☑ web　☑ api|~Each gets a worktree in …/shop/feat-checkout/" btns="Cancel|*Create" hint-size="236px,160px"></dc-import></div>
+        </div>
+        <p class="cap">勾选这次要改的仓库：勾上的各建一个 worktree，用同一个分支名；没勾的不放进这个工作区，agent 看不到也改不到。比如只改前端，就只勾 web</p>
+      </div>
+      <dc-import name="Arrow" label="Create" pad="96" hint-size="104px,110px"></dc-import>
+      <div class="step" style="width: 280px">
+        <div class="fig" style="width: 280px; height: 240px">
+          <div class="at" style="left: 20px; top: 30px"><dc-import name="Frame" w="240" h="180" project="shop" branch="feat/checkout" note="2 repos" hint-size="240px,180px"></dc-import></div>
+          <div class="at" style="left: 30px; top: 58px"><dc-import name="Term" w="220" h="140" f="1" s="Running · 2m" lines="› Add checkout to web and api|~Edit web/src/cart/Checkout.tsx|~Edit api/src/routes/checkout.ts" hint-size="220px,140px"></dc-import></div>
+        </div>
+        <p class="cap">agent 在父目录 feat-checkout/ 里运行，能同时改 web 和 api</p>
+      </div>
+      <dc-import name="Arrow" label="聚焦" pad="96" hint-size="104px,110px"></dc-import>
+      <div class="step" style="width: 250px">
+        <div class="fig" style="width: 250px; height: 240px">
+          <div class="at" style="left: 10px; top: 10px"><dc-import name="Panel" preset="multi" w="230" h="220" hint-size="230px,220px"></dc-import></div>
+        </div>
+        <p class="cap">面板按仓库分组，各自显示分支和改动</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 48px; font-size: 14px; line-height: 1.65">
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 10px">
+      <span style="font-size: 15px; font-weight: 600">实现难度</span>
+      <div style="display: grid; grid-template-columns: 170px 56px minmax(0, 1fr); border: 1px solid #E3E3E0; border-radius: 10px; overflow: hidden; font-size: 13px">
+        <span style="padding: 7px 10px; background: #F2F2EF; font-size: 12px; color: #6B6B6B; font-weight: 600">功能</span><span style="padding: 7px 10px; background: #F2F2EF; font-size: 12px; color: #6B6B6B; font-weight: 600">难度</span><span style="padding: 7px 10px; background: #F2F2EF; font-size: 12px; color: #6B6B6B; font-weight: 600">为什么</span>
+        <span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">只显示这个工作区的改动</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">容易</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">每个 worktree 是独立目录，有自己的 HEAD 和暂存区。git -C &lt;目录&gt; status --porcelain=v2 只返回这个目录的改动，天然隔离，不用我们过滤。</span>
+        <span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">当前分支、被占用的分支</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">容易</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">status 的输出里就有分支和 ahead/behind；哪个分支在哪个目录来自 git worktree list --porcelain。</span>
+        <span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">暂存、提交、切换分支</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">容易</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">直接调 git add / restore / commit / switch，出错就显示 git 的原文。</span>
+        <span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">多个仓库</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">中等</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">上面每条命令按仓库各跑一次，界面分组显示；难点在新建和删除时几个仓库要一起成功或一起回滚。</span>
+        <span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">提交记录</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">中等</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">MVP 只列当前分支和基础分支上的提交，不画任意分支的图。</span>
+        <span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">合并、变基、冲突</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">只做显示</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">显示状态和冲突文件，解决冲突交给编辑器，不自己做合并编辑器。</span>
+        <span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">大仓库</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">注意</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">大仓库 status 可能要几百毫秒，所以只在三个时机刷新、在后台进程里跑、不卡界面；超过 1 秒显示“Refreshing…”。</span>
+      </div>
+    </div>
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 10px">
+      <span style="font-size: 15px; font-weight: 600">多仓库规则</span>
+      <ul style="margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px">
+        <li>识别：添加的文件夹本身不是仓库，但下一层有 2 个及以上 git 仓库时，问一次“Add as one project”还是“Add separately”。只看下一层，不往深处找。</li>
+        <li>新建工作区：勾选的仓库各建一个 worktree，用同一个分支名，放在同一个父目录下，例如 ~/.agentdeck/worktrees/shop/feat-checkout/web 和 /api。agent 和终端在父目录里运行。没勾的仓库不出现在这个工作区里。</li>
+        <li>每个仓库的基础分支分别识别（远端默认分支，其次 main，再次 master）。某个仓库建 worktree 失败时，已建好的全部撤销，并显示是哪个仓库、git 的原始错误。</li>
+        <li>面板：顶部是工作区名和“2 repositories”；下面每个仓库一组，组标题是仓库名和它的分支，组里是它的改动。</li>
+        <li>提交：提交框在最上面，一条信息会在每个有暂存（没有暂存时是有改动）的仓库里各提交一次；按钮写清“Commit 5 changes in 2 repos”。只想提交一个仓库，单击那一组标题旁的“Commit this repo”。</li>
+        <li>切换分支：在每组标题的分支上单独切；顶部的“Switch all…”把所有仓库切到同名分支，某个仓库没有这个分支时提示新建。</li>
+        <li>删除工作区：每个仓库的 worktree 一起删除，规则同 4 · 工作区框。</li>
+        <li>子模块（submodule）：MVP 只显示为一条“Submodule changed”，不展开。</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":2560}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

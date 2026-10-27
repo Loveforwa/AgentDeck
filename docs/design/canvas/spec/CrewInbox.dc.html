@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Agent 集群 · 关卡和汇报</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.at{position:absolute}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1240px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.tag{display:inline-flex;align-items:center;height:18px;padding:0 7px;border-radius:999px;font-size:10.5px;background:#F2F2EF;color:#5F5F5A}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#8A8A85}
+.dot{width:7px;height:7px;border-radius:50%;flex:none;box-sizing:border-box}
+.am{width:6px;height:6px;border-radius:1.5px;flex:none}
+.btn{display:inline-flex;align-items:center;height:22px;padding:0 8px;border:1px solid #D6D6D2;border-radius:6px;font-size:11px;background:#FFFFFF;color:#1A1A1A;white-space:nowrap}
+.btn.pri{background:#1A1A1A;border-color:#1A1A1A;color:#FFFFFF}
+.panel{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,0.08);font-size:12px;overflow:hidden}
+.ir{display:flex;flex-direction:column;gap:4px;padding:9px 12px;border-top:1px solid #F0F0ED;line-height:1.45}
+.ih{display:flex;align-items:center;gap:6px}
+.acts{display:flex;gap:6px;flex-wrap:wrap}
+.top{position:absolute;left:0;right:0;top:0;height:30px;box-sizing:border-box;padding:0 12px;display:flex;align-items:center;gap:10px;background:#FFFFFF;border-bottom:1px solid #E3E3E0;font-size:11.5px}
+.field{box-sizing:border-box;border:1px solid #D6D6D2;border-radius:6px;padding:6px 8px;line-height:1.5;color:#A3A39E}
+.ex{display:flex;flex-direction:column;gap:10px;font-size:13.5px;line-height:1.65}
+.rt{display:grid;font-size:11.5px;line-height:1.45}
+.rt span{padding:5px 10px;border-top:1px solid #F0F0ED}
+.rh{font-size:10.5px;color:#8A8A85;font-weight:600}
+.diff{font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.7;padding:8px 12px;background:#FBFBFA;border-top:1px solid #F0F0ED;color:#3D3D3A}
+</style>
+</helmet>
+<div style="width: 1760px; height: 2440px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">C4 · 关卡、收件箱、汇报：只在需要你的时候叫你</h1>
+      <span class="concept">草案</span>
+    </div>
+    <p class="lead">所有等你的事集中在一个收件箱里：集群的关卡、终端在等批准、agent 问你的问题。每一条都能在收件箱里直接处理，不用先找到那个终端。集群跑完（或者你早上回来）看一份汇报。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 收件箱（Needs you）</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start">
+      <div class="fig" style="width: 960px; height: 820px">
+        <div class="top"><b>AgentDeck</b><span class="muted">agenduck</span><span style="flex: 1"></span><span class="btn" style="border-color: #BF8700"><span class="dot" style="background: #BF8700; margin-right: 5px"></span>Needs you · 6</span></div>
+        <div class="panel" style="left: 360px; top: 40px; width: 580px">
+          <div style="display: flex; align-items: center; gap: 8px; padding: 10px 12px"><b>Needs you</b><span class="muted">· 6</span><span style="flex: 1"></span><span class="muted" style="font-size: 11px">Oldest first · ⌘J</span></div>
+          <div class="ir">
+            <div class="ih"><span class="dot" style="background: #BF8700"></span><b>Approve plan</b><span class="tag">Crew · history-sidebar</span><span style="flex: 1"></span><span class="muted">12m</span></div>
+            <span class="muted">Lead wrote 8 tasks in 3 waves. Nothing starts until you approve.</span>
+            <div class="acts"><span class="btn">Review plan</span><span class="btn pri">Approve and start</span></div>
+          </div>
+          <div class="ir">
+            <div class="ih"><span class="dot" style="background: #BF8700"></span><b>Approval</b><span class="tag"><span class="am" style="background: #2F5E9E; margin-right: 4px"></span>T5 · codex</span><span style="flex: 1"></span><span class="muted">4m</span></div>
+            <span class="mono" style="font-size: 11px">rm -rf packages/ui/canvas/dist</span>
+            <div class="acts"><span class="btn">Yes, once</span><span class="btn">No</span><span class="btn">Go to terminal</span></div>
+          </div>
+          <div class="ir">
+            <div class="ih"><span class="dot" style="background: #BF8700"></span><b>Interface change</b><span class="tag"><span class="am" style="background: #2F5E9E; margin-right: 4px"></span>T7 · codex</span><span style="flex: 1"></span><span class="muted">3m</span></div>
+            <span class="muted">Add <span class="mono">width</span> and <span class="mono">collapsed</span> to <span class="mono">HistoryPanelState</span> in packages/contracts/src/history.ts</span>
+            <div class="acts"><span class="btn">View change</span><span class="btn">Reject</span><span class="btn pri">Approve</span></div>
+          </div>
+          <div class="ir">
+            <div class="ih"><span class="dot" style="background: #CF222E"></span><b>Stuck</b><span class="tag">T6 · failed review twice</span><span style="flex: 1"></span><span class="muted">2m</span></div>
+            <span class="muted">Retried with claude, still “kimi mark too close to muted text in dark mode”.</span>
+            <div class="acts"><span class="btn">Open task</span><span class="btn">Reassign…</span><span class="btn">I’ll take it</span><span class="btn">Skip task</span></div>
+          </div>
+          <div class="ir">
+            <div class="ih"><span class="dot" style="background: #BF8700"></span><b>Question</b><span class="tag"><span class="am" style="background: #2F5E9E; margin-right: 4px"></span>QA · codex</span><span style="flex: 1"></span><span class="muted">1m</span></div>
+            <span>Should resuming a session open it in the same frame, or a new terminal next to it?</span>
+            <div class="acts"><span class="btn">Same frame</span><span class="btn">New terminal</span><span class="btn">Reply…</span></div>
+          </div>
+          <div class="ir">
+            <div class="ih"><span class="dot" style="background: #BF8700"></span><b>Approval</b><span class="tag"><span class="am" style="background: #A8503A; margin-right: 4px"></span>claude · not in a crew</span><span style="flex: 1"></span><span class="muted">just now</span></div>
+            <span class="mono" style="font-size: 11px">git push origin feat/N12-arrange</span>
+            <div class="acts"><span class="btn">Yes, once</span><span class="btn">No</span><span class="btn">Go to terminal</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="ex" style="flex: 1">
+        <span><b>在哪</b>：顶栏右边一个按钮 <b>Needs you · 6</b>，有事时带黄点（出错的那条是红点），没事时变灰写 “All clear”。⌘J 打开，↑↓ 选，回车跳到对应的终端或任务。</span>
+        <span><b>收什么</b>：集群的关卡（确认任务表、改接口、卡住、合回 main）、所有终端在等批准或回答（集群外的也收）、agent 调 <span class="mono">crew_ask_human</span> 问的问题。</span>
+        <span><b>直接处理</b>：批准就是替你按终端里的那个选项（和 Auto-approve 走同一条路）；问题的按钮来自 agent 给的 options，Reply… 写一句话原样发回那个终端。</span>
+        <span><b>提醒</b>：新来一条发一个 macOS 通知（能关）。离开电脑时推到手机：第二期再做。</span>
+        <span style="color: #5F5F5A">收件箱不只给集群用，单个终端等你也在里面，所以可以先于集群单独做出来。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 两个关卡的样子</span>
+    <div class="fig" style="width: 1632px; height: 450px">
+      <div class="panel" style="left: 24px; top: 24px; width: 780px">
+        <div style="display: flex; align-items: center; gap: 8px; padding: 10px 12px"><b>Approve plan</b><span class="muted">· Crew · history-sidebar · 8 tasks · 3 waves</span></div>
+        <div class="rt" style="grid-template-columns: 50px 1fr 70px 190px 60px">
+          <span class="rh">ID</span><span class="rh">Task</span><span class="rh">Needs</span><span class="rh">Owns</span><span class="rh">Wave</span>
+          <span class="mono">T1</span><span>Contracts: HistoryService</span><span class="muted">—</span><span class="mono" style="font-size: 10.5px">contracts/**</span><span>1</span>
+          <span class="mono">T2</span><span>Index claude sessions</span><span class="mono">T1</span><span class="mono" style="font-size: 10.5px">agent-adapters/history/**</span><span>1</span>
+          <span class="mono">T3</span><span>Index codex sessions</span><span class="mono">T1</span><span class="mono" style="font-size: 10.5px">agent-adapters/history/**</span><span>1</span>
+          <span class="mono">T4</span><span>Sidebar list UI</span><span class="mono">T1</span><span class="mono" style="font-size: 10.5px">panels/history/**</span><span>2</span>
+          <span class="muted">…</span><span class="muted">4 more</span><span></span><span></span><span></span>
+        </div>
+        <div style="padding: 8px 12px; border-top: 1px solid #F0F0ED"><div class="field">Ask the lead to change something… e.g. “Split T5, it touches two packages.”</div></div>
+        <div style="display: flex; gap: 6px; padding: 8px 12px; border-top: 1px solid #F0F0ED"><span class="btn">Edit plan</span><span class="btn">Send to lead</span><span style="flex: 1"></span><span class="btn">Cancel crew</span><span class="btn pri">Approve and start</span></div>
+      </div>
+      <div class="panel" style="left: 830px; top: 24px; width: 776px">
+        <div style="display: flex; align-items: center; gap: 8px; padding: 10px 12px"><b>Interface change</b><span class="muted">· asked by T7 · codex</span></div>
+        <div style="padding: 0 12px 8px; line-height: 1.5">“T7 has to remember the panel width. HistoryPanelState has nowhere to keep it, so I’d add two optional fields.”</div>
+        <div class="diff">packages/contracts/src/history.ts<br>&#160;&#160;export interface HistoryPanelState {<br>&#160;&#160;&#160;&#160;open: boolean;<br><span style="color: #1A7F37">+&#160;&#160;&#160;width?: number;</span><br><span style="color: #1A7F37">+&#160;&#160;&#160;collapsed?: string[];</span><br>&#160;&#160;}</div>
+        <div style="padding: 8px 12px; border-top: 1px solid #F0F0ED; color: #5F5F5A; line-height: 1.5">Approve: the lead makes this change on the crew branch by itself, then T4 and T5 get “Interfaces changed: HistoryPanelState”.</div>
+        <div style="display: flex; gap: 6px; padding: 8px 12px; border-top: 1px solid #F0F0ED"><span class="btn">Reject with a note…</span><span style="flex: 1"></span><span class="btn pri">Approve</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · 汇报</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start">
+      <div class="fig" style="width: 960px; height: 640px">
+        <div class="panel" style="left: 24px; top: 24px; width: 912px">
+          <div style="display: flex; align-items: center; gap: 8px; padding: 12px 14px"><b style="font-size: 14px">Crew report · history-sidebar</b><span class="tag">Done</span><span style="flex: 1"></span><span class="muted">Started 23:40 · finished 06:20</span></div>
+          <div style="display: flex; gap: 24px; padding: 0 14px 10px; font-size: 12px"><span><b>8 of 8</b> tasks merged</span><span><b>6 of 6</b> acceptance cases pass</span><span><b>1h 15m</b> paused for claude’s 5-hour reset</span><span><b>2</b> notes · <b>0</b> open issues</span></div>
+          <div class="rt" style="grid-template-columns: 50px 1fr 90px 70px 80px 80px">
+            <span class="rh">ID</span><span class="rh">Task</span><span class="rh">Done by</span><span class="rh">Rounds</span><span class="rh">Check</span><span class="rh">Files</span>
+            <span class="mono">T1</span><span>Contracts: HistoryService</span><span><span class="am" style="background: #A8503A; display: inline-block; margin-right: 4px"></span>claude</span><span>1</span><span>✓</span><span>2 · +64</span>
+            <span class="mono">T4</span><span>Sidebar list UI</span><span><span class="am" style="background: #2F5E9E; display: inline-block; margin-right: 4px"></span>codex</span><span>2</span><span>✓</span><span>5 · +310</span>
+            <span class="mono">T6</span><span>Agent color marks</span><span><span class="am" style="background: #A8503A; display: inline-block; margin-right: 4px"></span>you</span><span>3</span><span>✓</span><span>4 · +92</span>
+            <span class="muted">…</span><span class="muted">5 more</span><span></span><span></span><span></span><span></span>
+          </div>
+          <div style="padding: 10px 14px; border-top: 1px solid #F0F0ED; display: flex; flex-direction: column; gap: 4px; line-height: 1.5"><span class="rh">NOTES FROM THE CREW</span><span>T2: claude writes sidechain sessions in a sub-folder; they are skipped on purpose.</span><span>T5: resuming a codex session needs codex ≥ 0.164.</span></div>
+          <div style="padding: 10px 14px; border-top: 1px solid #F0F0ED; display: flex; flex-direction: column; gap: 4px; line-height: 1.5"><span class="rh">USAGE</span><span><span class="am" style="background: #A8503A; display: inline-block; margin-right: 4px"></span>claude · hit the 5-hour limit once</span><span><span class="am" style="background: #2F5E9E; display: inline-block; margin-right: 4px"></span>codex · within limits</span></div>
+          <div style="display: flex; gap: 6px; padding: 10px 14px; border-top: 1px solid #F0F0ED"><span class="btn">Open diff</span><span class="btn">Copy as Markdown</span><span style="flex: 1"></span><span class="btn">Create PR</span><span class="btn pri">Merge into main</span></div>
+        </div>
+      </div>
+      <div class="ex" style="flex: 1">
+        <span><b>什么时候出</b>：集群跑完、你点 Stop、或者你点集群框上的 Report 看到目前为止的。集群跑完时收件箱多一条 “Ready to merge”。</span>
+        <span><b>写什么</b>：每个任务谁做的、来回几轮、检查过没过、改了多少；agent 用 <span class="mono">crew_note</span> 记下的发现；没解决的问题；每家的用量（来自 PL2 Usage）和因为额度停了多久。</span>
+        <span><b>Merge into main</b>：最后一道关卡，永远由你点。也可以 Create PR，汇报原样当 PR 描述（Copy as Markdown）。</span>
+        <span style="color: #5F5F5A">汇报存在 AgentDeck 的数据里，随集群一起留着，左边栏历史里能找回。</span>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":2440}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>光标零件</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>body{margin:0}</style>
+</helmet>
+<div style="position: relative; width: 24px; height: 24px">
+  <sc-if value="{{ring}}" hint-placeholder-val="{{ false }}">
+    <span style="position: absolute; left: -1px; top: -1px; width: 18px; height: 18px; box-sizing: border-box; border-radius: 50%; border: 1.5px solid rgba(26,26,26,0.45)"></span>
+  </sc-if>
+  <svg style="position: absolute; left: 7px; top: 7px" width="13" height="16" viewBox="0 0 13 16" aria-hidden="true"><path d="M1 1l10.5 7-4.8 1.1L4.3 14z" fill="#1A1A1A" stroke="#FFFFFF" stroke-width="1.1" stroke-linejoin="round"></path></svg>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":24,"height":24}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { ring: !!this.props.ring };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>需求：终端状态与提醒</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:8px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.at{position:absolute}
+.step{display:flex;flex-direction:column;gap:8px;flex:none}
+.cap{margin:0;font-size:13px;line-height:1.55}
+</style>
+</helmet>
+<div style="width: 1760px; height: 2160px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 44px">
+  <div style="display: flex; flex-direction: column; gap: 8px; max-width: 900px">
+    <h1 style="margin: 0; font-size: 28px; font-weight: 600">6 · 终端状态与提醒</h1>
+    <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #5F5F5A">每个终端都有一个状态，显示在标题栏的点和文字上，并汇总到工作区框、顶栏和系统通知，保证你不用盯着每个窗口也知道谁在等你。</p>
+  </div>
+
+  <div style="display: flex; gap: 48px; align-items: flex-start">
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <span style="font-size: 15px; font-weight: 600">六种状态的标题栏</span>
+      <div class="fig" style="width: 520px; height: 206px">
+        <div class="at" style="left: 20px; top: 16px"><dc-import name="Term" w="480" h="22" st="start" s="Starting" lines="" hint-size="480px,22px"></dc-import></div>
+        <div class="at" style="left: 20px; top: 46px"><dc-import name="Term" w="480" h="22" st="run" lbl="lead" s="Running · 4m" lines="" hint-size="480px,22px"></dc-import></div>
+        <div class="at" style="left: 20px; top: 76px"><dc-import name="Term" w="480" h="22" st="wait" lbl="lead" s="Needs approval · 3m" lines="" hint-size="480px,22px"></dc-import></div>
+        <div class="at" style="left: 20px; top: 106px"><dc-import name="Term" w="480" h="22" st="idle" s="Idle · 12m" lines="" hint-size="480px,22px"></dc-import></div>
+        <div class="at" style="left: 20px; top: 136px"><dc-import name="Term" w="480" h="22" st="exit" cmd="zsh" lbl="pnpm dev" s="Exited" lines="" hint-size="480px,22px"></dc-import></div>
+        <div class="at" style="left: 20px; top: 166px"><dc-import name="Term" w="480" h="22" st="err" cmd="codex" s="Error · exit 1" lines="" hint-size="480px,22px"></dc-import></div>
+      </div>
+      <p class="cap" style="max-width: 520px; color: #5F5F5A">“lead”只是用户用“Rename”给终端起的名字，应用不判断谁是主力；没改名时只显示 agent 名。</p>
+    </div>
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 10px; font-size: 14px; line-height: 1.6">
+      <span style="font-size: 15px; font-weight: 600">什么时候进入哪个状态</span>
+      <div style="display: grid; grid-template-columns: 90px minmax(0, 1fr) 200px; border: 1px solid #E3E3E0; border-radius: 10px; overflow: hidden">
+        <span style="padding: 8px 12px; background: #F2F2EF; font-size: 12px; color: #6B6B6B; font-weight: 600">状态</span><span style="padding: 8px 12px; background: #F2F2EF; font-size: 12px; color: #6B6B6B; font-weight: 600">什么时候进入</span><span style="padding: 8px 12px; background: #F2F2EF; font-size: 12px; color: #6B6B6B; font-weight: 600">标题栏文字</span>
+        <span style="padding: 8px 12px; border-top: 1px solid #E3E3E0">启动中</span><span style="padding: 8px 12px; border-top: 1px solid #E3E3E0">刚创建，程序还没有任何输出</span><span style="padding: 8px 12px; border-top: 1px solid #E3E3E0">Starting</span>
+        <span style="padding: 8px 12px; border-top: 1px solid #E3E3E0">运行中</span><span style="padding: 8px 12px; border-top: 1px solid #E3E3E0">收到“开始处理”的通知，或有新输出</span><span style="padding: 8px 12px; border-top: 1px solid #E3E3E0">Running · 4m（这一轮多久）</span>
+        <span style="padding: 8px 12px; border-top: 1px solid #E3E3E0; color: #C2410C">等你</span><span style="padding: 8px 12px; border-top: 1px solid #E3E3E0">收到“需要批准”的事件；或 agent 用它的提问工具向你提问（例如 claude 的 AskUserQuestion）。只是一轮说完不算，算空闲</span><span style="padding: 8px 12px; border-top: 1px solid #E3E3E0">Needs approval · 3m 或 Needs reply · 3m</span>
+        <span style="padding: 8px 12px; border-top: 1px solid #E3E3E0">空闲</span><span style="padding: 8px 12px; border-top: 1px solid #E3E3E0">一轮结束；没有通知能力的程序 3 秒内没有新输出</span><span style="padding: 8px 12px; border-top: 1px solid #E3E3E0">Idle · 12m</span>
+        <span style="padding: 8px 12px; border-top: 1px solid #E3E3E0">已退出</span><span style="padding: 8px 12px; border-top: 1px solid #E3E3E0">进程以 0 退出</span><span style="padding: 8px 12px; border-top: 1px solid #E3E3E0">Exited</span>
+        <span style="padding: 8px 12px; border-top: 1px solid #E3E3E0">出错</span><span style="padding: 8px 12px; border-top: 1px solid #E3E3E0">进程以非 0 退出，或启动失败</span><span style="padding: 8px 12px; border-top: 1px solid #E3E3E0">Error · exit 1</span>
+      </div>
+      <p style="margin: 0; color: #5F5F5A">时间写法：不到 1 分钟写“now”，不到 1 小时写“4m”，不到 1 天写“2h”，更早写日期“Oct 21”。每 30 秒更新；悬停显示准确时间，如“Started at 14:32”。</p>
+      <span style="font-weight: 600; margin-top: 4px">状态从哪来</span>
+      <div style="display: grid; grid-template-columns: 120px 70px 76px 76px minmax(0, 1fr); border: 1px solid #E3E3E0; border-radius: 10px; overflow: hidden; font-size: 13px">
+        <span style="padding: 7px 10px; background: #F2F2EF; font-size: 12px; color: #6B6B6B; font-weight: 600">程序</span><span style="padding: 7px 10px; background: #F2F2EF; font-size: 12px; color: #6B6B6B; font-weight: 600">运行中 / 空闲</span><span style="padding: 7px 10px; background: #F2F2EF; font-size: 12px; color: #6B6B6B; font-weight: 600">等你批准</span><span style="padding: 7px 10px; background: #F2F2EF; font-size: 12px; color: #6B6B6B; font-weight: 600">等你回复</span><span style="padding: 7px 10px; background: #F2F2EF; font-size: 12px; color: #6B6B6B; font-weight: 600">接法</span>
+        <span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">claude</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">✓</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">✓</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">✓</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">钩子（hooks）：UserPromptSubmit、PermissionRequest、Stop 等。启动时用 --settings 临时加上，不改你自己的配置</span>
+        <span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">codex</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">✓</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">✓</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">✓</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">钩子（hooks）：本机 codex 0.159 已有 PermissionRequest、Stop 等事件；旧版本只能用 notify，只知道一轮结束</span>
+        <span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">其他 agent</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">✓</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">可配置</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">—</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">tmux 的输出活动判断运行中和空闲；可在设置里给它配一句“等你”的文字，例如“(y/n)”，停下 3 秒且最后几行出现这句才算等你</span>
+        <span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">Shell 和其他程序</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">✓</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">—</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">—</span><span style="padding: 7px 10px; border-top: 1px solid #E3E3E0">只用 tmux 的输出活动；退出码判断已退出和出错</span>
+      </div>
+      <p style="margin: 0; color: #5F5F5A">钩子触发时运行 AgentDeck 自带的一个小命令，它读 tmux 给每个终端设的环境变量 AGENTDECK_TERM，把“哪个终端、什么事件”发给应用。所以状态不靠识别屏幕文字，看不见的终端也是准的。agent 升级改了钩子格式时，这个 agent 自动退回到“其他 agent”那一行的做法，并在 Settings › Agents 里提示。</p>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <span style="font-size: 15px; font-weight: 600">agent 停下来等你</span>
+    <div style="display: flex; align-items: flex-start">
+      <div class="step" style="width: 300px">
+        <div class="fig" style="width: 300px; height: 200px">
+          <div class="at" style="left: 0px; top: 0px; z-index: 5"><dc-import name="Top" w="300" r="2 running" hint-size="300px,20px"></dc-import></div>
+          <div class="at" style="left: 14px; top: 30px"><dc-import name="Frame" w="272" h="158" branch="feat/oauth" hint-size="272px,158px"></dc-import></div>
+          <div class="at" style="left: 24px; top: 58px"><dc-import name="Term" w="166" h="120" s="Running · 3m" lines="› Run the tests|~Bash pnpm test" hint-size="166px,120px"></dc-import></div>
+          <div class="at" style="left: 198px; top: 58px"><dc-import name="Term" w="80" h="120" cmd="zsh" s="" lines="$ pnpm dev|~:3000" hint-size="80px,120px"></dc-import></div>
+        </div>
+        <p class="cap">claude 运行中</p>
+      </div>
+      <dc-import name="Arrow" label="claude 请求批准命令" pad="76" hint-size="104px,110px"></dc-import>
+      <div class="step" style="width: 300px">
+        <div class="fig" style="width: 300px; height: 200px">
+          <div class="at" style="left: 0px; top: 0px; z-index: 5"><dc-import name="Top" w="300" r="1 running|!1 waiting" hint-size="300px,20px"></dc-import></div>
+          <div class="at" style="left: 14px; top: 30px"><dc-import name="Frame" w="272" h="158" branch="feat/oauth" wait="1 waiting" hint-size="272px,158px"></dc-import></div>
+          <div class="at" style="left: 24px; top: 58px"><dc-import name="Term" w="166" h="120" st="wait" s="Needs approval" lines="› Run the tests|~Bash pnpm test|!Allow running pnpm test?|!(y/n)" hint-size="166px,120px"></dc-import></div>
+          <div class="at" style="left: 198px; top: 58px"><dc-import name="Term" w="80" h="120" cmd="zsh" s="" lines="$ pnpm dev|~:3000" hint-size="80px,120px"></dc-import></div>
+        </div>
+        <p class="cap">2 秒内：窗口、框、顶栏一起提示</p>
+      </div>
+      <dc-import name="Arrow" label="⌘J 或单击顶栏“1 waiting”" pad="76" hint-size="104px,110px"></dc-import>
+      <div class="step" style="width: 300px">
+        <div class="fig" style="width: 300px; height: 200px">
+          <div class="at" style="left: 0px; top: 0px; z-index: 5"><dc-import name="Top" w="300" r="1 running|!1 waiting" hint-size="300px,20px"></dc-import></div>
+          <div class="at" style="left: 14px; top: 30px"><dc-import name="Frame" w="272" h="158" branch="feat/oauth" wait="1 waiting" hint-size="272px,158px"></dc-import></div>
+          <div class="at" style="left: 24px; top: 58px"><dc-import name="Term" w="166" h="120" st="wait" f="1" s="Needs approval" lines="› Run the tests|~Bash pnpm test|!Allow running pnpm test?|!(y/n)" hint-size="166px,120px"></dc-import></div>
+          <div class="at" style="left: 198px; top: 58px"><dc-import name="Term" w="80" h="120" cmd="zsh" s="" lines="$ pnpm dev|~:3000" hint-size="80px,120px"></dc-import></div>
+        </div>
+        <p class="cap">跳到这个窗口并聚焦；橙色边框消失，点仍是橙色</p>
+      </div>
+      <dc-import name="Arrow" label="按 y" pad="76" hint-size="104px,110px"></dc-import>
+      <div class="step" style="width: 300px">
+        <div class="fig" style="width: 300px; height: 200px">
+          <div class="at" style="left: 0px; top: 0px; z-index: 5"><dc-import name="Top" w="300" r="2 running" hint-size="300px,20px"></dc-import></div>
+          <div class="at" style="left: 14px; top: 30px"><dc-import name="Frame" w="272" h="158" branch="feat/oauth" hint-size="272px,158px"></dc-import></div>
+          <div class="at" style="left: 24px; top: 58px"><dc-import name="Term" w="166" h="120" f="1" s="Running" lines="› Run the tests|~Bash pnpm test|y|~Running 18 tests…" hint-size="166px,120px"></dc-import></div>
+          <div class="at" style="left: 198px; top: 58px"><dc-import name="Term" w="80" h="120" cmd="zsh" s="" lines="$ pnpm dev|~:3000" hint-size="80px,120px"></dc-import></div>
+        </div>
+        <p class="cap">回到运行中</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <span style="font-size: 15px; font-weight: 600">一次批准所有“要不要允许”的请求 <span style="font-weight: 400; font-size: 13px; color: #6B6B6B">只管 yes / no 的批准，不管提问和多选</span></span>
+    <div style="display: flex; align-items: flex-start">
+      <div class="step" style="width: 300px">
+        <div class="fig" style="width: 300px; height: 200px">
+          <div class="at" style="left: 0px; top: 0px; z-index: 5"><dc-import name="Top" w="300" r="!3 waiting|[Approve all…]" hint-size="300px,20px"></dc-import></div>
+          <div class="at" style="left: 10px; top: 40px"><dc-import name="Term" w="88" h="112" st="wait" s="Needs approval" lines="› Run the tests|!Allow pnpm test?|!(y/n)" hint-size="88px,112px"></dc-import></div>
+          <div class="at" style="left: 106px; top: 40px"><dc-import name="Term" w="88" h="112" cmd="codex" st="wait" s="Needs approval" lines="› Clear cache|!Run redis-cli FLUSHDB?|!(y/n)" hint-size="88px,112px"></dc-import></div>
+          <div class="at" style="left: 202px; top: 40px"><dc-import name="Term" w="88" h="112" st="wait" s="Needs reply" lines="› Export a GIF|!ffmpeg or gifski?" hint-size="88px,112px"></dc-import></div>
+          <div class="at" style="left: 262px; top: 8px; z-index: 45"><dc-import name="Cursor" hint-size="24px,24px"></dc-import></div>
+        </div>
+        <p class="cap">两个在等批准、一个在问你问题；顶栏出现“Approve all…”</p>
+      </div>
+      <dc-import name="Arrow" label="单击，或 ⌘⇧J" pad="76" hint-size="104px,110px"></dc-import>
+      <div class="step" style="width: 300px">
+        <div class="fig" style="width: 300px; height: 200px">
+          <div class="at" style="left: 20px; top: 14px"><dc-import name="Dialog" w="260" t="Approve these requests?" body="☑ claude · api-server · feat/oauth|>pnpm test|☐ codex · api-server · fix/rate-limit|>redis-cli FLUSHDB|!Unchecked: this looks destructive.|~Not included: 1 question waiting for your reply." btns="Cancel|*Approve 1" hint-size="260px,170px"></dc-import></div>
+        </div>
+        <p class="cap">先列出每条请求要做什么；看起来有破坏性的默认不勾</p>
+      </div>
+      <dc-import name="Arrow" label="Approve 1" pad="76" hint-size="104px,110px"></dc-import>
+      <div class="step" style="width: 300px">
+        <div class="fig" style="width: 300px; height: 200px">
+          <div class="at" style="left: 0px; top: 0px; z-index: 5"><dc-import name="Top" w="300" r="1 running|!2 waiting" hint-size="300px,20px"></dc-import></div>
+          <div class="at" style="left: 10px; top: 40px"><dc-import name="Term" w="88" h="112" st="run" s="Running" lines="› Run the tests|y|~Running 18 tests…" hint-size="88px,112px"></dc-import></div>
+          <div class="at" style="left: 106px; top: 40px"><dc-import name="Term" w="88" h="112" cmd="codex" st="wait" s="Needs approval" lines="› Clear cache|!Run redis-cli FLUSHDB?|!(y/n)" hint-size="88px,112px"></dc-import></div>
+          <div class="at" style="left: 202px; top: 40px"><dc-import name="Term" w="88" h="112" st="wait" s="Needs reply" lines="› Export a GIF|!ffmpeg or gifski?" hint-size="88px,112px"></dc-import></div>
+          <div class="at" style="left: 40px; top: 160px; z-index: 30"><dc-import name="Note" v="toast" w="220" text="Approved 1 request · 2 still need you" hint-size="220px,28px"></dc-import></div>
+        </div>
+        <p class="cap">勾上的那个回到运行中；剩下的照常等你</p>
+      </div>
+      <dc-import name="Arrow" label="想以后都自动批准" pad="76" hint-size="104px,110px"></dc-import>
+      <div class="step" style="width: 300px">
+        <div class="fig" style="width: 300px; height: 200px">
+          <div class="at" style="left: 14px; top: 16px"><dc-import name="Frame" w="272" h="140" branch="feat/oauth" note="Auto-approve" hint-size="272px,140px"></dc-import></div>
+          <div class="at" style="left: 24px; top: 44px"><dc-import name="Term" w="252" h="102" st="run" s="Running" lines="› Fix lint errors|~Bash pnpm lint --fix|~Auto-approved by AgentDeck|~Running…" hint-size="252px,102px"></dc-import></div>
+          <div class="at" style="left: 40px; top: 164px; z-index: 30"><dc-import name="Note" v="toast" w="220" text="Auto-approved pnpm lint --fix" hint-size="220px,28px"></dc-import></div>
+        </div>
+        <p class="cap">右键框 › “Auto-approve”：这个工作区以后的批准请求自动选 yes，每次都留记录</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 48px; font-size: 14px; line-height: 1.65">
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 10px">
+      <span style="font-size: 15px; font-weight: 600">批准规则</span>
+      <ul style="margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px">
+        <li>只处理“批准”类请求：claude、codex 的 PermissionRequest 事件，或配置了“等你”文字的其他 agent。agent 向你提问（Needs reply）、让你在几个选项里选，都不算，永远留给你。</li>
+        <li>入口：同时有 2 个及以上在等批准时，顶栏的“waiting”旁出现“Approve all…”，⌘⇧J 相同。一定先弹列表，写清每条是哪个 agent、哪个工作区、要运行什么，确认后才批准。</li>
+        <li>看起来有破坏性的命令默认不勾：rm -rf、git push --force、git reset --hard、DROP / TRUNCATE、FLUSHDB / FLUSHALL、改动 .env 等。名单在 Settings › Approvals 里可以改。</li>
+        <li>只选“这一次允许”，从不选“以后都允许 / don’t ask again”，不会改动 agent 自己的权限设置。</li>
+        <li>批准的做法：给那个终端的 tmux 窗格发 agent 对应的“允许一次”按键（claude 是回车选第一项 Yes，codex 是 y，其他 agent 在设置里配）。发完 2 秒内状态没离开“等你”，就在那一条上标“Couldn’t approve”，留给你手动处理。</li>
+      </ul>
+    </div>
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 10px">
+      <span style="font-size: 15px; font-weight: 600">Auto-approve（按工作区开）</span>
+      <ul style="margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px">
+        <li>默认关闭。右键工作区框 › “Auto-approve”打开；打开后框标题显示“Auto-approve”，再点一次关闭。只影响这个框里的终端。</li>
+        <li>claude 和 codex 在钩子里直接回答“允许”，终端里不会出现确认提示；其他 agent 等提示出现后由 AgentDeck 发按键。</li>
+        <li>破坏性名单里的命令照样停下来等你，提问和多选也照样等你。</li>
+        <li>每次自动批准都弹一条轻提示，并记进这个工作区的记录（右键框 › “Approval history”），可以事后查。</li>
+        <li>想让某个 agent 全程不问，也可以直接用它自己的模式（例如 claude 的 --permission-mode、codex 的 --full-auto），在 Settings › Agents 的启动参数里加。Auto-approve 是中间档：自动，但挡住危险命令、留记录。</li>
+      </ul>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 64px; align-items: flex-start">
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <span style="font-size: 15px; font-weight: 600">应用在后台时</span>
+      <div style="display: flex; align-items: flex-start">
+        <div class="step" style="width: 300px">
+          <div class="fig" style="width: 300px; height: 200px">
+            <div class="at" style="left: 34px; top: 70px"><dc-import name="Note" v="notif" w="230" title="AgentDeck" text="claude in api-server · feat/oauth needs approval" hint-size="230px,54px"></dc-import></div>
+          </div>
+          <p class="cap">系统通知；程序坞图标显示数字 1</p>
+        </div>
+        <dc-import name="Arrow" label="单击通知" pad="76" hint-size="104px,110px"></dc-import>
+        <div class="step" style="width: 300px">
+          <div class="fig" style="width: 300px; height: 200px">
+            <div class="at" style="left: 0px; top: 0px; z-index: 5"><dc-import name="Top" w="300" r="1 running|!1 waiting" hint-size="300px,20px"></dc-import></div>
+            <div class="at" style="left: 14px; top: 30px"><dc-import name="Frame" w="272" h="158" branch="feat/oauth" wait="1 waiting" hint-size="272px,158px"></dc-import></div>
+            <div class="at" style="left: 24px; top: 58px"><dc-import name="Term" w="166" h="120" st="wait" f="1" s="Needs approval" lines="› Run the tests|~Bash pnpm test|!Allow running pnpm test?|!(y/n)" hint-size="166px,120px"></dc-import></div>
+            <div class="at" style="left: 198px; top: 58px"><dc-import name="Term" w="80" h="120" cmd="zsh" s="" lines="$ pnpm dev|~:3000" hint-size="80px,120px"></dc-import></div>
+          </div>
+          <p class="cap">应用回到前台，跳到那个窗口并聚焦</p>
+        </div>
+      </div>
+    </div>
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 10px; font-size: 14px; line-height: 1.65">
+      <span style="font-size: 15px; font-weight: 600">提醒规则</span>
+      <ul style="margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px">
+        <li>窗口：状态点变橙；窗口未聚焦时边框也变橙。</li>
+        <li>工作区框：标题栏右侧显示“1 waiting”。</li>
+        <li>顶栏：“1 waiting”按钮，单击依次跳到每个在等你的窗口，⌘J 效果相同。</li>
+        <li>应用在后台：发系统通知（设置里可以关），程序坞角标显示在等你的数量。</li>
+        <li>聚焦一个在等你的窗口后，橙色边框消失，状态点仍是橙色，直到 agent 继续运行。</li>
+        <li>终端拉小成摘要卡时，在等你的摘要卡同样是橙色。</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":2160}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

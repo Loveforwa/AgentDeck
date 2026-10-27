@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>需求：MVP v3</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.at{position:absolute}
+.step{display:flex;flex-direction:column;gap:8px;flex:none}
+.cap{margin:0;font-size:13px;line-height:1.55}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1200px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.tag{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;background:#F2F2EF;color:#5F5F5A}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.win{background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;overflow:hidden;font-size:11px}
+.wt{display:flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-bottom:1px solid #EEEEEB}
+.wb{padding:6px 9px;font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.7;color:#6B6B6B}
+.dot{width:7px;height:7px;border-radius:50%;flex:none}
+</style>
+</helmet>
+<div style="width: 1760px; height: 3260px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">12 · MVP v3：agent 指挥白板、子 agent 窗口组、提交图</h1>
+      <span class="tag">M6 · N1–N8</span>
+    </div>
+    <p class="lead">v2（11）做完之后再开工。这一页记下 2026-10-24 提出的方向，标 <span class="concept">概念</span> 的地方形态还没定，开工前先在这张画板上定稿；带 DR 编号的先调研。</p>
+  </div>
+
+  <!-- 2026-10-25 定稿 -->
+  <div style="display: flex; flex-direction: column; gap: 14px; padding: 24px; border: 1.5px solid #1A1A1A; border-radius: 12px">
+    <div style="display: flex; align-items: baseline; gap: 10px"><span class="h2">2026-10-25 定稿：以这一节为准</span><span class="tag">下面各节里标“概念 / 待定”的，按这里办</span></div>
+    <div class="tbl" style="grid-template-columns: 90px 260px minmax(0, 1fr)">
+      <span class="th">编号</span><span class="th">项</span><span class="th">定下来的</span>
+      <span class="td mono">N2</span><span class="td">子 agent 窗口组</span><span class="td">用侧边栏（形态 A）：主 agent 旁边一列列出子 agent 和状态，选中一个就在右边打开它的终端，看它在跑什么。关掉主 agent 时子终端留下，变成普通窗口。</span>
+      <span class="td mono">N3、N4</span><span class="td">插件接口、cc-switch</span><span class="td">移到“插件能力”页（PL0 入口、PL2 CC Switch 用量），规则见 docs/plugins.md。这一页的 N3、N4 两节作废。</span>
+      <span class="td mono">N6</span><span class="td">白板手势</span><span class="td">都要：两指在任何窗口上都给窗口（不论是否聚焦），空白处两指平移；打开捏合缩放；空格拖动平移。</span>
+      <span class="td mono">N7</span><span class="td">cd 出工作区</span><span class="td">只提示：标题栏显示 “outside workspace”，不拦、不改面板。</span>
+      <span class="td mono">N8</span><span class="td">Approve all</span><span class="td">不设快捷键，只从顶栏点。</span>
+      <span class="td mono">N9</span><span class="td">Skills · MCP（新）</span><span class="td">不做插件，放进右侧源代码管理面板，一个可折叠的小节，和 Git 的内容放在一起（见右下图）。</span>
+    </div>
+    <div style="display: flex; gap: 32px; align-items: flex-start">
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <div class="fig" style="width: 860px; height: 300px">
+          <div class="at win" style="left: 20px; top: 24px; width: 290px; height: 250px; border: 1.5px solid #1A1A1A">
+            <div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="mono" style="font-weight: 500">claude</span><span style="color: #6B6B6B">· lead</span></div>
+            <div class="wb">› Split the refactor into 3 subagents<br>⏺ agentdeck.open_terminals(3)<br>  ⎿ opened sub-1, sub-2, sub-3</div>
+          </div>
+          <div class="at win" style="left: 318px; top: 24px; width: 170px; height: 250px; font-size: 11.5px">
+            <div style="padding: 8px 10px; font-weight: 600">3 subagents</div>
+            <div style="display: flex; align-items: center; gap: 7px; padding: 4px 10px"><span class="dot" style="background: #1A7F37"></span>sub-1 · api</div>
+            <div style="display: flex; align-items: center; gap: 7px; padding: 4px 10px; background: #EDEDEA; font-weight: 600"><span class="dot" style="background: #BF8700"></span>sub-2 · ui</div>
+            <div style="display: flex; align-items: center; gap: 7px; padding: 4px 10px"><span class="dot" style="background: #1A7F37"></span>sub-3 · tests</div>
+          </div>
+          <div class="at win" style="left: 496px; top: 24px; width: 340px; height: 250px">
+            <div class="wt"><span class="dot" style="background: #BF8700"></span><span class="mono" style="font-weight: 500">claude</span><span style="color: #6B6B6B">· sub-2 · ui</span><span style="flex: 1"></span><span style="color: #BF8700; font-weight: 600">Waiting</span></div>
+            <div class="wb">⏺ Edit src/ui/LoginForm.tsx<br>  Do you want to make this edit?</div>
+          </div>
+        </div>
+        <span class="cap">N2：主 agent · 侧边栏 · 选中的子 agent 的终端。点侧边栏另一行，右边换成那个子 agent 的终端。</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <div class="fig" style="width: 640px; height: 300px">
+          <div class="at win" style="left: 20px; top: 16px; width: 330px; height: 270px; font-size: 11.5px; border-radius: 10px">
+            <div style="padding: 8px 12px; font-weight: 600; border-bottom: 1px solid #EEEEEB">Source control<span style="float: right; color: #8A8A85; font-weight: 400">feat/login</span></div>
+            <div style="padding: 6px 12px; color: #8A8A85; font-size: 10px; font-weight: 600">▸ CHANGES  3</div>
+            <div style="padding: 6px 12px; color: #8A8A85; font-size: 10px; font-weight: 600">▸ COMMITS</div>
+            <div style="padding: 6px 12px; color: #1A1A1A; font-size: 10px; font-weight: 600">▾ SKILLS · MCP <span style="color: #8A8A85; font-weight: 400">for claude · Fix the login bug</span></div>
+            <div style="display: flex; gap: 8px; padding: 3px 12px" class="mono"><span>☑</span>agentdeck<span style="margin-left: auto; color: #8A8A85">built in</span></div>
+            <div style="display: flex; gap: 8px; padding: 3px 12px" class="mono"><span>☑</span>release-notes<span style="margin-left: auto; color: #8A8A85">repo</span></div>
+            <div style="display: flex; gap: 8px; padding: 3px 12px" class="mono"><span>☐</span>xlsx<span style="margin-left: auto; color: #8A8A85">library</span></div>
+            <div style="display: flex; gap: 8px; padding: 3px 12px" class="mono"><span>☑</span>github <span style="color: #8A8A85">MCP</span><span style="margin-left: auto; color: #8A8A85">library</span></div>
+            <div style="padding: 6px 12px; color: #5F5F5A">Add skill…  Add MCP…<span style="float: right; color: #1A1A1A; font-weight: 600">Restart and resume</span></div>
+          </div>
+          <div class="at" style="left: 370px; top: 24px; width: 250px; font-size: 12px; line-height: 1.65; color: #5F5F5A">和 Changes、Commits 一样是面板里的一个小节，能折起来。跟着聚焦的终端走。只通过启动参数带进去，不改你自己的配置；改了以后点 Restart and resume 生效。</div>
+        </div>
+        <span class="cap">N9：源代码管理面板里的 Skills · MCP。</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- N1 + N2 -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: baseline; gap: 10px"><span class="h2">N1 · AgentDeck 的 MCP：agent 自己在白板上开窗口</span></div>
+    <p class="lead">AgentDeck 启动 agent 时自动挂上自己的 MCP（claude 已经做了，见 M1-mcp；codex、pi、omp、kimi 跟上），需要的话再自动装载一个 AgentDeck skill，告诉 agent 什么时候该用这些工具。agent 拉起 subagent 时，每个 subagent 在白板上有自己的终端窗口；要你看网页时，直接在它旁边开网页窗口。claude 自己也能开 subagent，我们做的是把它们接到白板上看得见。</p>
+    <div class="tbl" style="grid-template-columns: 220px minmax(0, 1fr) 260px">
+      <span class="th">工具</span><span class="th">做什么</span><span class="th">谨慎的地方</span>
+      <span class="td mono">open_browser(url)</span><span class="td">在调用者旁边开网页窗口（同一个框）；同一来源已开着就跳过去刷新</span><span class="td">只允许 http(s) 和本地文件</span>
+      <span class="td mono">open_terminals(n, …)</span><span class="td">一次开 n 个终端（每个 subagent 一个），组成一个“窗口组”挂在调用者旁边（N2）</span><span class="td">一次最多 6 个，超过要你确认</span>
+      <span class="td mono">focus_window / notify</span><span class="td">把某个窗口拉到眼前；发一条通知（“测试跑完了”）</span><span class="td">不抢焦点：你正在打字时只闪一下</span>
+      <span class="td mono">list_windows</span><span class="td">读白板上有哪些窗口、状态、对话主题</span><span class="td">只读</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: baseline; gap: 10px"><span class="h2">N2 · 窗口组旁边的附着菜单</span><span class="concept">概念 · 两种形态待定</span><span class="mono" style="font-size: 12px; color: #6B6B6B">DR-54</span></div>
+    <p class="lead">一个 agent 一下开出 n 个子终端时，白板很快就乱了。给这一组窗口挂一个菜单，在它旁边切换、收起、排列。这个菜单以后也是插件的入口（N3），所以形态要先定好。</p>
+    <div style="display: flex; gap: 32px; align-items: flex-start">
+      <div class="step" style="width: 820px">
+        <div class="fig" style="width: 820px; height: 330px">
+          <div class="at win" style="left: 24px; top: 24px; width: 300px; height: 280px; border: 1.5px solid #1A1A1A">
+            <div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="mono" style="font-weight: 500">claude</span><span style="color: #6B6B6B">lead</span><span style="flex: 1"></span><span style="color: #1A7F37">Running</span></div>
+            <div class="wb">› Split the refactor into 3 subagents<br>⏺ agentdeck.open_terminals(3)<br>  ⎿ opened sub-1, sub-2, sub-3</div>
+          </div>
+          <div class="at" style="left: 334px; top: 24px; width: 150px; height: 280px; background: #FFFFFF; border: 1px solid #D6D6D2; border-radius: 8px; box-shadow: 0 8px 20px rgba(0,0,0,0.08); font-size: 11px; display: flex; flex-direction: column">
+            <div style="padding: 7px 9px; border-bottom: 1px solid #EEEEEB; font-weight: 600">3 subagents</div>
+            <div style="padding: 4px; display: flex; flex-direction: column; gap: 2px">
+              <span style="display: flex; align-items: center; gap: 6px; padding: 4px 6px; border-radius: 5px; background: #EDEDEA"><span class="dot" style="background: #1A7F37"></span>sub-1 · api</span>
+              <span style="display: flex; align-items: center; gap: 6px; padding: 4px 6px; border-radius: 5px; background: #FFF7E6; color: #B45309"><span class="dot" style="background: #E8A317"></span>sub-2 · ui</span>
+              <span style="display: flex; align-items: center; gap: 6px; padding: 4px 6px; border-radius: 5px"><span class="dot" style="background: #FFFFFF; box-shadow: inset 0 0 0 1.2px #8A8A85"></span>sub-3 · tests</span>
+            </div>
+            <div style="flex: 1"></div>
+            <div style="padding: 6px 9px; border-top: 1px solid #EEEEEB; color: #6B6B6B; display: flex; flex-direction: column; gap: 3px"><span>Show all</span><span>Stack</span><span>Collapse group</span><span style="color: #A3A39E">+ plugins…</span></div>
+          </div>
+          <div class="at win" style="left: 494px; top: 24px; width: 300px; height: 280px">
+            <div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="mono" style="font-weight: 500">claude</span><span style="color: #6B6B6B">sub-1 · api</span><span style="flex: 1"></span><span style="color: #1A7F37">Running</span></div>
+            <div class="wb">⏺ Edit src/routes/user.ts<br>⏺ Bash pnpm test user</div>
+          </div>
+        </div>
+        <p class="cap"><b>形态 A · 侧边栏</b>：菜单贴在主 agent 窗口右边，列出这一组的子窗口和状态；单击一个，右边只显示它（其他收起），“Show all” 平铺。占地方，但一眼看全。</p>
+      </div>
+      <div class="step" style="width: 780px">
+        <div class="fig" style="width: 780px; height: 330px">
+          <div class="at win" style="left: 24px; top: 24px; width: 300px; height: 280px; border: 1.5px solid #1A1A1A">
+            <div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="mono" style="font-weight: 500">claude</span><span style="color: #6B6B6B">lead</span><span style="flex: 1"></span><span style="color: #1A7F37">Running</span></div>
+            <div class="wb">› Split the refactor into 3 subagents<br>⏺ agentdeck.open_terminals(3)</div>
+          </div>
+          <div class="at" style="left: 344px; top: 24px; width: 410px; height: 280px; display: flex; flex-direction: column">
+            <div style="display: flex; gap: 2px; font-size: 11px">
+              <span style="display: flex; align-items: center; gap: 5px; padding: 5px 10px; background: #FFFFFF; border: 1px solid #E3E3E0; border-bottom: 0; border-radius: 8px 8px 0 0"><span class="dot" style="background: #1A7F37"></span>sub-1</span>
+              <span style="display: flex; align-items: center; gap: 5px; padding: 5px 10px; background: #F2F2EF; border-radius: 8px 8px 0 0; color: #B45309"><span class="dot" style="background: #E8A317"></span>sub-2</span>
+              <span style="display: flex; align-items: center; gap: 5px; padding: 5px 10px; background: #F2F2EF; border-radius: 8px 8px 0 0; color: #6B6B6B"><span class="dot" style="background: #FFFFFF; box-shadow: inset 0 0 0 1.2px #8A8A85"></span>sub-3</span>
+              <span style="padding: 5px 8px; color: #6B6B6B">⋯</span>
+            </div>
+            <div class="win" style="flex: 1; border-radius: 0 8px 8px 8px">
+              <div class="wb">⏺ Edit src/routes/user.ts<br>⏺ Bash pnpm test user<br>  18 passed</div>
+            </div>
+          </div>
+          <div class="at" style="left: 330px; top: 140px; width: 14px; height: 0px; border-top: 1.5px dashed #8A8A85"></div>
+        </div>
+        <p class="cap"><b>形态 B · 标签页</b>：这一组子终端叠成一个窗口，顶上一排标签，标签上带状态灯；“⋯” 是菜单（拆开平铺、收起、插件）。省地方，但同时只能看一个。</p>
+      </div>
+    </div>
+    <div class="tbl" style="grid-template-columns: 220px minmax(0, 1fr)">
+      <span class="th">待定</span><span class="th">选项</span>
+      <span class="td">默认形态</span><span class="td">A 侧边栏 / B 标签页 / 跟着数量变（≤3 平铺，更多变标签）</span>
+      <span class="td">谁算一组</span><span class="td">同一个 agent 用 open_terminals 开出来的；用户也能多选几个窗口手动编组</span>
+      <span class="td">关掉主 agent</span><span class="td">子终端一起关 / 留下变成普通窗口</span>
+    </div>
+  </div>
+
+  <!-- N3 插件 + N4 token -->
+  <div style="display: flex; gap: 48px; align-items: flex-start">
+    <div style="display: flex; flex-direction: column; gap: 14px; width: 780px">
+      <div style="display: flex; align-items: baseline; gap: 10px"><span class="h2">N3 · 插件接口</span><span class="concept">概念</span></div>
+      <p class="lead">先只开四个口子，插件只能往这些地方放东西，不能改白板本身：</p>
+      <div class="tbl" style="grid-template-columns: 180px minmax(0, 1fr)">
+        <span class="th">位置</span><span class="th">插件能放什么</span>
+        <span class="td">窗口组菜单（N2）</span><span class="td">菜单项，例如 “Merge all subagents’ branches”</span>
+        <span class="td">标题栏小标签</span><span class="td">窗口标题栏右边一个短标签，例如 token 数（N4）</span>
+        <span class="td">右侧面板的页签</span><span class="td">面板顶上多一个页签，例如 Usage（N4）</span>
+        <span class="td">MCP 工具</span><span class="td">给白板上的 agent 多几个工具（N1 同一个 MCP）</span>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 14px; width: 800px">
+      <div style="display: flex; align-items: baseline; gap: 10px"><span class="h2">N4 · 接入 cc-switch：看得见 token</span><span class="concept">概念</span><span class="mono" style="font-size: 12px; color: #6B6B6B">DR-55</span></div>
+      <div class="fig" style="width: 800px; height: 250px">
+        <div class="at" style="left: 20px; top: 20px; width: 470px; height: 210px; border: 1px solid #DCDCD8; border-radius: 12px; background: rgba(255,255,255,0.55)">
+          <div style="display: flex; align-items: baseline; gap: 8px; padding: 7px 10px; font-size: 11px"><b>agenduck</b><span class="mono" style="color: #6B6B6B">main</span><span style="flex: 1"></span><span style="color: #6B6B6B">1.2M tok today</span></div>
+          <div class="at win" style="left: 10px; top: 34px; width: 215px; height: 160px">
+            <div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="mono">claude</span><span style="flex: 1"></span><span class="tag" style="height: 16px; font-size: 10px">840k tok</span></div>
+          </div>
+          <div class="at win" style="left: 235px; top: 34px; width: 215px; height: 160px">
+            <div class="wt"><span class="dot" style="background: #FFFFFF; box-shadow: inset 0 0 0 1.2px #8A8A85"></span><span class="mono">codex</span><span style="flex: 1"></span><span class="tag" style="height: 16px; font-size: 10px">310k tok</span></div>
+          </div>
+        </div>
+        <div class="at" style="left: 510px; top: 20px; width: 270px; height: 210px; background: #FFFFFF; border: 1px solid #E3E3E0; border-radius: 10px; font-size: 11px; overflow: hidden">
+          <div style="display: flex; gap: 12px; height: 28px; align-items: center; padding: 0 10px; border-bottom: 1px solid #EEEEEB; color: #6B6B6B"><span>Source control</span><span style="color: #1A1A1A; font-weight: 600">Usage</span></div>
+          <div style="padding: 8px 10px; display: flex; flex-direction: column; gap: 7px">
+            <span style="color: #6B6B6B">Today · from cc-switch</span>
+            <span style="display: flex; align-items: center; gap: 6px">agenduck<span style="flex: 1; height: 6px; background: #EDEDEA; border-radius: 3px; overflow: hidden"><span style="display: block; width: 70%; height: 6px; background: #1A1A1A"></span></span>1.2M</span>
+            <span style="display: flex; align-items: center; gap: 6px">api-server<span style="flex: 1; height: 6px; background: #EDEDEA; border-radius: 3px; overflow: hidden"><span style="display: block; width: 25%; height: 6px; background: #1A1A1A"></span></span>410k</span>
+            <span style="color: #6B6B6B; margin-top: 6px">Open full dashboard in cc-switch ↗</span>
+          </div>
+        </div>
+      </div>
+      <p class="cap">三层：每个窗口标题栏一个 token 小标签；工作区框标题写这个项目今天用了多少；右侧面板多一个 Usage 页签，按项目列出，并能打开 cc-switch 的完整消耗面板。数据从 cc-switch 读（怎么读、能不能按会话拆，先调研）。</p>
+    </div>
+  </div>
+
+  <!-- N5 提交图 + N6 手势 -->
+  <div style="display: flex; gap: 48px; align-items: flex-start">
+    <div style="display: flex; flex-direction: column; gap: 14px; width: 780px">
+      <div style="display: flex; align-items: baseline; gap: 10px"><span class="h2">N5 · 面板里的提交图</span><span class="mono" style="font-size: 12px; color: #6B6B6B">IS-58</span></div>
+      <div class="fig" style="width: 780px; height: 420px">
+        <div class="at" style="left: 20px; top: 18px; width: 500px; height: 384px; background: #FFFFFF; border: 1px solid #E3E3E0; border-radius: 10px; overflow: hidden; box-shadow: 0 6px 18px rgba(0,0,0,0.05)">
+          <div style="display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border-bottom: 1px solid #EEEEEB; font-size: 11px">
+            <span style="font-weight: 600; letter-spacing: 0.4px; color: #6B6B6B">GRAPH</span>
+            <span style="flex: 1"></span>
+            <span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border: 1px solid #E3E3E0; border-radius: 6px; font-size: 11px">All branches ▾</span>
+            <svg width="14" height="14" viewBox="0 0 14 14" role="img" aria-label="Search commits"><circle cx="6" cy="6" r="4.2" fill="none" stroke="#6B6B6B" stroke-width="1.3"></circle><path d="M9.2 9.2L12.4 12.4" stroke="#6B6B6B" stroke-width="1.3" stroke-linecap="round"></path></svg>
+          </div>
+          <div style="position: relative; height: 270px; margin-top: 6px">
+            <div class="at" style="left: 0px; right: 0px; top: 0px; height: 30px; display: flex; align-items: center; gap: 8px; padding: 0 12px 0 84px; background: transparent; font-size: 12px; white-space: nowrap"><span class="mono" style="color: #8A8A85; font-size: 10.5px; width: 52px; flex: none">e7a03e6</span><span style="overflow: hidden; text-overflow: ellipsis; min-width: 0">Plan round 2 and the next phase</span><span style="display: inline-flex; align-items: center; height: 17px; padding: 0 7px; border-radius: 999px; background: #3A3A37; color: #FFFFFF; font-size: 10.5px; font-weight: 500; flex: none">HEAD → main</span><span style="display: inline-flex; align-items: center; height: 17px; padding: 0 6px; border-radius: 4px; background: #F2F2EF; color: #5F5F5A; font-size: 10.5px; flex: none">◧ agenduck</span><span style="flex: 1"></span><span style="color: #8A8A85; font-size: 11px; width: 26px; text-align: right; flex: none">now</span></div><div class="at" style="left: 0px; right: 0px; top: 30px; height: 30px; display: flex; align-items: center; gap: 8px; padding: 0 12px 0 84px; background: transparent; font-size: 12px; white-space: nowrap"><span class="mono" style="color: #8A8A85; font-size: 10.5px; width: 52px; flex: none">e9b3673</span><span style="overflow: hidden; text-overflow: ellipsis; min-width: 0">Merge feat/M1-mcp</span><span style="flex: 1"></span><span style="color: #8A8A85; font-size: 11px; width: 26px; text-align: right; flex: none">1h</span></div><div class="at" style="left: 0px; right: 0px; top: 60px; height: 30px; display: flex; align-items: center; gap: 8px; padding: 0 12px 0 84px; background: transparent; font-size: 12px; white-space: nowrap"><span class="mono" style="color: #8A8A85; font-size: 10.5px; width: 52px; flex: none">b095785</span><span style="overflow: hidden; text-overflow: ellipsis; min-width: 0">M1: Clawd, a pixel mascot</span><span style="display: inline-flex; align-items: center; height: 17px; padding: 0 7px; border-radius: 999px; border: 1px solid #2563EB; color: #2563EB; font-size: 10.5px; font-weight: 500; background: #FFFFFF; flex: none">feat/M1-mcp</span><span style="display: inline-flex; align-items: center; height: 17px; padding: 0 6px; border-radius: 4px; background: #F2F2EF; color: #5F5F5A; font-size: 10.5px; flex: none">◧ worktree-agent</span><span style="flex: 1"></span><span style="color: #8A8A85; font-size: 11px; width: 26px; text-align: right; flex: none">1h</span></div><div class="at" style="left: 0px; right: 0px; top: 90px; height: 30px; display: flex; align-items: center; gap: 8px; padding: 0 12px 0 84px; background: transparent; font-size: 12px; white-space: nowrap"><span class="mono" style="color: #8A8A85; font-size: 10.5px; width: 52px; flex: none">2415bc5</span><span style="overflow: hidden; text-overflow: ellipsis; min-width: 0">Merge x13-known-agents</span><span style="flex: 1"></span><span style="color: #8A8A85; font-size: 11px; width: 26px; text-align: right; flex: none">2h</span></div><div class="at" style="left: 0px; right: 0px; top: 120px; height: 30px; display: flex; align-items: center; gap: 8px; padding: 0 12px 0 84px; background: transparent; font-size: 12px; white-space: nowrap"><span class="mono" style="color: #8A8A85; font-size: 10.5px; width: 52px; flex: none">d41fcea</span><span style="overflow: hidden; text-overflow: ellipsis; min-width: 0">X13: list agents by label</span><span style="display: inline-flex; align-items: center; height: 17px; padding: 0 7px; border-radius: 999px; border: 1px solid #1A7F37; color: #1A7F37; font-size: 10.5px; font-weight: 500; background: #FFFFFF; flex: none">x13-known-agents</span><span style="flex: 1"></span><span style="color: #8A8A85; font-size: 11px; width: 26px; text-align: right; flex: none">2h</span></div><div class="at" style="left: 0px; right: 0px; top: 150px; height: 30px; display: flex; align-items: center; gap: 8px; padding: 0 12px 0 84px; background: #F2F2EF; font-size: 12px; white-space: nowrap"><span class="mono" style="color: #8A8A85; font-size: 10.5px; width: 52px; flex: none">ada4077</span><span style="overflow: hidden; text-overflow: ellipsis; min-width: 0">M1: start the MCP in the main process</span><span style="flex: 1"></span><span style="color: #6B6B6B; font-size: 10.5px; flex: none">Checkout · Copy</span><span style="color: #8A8A85; font-size: 11px; width: 26px; text-align: right; flex: none">3h</span></div><div class="at" style="left: 0px; right: 0px; top: 180px; height: 30px; display: flex; align-items: center; gap: 8px; padding: 0 12px 0 84px; background: transparent; font-size: 12px; white-space: nowrap"><span class="mono" style="color: #8A8A85; font-size: 10.5px; width: 52px; flex: none">abf2dfb</span><span style="overflow: hidden; text-overflow: ellipsis; min-width: 0">Board: center the window on restore</span><span style="flex: 1"></span><span style="color: #8A8A85; font-size: 11px; width: 26px; text-align: right; flex: none">3h</span></div><div class="at" style="left: 0px; right: 0px; top: 210px; height: 30px; display: flex; align-items: center; gap: 8px; padding: 0 12px 0 84px; background: transparent; font-size: 12px; white-space: nowrap"><span class="mono" style="color: #8A8A85; font-size: 10.5px; width: 52px; flex: none">f4a796a</span><span style="overflow: hidden; text-overflow: ellipsis; min-width: 0">M1: packages/mcp-server</span><span style="flex: 1"></span><span style="color: #8A8A85; font-size: 11px; width: 26px; text-align: right; flex: none">4h</span></div><div class="at" style="left: 0px; right: 0px; top: 240px; height: 30px; display: flex; align-items: center; gap: 8px; padding: 0 12px 0 84px; background: transparent; font-size: 12px; white-space: nowrap"><span class="mono" style="color: #8A8A85; font-size: 10.5px; width: 52px; flex: none">6d44acb</span><span style="overflow: hidden; text-overflow: ellipsis; min-width: 0">docs: one numbering scheme</span><span style="flex: 1"></span><span style="color: #8A8A85; font-size: 11px; width: 26px; text-align: right; flex: none">5h</span></div>
+            <div class="at" style="left: 4px; top: 0px"><svg width="76" height="278" viewBox="0 0 76 278" aria-hidden="true"><path d="M16 15 L16 285" fill="none" stroke="#3A3A37" stroke-width="2" stroke-linecap="round"></path><path d="M36 75 L36 225" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round"></path><path d="M36 75 C36 60.0 16 60.0 16 45" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round"></path><path d="M36 225 C36 240.0 16 240.0 16 255" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round"></path><path d="M56 135 C56 120.0 16 120.0 16 105" fill="none" stroke="#1A7F37" stroke-width="2" stroke-linecap="round"></path><path d="M56 135 L56 165" fill="none" stroke="#1A7F37" stroke-width="2" stroke-linecap="round"></path><path d="M56 165 C56 180.0 16 180.0 16 195" fill="none" stroke="#1A7F37" stroke-width="2" stroke-linecap="round"></path><circle cx="16" cy="15" r="5.5" fill="#3A3A37"></circle><circle cx="16" cy="45" r="6" fill="#FFFFFF" stroke="#3A3A37" stroke-width="2"></circle><circle cx="16" cy="45" r="2" fill="#3A3A37"></circle><circle cx="36" cy="75" r="5" fill="#FFFFFF" stroke="#2563EB" stroke-width="2"></circle><circle cx="16" cy="105" r="6" fill="#FFFFFF" stroke="#3A3A37" stroke-width="2"></circle><circle cx="16" cy="105" r="2" fill="#3A3A37"></circle><circle cx="56" cy="135" r="5" fill="#FFFFFF" stroke="#1A7F37" stroke-width="2"></circle><circle cx="36" cy="165" r="5" fill="#FFFFFF" stroke="#2563EB" stroke-width="2"></circle><circle cx="16" cy="195" r="5" fill="#FFFFFF" stroke="#3A3A37" stroke-width="2"></circle><circle cx="36" cy="225" r="5" fill="#FFFFFF" stroke="#2563EB" stroke-width="2"></circle><circle cx="16" cy="255" r="5" fill="#FFFFFF" stroke="#3A3A37" stroke-width="2"></circle></svg></div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; height: 34px; margin-top: 4px; padding: 0 12px 0 84px; border-top: 1px dashed #E3E3E0; font-size: 12px; color: #6B6B6B">▸ 12 merged branches not on the board<span style="flex: 1"></span><span style="font-size: 11px">Show</span></div>
+        </div>
+        <div class="at" style="left: 540px; top: 22px; width: 222px; display: flex; flex-direction: column; gap: 10px; font-size: 12px; line-height: 1.6; color: #3A3A37">
+          <span><b>泳道和颜色</b>：每条分支一种颜色，分叉、合并画成弧线；合并提交是空心双圈，HEAD 是实心点。</span>
+          <span><b>标签</b>：分支名用同色胶囊；白板上有框在用的分支后面带 ◧ 和框名。</span>
+          <span><b>折叠</b>：已合并、不在白板上的旧分支收成最后一行，点 Show 才列出。</span>
+          <span><b>操作</b>：单击一行在下面展开改了哪些文件；悬停出现 Checkout、Copy；顶部可切到“只看这个框的分支”。</span>
+        </div>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 14px; width: 800px">
+      <div style="display: flex; align-items: baseline; gap: 10px"><span class="h2">N6 · 白板平移手势</span><span class="concept">先调研</span><span class="mono" style="font-size: 12px; color: #6B6B6B">DR-53</span></div>
+      <p class="lead">要的效果：两指滑动永远给终端（滚历史），平移白板换一个不冲突的手势。限制：macOS 的“三指拖移”是系统辅助功能，传给应用的就是普通的按住拖动，应用分辨不出是几根手指，也拿不到原始的三指事件。</p>
+      <div class="tbl" style="grid-template-columns: 220px minmax(0, 1fr)">
+        <span class="th">候选</span><span class="th">说明</span>
+        <span class="td">空白处按住拖动</span><span class="td">在白板空白处拖动就平移；开了系统“三指拖移”的人，三指在空白处一拖就是平移（就是用户想要的手感）</span>
+        <span class="td">按住空格拖动</span><span class="td">在窗口上面也能平移（设计工具的习惯）；终端聚焦时空格要留给终端，只在没聚焦时生效</span>
+        <span class="td">两指只在空白处平移</span><span class="td">鼠标在窗口上时两指给窗口，在空白处时平移白板（现在的做法要核对）</span>
+        <span class="td">捏合</span><span class="td">缩放，不变</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- N7 路径 + N8 其他 -->
+  <div style="display: flex; gap: 48px; align-items: flex-start">
+    <div style="display: flex; flex-direction: column; gap: 14px; width: 780px">
+      <div style="display: flex; align-items: baseline; gap: 10px"><span class="h2">N7 · 工作区和目录：终端 cd 出去了怎么办</span><span class="concept">待定</span><span class="mono" style="font-size: 12px; color: #6B6B6B">IS-57</span></div>
+      <p class="lead">工作区 = 一个 worktree + 一个分支；终端在框里打开时进的是这个目录。可是用户可以在终端里 <span class="mono">cd ..</span> 再开 claude，它就在框外的目录干活了，框的分支、源代码管理面板都对不上。要不要把 agent 强制绑在工作区目录里？</p>
+      <div class="tbl" style="grid-template-columns: 220px minmax(0, 1fr)">
+        <span class="th">做法</span><span class="th">代价</span>
+        <span class="td">提示（建议）</span><span class="td">tmux 能读到终端当前目录：离开工作区目录时标题栏出现灰色 “outside workspace”，面板跟着显示那个目录的仓库；不拦用户</span>
+        <span class="td">强制</span><span class="td">在 agent 启动参数里锁目录（claude 的 --add-dir 等），shell 里 cd 拦不住，只能管 agent</span>
+        <span class="td">不管</span><span class="td">框只是“从哪开始”，以后按终端实际目录分组</span>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 14px; width: 800px">
+      <span class="h2">N8 · 其他</span>
+      <div class="tbl" style="grid-template-columns: 220px minmax(0, 1fr)">
+        <span class="th">事项</span><span class="th">说明</span>
+        <span class="td">快捷键冲突</span><span class="td">⌘⇧J 现在是“上一个在等你的窗口”（S3），原计划给 Approve all（X3）。Approve all 另找按键，例如 ⌘⌥J</span>
+        <span class="td">其他 agent 接 MCP</span><span class="td">codex、pi、omp、kimi 启动时也挂 AgentDeck 的 MCP（N1 的一部分）</span>
+        <span class="td">skill 自动装载</span><span class="td">启动 agent 时带上一个 AgentDeck skill，说明白板工具怎么用；不写进用户的全局配置</span>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":3260}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

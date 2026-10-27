@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Agent 集群 · 模板和分期</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1240px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.tag{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:11.5px;background:#F2F2EF;color:#5F5F5A;white-space:nowrap}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#8A8A85}
+.code{box-sizing:border-box;background:#FBFBFA;border:1px solid #E3E3E0;border-radius:10px;padding:16px 18px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.75;color:#3D3D3A;white-space:pre}
+.card{box-sizing:border-box;border:1px solid #E3E3E0;border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;font-size:12.5px;line-height:1.6;background:#FFFFFF}
+.card.on{border:1.5px solid #1A1A1A}
+.flow{display:flex;flex-wrap:wrap;align-items:center;gap:4px;font-size:11.5px}
+.fs{display:inline-flex;align-items:center;height:22px;padding:0 7px;border:1px solid #D6D6D2;border-radius:5px;background:#FFFFFF;white-space:nowrap}
+.fg{display:inline-flex;align-items:center;height:22px;padding:0 7px;border:1px dashed #BF8700;border-radius:5px;background:#FFF8E5;color:#5C4400;white-space:nowrap}
+.fa{color:#8A8A85}
+.q{display:flex;gap:12px;font-size:13.5px;line-height:1.65}
+.qn{flex:none;width:24px;height:24px;border-radius:50%;background:#F2F2EF;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:600}
+</style>
+</helmet>
+<div style="width: 1760px; height: 2580px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">C5 · 模板、分期、待你定的事</h1>
+      <span class="concept">草案</span>
+    </div>
+    <p class="lead">模板只写“形状”：角色、阶段、关卡、规矩。具体拆成哪些任务由总设计每次现拆。模板是一个文件加几份角色提示词，和 skill 一样能放进库里、放进仓库、分享给别人。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 模板文件长什么样</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start">
+      <div class="code" style="width: 860px">name: Contract-first build
+description: Plan, lock interfaces, build in parallel, review, merge, accept.
+
+roles:
+  lead:       { agents: [claude],        prompt: roles/lead.md }
+  worker:     { agents: [codex, claude], prompt: roles/worker.md, max: 4 }
+  reviewer:   { agents: [claude],        prompt: roles/reviewer.md, notSameAs: worker }
+  integrator: { agents: [claude],        prompt: roles/integrator.md, onlyOnConflict: true }
+  qa:         { agents: [codex],         prompt: roles/qa.md }
+
+stages:
+  - plan:      { by: lead, gate: approve-plan }
+  - contracts: { by: lead, lock: [packages/contracts/**] }
+  - build:     { flow: [work, check, review, merge], reviewRounds: 2 }
+  - accept:    { by: qa, failuresBecome: issues }
+  - report:    {}
+
+rules:
+  check: pnpm check
+  maxAgents: 3
+  retry: { times: 2, then: next-agent, finally: ask-human }
+  onUsageLimit: next-agent-or-wait
+  skills: { worker: [agentdeck-plugin] }</div>
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 10px; font-size: 13.5px; line-height: 1.65">
+        <span><b>放在哪</b>：自带的在 AgentDeck 里；你自己的在库里（<span class="mono">&lt;数据目录&gt;/crews/</span>）；仓库里的 <span class="mono">.agentdeck/crews/</span> 只读出来列在 New crew 里，不往仓库写。</span>
+        <span><b>角色提示词</b>：模板旁边的 <span class="mono">roles/*.md</span>，说这个角色怎么想、怎么交付。任务的具体内容由调度器每次填进去（C3 的第 3 节）。</span>
+        <span><b>agents</b>：按顺序写几家，前一家额度用完或失败两次就交给下一家。New crew 对话框里能改。</span>
+        <span><b>skills</b>：按名字引用 N9 库里的 skill，按角色带进去。</span>
+        <span><b>不是编程语言</b>：只有固定的几种阶段和规矩，调度器认得的才能写。要新形状就加一种阶段，不在模板里写脚本。</span>
+        <span style="color: #5F5F5A">第一期不开放模板文件，Contract-first build 写死在代码里；跑顺了再抽成文件（第三期）。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 自带的五种</span>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px">
+      <div class="card on">
+        <div style="display: flex; align-items: center; gap: 8px"><b style="font-size: 15px">Contract-first build · 接口先行、分头实现</b><span class="tag">第一期</span></div>
+        <div class="flow"><span class="fs">Lead 拆任务</span><span class="fg">你确认</span><span class="fa">→</span><span class="fs">Lead 定接口、锁住</span><span class="fa">→</span><span class="fs">Workers 分波并行</span><span class="fa">→</span><span class="fs">检查 · 换家审 · 合并</span><span class="fa">→</span><span class="fs">QA 验收</span><span class="fa">→</span><span class="fs">汇报</span><span class="fg">你合回 main</span></div>
+        <span><b>适合</b>：大功能、新模块，能拆成几块各管各的目录。</span>
+        <span class="muted">就是 AgentDeck 自己的开发方式，拿它自己的下一批任务来验。</span>
+      </div>
+      <div class="card">
+        <div style="display: flex; align-items: center; gap: 8px"><b style="font-size: 15px">Migration · 大规模迁移、重构</b><span class="tag">第三期</span></div>
+        <div class="flow"><span class="fs">Lead 先亲手改 1–2 个当样板</span><span class="fg">你看样板</span><span class="fa">→</span><span class="fs">按文件分批，每批一个任务</span><span class="fa">→</span><span class="fs">Workers 照样板改</span><span class="fa">→</span><span class="fs">每批检查、合并</span></div>
+        <span><b>适合</b>：换库、改 API、批量改写。Owns 就是这一批的文件，几乎不冲突，最能并行。</span>
+        <span class="muted">审查可以抽查：每 N 批审一批。</span>
+      </div>
+      <div class="card">
+        <div style="display: flex; align-items: center; gap: 8px"><b style="font-size: 15px">Bug hunt · 疑难 bug 多路排查</b><span class="tag">第三期</span></div>
+        <div class="flow"><span class="fs">Lead 列出几个猜想</span><span class="fa">→</span><span class="fs">每个猜想一个 agent 去查（不合并）</span><span class="fa">→</span><span class="fs">交证据</span><span class="fa">→</span><span class="fs">Lead 判断原因</span><span class="fg">你确认</span><span class="fa">→</span><span class="fs">一个修 · 一个写回归测试</span></div>
+        <span><b>适合</b>：复现难、原因不明。几家模型各查各的，比一个 agent 一条路走到黑快。</span>
+        <span class="muted">排查的 worktree 只用来做实验，不合进集群分支。</span>
+      </div>
+      <div class="card">
+        <div style="display: flex; align-items: center; gap: 8px"><b style="font-size: 15px">Spec to app · 从需求到能用</b><span class="tag">第三期</span></div>
+        <div class="flow"><span class="fs">QA 先写验收用例</span><span class="fg">你确认用例</span><span class="fa">→</span><span class="fs">Lead 拆任务</span><span class="fa">→</span><span class="fs">Workers 做</span><span class="fa">→</span><span class="fs">QA 在白板的网页窗口里逐条跑</span><span class="fa">→</span><span class="fs">不过的变成新任务</span></div>
+        <span><b>适合</b>：从零做一个页面或小应用，“做完”的标准是用例全过。</span>
+        <span class="muted">验收用到 MVP 的网页窗口和 N1 的 MCP（agent 能开、能看网页）。</span>
+      </div>
+      <div class="card">
+        <div style="display: flex; align-items: center; gap: 8px"><b style="font-size: 15px">Design bake-off · 方案比稿</b><span class="tag">第三期</span></div>
+        <div class="flow"><span class="fs">两三家各自独立出方案</span><span class="fa">→</span><span class="fs">互相挑刺</span><span class="fa">→</span><span class="fs">Lead 综合成一份</span><span class="fg">你拍板</span></div>
+        <span><b>适合</b>：架构选型、大设计。不写代码，只出文档。</span>
+        <span class="muted">出完可以直接接 Contract-first build。</span>
+      </div>
+      <div class="card" style="border-style: dashed">
+        <div style="display: flex; align-items: center; gap: 8px"><b style="font-size: 15px">你自己的</b><span class="tag">第三期</span></div>
+        <span>复制一个自带的模板改：换 agent、改角色提示词、加关卡、改检查命令。存进库里，或者放进仓库给团队用。</span>
+        <span class="muted">以后可以让总设计看完目标后建议用哪个模板，仍然要你点了才开始。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · 分期</span>
+    <div class="tbl" style="grid-template-columns: 120px minmax(0, 1fr) minmax(0, 1fr)">
+      <span class="th">期</span><span class="th">做什么</span><span class="th">做完能怎样</span>
+      <span class="td"><b>第一期</b><br><span class="mono" style="font-size:12px">CR0–CR6</span></span><span class="td">收件箱（可以先单独做，集群外的终端也用）；New crew（只有 Contract-first build）；集群框和任务看板；调度器：派任务、开 worktree 和终端、发任务提示词、自己跑检查、看目录、换家审、合进集群分支（冲突时叫你）；crew 工具；关卡：确认任务表、改接口、卡住、合回 main。</span><span class="td">拿 AgentDeck 自己的一批任务跑一遍：你确认任务表以后不用再手动开窗口、发提示词、合分支。</span>
+      <span class="td"><b>第二期</b><br><span class="mono" style="font-size:12px">CR7–CR8</span></span><span class="td">Integrator 自动解决冲突；QA 验收阶段；汇报；额度用完换下一家接着做；失败两次换模型重试；整夜跑（Keep Mac awake）；手机提醒。</span><span class="td">晚上开一个集群，早上看汇报、点合并。</span>
+      <span class="td"><b>第三期</b><br><span class="mono" style="font-size:12px">CR9</span></span><span class="td">模板文件和角色提示词开放；其余四种模板；库和仓库里的模板；总设计建议模板。</span><span class="td">不同的复杂任务用不同的形状，能分享。</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · 已定（2026-10-27）</span>
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <div class="q"><span class="qn">1</span><span><b>名字</b>：界面上叫 <span class="mono">Crew</span>（集群）。</span></div>
+      <div class="q"><span class="qn">2</span><span><b>任务表存在哪</b>：只存在 AgentDeck 里，不往你的仓库写东西，agent 用 crew 工具读写。</span></div>
+      <div class="q"><span class="qn">3</span><span><b>默认分工</b>：总设计 claude、实现 codex（用完换 claude）、审查 claude、验收 codex。</span></div>
+      <div class="q"><span class="qn">4</span><span><b>同时最多几个 agent</b>：默认 3，New crew 里可改。</span></div>
+      <div class="q"><span class="qn">5</span><span><b>收件箱先单独做</b>（CR1），不开集群时也用；⌘J 改成打开收件箱，在列表里选、回车跳过去。</span></div>
+      <div class="q"><span class="qn">6</span><span><b>第一期只给 claude、codex、omp</b>：pi、kimi 灰掉写 No AgentDeck MCP yet；omp 进集群前先修 IS-76。</span></div>
+    </div>
+    <span style="font-size: 13px; color: #5F5F5A">登记：任务 M8 · CR0–CR9（MVP 任务表）· 问题 IS-89、IS-90 · 调研 DR-64、DR-65 · 用例 TC-43–TC-45 · 决策写进 docs/decisions.md。</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px; font-size: 13.5px; line-height: 1.65">
+    <span class="h2">用到的已有能力</span>
+    <span>N1 AgentDeck MCP（加 crew 工具）· MVP v1 的 worktree 和工作区框 · N12 项目框排版 · PL1 Auto-approve · PL2 Usage 的额度上限 · PL3 Prompt queue 的发送方式和“等恢复再发” · N9 Skills · MCP 按角色带进去 · N11 左边栏历史（找回集群和汇报）。</span>
+    <span style="color: #5F5F5A">接口上要加的（CR0，单独提交 contracts）：集群和任务的数据、CrewService（建、暂停、停、读任务表、关卡）、收件箱的条目、集群框这种新的白板节点。</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":2580}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

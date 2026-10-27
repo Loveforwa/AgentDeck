@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>插件：Usage</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.at{position:absolute}
+.cap{margin:0;font-size:13px;line-height:1.55}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1200px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.tag{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;background:#F2F2EF;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.win{box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;overflow:hidden;font-size:11px}
+.wt{display:flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-bottom:1px solid #EEEEEB}
+.wb{padding:6px 9px;font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.7;color:#6B6B6B}
+.dot{width:7px;height:7px;border-radius:50%;flex:none}
+.strip{position:absolute;height:24px;display:flex;align-items:center;gap:14px;padding:0 6px 0 10px;background:#FFFFFF;border:1px solid #D6D6D2;border-radius:12px;font-size:10.5px;color:#3D3D3A;box-sizing:border-box;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.05)}
+.k{color:#8A8A85}
+.grip{width:10px;height:10px;flex:none;background-image:radial-gradient(#8A8A85 1px,transparent 1.2px);background-size:4px 4px}
+.meter{width:46px;height:5px;border-radius:3px;background:#E3E3E0;position:relative;overflow:hidden;flex:none}
+.meter i{position:absolute;left:0;top:0;bottom:0;background:#1A1A1A;border-radius:3px}
+.num{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:#1A1A1A;color:#FFFFFF;font-size:11px;font-weight:600;flex:none}
+.menu{background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;box-shadow:0 8px 20px rgba(0,0,0,0.08);padding:4px;font-size:11.5px;display:flex;flex-direction:column}
+.mi{display:flex;align-items:center;gap:8px;padding:4px 9px;border-radius:5px;white-space:nowrap}
+.ms{padding:4px 9px 2px;font-size:10px;font-weight:600;color:#8A8A85;letter-spacing:0.04em}
+.sep{height:1px;background:#EEEEEB;margin:3px 4px}
+</style>
+</helmet>
+<div style="width: 1760px; height: 1450px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">PL2 · Usage：这个终端用了多少 token</h1>
+      <span class="tag">插件 · 终端窗口</span><span class="tag">DR-55</span>
+    </div>
+    <p class="lead">右键终端点 Usage，终端上方贴出一条细长的圆角条，写这次对话的输入、输出、缓存 token 和上下文长度。条可以拖到终端下方，再拖回上方。agent 每次请求后更新。</p>
+  </div>
+
+  <!-- 流程 -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">打开、拖动、点开</span>
+    <div style="display: flex; gap: 28px">
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <div class="fig" style="width: 520px; height: 330px">
+          <div class="at win" style="left: 24px; top: 30px; width: 300px; height: 250px; border: 1.5px solid #1A1A1A">
+            <div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="mono" style="font-weight: 500">claude</span><span style="color: #6B6B6B">· Fix the login bug</span></div>
+            <div class="wb">⏺ Edit src/auth/oauth.ts</div>
+          </div>
+          <div class="at menu" style="left: 170px; top: 60px; width: 200px">
+            <span class="mi">Restart and resume conversation</span><span class="sep"></span>
+            <span class="ms">PLUGINS</span>
+            <span class="mi"><span style="width: 12px"></span>Auto-approve</span>
+            <span class="mi" style="background: #EDEDEA"><span style="width: 12px"></span>Usage</span>
+            <span class="sep"></span><span class="mi">Close</span>
+          </div>
+        </div>
+        <span class="cap"><span class="num">1</span> 右键终端标题栏，PLUGINS 里点 Usage。</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <div class="fig" style="width: 520px; height: 330px">
+          <div class="strip" style="left: 24px; top: 26px; width: 470px"><span class="grip"></span><span><span class="k">Input</span> 312k</span><span><span class="k">Output</span> 18.4k</span><span><span class="k">Cache</span> 1.4M</span><span style="margin-left: auto; display: flex; align-items: center; gap: 6px"><span class="k">Context</span> 96k / 200k<span class="meter"><i style="width: 48%"></i></span>48%</span></div>
+          <div class="at win" style="left: 24px; top: 56px; width: 470px; height: 230px; border: 1.5px solid #1A1A1A">
+            <div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="mono" style="font-weight: 500">claude</span><span style="color: #6B6B6B">· Fix the login bug</span><span style="flex: 1"></span><span style="color: #1A7F37">Running</span></div>
+            <div class="wb">⏺ Edit src/auth/oauth.ts<br>⏺ Bash pnpm test auth<br>  18 passed</div>
+          </div>
+        </div>
+        <span class="cap"><span class="num">2</span> 条贴在终端上方，和终端一样宽，中间留 6px。跟着窗口移动、改大小。每一项都写全称，悬停有一句说明；终端窄时先藏 Cache，再藏 Output、Input。</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <div class="fig" style="width: 520px; height: 330px">
+          <div class="at win" style="left: 24px; top: 24px; width: 470px; height: 220px; border: 1.5px solid #1A1A1A">
+            <div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="mono" style="font-weight: 500">claude</span><span style="color: #6B6B6B">· Fix the login bug</span></div>
+            <div class="wb">⏺ Bash pnpm test auth<br>  18 passed</div>
+          </div>
+          <div class="strip" style="left: 24px; top: 250px; width: 470px; border-color: #2563EB"><span class="grip"></span><span><span class="k">Input</span> 312k</span><span><span class="k">Output</span> 18.4k</span><span><span class="k">Cache</span> 1.4M</span><span style="margin-left: auto; display: flex; align-items: center; gap: 6px"><span class="k">Context</span> 96k / 200k<span class="meter"><i style="width: 48%"></i></span>48%</span></div>
+          <div class="at" style="left: 24px; top: 284px; width: 470px; font-size: 11px; color: #5F5F5A">按住左边的点阵拖：靠近下边时出现蓝色落点线，松手就贴到下方。</div>
+        </div>
+        <span class="cap"><span class="num">3</span> 拖到下方，或者拖回上方。只能贴在这个终端的上下两边，不会离开终端；位置随白板保存。</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 内容和点开 -->
+  <div style="display: flex; gap: 48px; align-items: flex-start">
+    <div style="display: flex; flex-direction: column; gap: 14px; width: 860px">
+      <span class="h2">条上写什么</span>
+      <div class="tbl" style="grid-template-columns: 120px minmax(0, 1fr)">
+        <span class="th">字段</span><span class="th">意思</span>
+        <span class="td mono">Input</span><span class="td">这次对话累计发给模型的 token（不含缓存）</span>
+        <span class="td mono">Output</span><span class="td">模型累计写出来的 token（含思考）</span>
+        <span class="td mono">Cache</span><span class="td">模型从缓存里重读的 token（便宜、快）。缓存写放在悬停里</span>
+        <span class="td mono">Context</span><span class="td">当前上下文用了多少 / 窗口多大，占比和一根小进度条，写法照 agent 自己的（kimi 的 k 按 1024、百分比向上取整；codex 先扣 12000 的基线），和终端里看到的一致。到 85% 时数字和进度条变黄（“需要你处理”：该压缩或开新对话了）</span>
+      </div>
+      <p class="cap" style="color: #5F5F5A">读不到数据的写 “No usage data”，不瞎估。数字用 k / M 缩写，悬停看准确数和模型名。</p>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 14px; width: 700px">
+      <span class="h2">点一下条</span>
+      <div class="fig" style="width: 700px; height: 250px">
+        <div class="strip" style="left: 24px; top: 20px; width: 470px"><span class="grip"></span><span><span class="k">Input</span> 312k</span><span><span class="k">Output</span> 18.4k</span><span><span class="k">Cache</span> 1.4M</span><span style="margin-left: auto; display: flex; align-items: center; gap: 6px"><span class="k">Context</span> 96k / 200k<span class="meter"><i style="width: 48%"></i></span>48%</span></div>
+        <div class="at menu" style="left: 24px; top: 50px; width: 330px; font-size: 11px">
+          <span class="mi" style="font-weight: 600">claude-opus-5-5<span style="flex: 1"></span><span style="color: #6B6B6B; font-weight: 400">window 200k</span></span>
+          <span class="mi mono" style="color: #6B6B6B; font-size: 10px">Last request  Input 2.1k · Output 640 · Cache 94k</span>
+          <span class="mi mono" style="color: #6B6B6B; font-size: 10px">Requests  37</span>
+          <span class="sep"></span>
+                    <span class="mi">Move to bottom</span>
+          <span class="mi">Hide</span>
+        </div>
+        <div class="at" style="left: 380px; top: 60px; width: 300px; font-size: 12px; line-height: 1.65; color: #5F5F5A">小卡片：模型和窗口大小、最近一次请求、请求次数。codex 另外写账号的 5 小时 / 每周额度用了多少（会话文件里就有）。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 数据来源 -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">数据从哪来（DR-55 结论）</span>
+    <p class="lead">AgentDeck 自己读各 agent 的会话文件：按终端的会话 id 找到文件，只读新增的部分，每次请求后一秒内更新。不接 CC Switch（调研过：它是事后扫同样的文件，最快 1 分钟一次，也没有上下文长度）。</p>
+    <div class="tbl" style="grid-template-columns: 110px 380px 380px minmax(0, 1fr)">
+      <span class="th">agent</span><span class="th">token 从哪读</span><span class="th">上下文从哪读</span><span class="th">怎么对到这个终端</span>
+      <span class="td mono">claude</span><span class="td">会话 jsonl 里 assistant 行的 <span class="mono">message.usage</span>，按 <span class="mono">message.id</span> 去重</span><span class="td">最后一条主线 assistant 的 input + cache；窗口按模型（200k / 1M）</span><span class="td">启动时传的 <span class="mono">--session-id</span></span>
+      <span class="td mono">codex</span><span class="td">rollout jsonl 的 <span class="mono">token_count.info.total_token_usage</span></span><span class="td"><span class="mono">last_token_usage.total_tokens</span> / <span class="mono">model_context_window</span></span><span class="td">resume 的 id，或 SessionStart 钩子</span>
+      <span class="td mono">pi、omp</span><span class="td">会话 jsonl 里 assistant 的 <span class="mono">message.usage</span></span><span class="td">我们的扩展调 <span class="mono">getContextUsage()</span> 上报</span><span class="td"><span class="mono">--session-id</span> / 扩展上报</span>
+      <span class="td mono">kimi</span><span class="td"><span class="mono">wire.jsonl</span> 的 <span class="mono">usage.record</span></span><span class="td"><span class="mono">token_counting</span> 记录；窗口在 kimi 配置里</span><span class="td">新建会话没有 id 和钩子，按目录和启动时间推断（可能对错，悬停写明）</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":1450}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

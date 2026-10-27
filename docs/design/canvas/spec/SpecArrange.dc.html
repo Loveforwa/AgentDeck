@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>项目框：一键排版</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.at{position:absolute}
+.cap{margin:0;font-size:13px;line-height:1.55}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1240px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.tag{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;background:#F2F2EF;color:#5F5F5A}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#8A8A85}
+.frame{box-sizing:border-box;border:1px solid #DCDCD8;border-radius:8px;background:rgba(255,255,255,0.55)}
+.fh{display:flex;align-items:center;gap:6px;height:30px;padding:0 8px 0 11px;font-size:11.5px;white-space:nowrap}
+.ib{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:5px;color:#5F5F5A}
+.ib.on{background:#1A1A1A;color:#FFFFFF}
+.ib.hover{background:#EDEDEA;color:#1A1A1A}
+.w{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:6px;overflow:hidden;font-size:10px}
+.wt{display:flex;align-items:center;gap:5px;height:18px;padding:0 7px;border-bottom:1px solid #EEEEEB;font-family:'IBM Plex Mono',monospace;font-size:9.5px}
+.dot{width:6px;height:6px;border-radius:50%;flex:none;box-sizing:border-box}
+.tip{position:absolute;padding:3px 8px;border-radius:5px;background:#1A1A1A;color:#FFFFFF;font-size:10.5px;white-space:nowrap}
+.menu{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;box-shadow:0 8px 20px rgba(0,0,0,0.08);padding:4px;font-size:11.5px;display:flex;flex-direction:column}
+.mi{display:flex;align-items:center;gap:8px;padding:4px 9px;border-radius:5px;white-space:nowrap}
+.sep{height:1px;background:#EEEEEB;margin:3px 4px}
+.lab{position:absolute;font-size:12px;font-weight:600;color:#3D3D3A}
+</style>
+</helmet>
+<div style="width: 1760px; height: 2160px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">15 · 项目框：一键排版，新建时自动排</h1>
+      <span class="tag">2026-10-26 定</span>
+      <span class="mono" style="font-size: 12px; color: #6B6B6B">N12 · IS-87</span>
+    </div>
+    <p class="lead">一个项目框里开了好几个 agent 之后窗口容易散乱。框标题右上角加几个小图标：点一下把框里的窗口排整齐（紧凑网格、并排、上下叠），框缩到正好装下。再加一个开关：开着时，在这个框里新开、关掉窗口都自动按上次的排法重排，不用再手动拖。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 框标题右上角的图标</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start">
+      <div class="fig" style="width: 860px; height: 330px">
+        <div class="at frame" style="left: 30px; top: 30px; width: 800px; height: 270px">
+          <div class="fh">
+            <b>agenduck</b><span class="mono muted" style="font-size: 10.5px">feat/login</span><span class="muted" style="font-size: 10.5px">· 5 windows</span>
+            <span style="flex: 1"></span>
+            <span class="ib on" title="Tidy">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><rect x="1.5" y="1.5" width="4.5" height="4.5" rx="1"></rect><rect x="8" y="1.5" width="4.5" height="4.5" rx="1"></rect><rect x="1.5" y="8" width="4.5" height="4.5" rx="1"></rect><rect x="8" y="8" width="4.5" height="4.5" rx="1"></rect></svg>
+            </span>
+            <span class="ib hover" title="Columns">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><rect x="1.5" y="1.5" width="3" height="11" rx="1"></rect><rect x="5.5" y="1.5" width="3" height="11" rx="1"></rect><rect x="9.5" y="1.5" width="3" height="11" rx="1"></rect></svg>
+            </span>
+            <span class="ib" title="Rows">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><rect x="1.5" y="1.5" width="11" height="3" rx="1"></rect><rect x="1.5" y="5.5" width="11" height="3" rx="1"></rect><rect x="1.5" y="9.5" width="11" height="3" rx="1"></rect></svg>
+            </span>
+            <span style="width: 1px; height: 14px; background: #E3E3E0; margin: 0 2px"></span>
+            <span class="ib" title="Auto-arrange">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><rect x="1.5" y="1.5" width="11" height="11" rx="2"></rect><path d="M4.5 7.2l1.8 1.8 3.4-3.6"></path></svg>
+            </span>
+          </div>
+          <div class="tip" style="left: 625px; top: 34px">Columns · side by side, same height</div>
+          <div class="w" style="left: 12px; top: 40px; width: 250px; height: 100px"><div class="wt"><span class="dot" style="background: #1A7F37"></span>claude</div></div>
+          <div class="w" style="left: 274px; top: 40px; width: 250px; height: 100px"><div class="wt"><span class="dot" style="background: #BF8700"></span>codex</div></div>
+          <div class="w" style="left: 536px; top: 40px; width: 250px; height: 100px"><div class="wt"><span class="dot" style="border: 1px solid #8A8A85"></span>zsh</div></div>
+          <div class="w" style="left: 12px; top: 152px; width: 250px; height: 100px"><div class="wt"><span class="dot" style="border: 1px solid #8A8A85"></span>pi</div></div>
+          <div class="w" style="left: 274px; top: 152px; width: 250px; height: 100px"><div class="wt" style="font-family: 'IBM Plex Sans', sans-serif">localhost:3000</div></div>
+        </div>
+      </div>
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 10px; font-size: 13.5px; line-height: 1.65">
+        <span>标题右边四个 22px 的小图标，平时灰色，悬停才变深，不抢框里的内容：</span>
+        <span><b>Tidy</b>（田）：紧凑网格。窗口大小不变，按现在的先后（先上后下、先左后右）排成几列，间距 20。</span>
+        <span><b>Columns</b>（川）：并排。所有窗口一样高、从左到右一排，宽度按内容平分（不小于最小宽度，太多就换行）。</span>
+        <span><b>Rows</b>（三）：上下叠。一样宽，从上到下。</span>
+        <span><b>Auto-arrange</b>（勾）：开关，开着是墨黑底。开着时在这个框里新开、关掉窗口都按最近一次点的排法重排。</span>
+        <span style="color: #5F5F5A">上次用的排法图标保持深色底（上图是 Tidy），开 Auto-arrange 时就按它排。框窄到标题放不下时，四个图标收进一个 ⋯ 菜单。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 排之前和排之后</span>
+    <div class="fig" style="width: 1632px; height: 420px">
+      <span class="lab" style="left: 30px; top: 18px">排之前：散的，框被撑得很大</span>
+      <div class="at frame" style="left: 30px; top: 44px; width: 520px; height: 350px">
+        <div class="fh"><b>agenduck</b><span class="mono muted" style="font-size: 10.5px">feat/login</span></div>
+        <div class="w" style="left: 14px; top: 40px; width: 170px; height: 90px"><div class="wt"><span class="dot" style="background: #1A7F37"></span>claude</div></div>
+        <div class="w" style="left: 260px; top: 70px; width: 170px; height: 90px"><div class="wt"><span class="dot" style="background: #BF8700"></span>codex</div></div>
+        <div class="w" style="left: 60px; top: 190px; width: 170px; height: 90px"><div class="wt"><span class="dot" style="border: 1px solid #8A8A85"></span>zsh</div></div>
+        <div class="w" style="left: 330px; top: 240px; width: 170px; height: 90px"><div class="wt"><span class="dot" style="border: 1px solid #8A8A85"></span>pi</div></div>
+      </div>
+      <span class="lab" style="left: 590px; top: 18px">Tidy：紧凑网格，框缩到正好装下</span>
+      <div class="at frame" style="left: 590px; top: 44px; width: 384px; height: 262px">
+        <div class="fh"><b>agenduck</b><span class="mono muted" style="font-size: 10.5px">feat/login</span></div>
+        <div class="w" style="left: 16px; top: 36px; width: 170px; height: 90px"><div class="wt"><span class="dot" style="background: #1A7F37"></span>claude</div></div>
+        <div class="w" style="left: 198px; top: 36px; width: 170px; height: 90px"><div class="wt"><span class="dot" style="background: #BF8700"></span>codex</div></div>
+        <div class="w" style="left: 16px; top: 138px; width: 170px; height: 90px"><div class="wt"><span class="dot" style="border: 1px solid #8A8A85"></span>zsh</div></div>
+        <div class="w" style="left: 198px; top: 138px; width: 170px; height: 90px"><div class="wt"><span class="dot" style="border: 1px solid #8A8A85"></span>pi</div></div>
+      </div>
+      <span class="lab" style="left: 1010px; top: 18px">Columns：一排、一样高</span>
+      <div class="at frame" style="left: 1010px; top: 44px; width: 590px; height: 170px">
+        <div class="fh"><b>agenduck</b><span class="mono muted" style="font-size: 10.5px">feat/login</span></div>
+        <div class="w" style="left: 16px; top: 36px; width: 130px; height: 118px"><div class="wt"><span class="dot" style="background: #1A7F37"></span>claude</div></div>
+        <div class="w" style="left: 158px; top: 36px; width: 130px; height: 118px"><div class="wt"><span class="dot" style="background: #BF8700"></span>codex</div></div>
+        <div class="w" style="left: 300px; top: 36px; width: 130px; height: 118px"><div class="wt"><span class="dot" style="border: 1px solid #8A8A85"></span>zsh</div></div>
+        <div class="w" style="left: 442px; top: 36px; width: 130px; height: 118px"><div class="wt"><span class="dot" style="border: 1px solid #8A8A85"></span>pi</div></div>
+      </div>
+      <span class="lab" style="left: 1010px; top: 232px">Rows：上下叠、一样宽</span>
+      <div class="at frame" style="left: 1010px; top: 256px; width: 300px; height: 150px">
+        <div class="fh"><b>agenduck</b><span class="mono muted" style="font-size: 10.5px">feat/login</span></div>
+        <div class="w" style="left: 16px; top: 34px; width: 268px; height: 22px"><div class="wt"><span class="dot" style="background: #1A7F37"></span>claude</div></div>
+        <div class="w" style="left: 16px; top: 62px; width: 268px; height: 22px"><div class="wt"><span class="dot" style="background: #BF8700"></span>codex</div></div>
+        <div class="w" style="left: 16px; top: 90px; width: 268px; height: 22px"><div class="wt"><span class="dot" style="border: 1px solid #8A8A85"></span>zsh</div></div>
+        <div class="w" style="left: 16px; top: 118px; width: 268px; height: 22px"><div class="wt"><span class="dot" style="border: 1px solid #8A8A85"></span>pi</div></div>
+      </div>
+      <span class="at" style="left: 1330px; top: 280px; width: 270px; font-size: 12px; line-height: 1.65; color: #5F5F5A">Rows 的高度按框原来的高度平分，太矮（低于终端的最小高度）就不再缩、往下排。</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · Auto-arrange：在框里新开窗口时自动排</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start">
+      <div class="fig" style="width: 860px; height: 300px">
+        <div class="at frame" style="left: 30px; top: 30px; width: 560px; height: 240px">
+          <div class="fh"><b>agenduck</b><span class="mono muted" style="font-size: 10.5px">feat/login</span><span style="flex: 1"></span>
+            <span class="ib on"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><rect x="1.5" y="1.5" width="4.5" height="4.5" rx="1"></rect><rect x="8" y="1.5" width="4.5" height="4.5" rx="1"></rect><rect x="1.5" y="8" width="4.5" height="4.5" rx="1"></rect><rect x="8" y="8" width="4.5" height="4.5" rx="1"></rect></svg></span>
+            <span class="ib"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><rect x="1.5" y="1.5" width="3" height="11" rx="1"></rect><rect x="5.5" y="1.5" width="3" height="11" rx="1"></rect><rect x="9.5" y="1.5" width="3" height="11" rx="1"></rect></svg></span>
+            <span class="ib"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><rect x="1.5" y="1.5" width="11" height="3" rx="1"></rect><rect x="1.5" y="5.5" width="11" height="3" rx="1"></rect><rect x="1.5" y="9.5" width="11" height="3" rx="1"></rect></svg></span>
+            <span style="width: 1px; height: 14px; background: #E3E3E0; margin: 0 2px"></span>
+            <span class="ib on"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><rect x="1.5" y="1.5" width="11" height="11" rx="2"></rect><path d="M4.5 7.2l1.8 1.8 3.4-3.6"></path></svg></span>
+          </div>
+          <div class="w" style="left: 16px; top: 38px; width: 170px; height: 90px"><div class="wt"><span class="dot" style="background: #1A7F37"></span>claude</div></div>
+          <div class="w" style="left: 198px; top: 38px; width: 170px; height: 90px"><div class="wt"><span class="dot" style="background: #BF8700"></span>codex</div></div>
+          <div class="w" style="left: 380px; top: 38px; width: 170px; height: 90px"><div class="wt"><span class="dot" style="border: 1px solid #8A8A85"></span>zsh</div></div>
+          <div class="w" style="left: 16px; top: 140px; width: 170px; height: 90px; border: 1.5px dashed #1A1A1A"><div class="wt"><span class="dot" style="border: 1px solid #8A8A85"></span>pi · new</div></div>
+        </div>
+        <div class="at" style="left: 610px; top: 40px; width: 230px; font-size: 12px; line-height: 1.7; color: #5F5F5A">新开的 pi 直接放进网格的下一个格子（虚线是它落下的位置），别的窗口不动；关掉一个时后面的往前补。拖动窗口还是可以的：拖完不会被弹回去，下一次新开或关掉时才重排。</div>
+      </div>
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 10px; font-size: 13.5px; line-height: 1.65">
+        <span>开关按框记，随白板保存，默认关。</span>
+        <span>开着时：在这个框里新开终端或网页（New terminal、agent 用 MCP 开的、W5 的 Open new）、关掉窗口，都按这个框上次用的排法重排一次；没点过排法时按 Tidy。</span>
+        <span>悬停写 “Auto-arrange is on · Tidy”。在框的右键菜单里也有一项 Auto-arrange new windows（打钩）。</span>
+        <span style="color: #5F5F5A">只在新开、关掉时排，不在拖动、改大小时排，免得窗口在手底下跳。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · 规则</span>
+    <div class="tbl" style="grid-template-columns: 260px minmax(0, 1fr)">
+      <span class="th">情况</span><span class="th">怎么排</span>
+      <span class="td">排哪些</span><span class="td">只排这个框里的窗口，不跨框。放大中的、收起的子终端不动。</span>
+      <span class="td">连在一起的算一块</span><span class="td">窗口组（lead、侧边栏、停靠的子终端）、开着的后台 agent 面板（画板 13）、窗口下面的书签和 Usage 条都跟着自己的窗口算一块，不拆开。</span>
+      <span class="td">顺序</span><span class="td">按排之前的位置：先上后下、先左后右；新开的排在最后。</span>
+      <span class="td">框的大小</span><span class="td">排完框缩到正好装下（四边留 16，标题下面 36）；变小、变大时挤开或让回旁边的框（V3 的规则）。点图标排版时<b>框的右上角不动</b>，刚点的图标还在指针底下，可以接着点别的排法（2026-10-26 定）；Auto-arrange 自动排时左上角不动。</span>
+      <span class="td">撤销</span><span class="td">点一次排法算一步，⌘Z 回到排之前。Auto-arrange 自动排的那次和新开窗口算在一起，不单独记。</span>
+      <span class="td">数字</span><span class="td">窗口之间 20（和不重叠的间距 GAP 一样）；Columns 的宽度不小于窗口的最小宽度，放不下就换到下一行。</span>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 40px; align-items: flex-start">
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 14px">
+      <span class="h2">不做的</span>
+      <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; line-height: 1.65">
+        <span>不改终端里的字号；不把窗口拉成很小的格子（小于最小尺寸时换行）。</span>
+        <span>不一次排整块白板（以后可以在白板的右键菜单里加 Arrange all frames）。</span>
+      </div>
+    </div>
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 14px">
+      <span class="h2">已定（2026-10-26）</span>
+      <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; line-height: 1.65">
+        <span>Tidy 不改窗口大小。</span>
+        <span>Auto-arrange 开着时，关掉窗口也重排。</span>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":2160}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Agent 集群 · 白板上</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.at{position:absolute}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1240px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.tag{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:11.5px;background:#F2F2EF;color:#5F5F5A}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#8A8A85}
+.pf{position:absolute;box-sizing:border-box;border:1px solid #CFCFCA;border-radius:12px;background:rgba(255,255,255,0.35)}
+.pfh{position:absolute;left:14px;top:8px;font-size:12px;color:#5F5F5A}
+.cf{position:absolute;box-sizing:border-box;border:1.5px solid #1A1A1A;border-radius:12px;background:rgba(255,255,255,0.55)}
+.cfh{position:absolute;left:0;top:0;right:0;height:40px;box-sizing:border-box;padding:0 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #E3E3E0;background:#FFFFFF;border-radius:11px 11px 0 0;font-size:12px}
+.step{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;color:#8A8A85}
+.step.done{color:#3D3D3A}
+.step.now{color:#1A1A1A;font-weight:600}
+.dot{width:7px;height:7px;border-radius:50%;flex:none;box-sizing:border-box}
+.am{width:6px;height:6px;border-radius:1.5px;flex:none}
+.btn{display:inline-flex;align-items:center;height:22px;padding:0 8px;border:1px solid #D6D6D2;border-radius:6px;font-size:11px;background:#FFFFFF;color:#1A1A1A}
+.win{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;overflow:hidden;font-size:11px}
+.wt{display:flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-bottom:1px solid #EEEEEB;white-space:nowrap}
+.wb{padding:6px 9px;font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.7;color:#6B6B6B}
+.kcol{display:flex;flex-direction:column;gap:6px;min-width:0}
+.kh{font-size:10.5px;font-weight:600;color:#8A8A85;letter-spacing:0.04em;padding:2px 2px 0}
+.tc{box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:6px;padding:6px 7px;display:flex;flex-direction:column;gap:2px;font-size:10.5px;line-height:1.4}
+.tc b{font-size:11px;font-weight:600}
+.tf{position:absolute;box-sizing:border-box;border:1px solid #BDBDB8;border-radius:10px;background:rgba(255,255,255,0.5)}
+.tfh{position:absolute;left:10px;top:5px;font-size:11px;color:#3D3D3A;white-space:nowrap}
+.chip{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border:1px solid #D6D6D2;border-radius:6px;font-size:11px;background:#FFFFFF;color:#5F5F5A}
+.ex{display:flex;flex-direction:column;gap:10px;font-size:13.5px;line-height:1.65}
+.panel{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,0.08);font-size:12px}
+.pr{display:flex;gap:8px;padding:5px 12px;border-top:1px solid #F0F0ED;line-height:1.5}
+</style>
+</helmet>
+<div style="width: 1760px; height: 2100px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">C2 · 白板上的集群：集群框、任务看板、每个任务一个 worktree</h1>
+      <span class="concept">草案</span>
+    </div>
+    <p class="lead">集群在项目框里占一块：顶上一条写清它在哪一步、几个在跑、几个等你；左边是任务看板；右边是正在做的任务，每个任务一个 worktree 小框，里面是实现者的终端，审的时候审查者的终端也开在同一个框里。做完合进去的任务收成一排小标签，白板不会越摊越大。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 做到第二波时的样子</span>
+    <div class="fig" style="width: 1632px; height: 980px">
+      <div class="pf" style="left: 14px; top: 14px; width: 1604px; height: 952px"></div>
+      <span class="pfh" style="left: 28px; top: 20px">agenduck · main</span>
+
+      <div class="cf" style="left: 30px; top: 44px; width: 1572px; height: 906px">
+        <div class="cfh">
+          <b style="font-size: 13px">Crew · history-sidebar</b>
+          <span class="tag">Contract-first build</span>
+          <span style="width: 8px"></span>
+          <span class="step done">Plan ✓</span><span class="muted">—</span>
+          <span class="step done">Contracts ✓</span><span class="muted">—</span>
+          <span class="step now">Build · wave 2 of 3</span><span class="muted">—</span>
+          <span class="step">Accept</span><span class="muted">—</span>
+          <span class="step">Report</span>
+          <span style="flex: 1"></span>
+          <span style="display: inline-flex; align-items: center; gap: 5px"><span class="dot" style="background: #1A7F37"></span>3 running</span>
+          <span style="display: inline-flex; align-items: center; gap: 5px"><span class="dot" style="background: #BF8700"></span>1 needs you</span>
+          <span class="muted">· 3 of 8 merged · 2h 10m</span>
+          <span class="btn">Plan</span><span class="btn">Report</span><span class="btn">Pause crew</span><span class="muted">⋯</span>
+        </div>
+
+        <div class="win" style="left: 14px; top: 54px; width: 620px; height: 640px; background: #FBFBFA">
+          <div class="wt"><b>Plan</b><span class="muted">· 8 tasks · 3 waves</span><span style="flex: 1"></span><span class="muted">Table · Board</span></div>
+          <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; padding: 8px">
+            <div class="kcol"><span class="kh">WAITING</span>
+              <div class="tc"><b><span class="mono">T8</span> e2e: open and resume</b><span class="muted">needs T4 T5 · wave 3</span><span style="display: flex; align-items: center; gap: 4px"><span class="am" style="background: #2F5E9E"></span>QA</span></div>
+            </div>
+            <div class="kcol"><span class="kh">READY</span>
+              <div class="tc"><b><span class="mono">T7</span> Remember width and collapsed</b><span class="muted mono" style="font-size: 9.5px">panels/history/**</span><span class="muted">waits for a free slot</span></div>
+            </div>
+            <div class="kcol"><span class="kh">WORKING</span>
+              <div class="tc" style="border-color: #1A1A1A"><b><span class="mono">T4</span> Sidebar list UI</b><span class="muted mono" style="font-size: 9.5px">panels/history/**</span><span style="display: flex; align-items: center; gap: 4px"><span class="am" style="background: #2F5E9E"></span>codex<span class="dot" style="background: #1A7F37; margin-left: auto"></span></span></div>
+              <div class="tc"><b><span class="mono">T5</span> Resume from history</b><span class="muted mono" style="font-size: 9.5px">ui/canvas/src/history/**</span><span style="display: flex; align-items: center; gap: 4px"><span class="am" style="background: #2F5E9E"></span>codex<span class="dot" style="background: #BF8700; margin-left: auto"></span></span><span style="color: #8A6700">needs approval</span></div>
+            </div>
+            <div class="kcol"><span class="kh">REVIEW</span>
+              <div class="tc"><b><span class="mono">T6</span> Agent color marks</b><span class="muted mono" style="font-size: 9.5px">design-tokens/**</span><span style="display: flex; align-items: center; gap: 4px"><span class="am" style="background: #A8503A"></span>claude reviewing · round 1<span class="dot" style="background: #1A7F37; margin-left: auto"></span></span></div>
+            </div>
+            <div class="kcol"><span class="kh">MERGED</span>
+              <div class="tc" style="color: #8A8A85"><b><span class="mono">T1</span> Contracts: HistoryService</b><span>✓ check · ✓ review</span></div>
+              <div class="tc" style="color: #8A8A85"><b><span class="mono">T2</span> Index claude sessions</b><span>✓ check · ✓ review</span></div>
+              <div class="tc" style="color: #8A8A85"><b><span class="mono">T3</span> Index codex sessions</b><span>✓ check · ✓ review</span></div>
+            </div>
+          </div>
+          <div class="at" style="left: 0; right: 0; bottom: 0; padding: 8px 10px; border-top: 1px solid #EEEEEB; font-size: 10.5px; color: #6B6B6B; background: #FFFFFF">Locked: <span class="mono">packages/contracts/**</span> · Check: <span class="mono">pnpm check</span> · Slots: 3 of 3 in use</div>
+        </div>
+
+        <div class="win" style="left: 14px; top: 708px; width: 300px; height: 70px">
+          <div class="wt"><span class="dot" style="border: 1px solid #8A8A85"></span><span class="am" style="background: #A8503A"></span><span class="mono" style="font-weight: 500">Lead · claude</span><span style="flex: 1"></span><span class="muted">Idle</span></div>
+          <div class="wb">Waiting for wave 2. Will plan fixes if QA fails.</div>
+        </div>
+        <div class="win" style="left: 330px; top: 708px; width: 304px; height: 70px">
+          <div class="wt"><span class="dot" style="border: 1px solid #8A8A85"></span><span class="mono" style="font-weight: 500">Integration</span><span class="muted mono">crew/history-sidebar</span></div>
+          <div class="wb">Merged T1 T2 T3 · pnpm check ✓</div>
+        </div>
+
+        <div class="tf" style="left: 652px; top: 54px; width: 446px; height: 330px"></div>
+        <span class="tfh" style="left: 664px; top: 60px"><span class="mono">T4</span> · Sidebar list UI · <span class="mono muted">crew/history-sidebar/T4</span></span>
+        <div class="win" style="left: 664px; top: 84px; width: 422px; height: 288px">
+          <div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="am" style="background: #2F5E9E"></span><span class="mono" style="font-weight: 500">Worker · codex</span><span class="muted">· T4</span><span style="flex: 1"></span><span class="muted">Running · 6m</span></div>
+          <div class="wb">• Reading the task: crew_get_task T4<br>• Edited packages/ui/panels/history/src/List.tsx<br>• Edited packages/ui/panels/history/src/List.css<br>• Running pnpm --filter @agentdeck/history-panel test<br>  ⎿ 12 passed</div>
+        </div>
+        <div class="at" style="left: 680px; top: 384px; height: 16px; padding: 0 7px; display: flex; align-items: center; font-size: 9.5px; font-weight: 600; border-radius: 0 0 4px 4px; background: #CF222E; color: #FFFFFF">Auto-approve</div>
+
+        <div class="tf" style="left: 1112px; top: 54px; width: 446px; height: 330px"></div>
+        <span class="tfh" style="left: 1124px; top: 60px"><span class="mono">T5</span> · Resume from history · <span class="mono muted">crew/history-sidebar/T5</span></span>
+        <div class="win" style="left: 1124px; top: 84px; width: 422px; height: 288px; border: 1.5px solid #BF8700">
+          <div class="wt"><span class="dot" style="background: #BF8700"></span><span class="am" style="background: #2F5E9E"></span><span class="mono" style="font-weight: 500">Worker · codex</span><span class="muted">· T5</span><span style="flex: 1"></span><span style="color: #8A6700">Needs approval</span></div>
+          <div class="wb">• Edited packages/ui/canvas/src/history/resume.ts<br><br>Allow command?<br>  rm -rf packages/ui/canvas/dist<br><span style="color: #1A1A1A">› Yes, once</span><br>  No, tell codex what to do</div>
+        </div>
+        <span class="at" style="left: 1124px; top: 386px; width: 420px; font-size: 10.5px; color: #8A6700">Auto-approve 没放过删除命令，停下来等你 · 收件箱里有一条</span>
+
+        <div class="tf" style="left: 652px; top: 414px; width: 906px; height: 364px"></div>
+        <span class="tfh" style="left: 664px; top: 420px"><span class="mono">T6</span> · Agent color marks · <span class="mono muted">crew/history-sidebar/T6</span> · Review round 1 of 2</span>
+        <div class="win" style="left: 664px; top: 444px; width: 430px; height: 320px">
+          <div class="wt"><span class="dot" style="border: 1px solid #8A8A85"></span><span class="am" style="background: #2F5E9E"></span><span class="mono" style="font-weight: 500">Worker · codex</span><span class="muted">· T6</span><span style="flex: 1"></span><span class="muted">Idle · delivered</span></div>
+          <div class="wb">• crew_report_done T6<br>  summary: Added --agent-* tokens for light<br>  and dark, used them in the sidebar marks.<br>• Scheduler: pnpm check ✓ · owns ✓<br>• Waiting for review…</div>
+        </div>
+        <div class="win" style="left: 1110px; top: 444px; width: 436px; height: 320px">
+          <div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="am" style="background: #A8503A"></span><span class="mono" style="font-weight: 500">Reviewer · claude</span><span class="muted">· T6</span><span style="flex: 1"></span><span class="muted">Running · 2m</span></div>
+          <div class="wb">● crew_get_diff T6<br>  ⎿ 4 files, +86 −3<br>● Checking dark-mode contrast of --agent-kimi…<br>● crew_review T6 changes<br>  "kimi mark is too close to the muted text<br>   in dark mode; pick a lighter shade."</div>
+        </div>
+
+        <div class="at" style="left: 652px; top: 800px; display: flex; align-items: center; gap: 8px; font-size: 11px; color: #6B6B6B">Merged
+          <span class="chip"><span class="mono">T1</span> Contracts</span><span class="chip"><span class="mono">T2</span> Index claude</span><span class="chip"><span class="mono">T3</span> Index codex</span>
+          <span class="muted">· click to open the worktree read-only</span>
+        </div>
+        <div class="at" style="left: 14px; top: 800px; display: flex; align-items: center; gap: 8px; font-size: 11px; color: #6B6B6B">Not started<span class="chip"><span class="mono">T7</span></span><span class="chip"><span class="mono">T8</span></span></div>
+        <span class="at muted" style="left: 14px; top: 850px; width: 1540px; font-size: 11px">集群框用 N12 自动排版：新开的任务框接在右边，合进去的收成标签；框跟着里面的东西长和缩。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 任务卡和任务详情</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start">
+      <div class="fig" style="width: 860px; height: 470px">
+        <div class="at tc" style="left: 30px; top: 30px; width: 190px; border-color: #1A1A1A"><b><span class="mono">T4</span> Sidebar list UI</b><span class="muted mono" style="font-size: 9.5px">panels/history/**</span><span style="display: flex; align-items: center; gap: 4px"><span class="am" style="background: #2F5E9E"></span>codex<span class="dot" style="background: #1A7F37; margin-left: auto"></span></span></div>
+        <span class="at muted" style="left: 30px; top: 116px; width: 200px; font-size: 11px; line-height: 1.5">点卡片打开详情；双击跳到它的 worktree 框</span>
+        <div class="panel" style="left: 260px; top: 24px; width: 570px">
+          <div style="display: flex; align-items: center; gap: 8px; padding: 10px 12px"><b><span class="mono">T4</span> Sidebar list UI</b><span class="tag">Wave 2</span><span style="flex: 1"></span><span class="muted">Working · codex · 6m</span></div>
+          <div class="pr"><span class="muted" style="width: 90px">Depends on</span><span><span class="mono">T1</span> Contracts: HistoryService</span></div>
+          <div class="pr"><span class="muted" style="width: 90px">Owns</span><span class="mono" style="font-size: 11px">packages/ui/panels/history/**</span></div>
+          <div class="pr"><span class="muted" style="width: 90px">Done when</span><span style="flex: 1">Sessions are grouped by folder, then by agent with its color mark. Empty state reads “No sessions yet”. Tests cover grouping and sorting.</span></div>
+          <div class="pr"><span class="muted" style="width: 90px">History</span><span style="flex: 1; display: flex; flex-direction: column; gap: 2px; font-size: 11.5px"><span>10:42 Ready → assigned to codex</span><span>10:42 Worktree <span class="mono">crew/history-sidebar/T4</span> opened</span><span>10:48 Running tests</span></span></div>
+          <div style="display: flex; gap: 6px; padding: 8px 12px; border-top: 1px solid #F0F0ED"><span class="btn">Go to terminal</span><span class="btn">Diff</span><span class="btn">Reassign…</span><span class="btn">Pause task</span><span style="flex: 1"></span><span class="btn">Edit task</span></div>
+        </div>
+      </div>
+      <div class="ex" style="flex: 1">
+        <span><b>卡片</b>：编号、标题、负责的目录、谁在做（agent 身份色的小方块）、状态点（绿在跑、黄等你、红出错）。等你的那张卡片多一行说等什么。</span>
+        <span><b>看板列</b>：Waiting（依赖没做完）、Ready（能做，等空位）、Working、Review、Merged。卡住的任务（失败两次、等你批准改接口）留在原列，卡片标黄，收件箱里有对应的一条。</span>
+        <span><b>Table · Board</b>：也能切成表格看，就是任务表本身（编号、依赖、目录、完成标准、分波），你可以直接改；改了未开始的任务立刻生效，改正在做的要先 Pause task。</span>
+        <span><b>Reassign…</b>：换一家 agent 接着做（同一个 worktree，新 agent 先读任务和 diff）。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · 摆放和样子的规则</span>
+    <div class="tbl" style="grid-template-columns: 280px minmax(0, 1fr)">
+      <span class="th">情况</span><span class="th">怎么做</span>
+      <span class="td">集群框放在哪</span><span class="td">项目框里，和普通 worktree 框并列；一个项目可以同时有几个集群。集群框整体能拖、能折叠成只剩标题条。</span>
+      <span class="td">任务框</span><span class="td">就是普通的 worktree 框（MVP v1 的工作区框），标题前多一个任务编号；终端窗口标题写角色和任务：<span class="mono">Worker · codex · T4</span>。</span>
+      <span class="td">合进去以后</span><span class="td">任务框收成一个标签，终端退出，worktree 保留到集群结束（点标签只读打开）；集群结束时一起清掉，分支留着。</span>
+      <span class="td">颜色</span><span class="td">照全局规则：状态点只用绿黄红；agent 身份色只用在小方块上；集群框本身是墨黑描边，不用彩色。</span>
+      <span class="td">缩小看全局</span><span class="td">缩到很小时集群框只画标题条和一行“3 running · 1 needs you · 3 of 8 merged”。</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":2100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

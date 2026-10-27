@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>后台 agent</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.at{position:absolute}
+.cap{margin:0;font-size:13px;line-height:1.55}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1240px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.tag{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;background:#F2F2EF;color:#5F5F5A}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.win{box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;overflow:hidden;font-size:11px}
+.wt{display:flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-bottom:1px solid #EEEEEB}
+.wb{padding:6px 9px;font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.7;color:#6B6B6B}
+.dot{width:7px;height:7px;border-radius:50%;flex:none}
+.hint{position:absolute;height:18px;padding:0 8px;display:flex;align-items:center;gap:6px;font-size:10px;border:1px solid #D6D6D2;border-top:none;border-radius:0 0 5px 5px;white-space:nowrap;background:#FFFFFF;color:#3D3D3A;box-sizing:border-box}
+.mark{position:absolute;height:16px;padding:0 7px;display:flex;align-items:center;font-size:9.5px;font-weight:600;border-radius:0 0 4px 4px;white-space:nowrap;background:#CF222E;color:#FFFFFF}
+.row{display:flex;align-items:center;gap:7px;padding:4px 10px;white-space:nowrap}
+.sh{padding:8px 10px 3px;font-size:9.5px;font-weight:600;color:#8A8A85;letter-spacing:0.04em}
+.ro{display:inline-flex;align-items:center;height:16px;padding:0 6px;border-radius:999px;font-size:9.5px;background:#F2F2EF;color:#5F5F5A}
+.state{font-size:12px;font-weight:600;color:#3D3D3A}
+</style>
+</helmet>
+<div style="width: 1760px; height: 2240px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">13 · 后台 agent：平时一个小提示，点开只读查看</h1>
+      <span class="tag">2026-10-26 定</span>
+      <span class="concept">概念 · 待确认</span>
+      <span class="mono" style="font-size: 12px; color: #6B6B6B">N10 · IS-85 · DR-61</span>
+    </div>
+    <p class="lead">agent 并行干活时，多半用它自带的子 agent（claude 的 Agent 工具），不走 AgentDeck 的 open_terminals。这些子 agent 跑在主 agent 的进程里，没有自己的终端，原来白板上看不到，N2 的窗口组也就很少出现。现在用钩子和 agent 自己的记录把它们读出来：平时只在主终端底边挂一个小提示，有后台 agent 时才出现；点开是 N2 的同一列侧边栏，选中一个看它的记录，只读。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">两种子 agent</span>
+    <div class="tbl" style="grid-template-columns: 260px 300px 320px minmax(0, 1fr)">
+      <span class="th"></span><span class="th">怎么开的</span><span class="th">跑在哪</span><span class="th">白板上</span>
+      <span class="td"><b>子终端</b>（N2，已有）</span><span class="td">主 agent 调 AgentDeck MCP 的 <span class="mono">open_terminals</span></span><span class="td">每个是一个真终端，有自己的 TUI</span><span class="td">侧边栏里一行，点开是它的终端，能打字、能批准</span>
+      <span class="td"><b>后台 agent</b>（N10，新）</span><span class="td">主 agent 用自带的工具开（claude 的 Agent / Task）</span><span class="td">在主 agent 的进程里，没有终端</span><span class="td">主终端底边一个小提示；点开在侧边栏里一行，选中看它的记录，<b>只读</b></span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 平时：主终端底边右侧一个小提示</span>
+    <p class="lead">只有主 agent 开了后台 agent 才出现，没有就什么都不挂。提示挂在底边右侧，和左侧的 Auto-approve 书签分开；Usage 条贴在下边时，照旧放在提示下面。点提示展开侧边栏，再点一次收起。</p>
+    <div class="fig" style="width: 1632px; height: 300px">
+      <div class="at win" style="left: 28px; top: 34px; width: 360px; height: 200px; border: 1.5px solid #1A1A1A">
+        <div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="mono" style="font-weight: 500">claude</span><span style="color: #6B6B6B">· Weather report</span><span style="flex: 1"></span><span style="color: #1A7F37">Running</span></div>
+        <div class="wb">⏺ 5 background agents launched<br>✻ Waiting for 5 background agents to finish</div>
+      </div>
+      <div class="hint" style="left: 196px; top: 234px"><span class="dot" style="background: #1A7F37"></span>5 background agents · 3 running</div>
+      <span class="at state" style="left: 28px; top: 262px">跑着：绿点，写几个还在跑</span>
+
+      <div class="at win" style="left: 436px; top: 34px; width: 360px; height: 200px">
+        <div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="mono" style="font-weight: 500">claude</span><span style="color: #6B6B6B">· Weather report</span><span style="flex: 1"></span><span style="color: #1A7F37">Running</span></div>
+        <div class="wb">⏺ 5 background agents launched<br>✻ Waiting for 4 background agents to finish</div>
+      </div>
+      <div class="mark" style="left: 452px; top: 234px">Auto-approve</div>
+      <div class="hint" style="left: 642px; top: 234px"><span class="dot" style="background: #CF222E"></span>5 background agents · 1 failed</div>
+      <span class="at state" style="left: 436px; top: 262px">有一个出错：红点；左侧书签不受影响</span>
+
+      <div class="at win" style="left: 844px; top: 34px; width: 360px; height: 200px">
+        <div class="wt"><span class="dot" style="background: #8A8A85"></span><span class="mono" style="font-weight: 500">claude</span><span style="color: #6B6B6B">· Weather report</span><span style="flex: 1"></span><span style="color: #6B6B6B">Idle</span></div>
+        <div class="wb">⏺ All 5 agents finished. Here is the summary…</div>
+      </div>
+      <div class="hint" style="left: 1132px; top: 234px; color: #8A8A85">✓ 5 done</div>
+      <span class="at state" style="left: 844px; top: 262px">全部完成：变灰，下次你发消息时消失</span>
+
+      <div class="at win" style="left: 1252px; top: 34px; width: 352px; height: 200px">
+        <div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="mono" style="font-weight: 500">claude</span><span style="color: #6B6B6B">· Fix the login bug</span><span style="flex: 1"></span><span style="color: #1A7F37">Running</span></div>
+        <div class="wb">⏺ Edit src/auth/oauth.ts<br>⏺ Bash pnpm test auth</div>
+      </div>
+      <span class="at state" style="left: 1252px; top: 262px">没开后台 agent：不挂提示</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 点开：主终端右边的侧边栏，选中一个看它的记录</span>
+    <p class="lead">和 N2 是同一列侧边栏：子终端和后台 agent 都列在里面，分成两组。点子终端那一行，右边打开它的真终端；点后台 agent 那一行，右边打开一个只读的记录窗口，跟着记录实时往下走，不能打字。要改它的任务、停掉它，回主终端跟主 agent 说。</p>
+    <div style="display: flex; gap: 32px; align-items: flex-start">
+      <div class="fig" style="width: 1100px; height: 400px">
+        <div class="at win" style="left: 20px; top: 24px; width: 330px; height: 330px; border: 1.5px solid #1A1A1A">
+          <div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="mono" style="font-weight: 500">claude</span><span style="color: #6B6B6B">· Weather report</span><span style="flex: 1"></span><span style="color: #1A7F37">Running</span></div>
+          <div class="wb">› 查一下今天、1 年前、10 年前、100 年前、<br>  1000 年前今天的天气，各开一个 agent<br>⏺ 5 background agents launched<br>✻ Waiting for 5 background agents to finish</div>
+        </div>
+        <div class="hint" style="left: 150px; top: 354px; background: #EDEDEA; font-weight: 600"><span class="dot" style="background: #1A7F37"></span>5 background agents · 3 running</div>
+        <div class="at win" style="left: 358px; top: 24px; width: 260px; height: 330px; font-size: 11px">
+          <div style="display: flex; align-items: center; padding: 8px 10px; font-weight: 600">5 background agents<span style="flex: 1"></span><span style="font-weight: 400; color: #6B6B6B; font-size: 10px">Collapse</span></div>
+          <div class="sh">BACKGROUND · READ-ONLY</div>
+          <div class="row"><span class="dot" style="background: #1A7F37"></span>Weather today<span style="flex: 1"></span><span style="color: #8A8A85; font-size: 10px">12s</span></div>
+          <div class="row"><span class="dot" style="background: #1A7F37"></span>Weather 1 year ago<span style="flex: 1"></span><span style="color: #8A8A85; font-size: 10px">12s</span></div>
+          <div class="row" style="background: #EDEDEA; font-weight: 600"><span class="dot" style="background: #1A7F37"></span>Weather 10 years ago<span style="flex: 1"></span><span style="color: #8A8A85; font-size: 10px; font-weight: 400">11s</span></div>
+          <div class="row" style="color: #8A8A85"><span style="width: 7px; font-size: 9px">✓</span>Weather 100 years ago<span style="flex: 1"></span><span style="font-size: 10px">9s</span></div>
+          <div class="row" style="color: #8A8A85"><span style="width: 7px; font-size: 9px">✓</span>Weather 1000 years ago<span style="flex: 1"></span><span style="font-size: 10px">9s</span></div>
+        </div>
+        <div class="at win" style="left: 626px; top: 24px; width: 450px; height: 330px">
+          <div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="mono" style="font-weight: 500">general-purpose</span><span style="color: #6B6B6B">· Weather 10 years ago</span><span style="flex: 1"></span><span class="ro">Read-only</span></div>
+          <div class="wb" style="height: 254px">› Look up the weather in Beijing on 2016-10-26 and give a<br>  one-paragraph summary with sources.<br>⏺ WebSearch beijing weather 26 october 2016<br>  ⎿ 10 results<br>⏺ WebFetch timeanddate.com/weather/china/beijing/historic…<br>  ⎿ Received 48 KB<br>⏺ WebFetch weatherunderground.com/history/daily/ZBAA/…<br>  ⎿ Fetching…</div>
+          <div style="display: flex; align-items: center; height: 28px; padding: 0 9px; border-top: 1px solid #EEEEEB; background: #F7F7F5; color: #6B6B6B; font-size: 10.5px">This agent runs inside claude. To change or stop it, tell the main agent.<span style="flex: 1"></span><span class="mono" style="font-size: 10px">40.8k tokens</span></div>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <div class="fig" style="width: 500px; height: 400px">
+          <div class="at win" style="left: 24px; top: 24px; width: 260px; height: 330px; font-size: 11px">
+            <div style="display: flex; align-items: center; padding: 8px 10px; font-weight: 600">5 subagents<span style="flex: 1"></span><span style="font-weight: 400; color: #6B6B6B; font-size: 10px">Collapse</span></div>
+            <div class="sh">TERMINALS</div>
+            <div class="row"><span class="dot" style="background: #1A7F37"></span>sub-1 · api</div>
+            <div class="row" style="background: #FFF8C5"><span class="dot" style="background: #BF8700"></span>sub-2 · ui<span style="flex: 1"></span><span style="color: #8A6700; font-size: 10px">Waiting</span></div>
+            <div class="sh">BACKGROUND · READ-ONLY</div>
+            <div class="row"><span class="dot" style="background: #1A7F37"></span>Explore the auth code<span style="flex: 1"></span><span style="color: #8A8A85; font-size: 10px">40s</span></div>
+            <div class="row"><span class="dot" style="background: #CF222E"></span>Check the CI logs<span style="flex: 1"></span><span style="color: #CF222E; font-size: 10px">Failed</span></div>
+            <div class="row" style="color: #8A8A85"><span style="width: 7px; font-size: 9px">✓</span>Find the API docs<span style="flex: 1"></span><span style="font-size: 10px">1m 2s</span></div>
+          </div>
+          <div class="at" style="left: 304px; top: 30px; width: 176px; font-size: 12px; line-height: 1.65; color: #5F5F5A">两种都有时，一列里分两组：上面是能打字的子终端，下面是只读的后台 agent。在等你的只会是子终端（浅黄底）。</div>
+        </div>
+        <span class="cap">两种子 agent 同时存在时的侧边栏。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · 什么时候显示什么，数据从哪来</span>
+    <div class="tbl" style="grid-template-columns: 260px 560px minmax(0, 1fr)">
+      <span class="th">发生了什么</span><span class="th">白板上</span><span class="th">从哪读（claude）</span>
+      <span class="td">主 agent 开了一个后台 agent</span><span class="td">底边右侧出现提示（第一个时）；侧边栏里加一行，写它的任务描述</span><span class="td"><span class="mono">SubagentStart</span> 钩子给 agent_id、agent_type；任务描述在 <span class="mono">subagents/agent-&lt;id&gt;.meta.json</span> 的 description</span>
+      <span class="td">它在跑</span><span class="td">绿点和已用时间；记录窗口跟着往下走，工具调用写成一行（WebSearch …、Edit …）</span><span class="td">只读 <span class="mono">subagents/agent-&lt;id&gt;.jsonl</span> 的新增部分（和 Usage 读主对话的办法一样）</span>
+      <span class="td">它做完了</span><span class="td">这一行变灰打 ✓，写用时和 token；全部做完时提示变灰写 “5 done”</span><span class="td"><span class="mono">SubagentStop</span> 钩子；token 取记录里的 usage</span>
+      <span class="td">它出错或被打断</span><span class="td">红点，写 Failed；提示写 “1 failed”，点开看记录最后几行</span><span class="td"><span class="mono">SubagentStop</span> 加记录里最后一条</span>
+      <span class="td">你给主 agent 发下一条消息</span><span class="td">全部做完的提示消失；记录留到关掉主终端前，右键菜单 “Background agents…” 还能打开</span><span class="td"><span class="mono">UserPromptSubmit</span> 钩子</span>
+      <span class="td">前台子 agent（主 agent 等它做完）</span><span class="td">也列出来，规则一样</span><span class="td">同上，meta.json 里写的是前台还是后台</span>
+      <span class="td">重开应用、Restore</span><span class="td">不保存，从空开始（2026-10-26 实现时定；记录还在 claude 自己的文件里，以后可以在左边栏里看，画板 14）</span><span class="td">—</span>
+      <span class="td">面板开着</span><span class="td">项目框跟着长到装下侧边栏和记录窗口，挤到的框、盖住的窗口挪开；收起时照原样放回。书签、小提示、Usage 条也算进框里（2026-10-26 定）</span><span class="td">—</span>
+      <span class="td">claude 自己的内部查询</span><span class="td">不列：每轮会单独发一两个没有 Start、没有类型的 SubagentStop</span><span class="td">只认见过 SubagentStart 的</span>
+    </div>
+    <p class="cap" style="color: #5F5F5A">本机 claude 2.1.291 实测：有 SubagentStart / SubagentStop 两个钩子；每个子 agent 一份记录 agent-&lt;id&gt;.jsonl，一份 meta.json（agentType、description、是否后台）。钩子照旧只通过 AgentDeck 启动 claude 时的参数带进去，不改你自己的配置。</p>
+  </div>
+
+  <div style="display: flex; gap: 40px; align-items: flex-start">
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 14px">
+      <span class="h2">支持哪些 agent</span>
+      <div class="tbl" style="grid-template-columns: 140px minmax(0, 1fr)">
+        <span class="th">agent</span><span class="th">情况</span>
+        <span class="td mono">claude</span><span class="td">先做：钩子和记录文件都有</span>
+        <span class="td mono">codex、pi、omp、kimi</span><span class="td">先调研有没有子 agent、怎么读（DR-61）。读不到的不挂提示，不猜</span>
+      </div>
+    </div>
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 14px">
+      <span class="h2">不做的</span>
+      <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; line-height: 1.65">
+        <span>不能在后台 agent 里打字、批准或停止它：它没有终端，要改就在主终端里跟主 agent 说。</span>
+        <span>不把后台 agent 变成真终端；需要能插手的并行任务，点名让 agent 用 open_terminals。</span>
+        <span>不另做成插件：这是 N2 窗口组的一部分，右键菜单里不加开关。</span>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":2240}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
