@@ -1,6 +1,6 @@
 // 只用于类型检查：确认接口能被实现、事件能按 type 收窄。不会被打包。
 import type {
-  AgentDeckApi, ApproveResult, BoardState, FrameArrange, SessionSummary, BackgroundAgent, TerminalBackgroundAgents, TranscriptLine, AutoApproveState, CommitInfo, EventOf, GitService, LogOptions, SkillItemId, TerminalHost, TerminalId,
+  AgentDeckApi, ApproveResult, BoardState, FrameArrange, PromptQueueSettings, UsageLimit, SessionSummary, BackgroundAgent, TerminalBackgroundAgents, TranscriptLine, AutoApproveState, CommitInfo, EventOf, GitService, LogOptions, SkillItemId, TerminalHost, TerminalId,
   TerminalSkills, TerminalUsage, TerminalWindowData, UsageService, WindowGroupId, WindowId, WindowNode, WindowRestoreSupport, WorkspaceId,
 } from './index.ts';
 import { effectiveSkillSelection, FIRE_AND_FORGET, isAutoApproveOn, skillsRestartNeeded } from './index.ts';
@@ -125,3 +125,11 @@ void api.history.list().then((all: SessionSummary[]) => all.filter((x) => x.agen
 // N11：左边栏的开关和宽度随白板保存，可选字段
 const left: BoardState['leftPanel'] = { open: true, width: 280 };
 void left;
+// PL3：Prompt queue。队列随白板保存；额度上限在 TerminalUsage.limit；watch 可以按 owner 分开
+const queue: PromptQueueSettings = { on: true, prompts: [{ id: 'p1', text: 'Add tests' }], sent: [], paused: false, keepAwake: true, running: false };
+const qdata: TerminalWindowData['queue'] = queue;
+void qdata;
+const limit: UsageLimit = { kind: 'five_hour', resetsAt: '2026-10-27T07:30:00.000Z', at: null, detail: null };
+void limit;
+void api.usage.watch('t1' as TerminalId, 'prompt-queue');
+void api.app.setKeepAwake(true);

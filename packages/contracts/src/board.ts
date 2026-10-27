@@ -121,6 +121,42 @@ export interface TerminalWindowData {
    * 不填或 null 用默认（built-in 勾、library 不勾，见 effectiveSkillSelection）。下次启动（Restart and resume）时生效。
    */
   skills?: SkillItemId[] | null;
+  /**
+   * PL3：Prompt queue 插件在这个终端上的队列（额度用完、到点恢复后接着发的提示词）。随白板保存。
+   * 不填或 null 是没开过。
+   */
+  queue?: PromptQueueSettings | null;
+}
+
+/** PL3：一条排着的提示词。 */
+export interface QueuedPrompt {
+  /** 界面生成的 id（排序、删除用）。 */
+  id: string;
+  text: string;
+}
+
+/** PL3：已经发出去的一条。 */
+export interface SentPrompt {
+  text: string;
+  sentAt: IsoTime;
+}
+
+/** PL3：Prompt queue 的设置和进度。 */
+export interface PromptQueueSettings {
+  on: boolean;
+  /** 还没发的，按顺序。 */
+  prompts: QueuedPrompt[];
+  /** 发出去的，最近的在后（最多留 50 条）。 */
+  sent: SentPrompt[];
+  /** 你点了 Pause：先不发。 */
+  paused: boolean;
+  /** 在等额度恢复、或正在接着发时不让 Mac 睡（默认 true）。 */
+  keepAwake: boolean;
+  /**
+   * 正在接着发：碰到上限、到点发了第一条之后为 true，之后 agent 每回到空闲就发下一条，发完或碰到新的上限时变回 false。
+   * 存下来是为了重开应用后能接着发。
+   */
+  running: boolean;
 }
 
 /** PL2：用量条开没开、贴在终端哪一边。 */
