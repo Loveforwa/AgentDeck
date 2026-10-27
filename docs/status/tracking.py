@@ -349,6 +349,28 @@ CASES = [
          result='重启不丢上下文',
          issue='已做（X6，68859ce）：2026-10-25 Claude 在隔离实例里验收通过：杀掉 tmux 后重开，弹出 “Restore your last session?”（10 terminals in 5 workspaces: 2 agents and 8 shells），Restore all 后 claude、codex 接回原来的对话，shell 在原目录打开，setup 那个 shell 的命令填在输入行里没运行。新增的 shell 命令记录（上次跑的命令）只对 X6 之后跑过的命令有效',
          rel='IS-35'),
+    # ---- Agent 集群（M8，CR0–CR9），需求见设计画布“Agent 集群”页（C0–C5）----
+    dict(id='TC-43', p='P2', status='未实现',
+         scene='所有等你的事在一处看、一处处理（CR1 收件箱）',
+         pre='白板上两个框：一个 claude 停在等批准，一个 codex 问了一个问题',
+         steps='1. 看顶栏\n2. 按 ⌘J\n3. 在列表里直接点 claude 那条的 Approve\n4. 回车跳到 codex 那条的终端',
+         expect='UI：顶栏有 “Needs you · 2” 按钮；⌘J 打开收件箱，按项目分组列出两条（什么事、哪个终端、等了多久），每条带能直接点的动作；Approve 后那条消失、claude 接着跑、按钮变成 “Needs you · 1”；↑↓ 选、回车跳到对应终端。没有等你的事时按钮是灰的 “Needs you”。\n后台：条目来自各终端现有的状态（needs-approval、needs-reply、error），集群的关卡以后也进这里（CR6）。',
+         result='不用满白板找谁在等你，也不用一个个跳过去看',
+         issue='未实现（CR1）', rel='IS-90'),
+    dict(id='TC-44', p='P2', status='未实现',
+         scene='用 Contract-first build 模板开一个集群，从目标做到合进集群分支（CR2–CR6）',
+         pre='AgentDeck 自己的仓库；claude、codex 都登录着；Auto-approve 关着',
+         steps='1. 右键项目框 › New crew…，选 Contract-first build，Goal 写一个要改 3 个包的小功能，Start crew\n2. 等收件箱出现 Approve plan，看任务表后点 Approve\n3. 看白板上的集群框\n4. 等所有任务进 Merged',
+         expect='UI：集群框顶上一条写到哪一步、几个在跑、几个等你；左边任务看板按 Waiting / Ready / Working / Review / Merged 分列；确认任务表前只开了总设计（claude）一个终端；确认后同时最多 3 个实现者，每个任务一个 worktree 小框，审查时换一家（claude 写的给 codex 审，反之亦然）的终端开在同一个框里；合进去的任务收成小标签。\n后台：任务表存在 AgentDeck 里（不往仓库写）；调度器自己跑检查命令、比对任务的 owns 目录，越界打回；每个任务 merge --no-ff 进 crew/<name>；集群分支上 pnpm check 通过；合回 main 没有自动做。',
+         result='确认任务表以后不用再手动开窗口、发提示词、合分支',
+         issue='未实现（CR2–CR6）', rel='IS-89'),
+    dict(id='TC-45', p='P2', status='未实现',
+         scene='晚上开集群，早上看汇报（CR7、CR8）',
+         pre='TC-44 的集群开着；实现者 codex 快用完 5 小时额度',
+         steps='1. 让集群整夜跑，离开电脑\n2. 第二天看收件箱和集群框\n3. 打开 Crew report，点 Create PR',
+         expect='UI：codex 碰到额度上限时，它的任务换给 claude 接着做（或写明等几点恢复）；同一个任务失败两次后换下一家再试，还不行进收件箱 Stuck；有冲突时开了 Integrator；跑完后有 Crew report：每个任务做了几轮、检查结果、审查意见、用量；最后的 Merge into main 永远等你点，Create PR 开出 PR。\n后台：换家和等恢复复用 PL3 的额度读取；Keep Mac awake 开着。',
+         result='人不在时集群接着跑，回来只用看汇报和点合并',
+         issue='未实现（CR7、CR8）', rel='IS-89'),
 ]
 
 # ---------------- 问题清单 ----------------
@@ -444,6 +466,9 @@ ISSUES = [
     ('IS-86', 'P2', '设计', '白板 · 左边栏', '找不到以前的会话：白板上只有开着的终端，关掉的、在普通终端里开的 agent 会话都看不到，要接着聊只能记住会话 id 自己去终端里 resume', '关掉一个 claude 终端，过几天想接着那段对话', '历史会话找不回来，同一个项目里开过哪些对话也看不全', 'N11（画板 14）：左边栏按项目 → 工作路径 → agent 列出所有历史会话，单击跳到开着的，没开着的 Resume / Fork（先调研 DR-62）', ''),
     ('IS-87', 'P2', '设计', '白板 · 项目框', '一个框里开了好几个 agent 后窗口散乱，框被撑得很大，只能一个个手动拖', '在一个框里陆续开 4、5 个终端、网页', '框里乱，占地方，找窗口费劲', 'N12（画板 15）：框标题右上角 Tidy / Columns / Rows 一键排版，Auto-arrange 开着时新开、关掉窗口自动重排', ''),
     ('IS-88', 'P2', '设计', '插件 · agent 终端', '5 小时（或每周）额度用完后 agent 就停了，要等你自己回来、到点后再一条条敲下一件事；人不在电脑前时排着的想法没法接着跑', '让 claude 跑到额度上限，然后离开电脑', '额度恢复后的几个小时白白空着', 'PL3（插件页）：Prompt queue，预先排好提示词，碰到上限后按恢复时间到点自动接着发（先调研 DR-63）', ''),
+    # ---- 2026-10-27 Agent 集群（M8），需求见设计画布“Agent 集群”页 ----
+    ('IS-89', 'P2', '设计', '白板 · 多 agent', '复杂任务要几个 agent 一起做时，拆任务、开 worktree、给每个 agent 发提示词、交给另一家审、合分支，全靠你在窗口之间传话；让一个 agent 当总指挥又会忘进度、不守分工、自己说做完了没人核对，也只能用它那一家的额度', '让 claude 带 3 个 codex 做一个要改 5 个包的功能', '你一直守着当调度员，人一走就停', 'M8 Agent 集群（设计画布“Agent 集群”页 C0–C5）：按模板组队，AgentDeck 里的调度器排活、跑检查、守分工、换家审、合进集群分支，你只在关卡上出现；第一期 CR0–CR6，先调研 DR-64、DR-65', 'TC-44 TC-45'),
+    ('IS-90', 'P2', '设计', '顶栏 · 提醒', '等你的事散在各个终端里，⌘J 只能一个个跳过去看是什么；批准、问题、出错没有一处能一起看、一起处理（集群的关卡更需要）', '同时开 5 个 agent，其中 3 个在等你', '要逐个跳过去才知道谁要什么', 'CR1（画板 C4）：顶栏 “Needs you · N” 收件箱，⌘J 打开，每条直接 Approve / Reply / 跳过去；集群开工前先单独做', 'TC-43'),
 ]
 
 # 用户在验收报告网页上填的验收结果（2026-10-24 从网页数据库同步的快照）。网页打开后以数据库为准；

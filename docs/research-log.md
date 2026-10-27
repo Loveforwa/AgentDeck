@@ -1,9 +1,9 @@
 # AgentDeck 调研记录
 
 实现过程中和一开始设想不一样的地方：原来以为什么、实际是什么、怎么决定的、好处和代价。
-由 `docs/research/build.py` 从 `docs/research/entries.py` 生成，不要直接改这个文件。更新于 2026-10-26。
+由 `docs/research/build.py` 从 `docs/research/entries.py` 生成，不要直接改这个文件。更新于 2026-10-27。
 
-共 63 条：已解决 41，进行中 13，推迟 4，待验证 5。
+共 65 条：已解决 41，进行中 14，推迟 4，待验证 6。
 
 编号规则（全项目统一）：DR-xx 调研记录 · TC-xx 端到端用例 · IS-xx 问题 · F1、T2、X3 等是 MVP 任务表的任务编号。用例和问题在 MVP 验收报告（docs/status/index.html）里；每条调研下面列出相关的用例和问题。
 
@@ -13,6 +13,7 @@
   - [DR-01 agent 的对话是在白板上的真终端里，不是我们自己画的界面](#dr-01)（已解决）
   - [DR-02 不要左侧栏，也不要每个框上的 +/− 改动数](#dr-02)（已解决）
   - [DR-03 界面全英文，文档用中文](#dr-03)（已解决）
+  - [DR-64 复杂任务的多 agent 协作：让一个 agent 当总指挥，还是 AgentDeck 按模板调度](#dr-64)（进行中）
 - **技术方案**：定技术选型时推翻的设想
   - [DR-04 终端进程交给 tmux，AgentDeck 只负责显示](#dr-04)（进行中）
   - [DR-05 Git 不监听文件，只在三个时机刷新](#dr-05)（已解决）
@@ -75,6 +76,7 @@
   - [DR-61 agent 自带的后台子 agent 能不能读出来、怎么读](#dr-61)（待验证）
   - [DR-62 各 agent 的历史会话存在哪、怎么列出来](#dr-62)（已解决）
   - [DR-63 额度用完时 agent 怎么记、什么时候恢复，能不能到点自动接着发提示词](#dr-63)（待验证）
+  - [DR-65 哪些 agent 能进集群](#dr-65)（待验证）
   - [DR-42 claude 能不能把对话 fork 到另一个目录](#dr-42)（已解决）
   - [DR-43 Approve all 发的“允许一次”按键对不对](#dr-43)（待验证）
   - [DR-44 经过 tmux 后的手感，要人在真界面上确认](#dr-44)（待验证）
@@ -120,6 +122,20 @@
 - **决策**：产品界面上出现的所有文字一律英文；需求说明、注释、文档、提交说明里的解释用中文。
 - **好处**：界面和 agent 输出、命令行一致；以后不用整体翻译一次。
 - **代价**：需求画板里中英混排，读的时候要分清哪些是界面原文。
+
+<a id="dr-64"></a>
+
+### DR-64 复杂任务的多 agent 协作：让一个 agent 当总指挥，还是 AgentDeck 按模板调度
+
+状态：进行中 · 出处：M8 Agent 集群 CR0–CR9 · 设计画布“Agent 集群”页 C0–C5 · packages/crew-service（新）· mcp-server · ui/canvas · 旧编号 —
+
+相关：TC-44、TC-45、IS-89
+
+- **原来以为**：（N1 之后的设想）agent 用 open_terminals 自己开子 agent、自己分工，AgentDeck 只负责把窗口摆出来；“claude 做完交给 codex 审”这种两步流程已经能手动做到。
+- **实际情况**：2026-10-27 推演 AgentDeck 自己的开发流程（先定 contracts、再分线并行、换家审、按依赖合并）：让一个 agent 当总指挥时，上下文满了或压缩后会忘任务表，断了接不上；它说“做完了、检查过了”没人核对；改了别的线的目录、动了 contracts 没人拦；只能用它自己那家的额度，额度一完整个集群停；你还是得守着它。这些都不需要模型的判断，是确定的规则。真正需要模型的是拆任务、写代码、审代码、解冲突。
+- **决策**：2026-10-27 用户定：模板定结构（角色、阶段、关卡、上限），agent 填内容（任务表、代码、审查意见）。调度器是 AgentDeck 里的一段代码，不是 agent：它保存任务表（只存在 AgentDeck 里，不往仓库写，agent 用 crew 工具读写）、按依赖派活、给每个任务开 worktree（crew/<name>/<任务>）和终端、自己跑检查命令、比对任务的 owns 目录（越界打回）、锁住 contracts（要改走关卡）、换一家审（最多两轮）、merge --no-ff 进集群分支（冲突才开 Integrator）、额度用完换家或等恢复、重启后对账接上。界面上叫 Crew；默认分工总设计 claude、实现 codex（用完换 claude）、审查 claude、验收 codex；同时最多 3 个 agent；收件箱（CR1）先单独做；第一期只给 claude、codex、omp（DR-65）。分三期：CR0–CR6 只有 Contract-first build 一个模板，CR7–CR8 加 Integrator、QA、汇报、换家、整夜跑，CR9 开放模板文件和其余四种模板。
+- **好处**：进度和规矩不靠模型记，断了能续、能核对；能跨家用额度；你只在关卡（确认任务表、改接口、卡住、合回 main）上出现；第一个模板就是我们自己在用的流程，能拿 AgentDeck 自己的任务验证。
+- **代价**：调度器、crew 工具、集群框都是新东西，第一期就有 7 个任务；模板的形状是我们定的，第三期才开放给用户改；agent 不守 crew 工具的约定（比如不调 crew_report_done）时要靠超时和检查兜底。
 
 ## 技术方案
 
@@ -901,7 +917,19 @@
 
 - **原来以为**：（插件 PL3 之前没考虑过：额度用完只能等你自己回来再敲）
 - **实际情况**：2026-10-26 本机核对（只读）。claude：用完 5 小时额度时会话记录里有一行 assistant，error: "rate_limit"、isApiErrorMessage、apiErrorStatus 429，带 quotaLimits { status: "rejected", rateLimitType: "five_hour", resetsAt: <秒> }，恢复时间是准的（本会话真遇到过一次，桌面版写的；终端版 2.1.291 的格式待用一次真用完核对）。codex 0.164：那一轮的 task_complete 事件带 error.codex_error_info "usage_limit_exceeded" 和 “try again at Aug 2nd, 2026 1:12 PM”，token_count 的 rate_limits.primary 有 used_percent（100）、window_minutes、resets_at（秒），Usage（PL2）已经在读。omp 自己有按额度换账号、等到恢复再重试的逻辑（auth-gateway 的 markUsageLimitReached），pi、kimi 的额度怎么记还没查。发提示词：终端的 sendKeys（tmux send-keys，和 Approve 一样）能把文字和回车送进去；什么时候发看状态机：agent 空闲（idle）才发下一条，在跑、等你批准、等你回答时都不发。
-- **怎么验证**：（待定，建议）做成插件 PL3「Prompt queue」：贴在 agent 终端上，你预先写好几条提示词排队；这个终端的 agent 碰到额度上限时，按记录里的恢复时间到点（多等 1 分钟）把第一条发进去，它做完一轮（回到空闲）再发下一条，又碰到上限就等下一次恢复，发完为止。先做 claude、codex（恢复时间读得到），pi、omp、kimi 调研后再说。
+- **怎么验证**：2026-10-27 用户定：做成插件 PL3「Prompt queue」，只在碰到额度上限、到点恢复后才发，Keep Mac awake 默认开。贴在 agent 终端上，你预先写好几条提示词排队；这个终端的 agent 碰到额度上限时，按记录里的恢复时间到点（多等 1 分钟）把第一条发进去，它做完一轮（回到空闲）再发下一条，又碰到上限就等下一次恢复，发完为止。先做 claude、codex（恢复时间读得到），pi、omp、kimi 调研后再说。
+
+<a id="dr-65"></a>
+
+### DR-65 哪些 agent 能进集群
+
+状态：待验证 · 出处：CR2、CR4 · agent-adapters · mcp-server · 旧编号 —
+
+相关：TC-44、IS-89
+
+- **原来以为**：（待核对）白板上能开的 agent（claude、codex、pi、omp、kimi）都能当集群里的角色。
+- **实际情况**：2026-10-27 按现有能力对照：进集群要能调 AgentDeck MCP（crew 工具）、能在启动时收到第一条提示词、最好读得到额度上限（换家用）。claude、codex 接了 AgentDeck MCP（N1，codex 用 app-server 真连过），omp 也能接；pi、kimi 没有 AgentDeck MCP。omp 走 generic 适配器，第一条消息现在会被丢掉（IS-76），要先修。额度上限只有 claude、codex 读得到（DR-63）。
+- **怎么验证**：2026-10-27 用户定：第一期只给 claude、codex、omp；New crew 对话框里每个角色的下拉只列这三个，pi、kimi 灰掉写 “No AgentDeck MCP yet”。omp 进集群前先修 IS-76；omp 没有额度读取时不参加换家，只按失败重试。
 
 <a id="dr-42"></a>
 

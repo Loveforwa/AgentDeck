@@ -2,6 +2,19 @@
 
 按时间倒序。改动其中任何一条，先在这里写清楚再动代码。
 
+## 2026-10-27（M8 · Agent 集群）
+
+需求见设计画布“Agent 集群”页（C0–C5），任务 CR0–CR9，调研 DR-64、DR-65。
+
+- **模板定结构，agent 填内容；调度器是 AgentDeck 里的代码，不是 agent。** 派活、开 worktree 和终端、跑检查、比对 owns 目录、锁 contracts、换家审、合并、等额度、重启后对账都由调度器做；拆任务、写代码、审代码、解冲突交给 agent。
+- **界面上叫 Crew。**
+- **任务表只存在 AgentDeck 里（SQLite），不往仓库写**；agent 用 crew 工具（AgentDeck MCP）读写。
+- **默认分工**：总设计 claude、实现 codex（用完换 claude）、审查 claude、验收 codex；审查永远换一家，最多两轮。
+- **同时最多 3 个 agent**（New crew 里可改）。
+- **收件箱（CR1）先单独做**：所有终端等你的事集中在顶栏 “Needs you · N”，⌘J 打开；原来 ⌘J 依次跳到等你的窗口，改成在列表里选、回车跳过去。
+- **第一期只给 claude、codex、omp**：pi、kimi 没有 AgentDeck MCP；omp 进集群前先修 IS-76。
+- **合回 main 永远由你点**，不能在 New crew 里取消这个关卡。
+
 ## 2026-10-25（X6 · 恢复上次会话）
 
 - **重开应用时只要有终端窗口的 tmux 会话没了，就问一次 “Restore your last session?”**（Restore all / Not now）；会话都在（普通 ⌘Q 再打开）不问。tmux 服务在应用开着时没了（`terminal.host-lost`）也问。Not now 之后每个窗口自己有 Restore / Restart。
