@@ -17,6 +17,8 @@
 //                     接着干活（running）；等的时候你发来的一行（AgentDeck 送进来的改过的话）先记着，到点改发这一行、不发自己的 continue
 //                     （DR-84 说真 claude 这样，待核对）。noauto：像用户关了 autoContinueAtUsageLimit，马上发 quota_auto_resume_disabled，
 //                     之后收到的一行当成普通的提示词（UserPromptSubmit，running）。
+//   edit <文件> [内容] → 像 agent 改了一个文件（TC-03）：UserPromptSubmit，在 cwd 下写这个文件（内容默认 “edited by fake claude”），
+//                     PostToolUse（Write，tool_input.file_path），Stop，回到 idle；日志 kind 'edit' 带绝对路径
 //   clear           → SessionStart（source: clear），换一个新的会话 id（和真 claude 的 /clear 一样）
 //   compact         → SessionStart（source: compact），会话 id 不变
 //   quit / exit     → SessionEnd，退出码 0
@@ -27,9 +29,9 @@
 
 import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { appendFileSync, mkdirSync } from 'node:fs';
+import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 
 const VERSION = '2.1.291';
 
@@ -272,6 +274,20 @@ async function runLine(input) {
       write(rest.length > 0 ? `\n● ${rest.join(' ')}\n\n` : '  Done.\n');
       prompt();
       return;
+    case 'edit': {
+      const file = resolve(process.cwd(), rest[0] ?? 'EDITED.txt');
+      state = 'working';
+      await emitHook('UserPromptSubmit', { prompt: input });
+      mkdirSync(dirname(file), { recursive: true });
+      writeFileSync(file, `${rest.slice(1).join(' ') || 'edited by fake claude'}\n`);
+      log({ kind: 'edit', file });
+      await emitHook('PostToolUse', { tool_name: 'Write', tool_input: { file_path: file }, tool_response: { success: true } });
+      state = 'idle';
+      await emitHook('Stop', { stop_hook_active: false });
+      write(`\n● Wrote ${rest[0] ?? 'EDITED.txt'}\n\n`);
+      prompt();
+      return;
+    }
     case 'clear':
       sessionId = randomUUID();
       await emitHook('SessionStart', { source: 'clear' });

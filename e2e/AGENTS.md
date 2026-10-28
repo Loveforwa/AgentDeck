@@ -51,6 +51,7 @@ AGENTDECK_E2E_KEEP=1 pnpm e2e              # 不删沙盒（打印路径和 tmux
 | 等批准时按 `2` / Esc / `n` | 无（真 claude 拒绝后也没有钩子） | 3 秒后兜底回 idle |
 | `done [回复]` | Stop（带回复时画一行 “● 回复”，像真 claude 的最后一条回复） | idle |
 | `limit <秒> [noauto]` | 会话记录（`$HOME/.claude/projects/<cwd>/<会话 id>.jsonl`）写一行 error `rate_limit`（resetsAt = 现在 + 秒），StopFailure（`error: rate_limit`、带 transcript_path）；默认像 claude 2.1.234 起自己续：到点 Notification `quota_auto_resume_fired` + UserPromptSubmit，等的时候收到的一行到点改发它（日志 `queued-while-limited`、`self-resume`）；`noauto` 马上发 `quota_auto_resume_disabled`，之后收到的一行当提示词（日志 `prompt`） | idle，到点 running |
+| `edit <文件> [内容]` | UserPromptSubmit、PostToolUse（Write，`tool_input.file_path`）、Stop：在 cwd 下写这个文件（像 agent 改代码，TC-03），日志 kind `edit` 带绝对路径 | running → idle |
 | `clear` | SessionStart（`source: clear`，新的会话 id，像真 claude 的 /clear） | 不变（Session 多一段，SE2） |
 | `compact` | SessionStart（`source: compact`，会话 id 不变） | 不变 |
 | `quit` / `exit` | SessionEnd，退出码 0 | exited |
@@ -86,15 +87,23 @@ bracketed paste（`ESC[200~ … ESC[201~`，LimitService 续跑时这样送）�
 | TC-61（CR15） | cr15-agentdeck-command | 散放的 Shell：窗格环境有自己的钥匙、PATH 最前面是 `<数据目录>/bin` → `agentdeck help`（真键盘）出 JSON → `agentdeck notify "…"`（tmux send-keys，像 agent 跑命令）白板弹提示 → `crew plan` 退出码 1（CR2 之前是 “crew is not available yet”）→ 改 AGENTDECK_TERM 冒充别的终端 “Unauthorized” → 同样 HOME、PATH 的系统登录 shell 里 `command -v agentdeck` 找不到。沙盒的 .bash_profile 在这个测试里改成往前加 PATH（见 tools/agentdeck-cli「已知限制」） |
 | TC-78（PL6） | tc78-auto-resume | 假 claude `limit 45 noauto`（像 codex，AgentDeck 来续）→ 右键标题栏开 Auto-resume → 书签 Paused · resumes … → 卡片里改话、⌘↩ → 到点打进终端的就是改过的那一句（只这一句），Resuming，做完书签收起。用 `AGENTDECK_LIMIT_GRACE_MS=0`、`AGENTDECK_RESUME_STAGGER_MS=0` |
 | TC-82（PL6，claude 部分） | 同上 | `limit 45`（claude 自己续）：灰书签 claude resumes …，卡片没有 Don’t resume → Give to claude 马上送进去（不算你接手），到点 claude 发改过的那一句、AgentDeck 不另发；claude resuming，做完收起。真 claude 是否这样待核对（DR-84） |
-| TC-12 | 同上 | 右键框 Delete workspace… → 连目录删 → 有未提交改动要勾选再确认 → 框消失、目录没了、分支还在、终端结束 |
+| TC-03 | tc03-tc08-two-worktrees | 已有 feat/oauth → 右键 New workspace… 建 fix/rate-limit → 两个框右键 New terminal › Claude Code 紧接着连开（不等，IS-07 没出现）→ 各自 `edit` 改一个文件 → 面板随聚焦只显示各自的改动；面板里暂存只进自己的暂存区；HEAD、git status、tmux pane_current_path、钩子 cwd 各是各的 |
+| TC-08 | 同上 | 聚焦 feat/oauth 的终端 → 分支按钮 → fix/rate-limit 灰显、写 “in fix/rate-limit” → 单击：选中那个框、视口平移到它、面板换过去；`git.branches` 的 checkedOutAt 来自 worktree list；refs、reflog、两个 HEAD 都没变 |
+| TC-11 | tc11-system-terminal | 标题栏右键 › Open in system terminal：主进程里截下交给 osascript 的 AppleScript（`support/system-terminal.ts`，不真开 Terminal.app），取出 `tmux -L <沙盒 socket> … attach-session -t =<id>`，在 node-pty 伪终端里跑它 → 同一会话两个客户端，两边打字互相看得到，关掉只断一个客户端。Terminal.app 真弹出来要人工看 |
+| TC-15 | tc15-project-settings | 顶栏 Projects ▾ › shop › Project settings…（选中的是 shop 不是第一个项目）→ 看到并改名称、基础分支、worktree 位置、复制的文件、初始化命令 → Save 写进 store、重开还在 → New workspace 默认从新基础分支分出、在新位置、复制了文件、setup Shell 跑了命令 |
+| TC-23 | tc23-tc24-panel-stage-switch | 新文件和改过的已跟踪文件：悬停 + 移到 Staged Changes（git status `A ` / `M `），− 移回（`??` / ` M`） |
+| TC-24 | 同上 | 主目录工作区开着空闲的 bash 和 claude → 分支按钮 → 另一个分支 → 确认框写 “bash and claude are open in this folder…”，确认前 HEAD 不变、Cancel 不变 → Switch 后框标题、面板、workspaces.list、workspace.changed 都是新分支；claude Running 时切回也先确认 |
+| TC-36 | tc36-commit-graph | 测试仓库（不用 agenduck）：All branches 里泳道不止一条、有弧线、合并是双圈、HEAD → main、feat/login 带 ◧（单击跳框）、feat/search；feat/cart、feat/old 收成 “2 merged branches not on the board”，Show 展开；行数 = rev-list --all；点 Merge feat/cart 展开 cart.txt；This workspace 只剩 main 的提交 |
+| TC-38 | tc38-outside-workspace | Shell 里 `cd /tmp` → 标题栏状态后面 “outside workspace”（--muted 色），title 写 Now in … / Workspace: … → `cd -` 消失；tmux pane_current_path 对得上 |
+| TC-39 | tc39-skills-mcp | 沙盒 HOME：折起再展开 SKILLS · MCP → agentdeck（built in）、agentdeck MCP（Connected）、repo-notes（repo，灰着勾上）、accept-hello（library，没勾）→ 勾上出 Changes apply after restart → Restart and resume：假 claude `--resume <原会话>`、`--plugin-dir` 那套目录多了 accept-hello，提示消失；~/.claude 和仓库都没变。真 claude 里 /skills 要人工看 |
+| TC-12 | tc07-tc12-git | 右键框 Delete workspace… → 连目录删 → 有未提交改动要勾选再确认 → 框消失、目录没了、分支还在、终端结束 |
 
 `test.fail` 标着的两条是**已知缺口**（现在失败才算通过；修好后会报“意外通过”，那时去掉 `test.fail`）：
 
 - TC-01：选子文件夹时界面不提示“用了仓库根目录”（`ProjectProbe.usedRepoRoot` 有，`addProject` 没用）。
 - TC-06：第二次单击同一个地址只聚焦、不刷新（终端打开网页时没带 `reloadToken`）。
 
-没写的：TC-03（两个 worktree 并行，要两个 agent 改文件，可以照 TC-30 写）、TC-04（主要看后台通知，系统通知点不到）、TC-08（分支占用跳框，可以写）、
-TC-11（会打开系统终端 App）、TC-13（系统通知）、TC-14（未实现）。
+没写的：TC-04（主要看后台通知，系统通知点不到）、TC-13（系统通知）、TC-14（未实现）。
 
 ## 已知问题（测试里绕开的，见各处注释）
 
