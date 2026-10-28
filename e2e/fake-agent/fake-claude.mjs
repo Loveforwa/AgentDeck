@@ -11,6 +11,8 @@
 //   ask [命令]       → UserPromptSubmit + PermissionRequest（Bash，默认命令 ls -la），屏幕上画确认框；
 //                     等批准时按 1 或回车 = 允许一次 → PostToolUse，回到 running；按 2 或 Esc = 拒绝（和真 claude 一样不发钩子）
 //   done            → Stop（一轮结束，idle）
+//   clear           → SessionStart（source: clear），换一个新的会话 id（和真 claude 的 /clear 一样）
+//   compact         → SessionStart（source: compact），会话 id 不变
 //   quit / exit     → SessionEnd，退出码 0
 //   crash           → 不发钩子，退出码 3（状态机记成 error）
 // 每发一个钩子、每收到一次批准，都往 $AGENTDECK_E2E_LOG_DIR/<会话 id>.jsonl 写一行，测试读它核对后台发生了什么。
@@ -18,6 +20,7 @@
 // 只用 node 内置模块。
 
 import { spawn } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import { appendFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -52,7 +55,9 @@ if (args.version) {
   process.exit(0);
 }
 
-const sessionId = args.sessionId ?? args.resume ?? 'no-session';
+/** 现在的会话 id：/clear 以后换新的。日志文件一直用启动时那个（logId）。 */
+let sessionId = args.sessionId ?? args.resume ?? 'no-session';
+const logId = sessionId;
 const logDir = process.env['AGENTDECK_E2E_LOG_DIR'];
 /** @param {Record<string, unknown>} entry */
 function log(entry) {
@@ -60,7 +65,7 @@ function log(entry) {
   try {
     mkdirSync(logDir, { recursive: true });
     appendFileSync(
-      join(logDir, `${sessionId}.jsonl`),
+      join(logDir, `${logId}.jsonl`),
       `${JSON.stringify({ at: new Date().toISOString(), terminal: process.env['AGENTDECK_TERM'] ?? null, ...entry })}\n`,
     );
   } catch {
@@ -120,7 +125,7 @@ function banner() {
   write('\x1b[1m* Fake Claude (AgentDeck e2e)\x1b[0m\n');
   write(`  cwd: ${process.cwd()}\n`);
   write(`  session: ${sessionId}${args.resume ? ' (resumed)' : ''}\n`);
-  write('  commands: work · ask [cmd] · done · quit\n\n');
+  write('  commands: work · ask [cmd] · done · clear · compact · quit\n\n');
 }
 
 /** @param {string} command */
@@ -177,6 +182,17 @@ async function runLine(input) {
       state = 'idle';
       await emitHook('Stop', { stop_hook_active: false });
       write('  Done.\n');
+      prompt();
+      return;
+    case 'clear':
+      sessionId = randomUUID();
+      await emitHook('SessionStart', { source: 'clear' });
+      write(`  Cleared. session: ${sessionId}\n`);
+      prompt();
+      return;
+    case 'compact':
+      await emitHook('SessionStart', { source: 'compact' });
+      write('  Compacted.\n');
       prompt();
       return;
     case 'crash':

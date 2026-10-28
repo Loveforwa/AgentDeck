@@ -121,6 +121,8 @@ cwd 是目标工作区的目录。原来的终端和对话都不动。
 ### claude：各事件什么时候来
 
 - 启动：`SessionStart`（`session_id` 就是我们传的 `--session-id`，`source: startup`）。
+  SE2：`parseSessionStart` 把 `source` 读成 `AgentHookEvent.reason`：startup → start、resume、clear、compact（后三个按官方文档，没在真 claude 里逐个核对），
+  认不出的记 unknown，没有 source 时不填（pi / omp 的扩展只报 session_id）。codex 0.159.2 的 SessionStart 也带 `source: startup`，同样读。
 - 用户发消息：`UserPromptSubmit`。
 - 要批准：`PreToolUse` → `PermissionRequest`（`tool_name`、`tool_input.command`）→ `Notification`（`notification_type: permission_prompt`）。
   批准后工具跑完有 `PostToolUse`，一轮结束 `Stop`。

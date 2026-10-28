@@ -28,7 +28,7 @@ export type { CommandLaunchContext } from './adapters/shell.ts';
 export type { AdapterDeps, AdapterLaunchContext, AgentAdapterExt } from './adapters/types.ts';
 export { compareVersions, findExecutable, readVersion, shellQuote, splitCommand } from './env.ts';
 export type { Env, EnvSource } from './env.ts';
-export { hookHint, parseCommonHook, parsePermissionRequest } from './hook-payload.ts';
+export { hookHint, parseCommonHook, parsePermissionRequest, parseSessionStart, sessionStartReason } from './hook-payload.ts';
 export { defaultHookSocketPath, HookServer, parseEnvelope } from './hook-server.ts';
 export type { HookServerOptions, ReceivedHook } from './hook-server.ts';
 export { StatusMachine } from './status/machine.ts';

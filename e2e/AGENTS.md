@@ -50,10 +50,12 @@ AGENTDECK_E2E_KEEP=1 pnpm e2e              # 不删沙盒（打印路径和 tmux
 | 等批准时按 `1` / 回车 / `y` | PostToolUse | running |
 | 等批准时按 `2` / Esc / `n` | 无（真 claude 拒绝后也没有钩子） | 3 秒后兜底回 idle |
 | `done` | Stop | idle |
+| `clear` | SessionStart（`source: clear`，新的会话 id，像真 claude 的 /clear） | 不变（Session 多一段，SE2） |
+| `compact` | SessionStart（`source: compact`，会话 id 不变） | 不变 |
 | `quit` / `exit` | SessionEnd，退出码 0 | exited |
 | `crash` | 无，退出码 3 | error |
 
-每个钩子、每次批准都写进 `$AGENTDECK_E2E_LOG_DIR/<会话 id>.jsonl`（`deck.agentLog(terminalId)` 读），测试用它核对后台真的发生了什么。
+每个钩子、每次批准都写进 `$AGENTDECK_E2E_LOG_DIR/<启动时的会话 id>.jsonl`（clear 以后也写同一个文件）（`deck.agentLog(terminalId)` 读），测试用它核对后台真的发生了什么。
 `fake-agent/dev-server.mjs` 是 TC-06 用的“dev server”：打印 `Local: http://localhost:<端口>/`，每个请求记一行，故意带 `X-Frame-Options: DENY`。
 
 ## 写测试

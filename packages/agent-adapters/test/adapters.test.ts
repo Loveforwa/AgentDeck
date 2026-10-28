@@ -135,7 +135,19 @@ describe('ClaudeAdapter', () => {
     expect(claude.parseHook('SessionStart', fx.claude.SessionStart)).toEqual({
       type: 'session-start',
       sessionId: 'c2874ef2-d753-4246-a52b-c4eec2e93598',
+      reason: 'start',
     });
+    // SE2：SessionStart 的 source 记成这一段对话的原因
+    const id = 'c2874ef2-d753-4246-a52b-c4eec2e93598';
+    for (const [source, reason] of [
+      ['resume', 'resume'],
+      ['clear', 'clear'],
+      ['compact', 'compact'],
+      ['something-new', 'unknown'],
+    ] as const) {
+      expect(claude.parseHook('SessionStart', { session_id: id, source })).toEqual({ type: 'session-start', sessionId: id, reason });
+    }
+    expect(claude.parseHook('SessionStart', { session_id: id })).toEqual({ type: 'session-start', sessionId: id });
     expect(claude.parseHook('UserPromptSubmit', fx.claude.UserPromptSubmit)).toEqual({ type: 'prompt-submitted' });
     expect(claude.parseHook('PermissionRequest', fx.claude.PermissionRequestBash)).toEqual({
       type: 'permission-request',
@@ -311,6 +323,7 @@ describe('CodexAdapter', () => {
     expect(codex.parseHook('SessionStart', fx.codex.SessionStart)).toEqual({
       type: 'session-start',
       sessionId: '01a168da-2729-7752-adf2-dd274b58dd05',
+      reason: 'start',
     });
     expect(codex.parseHook('PermissionRequest', fx.codex.PermissionRequest)).toEqual({
       type: 'permission-request',
