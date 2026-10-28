@@ -35,6 +35,8 @@ export { FakeSessionService } from './session-service.ts';
 export type { FakeSessionInit, FakeSessionServiceOptions } from './session-service.ts';
 export { FakeLimitService } from './limit-service.ts';
 export type { FakeLimitHit } from './limit-service.ts';
+export { FakeCrewService } from './crew-service.ts';
+export type { FakeCrewServiceOptions } from './crew-service.ts';
 export type { FakeSubagentServiceOptions } from './subagent-service.ts';
 export type { FakeSkillsServiceOptions } from './skills-service.ts';
 export { Scenario, createFakeApi, createFakeServices, defaultRecordingFor } from './api.ts';

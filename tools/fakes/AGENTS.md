@@ -23,6 +23,7 @@ contracts 里每个服务的内存假实现（任务 F6）。第 2 波各条线�
 | `FakeSkillsService` | SkillsService（N9） | `addLibrary(item)`（发 skills.library-changed）、`setRepoSkills(cwd, names)`、`setRunning(id, ids)`、`mcpStatus`、`addedFolders`；支持情况同 agent-adapters 的 skills/support.ts |
 | `FakeSessionService` | SessionService（SE0） | `open(init)`、`stop(id)`、`reopen(id, terminalId?)`、`addSegment(id, agentSessionId, reason)`、`playLeadScenario()`（Lead 开 3 个子 session → 关掉 Lead → Reopen → 交接）；给了 `agents` 时 handoff 经过 `agents.start` |
 | `FakeLimitService` | LimitService（PL4） | `hit(init)`（撞上，返回账号键）、`reset(key)`（到点按先后续）、`finish(id)`、`hitAgain(id)`（两次后 gave-up）、`playHitWaitResume(ids)`、`playCancel(ids)`、`resumed`、`prompts`；`FakeLimitService.keyOf(agent, dir, scope)` |
+| `FakeCrewService` | CrewService（CR0、CR13） | `cli(caller, req)`（按 cliCommandAllowed 放行，回 CliResponse）、`leadTerminal(crewId)`、`addTask`、`setTaskStatus`、`setSessionStatus`、`setCheck`、`setConflict`、`inbox`、`sent`、`playTemplateRun()`、`playFreeRun()`；给了 `sessions` 时 Lead 和子 session 建在 FakeSessionService 上 |
 | `FakeAppService` | AppService | `queuePickFolder(...)`、`defaultPick`、`calls`、`trashed`、`badge`、`quitRequest`、`windowShown()`、`focusTerminal(id)` |
 | `FakeEventBus` | `on` / `onTerminalData` 背后的总线 | `emit`、`emitTerminalData`、`log`、`eventsOf(type)`、`clearLog()` |
 | `createFakeApi()` | AgentDeckApi | 返回值多了 `fakes`（上面这些实例）、`bus`、`scenario`、`dispose()` |
