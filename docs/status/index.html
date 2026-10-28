@@ -2392,7 +2392,7 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
     <div class="spec">
       <div><span class="label">怎么复现 / 验证</span><p>在 GitHub 或搜索引擎搜 “agent deck tmux”</p></div>
       <div><span class="label">影响</span><p>用户和贡献者会搞混：搜到的是别人的仓库，issue 提错地方，README 里的说法和对方的功能混在一起；公开推广后再改名，成本更高</p></div>
-      <div class="wide-cell"><span class="label">建议处理</span><p>2026-10-28 用户定：改名，新名字待定（候选 Trireme、Stoa、Pnyx、Argonaut，选定后先查 GitHub、域名、npm 和商标）；改之前 README 先加一句和 asheshgoplani/agent-deck 的区分（CR21）。改名要动 bundle id、~/.agentdeck、tmux socket、各语言 README 和图标</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>2026-10-28 用户定：改名为 Trireme（三列桨战船：很多桨手听同一个节拍划，你掌舵，只在关键时刻下令）。2026-10-28 查（GitHub、npm、Homebrew、域名、美国商标）：GitHub 上没有叫 Trireme 的 agent 工具。同名的仓库有 apigee/trireme（在 JVM 上跑 Node，486★）、aporeto-inc/trireme-lib（网络隔离，Aporeto 已被 Palo Alto Networks 收购，300★）、teal77/trireme（Deluge 安卓客户端）。用户名 trireme 被一个 2010 年的个人账号占了，trireme-app、trireme-dev、triremeapp 都还空着。npm 的 trireme 包被 apigee 占着（最后更新 2022），trireme-cli、trireme-app 空着。Homebrew 没有同名的 formula 和 cask。域名：trireme.com（1998，一家数字资产公司）、trireme.ai（2024，MarkMonitor 代管，所有者不明）、trireme.io（2016，MarkMonitor）、trireme.dev、trireme.app 都已被注册；trireme.sh、triremeapp.com、usetrireme.com、gettrireme.com 当时查不到注册记录。美国商标（tmsearch.uspto.gov）：7 条 TRIREME，有效的只有一条，是第 20 类家具；第 9 类、第 42 类软件没有。欧盟（EUIPO）和中国（CNIPA）还没查。结论：没有撞上开发工具和软件商标，可以用；主域名拿不到，用 trireme.sh 或 triremeapp.com，GitHub 组织用 trireme-app，npm 包名不用裸的 trireme。改名做法见 CR22</p></div>
     </div>
   </details>
   <p class="links">相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-79" target="_blank" rel="noopener">DR-79</a></p>
