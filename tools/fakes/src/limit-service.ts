@@ -1,6 +1,8 @@
 // LimitService 的假实现（插件 Auto-resume · PL4）：内存里的受限账号表，每次变化发 limits.changed（带完整列表）。
 // 控制方法：hit（撞上）、reset（到了恢复时间，按先后开始续）、finish（续跑这一轮做完）、hitAgain，
 // 以及 playHitWaitResume / playCancel 回放“撞上 → 等 → 续上”和“取消”。不真的等时间，也不发按键。
+// contracts 0.1.23（PL6）：setMessage 记下这一次改过的续跑文字（LimitedTerminal.message），每个终端都带 defaultMessage；
+// owner 为 agent、还在等时改过的文字算“已送进终端”（messageDelivered），sent 里记一条（测试断言用）。
 
 import type {
   AbsPath,
@@ -38,8 +40,14 @@ export interface FakeLimitHit {
     lostSubagents?: number;
     autoResume?: boolean;
     selfResume?: SelfResumeState;
+    /** 0.1.23：没改时会发的文字。不给用 FAKE_RESUME_PROMPT。 */
+    defaultMessage?: string;
   }[];
 }
+
+/** 假实现的默认续跑文字（同 agent-adapters 的 DEFAULT_RESUME_PROMPT）。 */
+export const FAKE_RESUME_PROMPT =
+  "Your usage limit has reset. Continue the task you were working on when the limit stopped you, from where you left off. Don't redo work that is already done.";
 
 /** 续跑间隔（毫秒），同主进程的默认 30 秒。只用来算 resumeAt。 */
 const STAGGER_MS = 30_000;
@@ -58,6 +66,8 @@ export class FakeLimitService implements LimitService {
   readonly resumed: TerminalId[] = [];
   /** 每个终端续了又撞的次数。 */
   private readonly again = new Map<TerminalId, number>();
+  /** 0.1.23：“发出去”的文字（reset / resumeNow 时发的，或 claude 自己续时送进去的改过的文字），按先后。 */
+  readonly sent: { terminalId: TerminalId; text: string }[] = [];
 
   constructor(opts: { bus?: FakeEventBus } = {}) {
     this.bus = opts.bus ?? new FakeEventBus();
@@ -97,6 +107,18 @@ export class FakeLimitService implements LimitService {
     this.changed(account);
   }
 
+  async setMessage(terminalId: TerminalId, text: string | null): Promise<void> {
+    const { account, terminal } = this.find(terminalId);
+    if (!WAITING.includes(terminal.state) || terminal.messageDelivered) fail('invalid-argument', 'The resume message was already sent');
+    const value = text !== null && text.trim() !== '' && text !== terminal.defaultMessage ? text : null;
+    terminal.message = value;
+    if (value !== null && terminal.owner === 'agent' && terminal.state === 'interrupted') {
+      terminal.messageDelivered = true;
+      this.sent.push({ terminalId, text: value });
+    }
+    this.changed(account);
+  }
+
   // ---- 假实现专用 ----
 
   static keyOf(agent: AgentKind, configDir: AbsPath, scope: LimitScope = 'all'): AccountKey {
@@ -131,6 +153,8 @@ export class FakeLimitService implements LimitService {
         lostSubagents: t.lostSubagents ?? 0,
         ...(t.autoResume !== undefined ? { autoResume: t.autoResume } : {}),
         ...(selfResume ? { selfResume } : {}),
+        message: null,
+        defaultMessage: t.defaultMessage ?? FAKE_RESUME_PROMPT,
       });
     }
     this.schedule(a);
@@ -217,8 +241,12 @@ export class FakeLimitService implements LimitService {
     );
     for (const t of chosen) {
       // 当时空闲的不发续跑提示，只是放开排着的提示词（PL3）；之后照样 finish
-      if (t.state === 'interrupted') this.resumed.push(t.terminalId);
+      if (t.state === 'interrupted') {
+        this.resumed.push(t.terminalId);
+        this.sent.push({ terminalId: t.terminalId, text: t.message ?? t.defaultMessage ?? FAKE_RESUME_PROMPT });
+      }
       t.state = 'resuming';
+      t.message = null;
     }
     a.needsYou = null;
     this.changed(a);

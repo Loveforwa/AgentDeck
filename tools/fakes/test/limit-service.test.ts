@@ -72,4 +72,28 @@ describe('FakeLimitService', () => {
     expect((await terms())[0]?.state).toBe('resumed');
     void key;
   });
+
+  it('0.1.23: setMessage edits this limit’s resume text; claude self-resume gets it delivered right away', async () => {
+    const limits = new FakeLimitService();
+    const key = limits.hit({
+      agent: 'codex', configDir: '/Users/you/.codex', resetsAt: '2026-10-28T13:00:00.000Z',
+      terminals: [{ terminalId: T('c1'), defaultMessage: 'Default text' }],
+    });
+    const term = async () => (await limits.list())[0]?.terminals[0];
+    expect(await term()).toMatchObject({ message: null, defaultMessage: 'Default text' });
+    await limits.setMessage(T('c1'), 'Finish the tests, then stop');
+    expect((await term())?.message).toBe('Finish the tests, then stop');
+    await limits.setMessage(T('c1'), '   ');
+    expect((await term())?.message).toBeNull();
+    await limits.setMessage(T('c1'), 'Edited');
+    limits.reset(key);
+    expect(limits.sent).toEqual([{ terminalId: 'c1', text: 'Edited' }]);
+    await expect(limits.setMessage(T('c1'), 'Too late')).rejects.toMatchObject({ code: 'invalid-argument' });
+    await expect(limits.setMessage(T('nope'), 'x')).rejects.toMatchObject({ code: 'not-found' });
+
+    limits.hit({ agent: 'claude', configDir: '/Users/you/.claude', resetsAt: null, terminals: [{ terminalId: T('cl'), owner: 'agent' }] });
+    await limits.setMessage(T('cl'), 'Use the new API instead');
+    expect(limits.sent.at(-1)).toEqual({ terminalId: 'cl', text: 'Use the new API instead' });
+    expect((await limits.list()).find((a) => a.agent === 'claude')?.terminals[0]?.messageDelivered).toBe(true);
+  });
 });

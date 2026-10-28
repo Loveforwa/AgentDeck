@@ -33,7 +33,7 @@ export { FakeSubagentService, fakeBackgroundAgent } from './subagent-service.ts'
 export { FakeHistoryService, fakeSession } from './history-service.ts';
 export { FakeSessionService } from './session-service.ts';
 export type { FakeSessionInit, FakeSessionServiceOptions } from './session-service.ts';
-export { FakeLimitService } from './limit-service.ts';
+export { FAKE_RESUME_PROMPT, FakeLimitService } from './limit-service.ts';
 export type { FakeLimitHit } from './limit-service.ts';
 export { FakeCrewService } from './crew-service.ts';
 export type { FakeCrewServiceOptions } from './crew-service.ts';
