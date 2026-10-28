@@ -17,6 +17,8 @@
 //                     接着干活（running）；等的时候你发来的一行（AgentDeck 送进来的改过的话）先记着，到点改发这一行、不发自己的 continue
 //                     （DR-84 说真 claude 这样，待核对）。noauto：像用户关了 autoContinueAtUsageLimit，马上发 quota_auto_resume_disabled，
 //                     之后收到的一行当成普通的提示词（UserPromptSubmit，running）。
+//   ask-stuck [命令] → 同 ask，但确认框不认按键（日志 key-ignored），像 agent 没收到“允许一次”（Approve all 的 Couldn’t approve，g3）
+//   usage <输入> <输出> [缓存读] [模型] → 会话记录里写一行带 message.usage 的 assistant 回答（Usage 插件读它，g3；默认模型 claude-sonnet-4-5）
 //   clear           → SessionStart（source: clear），换一个新的会话 id（和真 claude 的 /clear 一样）
 //   compact         → SessionStart（source: compact），会话 id 不变
 //   quit / exit     → SessionEnd，退出码 0
@@ -128,6 +130,10 @@ let limited = null;
 let line = '';
 /** @type {{ tool_name: string, tool_input: { command: string } } | null} */
 let pendingTool = null;
+/** ask-stuck：确认框不认按键。 */
+let stuck = false;
+/** usage 命令写的回答编号（message.id 要不一样）。 */
+let usageSeq = 0;
 
 function prompt() {
   write(PROMPT);
@@ -179,6 +185,35 @@ function deny() {
 function transcriptPath() {
   const root = process.env['CLAUDE_CONFIG_DIR'] || join(homedir(), '.claude');
   return join(root, 'projects', process.cwd().replace(/[^a-zA-Z0-9]/g, '-'), `${sessionId}.jsonl`);
+}
+
+/** usage 命令：会话记录里写一行带用量的回答（和真 claude 的 assistant 行同样的字段）。 */
+function writeUsage(/** @type {string[]} */ rest) {
+  const [input = '0', output = '0', cacheRead = '0', model = 'claude-sonnet-4-5'] = rest;
+  const file = transcriptPath();
+  const line = {
+    parentUuid: null,
+    isSidechain: false,
+    type: 'assistant',
+    uuid: randomUUID(),
+    timestamp: new Date().toISOString(),
+    sessionId,
+    message: {
+      model,
+      id: `msg_e2e_${++usageSeq}`,
+      type: 'message',
+      role: 'assistant',
+      content: [{ type: 'text', text: 'OK' }],
+      usage: { input_tokens: Number(input), cache_creation_input_tokens: 0, cache_read_input_tokens: Number(cacheRead), output_tokens: Number(output) },
+    },
+  };
+  try {
+    mkdirSync(join(file, '..'), { recursive: true });
+    appendFileSync(file, `${JSON.stringify(line)}\n`);
+    log({ kind: 'usage', input: Number(input), output: Number(output), cacheRead: Number(cacheRead), model });
+  } catch {
+    // 写不了：Usage 读不到
+  }
 }
 
 /** 像真 claude 那样撞上额度（PL6 的 e2e 用）。 */
@@ -261,7 +296,16 @@ async function runLine(input) {
       write('  Working… (type done to finish)\n');
       return;
     case 'ask':
+      stuck = false;
       await ask(rest.join(' ') || 'ls -la');
+      return;
+    case 'ask-stuck':
+      stuck = true;
+      await ask(rest.join(' ') || 'ls -la');
+      return;
+    case 'usage':
+      writeUsage(rest);
+      prompt();
       return;
     case 'limit':
       await hitLimit(rest);
@@ -319,6 +363,10 @@ function onChars(chunk) {
     if (pasting && (ch === '\r' || ch === '\n')) {
       line += ' ';
       write(' ');
+      continue;
+    }
+    if (state === 'approval' && stuck) {
+      log({ kind: 'key-ignored', key: ch });
       continue;
     }
     if (state === 'approval') {
