@@ -12,8 +12,22 @@ vi.mock('@xterm/xterm', async () => {
     keyHandler: ((e: KeyboardEvent) => boolean) | null = null;
     linkProviders: { provideLinks(y: number, cb: (links: unknown[] | undefined) => void): void }[] = [];
     resets = 0;
+    /** 测试用：xterm 自己的选中（按住 Option 拖）。headless 没有选中。 */
+    selection = '';
+    private keyListeners = new Set<() => void>();
     constructor(options: Record<string, unknown> = {}) {
-      const { linkHandler: _l, theme: _t, macOptionIsMeta: _m, macOptionClickForcesSelection: _c, fontFamily: _f, fontSize: _s, lineHeight: _h, cursorBlink: _b, ...rest } = options;
+      const {
+        linkHandler: _l,
+        theme: _t,
+        macOptionIsMeta: _m,
+        macOptionClickForcesSelection: _c,
+        rightClickSelectsWord: _r,
+        fontFamily: _f,
+        fontSize: _s,
+        lineHeight: _h,
+        cursorBlink: _b,
+        ...rest
+      } = options;
       super({ allowProposedApi: true, ...rest, cols: 80, rows: 24 });
       (this as unknown as { initialOptions: Record<string, unknown> }).initialOptions = options;
     }
@@ -34,6 +48,20 @@ vi.mock('@xterm/xterm', async () => {
     registerLinkProvider(p: Terminal['linkProviders'][number]): { dispose(): void } {
       this.linkProviders.push(p);
       return { dispose: () => {} };
+    }
+    hasSelection(): boolean {
+      return this.selection !== '';
+    }
+    getSelection(): string {
+      return this.selection;
+    }
+    onKey(fn: () => void): { dispose(): void } {
+      this.keyListeners.add(fn);
+      return { dispose: () => this.keyListeners.delete(fn) };
+    }
+    /** 测试用：用户在终端里按了一个键。 */
+    pressKey(): void {
+      for (const fn of this.keyListeners) fn();
     }
     paste(text: string): void {
       const body = text.replace(/\r?\n/g, '\r');
@@ -68,7 +96,11 @@ vi.mock('@xterm/addon-webgl', () => ({
 }));
 
 vi.mock('@xterm/addon-clipboard', () => ({
+  // 记下最近一个终端的剪贴板 provider，测试里调 writeText 模拟 tmux 经 OSC 52 发来复制的文字
   ClipboardAddon: class {
+    constructor(_base: unknown, provider: unknown) {
+      (globalThis as { __lastClipboard?: unknown }).__lastClipboard = provider;
+    }
     activate(): void {}
     dispose(): void {}
   },
