@@ -3,7 +3,7 @@
 实现过程中和一开始设想不一样的地方：原来以为什么、实际是什么、怎么决定的、好处和代价。
 由 `docs/research/build.py` 从 `docs/research/entries.py` 生成，不要直接改这个文件。更新于 2026-10-28。
 
-共 84 条：已解决 41，进行中 28，推迟 4，待验证 11。
+共 84 条：已解决 41，进行中 29，推迟 4，待验证 10。
 
 编号规则（全项目统一）：DR-xx 调研记录 · TC-xx 端到端用例 · IS-xx 问题 · F1、T2、X3 等是 MVP 任务表的任务编号。用例和问题在 MVP 验收报告（docs/status/index.html）里；每条调研下面列出相关的用例和问题。
 
@@ -17,7 +17,7 @@
   - [DR-68 AgentDeck 里的 session 是什么：窗口、tmux 会话、agent 会话记录之外要不要有自己的 Session](#dr-68)（进行中）
   - [DR-71 自由模式：让 Lead 自己指挥时，AgentDeck 还守哪些规矩](#dr-71)（进行中）
   - [DR-73 Agent as Memory、收件箱、调度器的任务表：进度放哪，人从哪进来](#dr-73)（进行中）
-  - [DR-79 定位：原来说的三样（跨家协作、白板看全局、原生 TUI）还是只有我们有吗（2026-10 竞品对照）](#dr-79)（待验证）
+  - [DR-79 定位：原来说的三样（跨家协作、白板看全局、原生 TUI）还是只有我们有吗（2026-10 竞品对照）](#dr-79)（进行中）
   - [DR-81 AgentDeck 要不要管 skill、管到哪一步、一处存放放在哪](#dr-81)（进行中）
 - **技术方案**：定技术选型时推翻的设想
   - [DR-04 终端进程交给 tmux，AgentDeck 只负责显示](#dr-04)（进行中）
@@ -202,7 +202,7 @@
 
 ### DR-79 定位：原来说的三样（跨家协作、白板看全局、原生 TUI）还是只有我们有吗（2026-10 竞品对照）
 
-状态：待验证 · 出处：设计画布“Agent 集群”页 C9 · CR21 · README · docs/design/agentdeck-plan.html · M8 CR1–CR6 · 旧编号 —
+状态：进行中 · 出处：设计画布“Agent 集群”页 C9 · CR21 · README · docs/design/agentdeck-plan.html · M8 CR1–CR6 · 旧编号 —
 
 相关：IS-109
 
@@ -213,7 +213,9 @@
 跨家：几乎所有第三方都能接几家。按流程协作也有人在做：TermCanvas 的 Hydra（Lead 驱动，角色文件定用哪家，result.json 当关卡，CLI + skill 不用 MCP）、AgentGrid（主 agent 派活，额度快满时换 agent 接着做）、Synara（provider handoff）、Agent Deck（conductor 常驻会话盯别的会话）。
 官方在补单家多 session：Claude Code 的 agent view（2026-05，预览）、agent teams（实验，Lead + 队友 + 共享任务表）、Projects（公测，一个协调对话开云端 thread，Overview 列出 Waiting on you）、Remote Control（2026-02）；Codex App 的 threads、worktree、subagents、Automations，ChatGPT 手机 app 控 Mac（2026-05）。
 还没看到有人做的：调度器是一段确定的代码，不是 Lead agent。它守 owns 目录、锁接口、换家审、额度用完换家、重启后对账，关卡进统一收件箱。也就是 M8 的设计。
-- **怎么验证**：2026-10-28 主 agent 定：（待用户确认）定位一句话：几家 agent 一起把大任务可靠地做完，你只在关卡出现。跨家协作、白板看全局、原生 TUI 降为底座。集群排在所有新方向前面，M5、M6 只做验收、修问题。只深做 claude、codex；omp 等 AH1 修好后跟上；pi、kimi 走 generic 加命令行。不做自己的聊天界面、统一工具集、记忆系统、搜索、云端执行；远程先借各家的（claude 在我们的终端里能 /remote-control），手机上看收件箱、批关卡见 M12。定位文案 CR21：内部文档现在改，README 首句等集群第一期合进再改。和开源项目 Agent Deck 同名（IS-109）：先在 README 加一句区分，公开推广前要不要改名由用户定。官方多 agent 功能（/remote-control、agent teams 分屏）在 AgentDeck 里的兼容实测：AH6。
+- **决策**：2026-10-28 主 agent 定，用户确认：定位一句话：几家 agent 一起把大任务可靠地做完，你只在关卡出现。跨家协作、白板看全局、原生 TUI 降为基础设施底座，上面的复杂业务场景（集群、研究和竞赛、文档、issue / MR）各自单独设计。集群排在所有新方向前面，M5、M6 只做验收、修问题。只深做 claude、codex；omp 等 AH1 修好后跟上；pi、kimi 走 generic 加命令行。不做自己的聊天界面、统一工具集、记忆系统、搜索、云端执行；远程先借各家的（claude 在我们的终端里能 /remote-control），手机上看收件箱、批关卡见 M12。定位文案 CR21：内部文档现在改，README 首句等集群第一期合进再改。和开源项目 Agent Deck 同名（IS-109）：先在 README 加一句区分，公开推广前要不要改名由用户定。官方多 agent 功能（/remote-control、agent teams 分屏）在 AgentDeck 里的兼容实测：AH6。
+- **好处**：对外说的是别人还没做完整的东西；和官方（单家）、T3 / Synara（协议接入）、Nodeterm / TermCanvas（Lead agent 自己管）都分得开；集群已经设计好（C0–C5），不用另起方向。
+- **代价**：集群做出来之前没有新的东西能对外说；窗口期有限，Hydra 和 AgentGrid 在接近；M5、M6 的验收和远程手机往后排；竞品变得快，这张表过一两个月就旧了。
 
 <a id="dr-81"></a>
 
@@ -341,7 +343,7 @@
 
 - **原来以为**：（2026-10-27 主 agent 的看法）终端在我们自己的 tmux 里，远程不难但不急；整夜跑时早上在手机上看收件箱、批关卡。
 - **实际情况**：2026-10-27 核对：（1）Claude Remote Control：在 claude 里打 /remote-control（或 claude --remote-control 启动），Claude 手机 App 和 claude.ai/code 接着聊、批权限、有推送；本机只发出站 HTTPS，经 Anthropic API 中转；要 claude.ai 订阅登录，API key、ANTHROPIC_BASE_URL 指向别的主机、Bedrock 等都不行（code.claude.com/docs/en/remote-control）。（2）Codex：ChatGPT 手机 App 的 Remote 能看任务、批命令、看 diff，但只能从 Codex 桌面 App 配对，CLI 和 IDE 插件不行（learn.chatgpt.com/docs/remote-connections、9to5mac 2026-05-14）。（3）Happy（github.com/slopus/happy）要用它的命令替换 claude / codex 启动。（4）Tailscale Serve 把本机端口只给自己的 tailnet，带 HTTPS 证书和 Tailscale-User-Login 请求头，后端要只听 localhost 才不能被伪造（tailscale.com/kb/1312/serve）。（5）ntfy 能自己架、有按主题的权限，iOS 上要经 ntfy.sh 转一次唤醒；Bark 是 iOS 推送，公共服务器 api.day.app，能自己架、支持加密推送（github.com/Finb/Bark）。（6）现状：tmux.conf 是 window-size latest，从手机 attach 会改桌面窗口的大小；会话名是 t- 加 12 位十六进制；主进程已有后台通知（apps/desktop/src/main/alerts.ts）；所有服务走 contracts 的 Services 统一调用（packages/contracts/src/ipc.ts），MCP 服务已经是“主进程里的 HTTP 服务 + 注入服务”的写法（packages/mcp-server）。
-- **决策**：2026-10-28 主 agent 定：远程分三步，新开 M12「远程」（RM0–RM4），M12 等 CR1。RM1 推送（ntfy、Bark，默认只写种类和数量）：可以和 CR8 一起提前做。RM2 只读手机页：只听 127.0.0.1，经 tailscale serve 给自己的 tailnet，扫码配对拿设备令牌，再对上 Tailscale 的登录账号。RM3 手机上处理（等 CR6）：可以批集群关卡、非破坏性命令、回答问题；Merge into main、破坏性命令、随便打字都不行。第一版不支持局域网直连，不用 Funnel。手机上不放 Merge into main（待用户确认）。ssh + tmux attach 和 claude 的 /remote-control 写进文档（RM4），不包装成功能；Codex 的手机端和 Happy 这类不用。
+- **决策**：2026-10-28 主 agent 定：远程分三步，新开 M12「远程」（RM0–RM4），M12 等 CR1。RM1 推送（ntfy、Bark，默认只写种类和数量）：可以和 CR8 一起提前做。RM2 只读手机页：只听 127.0.0.1，经 tailscale serve 给自己的 tailnet，扫码配对拿设备令牌，再对上 Tailscale 的登录账号。RM3 手机上处理（等 CR6）：可以批集群关卡、非破坏性命令、回答问题；Merge into main、破坏性命令、随便打字都不行。第一版不支持局域网直连，不用 Funnel。手机上不放 Merge into main（2026-10-28 用户确认）。ssh + tmux attach 和 claude 的 /remote-control 写进文档（RM4），不包装成功能；Codex 的手机端和 Happy 这类不用。
 - **好处**：只做跨家的那一层（收件箱、集群、汇报），单家的聊天远程留给 Claude / Codex 自己；复用 CR1 的收件箱和 CR6 的关卡，手机页就是收件箱的另一种显示；不对公网开端口，不经第三方中转我们的数据（推送只带最少的字）。
 - **代价**：手机页要装 Tailscale（国内连接质量待核对）；Mac 要醒着、AgentDeck 要开着（合上盖子会睡，Keep Mac awake 只防闲置睡眠）；多一个对外的服务就多一块要审的安全面；推送经过 ntfy.sh 或 Bark 的公共服务器。
 
@@ -1091,7 +1093,7 @@
 
 - **原来以为**：（待核对）白板上能开的 agent（claude、codex、pi、omp、kimi）都能当集群里的角色。
 - **实际情况**：2026-10-27 按现有能力对照：进集群要能调 AgentDeck MCP（crew 工具）、能在启动时收到第一条提示词、最好读得到额度上限（换家用）。claude、codex 接了 AgentDeck MCP（N1，codex 用 app-server 真连过），omp 也能接；pi、kimi 没有 AgentDeck MCP。omp 走 generic 适配器，第一条消息现在会被丢掉（IS-76），要先修。额度上限只有 claude、codex 读得到（DR-63）。2026-10-28 补（DR-72）：crew 改成 agentdeck 命令行以后，进集群要能跑 shell 命令、能收到第一条提示词（调度器启动后发送，不依赖启动参数）、有回合结束信号（钩子或扩展），最好读得到额度上限。claude、codex、omp、pi 都满足（pi 有扩展报回合结束、从不请求批准）；kimi 能跑 shell，但没有钩子、不支持 Auto-approve，每条命令都要你批。
-- **怎么验证**：2026-10-27 用户定：第一期只给 claude、codex、omp；New crew 对话框里每个角色的下拉只列这三个，pi、kimi 灰掉写 “No AgentDeck MCP yet”。omp 进集群前先修 IS-76；omp 没有额度读取时不参加换家，只按失败重试。2026-10-28 主 agent 定（改 2026-10-27 第 6 件决定，待用户确认）：第一期能当 Lead 和 Worker 的是 claude、codex、omp、pi，kimi 灰掉写 “Needs approval for every command”；自由模式的子 session 不带任何工具，五家都行（pi、kimi 默认不勾，DR-71）。名单不再写死，由能力报告（AH0）按“能跑 shell 命令、有回合结束信号”算出，下拉灰掉的原因也从报告取（DR-66）。第一条消息由调度器在启动后发，IS-76 不再挡集群，但照常单独修（AH1），不放在 CR3 里。
+- **怎么验证**：2026-10-27 用户定：第一期只给 claude、codex、omp；New crew 对话框里每个角色的下拉只列这三个，pi、kimi 灰掉写 “No AgentDeck MCP yet”。omp 进集群前先修 IS-76；omp 没有额度读取时不参加换家，只按失败重试。2026-10-28 主 agent 定（改 2026-10-27 第 6 件决定，2026-10-28 用户确认）：第一期能当 Lead 和 Worker 的是 claude、codex、omp、pi，kimi 灰掉写 “Needs approval for every command”；自由模式的子 session 不带任何工具，五家都行（pi、kimi 默认不勾，DR-71）。名单不再写死，由能力报告（AH0）按“能跑 shell 命令、有回合结束信号”算出，下拉灰掉的原因也从报告取（DR-66）。第一条消息由调度器在启动后发，IS-76 不再挡集群，但照常单独修（AH1），不放在 CR3 里。
 
 <a id="dr-67"></a>
 
@@ -1115,7 +1117,7 @@
 
 - **原来以为**：（CR3 原计划）crew 工具加进 AgentDeck MCP，按 x-agentdeck-terminal 只给对应角色；文章说 MCP 每轮注入几万 token、缓存读取叠起来很大。
 - **实际情况**：2026-10-27 量（真的 McpServer + 内存 transport 跑 tools/list，按模型看到的 name、description、input_schema 序列化，字符数 / 4 估算，UTF-8 字节数 / 4 一样）：现有 11 个工具完整定义约 1,910 token，server instructions 约 210，合计约 2,120；自带 agentdeck skill 的描述约 65。CR3 的 12 个 crew 工具照同样写法起草约 1,590。但三家默认都不把 MCP 工具定义预先放进上下文：claude（2.1.291，文档“Scale with MCP tool search”）默认延迟加载，只常驻工具名（约 80）和 server instructions（约 210）；codex 源码 main（2026-10-26）写 tool_search 可用时 MCP 工具总是延迟，0.164.0 待实测；omp 18.0.4 默认 tools.xdev 把 MCP 工具挂成 xd:// 设备，系统提示里只有路由列表（约 160）。所以现在每个 claude 终端每轮约 360（1000 次请求 0.36M），只有关了 tool search 时才到约 2,190（2.19M）；CR3 做成 MCP 后延迟加载约 500、预先加载约 3,780。真正的差别不在 token：MCP 只有 claude、codex、omp 能挂（pi 不内置 MCP，kimi 启动时挂不上）；open_terminals 在每个终端里都有，Worker 也能再开 session。命令行这边：pi、kimi、codex、claude、omp 都能跑 shell；claude 的 Bash 要批准（可预先放行 Bash(agentdeck:*)）；codex 默认沙箱只放行名单里的 unix socket 和本机端口（源码 main 的 network.unix_sockets），不放行就每次走批准；kimi 每条命令都要批准，又没有 Auto-approve。各家只给一个终端带说明：claude、omp 的 skill 支持 disable-model-invocation（描述不进上下文、只能 /crew 打开），pi 同样支持并有 --prompt-template，kimi 有 /skill:<name> 但能不能不进上下文待核对，codex 启动时加不进 skill（N9），只能放进第一条提示词或 -c developer_instructions（待实测）。
-- **决策**：2026-10-28 主 agent 定：混合方案。现有 11 个 MCP 工具不动，SERVER_INSTRUCTIONS 缩短；crew 和 session 的命令只做成 agentdeck 命令行（同一个 127.0.0.1 服务的 /cli，或 unix socket，按 CR12 的实测定），不在 MCP 里列出。说明只给 Lead：模板模式写进调度器发的第一条提示词，自由模式用 built in 的 crew skill（disable-model-invocation，只给勾了它的终端）。每个终端一把自己的钥匙 AGENTDECK_TERM_KEY = HMAC(密钥, 终端 id)，不再共用一个 token；命令只能申请关卡，批准和合回 main 只在界面上。集群里非 Lead 的终端不再提供 open_terminals、create_workspace、send_to_terminal；Worker 只在提示词里拿到四五行命令，服务按角色拒绝 Lead 的命令和 session 命令。省 token 不是主要理由（实测每轮约 2.1k，延迟加载时约 360）；真正的理由是 Worker 拿不到开 session 的命令、不会一层套一层，能跑 shell 的 agent 都能进集群。改 2026-10-27 第 6 件决定（待用户确认）：第一期能当 Lead 和 Worker 的是 claude、codex、omp、pi，kimi 灰掉写 “Needs approval for every command”，自由模式的子 session 五家都行；第一条消息由调度器在启动后发，IS-76 不再挡集群，但照常修（AH1）。任务 CR12–CR17，CR3 改成在 /cli 上实现。
+- **决策**：2026-10-28 主 agent 定：混合方案。现有 11 个 MCP 工具不动，SERVER_INSTRUCTIONS 缩短；crew 和 session 的命令只做成 agentdeck 命令行（同一个 127.0.0.1 服务的 /cli，或 unix socket，按 CR12 的实测定），不在 MCP 里列出。说明只给 Lead：模板模式写进调度器发的第一条提示词，自由模式用 built in 的 crew skill（disable-model-invocation，只给勾了它的终端）。每个终端一把自己的钥匙 AGENTDECK_TERM_KEY = HMAC(密钥, 终端 id)，不再共用一个 token；命令只能申请关卡，批准和合回 main 只在界面上。集群里非 Lead 的终端不再提供 open_terminals、create_workspace、send_to_terminal；Worker 只在提示词里拿到四五行命令，服务按角色拒绝 Lead 的命令和 session 命令。省 token 不是主要理由（实测每轮约 2.1k，延迟加载时约 360）；真正的理由是 Worker 拿不到开 session 的命令、不会一层套一层，能跑 shell 的 agent 都能进集群。改 2026-10-27 第 6 件决定（2026-10-28 用户确认）：第一期能当 Lead 和 Worker 的是 claude、codex、omp、pi，kimi 灰掉写 “Needs approval for every command”，自由模式的子 session 五家都行；第一条消息由调度器在启动后发，IS-76 不再挡集群，但照常修（AH1）。任务 CR12–CR17，CR3 改成在 /cli 上实现。
 - **好处**：没打开的终端不多付 token（普通终端每轮从约 360 降到约 200，只因为 instructions 缩短）；Worker 没有开 session 的命令，不会一层套一层；pi 能进集群，换家审多一家；命令每次现读地址，AgentDeck 换了端口还活着的 agent 也能连上（MCP 的地址是启动时写死的）；人和脚本也能用同一套命令调试和写测试。
 - **代价**：多一个要打包的命令（像 agentdeck-notify 一样要 node 或用 Electron 当 node 跑）；claude 的 Bash 批准、codex 的沙箱要分别处理，codex 不放行时每条命令要批准；agent 要自己拼命令行和引号（长内容走 stdin）；两个入口要一起维护（同一份实现能减轻）；同一个 macOS 用户下故意去读别的终端环境的进程仍能冒充（和现在能 tmux send-keys 进任何终端同一级）。
 
@@ -1205,7 +1207,7 @@
 
 - **原来以为**：（PL3 时以为各家都是撞了就停，要等你回来再敲；所以只做了“恢复后发排好的提示词”，队列空就什么都不发）
 - **实际情况**：2026-10-27 查（文档 + 本机只读核对版本和源码）。claude：2.1.234 起交互会话（claude.ai 订阅登录）默认在额度恢复后自己接着做（settings 的 autoContinueAtUsageLimit，默认 true，只读用户 / --settings / 托管设置；/config 里叫 Continue automatically at usage limit），界面写 “Usage limit reached · limit resets 3:45pm / Continuing automatically at 3:45pm · esc to cancel”，恢复时提示 Claude 从停下的地方接着做、不重发你的消息；连撞两次停；Mac 睡过 30 分钟以上改成等你按回车；恢复在 24 小时以外（每周额度）不自己等；你在等的时候发了消息就改发你的；钩子：StopFailure 带 error（rate_limit 等），Notification 的 quota_auto_resume_fired / stale / disabled（来源 code.claude.com/docs/en/interactive-mode「Wait for a usage limit to reset」、hooks、settings-reference、errors）。后台子 agent 撞额度时标 failed，主 agent 收到带错误和最后输出的通知，文档说“错误清了以后让 Claude 重试或 resume 子 agent”（SendMessage 按 id，记录还在），不会自己重派（sub-agents「API errors in subagents」）。Claude 桌面应用的 session-limit 卡片有单独的 Auto-continue when limits reset 勾选框，和 CLI 的设置分开。codex 0.164：没有自带续跑（GitHub openai/codex #21073、#34188、#48392 都在要，至 2026-10-27 没有维护者回复）；有 codex queue --thread <id> --message（本机 --help 核对过，给已开的会话排一条，跑着时等这一轮做完再发；能不能送进 tmux 里那个 TUI 会话待核对）；有 /goal，撞额度后也要你手动 continue。omp 18.0.4（本机源码只读）：auth-gateway 撞额度时 markUsageLimitReached，能换就换到另一个已登录的账号，没得换时按 retryAtMs 算等多久再重试；最长等多久、界面写什么待核对。pi（earendil-works/pi 文档）：只有短重试（retry.maxRetries 3、最长 60 秒），不等额度恢复；Enter 发的是 steering、Alt+Enter 是 follow-up 排队；没有子 agent。kimi（kimi.com 的 Kimi Code 错误参考）：“You’ve reached your 5-hour usage limit. Your quota will reset when the current 5-hour window ends.”，不写几点，官方说额度错误重试没用；CLI 会不会自己等待核对。判断“干到一半被打断”：额度只会在发请求时撞上，也就是一轮还没结束；“这一轮是被额度结束的”（claude 的 StopFailure rate_limit / 会话记录最后一条 rate_limit；codex 最后一个 task_complete 带 usage_limit_exceeded）就够，todo 和未完成的工具调用不参与判断。PL3 现在的代码在默认设置的 claude 上排着的提示词永远不发（IS-113）。
-- **决策**：2026-10-28 主 agent 定：PL3 先修一个 P1 缺陷再提交（IS-113）：加 armed 标记；claude 自己续跑的那一轮结束后再发；claude 在 stale 状态时不粘贴。续跑另开插件 Auto-resume（名字待用户确认），任务 PL4–PL9：贴在白板上（框、终端可单独关），默认开（待用户确认）；只看这一轮是不是被额度结束的；先续跑，做完再发 PL3 排着的；续跑提示词是一段可改的英文模板，因额度 failed 的子 agent 逐个点名（claude 让它用 SendMessage 接回，codex 让它重开）；按“agent + 配置目录”算账号，同一账号的一起停，恢复后按被打断的先后、每 30 秒续一个；PL3 发第一条的条件改成“这个账号碰到上限后”（待用户确认）；连续两次续了又撞、读不到恢复时间时停下来进收件箱；Mac 睡过恢复时间 30 分钟以上时先问你，不直接续（待用户确认）。claude 自己会续的，AgentDeck 只盯着（等 quota_auto_resume_fired；stale 时进收件箱，你点 Continue 才替你按回车；disabled 或恢复 3 分钟后没动静才自己发），续完补发子 agent 那一段，不重复发。omp 先只显示 “handled by omp”，pi、kimi 读不到恢复时间只给 Resume now（PL9 核对后再定）。集群里的终端归 CR8 调度器。识别、归组、错开发送只在主进程的 LimitService（agent-adapters limits）里写一份，插件和 CR8 共用。
+- **决策**：2026-10-28 主 agent 定：PL3 先修一个 P1 缺陷再提交（IS-113）：加 armed 标记；claude 自己续跑的那一轮结束后再发；claude 在 stale 状态时不粘贴。续跑另开插件 Auto-resume（名字2026-10-28 用户确认），任务 PL4–PL9：贴在白板上（框、终端可单独关），默认关（2026-10-28 用户定，原推荐默认开）；只看这一轮是不是被额度结束的；先续跑，做完再发 PL3 排着的；续跑提示词是一段可改的英文模板，因额度 failed 的子 agent 逐个点名（claude 让它用 SendMessage 接回，codex 让它重开）；按“agent + 配置目录”算账号，同一账号的一起停，恢复后按被打断的先后、每 30 秒续一个；PL3 发第一条的条件改成“这个账号碰到上限后”（2026-10-28 用户确认）；连续两次续了又撞、读不到恢复时间时停下来进收件箱；Mac 睡过恢复时间 30 分钟以上时先问你，不直接续（2026-10-28 用户确认）。claude 自己会续的，AgentDeck 只盯着（等 quota_auto_resume_fired；stale 时进收件箱，你点 Continue 才替你按回车；disabled 或恢复 3 分钟后没动静才自己发），续完补发子 agent 那一段，不重复发。omp 先只显示 “handled by omp”，pi、kimi 读不到恢复时间只给 Resume now（PL9 核对后再定）。集群里的终端归 CR8 调度器。识别、归组、错开发送只在主进程的 LimitService（agent-adapters limits）里写一份，插件和 CR8 共用。
 - **好处**：队列空也能接着做；同一账号一处看、一处取消；和 claude 自己的续跑不打架；集群和插件共用一份识别和发送。
 - **代价**：又多一个主进程模块和 contracts 接口；claude 走它自己的续跑，claude 终端没法错开；依赖各家记录和钩子的格式，升级后要核对（并入 DR-60）；续跑会用掉新窗口的额度，你回来时可能已经用掉一部分。
 

@@ -35,7 +35,7 @@ body{margin:0}
 
   <div style="display: flex; flex-direction: column; gap: 10px">
     <div style="display: flex; align-items: center; gap: 10px">
-      <h1 style="margin: 0; font-size: 28px; font-weight: 600">C5 · 模板、分期、待你定的事</h1>
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">C5 · 模板、分期、已定</h1>
       <span class="concept">草案</span>
     </div>
     <p class="lead">模板只写“形状”：角色、阶段、关卡、规矩。具体拆成哪些任务由总设计每次现拆。模板是一个文件加几份角色提示词，和 skill 一样能放进库里、放进仓库、分享给别人。</p>
@@ -138,7 +138,7 @@ rules:
       <div class="q"><span class="qn">3</span><span><b>默认分工</b>：总设计 claude、实现 codex（用完换 claude）、审查 claude、验收 codex。</span></div>
       <div class="q"><span class="qn">4</span><span><b>同时最多几个 agent</b>：默认 3，New crew 里可改。</span></div>
       <div class="q"><span class="qn">5</span><span><b>收件箱先单独做</b>（CR1），不开集群时也用；⌘J 改成打开收件箱，在列表里选、回车跳过去。</span></div>
-      <div class="q"><span class="qn">6</span><span><b>第一期给 claude、codex、omp、pi</b>（2026-10-28 放宽，待你确认）：能当 Lead 和 Worker 的是这四家；kimi 灰掉写 Needs approval for every command；自由模式的子 session 五家都行。第一条消息由调度器在启动后发，IS-76 不再挡集群，但照常修（AH1）。<span class="muted">原来是：第一期只给 claude、codex、omp，pi、kimi 灰掉写 No AgentDeck MCP yet；omp 进集群前先修 IS-76。</span></span></div>
+      <div class="q"><span class="qn">6</span><span><b>第一期给 claude、codex、omp、pi</b>（2026-10-28 放宽，你已确认）：能当 Lead 和 Worker 的是这四家；kimi 灰掉写 Needs approval for every command；自由模式的子 session 五家都行。第一条消息由调度器在启动后发，IS-76 不再挡集群，但照常修（AH1）。<span class="muted">原来是：第一期只给 claude、codex、omp，pi、kimi 灰掉写 No AgentDeck MCP yet；omp 进集群前先修 IS-76。</span></span></div>
       <div class="q"><span class="qn">7</span><span><b>两种模式</b>（2026-10-28）：模板之外加自由模式（No template，C6），只开一个 Lead，安全和记账由 AgentDeck 守，流程交给 Lead。第一期先做收件箱（CR1），再分 1a 自由模式、1b 模板模式；两种模式互转放第二期（CR11）。crew 命令只走 <span class="mono">agentdeck</span> 命令行（C7）；进度以任务表和 Decisions 为准，Lead 跟你聊（C8）；定位见 C9。</span></div>
     </div>
     <span style="font-size: 13px; color: #5F5F5A">登记：任务 M8 · CR0–CR9（MVP 任务表）· 问题 IS-89、IS-90 · 调研 DR-64、DR-65 · 用例 TC-43–TC-45 · 决策写进 docs/decisions.md。<br>2026-10-28 加：任务 CR10–CR21 · 问题 IS-98–IS-105、IS-109、IS-110 · 调研 DR-71–DR-75、DR-79 · 用例 TC-56–TC-69。</span>

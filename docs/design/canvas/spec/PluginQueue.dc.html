@@ -141,7 +141,7 @@ body{margin:0}
     <span class="h2">5 · 规则</span>
     <div class="tbl" style="grid-template-columns: 280px minmax(0, 1fr)">
       <span class="th">情况</span><span class="th">怎么做</span>
-      <span class="td">什么时候发第一条</span><span class="td">这个终端的 agent 碰到额度上限（5 小时或每周），并且到了记录里的恢复时间 + 1 分钟，并且 agent 空闲。<br><span style="color: #9A6700">10-28 改（IS-113，PL3 提交前修）：“碰到上限”记下来就不忘（armed），之后哪怕上限被一次成功的请求清掉也照发；按账号算，同一账号别的终端撞了也算（待你确认）；这个终端被打断时先续跑（PL4），续跑那一轮做完再发第一条。</span></span>
+      <span class="td">什么时候发第一条</span><span class="td">这个终端的 agent 碰到额度上限（5 小时或每周），并且到了记录里的恢复时间 + 1 分钟，并且 agent 空闲。<br><span style="color: #9A6700">10-28 改（IS-113，PL3 提交前修）：“碰到上限”记下来就不忘（armed），之后哪怕上限被一次成功的请求清掉也照发；按账号算，同一账号别的终端撞了也算（你已确认）；这个终端被打断时先续跑（PL4），续跑那一轮做完再发第一条。</span></span>
       <span class="td">claude 自己续跑（10-28 补，IS-113）</span><span class="td">claude 2.1.234 起默认在恢复后自己接着做（autoContinueAtUsageLimit）。它在等的时候不往里粘贴：粘进去的话 claude 会发你的提示词、不再续原来的事。等它续的那一轮做完回到空闲再发；它说 stale（Mac 睡过头，要按回车）或 disabled 时交给 PL4。</span>
       <span class="td">什么时候发下一条</span><span class="td">上一条那一轮做完、agent 回到空闲（状态机的 turn-end）。中间你自己打了字，就等你这一轮也做完。</span>
       <span class="td">怎么发</span><span class="td">和批准一样走终端的按键（tmux send-keys）：先把文字送进输入框，再按回车。多行的按 agent 自己的多行写法送。</span>

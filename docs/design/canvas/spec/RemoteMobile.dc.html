@@ -63,7 +63,7 @@ body{margin:0}
   <div style="display: flex; flex-direction: column; gap: 10px">
     <div style="display: flex; align-items: center; gap: 10px">
       <h1 style="margin: 0; font-size: 28px; font-weight: 600">R1 · 手机页、推送和 Settings › Remote</h1>
-      <span class="concept">2026-10-27 草案 · 待你定</span>
+      <span class="concept">2026-10-28 已定（按推荐）</span>
     </div>
     <p class="lead">手机页就是收件箱（C4）的手机版：同样的条目、同样的按钮，只是排成一列、按钮够大（44px）。另加两页：集群进度和汇报、一个终端的最后几行。外观用组件库的 tokens 和零件（Button、StatusLamp、agent 身份色小方块），不另起一套。</p>
   </div>
@@ -193,7 +193,7 @@ body{margin:0}
 
       <div class="ex" style="flex: 1">
         <span><b>Crews</b>：每个开着的集群一张卡：到第几波、几个合进去、几个在跑、因为额度停了多久，任务只列没合进去的（Waiting / Working / Review / Stuck）。Report so far 打开目前为止的汇报（CR7）。</span>
-        <span><b>Merge into main 在手机上永远是灰的</b> “Merge at your Mac”（待你定，见 R0 第 6 节）。</span>
+        <span><b>Merge into main 在手机上永远是灰的</b> “Merge at your Mac”（已定，见 R0 第 6 节）。</span>
         <span><b>Terminals</b>：按项目列出所有终端和状态灯；点进去是最后 40 行（tmux <span class="mono">capture-pane</span>，和 MCP 的 read_terminal 同一个读法），不 attach，所以桌面上的窗口大小不变。只有在等批准的终端下面才有批准按钮（RM3）。</span>
         <span style="color: #5F5F5A">手机页没有“往终端里打字”的地方。真要接管一个终端，用 ssh + tmux attach（文档里写怎么做），或者在 claude 终端里自己打 /remote-control。</span>
       </div>

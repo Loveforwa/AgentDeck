@@ -220,7 +220,7 @@ body{margin:0}
       </div>
       <div class="ex" style="flex: 1">
         <span><b>贴在白板上</b>（整块白板的所有 agent 终端），框和单个终端可以单独关，规则和 Auto-approve 一样：终端上的设置优先，框上关掉框里的都关。</span>
-        <span><b>默认开</b>（待你定）：它只做“让被额度打断的那件事接着做完”，不开新活；和 claude 自己的默认一致。不想要就在白板右键关掉。</span>
+        <span><b>默认开</b>（已定）：它只做“让被额度打断的那件事接着做完”，不开新活；和 claude 自己的默认一致。不想要就在白板右键关掉。</span>
         <span><b>Keep Mac awake</b>：有终端在等恢复时不让 Mac 睡（沿用 PL3 的默认开）；离恢复超过 12 小时不阻止。</span>
         <span style="color: #5F5F5A">集群里的终端不归它管，见第 8 节。</span>
       </div>
@@ -240,9 +240,9 @@ body{margin:0}
 
   <div style="display: flex; gap: 40px; align-items: flex-start">
     <div style="flex: 1; display: flex; flex-direction: column; gap: 14px">
-      <span class="h2">待你定</span>
+      <span class="h2">已定（2026-10-28：默认关，其余按推荐）</span>
       <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; line-height: 1.65">
-        <span>1. Auto-resume 默认开（建议），还是默认关、要用时右键白板打开。</span>
+        <span>1. Auto-resume 默认开（建议），还是默认关、要用时右键白板打开。→ 你定：默认关。</span>
         <span>2. 名字：Auto-resume（建议，和 Auto-approve 成对），或并进 Prompt queue 不单独列。</span>
         <span>3. PL3 的“只在碰到上限后才发”改成“这个账号碰到上限后”：空闲、自己没撞的终端排着的提示词也在这次恢复后发。</span>
         <span>4. Mac 睡过恢复时间 30 分钟以上：问你（建议，和 claude 一致），还是醒来就续。</span>

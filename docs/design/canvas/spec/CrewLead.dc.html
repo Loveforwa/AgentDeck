@@ -53,7 +53,7 @@ body{margin:0}
   <div style="display: flex; flex-direction: column; gap: 10px">
     <div style="display: flex; align-items: center; gap: 10px">
       <h1 style="margin: 0; font-size: 28px; font-weight: 600">C8 · Lead 和收件箱：谁记进度、谁叫你、谁跟你聊</h1>
-      <span class="concept">草案 · 待你定</span>
+      <span class="concept">2026-10-28 已定（按推荐）</span>
     </div>
     <p class="lead">有人主张“Agent as Memory”：人只跟一个主 agent 说话，主 agent 记着进度、开子 session、再回来跟你汇报，因为人的精力有限，来回切 session 很累。我们的出发点一样，但分成三份：<b>进度记在 AgentDeck 的数据里</b>（任务表、你做过的决定），<b>要你拍板的事进收件箱</b>（C4），<b>Lead 负责跟你聊</b>：到哪了、为什么、要不要改方向。Lead 的上下文只是缓存，压缩了、重开了、换一家当 Lead，都能从 AgentDeck 生成的进度摘要接上。</p>
   </div>
@@ -127,7 +127,7 @@ claude hit its 5-hour limit at 03:10, so T8 started
       <span class="td"><b>例子</b></span><span class="td">“组件里不写颜色值”“提交前跑 pnpm check”“我喜欢小提交”</span><span class="td">T6 审了两轮、T7 在等你批接口、你答过 QA “Same frame”</span>
       <span class="td"><b>存在哪</b></span><span class="td">各家 agent 自己的：仓库里的 <span class="mono">AGENTS.md</span> / <span class="mono">CLAUDE.md</span>；claude 的 auto memory（<span class="mono">~/.claude/projects/&lt;仓库&gt;/memory/</span>，同一仓库的所有 worktree 共用）；codex 的 memories（默认关）。</span><span class="td">AgentDeck 的数据（SQLite）：任务表、<b>Decisions</b>（你在收件箱和关卡上做过的决定）、crew notes、还开着的关卡。不往仓库写。</span>
       <span class="td"><b>谁写</b></span><span class="td">你；auto memory 由 agent 自己写。</span><span class="td">调度器写状态，你的每个决定自动记下，agent 用 crew note 写发现。</span>
-      <span class="td"><b>AgentDeck 做什么</b></span><span class="td">不另做一套记忆，也不往每个终端注入（那是每轮都要付的 token）。只做两件小事：集群不改仓库里的说明文件；集群里的 Worker、Reviewer、QA 启动时关掉 claude 的 auto memory，免得三个并行的任务把“T4 做到一半”写进你的长期记忆（待你定）。</span><span class="td">存下来，生成进度摘要（第 3 节）给 Lead；Worker 只拿到自己的任务卡和相关的 Decisions，不拿整张表。</span>
+      <span class="td"><b>AgentDeck 做什么</b></span><span class="td">不另做一套记忆，也不往每个终端注入（那是每轮都要付的 token）。只做两件小事：集群不改仓库里的说明文件；集群里的 Worker、Reviewer、QA 启动时关掉 claude 的 auto memory，免得三个并行的任务把“T4 做到一半”写进你的长期记忆（已定）。</span><span class="td">存下来，生成进度摘要（第 3 节）给 Lead；Worker 只拿到自己的任务卡和相关的 Decisions，不拿整张表。</span>
       <span class="td"><b>短期变长期</b></span><span class="td" style="grid-column: span 2">汇报里的 Decisions 和 notes，值得一直留的（比如“恢复会话一律在原来的框里”）由你自己抄进 AGENTS.md（Copy as Markdown）。AgentDeck 不自动写你的仓库和 agent 配置。</span>
     </div>
     <span style="font-size: 13px; line-height: 1.65; color: #5F5F5A; max-width: 1632px">第二版画板 2（工作区设置）里 “Share with every agent · Instructions · AGENTS.md · Also links CLAUDE.md and GEMINI.md” 一直没做。现在 claude（2.1.277 起）在没有 CLAUDE.md 时自己读 AGENTS.md，codex、pi、omp、kimi 本来就读，“链接”这件事基本不用做了。剩下有用的是把不进 git 的个人说明（<span class="mono">CLAUDE.local.md</span>、<span class="mono">AGENTS.override.md</span>）带进新开的 worktree，和那一行的 <span class="mono">.env.local</span> 一样，算工作区设置，不算记忆功能，以后再做。</span>
@@ -237,7 +237,7 @@ Since 02:05: T6 merged · T8 started · claude hit the 5-hour limit at 03:10</di
   </div>
 
   <div style="display: flex; flex-direction: column; gap: 14px">
-    <span class="h2">5 · 待你定</span>
+    <span class="h2">5 · 已定（2026-10-28，没特别说明的都按推荐）</span>
     <div class="decide" style="max-width: 1500px">
       <b>1</b><span><b>进度放哪</b>：推荐<b>两处，任务表为准</b>，Lead 的上下文当缓存，丢了从摘要恢复。只放 Lead 的上下文（文章的做法）会被压缩冲掉、跟着额度一起停；只放任务表就没人跟你聊。</span>
       <b>2</b><span><b>Lead 能不能替你答</b>：推荐第一期只建议，第二期按集群授权、只答 worker 的问题。批准和关卡永远不交给它。</span>

@@ -42,7 +42,7 @@ body{margin:0}
   <div style="display: flex; flex-direction: column; gap: 10px">
     <div style="display: flex; align-items: center; gap: 10px">
       <h1 style="margin: 0; font-size: 28px; font-weight: 600">S0 · 以 session 为核心：AgentDeck 自己的 Session，和窗口、tmux、agent 的会话记录分开</h1>
-      <span class="concept">2026-10-27 草案 · 待你定</span>
+      <span class="concept">2026-10-28 已定（按推荐）</span>
     </div>
     <p class="lead">现在白板上“一个终端窗口就是一个 session”只是看起来如此：数据上是窗口、tmux 会话、agent 的会话 id 三样东西靠窗口临时串着，窗口一关就散了。谁开了谁、名字、选的 skill、/clear 之前的对话，都跟着丢。这一页提议加一个 AgentDeck 自己的 Session：它比窗口活得长，比 agent 的会话 id 稳，父子关系、关掉以后再打开、集群任务的几轮、换一家接着做，都记在它上面。</p>
     <p class="lead" style="color: #1A1A1A">不做对话格式转换：每家仍然跑自己的原生 CLI，session 之间传的是结论（交接说明），不是对话记录。</p>
@@ -167,7 +167,7 @@ body{margin:0}
   </div>
 
   <div style="display: flex; flex-direction: column; gap: 14px">
-    <span class="h2">7 · 待你定</span>
+    <span class="h2">7 · 已定（2026-10-28，没特别说明的都按推荐）</span>
     <div class="tbl" style="grid-template-columns: 260px minmax(0, 1fr) 300px">
       <span class="th">事</span><span class="th">选项</span><span class="th">推荐</span>
       <span class="td">contracts 里加不加 Session</span><span class="td">A 往窗口上加字段 / B 加 Session，窗口只引用 / C 自己存对话、各家格式互相转换</span><span class="td">B</span>
