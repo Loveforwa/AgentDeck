@@ -224,7 +224,25 @@ token 本身只放进 `LaunchSpec.env`，不进命令行。和用户自己配的
 - 版本：codex 低于 0.164.0 不挂（`-c` 里不认识的字段可能让整份配置加载失败、codex 起不来）；omp 低于 18.0.4 不挂。版本取不到时按够新处理（同钩子）。
 - omp 在 tmux 里有没有真的连上、工具名在 omp 里显示成什么，没有在真 TUI 里核对（只核对了配置解析）。
 
-`StartAgentRequest.prompt`（第一条消息）：claude、codex 都放在参数最后、`--` 之后（`--mcp-config` 和不少用户参数后面能跟多个值，不隔开会被吃掉）。只在新会话时带。
+## 第一条消息（`StartAgentRequest.prompt`，AH1，IS-76）
+
+只在新会话时带（resume、fork 照旧不带）。适配器在 `LaunchSpec.consumed.prompt` 报有没有放进启动参数；没放进、也没给
+`LaunchSpec.sendAfterReady` 时，`AgentServiceImpl.start` 抛 `unsupported`
+“<Label> can't take a first message yet. Open it without "prompt", or pick an agent that can (see Settings › Agents).”，**不开终端**；
+MCP 的 open_terminals / create_workspace 把这句原样返回给调用的 agent。
+
+| agent | 怎么带 | 核对（2026-10-28） |
+| --- | --- | --- |
+| claude | 参数最后、`--` 之后（`--mcp-config` 和不少用户参数后面能跟多个值，不隔开会被吃掉） | 2.1.291 实测（M1） |
+| codex | 同上（`codex [PROMPT]`） | 0.164.0 |
+| omp | 同上：omp 认 `--`，之后的 @、- 开头的也照原文 | 18.0.4 真 TUI：`omp -- '@README.md reply with the word PELICAN'`，假模型收到原文（omp 另外附上了 README.md，和在输入框里打 @ 一样） |
+| pi | 不认 `--`（会被当成名字为空的未知参数、吃掉下一项），所以放在用户的额外参数**前面**；开头是 @（文件）或 -（参数）时前面加一个空格 | 0.83.0 真 TUI：`' @README.md …'`、`' --help me …'` 原文（多一个空格）送到假模型；不加空格的 `@README.md say …` 被当成文件，pi 直接退出 |
+| kimi | 交互模式没有这个参数（`-p` 是一次性问答）：`sendAfterReady`，AgentService 等终端第一次安静下来（monitor-silence）后 `sendKeys` 打字，停 500ms 再回车（`src/first-message.ts`）。屏幕上有 “Trust this folder?” 时等下一次安静（回车会替用户选 Trust and continue）。能力报告里是 Partial · Typed after start | 2.3.2 真 TUI（临时 `KIMI_CODE_HOME`、假模型）：`@README.md reply with the word PELICAN` 原文送到；新目录第一次打开先弹信任框 |
+| shell、custom | 带不了，报 unsupported | — |
+
+- 打字用 `literalKeys(text)` 转成 sendKeys 的参数（tmux-host 的 sendKeys 不带 `-l`）：控制字符换成空格；结尾的 `;` 写成 `\;`（tmux 把以 `;` 结尾的参数当命令分隔符）；
+  没有空格的一段可能正好是按键名（Enter、Up……），拆成一个字一个参数。TerminalHost 以后有 `send-keys -l` 的方法时换成它。
+- 等待：终端一直不安静时 20 秒后照样看一次屏幕再打；终端退出了就不打。要组装方把 TerminalHost 的事件交给 `rt.onTerminalEvent`（已经接好）。
 
 ## Skills · MCP（N9，2026-10-25 核对）
 

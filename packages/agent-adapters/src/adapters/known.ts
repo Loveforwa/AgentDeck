@@ -75,6 +75,15 @@ export interface KnownAgent {
    * repoDirs：仓库里它自己会读的 skill 目录（相对目录，从 cwd 往上找到仓库根），面板上列成 repo，只显示、不开关。
    */
   skills: { kind: 'plugin-dir' | 'skill-flag' | 'skills-dir'; flag: string; minVersion: string | null; repoDirs: string[] } | null;
+  /**
+   * 第一条消息（AH1，StartAgentRequest.prompt，只在新会话时带）。
+   * arg：放进启动参数。separator 为 '--' 时放在所有参数最后、`--` 之后（agent 认 `--`）；为 null 时 agent 不认 `--`，
+   *   消息放在用户的额外参数前面（免得被某个不认识的 `--flag` 当成它的值吃掉），开头是 @ 或 - 时前面加一个空格（不然会被当成文件或参数）。
+   * after-ready：交互模式没有这个参数，由 AgentService 在终端第一次安静下来后替用户打进去、按回车（LaunchSpec.sendAfterReady）；
+   *   notReadyScreens 里的字出现在屏幕上时（例如“信任这个文件夹吗”），说明它还没到输入框，等下一次安静再打，免得回车替用户选了选项。
+   * null = 带不了（AgentService.start 报 unsupported，不开终端）。
+   */
+  prompt: { kind: 'arg'; separator: '--' | null } | { kind: 'after-ready'; notReadyScreens: string[] } | null;
 }
 
 export const KNOWN_AGENTS: readonly KnownAgent[] = [
@@ -95,6 +104,10 @@ export const KNOWN_AGENTS: readonly KnownAgent[] = [
     // N9：--skill <文件夹>，可重复，和自己发现的叠加（README「Resource Options」、docs/skills.md；0.83.0 用 rpc 的 get_commands 实测列出）。
     // 仓库里读 .pi/skills、.agents/skills（从 cwd 往上，README「Skills」）。
     skills: { kind: 'skill-flag', flag: '--skill', minVersion: null, repoDirs: ['.pi/skills', '.agents/skills'] },
+    // AH1（2026-10-28 用真 pi 0.83.0 核对，dist/cli/args.js parseArgs）：位置参数就是消息；不认 `--`（会被当成名字为空的未知参数，
+    // 把后面一项吃成它的值）；@ 开头的是文件（找不到文件时 pi 直接退出），- 开头的是参数。所以开头是 @ 或 - 时前面加一个空格，
+    // 模型收到的就是原文（前面多一个空格）。不认识的 `--x` 会吃掉后面一项，所以消息放在用户的额外参数前面。
+    prompt: { kind: 'arg', separator: null },
   },
   {
     id: 'omp',
@@ -112,6 +125,9 @@ export const KNOWN_AGENTS: readonly KnownAgent[] = [
     // N9：同一个 --plugin-dir（可重复）的目录里 skills/<name>/ 也会被发现（18.0.4 源码 discovery/claude-plugins.ts loadSkills；
     // 用 bun 跑 omp 自己的 injectPluginDirRoots + loadCapability('skills') 实测列出）。仓库里读 .omp、.claude、.codex、.agent(s) 的 skills/。
     skills: { kind: 'plugin-dir', flag: '--plugin-dir', minVersion: '18.0.4', repoDirs: ['.omp/skills', '.claude/skills', '.codex/skills', '.agents/skills', '.agent/skills'] },
+    // AH1（2026-10-28 用真 omp 18.0.4 核对，cli.js 的参数解析）：`--` 之后的都是消息，@ 和 - 开头的也照原文送到
+    // （omp 会像你在输入框里打了 @README.md 一样另外附上那个文件）。
+    prompt: { kind: 'arg', separator: '--' },
   },
   {
     id: 'kimi',
@@ -126,5 +142,8 @@ export const KNOWN_AGENTS: readonly KnownAgent[] = [
     // N9：--skills-dir <目录>，可重复（2.3.1 --help）。给了它就不再自动发现用户和项目目录（读打包的源码 extraFileSkillSource.ts），
     // 所以 LaunchSkills.keepSkillRoots 把那几个目录一起传回去。仓库里读 <仓库根>/.kimi-code/skills、.agents/skills。
     skills: { kind: 'skills-dir', flag: '--skills-dir', minVersion: null, repoDirs: ['.kimi-code/skills', '.agents/skills'] },
+    // AH1（2026-10-28 用真 kimi 2.3.2 核对）：交互模式没有带消息的参数（-p 是非交互的一次性问答）。启动后在输入框里打字、回车，
+    // @ 开头的照原文送到。第一次在某个目录打开时先弹 “Trust this folder?”（回车会选中 Trust and continue），等用户处理完再打。
+    prompt: { kind: 'after-ready', notReadyScreens: ['Trust this folder?'] },
   },
 ];

@@ -338,7 +338,7 @@ describe('ShellAdapter and CustomCommandAdapter', () => {
   it('shell runs the login shell from the environment', () => {
     const shell = new ShellAdapter({ env: () => ({ SHELL: '/bin/bash' }) });
     expect(shell.command).toBe('/bin/bash');
-    expect(shell.launch(ctx())).toEqual({ cmd: '/bin/bash', args: ['-l'], sessionId: null });
+    expect(shell.launch(ctx())).toEqual({ cmd: '/bin/bash', args: ['-l'], sessionId: null, consumed: { prompt: false } });
     expect(shell.launch(ctx({ command: 'pnpm install' })).args).toEqual(['-l', '-c', 'pnpm install']);
     expect(new ShellAdapter({ env: () => ({}) }).command).toBe('/bin/zsh');
   });
@@ -365,6 +365,7 @@ describe('ShellAdapter and CustomCommandAdapter', () => {
       cmd: 'gemini',
       args: ['--prompt', 'hello world', 'a b'],
       sessionId: null,
+      consumed: { prompt: false },
     });
     expect(() => c.launch(ctx({ command: '   ' }))).toThrow('Enter a command to run');
     expect(c.parseHook()).toBeNull();

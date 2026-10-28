@@ -84,8 +84,9 @@ export class ClaudeAdapter implements AgentAdapterExt {
     }
     args.push(...ctx.extraArgs);
     // --mcp-config 和不少用户参数后面能跟多个值，提示词放在 -- 之后才不会被吃掉（2.1.291 实测）。
-    if (ctx.prompt && ctx.mode.kind === 'new') args.push('--', ctx.prompt);
-    return { cmd: this.command, args, env, sessionId: sessionId as AgentSessionId };
+    const prompt = ctx.prompt && ctx.mode.kind === 'new' ? ctx.prompt : null;
+    if (prompt) args.push('--', prompt);
+    return { cmd: this.command, args, env, sessionId: sessionId as AgentSessionId, consumed: { prompt: prompt !== null } };
   }
 
   parseHook(hookName: string, payload: unknown): AgentHookEvent | null {

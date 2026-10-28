@@ -25,6 +25,11 @@ export interface AgentAdapterExt extends AgentAdapter {
    * AgentService.start 在 launch 前调用。失败不抛，返回 hooks: false，launch 退回到没有钩子的做法。
    */
   prepare?(ctx: LaunchContext): Promise<{ hooks: boolean }>;
+  /**
+   * AH1：LaunchSpec.sendAfterReady 的 agent 还没到输入框时屏幕上会有的字（例如 kimi 的 “Trust this folder?”）。
+   * AgentService 在终端安静下来时先看屏幕，有这些字就等下一次安静再打第一条消息。
+   */
+  readonly notReadyScreens?: readonly string[];
 }
 
 export type DetectResult = Awaited<ReturnType<AgentAdapter['detect']>>;

@@ -42,7 +42,8 @@ export class ShellAdapter implements AgentAdapterExt {
     const command = ctx.command?.trim();
     // 带命令（例如工作区的 setupCommand、pnpm dev）时用 -c 跑它，命令结束 shell 也结束，退出码就是命令的。
     const args = command ? ['-l', '-c', command] : ['-l'];
-    return { cmd: this.command, args: [...args, ...ctx.extraArgs], sessionId: null };
+    // 第一条消息带不了（AH1）：AgentService.start 见到 consumed.prompt 为 false 就报 unsupported
+    return { cmd: this.command, args: [...args, ...ctx.extraArgs], sessionId: null, consumed: { prompt: false } };
   }
 
   parseHook(): AgentHookEvent | null {
@@ -70,7 +71,7 @@ export class CustomCommandAdapter implements AgentAdapterExt {
     if (ctx.mode.kind !== 'new') unsupported(this.label, ctx.mode);
     const [cmd, ...args] = splitCommand(ctx.command ?? '');
     if (!cmd) throw new AgentDeckError({ code: 'invalid-argument', message: 'Enter a command to run' });
-    return { cmd, args: [...args, ...ctx.extraArgs], sessionId: null };
+    return { cmd, args: [...args, ...ctx.extraArgs], sessionId: null, consumed: { prompt: false } };
   }
 
   parseHook(): AgentHookEvent | null {

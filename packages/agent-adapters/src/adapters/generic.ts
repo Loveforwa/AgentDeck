@@ -112,8 +112,34 @@ export class KnownAgentAdapter implements AgentAdapterExt {
       env = { ...env, [MCP_URL_ENV]: ctx.mcp.url, [MCP_TOKEN_ENV]: ctx.mcp.token };
     }
     args.push(...this.skillArgs(ctx));
+    // AH1：第一条消息（只在新会话时带），做法见 known.ts 的 prompt 一列
+    const how = this.def.prompt;
+    const prompt = ctx.mode.kind === 'new' && ctx.prompt ? ctx.prompt : null;
+    let consumed = false;
+    let sendAfterReady: string | undefined;
+    if (prompt && how?.kind === 'arg' && how.separator === null) {
+      args.push(/^[@-]/.test(prompt) ? ` ${prompt}` : prompt);
+      consumed = true;
+    }
     args.push(...ctx.extraArgs);
-    return { cmd: this.command, args, ...(env ? { env } : {}), sessionId: sessionId as AgentSessionId | null };
+    if (prompt && how?.kind === 'arg' && how.separator !== null) {
+      args.push(how.separator, prompt);
+      consumed = true;
+    }
+    if (prompt && how?.kind === 'after-ready') sendAfterReady = prompt;
+    return {
+      cmd: this.command,
+      args,
+      ...(env ? { env } : {}),
+      sessionId: sessionId as AgentSessionId | null,
+      consumed: { prompt: consumed },
+      ...(sendAfterReady !== undefined ? { sendAfterReady } : {}),
+    };
+  }
+
+  /** AH1：after-ready 的 agent 屏幕上出现这些字时还没到输入框（AgentService 等下一次安静）。 */
+  get notReadyScreens(): readonly string[] {
+    return this.def.prompt?.kind === 'after-ready' ? this.def.prompt.notReadyScreens : [];
   }
 
   parseHook(hookName: string, payload: unknown): AgentHookEvent | null {

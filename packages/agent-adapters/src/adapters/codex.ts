@@ -139,6 +139,7 @@ export class CodexAdapter implements AgentAdapterExt {
     const mcp = ctx.mcp && mcpOk ? ctx.mcp : null;
     // N9：库里选中的 MCP 服务同样用 -c 加（skill 带不了，见 skills/support.ts）
     const library = mcpOk ? (ctx.skills?.mcp ?? []) : [];
+    const prompt = ctx.prompt && ctx.mode.kind === 'new' ? ctx.prompt : null;
     return {
       cmd: this.command,
       // codex [PROMPT]：位置参数是第一条消息。
@@ -148,10 +149,11 @@ export class CodexAdapter implements AgentAdapterExt {
         ...(mcp ? codexMcpOverrides(mcp) : []),
         ...library.flatMap(codexLibraryMcpOverrides),
         ...ctx.extraArgs,
-        ...(ctx.prompt && ctx.mode.kind === 'new' ? ['--', ctx.prompt] : []),
+        ...(prompt ? ['--', prompt] : []),
       ],
       ...(mcp ? { env: { [MCP_TOKEN_ENV]: mcp.token } } : {}),
       sessionId: sessionId as AgentSessionId | null,
+      consumed: { prompt: prompt !== null },
     };
   }
 

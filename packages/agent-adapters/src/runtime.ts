@@ -25,6 +25,8 @@ export interface AgentRuntimeOptions {
   env: EnvSource;
   /** create 给 AgentService；sendKeys、lastLines 给 ApprovalService（批准按键、看屏幕），不给时批准一律失败（测试里常不给）。 */
   terminals: Pick<TerminalHost, 'create'> & Partial<Pick<TerminalHost, 'sendKeys' | 'lastLines'>>;
+  /** AH1：启动后打第一条消息的等待时间（测试用），见 AgentServiceOptions.firstMessageTiming。 */
+  firstMessageTiming?: AgentServiceOptions['firstMessageTiming'];
   /** agentdeck-notify 的绝对路径。 */
   notifyCommand: AbsPath;
   /** agentdeck-pi-extension.mjs 的绝对路径（pi、omp 用 -e 加载它拿状态）。不给时它们没有钩子。 */
@@ -90,6 +92,7 @@ export function createAgentRuntime(opts: AgentRuntimeOptions) {
     ...(opts.extraArgs ? { extraArgs: opts.extraArgs } : {}),
     ...(opts.mcp ? { mcp: opts.mcp } : {}),
     ...(opts.skills ? { skills: opts.skills } : {}),
+    ...(opts.firstMessageTiming ? { firstMessageTiming: opts.firstMessageTiming } : {}),
     ...(opts.sessionRoots === null
       ? {}
       : { conversationExists: opts.sessionRoots ? conversationExists(opts.sessionRoots) : conversationCheckFromEnv(opts.env) }),
@@ -136,10 +139,16 @@ export function createAgentRuntime(opts: AgentRuntimeOptions) {
     status,
     approvals: approvalService,
     hookServer,
-    onTerminalEvent: (event: TerminalEvent) => status.onTerminalEvent(event),
+    onTerminalEvent: (event: TerminalEvent) => {
+      status.onTerminalEvent(event);
+      agents.onTerminalEvent(event); // AH1：启动后打第一条消息（kimi）等终端安静
+    },
     noteInput: (terminalId: TerminalId) => status.noteInput(terminalId),
     start: () => hookServer.start(),
-    close: () => hookServer.close(),
+    close: () => {
+      agents.dispose();
+      return hookServer.close();
+    },
   };
 }
 

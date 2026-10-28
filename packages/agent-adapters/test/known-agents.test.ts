@@ -148,6 +148,7 @@ describe('KnownAgentAdapter launch', () => {
       args: ['--session-id', 'new-1', '-e', EXTENSION, '--model', 'sonnet'],
       env: extEnv('pi', 'agent_settled'),
       sessionId: 'new-1',
+      consumed: { prompt: false },
     });
     expect(pi.launch(ctx({ kind: 'resume', sessionId: 'abc' as AgentSessionId }))).toMatchObject({
       args: ['--session', 'abc', '-e', EXTENSION],
@@ -162,7 +163,7 @@ describe('KnownAgentAdapter launch', () => {
   it('omp: session id comes later from the extension; --resume and --fork take the old id', async () => {
     const omp = new KnownAgentAdapter(def('omp'), { env, agentExtension: EXTENSION });
     await omp.detect();
-    expect(omp.launch(ctx())).toEqual({ cmd: 'omp', args: ['-e', EXTENSION], env: extEnv('omp', 'agent_end'), sessionId: null });
+    expect(omp.launch(ctx())).toEqual({ cmd: 'omp', args: ['-e', EXTENSION], env: extEnv('omp', 'agent_end'), sessionId: null, consumed: { prompt: false } });
     expect(omp.launch(ctx({ kind: 'resume', sessionId: 'abc' as AgentSessionId }))).toMatchObject({
       args: ['--resume', 'abc', '-e', EXTENSION],
       sessionId: 'abc',
@@ -176,7 +177,7 @@ describe('KnownAgentAdapter launch', () => {
   it('without the extension (or too old for it) there is no -e and no env', async () => {
     const pi = new KnownAgentAdapter(def('pi'), { env, newSessionId: ids() });
     await pi.detect();
-    expect(pi.launch(ctx())).toEqual({ cmd: 'pi', args: ['--session-id', 'new-1'], sessionId: 'new-1' });
+    expect(pi.launch(ctx())).toEqual({ cmd: 'pi', args: ['--session-id', 'new-1'], sessionId: 'new-1', consumed: { prompt: false } });
     // 假 pi 是 0.83.0；换成一个只认更高版本的表行，模拟“版本太旧”
     const tooOld = new KnownAgentAdapter({ ...def('pi'), extension: { ...def('pi').extension!, minVersion: '9.0.0' } }, {
       env,
@@ -190,8 +191,8 @@ describe('KnownAgentAdapter launch', () => {
   it('kimi: no hooks, resume with -S, fork is unsupported', async () => {
     const kimi = new KnownAgentAdapter(def('kimi'), { env, agentExtension: EXTENSION });
     await kimi.detect();
-    expect(kimi.launch(ctx({ kind: 'new' }, ['--yolo']))).toEqual({ cmd: 'kimi', args: ['--yolo'], sessionId: null });
-    expect(kimi.launch(ctx({ kind: 'resume', sessionId: 's1' as AgentSessionId }))).toEqual({ cmd: 'kimi', args: ['-S', 's1'], sessionId: 's1' });
+    expect(kimi.launch(ctx({ kind: 'new' }, ['--yolo']))).toEqual({ cmd: 'kimi', args: ['--yolo'], sessionId: null, consumed: { prompt: false } });
+    expect(kimi.launch(ctx({ kind: 'resume', sessionId: 's1' as AgentSessionId }))).toEqual({ cmd: 'kimi', args: ['-S', 's1'], sessionId: 's1', consumed: { prompt: false } });
     let err: unknown;
     try {
       kimi.launch(ctx({ kind: 'fork', sessionId: 's1' as AgentSessionId }));
@@ -315,7 +316,7 @@ describe('AgentDeck MCP for the known agents (N1)', () => {
     expect(omp.launch(ctx()).args).toEqual(['-e', EXTENSION]);
     const noDir = new KnownAgentAdapter(def('omp'), { env });
     await noDir.detect();
-    expect(noDir.launch({ ...ctx(), mcp })).toEqual({ cmd: 'omp', args: [], sessionId: null });
+    expect(noDir.launch({ ...ctx(), mcp })).toEqual({ cmd: 'omp', args: [], sessionId: null, consumed: { prompt: false } });
   });
 
   it('omp without hooks still gets the MCP (env without the extension variables)', async () => {
@@ -326,6 +327,7 @@ describe('AgentDeck MCP for the known agents (N1)', () => {
       args: ['--plugin-dir', PLUGIN_DIR],
       env: { [MCP_URL_ENV]: mcp.url, AGENTDECK_MCP_TOKEN: 'secret-token' },
       sessionId: null,
+      consumed: { prompt: false },
     });
   });
 

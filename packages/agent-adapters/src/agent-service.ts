@@ -11,10 +11,13 @@ import type {
   McpEndpoint,
   StartAgentRequest,
   StartAgentResult,
+  TerminalEvent,
   TerminalHost,
   TerminalId,
   WorkspaceId,
 } from '@agentdeck/contracts';
+import type { FirstMessageTiming } from './first-message.ts';
+import { FirstMessageTyper } from './first-message.ts';
 import type { CommandLaunchContext } from './adapters/shell.ts';
 import type { AdapterLaunchContext, AgentAdapterExt } from './adapters/types.ts';
 import type { LaunchSkills } from './skills/types.ts';
@@ -42,7 +45,11 @@ export interface StartedAgent {
 
 export interface AgentServiceOptions {
   adapters: AgentAdapterExt[];
-  terminals: Pick<TerminalHost, 'create'>;
+  /**
+   * create 开终端。sendKeys、lastLines 给“启动后打第一条消息”（AH1，kimi）用：不给 sendKeys 时这类 agent 带 prompt 会报 unsupported。
+   * 要让它工作，组装方还要把 TerminalHost 的事件交给 onTerminalEvent（createAgentRuntime 已经接好）。
+   */
+  terminals: Pick<TerminalHost, 'create'> & Partial<Pick<TerminalHost, 'sendKeys' | 'lastLines'>>;
   /** 登录 shell 的环境，检测自定义命令用。 */
   env: EnvSource;
   /** agentdeck-notify 的绝对路径。 */
@@ -61,14 +68,34 @@ export interface AgentServiceOptions {
    * X4：fork 前看原来的对话在不在（fork.ts）。返回 false 时不开终端，抛 not-found；null、出错、不给时照常启动。
    */
   conversationExists?: ConversationCheck;
+  /** AH1：启动后打第一条消息的等待时间（测试用）。 */
+  firstMessageTiming?: FirstMessageTiming;
 }
 
 export class AgentServiceImpl implements AgentService {
   private readonly adapters: Map<string, AgentAdapterExt>;
   private detection: Promise<AgentInfo[]> | null = null;
+  private readonly typer: FirstMessageTyper | null;
 
   constructor(private readonly opts: AgentServiceOptions) {
     this.adapters = new Map(opts.adapters.map((a) => [a.id, a]));
+    const { sendKeys, lastLines } = opts.terminals;
+    this.typer = sendKeys
+      ? new FirstMessageTyper(
+          { sendKeys: sendKeys.bind(opts.terminals), ...(lastLines ? { lastLines: lastLines.bind(opts.terminals) } : {}) },
+          opts.firstMessageTiming,
+        )
+      : null;
+  }
+
+  /** TerminalHost 的事件（AH1：等终端安静下来再打第一条消息）。createAgentRuntime 接好了。 */
+  onTerminalEvent(event: TerminalEvent): void {
+    this.typer?.onTerminalEvent(event);
+  }
+
+  /** 停掉还在等着打第一条消息的计时器。 */
+  dispose(): void {
+    this.typer?.dispose();
   }
 
   list(): Promise<AgentInfo[]> {
@@ -128,10 +155,22 @@ export class AgentServiceImpl implements AgentService {
     if (skills) ctx.skills = skills;
     const prepared = info.capabilities.hooks ? await adapter.prepare?.(ctx) : undefined;
     const spec = adapter.launch(ctx);
+    // AH1（IS-76）：第一条消息送不到就报错，不空着启动。不填 consumed 的老适配器按旧规矩：claude、codex 算用上了。
+    // prompt 只对新会话有意义（resume、fork 时照旧不带，contracts 的 LaunchContext.prompt）。
+    const sendAfterReady = spec.sendAfterReady !== undefined && this.typer ? spec.sendAfterReady : null;
+    if (req.prompt && req.mode.kind === 'new') {
+      const consumed = spec.consumed?.prompt ?? (req.agent === 'claude' || req.agent === 'codex');
+      if (!consumed && sendAfterReady === null) {
+        throw new AgentDeckError({
+          code: 'unsupported',
+          message: `${adapter.label} can't take a first message yet. Open it without "prompt", or pick an agent that can (see Settings › Agents).`,
+        });
+      }
+    }
+
     if (req.agent === 'custom' && !(await findExecutable(spec.cmd, this.opts.env()))) {
       throw new AgentDeckError({ code: 'command-not-found', message: `Command not found: ${spec.cmd}` });
     }
-
     const { id } = await this.opts.terminals.create({
       cmd: spec.cmd,
       args: spec.args,
@@ -141,6 +180,7 @@ export class AgentServiceImpl implements AgentService {
       // X6：恢复 Shell 时把上次的命令填进输入行、不运行。只对交互的 shell 有意义（agent 的输入框、-c 跑的命令都不该收到）
       ...(req.agent === 'shell' && req.prefill && req.command === undefined ? { prefill: req.prefill } : {}),
     });
+    if (sendAfterReady !== null && req.prompt && req.mode.kind === 'new') this.typer?.add(id, sendAfterReady, adapter.notReadyScreens ?? []);
     this.opts.onStarted?.({
       terminalId: id,
       agent: req.agent,
