@@ -316,9 +316,9 @@
       "y": 10860
     },
     "spec/PluginQueue.dc.html": {
-      "h": 3080,
+      "h": 3180,
       "page": "plugins",
-      "title": "PL3 · Prompt queue：额度用完后到点接着发排好的提示词",
+      "title": "PL3 · Prompt queue：额度用完后到点接着发排好的提示词（2026-10-28 退役，并进 PL6）",
       "w": 1760,
       "x": 0,
       "y": 4630
@@ -372,12 +372,12 @@
       "y": 13300
     },
     "spec/PluginResume.dc.html": {
-      "h": 3640,
+      "h": 4360,
       "page": "plugins",
       "title": "PL4 · Auto-resume：被额度打断的任务，恢复后自己接着做",
       "w": 1760,
       "x": 0,
-      "y": 7870
+      "y": 7970
     },
     "spec/CrewFree.dc.html": {
       "h": 3560,
@@ -604,7 +604,7 @@
       "y": 7220
     },
     "spec/MultiShepherd.dc.html": {
-      "h": 3120,
+      "h": 3160,
       "page": "multi",
       "title": "O0 · “牧羊人”面板：借哪几样、放在哪",
       "w": 1760,

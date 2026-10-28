@@ -41,16 +41,20 @@ body{margin:0}
 .tl{display:flex;flex-direction:column;gap:2px;font-size:12px;line-height:1.5}
 </style>
 </helmet>
-<div style="width: 1760px; height: 3080px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+<div style="width: 1760px; height: 3180px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
 
   <div style="display: flex; flex-direction: column; gap: 10px">
     <div style="display: flex; align-items: center; gap: 10px">
       <h1 style="margin: 0; font-size: 28px; font-weight: 600">PL3 · Prompt queue：额度用完后，到点接着发你排好的提示词</h1>
       <span class="tag">2026-10-27 定</span>
+      <span class="concept" style="border-style: solid; border-color: #1A1A1A; color: #1A1A1A; font-weight: 600">2026-10-28 退役</span>
       <span class="concept">2026-10-28 补：第 6 节和规则表里标 10-28 的行，草案</span>
       <span class="mono" style="font-size: 12px; color: #6B6B6B">PL3 · IS-88 · DR-63</span>
     </div>
     <p class="lead">5 小时额度用完了，你还有很多想法要它做。在 agent 终端上开 Prompt queue，先把提示词一条条排进去；这个终端的 agent 碰到额度上限时，插件按 agent 自己记下的恢复时间到点（多等 1 分钟）把第一条发进去，它做完一轮回到空闲再发下一条；又碰到上限就等下一次恢复，发完为止。你不在电脑前也能接着跑。</p>
+    <div style="box-sizing: border-box; max-width: 1240px; padding: 12px 16px; border: 1.5px solid #1A1A1A; border-radius: 10px; background: #F7F7F5; font-size: 14px; line-height: 1.7">
+      <b>2026-10-28 退役：并进 Auto-resume（PL6）。</b>用户试用后定：各家 code agent 大多自己会排提示词，要紧的是撞上额度上限那一刻——恢复时 AgentDeck 把续跑的话发出去，你能改这句话、往里加要求。所以不再有队列：Auto-resume 的卡片里改“这一次续跑发的话”（见画板 PL4 第 2 节）。代码、样式、测试都删了；contracts 的 TerminalWindowData.queue、PromptQueueSettings、app.setKeepAwake 只标 deprecated。<span class="muted">下面是原来的设计，留作记录，不再照做。</span>
+    </div>
   </div>
 
   <div style="display: flex; flex-direction: column; gap: 14px">
@@ -196,7 +200,7 @@ body{margin:0}
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":3080}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":3180}}'>
 class Component extends DCLogic {
   renderVals() {
     return {};

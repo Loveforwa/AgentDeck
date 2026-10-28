@@ -47,14 +47,15 @@ body{margin:0}
 .ann{position:absolute;font-size:12px;line-height:1.5;color:#5F5F5A}
 </style>
 </helmet>
-<div style="width: 1760px; height: 3120px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+<div style="width: 1760px; height: 3160px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
 
   <div style="display: flex; flex-direction: column; gap: 10px">
     <div style="display: flex; align-items: center; gap: 10px">
       <h1 style="margin: 0; font-size: 28px; font-weight: 600">O0 · “牧羊人”面板：Shepherd Terminal 和 herdr 有什么，AgentDeck 借哪几样、放在哪</h1>
       <span class="concept">2026-10-28 按推荐先定，待你确认</span>
+      <span class="concept" style="border-style: solid; border-color: #1A1A1A; color: #1A1A1A; font-weight: 600">2026-10-28 试用后去掉 Unseen</span>
     </div>
-    <p class="lead">用户笔记里的“牧羊人”和“terder”没有链接。按名字查到两个最像的：字面就叫 Shepherd（牧羊人）的 Mac 应用 Shepherd Terminal，和名字意思是“放牧的人”的终端复用器 herdr（“terder”很可能是它的笔误）。用户说的“tmux 多 pane 间复制不顺手、底层逻辑有问题、不如我们现在这样”，和 herdr 对得上：它就是一个 tmux 式的分屏复用器。下面按“它有什么 → AgentDeck 现在有什么 → 借不借、放哪”整理。认错了请给链接或截图。2026-10-28 按推荐先定，待你确认：借四样（Agents 视图、Unseen、悬停看最后一条回复、Send selection to ▸）；产品是不是 Shepherd Terminal 和 herdr 待用户确认。任务是 M18 的 CO3（右键菜单和 Send selection to ▸）、CO4（Agents 视图和 Unseen）。</p>
+    <p class="lead">用户笔记里的“牧羊人”和“terder”没有链接。按名字查到两个最像的：字面就叫 Shepherd（牧羊人）的 Mac 应用 Shepherd Terminal，和名字意思是“放牧的人”的终端复用器 herdr（“terder”很可能是它的笔误）。用户说的“tmux 多 pane 间复制不顺手、底层逻辑有问题、不如我们现在这样”，和 herdr 对得上：它就是一个 tmux 式的分屏复用器。下面按“它有什么 → AgentDeck 现在有什么 → 借不借、放哪”整理。认错了请给链接或截图。2026-10-28 按推荐先定，待你确认：借四样（Agents 视图、Unseen、悬停看最后一条回复、Send selection to ▸）；产品是不是 Shepherd Terminal 和 herdr 待用户确认。任务是 M18 的 CO3（右键菜单和 Send selection to ▸）、CO4（Agents 视图和 Unseen）。<b>2026-10-28 用户试用后去掉 Unseen</b>：多余，状态（Idle）不用点进去就看得见；标题栏只写 “Idle · 5m”，Agents 视图分 ERROR、NEEDS YOU、RUNNING、IDLE 四组，悬停提示和 ⌥⌘1–9 留着。借的剩三样。</p>
   </div>
 
   <!-- 1 · 两个候选 -->
@@ -69,11 +70,11 @@ body{margin:0}
 
   <!-- 2 · 对照表 -->
   <div style="display: flex; flex-direction: column; gap: 14px">
-    <span class="h2">2 · 功能对照：借四样，其余已有或另有安排</span>
+    <span class="h2">2 · 功能对照：借四样（2026-10-28 去掉 ②，剩三样），其余已有或另有安排</span>
     <div class="tbl" style="grid-template-columns: 170px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) 330px; font-size: 12.5px">
       <span class="th">功能</span><span class="th">Shepherd</span><span class="th">herdr</span><span class="th">AgentDeck 现在</span><span class="th">借不借、放哪</span>
       <span class="td">所有 agent 一张表</span><span class="td">Agent Monitor，跨工作区</span><span class="td">侧边栏，跨机器</span><span class="td">BoardNav（项目 → 框 → 窗口，带灯，没聚焦时在右边）；HISTORY 只列会话</span><span class="td"><b>借 ①</b>：BoardNav 顶上加 Board / Agents 切换，Agents 只列 agent 终端，按状态分组</span>
-      <span class="td">做完了还没看</span><span class="td">done since you last looked</span><span class="td">done 留到你看过</span><span class="td">一轮结束就是 Idle，看没看过分不出来</span><span class="td"><b>借 ②</b>：Idle 加一个 Unseen 标记（文字，不加颜色），聚焦那个终端就清掉</span>
+      <span class="td">做完了还没看</span><span class="td">done since you last looked</span><span class="td">done 留到你看过</span><span class="td">一轮结束就是 Idle，看没看过分不出来</span><span class="td"><s>借 ②：Idle 加一个 Unseen 标记（文字，不加颜色），聚焦那个终端就清掉</s><br><b>2026-10-28 去掉</b>：状态本身看得见，不借</span>
       <span class="td">悬停预览</span><span class="td">悬停看对话</span><span class="td">—</span><span class="td">悬停只有状态和时间</span><span class="td"><b>借 ③</b>：Agents 视图里悬停显示最后一条回复（读会话记录，和 C7 的 session result 同一段代码）</span>
       <span class="td">跳转</span><span class="td">⌥⌘1–4</span><span class="td">前缀键</span><span class="td">⌘J 在等你的里跳（CR1 以后进收件箱）</span><span class="td">跟 ①：⌥⌘1–9 跳 Agents 视图里的前 9 个</span>
       <span class="td">等你处理</span><span class="td">通知，iPhone 锁屏</span><span class="td">通知</span><span class="td">黄灯、Dock 角标；收件箱 CR1；推送 RM1</span><span class="td">已有或已排，不另做</span>
@@ -142,14 +143,13 @@ body{margin:0}
         <div class="gh">RUNNING · 2</div>
         <div class="row"><span class="dot" style="background: #1A7F37"></span><span class="mono">claude</span><span class="muted">web</span><span style="flex: 1"></span><span class="muted">4m</span></div>
         <div class="row"><span class="dot" style="background: #1A7F37"></span><span class="mono">pi</span><span class="muted">api · sub-2</span><span style="flex: 1"></span><span class="muted">1m</span></div>
-        <div class="gh">DONE · UNSEEN · 1</div>
-        <div class="row" style="background: #EDEDEA"><span class="ring"></span><span class="mono" style="font-weight: 600">claude</span><span class="muted">api</span><span style="flex: 1"></span><span style="font-weight: 600">Unseen · now</span></div>
-        <div class="gh">IDLE · 1</div>
+        <div class="gh">IDLE · 2</div>
+        <div class="row" style="background: #EDEDEA"><span class="ring"></span><span class="mono">claude</span><span class="muted">api</span><span style="flex: 1"></span><span class="muted">now</span></div>
         <div class="row"><span class="ring"></span><span class="mono">hermes</span><span class="muted">research</span><span style="flex: 1"></span><span class="muted">1h</span></div>
         <div style="padding: 12px; font-size: 10.5px; color: #6B6B6B; line-height: 1.6">⌥⌘1–9 跳到第 1–9 行。shell、网页窗口不列（切回 Board 看全部）。</div>
       </div>
       <div class="tip" style="left: 1250px; top: 200px; width: 350px"><span style="font-weight: 600">claude · api · Idle · now</span><span style="color: #D6D6D2">Last reply</span><span>The p99 spike comes from the cold pool in db/pool.ts:88. I can raise idleTimeout or add a keep-alive.</span><span style="color: #D6D6D2">Click to jump · ⌥⌘3</span></div>
-      <span class="ann" style="left: 1250px; top: 330px; width: 360px">规矩：颜色只在灯上（等你黄、运行绿）；Unseen 只用粗体和文字，不加颜色。分组顺序固定：出错（有的话）、等你、运行、没看、空闲。收件箱（CR1）仍然只管要你拍板的事；HISTORY 仍然管关掉的会话。</span>
+      <span class="ann" style="left: 1250px; top: 330px; width: 360px">规矩：颜色只在灯上（等你黄、运行绿）。分组顺序固定：ERROR（有的话）、NEEDS YOU、RUNNING、IDLE；IDLE 的行右边只写时间。（2026-10-28 去掉了 DONE · UNSEEN 一组和粗体的 Unseen。）收件箱（CR1）仍然只管要你拍板的事；HISTORY 仍然管关掉的会话。</span>
     </div>
   </div>
 
@@ -160,14 +160,14 @@ body{margin:0}
       <span class="th">#</span><span class="th">问题</span><span class="th">定的</span>
       <span class="td mono">1</span><span class="td">“牧羊人”是 Shepherd Terminal 吗？“terder” 是 herdr 吗？还是抖音、B 站视频里别的产品</span><span class="td">先按这两个做（待用户确认）；给链接或截图后再对一遍功能</span>
       <span class="td mono">2</span><span class="td">Agents 视图放在 BoardNav 里切换，还是单独一个面板</span><span class="td">放 BoardNav 里（同一个位置、同一套行），少一个面板</span>
-      <span class="td mono">3</span><span class="td">Unseen 要不要也出现在终端标题栏（Idle · Unseen）</span><span class="td">要，只改文字；聚焦就清</span>
+      <span class="td mono">3</span><span class="td">Unseen 要不要也出现在终端标题栏（Idle · Unseen）</span><span class="td"><s>要，只改文字；聚焦就清</s><br><b>2026-10-28 试用后去掉 Unseen</b>：标题栏只写 “Idle · 5m”</span>
       <span class="td mono">4</span><span class="td">Send selection to 是只粘贴不发，还是直接发出去</span><span class="td">只粘贴、不按回车（CO3，合并了 L0 的同一个菜单）：发给 agent 的话要你自己补一句</span>
     </div>
   </div>
 
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":3120}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":3160}}'>
 class Component extends DCLogic {
   renderVals() {
     return {};

@@ -2,6 +2,24 @@
 
 按时间倒序。改动其中任何一条，先在这里写清楚再动代码。
 
+## 2026-10-28（试用后）
+
+用户试了 integrate/W0-W1 的构建后定的两条。代码在同一分支（4a22f5e；PL6 合进来的 246d737），没合进 main。
+
+- **CO4 去掉 Unseen**：用户觉得多余，状态不用点进去就看得见。
+  - 终端标题栏只写 “Idle · 5m”。
+  - Agents 视图分 ERROR、NEEDS YOU、RUNNING、IDLE 四组，没有 DONE · UNSEEN。
+  - 悬停看最后一条回复、⌥⌘1–9 照旧。
+  - contracts 的 `TerminalWindowData.unseen` 留着不用（只加不改），界面不再读写。
+- **Prompt queue（PL3）退役，并进 Auto-resume（PL6）**：各家 code agent 大多自己会排提示词，要紧的是撞上额度上限那一刻：恢复时 AgentDeck 把续跑的话发出去，你能改这句话、往里加要求。
+  - Auto-resume 贴在白板（默认关）、框、agent 终端上。书签只在终端被额度停下时挂。
+  - 卡片里的 Message 是这一次续跑发的话：预填 Settings › General › Resume prompt（没填用内置模板）加上断掉的子 agent；改过的只管这一次。按钮 Reset to default、Resume now、Don’t resume。
+  - Don’t resume 在终端上只管这个终端；整个账号不续留给收件箱（CR1）。
+  - claude 自己续时：没改话 AgentDeck 什么都不发；改过就马上送进 claude，由它恢复时代发。这一点只用假 claude 验证过，待真 claude 撞一次核对（IS-150）。
+  - Keep Mac awake 勾选框去掉，由主进程管。
+  - contracts 0.1.23 加可选的 `LimitService.setMessage`，PL3 的队列字段和 `app.setKeepAwake` 只在注释里标 deprecated。
+  - 细节见 docs/plugins.md 的决定记录和 DR-84；PL3 的 IS-113 跟着关。
+
 ## 2026-10-28（第 0、1 波实现）
 
 代码在分支 integrate/W0-W1，没合进 main。做完的任务：PL3、PL5、SE0、SE1、SE2、AH0、AH1、AH2、AH3、AH7、AH11、LA0、PL4（contracts）、CR0（contracts）、CR13、CR14、CR15、DC0、DC1、DC2、CO0、CO3、CO4、SK5；实测 AH6、RS14。contracts 0.1.14–0.1.22 共 9 个版本。用例、问题、调研的状态见 docs/status/tracking.py 和 docs/research/entries.py（新登记 IS-146～149、DR-118、DR-119）。
@@ -42,13 +60,13 @@
   - 反复踩的坑（Lessons）归 AgentDeck，按项目存，用户点 Accept 才生效。
   - 每条一句话，项目上限 1,000 token。
   - 开 session 时追加进系统提示；用户点 Move to AGENTS.md 才写进仓库，不提交。
-  - 单 agent 全天：扩展 PL3 的队列（Run all day），执行搬进主进程；PL3 第一版照原样提交。
+  - 单 agent 全天：扩展 PL3 的队列（Run all day），执行搬进主进程；PL3 第一版照原样提交。（PL3 2026-10-28 退役，队列要另起，待定，见 DR-107。）
 - **Issue · PR（M17）**：
   - 对外发言（评论、推送、开 PR、回 review、合并）只进收件箱的 “Ready to post”，用户点了才用用户的 gh / glab 发出去。
   - AgentDeck 不存令牌，从 issue 开的终端不带推送凭据。
 - **同仓协作（M18）**：
   - 两个框改了同一个文件时提前提示（L2）；合并前在内存里预演（L3）。都只提醒、不拦，不做硬锁。
-  - 借“牧羊人”的四样（待用户确认是 Shepherd Terminal）：Agents 视图、Unseen、悬停看最后一条回复、Send selection to ▸（CO3，只粘贴不发）。
+  - 借“牧羊人”的四样（待用户确认是 Shepherd Terminal）：Agents 视图、Unseen、悬停看最后一条回复、Send selection to ▸（CO3，只粘贴不发）。Unseen 2026-10-28 试用后去掉，见最上面。
 - **新 agent（M10 AH8–AH10）**：
   - OpenCode 用官方插件接，过了合格测试按能力报告进第一档，排在集群第一期之后。这一条改了 DR-79 “只深做 claude、codex”。
   - Hermes 按 Nous Research Hermes Agent 通用档接，不往 `~/.hermes` 装插件（待用户确认）。
@@ -101,13 +119,13 @@
   - 按需加载放第二期。
   - AgentDeck 永远不写、不删、不搬用户的 skill 目录。
 - **额度恢复后自动续跑另开插件 Auto-resume**（PL4–PL9，DR-84）：
-  - 只看这一轮是不是被额度结束的。先续跑，做完再发 Prompt queue。
+  - 只看这一轮是不是被额度结束的。先续跑，做完再发 Prompt queue（2026-10-28 试用后 PL3 退役，见最上面）。
   - 按“agent + 配置目录”算账号，同一账号的一起停，恢复后每 30 秒续一个。
   - claude 自己会续的，AgentDeck 不重复发，只补发“接回 failed 的子 agent”那一段。
   - 集群终端归 CR8。
   - 识别、归组、错开发送只在主进程的 LimitService 里写一份。
   - 用户定：**默认关**（要用时右键白板打开），名字叫 Auto-resume，PL3 发第一条改成按账号，Mac 睡过头时先问你。
-- **PL3 提交前先修 IS-113**：claude 自己续跑成功后，PL3 记下的上限被清掉，排着的提示词再也不发。修法：加 armed 标记，等 claude 续完那一轮再发，stale 时不粘贴。
+- **PL3 提交前先修 IS-113**：claude 自己续跑成功后，PL3 记下的上限被清掉，排着的提示词再也不发。修法：加 armed 标记，等 claude 续完那一轮再发，stale 时不粘贴。（PL3 后来退役，见最上面）
 
 ## 2026-10-27（M8 · Agent 集群）
 
