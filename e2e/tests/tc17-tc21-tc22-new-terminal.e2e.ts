@@ -5,7 +5,7 @@ import { installFake, recordStatuses, statusHistory, xtermOf } from '../support/
 
 test('TC-17 New terminal ▸ lists the installed agents by name, the picked one opens where you right-clicked', async ({ deck, sb }) => {
   // 前提：本机装了 claude 和 codex（沙盒里是假的：fakebin 在 PATH 最前面）
-  installFake(sb, 'codex', 'fake-codex.mjs');
+  installFake(sb, 'codex', 'fake-codex-mini.mjs');
   const page = await deck.launch();
   const agents = await page.evaluate(() =>
     (window as unknown as { agentdeck: { agents: { list(): Promise<{ id: string; label: string; installed: boolean }[]> } } }).agentdeck.agents.list(),
