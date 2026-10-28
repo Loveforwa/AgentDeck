@@ -44,7 +44,7 @@ body{margin:0}
 .num{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:#1A1A1A;color:#FFFFFF;font-size:11px;font-weight:600;flex:none}
 </style>
 </helmet>
-<div style="width: 1760px; height: 2240px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+<div style="width: 1760px; height: 2700px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
 
   <div style="display: flex; flex-direction: column; gap: 10px">
     <div style="display: flex; align-items: center; gap: 10px">
@@ -121,7 +121,7 @@ body{margin:0}
       </div>
       <div style="flex: 1; display: flex; flex-direction: column; gap: 14px; font-size: 13.5px; line-height: 1.65">
         <div style="display: flex; gap: 10px"><span class="num">1</span><span><b>顶上一行</b>：名字、装的版本、上次检查时间、Check again。Check again 只做不花钱的探测：<span class="mono">--version</span>、在 <span class="mono">--help</span> 里找我们要带的参数、带钩子空启动一次等 SessionStart 再关掉；不发提示词。codex 的 SessionStart 要等第一次输入，这一项写 “Checked at last launch”。检查时按钮写 Checking…。</span></div>
-        <div style="display: flex; gap: 10px"><span class="num">2</span><span><b>左边一组 AGENTS</b>：装了的 agent 按菜单里的顺序列出，名字前面是 agent 身份色的小方块（组件库：身份色只用在区分 agent 的小标记上）。没装的已知 agent 列在最后，灰掉，hint 写 Not installed，点进去只有一句怎么装。</span></div>
+        <div style="display: flex; gap: 10px"><span class="num">2</span><span><b>左边一组 AGENTS</b>：装了的 agent 按菜单里的顺序列出，名字前面是 agent 身份色的小方块（组件库：身份色只用在区分 agent 的小标记上）。没装的已知 agent 列在最后，灰掉，hint 写 Not installed，点进去只有一句怎么装。OpenCode、Hermes Agent 接入后照同样的样子加两项，见 A2 第 5 节。</span></div>
         <div style="display: flex; gap: 10px"><span class="num">3</span><span><b>版本比核对过的新</b>：一行 muted 文字说明，不用黄色（黄色只给“等你”），也不弹框。只有按键、认屏这类“替你按”的功能自动关掉（Off），钩子、扩展、会话文件照常用。Check again 跑过、合格测试的记录更新后，这行消失。</span></div>
         <div style="display: flex; gap: 10px"><span class="num">4</span><span><b>能力表</b>：一行一项。Support 只有 Yes / Partial / No / Off 四个词，Yes 用 ink，其余用 muted；Check again 失败的那一项写 Failed，用 error 红（这是真的出错）。How 写靠什么做，Note 写原因，原因就是菜单 hint 用的那句。</span></div>
         <div style="display: flex; gap: 10px"><span class="num" style="background: #6B6B6B">·</span><span><b>Extra launch arguments</b>：原来只能在 settings.json 里改的 <span class="mono">agents.&lt;id&gt;.extraArgs</span> 挪到这里，Save 和别的页一起存。</span></div>
@@ -209,7 +209,7 @@ body{margin:0}
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":2240}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":2700}}'>
 class Component extends DCLogic {
   renderVals() {
     return {};

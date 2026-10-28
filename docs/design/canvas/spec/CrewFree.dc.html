@@ -108,7 +108,7 @@ body{margin:0}
         <div class="box" style="position: absolute; left: 680px; top: 420px; width: 876px">
           <span style="font-size: 11px; font-weight: 600; color: #8A8A85; letter-spacing: 0.04em">FIRST LINES ADDED TO EVERY SUBAGENT PROMPT</span>
           <span class="mono" style="font-size: 11px; color: #3D3D3A; line-height: 1.7">You are a subagent in crew “login-fix”, opened by its lead. Work in /…/agenduck-crews/login-fix/race on branch crew/login-fix/race.<br>Commit your work on this branch. Do not merge into other branches and do not open new sessions.<br>When you are done, end with a short summary of what you changed and what you found.</span>
-          <span class="muted" style="font-size: 11px">下面原样接 Lead 写的交接提示词。AgentDeck 只加这几行事实和安全约定，不规定做法。</span>
+          <span class="muted" style="font-size: 11px">下面原样接 Lead 写的交接提示词。AgentDeck 只加这几行事实和安全约定，不规定做法。开了 Results 或 Compute 的集群，多 4 行 run / job / out 命令（“研究和竞赛”页 E1 第 6 节）。</span>
         </div>
 
         <div class="at" style="left: 14px; top: 580px; display: flex; align-items: center; gap: 8px; font-size: 11px; color: #6B6B6B">Merged into crew branch<span class="chip"><span class="mono">sub-0</span> repro test</span><span class="muted">· click to open the worktree read-only</span></div>
@@ -171,7 +171,7 @@ body{margin:0}
           <div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="am" style="background: #2F5E9E"></span><span class="mono" style="font-weight: 500">sub-1 · codex · race</span></div>
           <div class="wb">• agentdeck session spawn --agent claude …<br>  ⎿ Refused: only the lead of crew “login-fix”<br>    can open sessions.</div>
         </div>
-        <span class="muted" style="font-size: 12px; line-height: 1.6">开子 session 和管子 session 是一套 <span class="mono">agentdeck session spawn · list · read · send · wait · result · close</span>，只有 Lead 能用；集群本身的是 <span class="mono">agentdeck crew status · diff · check · merge · ask · note · done</span>。被拒时返回一句能照着做的英文。子 session 本来就拿不到这些操作的说明（C7），万一调了，AgentDeck 按终端认出来拒绝。</span>
+        <span class="muted" style="font-size: 12px; line-height: 1.6">开子 session 和管子 session 是一套 <span class="mono">agentdeck session spawn · list · read · send · wait · result · close</span>，只有 Lead 能用；集群本身的是 <span class="mono">agentdeck crew status · diff · check · merge · ask · note · done</span>。被拒时返回一句能照着做的英文。子 session 本来就拿不到这些操作的说明（C7），万一调了，AgentDeck 按终端认出来拒绝。<br>只碰自己产物的命令所有 AgentDeck 终端都有（子 session、Worker 也有）：<span class="mono">agentdeck doc</span>（D0）、<span class="mono">agentdeck flow</span>（verdicts 只认 Verifier，F2）、<span class="mono">agentdeck lesson propose / list / search</span>（W1），研究集群里的 <span class="mono">run start / run done / job start / out add</span>（E1 第 6 节）。认身份靠终端钥匙；这些命令都不能开终端、不能批准、不能提交、不能合并。</span>
       </div>
     </div>
   </div>
@@ -206,13 +206,13 @@ body{margin:0}
     <div class="tbl" style="grid-template-columns: 220px minmax(0, 1fr) minmax(0, 1fr)">
       <span class="th">问题</span><span class="th">选项</span><span class="th">建议</span>
       <span class="td">自由模式里 AgentDeck 管什么</span><span class="td">全放开（现在的 N1） / 安全的留、流程的放 / 全留（等于模板）</span><span class="td">安全的留、流程的放（第 2 节）</span>
-      <span class="td">子 session 默认在哪干活</span><span class="td">各自 worktree / 共用 Lead 的目录 / 每次让 Lead 选</span><span class="td">各自 worktree，Lead 可以让只读的共用</span>
+      <span class="td">子 session 默认在哪干活</span><span class="td">各自 worktree / 共用 Lead 的目录 / 每次让 Lead 选</span><span class="td">各自 worktree，Lead 可以让只读的共用。共用目录的子 session 受同目录改动提醒保护（CO2，第二期）；跨 worktree 的重叠由 crew status 告诉 Lead（CO0，O1）</span>
       <span class="td">提示词前加不加固定说明</span><span class="td">不加 / 加几行事实和安全约定 / 套角色提示词</span><span class="td">加几行（第 1 节的样子）</span>
-      <span class="td">Lead 怎么知道做完了</span><span class="td">轮询读屏幕 / AgentDeck 的 wait + result / 子 session 自己报</span><span class="td">wait + result，子 session 不带工具</span>
+      <span class="td">Lead 怎么知道做完了</span><span class="td">轮询读屏幕 / AgentDeck 的 wait + result / 子 session 自己报</span><span class="td">wait + result；子 session 不带 crew 和 session 命令（只碰自己产物的 doc、flow、lesson 等命令所有终端都有，见第 3 节）</span>
       <span class="td">超过上限</span><span class="td">拒绝 / 排队 / 问你</span><span class="td">拒绝</span>
       <span class="td">中途换模式</span><span class="td">不支持 / 两个方向 / 只能模板 → 自由</span><span class="td">两个方向，第二期</span>
       <span class="td">先做哪个</span><span class="td">自由模式先 / 模板先 / 一起</span><span class="td">自由模式先（第一期 1a），模板在 1b</span>
-      <span class="td">谁能当子 session</span><span class="td">只 claude、codex、omp / 五家</span><span class="td">五家（不需要 crew 工具），pi、kimi 默认不勾</span>
+      <span class="td">谁能当子 session</span><span class="td">只 claude、codex、omp / 五家</span><span class="td">五家（不需要 crew 和 session 命令），pi、kimi 默认不勾</span>
     </div>
   </div>
 </div>

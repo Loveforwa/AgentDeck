@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>研究和竞赛 · 模板草稿</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1280px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.tag{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:11.5px;background:#F2F2EF;color:#5F5F5A;white-space:nowrap}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#8A8A85}
+.code{box-sizing:border-box;background:#FBFBFA;border:1px solid #E3E3E0;border-radius:10px;padding:14px 16px;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.7;color:#3D3D3A;white-space:pre;overflow:hidden}
+.card{box-sizing:border-box;border:1px solid #E3E3E0;border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;font-size:12.5px;line-height:1.6;background:#FFFFFF}
+.flow{display:flex;flex-wrap:wrap;align-items:center;gap:4px;font-size:11.5px}
+.fs{display:inline-flex;align-items:center;height:22px;padding:0 7px;border:1px solid #D6D6D2;border-radius:5px;background:#FFFFFF;white-space:nowrap}
+.fn{display:inline-flex;align-items:center;height:22px;padding:0 7px;border:1.5px solid #1A1A1A;border-radius:5px;background:#FFFFFF;white-space:nowrap}
+.fg{display:inline-flex;align-items:center;height:22px;padding:0 7px;border:1px dashed #BF8700;border-radius:5px;background:#FFF8E5;color:#5C4400;white-space:nowrap}
+.fa{color:#8A8A85}
+.dlg{box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:12px;display:grid;grid-template-columns:260px minmax(0,1fr)}
+.dl{border-right:1px solid #EEEEEB;padding:10px 0;display:flex;flex-direction:column}
+.dr{padding:14px 18px;display:flex;flex-direction:column;gap:12px}
+.ti{padding:7px 14px;display:flex;flex-direction:column;gap:1px}
+.ti.on{background:#EDEDEA}
+.sl{font-size:10px;font-weight:600;color:#8A8A85;letter-spacing:0.04em}
+.fld{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.inp{display:inline-flex;align-items:center;height:26px;padding:0 9px;border:1px solid #D6D6D2;border-radius:6px;background:#FFFFFF;font-size:11.5px;white-space:nowrap}
+.btn{display:inline-flex;align-items:center;height:24px;padding:0 9px;border:1px solid #D6D6D2;border-radius:6px;font-size:11.5px;background:#FFFFFF;color:#1A1A1A;white-space:nowrap}
+.btn.pri{background:#1A1A1A;color:#FFFFFF;border-color:#1A1A1A}
+.ck{display:inline-flex;align-items:center;gap:6px}
+.cb{width:12px;height:12px;border:1px solid #8A8A85;border-radius:3px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;font-size:9px;line-height:1}
+.new{border:1.5px dashed #8A8A85;border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.am{width:6px;height:6px;border-radius:1.5px;flex:none;display:inline-block}
+.ex{display:flex;flex-direction:column;gap:10px;font-size:13.5px;line-height:1.65}
+</style>
+</helmet>
+<div style="width: 1760px; height: 3560px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">E3 · 四个研究模板（C5 格式草稿）和 New crew 里的研究设置</h1>
+      <span class="concept">2026-10-28 按推荐先定，待你确认· 研究第三期</span>
+    </div>
+    <p class="lead">按 C5 的模板格式写的四个草稿：Competition、Literature watch、Paper reproduction、Video to slides。它们要等 CR9 开放模板文件才能用；在那之前，同样的事在自由模式里做，New crew 的 No template 多三块可选设置（第 3 节）。C5 说模板“不是编程语言，只有固定的几种阶段和规矩，要新形状就加一种阶段”，所以这里列出要加的阶段和规矩（第 1 节），其余照用 C5 已有的。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 要加的阶段、步骤、关卡和规矩</span>
+    <div class="tbl" style="grid-template-columns: 170px 90px minmax(0, 1.4fr) minmax(0, 1fr) 210px">
+      <span class="th">名字</span><span class="th">种类</span><span class="th">是什么</span><span class="th">调度器做什么</span><span class="th">谁用</span>
+      <span class="td mono">explore</span><span class="td">阶段</span><span class="td">从一个基准（baseline 或环境）分出几路，每路一个 session，按同一个分数比；默认<b>不合并</b>，几轮后留下最好的几路</span><span class="td">开 worktree 和 session；每轮结束把 Runs 表交给 Lead 决定 keep / drop / new；<span class="mono">keep</span> 之外的停掉；<span class="mono">mergeBest</span> 时只合最好的那路</span><span class="td">Competition、Paper reproduction；C5 的 Bug hunt 也可以改用它</span>
+      <span class="td mono">fanout</span><span class="td">阶段</span><span class="td">按一张清单（来源、视频、论文）每项开一个 session，每项走同样几步；产物进资料库或 Outputs</span><span class="td">按清单派活、限并发；每项每步记状态（条目进度表）；一项失败不影响别的</span><span class="td">Literature watch、Video to slides</span>
+      <span class="td mono">deliver</span><span class="td">阶段</span><span class="td">最后一步：列出必须有的产物和最后一道关</span><span class="td">检查产物在不在、复制快照、出汇报；关卡 <span class="mono">accept-outputs</span>、<span class="mono">merge</span> 或 <span class="mono">none</span></span><span class="td">四个都用；Design bake-off 也该用</span>
+      <span class="td mono">run · score · verify</span><span class="td">flow 里的步骤</span><span class="td">run：开 Job 跑长命令；score：用锁住的打分命令算分；verify：换一家核对事实并记来源</span><span class="td">run 由调度器等（不叫 agent）；score 由调度器跑；verify 只记 agent 交的结果</span><span class="td">按需</span>
+      <span class="td mono">approve-claims · submit · accept-outputs</span><span class="td">关卡</span><span class="td">approve-claims 是 Approve plan 的一种（看 Claims 表）；submit 每次提交都问；accept-outputs 是研究类的最后一道</span><span class="td">只能申请，批准在界面上</span><span class="td">复现、竞赛、全部</span>
+      <span class="td mono">score · jobs · submit · library · schedule · requires · media · env · tolerance</span><span class="td">规矩</span><span class="td">打分命令和方向；Job 能去哪、同时几个、GPU 预算；提交到哪、每天几次；资料库文件夹；定期跑；要装的工具；视频的规矩（先字幕、cookies 要问）；环境护栏；复现容差</span><span class="td">都是调度器认得的固定字段，不写脚本</span><span class="td">见下面四个</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 四个模板</span>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px">
+
+      <div class="card">
+        <div style="display: flex; align-items: center; gap: 8px"><b style="font-size: 15px">Competition · Kaggle 这类竞赛</b><span class="tag">研究第三期</span></div>
+        <div class="flow"><span class="fs">Lead 读规则、数据、指标，列方向和预算</span><span class="fg">你确认</span><span class="fa">→</span><span class="fs">Lead 写划分和打分，锁住</span><span class="fa">→</span><span class="fs">baseline</span><span class="fa">→</span><span class="fn">explore × 3 方向 · 3 轮</span><span class="fa">→</span><span class="fs">融合</span><span class="fa">→</span><span class="fg">每次 Submit 你点</span><span class="fa">→</span><span class="fg">Accept</span></div>
+        <div class="code">name: Competition
+description: Baseline first, explore directions in parallel,
+  compare on one locked score, submit only when you say.
+
+requires:
+  tools: [kaggle]
+  setup: Accept the competition rules on kaggle.com first.
+
+roles:
+  lead:     { agents: [claude], prompt: roles/lead.md }
+  explorer: { agents: [codex, claude], prompt: roles/explorer.md, max: 3 }
+  reviewer: { agents: [claude], prompt: roles/reviewer.md, notSameAs: explorer }
+
+stages:
+  - plan:      { by: lead, gate: approve-plan }       # directions, budget
+  - contracts: { by: lead, lock: [cv/**, score.py, data/**] }
+  - baseline:  { by: lead, flow: [work, run, score] }
+  - explore:   { by: explorer, from: baseline, flow: [work, run, score],
+                 rounds: 3, keep: 2, review: suspicious }
+  - blend:     { by: lead, flow: [work, run, score], optional: true }
+  - deliver:   { outputs: [report, runs, submissions], gate: accept-outputs }
+
+rules:
+  score:  { cmd: "python score.py --oof {oof}", better: higher }
+  jobs:   { on: [local, gpu1], atOnce: 1, budget: 12h }
+  submit: { to: kaggle, competition: "{slug}", perDay: 5, gate: always }
+  maxAgents: 3
+  onUsageLimit: next-agent-or-wait
+  skills: { explorer: [run-experiment] }   # only if it's in your library</div>
+        <span class="muted"><span class="mono">review: suspicious</span>：只有被标出来的 Run（分数跳得太多、各折散得厉害）才开别家的审查；其余不审，省 token。</span>
+      </div>
+
+      <div class="card">
+        <div style="display: flex; align-items: center; gap: 8px"><b style="font-size: 15px">Literature watch · 收论文、新闻、日程，辅助读</b><span class="tag">研究第三期</span></div>
+        <div class="flow"><span class="fn">fanout · 一个来源一个 session</span><span class="fa">→</span><span class="fs">lib add（AgentDeck 去重）</span><span class="fa">→</span><span class="fs">Lead 排序写摘要</span><span class="fa">→</span><span class="fs">reader 读前 3 篇、记笔记</span><span class="fa">→</span><span class="fs">资料库 · 今日摘要</span></div>
+        <div class="code">name: Literature watch
+description: Collect papers, news and events from your sources,
+  dedupe them, write a digest, and read the best few.
+
+requires:
+  note: Searching uses each agent's own tools (Exa, OpenCLI, ...).
+
+inputs:
+  topics: "agent harness, long-running coding agents"
+  sources: [arxiv:cs.SE, arxiv:cs.AI, hf-papers, openreview:ICLR,
+            hn, "rss:https://...", "site:linux.do via opencli"]
+
+roles:
+  lead:      { agents: [claude], prompt: roles/lead.md }
+  collector: { agents: [codex, claude], prompt: roles/collector.md,
+               max: 3, worktree: none, autoApprove: off }
+  reader:    { agents: [claude], prompt: roles/reader.md }
+
+stages:
+  - fanout:  { by: collector, over: sources, steps: [fetch, add] }
+  - digest:  { by: lead }                    # rank by topics
+  - fanout:  { by: reader, over: top-3, steps: [read, note] }
+  - deliver: { outputs: [digest], gate: none }
+
+rules:
+  library:  { folder: default, dedupe: [doi, arxiv, url, title] }
+  schedule: { every: day, at: "07:00", missed: once }
+  maxAgents: 3</div>
+        <span class="muted">collector 读的是外面的网页：Auto-approve 默认关，抓回来的内容当数据（提示词里写明），不当指令。</span>
+      </div>
+
+      <div class="card">
+        <div style="display: flex; align-items: center; gap: 8px"><b style="font-size: 15px">Paper reproduction · 搭环境、复现、对数</b><span class="tag">研究第三期</span></div>
+        <div class="flow"><span class="fs">Lead 写 Claims 和预算</span><span class="fg">你勾要跑的</span><span class="fa">→</span><span class="fs">builder 搭环境、冒烟</span><span class="fa">→</span><span class="fn">explore · 一个 Claim 一路</span><span class="fa">→</span><span class="fs">auditor 写差异</span><span class="fa">→</span><span class="fg">Accept（补丁可合回）</span></div>
+        <div class="code">name: Paper reproduction
+description: Turn the paper's numbers into a table, build an isolated
+  environment, rerun, and report every gap.
+
+requires:
+  tools: [git, uv or conda]
+  gpu: from the plan
+
+inputs: { paper: "arXiv:2601.04321", code: "https://github.com/..." }
+
+roles:
+  lead:    { agents: [claude], prompt: roles/lead.md }
+  builder: { agents: [codex, claude], prompt: roles/builder.md }
+  runner:  { agents: [codex], prompt: roles/runner.md, max: 2 }
+  auditor: { agents: [claude], prompt: roles/auditor.md, notSameAs: runner }
+
+stages:
+  - plan:    { by: lead, gate: approve-claims }  # claims, tolerance, budget
+  - env:     { by: builder, isolate: worktree-env, flow: [work, run] }
+  - explore: { by: runner, over: claims, flow: [run, score], seeds: 3 }
+  - audit:   { by: auditor }                     # deviations, odd numbers
+  - deliver: { outputs: [report, claims, patches],
+               gate: accept-outputs, merge: optional }
+
+rules:
+  score:     { cmd: "{eval command from the plan}", parse: json }
+  tolerance: { relative: 1%, orPaperStd: 2 }
+  jobs:      { on: [gpu1], atOnce: 1, budget: 24h }
+  env:       { pipRequireVirtualenv: true }</div>
+        <span class="muted">没有官方代码的论文（要从头实现）不在这个模板里，用自由模式。</span>
+      </div>
+
+      <div class="card">
+        <div style="display: flex; align-items: center; gap: 8px"><b style="font-size: 15px">Video to slides · 视频取原文、分析、核对、出 PPT</b><span class="tag">研究第三期</span></div>
+        <div class="flow"><span class="fn">fanout · 一个视频一个 session</span><span class="fa">→</span><span class="fs">Lead 写带时间点的大纲</span><span class="fa">→</span><span class="fs">checker 上网核对</span><span class="fa">→</span><span class="fs">Lead 出 PPT</span><span class="fa">→</span><span class="fg">Accept</span></div>
+        <div class="code">name: Video to slides
+description: Get the words out of each video, analyze and fact-check
+  them, and turn them into a deck.
+
+requires:
+  tools: [yt-dlp, ffmpeg, whisper]   # mlx-whisper or whisper.cpp
+  optional: [an agent with video input, for a visual pass]
+
+inputs: { videos: [url, url], audience: "reading group", slides: 15 }
+
+roles:
+  lead:    { agents: [claude], prompt: roles/lead.md }
+  fetcher: { agents: [codex], prompt: roles/fetcher.md, worktree: shared }
+  viewer:  { agents: [kimi], prompt: roles/viewer.md, optional: true }
+  checker: { agents: [codex, claude], prompt: roles/checker.md,
+             notSameAs: lead }
+
+stages:
+  - fanout:  { by: fetcher, over: videos,
+               steps: [info, words, frames] }    # whisper runs as a job
+  - outline: { by: lead }                        # every point cites [mm:ss]
+  - verify:  { by: checker, flow: [verify] }
+  - slides:  { by: lead }
+  - deliver: { outputs: [deck, transcripts, outline, checks],
+               gate: accept-outputs }
+
+rules:
+  media: { subtitlesFirst: true, cookies: ask-each-time }
+  jobs:  { on: [local] }</div>
+        <span class="muted">viewer 只在 AH0 报告里有 <span class="mono">video-input</span> 的 agent 能选；没有就跳过这一步，只靠字幕和关键帧。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · New crew 对话框：研究第一期在 No template 上多三块</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start">
+      <div class="dlg" style="width: 1000px; flex: none">
+        <div class="dl">
+          <span class="sl" style="padding: 0 14px 6px">TEMPLATE</span>
+          <div class="ti on"><b>No template</b><span class="muted" style="font-size: 11px">One lead. It opens sessions when it needs them.</span></div>
+          <div class="ti"><b>Contract-first build</b><span class="muted" style="font-size: 11px">Plan, lock interfaces, build in parallel…</span></div>
+          <div class="ti muted"><span>Migration · Bug hunt · Spec to app · Design bake-off</span><span style="font-size: 11px">Coming later</span></div>
+          <span class="sl" style="padding: 10px 14px 6px">RESEARCH</span>
+          <div class="ti muted"><span>Competition</span><span style="font-size: 11px">Coming later</span></div>
+          <div class="ti muted"><span>Literature watch</span><span style="font-size: 11px">Coming later</span></div>
+          <div class="ti muted"><span>Paper reproduction</span><span style="font-size: 11px">Coming later</span></div>
+          <div class="ti muted"><span>Video to slides</span><span style="font-size: 11px">Coming later</span></div>
+          <span class="muted" style="font-size: 11px; padding: 10px 14px">Until then, use No template with Results and Jobs.</span>
+        </div>
+        <div class="dr">
+          <span class="sl">GOAL</span>
+          <span class="inp" style="height: auto; padding: 7px 9px; white-space: normal; line-height: 1.5">Playground S6E11 (churn). Get a baseline, try a few directions in parallel, and ask me before every submission.</span>
+          <div class="fld"><span class="sl">NAME</span><span class="inp">s6e11-churn</span><span class="sl">START FROM</span><span class="inp">main</span><span class="sl">LEAD</span><span class="inp"><span class="am" style="background: #A8503A"></span>&#160;claude ▾</span></div>
+          <span class="muted" style="font-size: 11px">Subagents, At most, Check, Locked paths, Stop after, Ask me … (same as C1 section 2)</span>
+          <div class="new">
+            <span class="sl">RESULTS · OPTIONAL</span>
+            <div class="fld"><span>Score with</span><span class="inp mono" style="width: 340px">python score.py --oof {oof}</span><span class="inp">Higher is better ▾</span></div>
+            <div class="fld"><span class="ck"><span class="cb">✓</span>Lock the scorer and the folds after you approve them</span><span class="inp mono">cv/** score.py data/**</span></div>
+            <span class="muted" style="font-size: 11px">Turns on Runs: every result is a row, scored by AgentDeck at the run’s commit. The lead writes the scorer first if it doesn’t exist.</span>
+          </div>
+          <div class="new">
+            <span class="sl">COMPUTE · OPTIONAL</span>
+            <div class="fld"><span>Long jobs run on</span><span class="ck"><span class="cb">✓</span>This Mac</span><span class="ck"><span class="cb">✓</span>gpu1 (ssh · 1 GPU)</span><span class="muted">Add in Settings › Compute</span></div>
+            <div class="fld"><span>At most</span><span class="inp">1 ▾</span><span>job per GPU · GPU budget</span><span class="inp">12 h ▾</span></div>
+          </div>
+          <div class="new">
+            <span class="sl">SUBMIT · OPTIONAL</span>
+            <div class="fld"><span>Kaggle competition</span><span class="inp mono" style="width: 240px">playground-series-s6e11</span><span class="muted">kaggle found · signed in</span></div>
+            <span class="ck"><span class="cb">✓</span>Ask me before every submission (always)</span>
+          </div>
+          <span class="muted" style="font-size: 11px">Needs kaggle · 1 of 1 found</span>
+          <div class="fld" style="justify-content: flex-end"><span class="btn">Cancel</span><span class="btn pri">Start crew</span></div>
+        </div>
+      </div>
+      <div class="ex">
+        <span><b>三块都是可选的</b>，不填就是 C6 原来的自由模式。虚线框是这次加的。</span>
+        <span><b>Results</b>：填了打分命令就打开 Runs 和 Results 窗口；Lock 那一行把划分和打分脚本加进 Locked paths，改它们要进收件箱等你。复现时这里填评测命令，Lead 在 Plan 里补 Claims。</span>
+        <span><b>Compute</b>：打开 Jobs。This Mac 默认勾上；SSH 机器在 Settings › Compute 里加（研究第二期）。GPU budget 和 Stop after 分开：一个管 GPU 小时，一个管 agent 跑多久。</span>
+        <span><b>Submit</b>：填了比赛名才有提交关卡；检查 kaggle 命令在不在、登没登录（只检查，不读你的密钥）。“每次都问”不能关。</span>
+        <span><b>子 session</b>：打开 Results 或 Compute 后，Lead 开的子 session 第一条提示词多 4 行命令（<span class="mono">run start · run done · job start · out add</span>），见 E1 第 6 节。</span>
+        <span><b>Literature watch 和视频</b>在第一期也能用 No template 做（Lead 开子 session、各自用自己的搜索和工具），只是没有资料库去重和条目进度；这两样在研究第二期。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · 研究角色的预设（SK6 的补充）</span>
+    <div class="tbl" style="grid-template-columns: 150px 170px minmax(0, 1.4fr) 150px minmax(0, 1fr)">
+      <span class="th">角色</span><span class="th">默认 agent</span><span class="th">带哪类 skill（你库里有才带，没有就跳过）</span><span class="th">Auto-approve</span><span class="th">命令</span>
+      <span class="td"><b>Lead</b></span><span class="td"><span class="am" style="background: #A8503A"></span> claude</span><span class="td">读论文、查文献、做计划、出 PPT 类</span><span class="td">按 New crew</span><span class="td mono">crew · session · run · job · out · submit ask · claim · lib</span>
+      <span class="td"><b>Explorer · Runner</b></span><span class="td"><span class="am" style="background: #2F5E9E"></span> codex → claude</span><span class="td">跑实验、排队、远程 GPU 类</span><span class="td">开（破坏性的照样停）</span><span class="td mono">run · job · out</span>
+      <span class="td"><b>Builder</b></span><span class="td"><span class="am" style="background: #2F5E9E"></span> codex</span><span class="td">环境、依赖类</span><span class="td">开</span><span class="td mono">run · job · out</span>
+      <span class="td"><b>Collector · Fetcher</b></span><span class="td"><span class="am" style="background: #2F5E9E"></span> codex</span><span class="td">搜索、抓取、下载转写类（arxiv、exa、yt-dlp……）</span><span class="td"><b>关</b>（读外面的内容）</span><span class="td mono">lib add · job · out · crew item</span>
+      <span class="td"><b>Reviewer · Auditor · Checker</b></span><span class="td"><span class="am" style="background: #A8503A"></span> claude（和被审的不同家）</span><span class="td">实验审计、论断核对类</span><span class="td">关</span><span class="td mono">crew note · out add</span>
+      <span class="td"><b>Viewer</b></span><span class="td"><span class="am" style="background: #4A4F7A"></span> kimi（可选）</span><span class="td">—</span><span class="td">关</span><span class="td mono">out add</span>
+    </div>
+    <span style="font-size: 12.5px; color: #5F5F5A">AgentDeck 不带第三方的研究 skill、不替你装；模板里写的 skill 名字在你库里找不到时，New crew 里那一行写 “Not in your library · skipped”。所有角色你的其余 skill 照 K0 第 3 节默认 Names only。</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":3560}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

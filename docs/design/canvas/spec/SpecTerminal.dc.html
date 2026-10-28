@@ -17,7 +17,7 @@ body{margin:0}
 .cap{margin:0;font-size:13px;line-height:1.55}
 </style>
 </helmet>
-<div style="width: 1760px; height: 3000px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 44px">
+<div style="width: 1760px; height: 3040px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 44px">
   <div style="display: flex; flex-direction: column; gap: 8px; max-width: 960px">
     <h1 style="margin: 0; font-size: 28px; font-weight: 600">5 · 终端窗口</h1>
     <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #5F5F5A">运行一个命令的终端，例如 claude、codex 或你的 shell。终端本身是标准终端，不加额外的输入框或按钮；它的用处来自和外部的连接：所在的工作区决定目录和右侧面板，输出里的链接和文件路径可以点，它的状态会变成提醒。</p>
@@ -214,7 +214,7 @@ body{margin:0}
         <li>改大小时，松手后才把新的行列数告诉程序，避免拖动中反复重绘。变成摘要卡时不改程序的行列数，恢复时它的画面不会乱。</li>
         <li>双击标题栏、放大按钮或 ⌘⇧↩：占满视口（不盖住右侧面板和顶栏）；再做一次还原。</li>
         <li>滚动：已聚焦且光标在窗口上时滚动终端历史；否则平移白板。</li>
-        <li>其他网址用系统浏览器打开。文件路径（如 src/auth/oauth.ts:44）在设置里选的编辑器中打开到那一行。</li>
+        <li>其他网址用系统浏览器打开。文件路径（如 src/auth/oauth.ts:44）在设置里选的编辑器中打开到那一行。.md 文件在白板上开成文档窗口，放在这个终端旁边（M15，“文档”页 D0）；⌥ 单击仍用编辑器。</li>
         <li>右键标题栏：“Rename”“Copy folder path”“Clear”“Restart”“Open in another workspace ▸”“Open in system terminal”“Close”。</li>
         <li>“Open in system terminal”：打开你设置的终端 App 并接上同一个 tmux 会话，两边的输入和输出同步。</li>
       </ul>
@@ -242,7 +242,7 @@ body{margin:0}
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":3000}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":3040}}'>
 class Component extends DCLogic {
   renderVals() {
     return {};

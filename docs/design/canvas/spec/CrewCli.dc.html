@@ -40,7 +40,7 @@ body{margin:0}
 .ex{display:flex;flex-direction:column;gap:10px;font-size:13.5px;line-height:1.65}
 </style>
 </helmet>
-<div style="width: 1760px; height: 2960px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+<div style="width: 1760px; height: 3000px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
 
   <div style="display: flex; flex-direction: column; gap: 10px">
     <div style="display: flex; align-items: center; gap: 10px">
@@ -82,6 +82,7 @@ body{margin:0}
         <b>普通终端</b>
         <span>白板上自己开的 claude、codex、omp：照旧带 AgentDeck MCP 的 11 个工具（open_browser、notify、open_terminals…）。</span>
         <span>看不到任何 crew 命令；跑 <span class="mono">agentdeck crew plan</span> 只会得到 <span class="mono">Not in a crew.</span></span>
+        <span>只碰自己产物的命令所有 AgentDeck 终端都有（子 session、Worker 也有）：<span class="mono">agentdeck doc</span>（打开文档、核对引用、读和回复评论，见“文档”页 D0）、<span class="mono">agentdeck flow</span>（verdicts 只认 Verifier，F2）、<span class="mono">agentdeck lesson propose / list / search</span>（W1），研究集群里的 <span class="mono">run start / run done / job start / out add</span>（E1 第 6 节）。认身份靠终端钥匙；这些命令都不能开终端、不能批准、不能提交、不能合并。开 session、管子 session、跑 crew 流程的命令仍然只给 Lead。</span>
         <span class="muted">每轮 ~200 token（instructions 缩短之后）</span>
       </div>
       <div class="col">
@@ -170,7 +171,7 @@ body{margin:0}
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":2960}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":3000}}'>
 class Component extends DCLogic {
   renderVals() {
     return {};

@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>文档 · agentdeck-docs skill</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1240px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#6B6B6B}
+.col{flex:1;box-sizing:border-box;border:1px solid #E3E3E0;border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.6;background:#FFFFFF}
+.col b{font-size:14.5px}
+.paper{flex:1;box-sizing:border-box;border:1px solid #E3E3E0;border-radius:8px;background:#FFFFFF;padding:18px 22px;font-size:13.5px;line-height:1.8;display:flex;flex-direction:column;gap:10px}
+.paper .tag{font-size:11.5px;color:#6B6B6B;font-weight:600;letter-spacing:0.04em}
+.ref{font-family:'IBM Plex Mono',monospace;font-size:12px;text-decoration:underline;text-decoration-color:#D6D6D2;text-underline-offset:2px}
+.c{font-family:'IBM Plex Mono',monospace;font-size:12px;background:#F2F2EF;border-radius:4px;padding:0 3px}
+.x{text-decoration:underline;text-decoration-color:#CF222E;text-decoration-style:wavy;text-underline-offset:3px}
+.note{font-size:12px;line-height:1.6;color:#5F5F5A}
+ul.l{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:5px}
+ol.l{margin:0;padding-left:1.3em;display:flex;flex-direction:column;gap:5px}
+</style>
+</helmet>
+<div style="width: 1760px; height: 1940px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">D2 · agentdeck-docs skill：用人话写，少 AI 味，关键的话都能点回代码</h1>
+      <span class="concept">2026-10-28 按推荐先定，待你确认</span>
+    </div>
+    <p class="lead">一个专门写文档的 skill，AgentDeck 自带，五家 agent 都能用。它管三件事：先说结论的短句；不写套话；每句讲代码的话后面跟着从仓库根写起的 <span class="mono">path:行</span> 和符号，写完自己跑一遍 <span class="mono">agentdeck doc check</span>。全文草稿在 p11/drafts/agentdeck-docs-SKILL.md（英文正文，另有一节中文写作规则）。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 怎么带给 agent</span>
+    <div class="tbl" style="grid-template-columns: 240px minmax(0, 1fr)">
+      <span class="th">事项</span><span class="th">做法</span>
+      <span class="td">放在哪</span><span class="td">AgentDeck 自带的 skill，和现在的 agentdeck skill 一样由 <span class="ref">packages/agent-adapters/src/skills/library.ts:255</span> <span class="c">builtinSkillFiles</span> 写进数据目录，按 N9 的办法带进终端（claude、omp 用 --plugin-dir，pi 用 --skill，kimi 用 --skills-dir；codex 带不进，靠提示词指路）。不写用户自己的 skill 目录。</span>
+      <span class="td">每轮多少 token</span><span class="td">描述 191 个字符，约 47 token，勾上的终端每轮常驻；正文约 8.9k 字符（UTF-8 字节数 / 4 约 2.5k，偏高），只有用到时才读。</span>
+      <span class="td">默认勾不勾</span><span class="td">默认不勾（不让每个终端都付描述的钱）。AgentDeck 为文档开的终端自动勾上：New doc… 里的 “Ask a new claude to draft it”、Verify claims 的核查终端。按 K0 的三层启用：可以在项目里设成默认勾上（写文档多的项目）。</span>
+      <span class="td">没勾的终端</span><span class="td">从文档窗口发出去的提示词（Ask…、Send comments）第一次会带一句 “Before editing, read &lt;数据目录&gt;/skills/agentdeck-docs/SKILL.md”，五家都能直接读文件，不用重启终端。同一个终端只带一次。</span>
+      <span class="td">和项目自己的规矩</span><span class="td">skill 第一条就是：仓库里有 AGENTS.md、CLAUDE.md、CONTRIBUTING.md 的写作规矩时，它们优先。本项目的规矩（界面字用英文、注释和文档可以中文、编号规则）照旧。</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 三条规矩</span>
+    <div style="display: flex; gap: 24px">
+      <div class="col"><b>用人话</b><span>每节第一句是结论，理由在后面。</span><span>一句只说一件事；主语是具体的东西：文件、函数、按钮上的字、数字。</span><span>数字写怎么量的、在什么上量的、哪天量的；没量的写“没量过”。</span><span>不知道的写“待核对”，不拿一句听着对的话盖过去。</span><span>真有先后才用编号；列表是并列的东西，不拿列表写论证。</span></div>
+      <div class="col"><b>少 AI 味</b><span>不写：赋能、抓手、闭环、打通、无缝、强大的、一站式、极致；值得注意的是、总的来说、综上所述、不难看出。英文同理：robust、seamless、leverage、delve、crucial、In summary。</span><span>不用排比凑节奏，不写“不仅……而且……更……”，不自问自答，不收尾总结。</span><span>不满篇加粗、不用感叹号、不用 emoji，破折号少用。</span><span class="note">参考：维基百科 WikiProject AI Cleanup 的 “Signs of AI writing”（指南本身说这些只是弱信号，要几种一起出现才算）；本仓库 AGENTS.md 的文风。</span></div>
+      <div class="col"><b>引用要密</b><span>“现状”“怎么工作”“改了什么”这几节，每段至少一处引用；讲代码的每条列表项各带一处。</span><span>从仓库根写全路径；范围尽量窄（30 行以内）；后面跟符号。</span><span>说“定义成什么”指定义，说“谁调了它”指调用处，说“测过了”指测试。</span><span>计划中的文件标 (new)；别的仓库写来源、版本和日期；实验钉住版本 <span class="mono">path@提交:行</span>。</span><span>没打开过的文件不许引。写完跑 <span class="mono">agentdeck doc check</span>，not found 和短路径必须修掉。</span></div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · 改写前后（同一件事：终端里的文件链接）</span>
+    <div style="display: flex; gap: 24px; align-items: stretch">
+      <div class="paper">
+        <span class="tag">改写前</span>
+        <span><span class="x"><b>终端链接处理</b>是 AgentDeck 中一个至关重要的功能模块</span>。<span class="x">值得注意的是</span>，该模块<span class="x">不仅能够智能识别各种格式的文件路径，而且还能无缝对接</span>用户的编辑器，<span class="x">从而极大地提升了开发效率</span>。在实现层面，系统采用了正则表达式进行匹配，并通过统一的接口调用外部程序。<span class="x">总的来说，这一设计充分体现了以用户为中心的理念</span>。</span>
+        <span class="note">问题：一处引用都没有，没法核查；“各种格式”“极大提升”说不出依据；“正则表达式”“统一的接口”是哪个、在哪；最后一句什么也没说。红线是 skill 第 3、4 节点名的写法。</span>
+      </div>
+      <div class="paper">
+        <span class="tag">改写后</span>
+        <span>终端输出里的 <span class="c">文件:行号</span> 由 <span class="c">findLinkMatches</span> 认出来（<span class="ref">packages/ui/widgets/terminal/src/links.ts:33</span>）。它认三种写法：<span class="c">a.ts:12:3</span>、tsc 的 <span class="c">a.ts(12,3)</span>、Python 的 <span class="c">File "a.py", line 3</span>（同一文件 <span class="ref">:14-17</span>）。</span>
+        <span>单击以后交给 <span class="c">app.openInEditor</span>（<span class="ref">packages/ui/widgets/terminal/src/TerminalWindow.tsx:243-247</span>），用设置里的 <span class="c">editorCommand</span> 打开到那一行，默认是 <span class="c">code -g</span>（<span class="ref">apps/desktop/src/main/settings.ts:12</span>）。找不到编辑器时退回系统的默认程序（<span class="ref">apps/desktop/src/main/app-service.ts:123-134</span>）。</span>
+        <span>这套规则在 <span class="ref">packages/port-watch/src/links.ts</span> 里还有一份副本，因为界面包不能 import 服务包；改的时候两边一起改。</span>
+        <span class="note">每句都能点开核对（2026-10-28 对着 871dd81 逐条看过）。没有形容词，没有总结句；读完就知道去哪改。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · 四类文档的提纲（New doc… 的模板也用这几个）</span>
+    <div class="tbl" style="grid-template-columns: repeat(4, minmax(0, 1fr))">
+      <span class="th">需求 Requirements</span><span class="th">技术 Design</span><span class="th">实现 Implementation</span><span class="th">实验 Experiment</span>
+      <span class="td">问题：谁、什么时候碰到，一个具体例子</span><span class="td">现状：现在的代码怎么做的（每段都有引用）</span><span class="td">改了什么、为什么：每处改动一小节，引用新代码和测试</span><span class="td">问题：想知道什么</span>
+      <span class="td">用户看到什么：一步一步，界面原文用英文</span><span class="td">决策：每个决策写选项、推荐、理由、代价、要不要你拍板</span><span class="td">怎么测的：命令和结果</span><span class="td">怎么做的：版本、提交、机器、原样的命令，别人能重跑</span>
+      <span class="td">规则和边界情况；不做的</span><span class="td">接口：类型和调用，写在哪个文件</span><span class="td">还没做的、已知的缺口</span><span class="td">结果：原始数字的表，再说它说明了什么</span>
+      <span class="td">验收：能照着测的用例（前提、步骤、界面、后台），对上 TC 编号</span><span class="td">风险和不确定的（待核对）</span><span class="td">后续：带编号的任务和问题</span><span class="td">结论：现在知道了什么、还不知道什么；脚本和数据在哪</span>
+    </div>
+    <span class="note">和本项目已有的格式一致：技术文档的“决策”就是调研记录（DR）的 assumed / found / decision / pros / cons；需求的“验收”就是 TC 用例的写法。</span>
+  </div>
+
+  <div style="display: flex; gap: 24px; align-items: flex-start">
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 14px">
+      <span class="h2">5 · 交出去之前自查</span>
+      <ol class="l" style="font-size: 13.5px; line-height: 1.65">
+        <li>每个路径都在这个 worktree 里，或者标了 (new)、外部来源、钉住的版本。跑 <span class="mono">agentdeck doc check</span>；不在 AgentDeck 里时用 <span class="mono">ls</span> 和 <span class="mono">sed -n</span> 逐个看。</li>
+        <li>每句讲代码的话和它引的几行放在一起再读一遍：那几行证明不了这句话，就改话或改引用。</li>
+        <li>按第 2 节的词表搜一遍，删掉；删掉读者本来就知道的段落。</li>
+        <li>在终端里用一两句话说写了什么、还有什么待核对；不把文档贴进对话。</li>
+        <li>按评论改时只改评论挂着的那段，用 <span class="mono">agentdeck doc reply</span> 逐条回复，不替你 Resolve。</li>
+      </ol>
+    </div>
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 14px">
+      <span class="h2">6 · 实测：重点该放在哪</span>
+      <div class="tbl" style="grid-template-columns: 220px minmax(0, 1fr)">
+        <span class="th">第一轮 9 份报告（83,727 字符）</span><span class="th">tone.py、refs.py，2026-10-28</span>
+        <span class="td">第 2 节的套话</span><span class="td">全部 9 份只出现 1 次（“链路”）；破折号 2 处；加粗 106 处（每万字 12.7 处）</span>
+        <span class="td">带行号的引用</span><span class="td">13 处，其中 5 处短路径；6 个点一处都没有</span>
+        <span class="td">说明</span><span class="td">项目已有的文风规矩（AGENTS.md、BRIEF）已经压住了套话；缺的是引用：少、短、没法点。所以 skill 的篇幅大头放在第 2 节“代码引用”和自查，词表只做一张短清单，不另做 lint 命令（以后要再加进 <span class="mono">doc check</span>）。</span>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":1940}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

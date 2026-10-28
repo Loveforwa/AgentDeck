@@ -121,14 +121,14 @@ claude hit its 5-hour limit at 03:10, so T8 started
   </div>
 
   <div style="display: flex; flex-direction: column; gap: 14px">
-    <span class="h2">2 · 记忆分两种，AgentDeck 只管短期的</span>
+    <span class="h2">2 · 记忆分两种，AgentDeck 只管短期的（例外：Lessons）</span>
     <div class="tbl" style="grid-template-columns: 150px 1fr 1fr; max-width: 1632px">
       <span class="th"></span><span class="th">长期：偏好、注意事项</span><span class="th">短期：进度</span>
       <span class="td"><b>例子</b></span><span class="td">“组件里不写颜色值”“提交前跑 pnpm check”“我喜欢小提交”</span><span class="td">T6 审了两轮、T7 在等你批接口、你答过 QA “Same frame”</span>
       <span class="td"><b>存在哪</b></span><span class="td">各家 agent 自己的：仓库里的 <span class="mono">AGENTS.md</span> / <span class="mono">CLAUDE.md</span>；claude 的 auto memory（<span class="mono">~/.claude/projects/&lt;仓库&gt;/memory/</span>，同一仓库的所有 worktree 共用）；codex 的 memories（默认关）。</span><span class="td">AgentDeck 的数据（SQLite）：任务表、<b>Decisions</b>（你在收件箱和关卡上做过的决定）、crew notes、还开着的关卡。不往仓库写。</span>
       <span class="td"><b>谁写</b></span><span class="td">你；auto memory 由 agent 自己写。</span><span class="td">调度器写状态，你的每个决定自动记下，agent 用 crew note 写发现。</span>
-      <span class="td"><b>AgentDeck 做什么</b></span><span class="td">不另做一套记忆，也不往每个终端注入（那是每轮都要付的 token）。只做两件小事：集群不改仓库里的说明文件；集群里的 Worker、Reviewer、QA 启动时关掉 claude 的 auto memory，免得三个并行的任务把“T4 做到一半”写进你的长期记忆（已定）。</span><span class="td">存下来，生成进度摘要（第 3 节）给 Lead；Worker 只拿到自己的任务卡和相关的 Decisions，不拿整张表。</span>
-      <span class="td"><b>短期变长期</b></span><span class="td" style="grid-column: span 2">汇报里的 Decisions 和 notes，值得一直留的（比如“恢复会话一律在原来的框里”）由你自己抄进 AGENTS.md（Copy as Markdown）。AgentDeck 不自动写你的仓库和 agent 配置。</span>
+      <span class="td"><b>AgentDeck 做什么</b></span><span class="td">不另做一套记忆，也不往每个终端注入（那是每轮都要付的 token）。只做两件小事：集群不改仓库里的说明文件；集群里的 Worker、Reviewer、QA 启动时关掉 claude 的 auto memory，免得三个并行的任务把“T4 做到一半”写进你的长期记忆（已定）。<br><b>例外</b>：反复踩的坑（Lessons），经你确认后由 AgentDeck 按项目存，开 session 时追加进每个终端的系统提示（每条一句，项目上限 1,000 token），见“长期运行 · Lessons”页 W1。</span><span class="td">存下来，生成进度摘要（第 3 节）给 Lead；Worker 只拿到自己的任务卡和相关的 Decisions，不拿整张表。</span>
+      <span class="td"><b>短期变长期</b></span><span class="td" style="grid-column: span 2">汇报里的 Decisions 和 notes，值得一直留的（比如“恢复会话一律在原来的框里”）由你自己抄进 AGENTS.md（Copy as Markdown）。AgentDeck 不自动写你的仓库和 agent 配置；Lessons 的 Move to AGENTS.md 也是你点了才写，AgentDeck 不提交（W1）。</span>
     </div>
     <span style="font-size: 13px; line-height: 1.65; color: #5F5F5A; max-width: 1632px">第二版画板 2（工作区设置）里 “Share with every agent · Instructions · AGENTS.md · Also links CLAUDE.md and GEMINI.md” 一直没做。现在 claude（2.1.277 起）在没有 CLAUDE.md 时自己读 AGENTS.md，codex、pi、omp、kimi 本来就读，“链接”这件事基本不用做了。剩下有用的是把不进 git 的个人说明（<span class="mono">CLAUDE.local.md</span>、<span class="mono">AGENTS.override.md</span>）带进新开的 worktree，和那一行的 <span class="mono">.env.local</span> 一样，算工作区设置，不算记忆功能，以后再做。</span>
   </div>

@@ -157,6 +157,7 @@ body{margin:0}
             <div class="fld"><span class="l">Library skills</span>
               <span style="display: flex; flex-direction: column">
                 <span class="ck"><span class="box on">✓</span><span class="mono">agentdeck</span><span class="muted">built in</span></span>
+                <span class="ck"><span class="box">&#160;</span><span class="mono">agentdeck-docs</span><span class="muted">built in</span></span>
                 <span class="ck"><span class="box on">✓</span><span class="mono">release-notes</span></span>
                 <span class="ck"><span class="box">&#160;</span><span class="mono">xlsx</span></span>
                 <span class="muted">Repo skills (.claude/skills, .agents/skills) always follow the repo.</span>
@@ -231,7 +232,8 @@ body{margin:0}
         <b>面板</b>：每行右边的 token 估算、built in 的 crew 项是画板 C7（agentdeck 命令行）加的，这里照用。这一页只加一行 <span class="mono">Your other skills · 93</span>：默认跟项目设置，下拉里能只给这个终端换一档（存在 TerminalWindowData.skills 里，和 N9 的勾选一起）。合计一行把它算进去。<br><br>
         <b>Manage…</b> 打开 Settings › Skills。改了任何一项都照 N9 出现 Changes apply after restart，点 Restart and resume 生效。<br><br>
         <b>codex 终端</b>：库里的 skill 行灰掉写 Not supported for codex（N9 已有）；Your other skills 的下拉里没有 Names only，只有 Leave as is 和 Turn off。<br><br>
-        <b>新建集群（C1）</b>：每个角色多一行 skill，默认值来自模板（C5 的 skills 字段），加上这个角色的“其余的怎么办”。Lead 带 crew（C7），Worker、Reviewer 默认 Names only，省掉每个实现者每轮的那几千 token。集群开终端时把这一套当作终端选择传进去，不另设一层。
+        <b>新建集群（C1）</b>：每个角色多一行 skill，默认值来自模板（C5 的 skills 字段），加上这个角色的“其余的怎么办”。Lead 带 crew（C7），Worker、Reviewer 默认 Names only，省掉每个实现者每轮的那几千 token。集群开终端时把这一套当作终端选择传进去，不另设一层。<br><br>
+        <b>agentdeck-docs</b>：写文档的 built in skill，默认不勾；AgentDeck 为文档开的终端自动勾上（“文档”页 D2）。
       </div>
     </div>
   </div>

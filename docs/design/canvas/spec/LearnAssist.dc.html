@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>学习和辅助 · /teach 和数据库终端</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1300px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#6B6B6B}
+.small{font-size:12px;color:#5F5F5A;line-height:1.6}
+.warn{color:#B45309}
+.am{display:inline-block;width:7px;height:7px;border-radius:1.5px;flex:none;margin-right:4px}
+.lamp{display:inline-block;width:7px;height:7px;border-radius:999px;flex:none}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.at{position:absolute}
+.frame{position:absolute;box-sizing:border-box;border:1px solid #D6D6D2;border-radius:12px;background:rgba(255,255,255,0.35)}
+.fhead{display:flex;align-items:center;gap:8px;padding:8px 12px;font-size:13px}
+.win{position:absolute;box-sizing:border-box;border:1px solid #E3E3E0;border-radius:8px;background:#FFFFFF;overflow:hidden;display:flex;flex-direction:column}
+.win.focus{border-color:#1A1A1A}
+.wbar{display:flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-bottom:1px solid #EEEEEB;font-size:12px;flex:none}
+.wname{font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:12px}
+.term{flex:1;padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.6;color:#1A1A1A;background:#FFFFFF;white-space:pre}
+.menu{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.08);padding:4px;font-size:13px;display:flex;flex-direction:column}
+.mi{display:flex;align-items:center;justify-content:space-between;height:24px;padding:0 8px;border-radius:4px;gap:16px}
+.mi.on{background:#EDEDEA}
+.mi .hint{font-size:11px;color:#6B6B6B}
+.msep{height:1px;background:#EEEEEB;margin:4px 0}
+.mhead{font-size:11px;font-weight:600;letter-spacing:0.04em;color:#6B6B6B;padding:4px 8px 2px}
+.dialog{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.08);padding:20px;display:flex;flex-direction:column;gap:12px;font-size:13px}
+.dtitle{font-size:15px;font-weight:600;margin:0}
+.flabel{font-size:12px;color:#6B6B6B}
+.input{box-sizing:border-box;height:26px;border:1px solid #D6D6D2;border-radius:6px;padding:0 8px;display:flex;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:12px;background:#FFFFFF}
+.radio{display:flex;align-items:center;gap:6px;font-size:13px}
+.rdot{width:12px;height:12px;border-radius:999px;border:1px solid #8A8A85;box-sizing:border-box;flex:none}
+.rdot.on{border:4px solid #1A1A1A}
+.check{width:12px;height:12px;border-radius:3px;border:1px solid #8A8A85;box-sizing:border-box;flex:none;display:inline-flex;align-items:center;justify-content:center;font-size:9px;line-height:1}
+.check.on{background:#1A1A1A;border-color:#1A1A1A;color:#FFFFFF}
+.btn{display:inline-flex;align-items:center;height:26px;padding:0 12px;border-radius:6px;border:1px solid #D6D6D2;font-size:13px;background:#FFFFFF}
+.btn.primary{background:#1A1A1A;border-color:#1A1A1A;color:#FFFFFF;font-weight:500}
+.note{position:absolute;font-size:12px;line-height:1.6;color:#5F5F5A}
+.col{flex:1;box-sizing:border-box;border:1px solid #E3E3E0;border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;font-size:13.5px;line-height:1.6;background:#FFFFFF}
+.col b{font-size:15px}
+.node{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #D6D6D2;border-radius:8px;padding:10px 12px;font-size:12.5px;line-height:1.5;display:flex;flex-direction:column;gap:3px}
+.node b{font-size:13px}
+.arr{position:absolute;font-size:18px;color:#8A8A85}
+.lesson{flex:1;padding:14px 18px;font-size:12px;line-height:1.6;color:#1A1A1A;display:flex;flex-direction:column;gap:6px;font-family:Georgia,'Noto Serif SC',serif}
+.quiz{display:flex;flex-direction:column;gap:4px;font-family:'IBM Plex Sans','Noto Sans SC',sans-serif}
+.qopt{border:1px solid #D6D6D2;border-radius:6px;padding:3px 8px;font-size:11.5px}
+</style>
+</helmet>
+<div style="width: 1760px; height: 3820px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">L0 · 学习和辅助：用 /teach 学东西，把数据库 TUI 放上白板</h1>
+      <span class="concept">2026-10-28 按推荐先定，待你确认</span>
+    </div>
+    <p class="lead">两件小事，都不给 AgentDeck 加新的“学习”或“数据库”功能，只把已有的能力接顺。<b>/teach</b> 是一个普通的 skill：放进库里（M11），在一个专门的学习文件夹里跑，课程和进度都是那个文件夹里的文件，课在白板的浏览器窗口里看。<b>数据库 TUI</b> 就是一个跑自定义命令的终端：后台早就支持，白板上缺一个入口；补上 Custom command… 和启动预设，加一个把选中的 SQL 送过去的菜单，再管住 agent 能不能读、能不能往里打字。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 用户说的 “Matt Pike 的 teach skill”：是 Matt Pocock 的 /teach</span>
+    <div class="tbl" style="grid-template-columns: 170px minmax(0, 1fr)">
+      <span class="th">项</span><span class="th">内容（来源：github.com/mattpocock/skills 的 README、skills/productivity/teach/SKILL.md、GitHub API，2026-10-28 读）</span>
+      <span class="td">名字和位置</span><span class="td"><span class="mono">teach</span>，仓库 <span class="mono">mattpocock/skills</span>（“Skills for Real Engineers”，约 30.5 万星）里的 <span class="mono">skills/productivity/teach/</span>：SKILL.md 加 MISSION-、RESOURCES-、LEARNING-RECORD-、GLOSSARY-FORMAT.md 和 <span class="mono">agents/openai.yaml</span>。最近一次改它是 2026-10-07（#1183：工作区路径按运行 /teach 的目录算，修了课写进 ~/.claude/skills 的问题 #377）</span>
+      <span class="td">许可证</span><span class="td">MIT</span>
+      <span class="td">做什么</span><span class="td">多次会话地教你一个技能或概念。只能你手动调（<span class="mono">disable-model-invocation: true</span>，codex 那边 <span class="mono">allow_implicit_invocation: false</span>），所以平时不占上下文。它把<b>当前目录</b>当成教学工作区，所有状态都是这个目录里的文件</span>
+      <span class="td">怎么装</span><span class="td">claude：<span class="mono">claude plugin install mattpocock-skills@claude-plugins-official</span>（整包，自动更新）· codex：<span class="mono">codex plugin marketplace add mattpocock/skills</span> 再 <span class="mono">codex plugin add mattpocock-skills@mattpocock</span> · 其他：<span class="mono">npx skills@latest add mattpocock/skills -a &lt;agent&gt;</span>（可加 <span class="mono">--skill teach</span> 只装这一个，第三方目录站的写法，待核对）· 在 AgentDeck 里：克隆后 Add skill… 选 <span class="mono">skills/productivity/teach</span></span>
+      <span class="td">怎么“生成课程和学习计划”</span><span class="td">它<b>不先排一整份大纲</b>。每次：没有 MISSION.md 就先问你为什么学 → 读 learning-records 估你的“最近发展区” → 找可信资料记进 RESOURCES.md → 写一节短的 HTML 课（带引用、主要资料、测验，答案长度一样、位置打乱）→ 更新 reference 里的速查和术语表 → 你表现出真懂了才写一条 learning record。“计划”是每次按记录现算的下一节。想要整份路线，用你自己的学习手册（/next 的“完整计划”）当大纲，/teach 负责每一节</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 在 AgentDeck 里学：一个学习文件夹 = 一个普通项目，课在白板上看</span>
+    <div class="fig" style="width: 1632px; height: 470px">
+      <div class="frame" style="left: 24px; top: 24px; width: 1000px; height: 420px">
+        <div class="fhead"><b>learn-postgres</b><span class="mono muted" style="font-size: 12px">~/learn/postgres · main</span><span class="muted" style="font-size: 12px">plain folder</span></div>
+        <div class="win focus" style="left: 12px; top: 40px; width: 460px; height: 366px">
+          <div class="wbar"><span class="am" style="background: #A8503A"></span><span class="wname">claude</span><span class="lamp" style="background: #1A7F37; margin-left: auto"></span><span class="muted">Running</span></div>
+          <div class="term">&gt; /teach how Postgres plans a query
+
+Read MISSION.md (tune slow queries at work)
+Read learning-records/ (3 records)
+Wrote lessons/0004-reading-explain.html
+Wrote reference/explain-cheatsheet.html
+open_browser lessons/0004-reading-explain.html
+
+Lesson 4 is open next to me. Try the quiz,
+then ask me anything that's unclear.</div>
+        </div>
+        <div class="win" style="left: 484px; top: 40px; width: 504px; height: 366px">
+          <div class="wbar"><span class="wname" style="font-weight: 400">0004-reading-explain.html</span><span class="muted" style="margin-left: auto">opened by agent</span></div>
+          <div class="lesson">
+            <b style="font-size: 15px">Reading EXPLAIN, one node at a time</b>
+            <span>A plan is a tree. Each node says what it does, what it expects to cost, and how many rows it expects. Start from the innermost node …</span>
+            <span class="muted" style="font-size: 11px">Primary source: PostgreSQL docs, “Using EXPLAIN” · Glossary · Lesson 3</span>
+            <div class="quiz"><b style="font-size: 12px">Which node runs first?</b><span class="qopt">The top Sort node</span><span class="qopt">The inner Seq Scan</span><span class="qopt">The Hash Join node</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="node" style="left: 1060px; top: 24px; width: 548px">
+        <b>学习文件夹里有什么（/teach 自己写，AgentDeck 不碰）</b>
+        <span class="mono" style="font-size: 12px; line-height: 1.7">MISSION.md          为什么学<br>RESOURCES.md        可信资料<br>NOTES.md            你喜欢怎么被教<br>learning-records/   0001-….md 学会了什么<br>lessons/            0001-….html 一节课<br>reference/          速查、术语表<br>assets/             共用样式、测验组件</span>
+      </div>
+      <div class="node" style="left: 1060px; top: 222px; width: 548px">
+        <b>怎么开</b>
+        <span>Add project… 选一个空文件夹（plain，也可以 git init 让进度有历史）→ 框里 New terminal ▸ claude → 打 <span class="mono">/teach</span>。不开 worktree：进度只有一份，分支会把它分散。不要在代码仓库的框里跑，课会写进你的仓库。</span>
+      </div>
+      <div class="node" style="left: 1060px; top: 352px; width: 548px; border-style: dashed">
+        <b>要修的一处（IS-128）</b>
+        <span>白板浏览器只许读“打开的文件所在目录”：开 lessons/0004.html 时 <span class="mono">../assets/style.css</span>、<span class="mono">../reference/*.html</span> 读不到。改成：文件在某个工作区目录里时，整个工作区都能读。</span>
+      </div>
+    </div>
+    <div class="tbl" style="grid-template-columns: 220px minmax(0, 1fr) minmax(0, 1fr)">
+      <span class="th">问题</span><span class="th">怎么定</span><span class="th">为什么</span>
+      <span class="td">放进 skill 库</span><span class="td">不内置。用户自己装：claude、codex 用各自的插件（会自动更新）；pi、omp、kimi 用 Add skill… 放进 AgentDeck 的库（N9 已经能带）。M11 的总览会把两处装的列成重名</span><span class="td">它是第三方的，跟着上游更新；手动调用，平时 0 token，不用做减法</span>
+      <span class="td">进度存在哪</span><span class="td">就在学习文件夹里（/teach 的文件）。AgentDeck 不另存“学习进度”，也不读它们</span><span class="td">和 C8 一致：长期记忆不归 AgentDeck 管（DR-74；W1 的 Lessons 是唯一的例外，只收项目里反复踩的坑）。你的学习手册（/next、/check）同理：手册和 Obsidian 笔记是进度，AgentDeck 只提供开终端和看课的地方。想让记录进 Obsidian，把学习文件夹放在 vault 里</span>
+      <span class="td">学习类集群模板</span><span class="td">不做。自由模式也不专门写用法</span><span class="td">学习是你和一个老师一来一回，集群是给不用你盯的长任务的。要从多个网站收集资料，归“研究和竞赛”页 E0–E3 的研究集群</span>
+      <span class="td">新建终端菜单里的 Learn…</span><span class="td">不做专门的项。需要时用第 3 节的启动预设存一个 “claude + 第一条 /teach”</span><span class="td">一个预设机制管所有常用命令，不为一个 skill 开菜单项</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · 数据库 TUI：就是一个“自定义命令”终端；白板上补入口和预设</span>
+    <div class="tbl" style="grid-template-columns: 120px 150px minmax(0, 1fr) minmax(0, 1fr) 150px">
+      <span class="th">工具</span><span class="th">语言 · 许可证</span><span class="th">能连什么</span><span class="th">密码和只读</span><span class="th">状态（GitHub，2026-10-28）</span>
+      <span class="td mono">harlequin</span><span class="td">Python · MIT</span><span class="td">自带 DuckDB、SQLite，Postgres、MySQL 等装 adapter；带 <span class="mono">hsql</span>：给 agent 和脚本用的无界面查询命令</span><span class="td">配置 profile 里写 <span class="mono">${MYPASSWORD}</span> 读环境变量，秘密字段打印时遮住；<span class="mono">--read-only</span>、<span class="mono">--timeout</span>，数据库做不到就拒绝启动</span><span class="td">6.5k 星，v2.17.0 2026-10-26</span>
+      <span class="td mono">lazysql</span><span class="td">Go · MIT</span><span class="td">MySQL、Postgres、SQLite、MSSQL、ClickHouse、MongoDB</span><span class="td"><span class="mono">config.toml</span>，往上找到 git 根的 <span class="mono">.lazysql.toml</span> 能覆盖（会进仓库，小心）；<span class="mono">${env:VAR}</span>；<span class="mono">--read-only</span>；有遥测，<span class="mono">--no-telemetry</span></span><span class="td">4.4k 星，活跃</span>
+      <span class="td mono">gobang</span><span class="td">Rust · MIT</span><span class="td">MySQL、Postgres、SQLite</span><span class="td muted">—</span><span class="td warn">最后推送 2023-11，基本没人维护，不推荐</span>
+      <span class="td mono">pgcli</span><span class="td">Python · BSD-3</span><span class="td">Postgres（同家族 mycli、litecli）；是补全很强的命令行，不是全屏 TUI</span><span class="td">默认用系统钥匙串存密码；支持 PG* 环境变量；危险语句先警告（drop 等）</span><span class="td">13.4k 星，活跃</span>
+      <span class="td mono">rainfrog</span><span class="td">Rust · MIT</span><span class="td">Postgres 为主，MySQL、SQLite、DuckDB</span><span class="td">读 <span class="mono">DATABASE_URL</span> 或 .env；输入的密码可存系统钥匙串</span><span class="td">5.4k 星，活跃</span>
+      <span class="td mono">usql · dblab · sqlit</span><span class="td">Go / Go / Python · MIT</span><span class="td">通用 SQL 命令行和 TUI</span><span class="td muted">各自的配置</span><span class="td">10.2k / 3.2k / 4.9k 星</span>
+    </div>
+    <p class="small" style="margin: 0">现在已经能做的：New terminal ▸ Shell，再在里面敲 <span class="mono">harlequin -P dev</span>；agent 可以用 MCP 的 <span class="mono">open_terminal</span>（agent: "shell"，command: "lazysql"）开一个；重开应用后自定义命令变成 Shell，命令填在输入行里不自动跑（不会自动重连数据库）。后台的 <span class="mono">custom</span> 适配器（packages/agent-adapters/src/adapters/shell.ts）早就有，白板菜单故意藏掉了它，因为没有问命令的对话框（IS-21）。</p>
+    <div class="fig" style="width: 1632px; height: 560px">
+      <div class="menu" style="left: 24px; top: 24px; width: 200px">
+        <div class="mi">New terminal<span class="hint">▸</span></div>
+        <div class="mi">New browser<span class="hint">⌘⇧B</span></div>
+        <div class="mi">New workspace…</div>
+        <div class="mi">Add project…</div>
+      </div>
+      <div class="menu" style="left: 228px; top: 24px; width: 290px">
+        <div class="mi"><span><span class="am" style="background: #A8503A"></span>Claude Code</span></div>
+        <div class="mi"><span><span class="am" style="background: #2F5E9E"></span>Codex</span></div>
+        <div class="msep"></div>
+        <div class="mi">Shell</div>
+        <div class="msep"></div>
+        <div class="mhead">COMMANDS</div>
+        <div class="mi on"><span>harlequin · shop dev</span><span class="hint">This project</span></div>
+        <div class="mi"><span>lazysql</span><span class="hint">All projects</span></div>
+        <div class="mi"><span>Teach me</span><span class="hint">claude · /teach</span></div>
+        <div class="msep"></div>
+        <div class="mi">Custom command…</div>
+      </div>
+      <div class="dialog" style="left: 560px; top: 24px; width: 470px">
+        <p class="dtitle">Custom command</p>
+        <div style="display: flex; flex-direction: column; gap: 4px"><span class="flabel">Command</span><div class="input">harlequin -P dev --read-only</div></div>
+        <div style="display: flex; flex-direction: column; gap: 4px"><span class="flabel">Name (optional)</span><div class="input" style="font-family: 'IBM Plex Sans', sans-serif">harlequin · shop dev</div></div>
+        <div style="display: flex; flex-direction: column; gap: 6px"><span class="flabel">Save to New terminal ▸</span>
+          <span class="radio"><span class="rdot on"></span>This project (shop)</span>
+          <span class="radio"><span class="rdot"></span>All projects</span>
+          <span class="radio"><span class="rdot"></span>Don’t save, just open</span>
+        </div>
+        <span class="radio"><span class="check on">✓</span>Hide from agents: they can’t list, read or type into this terminal</span>
+        <div style="display: flex; justify-content: flex-end; gap: 8px"><span class="btn">Cancel</span><span class="btn primary">Open</span></div>
+      </div>
+      <div class="dialog" style="left: 1060px; top: 24px; width: 548px; gap: 8px">
+        <p class="dtitle">Custom command</p>
+        <div style="display: flex; flex-direction: column; gap: 4px"><span class="flabel">Command</span><div class="input">pgcli postgres://app:<span style="background: #FFF7E6">••••••</span>@db.internal/shop</div></div>
+        <span class="warn" style="font-size: 12px; line-height: 1.5">This command has a password in it. It would be saved on the board and shown in the process list. Put it in the tool’s own config, ~/.pgpass or the keychain, then use the command without it.</span>
+        <div style="display: flex; justify-content: flex-end; gap: 8px"><span class="btn">Cancel</span><span class="btn primary" style="opacity: 0.4">Open</span></div>
+      </div>
+      <div class="note" style="left: 1060px; top: 210px; width: 548px">命令里 <span class="mono">scheme://用户:密码@</span> 这种写法直接挡住，Open 灰掉；不做“仍然打开”。只认这一种写法，<span class="mono">PGPASSWORD=… pgcli</span> 这类前缀也一样挡。别的写法挡不全，所以第 4 节的规矩靠工具自己的配置。</div>
+      <div class="note" style="left: 24px; top: 330px; width: 500px">COMMANDS 一组是启动预设：存 AgentDeck 的 settings.json（全局一份、每个项目一份），<b>不写进仓库</b>。一项 = 名字 + 命令（或 agent + 第一条消息，比如 claude + <span class="mono">/teach</span>）+ Hide from agents。右边写来源。项目设置页里能改名、删除。没有预设时这一组不显示，只剩 Custom command…。</div>
+      <div class="note" style="left: 560px; top: 400px; width: 470px">Custom command… 开出来的终端用现有的 custom 适配器（直接执行，不经过 shell，<span class="mono">${VAR}</span> 由工具自己展开）。标题栏写命令的第一个词（现有 title.ts）。窗口重开时照现在的规矩：变成 Shell，命令填好不跑。Hide from agents 存在这个窗口上，跟着白板保存。</div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · agent 写的 SQL 怎么到数据库终端；agent 自己查库</span>
+    <div class="fig" style="width: 1632px; height: 330px">
+      <div class="win focus" style="left: 24px; top: 24px; width: 520px; height: 280px">
+        <div class="wbar"><span class="am" style="background: #2F5E9E"></span><span class="wname">codex</span><span class="lamp" style="background: #6B6B6B; margin-left: auto"></span><span class="muted">Idle</span></div>
+        <div class="term">Here is the query for the slow orders page:
+
+<span style="background: #DCE6F5">SELECT o.id, o.total, c.email
+FROM orders o
+JOIN customers c ON c.id = o.customer_id
+-- only last week
+WHERE o.created_at &gt; now() - interval '7 days';</span></div>
+      </div>
+      <div class="menu" style="left: 330px; top: 44px; width: 230px">
+        <div class="mi">Rename…</div>
+        <div class="mi">Maximize</div>
+        <div class="msep"></div>
+        <div class="mi on">Send selection to<span class="hint">▸</span></div>
+        <div class="mi">Clear</div>
+        <div class="mi">Restart</div>
+      </div>
+      <div class="menu" style="left: 564px; top: 114px; width: 230px">
+        <div class="mi on">harlequin · shop dev</div>
+        <div class="mi">Shell · api</div>
+      </div>
+      <div class="win" style="left: 830px; top: 24px; width: 420px; height: 280px">
+        <div class="wbar"><span class="wname">harlequin</span><span class="muted" style="margin-left: auto">Hidden from agents</span></div>
+        <div class="term">┌ Query editor ───────────────────┐
+│ SELECT o.id, o.total, c.email    │
+│ FROM orders o                    │
+│ JOIN customers c ON …            │
+│ -- only last week                │
+│ WHERE o.created_at &gt; now() - …▌ │
+└──────── ctrl+enter to run ───────┘</div>
+      </div>
+      <div class="note" style="left: 1272px; top: 24px; width: 340px">选中以后右键<b>标题栏</b>（终端里面的右键留给 TUI 自己）。Send selection to ▸ 把选中的字<b>贴</b>进去（bracketed paste，保留换行），<b>不按回车</b>：跑不跑由你在数据库终端里按（CO3，和“多 agent 同仓协作”页 O0 是同一个菜单）。列表里是这个框和散放的 Shell、自定义命令终端，不列 agent 终端。<br><br>不用 agent 的 send_to_terminal：它把换行变空格，上面那句 <span class="mono">--</span> 注释会吃掉后面的 WHERE；它还会按回车。</div>
+    </div>
+    <div class="tbl" style="grid-template-columns: 240px minmax(0, 1fr) minmax(0, 1fr)">
+      <span class="th">做法</span><span class="th">怎么定</span><span class="th">代价</span>
+      <span class="td">人把 SQL 送进数据库终端</span><span class="td">做 Send selection to ▸（终端窗口的菜单，CO3；只粘贴、不按回车）</span><span class="td">要先选中；agent 输出被折行的长 SQL 选出来带硬换行（xterm 的选择行为，待实测）</span>
+      <span class="td">agent 自己往数据库终端里打字</span><span class="td">不加新工具；Hide from agents 打开时 send_to_terminal、read_terminal 都拒绝，list_terminals 不列它（AH11，M10，和 AH7 放在同一处检查；会动现有 MCP 的默认行为，实现时单独写进 docs/decisions.md）</span><span class="td">agent 没法替你“在 harlequin 里跑一下”；要它查库走下一行</span>
+      <span class="td">agent 只读查库</span><span class="td">不做内置 skill，也不做数据库 MCP。文档给一个示例 skill（<span class="mono">db-readonly</span>）：用 <span class="mono">hsql --read-only --timeout 30 -P &lt;profile&gt; -c</span> 或 psql 加只读账号，结果加 LIMIT；你自己 Add skill… 放进库</span><span class="td">真正挡住写入的是数据库的只读账号；<span class="mono">--read-only</span> 和 skill 只是省事，agent 有 shell 就能绕过</span>
+      <span class="td">连接串和密码</span><span class="td">AgentDeck 不存密码、不做钥匙串。密码放工具自己那里（harlequin <span class="mono">${ENV}</span>、lazysql <span class="mono">${env:}</span>、pgcli 钥匙串、~/.pgpass、rainfrog 钥匙串）；命令里带密码就挡（第 3 节）；list_terminals 返回的命令里遮掉 <span class="mono">://用户:***@</span>（所有终端）</span><span class="td">.env 里的 DATABASE_URL 照旧会被复制进 worktree（copyIntoWorktrees 默认），agent 也读得到，这是你的仓库约定，AgentDeck 不改</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">5 · 不做的</span>
+    <div style="display: flex; gap: 16px">
+      <div class="col"><b>学习</b>
+        <span>不内置 /teach，不替你装、不自动更新它</span>
+        <span>不做“学习进度”面板，不读、不汇总学习文件夹或你的学习手册</span>
+        <span>不做学习类集群模板，不写自由模式的学习用法</span>
+        <span>New terminal 菜单不加专门的 Learn… 项</span>
+        <span>不把课程转成别的格式（视频转 PPT 归 E2，文档归“文档”页 D0–D2）</span>
+      </div>
+      <div class="col"><b>数据库</b>
+        <span>不做 AgentDeck 自己的数据库浏览器、查询编辑器、结果表格</span>
+        <span>不做数据库 MCP，不做内置的只读查询 skill</span>
+        <span>不存密码，不接系统钥匙串，不做连接管理器</span>
+        <span>不自动探测装了哪些数据库工具来生成预设</span>
+        <span>不给 agent 新的“往终端贴 SQL”工具；不解析 SQL、不判断危险语句（pgcli 自己有）</span>
+        <span>重开应用不自动重连数据库（保持现在的“填好不跑”）</span>
+      </div>
+      <div class="col"><b>按推荐先定（2026-10-28），待你确认</b>
+        <span>/teach 不内置，写一页文档（LA0）</span>
+        <span>学习进度留在学习文件夹，AgentDeck 不存</span>
+        <span>New terminal ▸ 加启动预设和 Custom command…（LA1）；预设存 AgentDeck 设置、不进仓库</span>
+        <span>Hide from agents 默认勾上；agent 能看到密码、读到数据库终端是 P1（IS-129），修复是 AH11（M10），和 AH7 同一处检查</span>
+        <span>命令里带密码直接挡，不给“仍然打开”</span>
+        <span>只读查库只给一个示例 skill（db-readonly）</span>
+        <span>Send selection to ▸ 并进 CO3（和 O0 同一个任务），只粘贴、不按回车</span>
+        <span>收紧 MCP（Hide from agents、遮密码）是允许的：“现有 11 个 MCP 工具不动”指不改成命令行、不删</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":3820}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

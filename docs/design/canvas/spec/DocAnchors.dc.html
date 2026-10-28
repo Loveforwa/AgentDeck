@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>文档 · 代码锚点和核查</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D6D6D2 1px,transparent 1px);background-size:20px 20px}
+.at{position:absolute}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1240px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#6B6B6B}
+.node{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #D6D6D2;border-radius:8px;padding:10px 12px;font-size:12.5px;line-height:1.5;display:flex;flex-direction:column;gap:4px}
+.node b{font-size:13px}
+.arr{position:absolute;font-size:18px;color:#8A8A85}
+.wl{position:absolute;font-size:10.5px;color:#6B6B6B}
+.ref{font-family:'IBM Plex Mono',monospace;font-size:11.5px;text-decoration:underline;text-decoration-color:#D6D6D2;text-underline-offset:2px}
+.ref.w{text-decoration-color:#BF8700;text-decoration-style:wavy}
+.ref.e{text-decoration-color:#CF222E;text-decoration-style:wavy}
+.ref.m{color:#6B6B6B;text-decoration-style:dotted}
+.sym{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#3D3D3A;background:#F2F2EF;border-radius:4px;padding:0 3px}
+.card{box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;box-shadow:0 6px 20px rgba(26,26,26,0.12);font-size:12px;line-height:1.5;display:flex;flex-direction:column;flex:none;overflow:hidden}
+.ch{padding:8px 12px;display:flex;flex-direction:column;gap:2px;border-bottom:1px solid #EEEEEB}
+.code{font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.7;white-space:pre;padding:6px 0}
+.code span{display:block;padding:0 12px}
+.code .n{display:inline;padding:0;color:#6B6B6B;margin-right:10px}
+.code .add{background:#EDEDEA}
+.code .del{background:#EEEEEB;color:#6B6B6B}
+.cf{display:flex;gap:6px;padding:8px 12px;border-top:1px solid #EEEEEB}
+.btn{display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:6px;font-size:12px;border:1px solid #D6D6D2;background:#FFFFFF;color:#1A1A1A;font-family:inherit}
+.btn.pri{background:#1A1A1A;color:#FFFFFF;border-color:#1A1A1A}
+.dlg{box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;box-shadow:0 6px 20px rgba(26,26,26,0.12);padding:18px 20px;display:flex;flex-direction:column;gap:12px;font-size:13px;line-height:1.5;flex:none}
+.sel{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border:1px solid #D6D6D2;border-radius:6px;font-size:12px}
+.am{display:inline-block;width:7px;height:7px;border-radius:2px;flex:none}
+.vr{display:flex;gap:10px;padding:8px 12px;border-top:1px solid #EEEEEB;font-size:12px;line-height:1.55}
+.vr .mk{flex:none;width:64px;font-size:11px}
+.col{flex:1;box-sizing:border-box;border:1px solid #E3E3E0;border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.6;background:#FFFFFF}
+.col b{font-size:14.5px}
+ul.l{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px}
+</style>
+</helmet>
+<div style="width: 1760px; height: 2780px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">D1 · 代码锚点和核查：文档里的 path:line 点得回去，代码变了也对得上，再让另一家 agent 逐句核查</h1>
+      <span class="concept">2026-10-28 按推荐先定，待你确认</span>
+    </div>
+    <p class="lead">文档里写 <span class="mono">packages/contracts/src/board.ts:275</span> 很容易，难的是三天以后它还指着对的地方。这一层分两段：机械核对由 AgentDeck 的代码做，便宜、每次打开都跑，回答“这几行还在不在、变没变”；语义核查交给另一家 agent，按需跑，回答“这句话和这几行说的是不是一回事”。“代码理解”页 F0–F2 的序列图也要点回源码，两边共用同一层“代码锚点”，格式以这一张为准（接口在 DC0）。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 文档里怎么写引用</span>
+    <div class="tbl" style="grid-template-columns: 260px minmax(0, 1.3fr) minmax(0, 1fr)">
+      <span class="th">写法</span><span class="th">例子</span><span class="th">什么时候用、AgentDeck 怎么处理</span>
+      <span class="td mono">path:行 · path:起-止 + `符号`</span><span class="td"><span class="ref">packages/contracts/src/board.ts:275</span> <span class="sym">WindowTypeDefinition</span></span><span class="td">默认写法。路径从仓库根写起；符号写在后面的反引号里，行号挪了以后靠它和这几行原文找回来。</span>
+      <span class="td mono">path#L起-L止</span><span class="td"><span class="ref">packages/ui/widgets/terminal/src/TerminalWindow.tsx#L243-L247</span></span><span class="td">从 GitHub 链接、claude 的 <span class="mono">@file#L5-10</span> 粘过来的，一样认。</span>
+      <span class="td mono">path@版本:行</span><span class="td"><span class="ref">packages/mcp-server/src/tools.ts@871dd81:279</span></span><span class="td">实验报告钉住跑实验时的代码，不跟着代码走；悬停看的是那个版本。</span>
+      <span class="td mono">path (new)</span><span class="td"><span class="ref m">apps/desktop/src/main/sessions.ts</span> (new)</span><span class="td">计划要建的文件。不核对；文件建出来以后自动变成普通引用。</span>
+      <span class="td">别的仓库、网页</span><span class="td">openai/codex main (2026-10-26) <span class="mono">features/src/lib.rs</span>；或 URL</span><span class="td">不核对，按外部来源显示。skill 要求写清版本和日期。</span>
+      <span class="td mono">短路径</span><span class="td"><span class="ref w">claude.ts:83</span> <span style="font-size: 11px; color: #B45309">3 files</span></span><span class="td">认得出，但标 ambiguous，悬停列出候选，选一个就改成全路径。agent 自查时必须修掉。</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 代码变了以后怎么对上</span>
+    <div class="fig" style="width: 1632px; height: 300px">
+      <span class="wl" style="left: 24px; top: 22px">文档里的一处引用</span>
+      <div class="node" style="left: 24px; top: 42px; width: 230px"><b>TerminalWindow.tsx:243-247</b><span class="mono" style="font-size: 11px">`onLink`</span><span class="muted">写在 docs/design/doc-window.md 第 18 行</span></div>
+      <span class="arr" style="left: 262px; top: 70px">→</span>
+      <span class="wl" style="left: 286px; top: 22px">1 · 定基准：写的时候看到的是哪一版</span>
+      <div class="node" style="left: 286px; top: 42px; width: 330px"><span>按顺序取第一个有的：</span><span>① 写死的 <span class="mono">@版本</span></span><span>② 上次核对通过时记下的（Mark as checked、<span class="mono">doc check</span> 全 ok）</span><span>③ <span class="mono">git blame</span> 文档第 18 行所在的提交</span><span>④ 这一行还没提交：就是现在的工作区</span></div>
+      <span class="arr" style="left: 624px; top: 70px">→</span>
+      <span class="wl" style="left: 648px; top: 22px">2 · 挪行号</span>
+      <div class="node" style="left: 648px; top: 42px; width: 300px"><span><span class="mono">git diff -U0 基准 -- TerminalWindow.tsx</span>（对工作区，包括没提交的改动）</span><span>243 之前多了 8 行 → 现在是 251-255</span><span class="muted">hunk 和这几行有交叉 → 这几行被改过</span></div>
+      <span class="arr" style="left: 956px; top: 70px">→</span>
+      <span class="wl" style="left: 980px; top: 22px">3 · 对内容和符号</span>
+      <div class="node" style="left: 980px; top: 42px; width: 300px"><span>基准里这几行的原文和现在一样吗？</span><span><span class="mono">onLink</span> 还在新范围里（或往上找最近的定义）吗？</span><span>文件被改名：用 git 的改名检测找新路径</span></div>
+      <span class="arr" style="left: 1288px; top: 70px">→</span>
+      <span class="wl" style="left: 1312px; top: 22px">4 · 状态</span>
+      <div class="node" style="left: 1312px; top: 42px; width: 296px"><span>ok · moved · changed · gone · ambiguous · outside</span><span class="muted">结果按（文档、引用、基准提交、工作区里那个文件的哈希）缓存在 AgentDeck 的库里</span></div>
+      <div class="at" style="left: 24px; top: 196px; width: 1580px; display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; line-height: 1.6; color: #3D3D3A">
+        <span><b>为什么不在文件里存东西：</b>基准从 git blame 来，文档里只有人写的 <span class="mono">path:line</span>，别的编辑器、GitHub 里看着和平常一样，换分支、合并都不用管附加数据。文档没提交过的那几行，就以现在为准。</span>
+        <span><b>什么时候重算：</b>打开窗口、文件变了（doc.changed）、工作区里被引用的文件存盘（去抖 2 秒，只算引用到的文件）、git 提交和切分支（GitEvent）、<span class="mono">agentdeck doc check</span>。一篇 100 处引用的文档一次是几次 git 调用，按文件合并。</span>
+        <span><b>按哪个工作区解析：</b>文档窗口在哪个框里就按那个 worktree；同一篇文档在 main 和 feat 里状态可以不同。散放的窗口按文件所在的仓库。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 32px; align-items: flex-start">
+    <div style="flex: 1.25; display: flex; flex-direction: column; gap: 14px">
+      <span class="h2">3 · 六种状态在文档里的样子</span>
+      <div class="tbl" style="grid-template-columns: 110px 280px minmax(0, 1fr)">
+        <span class="th">状态</span><span class="th">文档里</span><span class="th">意思 · 你能做什么</span>
+        <span class="td mono">ok</span><span class="td"><span class="ref">board.ts:275</span> <span class="sym">WindowTypeDefinition</span></span><span class="td">基准以来没变。单击用编辑器打开到这一行（app.openInEditor，同终端里的文件链接）。不加颜色，绿色只表示“在跑”。</span>
+        <span class="td mono">moved</span><span class="td"><span class="ref m">TerminalWindow.tsx:243-247</span> <span class="muted" style="font-size: 11px">→ 251</span></span><span class="td">内容没变，行号挪了。单击直接开到新位置；悬停卡片里 Update line numbers 只改这几个数字，是一次普通的文件修改，git 里看得到。</span>
+        <span class="td mono">changed</span><span class="td"><span class="ref w">TerminalWindow.tsx:243-247</span> <span style="font-size: 11px; color: #B45309">changed</span></span><span class="td">这几行被改过，句子可能已经不对。悬停看 diff；重新看过以后点 Mark as checked（以现在为新基准），或者改句子。</span>
+        <span class="td mono">gone</span><span class="td"><span class="ref e">git-service/src/show.ts:12</span> <span style="font-size: 11px; color: #CF222E">not found</span></span><span class="td">文件删了、行数不够、符号找不到。改名的会提示新路径（Use packages/…）。</span>
+        <span class="td mono">ambiguous</span><span class="td"><span class="ref w">claude.ts:83</span> <span style="font-size: 11px; color: #B45309">3 files</span></span><span class="td">短路径对到几个文件。悬停列出候选，按这几行原文和句子里的词排序，选一个改成全路径。</span>
+        <span class="td mono">outside</span><span class="td"><span class="ref m">features/src/lib.rs</span></span><span class="td">不在这个工作区：外部来源、(new)、文档不在仓库里。只显示，不核对。</span>
+      </div>
+      <span style="font-size: 12.5px; line-height: 1.6; color: #5F5F5A">颜色只用已有的三种状态色：要人重看的（changed、ambiguous）用 attention，找不到的用 error，其余不上色。窗口工具栏写总数和出问题的数，单击依次跳过去。</span>
+    </div>
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 14px">
+      <span class="h2" style="visibility: hidden">悬停卡片</span>
+      <div class="card" style="width: 100%">
+        <div class="ch"><span class="mono" style="font-size: 11.5px">packages/ui/widgets/terminal/src/TerminalWindow.tsx:251-255</span><span><span style="color: #B45309">Changed</span> <span class="muted">since 6925f35 (when this line of the doc was written) · now in your worktree</span></span></div>
+        <div class="code"><span><span class="n">249</span>  const onLink = useCallback((link) =&gt; {</span><span><span class="n">250</span>    …</span><span class="del"><span class="n">   </span>    } else if (link.kind === 'file') {</span><span class="add"><span class="n">251</span>    } else if (link.kind === 'file' &amp;&amp; !isMarkdown(link.path)) {</span><span><span class="n">252</span>      const path = link.path.startsWith('/') ? …</span><span><span class="n">253</span>      void api()</span><span><span class="n">254</span>        .app.openInEditor(path, link.line)</span><span class="add"><span class="n">255</span>    } else if (link.kind === 'file') {</span><span class="add"><span class="n">256</span>      p.openWindow({ type: 'doc', data: { path, … } });</span></div>
+        <div class="cf"><span class="btn">Open in editor</span><span class="btn">Mark as checked</span><span style="flex: 1"></span><span class="btn">Ask claude…</span></div>
+      </div>
+      <ul class="l" style="font-size: 12.5px; line-height: 1.6">
+        <li>悬停 400ms 出卡片：现在的代码前后各 3 行；changed 时是基准到现在的 diff（样式同源代码管理面板的 diff：加的行 hover 底色，删的行 line-subtle 底色加 muted 字）。</li>
+        <li>Ask claude… 把这句话、这处引用和 diff 发给连着的终端：“Does this sentence still hold? Update the doc if not.”</li>
+        <li>单击 = Open in editor；⌥ 单击在白板上开只读的代码窗口留到第二期（和“代码理解”页的 Flow 窗口 F0 一起定）。</li>
+      </ul>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · 实测（2026-10-28，本仓库，脚本在 p11/measure）</span>
+    <div class="tbl" style="grid-template-columns: 300px minmax(0, 1fr) 160px 160px 160px">
+      <span class="th">行号漂移（被引用最多的 10 个文件，drift.py）</span><span class="th">做法：假设文档在过去某个提交时写了每一行的行号，到 HEAD 871dd81 时</span><span class="th">行号照旧还对</span><span class="th">diff 挪行号后找到</span><span class="th">这行被改或删了</span>
+      <span class="td mono">HEAD~10（10-26）</span><span class="td">3,087 行；最热的 apps/desktop/src/main/index.ts 只有 38/481 行没挪</span><span class="td">81%</span><span class="td">100%</span><span class="td">0%</span>
+      <span class="td mono">HEAD~30（10-25）</span><span class="td">3,052 行；board.ts 29/252、claude.ts 14/112 没挪</span><span class="td">72%</span><span class="td">100%</span><span class="td">0%</span>
+      <span class="td mono">HEAD~100（10-24）</span><span class="td">1,660 行（3 个文件那时还没有）</span><span class="td">3%</span><span class="td">94%</span><span class="td">6%</span>
+    </div>
+    <div class="tbl" style="grid-template-columns: 300px minmax(0, 1fr)">
+      <span class="th">第一轮 9 份报告里的引用（refs.py、paths.py）</span><span class="th">结果</span>
+      <span class="td">带行号的</span><span class="td">83,727 个字符里只有 13 处，第 3、5、6、7、8、9 点一处都没有。13 处里 5 处是短路径（<span class="mono">claude.ts:80-83</span> 对到 3 个文件）。按内容挑出对的文件后，13 处都说得对（人工逐条看过）。</span>
+      <span class="td">只写路径的</span><span class="td">93 处：51 处对得上仓库里的文件；42 处不在仓库里：暂存目录的画板和脚本、别的仓库的源码（codex、omp）、计划新建的文件、还没合进 main 的 PL3 文件。</span>
+      <span class="td">结论</span><span class="td">光记行号，三四天就基本失效；用 git diff 挪行号能找回九成以上。要管的是三件事：短路径、计划中和外部的引用要能写明白、按文档所在的 worktree 解析。</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">5 · 让子 agent 核查“这句话和代码对不对得上”</span>
+    <div style="display: flex; gap: 32px; align-items: flex-start">
+      <div class="dlg" style="width: 420px">
+        <b style="font-size: 15px">Verify claims</b>
+        <span class="mono muted" style="font-size: 12px">docs/design/doc-window.md</span>
+        <span>14 sentences cite code · 3 already checked · <b>11 to check</b></span>
+        <div style="display: flex; align-items: center; gap: 10px"><span style="width: 90px">Check with</span><span class="sel"><span class="am" style="background: #2F5E9E"></span><span class="mono">codex</span> ▾</span></div>
+        <span class="muted" style="font-size: 12px">A different agent from the one that wrote it. It gets the sentences and the code, not the writer’s conversation, and can’t edit files.</span>
+        <span class="muted" style="font-size: 12px">About 45k tokens. Opens a terminal in this workspace that closes when it’s done.</span>
+        <div style="display: flex; justify-content: flex-end; gap: 8px"><span class="btn">Cancel</span><span class="btn pri">Start</span></div>
+      </div>
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 10px">
+        <div class="fig" style="width: 100%; height: 150px">
+          <div class="node" style="left: 16px; top: 22px; width: 220px"><b>1 · 抽句子</b><span>带引用的句子、列表项；id = 文字 + 引用的哈希；有有效结论的跳过</span></div>
+          <span class="arr" style="left: 244px; top: 52px">→</span>
+          <div class="node" style="left: 268px; top: 22px; width: 250px"><b>2 · 开核查终端</b><span>换一家、只读启动；第一条提示词只有句子和代码位置，带 skill 第 8 节</span></div>
+          <span class="arr" style="left: 526px; top: 52px">→</span>
+          <div class="node" style="left: 550px; top: 22px; width: 230px"><b>3 · 逐条交结论</b><span><span class="mono">agentdeck doc verdict c4 wrong "…" --fix "…"</span></span></div>
+          <span class="arr" style="left: 788px; top: 52px">→</span>
+          <div class="node" style="left: 812px; top: 22px; width: 210px"><b>4 · 文档边上标出来</b><span>做完终端自己关，结论存在库里</span></div>
+        </div>
+        <div class="card" style="width: 100%; box-shadow: none">
+          <div class="vr" style="border-top: none"><span class="mk muted">✓ supported</span><span style="flex: 1">“It registers like the browser window through WindowTypeDefinition.” <span class="muted">codex · 2m · index.ts:13-23 sets type, defaultSize, component.</span></span></div>
+          <div class="vr"><span class="mk" style="color: #B45309">partly</span><span style="flex: 1">“Agents’ writes are attributed from the PostToolUse hook path.” <span class="muted">hook-payload.ts:63 reads file_path from tool_input; whether codex sends it isn’t checked.</span></span></div>
+          <div class="vr"><span class="mk" style="color: #CF222E">wrong</span><span style="flex: 1">“Every link clicked in a terminal opens in the editor.” <span class="muted">TerminalWindow.tsx:236-242 opens localhost links in a browser window; only kind 'file' goes to the editor (:243-247).</span> <span class="btn" style="height: 20px; font-size: 11px">Apply fix</span></span></div>
+        </div>
+      </div>
+    </div>
+    <ul class="l" style="font-size: 13px; line-height: 1.65">
+      <li><b>为什么换一家、不带对话：</b>让写的人自己查，容易顺着自己的思路说“对”。核查的 agent 只拿到句子和引用，可以自己再读仓库，但不能改文件（claude 用 plan 模式、codex 用 read-only 沙箱，各家参数按 AH0 的能力报告取）。</li>
+      <li><b>什么时候作废：</b>句子文字变了，或者它引用的任何一处代码（按基准挪过行号后那几行的哈希）变了，这条结论就作废，回到“没查过”。moved 不作废。再点 Verify claims 只查作废和没查过的，所以第二次几乎不花 token。</li>
+      <li><b>花多少：</b>对话框先估算（句子数 × 每句平均代码行数，按字符数 / 4）；一次最多 30 句，多了分批。核查终端是普通的终端窗口，开在文档窗口旁边，你能看着它查；做完自己关（可以在 ⋯ 里改成留着）。</li>
+      <li><b>结论只是标记：</b>wrong 和 partly 不会自动改文档。Apply fix 把建议的句子换进去（一次普通修改）；或者 Send to claude 让原来的 agent 按结论改。</li>
+      <li><b>为什么走终端、不用 <span class="mono">claude -p</span> 这种一次性调用：</b>和 DR-66 一致，五家都能当核查者、过程看得见；一次性调用当旁路，等 Flow 的 Verifier（CU4）或 CR7 真需要批量跑时再说。</li>
+    </ul>
+  </div>
+
+  <div style="display: flex; gap: 24px">
+    <div class="col"><b>和 F0–F2（序列图）</b><span>共用这一层：引用的形状（path、起止行、符号、一行原文、版本）、六种状态的名字（以这一张为准，引用必须保留一行原文 text）、CodeAnchorService（resolve、peek、fixLines、markVerified）、GitService 加的三个方法（blame、按版本读文件、行号映射）。序列图的锚点也用这六个名字（不另起 missing，统一叫 gone）。谁先做谁建这一层，另一个直接用；建议放在 doc-service（DC2）里，通过 contracts 的接口给序列图用。</span></div>
+    <div class="col"><b>和 CR7（集群汇报）</b><span>汇报由代码生成到 AgentDeck 的数据目录，用文档窗口只读打开（Save to repo… 可以存进仓库）；Lead 写的那段说明按 agentdeck-docs skill 写；每个任务的改动列成引用，状态照样显示；Verify claims 可以对汇报跑一遍，结论进汇报的 Decisions 旁边。</span></div>
+    <div class="col"><b>和 C7、K0</b><span><span class="mono">agentdeck doc …</span> 是 C7 命令行上的一组新命令，所有 AgentDeck 终端都有（只读和改文档、评论；不能开终端、不能批准、不能提交、不能合并），只有 verdict 认核查终端的钥匙。agentdeck-docs 是自带 skill，按 K0 的三层启用（全局 → 项目 → 终端）。</span></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":2780}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

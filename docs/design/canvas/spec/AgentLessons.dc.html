@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Lessons 反复踩的坑</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.plain{background-image:none;background-color:#FBFBFA}
+.at{position:absolute}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1240px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.tag{display:inline-flex;align-items:center;height:18px;padding:0 7px;border-radius:999px;font-size:10.5px;background:#F2F2EF;color:#5F5F5A;white-space:nowrap}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#8A8A85}
+.dot{width:7px;height:7px;border-radius:50%;flex:none;box-sizing:border-box;display:inline-block}
+.am{width:6px;height:6px;border-radius:1.5px;flex:none;display:inline-block}
+.btn{display:inline-flex;align-items:center;height:22px;padding:0 8px;border:1px solid #D6D6D2;border-radius:6px;font-size:11px;background:#FFFFFF;color:#1A1A1A;white-space:nowrap}
+.btn.pri{background:#1A1A1A;border-color:#1A1A1A;color:#FFFFFF}
+.panel{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,0.08);font-size:12px;overflow:hidden}
+.ir{display:flex;flex-direction:column;gap:5px;padding:9px 12px;border-top:1px solid #F0F0ED;line-height:1.45}
+.ih{display:flex;align-items:center;gap:6px}
+.gh{display:flex;align-items:center;gap:6px;padding:7px 12px;border-top:1px solid #E3E3E0;background:#FBFBFA;font-size:10.5px;font-weight:600;color:#8A8A85;letter-spacing:0.04em}
+.kv{display:grid;grid-template-columns:44px 1fr;gap:2px 8px;font-size:11.5px}
+.nav{display:flex;flex-direction:column;gap:2px;font-size:12px}
+.ni{padding:5px 10px;border-radius:5px}
+.ni.on{background:#EDEDEA}
+.lr{display:grid;grid-template-columns:34px 1fr 120px 80px 20px;gap:10px;align-items:start;padding:8px 14px;border-top:1px solid #F0F0ED;font-size:11.5px;line-height:1.5}
+.box{box-sizing:border-box;border:1px solid #D6D6D2;border-radius:8px;background:#FFFFFF;padding:9px 11px;font-size:12px;line-height:1.5;display:flex;flex-direction:column;gap:2px}
+.box.ink{border:1.5px solid #1A1A1A}
+.arr{position:absolute;font-size:11px;color:#8A8A85;white-space:nowrap}
+.ex{display:flex;flex-direction:column;gap:10px;font-size:13.5px;line-height:1.65}
+.pre{box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;padding:10px 12px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.65;color:#3D3D3A;white-space:pre-wrap}
+.decide{display:grid;grid-template-columns:36px 1fr;gap:6px 10px;font-size:13px;line-height:1.6}
+</style>
+</helmet>
+<div style="width: 1760px; height: 3900px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">W1 · Lessons：反复踩的坑记一次，五家、每个 worktree、每个新 session 都知道</h1>
+      <span class="concept">2026-10-28 按推荐先定，待你确认· DR-74 补一条例外</span>
+    </div>
+    <p class="lead">DR-74 定了长期记忆交给各家自己。核对下来，各家的 memory 记的是<b>偏好和进度</b>，<b>不记坑</b>（claude 的文档明说跳过 debugging fixes），也不跨家。所以只补一样窄的东西：<b>Lessons</b>。每条一句 When / Do / Why，经你确认才生效，存在 AgentDeck 里（按项目，所有 worktree 共用），开 session 时追加进各家的系统提示，有硬上限；值得全队长期留的，你点一下移进 AGENTS.md。偏好、进度照旧不归 AgentDeck。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 各家自带的够不够</span>
+    <div class="tbl" style="grid-template-columns: 110px 1.5fr 1fr 0.8fr 1fr 0.9fr; max-width: 1632px">
+      <span class="th">agent</span><span class="th">自带的</span><span class="th">记不记坑</span><span class="th">跨家</span><span class="th">分项目 · worktree</span><span class="th">每次进上下文</span>
+      <span class="td"><span class="am" style="background: #A8503A"></span> <b>claude</b><br><span class="muted">2.1.291</span></span><span class="td">CLAUDE.md（你写）；auto memory（它写，默认开，user / feedback / project / reference 四类）；.claude/rules 按路径加载</span><span class="td">不记：文档写明跳过“能从代码推出来的：架构、文件路径、debugging fixes”；你纠正它的 feedback 会记</span><span class="td">否</span><span class="td">按仓库，同一仓库所有 worktree 共用；只在本机</span><span class="td">MEMORY.md 前 200 行或 25KB（约 6k token 上限）</span>
+      <span class="td"><span class="am" style="background: #2F5E9E"></span> <b>codex</b><br><span class="muted">0.164.0</span></span><span class="td">AGENTS.md；memories 默认关，会话闲置后后台提炼、子 agent 全局合并</span><span class="td">可能记，但自己决定、几小时后才有，生成的文件不建议手改</span><span class="td">否</span><span class="td">~/.codex/memories/ 一处，不分项目</span><span class="td">memory_summary，约 5k 封顶（第三方读源码，待核对）</span>
+      <span class="td"><span class="am" style="background: #0F6F7F"></span> <b>omp</b><br><span class="muted">18.0.4</span></span><span class="td">AGENTS.md；自己的记忆（--help 里有 “memory” 小模型，第三方说是 Hindsight 的 retain / recall）</span><span class="td">待核对</span><span class="td">否</span><span class="td">默认按项目（待核对）</span><span class="td">待核对</span>
+      <span class="td"><span class="am" style="background: #7347A8"></span> <b>pi</b><br><span class="muted">0.83.0</span></span><span class="td">AGENTS.md、CLAUDE.md；没有记忆</span><span class="td">不记</span><span class="td">—</span><span class="td">—</span><span class="td">只有说明文件</span>
+      <span class="td"><span class="am" style="background: #4A4F7A"></span> <b>kimi</b><br><span class="muted">2.3.2</span></span><span class="td">AGENTS.md（几层合并）；没有记忆</span><span class="td">不记</span><span class="td">—</span><span class="td">—</span><span class="td">只有说明文件</span>
+      <span class="td"><b>AGENTS.md</b><br><span class="muted">仓库里</span></span><span class="td">五家都读；本仓库就靠它记坑（“depcruise 命令行拒绝在 node 25 上跑”）</span><span class="td">记，但要你手写</span><span class="td">是</span><span class="td">跟着分支走：别的 worktree 合进去之前看不到</span><span class="td">整份每次都读（本仓库约 3.5k）</span>
+    </div>
+    <span style="font-size: 12.5px; line-height: 1.6; color: #5F5F5A; max-width: 1632px">来源（2026-10-28 读）：code.claude.com/docs/en/memory；learn.chatgpt.com/docs/customization/memories（从 developers.openai.com/codex/memories 跳过去）；github.com/openai/codex 的 codex-rs/memories/README.md；本机 claude / codex / pi / omp / kimi 的 --help（只读）；omp 的记忆来自 hindsight.vectorize.io 2026-06 的博客，没在本机核对。结论：各家的 memory 留着管偏好和进度，不关、不替；坑要一个跨家、跨 worktree、你能审的地方。</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 一条坑的一生：谁提、谁定、什么时候退</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start">
+      <div class="fig plain" style="width: 1060px; height: 560px">
+        <div class="at" style="left: 24px; top: 20px; font-size: 11px; font-weight: 600; color: #8A8A85; letter-spacing: 0.04em">WHO PROPOSES</div>
+        <div class="at box" style="left: 24px; top: 44px; width: 230px"><b>The agent</b><span class="mono" style="font-size: 10.5px">agentdeck lesson propose</span><span class="muted">any AgentDeck terminal, crew workers too; after a stuck item AgentDeck asks once</span></div>
+        <div class="at box" style="left: 24px; top: 150px; width: 230px"><b>AgentDeck</b><span class="muted">a check it ran failed with the same error in 2 sessions within 14 days → “Repeated failure”, with evidence; Do is empty until someone writes it</span></div>
+        <div class="at box" style="left: 24px; top: 280px; width: 230px"><b>You</b><span class="muted">Add lesson… in Project settings; Save as lesson on a report line or an answered inbox item</span></div>
+        <div class="arr" style="left: 262px; top: 70px">→</div>
+        <div class="arr" style="left: 262px; top: 180px">→</div>
+        <div class="arr" style="left: 262px; top: 300px">→</div>
+
+        <div class="at box" style="left: 290px; top: 150px; width: 190px"><b>Candidate</b><span class="muted">not given to any agent; checked against existing ones: “Looks like L1” → Merge</span></div>
+        <div class="arr" style="left: 488px; top: 180px">→</div>
+        <div class="at box ink" style="left: 512px; top: 150px; width: 170px"><span><span class="dot" style="background: #BF8700"></span> <b>You review</b></span><span class="muted">inbox · LESSONS TO REVIEW · not counted · Accept / Edit / Merge / Reject</span></div>
+        <div class="arr" style="left: 512px; top: 252px; width: 200px; white-space: normal; line-height: 1.4">↓ Reject: the signature is remembered, never proposed again</div>
+        <div class="arr" style="left: 690px; top: 180px">→ Accept</div>
+
+        <div class="at box ink" style="left: 760px; top: 150px; width: 276px"><span><span class="dot" style="background: #1A7F37"></span> <b>Active</b></span><span class="muted">in every new session’s system prompt for this project (all worktrees, all five agents where supported). Cap: 1,000 tokens ≈ 20 lessons. Full → archive one first.</span></div>
+
+        <div class="arr" style="left: 800px; top: 262px">↓ over time</div>
+        <div class="at box" style="left: 560px; top: 310px; width: 220px"><b>Seen again despite it</b><span class="muted">a check output matched its Match text after it was given → report says “Didn’t help” → rewrite or drop</span></div>
+        <div class="at box" style="left: 790px; top: 310px; width: 246px"><b>Not seen in 60 days</b><span class="muted">weekly report asks “Still true?” → Keep / Archive. Nothing is deleted automatically.</span></div>
+        <div class="at box" style="left: 560px; top: 420px; width: 220px"><b>Archived</b><span class="muted">not given to agents; agentdeck lesson search still finds it</span></div>
+        <div class="at box" style="left: 790px; top: 420px; width: 246px"><b>Moved to AGENTS.md</b><span class="muted">you click; AgentDeck edits the working tree only, you commit. No longer injected (no double cost).</span></div>
+        <div class="at" style="left: 24px; top: 420px; width: 500px; font-size: 11.5px; line-height: 1.6; color: #5F5F5A">谁来记：<b>agent 和 AgentDeck 只能提，你点 Accept 才算</b>。不做“agent 记了直接生效”：那就是 auto memory，越记越乱、记错了没人看。AgentDeck 自己只认它亲手跑过的检查（命令和输出都确定），不去猜 agent 终端里的文字。</div>
+      </div>
+      <div class="ex" style="flex: 1">
+        <span><b>一条长什么样</b>：When（碰到什么情况）、Do（该怎么做）、Why（一句原因），合计 300 字符以内；可选 Match（命令或错误文字，用来看“又碰到了”）。不收过程、不收进度、不收偏好。</span>
+        <span><b>不越记越乱的七条</b>：</span>
+        <span>1. 只收你确认过的。</span>
+        <span>2. 一条一句，超长的 Accept 前要你改短。</span>
+        <span>3. 硬上限：项目 1,000 token（约 20 条），All projects 400 token；满了先归档一条才能加。</span>
+        <span>4. 提的时候查重：同一个 Match，或 When 的词重合一半以上，提示 Merge。</span>
+        <span>5. 和 AGENTS.md 里已有的一句重复时，提示 “AGENTS.md already says this”。</span>
+        <span>6. 60 天没碰到问还对不对；注入了还碰到，标 Didn’t help。</span>
+        <span>7. 全队都该知道的移进 AGENTS.md，从注入里拿掉。</span>
+        <span style="color: #5F5F5A"><b>All projects</b> 一组是你自己的偏好（“提交信息用中文解释”），只收你手动加的，不从对话里抽；跨家时比写五个用户级文件省事。项目自己的偏好仍写 AGENTS.md。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · 界面：Project settings › Lessons、收件箱、终端里那一行</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start">
+      <div class="fig" style="width: 1060px; height: 940px">
+        <div class="panel" style="left: 24px; top: 24px; width: 1012px; height: 420px">
+          <div style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid #E3E3E0"><b>Project settings</b><span class="muted">· agenduck</span><span style="flex: 1"></span><span class="muted">×</span></div>
+          <div style="display: flex">
+            <div class="nav" style="width: 160px; padding: 10px 8px; border-right: 1px solid #E3E3E0; height: 380px; box-sizing: border-box">
+              <span class="ni">General</span><span class="ni">Workspaces</span><span class="ni">Skills</span><span class="ni on">Lessons</span>
+            </div>
+            <div style="flex: 1">
+              <div style="display: flex; align-items: center; gap: 10px; padding: 12px 14px"><b>Lessons</b><span class="muted">· 12 active · ~480 tokens per turn · cap 1,000</span><span style="flex: 1"></span><span style="font-size: 11.5px">☑ Give lessons to agents in this project</span><span class="btn">Add lesson…</span></div>
+              <div style="padding: 0 14px 8px; font-size: 11px; color: #5F5F5A">Given to new sessions of claude, codex, pi and omp in every worktree of this project. kimi: not supported yet. Changes apply to new sessions.</div>
+              <div class="gh"><span>ACTIVE · 12</span></div>
+              <div class="lr"><span class="mono muted">L1</span><span><b>When</b> you run pnpm boundaries on node 25<br><b>Do</b> call scripts/boundaries.mjs, never depcruise directly<br><span class="muted">Why: depcruise refuses node 25</span></span><span><span class="am" style="background: #A8503A"></span> <span class="muted">claude · accepted Oct 28</span></span><span class="muted">seen 2d ago</span><span class="muted">⋯</span></div>
+              <div class="lr"><span class="mono muted">L2</span><span><b>When</b> an e2e test needs tmux<br><b>Do</b> use tmux -L agentdeck-e2e, never the default server</span><span><span class="muted">repeated failure · you wrote Do</span></span><span class="muted">seen 9d ago</span><span class="muted">⋯</span></div>
+              <div class="lr"><span class="mono muted">L4</span><span><b>When</b> a UI file needs a color<br><b>Do</b> use a token from packages/design-tokens</span><span><span class="muted">you · Oct 20</span></span><span style="color: #9A6700">61 days · still true?</span><span class="muted">⋯</span></div>
+              <div class="gh"><span>ARCHIVED · 3</span><span style="flex: 1"></span><span>▸</span></div>
+              <div class="gh"><span>IN AGENTS.MD · 2</span><span style="flex: 1"></span><span>▸</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel" style="left: 24px; top: 470px; width: 470px">
+          <div style="display: flex; align-items: center; gap: 8px; padding: 10px 12px"><b>Needs you</b><span class="muted">· 1</span><span style="flex: 1"></span><span class="muted" style="font-size: 11px">⌘J</span></div>
+          <div class="gh"><span>LESSONS TO REVIEW · NOT COUNTED · 2</span></div>
+          <div class="ir">
+            <div class="ih"><b>Lesson proposed</b><span class="tag"><span class="am" style="background: #2F5E9E; margin-right: 4px"></span>codex · feat/x</span><span style="flex: 1"></span><span class="muted">12m</span></div>
+            <div class="kv"><span class="muted">When</span><span>store tests fail with SQLITE_BUSY</span><span class="muted">Do</span><span>run them with --pool=forks</span><span class="muted">Why</span><span>the threads pool shares one db file</span></div>
+            <div style="display: flex; gap: 6px"><span class="btn">Reject</span><span class="btn">Edit…</span><span class="btn pri">Accept</span></div>
+          </div>
+          <div class="ir">
+            <div class="ih"><span class="dot" style="background: #CF222E"></span><b>Repeated failure</b><span class="mono" style="font-size: 11px">pnpm boundaries</span><span style="flex: 1"></span><span class="muted">2 sessions</span></div>
+            <span class="muted" style="font-size: 11px">Error: depcruise refuses to run on node 25 · claude Oct 27 14:02 · codex Oct 28 09:40</span>
+            <span style="font-size: 11px">Looks like <b>L1</b> · Do: Not written yet</span>
+            <div style="display: flex; gap: 6px"><span class="btn">Reject</span><span class="btn">Ask claude to write it</span><span class="btn pri">Merge into L1</span></div>
+          </div>
+        </div>
+
+        <div class="at" style="left: 520px; top: 470px; width: 516px; display: flex; flex-direction: column; gap: 8px">
+          <span style="font-size: 11px; font-weight: 600; color: #8A8A85; letter-spacing: 0.04em">WHAT THE AGENT GETS · APPENDED TO THE SYSTEM PROMPT</span>
+          <div class="pre"># Project lessons (from AgentDeck · confirmed by the user · 12)
+Known pitfalls in this project. Check them before you act.
+If one looks wrong now, say so in your reply.
+To suggest a new one: agentdeck lesson propose --when "..." --do "..." --why "..."
+- L1 When you run pnpm boundaries on node 25: call
+  scripts/boundaries.mjs; never call depcruise directly
+  (it refuses node 25).
+- L2 When an e2e test needs tmux: use tmux -L agentdeck-e2e,
+  never the default server.
+- L3 When you change packages/contracts: commit it alone
+  first (packages/contracts/AGENTS.md).
+…  9 more · ~480 tokens in all</div>
+          <span style="font-size: 11px; font-weight: 600; color: #8A8A85; letter-spacing: 0.04em; margin-top: 6px">SCM PANEL · SKILLS · MCP</span>
+          <div class="pre" style="font-family: 'IBM Plex Sans', sans-serif; font-size: 11.5px">Lessons · 12 · ~480 tokens/turn          Manage…
+<span class="muted">kimi terminal: Lessons · Not supported for kimi yet</span></div>
+        </div>
+        <div class="at" style="left: 24px; top: 880px; width: 1012px; font-size: 11.5px; line-height: 1.6; color: #5F5F5A">示例里的 L1、L3、L4 来自本仓库的 AGENTS.md，L2 和 SQLITE_BUSY 那条是编的，只为看样子。注入那一块是英文（给 agent 看的），整块按 SK1 的 chars/3.5 估：12 条约 1,680 字符 ≈ 480 token。</div>
+      </div>
+      <div class="ex" style="flex: 1">
+        <span><b>怎么进上下文</b>：开 session 时追加进系统提示：claude <span class="mono">--append-system-prompt-file</span>，pi、omp <span class="mono">--append-system-prompt</span>，codex <span class="mono">-c developer_instructions=…</span>（待核对）；kimi 没有对应参数（<span class="mono">--agent-file</span> 待核对），先写 “Not supported for kimi yet”。</span>
+        <span><b>为什么不用 SessionStart 钩子</b>：系统提示压缩、/clear 以后都还在，不用每次补；只在启动时定、会话中途不改，缓存前缀不变。CR18 给 Lead 塞进度摘要仍用钩子（那是会变的东西）。</span>
+        <span><b>改了什么时候生效</b>：只对新 session。已经开着的终端在 SKILLS · MCP 那一行写 “Changes apply to new sessions”。</span>
+        <span><b>集群</b>：Worker、Reviewer、QA 照样拿到（它们关了 claude 的 auto memory，CR4 不变），也能提候选。</span>
+        <span><b>移进 AGENTS.md</b>：⋯ › Move to AGENTS.md… 先给你看改哪个文件、加哪一行（加在 “## Known pitfalls (kept by AgentDeck)” 一节），你点 Write 才改工作区，不提交。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · 放哪、谁写、每轮多少 token</span>
+    <div class="tbl" style="grid-template-columns: 210px 1fr 1fr 1fr; max-width: 1632px">
+      <span class="th">放哪</span><span class="th">好处</span><span class="th">代价</span><span class="th">结论</span>
+      <span class="td"><b>A · 只放仓库</b><br><span class="muted">AGENTS.md 一节或 docs/lessons.md</span></span><span class="td">五家都读；有版本、能审、能和队友共享；AgentDeck 外面也有效</span><span class="td">跟着分支走：别的 worktree 合进去之前看不到；改它要提交；机器上才有的坑不该进仓库；整份每次都读</span><span class="td">当成“毕业”去处，不当收集处</span>
+      <span class="td"><b>B · AgentDeck 的库</b><br><span class="muted">SQLite，按项目</span></span><span class="td">跨家、所有 worktree 马上生效；能审、能计数、能设上限</span><span class="td">AgentDeck 外面开的 agent 看不到；多一块数据和界面；给 DR-74 补一条例外</span><span class="td">当收集处和本机的那一份</span>
+      <span class="td"><b>C · 各家的 memory</b></span><span class="td">不用做</span><span class="td">不记坑、不跨家，codex 的不分项目</span><span class="td">不选，但也不关</span>
+      <span class="td"><b>D · B + 移进 A</b><br><span class="muted">已定</span></span><span class="td">先在 B 里马上生效，值得长期留的你点一下进 A；进了 A 就不再注入</span><span class="td">两处要对上（进了 A 的标 In AGENTS.md）</span><span class="td"><b>按推荐先定（2026-10-28），待你确认</b></span>
+    </div>
+    <div class="tbl" style="grid-template-columns: 330px 160px 1fr; max-width: 1632px; margin-top: 10px">
+      <span class="th">每轮进上下文的</span><span class="th">大约多少 token</span><span class="th">说明</span>
+      <span class="td"><b>Lessons（上限）</b></span><span class="td">≤ 1,000 + 400</span><span class="td">示例 12 条约 480。项目 1,000 封顶，All projects 400 封顶。</span>
+      <span class="td">AgentDeck MCP 的工具说明（DR-72）</span><span class="td">~2,100（延迟加载 ~360）</span><span class="td">实测。</span>
+      <span class="td">本仓库 AGENTS.md</span><span class="td">~3,500</span><span class="td">7,098 字符，按中文一字一 token、其余 chars/3.5 粗估。</span>
+      <span class="td">claude 的 MEMORY.md（上限）</span><span class="td">~6,000</span><span class="td">前 200 行或 25KB，按 chars/4。</span>
+      <span class="td">codex 的 memory_summary（上限）</span><span class="td">~5,000</span><span class="td">第三方读源码，待核对。</span>
+      <span class="td">omp 用户目录的 skill 描述（DR-81）</span><span class="td">~10,500</span><span class="td">实测。</span>
+    </div>
+    <span style="font-size: 13px; line-height: 1.65; color: #5F5F5A; max-width: 1632px">每轮付的是缓存读取：Anthropic 按输入价的 0.1 算。一天 300 轮 × 500 token = 15 万缓存读取，约等于 1.5 万全价输入 token；每次新 session 或 /clear 后多写一次缓存。和一件中等的活动辄几十万 token 比，是百分之一左右。OpenAI 的缓存折扣、订阅额度里缓存读取怎么折算，待核对。第二期再试“只在相关时补一条”（LR11：PostToolUse 钩子看到命令或错误对上 Match 时才补），看能不能把平时这几百 token 也省掉。</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">5 · 和 DR-74 的关系、按推荐先定（2026-10-28），待你确认</span>
+    <div class="decide" style="max-width: 1500px">
+      <b>1</b><span><b>改不改 DR-74</b>：<b>补一条例外，不推翻</b>：偏好、进度仍归各家和 AGENTS.md；只有 Lessons 归 AgentDeck，并且只注入经你确认、有上限的那一块。</span>
+      <b>2</b><span><b>放哪</b>：D（AgentDeck 的库，按项目存；你点 Move to AGENTS.md 才改工作区里的 AGENTS.md，AgentDeck 不提交）。</span>
+      <b>3</b><span><b>谁来记</b>：agent 和 AgentDeck 只提候选，<b>你点 Accept 才生效</b>，每条一句话。agentdeck lesson propose / list / search 所有 AgentDeck 终端都有，不能 Accept；crew 和 session 命令仍只给 Lead。</span>
+      <b>4</b><span><b>上限</b>：项目 1,000 token（约 20 条），满了先归档；开 session 时追加进系统提示。</span>
+      <b>5</b><span><b>个人偏好要不要也走这条</b>：要，All projects 一组，只收手动加的，上限 400 token。</span>
+      <b>6</b><span><b>kimi 拿不到</b>：先灰掉写原因，核对 --agent-file 后再定，不为它改 AGENTS.md。</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":3900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

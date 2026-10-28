@@ -33,7 +33,7 @@ body{margin:0}
 .arr{flex:none;align-self:center;font-size:18px;color:#8A8A85}
 </style>
 </helmet>
-<div style="width: 1760px; height: 2760px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 48px">
+<div style="width: 1760px; height: 3060px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 48px">
 
   <div style="display: flex; flex-direction: column; gap: 10px">
     <div style="display: flex; align-items: center; gap: 10px">
@@ -106,6 +106,7 @@ body{margin:0}
         <div class="item"><span>卡片：用已有的窗口</span><i>Session 卡片就是终端窗口和摘要卡，HTML / Artifact 卡片就是网页窗口，任务卡片在 CR5。不另起一套。</i></div>
         <div class="item"><span>和官方的新功能兼容，不重做</span><i>agent view、agent teams、/remote-control 在我们的终端里能正常用（AH6 实测）。N10 读 claude 子 agent 就是这个思路。</i></div>
         <div class="item"><span>远程：先借各家的，集群整夜跑以后再做“看收件箱、批关卡”</span><i>见“手机 · 远程”页 R0、R1（M12）。</i></div>
+        <div class="item"><span>大型开源项目的 issue 和 PR</span><i>本机的工作台，不是云端机器人；对外发言一律你点（“Issue · PR”页 I0，M17）。</i></div>
       </div>
       <div class="col"><b>不做</b>
         <div class="item"><span>自己的聊天界面，或把 agent 接成协议再自己画</span><i>T3、Synara 走的路。代价是模型表现不一定等于原生，各家一改版就要跟。</i></div>
@@ -114,7 +115,7 @@ body{margin:0}
         <div class="item"><span>搜索</span><i>是 agent 自己的能力，最多做成插件；AgentDeck 不做，写一页说明（RM4，R0）。</i></div>
         <div class="item"><span>云端跑 agent</span><i>Cursor、Claude Projects、Codex 云端都有。我们是本机工具，代码不离开你的电脑。</i></div>
         <div class="item"><span>追单家的深度功能</span><i>Codex Automations、Claude Projects、computer use 这些，用户直接用官方的。</i></div>
-        <div class="item"><span>每家都深做适配</span><i>深做 claude、codex（omp 修好 IS-76）。pi、kimi 走 generic 适配器加命令行进集群（C7），新 agent 靠社区贡献。</i></div>
+        <div class="item"><span>每家都深做适配</span><i>深做 claude、codex（omp 修好 IS-76）；2026-10-28 补：OpenCode 过了合格测试就按能力报告进第一档，排在集群第一期之后；Hermes Agent 按通用档接（A2）。pi、kimi 走 generic 适配器加命令行进集群（C7），其他新 agent 靠社区贡献。</i></div>
       </div>
     </div>
   </div>
@@ -139,13 +140,13 @@ body{margin:0}
     <div style="display: flex; gap: 14px">
       <div class="gate"><b>1 · 定位改成“几家一起把大任务做完”</b><span>三样降成底座。内部文档（实施方案、画布）现在改，README 首句等 CR 第一期合进以后再改。</span></div>
       <div class="gate"><b>2 · 集群排在所有新方向前面</b><span>远程手机、PL3 的界面、新 agent 适配都往后排。M5、M6 只验收、修问题。</span></div>
-      <div class="gate"><b>3 · 深做的 agent 只有 claude、codex</b><span>omp 修好 IS-76 后跟上。pi、kimi 走 generic 适配器和 CLI，新 agent 靠社区贡献。</span></div>
+      <div class="gate"><b>3 · 深做的 agent：claude、codex，OpenCode 过了合格测试也进</b><span>omp 修好 IS-76 后跟上。2026-10-28 改：OpenCode 用官方插件和本地服务接，过了合格测试（A1）就按能力报告进第一档，排在集群第一期之后（A2、AH8）；Hermes Agent 按通用档接，不往 ~/.hermes 装插件。pi、kimi 走 generic 适配器和命令行，其他新 agent 靠社区贡献。</span></div>
       <div class="gate"><b>4 · 和 Agent Deck 同名</b><span>那个项目也是 tmux 里管多个 coding agent。先在 README 里写一句区分；2026-10-28 你定：改名为 Trireme（三列桨战船）。GitHub、npm、Homebrew、美国商标都没撞上开发工具；trireme.com / .ai / .io / .dev / .app 已被注册，用 trireme.sh 或 triremeapp.com（IS-109，CR22）。</span></div>
     </div>
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":2760}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":3060}}'>
 class Component extends DCLogic {
   renderVals() {
     return {};

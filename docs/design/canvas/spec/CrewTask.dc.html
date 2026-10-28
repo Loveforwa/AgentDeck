@@ -91,11 +91,11 @@ body{margin:0}
       <span class="td">怎么算做完</span><span class="td">只认 <span class="mono">agentdeck crew done</span>。agent 回到空闲却没交付：提醒一次 “If you’re done, run agentdeck crew done. If you’re stuck, run agentdeck crew ask.”；再空闲就算等你。</span>
       <span class="td">检查</span><span class="td">交付后调度器自己在任务 worktree 里跑 Check 命令。没过：把输出最后一段发回实现者，任务回 Working。</span>
       <span class="td">目录归属</span><span class="td">交付时看这个任务的 diff：改了 Owns 以外的文件就打回，写清是哪些文件。锁住的接口目录只有批准过的接口改动能改。</span>
-      <span class="td">审查</span><span class="td">审查者默认不和实现者同一家。它用 <span class="mono">agentdeck crew diff</span> 看改动、能在同一个 worktree 里只读地跑命令，最后 <span class="mono">agentdeck crew review</span> 给 approve 或 changes。</span>
+      <span class="td">审查</span><span class="td">审查者默认不和实现者同一家。它用 <span class="mono">agentdeck crew diff</span> 看改动、能在同一个 worktree 里只读地跑命令，最后 <span class="mono">agentdeck crew review</span> 给 approve 或 changes。<span class="muted">（第二期）项目里有图时，审查者按图核对这次改动动到的步骤，审查结论里多一节 Flows；验收者（QA）对动到的步骤跑测试覆盖，汇报里列没跑到、没加载的步骤和建议的 TC（“代码理解”页 F2 第 3 节）。</span></span>
       <span class="td">合并</span><span class="td">调度器把任务分支 <span class="mono">--no-ff</span> 合进集群分支，再跑一次检查。冲突才开 Integrator 终端。合并顺序按交付先后，一次一个。</span>
       <span class="td">接口改动</span><span class="td">实现者跑 <span class="mono">agentdeck crew contract</span> 写清要改什么、为什么。关卡通过后由总设计改接口、单独合进集群分支，其他在做的任务收到一条提示 “Interfaces changed: …”。</span>
       <span class="td">关掉应用、重启</span><span class="td">集群状态存在 AgentDeck 的数据里，终端在 tmux 里接着跑。重开后先对账：每个 Working 任务的终端还在不在、有没有已经交付。</span>
-      <span class="td">集群结束</span><span class="td">验收全过、或者你点 Stop：出汇报（C4），任务 worktree 清掉，分支都留着；集群分支等你合回 main。</span>
+      <span class="td">集群结束</span><span class="td">验收全过、或者你点 Stop：出汇报（C4），任务 worktree 清掉，分支都留着；集群分支等你合回 main。研究集群先给登记过的产物（Outputs）存快照，再清 worktree（RS5，“研究和竞赛”页 E1 第 5 节）。</span>
     </div>
   </div>
 

@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>代码理解 · 三种覆盖</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D6D6D2 1px,transparent 1px);background-size:20px 20px}
+.at{position:absolute}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1240px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#6B6B6B}
+.node{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #D6D6D2;border-radius:8px;padding:10px 12px;font-size:12.5px;line-height:1.5;display:flex;flex-direction:column;gap:3px}
+.node b{font-size:13px}
+.gate{position:absolute;box-sizing:border-box;background:#FFF8E5;border:1px dashed #BF8700;border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.45;color:#5C4400;display:flex;flex-direction:column;gap:2px}
+.arr{position:absolute;font-size:18px;color:#8A8A85}
+.who{position:absolute;font-size:10.5px;color:#6B6B6B}
+.win{box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;overflow:hidden;font-size:12px;flex:none}
+.tb{height:28px;display:flex;align-items:center;gap:6px;padding:0 10px;border-bottom:1px solid #EEEEEB;font-size:12px;white-space:nowrap}
+.tb .n{font-family:'IBM Plex Mono',monospace;font-weight:500}
+.tb .s{color:#6B6B6B}
+.tb .tag{color:#6B6B6B;font-size:11px;border:1px solid #E3E3E0;border-radius:4px;padding:0 5px;line-height:16px}
+.tb .tag.att{color:#B45309}
+.lr{display:inline-block;width:7px;height:7px;border-radius:50%;flex:none;background:#1A7F37}
+.lw{display:inline-block;width:7px;height:7px;border-radius:50%;flex:none;background:#BF8700}
+.le{display:inline-block;width:7px;height:7px;border-radius:50%;flex:none;background:#CF222E}
+.li{display:inline-block;width:7px;height:7px;border-radius:50%;flex:none;box-sizing:border-box;border:1.5px solid #6B6B6B}
+.lx{display:inline-block;width:7px;height:2px;flex:none;background:#6B6B6B}
+.am{display:inline-block;width:7px;height:7px;border-radius:2px;flex:none}
+.seg{display:inline-flex;border:1px solid #D6D6D2;border-radius:6px;overflow:hidden;font-size:12px}
+.seg span{padding:0 10px;height:22px;display:inline-flex;align-items:center;border-left:1px solid #D6D6D2}
+.seg span:first-child{border-left:none}
+.seg .on{background:#1A1A1A;color:#FFFFFF}
+.btn{display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:6px;font-size:12px;border:1px solid #D6D6D2;background:#FFFFFF;color:#1A1A1A;font-family:inherit}
+.btn.pri{background:#1A1A1A;border-color:#1A1A1A;color:#FFFFFF}
+.sr{display:grid;grid-template-columns:28px 210px 150px minmax(0,1fr);align-items:center;gap:8px;min-height:26px;padding:0 12px;border-top:1px solid #EEEEEB;font-size:12px}
+.sr .k{font-family:'IBM Plex Mono',monospace;color:#6B6B6B}
+.sr .a{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#3D3D3A}
+.sr.ghost{border-top:1px dashed #D6D6D2;color:#5F5F5A}
+.chip{display:inline-flex;align-items:center;gap:4px;height:18px;padding:0 6px;border:1px solid #E3E3E0;border-radius:4px;font-size:11px;color:#3D3D3A}
+.eb{font-size:10px;font-weight:600;letter-spacing:0.04em;color:#6B6B6B}
+.pre{box-sizing:border-box;border:1px solid #E3E3E0;border-radius:8px;background:#FBFBFA;font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.6;color:#3D3D3A;padding:12px 14px;white-space:pre;margin:0}
+.col{flex:1;box-sizing:border-box;border:1px solid #E3E3E0;border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.6;background:#FFFFFF}
+.col b{font-size:15px}
+</style>
+</helmet>
+<div style="width: 1760px; height: 3300px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 48px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">F1 · 三种“覆盖”：图漏了什么、测试跑到哪、需求管到哪</h1>
+      <span class="concept">2026-10-28 按推荐先定，待你确认</span>
+    </div>
+    <p class="lead">“覆盖”在这里说的是三件不同的事，问的人、算的人、出错的后果都不一样。三层都叠在同一张图上，所以图本身先得对：先做第一层（图对不对、漏了什么），它就是你说的“由子 agent 判断”；第二层机器就能算，紧跟着做；第三层要人确认对应关系，最后做。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 三种覆盖分别是什么</span>
+    <div class="tbl" style="grid-template-columns: 170px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr)">
+      <span class="th"></span><span class="th">① 图覆盖代码（Review）</span><span class="th">② 测试覆盖图（Tests）</span><span class="th">③ 需求覆盖图（Requirements）</span>
+      <span class="td">问的是</span><span class="td">图上每一步说得对不对？这条流程里有哪些分支、出错的路、副作用图上没画？</span><span class="td">图上哪几步被单元测试或 e2e 真的跑到了？跑到的时候下游是不是假的？</span><span class="td">哪些 TC 用例说到了哪几步？哪几步没有任何用例管？</span>
+      <span class="td">谁来判断</span><span class="td">核对的子 session（Verifier），默认换一家：claude 画的 codex 核，反过来也一样</span><span class="td">机器：V8 覆盖数据按锚点行叠上去。子 agent 只判断“跑到了有没有断言”</span><span class="td">agent 按 TC 的步骤和预期提一版对应，你确认；e2e 用例按 tcXX 命名的自动对上</span>
+      <span class="td">输入</span><span class="td">图、锚点核对结果、锚点附近的代码、codegraph 给的候选（这一步所在函数还调了谁、有哪些 throw / catch / if）</span><span class="td">vitest 的 coverage-v8 JSON；e2e 时主进程、utility 进程的 NODE_V8_COVERAGE，界面进程的 Chromium 覆盖（待核对）</span><span class="td">docs/status/tracking.py 的 TC（步骤、预期、状态）、e2e/tests 的文件名</span>
+      <span class="td">每一步的结果</span><span class="td"><span class="lr"></span> Confirmed · <span class="lw"></span> Unsure · <span class="le"></span> Wrong；漏掉的画成虚线幽灵箭头，标 main path / error path / side effect</span><span class="td"><span class="lr"></span> Run · <span class="lr"></span> Run <span class="chip">fakes</span> · <span class="li"></span> Not run · <span class="lx"></span> Not loaded（这次测试根本没加载这个文件）</span><span class="td">TC 小签：TC-34 · Verified / TC-46 · Not built；一步没有签就是没人管</span>
+      <span class="td">怎么核查</span><span class="td">每条结论必须带证据锚点，机器先核证据的原文在不在，不在就作废；你逐条 Accept / Reject，或点开编辑器自己看</span><span class="td">数字可复现：Run tests for this flow 只跑相关的测试文件，覆盖数据存下来，谁都能重算</span><span class="td">对应关系存在图的 requirements 里，进 PR 让人审；TC 的状态以 tracking.py 为准</span>
+      <span class="td">代价</span><span class="td">一次核对几万到十几万 token（待实测）；只重核改过的步骤</span><span class="td">要给仓库装 @vitest/coverage-v8（现在没装、没配）；e2e 覆盖要实验</span><span class="td">维护对应关系；TC 改了要重看</span>
+      <span class="td">先后</span><span class="td" style="color: #1A1A1A">第一期</span><span class="td" style="color: #1A1A1A">第一期（单元测试）；e2e 第三期</span><span class="td" style="color: #1A1A1A">第二期</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 一张图的一生：谁写、谁核、你在哪拍板</span>
+    <div class="fig" style="width: 1632px; height: 360px">
+      <div class="node" style="left: 24px; top: 46px; width: 200px"><b>1 · 画</b><span>你在终端里说一句；agent 读代码，写成带锚点的 JSON（flow skill 教它怎么写）</span></div>
+      <span class="who" style="left: 24px; top: 26px">任意一个终端里的 agent · claude</span>
+      <span class="arr" style="left: 232px; top: 72px">→</span>
+      <div class="node" style="left: 256px; top: 46px; width: 230px"><b>2 · 机器核对</b><span>锚点原文在不在、挪了几行；codegraph 有索引时列出候选：这一步所在函数还调了谁、没画的 throw</span></div>
+      <span class="who" style="left: 256px; top: 26px">AgentDeck · flow-service</span>
+      <span class="arr" style="left: 494px; top: 72px">→</span>
+      <div class="node" style="left: 518px; top: 46px; width: 250px"><b>3 · 换一家核对</b><span>Verifier 子 session（codex）逐步给结论和证据，列出漏掉的分支；只读，不改图</span></div>
+      <span class="who" style="left: 518px; top: 26px">子 session · codex · 只读</span>
+      <span class="arr" style="left: 776px; top: 72px">→</span>
+      <div class="node" style="left: 800px; top: 46px; width: 230px"><b>4 · 机器核证据</b><span>每条结论的证据锚点原文必须存在；不存在的结论标 Unverified，不算数</span></div>
+      <span class="who" style="left: 800px; top: 26px">AgentDeck</span>
+      <span class="arr" style="left: 1038px; top: 72px">→</span>
+      <div class="gate" style="left: 1062px; top: 46px; width: 220px"><b>5 · 你看结论</b><span>Accept / Reject 每条；接受的“漏掉的分支”由原作者补进图</span></div>
+      <span class="arr" style="left: 1290px; top: 72px">→</span>
+      <div class="node" style="left: 1314px; top: 46px; width: 294px"><b>6 · 存下来</b><span>图 + 核对记录（谁、哪个提交、每步结论）。Save to repo 写进 docs/flows/，跟代码一起进 PR</span></div>
+      <div class="at" style="left: 256px; top: 196px; width: 1352px; height: 0; border-top: 1px dashed #8A8A85"></div>
+      <span class="at" style="left: 256px; top: 206px; width: 1352px; font-size: 12.5px; color: #5F5F5A">代码变了（文件保存、切分支、合并后）：先只做第 2 步。原文还在、行号挪了的自动跟上；锚点所在的函数被改过的那几步标 Needs re-check（黄）；原文没了的标 Stale（红）。只把这几步交给第 3 步重核，不重画整张图。</span>
+      <span class="at" style="left: 24px; top: 262px; width: 1584px; font-size: 12.5px; color: #5F5F5A">为什么换一家核：画图的 agent 自己核自己，会把自己写错的顺序再说一遍（和集群里“换家审”同一个道理，DR-64）。为什么核对的人不改图：改图和判对错分开，你能看到原作者写了什么、核对的人说了什么。</span>
+      <span class="at" style="left: 24px; top: 306px; width: 1584px; font-size: 12.5px; color: #5F5F5A">锚点怎么认、行号怎么跟 diff 挪，是“文档”页 D1（代码锚点）那一层，这里直接用。</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · ① Review：核对的结论叠在图上（open_terminals，示意）</span>
+    <div style="display: flex; gap: 24px; align-items: flex-start">
+      <div class="win" style="width: 1000px">
+        <div class="tb"><span class="lr"></span><span class="n">flow · open-terminals</span><span class="s">agentdeck · main · 22 steps</span><span class="tag att">1 wrong · 5 missing</span><span class="s" style="margin-left: auto">Verified by codex · 6925f35</span></div>
+        <div style="display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; border-bottom: 1px solid #EEEEEB">
+          <span class="muted">Show</span><span class="seg"><span>Anchors</span><span class="on">Review</span><span>Tests</span><span>Requirements</span></span>
+          <span style="flex: 1"></span><span class="muted">16 confirmed · 1 wrong · 5 unsure · 5 missing</span>
+        </div>
+        <div class="sr" style="border-top: none"><span class="k">1</span><span>POST /mcp</span><span class="a">server.ts:73</span><span><span class="lr"></span>&#160; Confirmed</span></div>
+        <div class="sr ghost"><span class="k">+</span><span>header missing → caller = null</span><span class="a">server.ts:100</span><span><span class="lw"></span>&#160; Missing · error path: not called from an AgentDeck terminal, group has no lead</span></div>
+        <div class="sr"><span class="k">4</span><span>resolveWorkspace</span><span class="a">tools.ts:320</span><span><span class="lr"></span>&#160; Confirmed</span></div>
+        <div class="sr ghost"><span class="k">+</span><span>more prompts than count</span><span class="a">tools.ts:318</span><span><span class="lw"></span>&#160; Missing · error path: invalid-argument before anything opens</span></div>
+        <div class="sr"><span class="k">5</span><span>confirm “Open 7 terminals?”</span><span class="a">tools.ts:327</span><span><span class="lr"></span>&#160; Confirmed</span></div>
+        <div class="sr ghost"><span class="k">+</span><span>you press Cancel</span><span class="a">tools.ts:332</span><span><span class="lw"></span>&#160; Missing · error path: cancelled, nothing opens</span></div>
+        <div class="sr"><span class="k">6</span><span>agents.start</span><span class="a">tools.ts:526</span><span><span class="lr"></span>&#160; Confirmed · goes through viaRegistry, mcp.ts:25</span></div>
+        <div class="sr ghost"><span class="k">+</span><span>agent not installed</span><span class="a">agent-service.ts:88</span><span><span class="lw"></span>&#160; Missing · error path: command-not-found</span></div>
+        <div class="sr" style="background: #FBFBFA"><span class="k">9</span><span>adapter.launch: argv with prompt</span><span class="a">agent-service.ts:123</span><span><span class="le"></span>&#160; Wrong for pi, omp, kimi: generic.ts launch never reads ctx.prompt; only claude.ts:87 adds it. Known as IS-76</span></div>
+        <div class="sr"><span class="k">13</span><span>new-session ; pipe-pane</span><span class="a">host.ts:260</span><span><span class="lr"></span>&#160; Confirmed</span></div>
+        <div class="sr ghost"><span class="k">+</span><span>a launch fails mid-loop</span><span class="a">tools.ts:345</span><span><span class="lw"></span>&#160; Missing · error path: the group opens with the ones that started, result carries error</span></div>
+        <div class="sr"><span class="k">17</span><span>board.open-group (IPC.event)</span><span class="a">events.ts:16</span><span><span class="lw"></span>&#160; Unsure · goes to every window, not just the board that holds the lead</span></div>
+        <div class="sr"><span class="k">…</span><span class="muted">10 more rows</span><span></span><span></span></div>
+        <div style="display: flex; gap: 8px; padding: 10px 12px; border-top: 1px solid #EEEEEB"><button class="btn pri">Accept all confirmed</button><button class="btn">Review one by one</button><button class="btn">Ask claude to add the missing steps</button></div>
+      </div>
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 10px; font-size: 13px; line-height: 1.65">
+        <span class="eb">VERIFIER 交回来的（一步一条）</span>
+        <pre class="pre">{ "n": 9, "verdict": "wrong",
+  "claim": "argv with prompt",
+  "why": "generic adapters ignore ctx.prompt",
+  "evidence": [
+    { "path": "packages/agent-adapters/src/adapters/claude.ts",
+      "line": 87, "text": "if (ctx.prompt &amp;&amp; ctx.mode.kind === 'new')" },
+    { "path": "packages/agent-adapters/src/adapters/generic.ts",
+      "line": 77, "text": "launch(ctx: AdapterLaunchContext): LaunchSpec {" } ] }
+{ "after": 13, "missing": "a launch fails mid-loop",
+  "kind": "error-path", "importance": "main",
+  "evidence": [ { "path": "packages/mcp-server/src/tools.ts",
+      "line": 345, "text": "} catch (e) {" } ] }</pre>
+        <span>机器怎么核：每条 evidence 的 text 必须在那个文件里、离 line 不远；找不到的结论标 <b>Unverified</b>，不显示成 Confirmed 或 Wrong。“漏掉的”同样要带锚点。</span>
+        <span>第 9 步这一条不是编的：generic 适配器确实不读 ctx.prompt（本次核对 generic.ts、claude.ts 的源码），就是已登记的 IS-76。核对的人能抓到画图的人没注意到的分叉，这正是要第二家的原因。</span>
+        <span class="muted">表里其余的结论是示意；5 条 Missing 的锚点都是真实代码位置。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · ② Tests：测试跑到了哪几步（实测）</span>
+    <div style="display: flex; gap: 24px; align-items: flex-start">
+      <div class="win" style="width: 1000px">
+        <div class="tb"><span class="lr"></span><span class="n">flow · open-terminals</span><span class="s">agentdeck · main · 22 steps</span><span class="tag att">14 steps not loaded by tests</span></div>
+        <div style="display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; border-bottom: 1px solid #EEEEEB">
+          <span class="muted">Show</span><span class="seg"><span>Anchors</span><span>Review</span><span class="on">Tests</span><span>Requirements</span></span>
+          <span style="flex: 1"></span><span class="muted">Unit · server.test.ts › N1 · open_terminals · 11:09</span>
+        </div>
+        <div class="sr" style="border-top: none"><span class="k">1–4</span><span>POST /mcp → resolveWorkspace</span><span class="a">server.ts · tools.ts</span><span><span class="lr"></span>&#160; Run <span class="chip">fakes</span></span></div>
+        <div class="sr"><span class="k">5</span><span>confirm (count &gt; 6)</span><span class="a">tools.ts:327</span><span><span class="li"></span>&#160; Not run in this run (count was 2); other tests in the file do run it</span></div>
+        <div class="sr"><span class="k">6</span><span>agents.start</span><span class="a">tools.ts:526</span><span><span class="lr"></span>&#160; Run <span class="chip">fakes</span> · FakeAgentService answered</span></div>
+        <div class="sr"><span class="k">7–15</span><span>registry → AgentService → tmux</span><span class="a">mcp.ts · index.ts · agent-service.ts · host.ts</span><span><span class="lx"></span>&#160; Not loaded · no automated test runs these with the real services</span></div>
+        <div class="sr"><span class="k">16</span><span>emit board.open-group</span><span class="a">tools.ts:350</span><span><span class="lr"></span>&#160; Run</span></div>
+        <div class="sr"><span class="k">17–20</span><span>IPC → board → attach</span><span class="a">events.ts · api.ts · controller.ts</span><span><span class="lx"></span>&#160; Not loaded</span></div>
+        <div class="sr"><span class="k">21</span><span>return { lead, terminals }</span><span class="a">tools.ts:352</span><span><span class="lr"></span>&#160; Run</span></div>
+        <div style="display: flex; gap: 8px; align-items: center; padding: 10px 12px; border-top: 1px solid #EEEEEB"><button class="btn pri">Run tests for this flow</button><button class="btn">Run e2e…</button><span class="muted" style="margin-left: auto">e2e coverage isn’t collected yet</span></div>
+      </div>
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 10px; font-size: 13px; line-height: 1.65">
+        <span>这是真跑出来的：在暂存目录里用 node 25 直接跑一次 open_terminals（假服务，count 2），开 NODE_V8_COVERAGE，按 source map 换回源码行，再按锚点行查：<b>7 步跑到、1 步没跑到、14 步根本没加载</b>。</span>
+        <span>说明的事：open_terminals 的自动测试只到 MCP 这一侧；从注册表往后（真的 AgentService、tmux、白板）只有 TC-34 在 2026-10-25 人工验收过一次。这一层能把“看起来测过”和“真的测过”分开。</span>
+        <span>“Run 不等于测过”：跑到只说明执行了，没说断言了什么。子 agent（集群里的 QA）对 Run 的步骤再看一眼：哪个测试的哪一行断言了这一步的结果，写成证据锚点；没有断言的标 <span class="chip">Run · not asserted</span>。</span>
+        <span class="muted">现状：仓库没装 @vitest/coverage-v8，根 vitest.config.ts 没开 coverage；vitest 文档（v5.0.5，2026-10-28 读）没有“每个测试覆盖了哪些行”，所以按测试文件或用 -t 单跑来归属。直接给 vitest 设 NODE_V8_COVERAGE 只录到主进程，fork 出来的测试进程没录到（实测）。e2e 的主进程、utility 进程、界面进程怎么收覆盖，待实验。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">5 · ③ Requirements：TC 用例管到哪几步</span>
+    <div style="display: flex; gap: 24px; align-items: flex-start">
+      <div class="win" style="width: 1000px">
+        <div class="tb"><span class="lr"></span><span class="n">flow · open-terminals</span><span class="s">agentdeck · main · 22 steps</span><span class="tag">14 steps no TC mentions</span></div>
+        <div style="display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; border-bottom: 1px solid #EEEEEB">
+          <span class="muted">Show</span><span class="seg"><span>Anchors</span><span>Review</span><span>Tests</span><span class="on">Requirements</span></span>
+          <span style="flex: 1"></span><span class="muted">from docs/status/tracking.py</span>
+        </div>
+        <div class="sr" style="border-top: none"><span class="k">1 · 3</span><span>POST /mcp · caller</span><span class="a">server.ts</span><span><span class="chip">TC-34 · Verified</span></span></div>
+        <div class="sr"><span class="k">6</span><span>agents.start</span><span class="a">tools.ts:526</span><span style="display: flex; gap: 4px"><span class="chip">TC-34 · Verified</span><span class="chip">TC-46 · Not built</span><span class="chip">TC-50 · Not built</span></span></div>
+        <div class="sr"><span class="k">9</span><span>adapter.launch</span><span class="a">agent-service.ts:123</span><span><span class="chip">TC-46 · Not built</span> <span class="muted">(pi, omp, kimi get their first message)</span></span></div>
+        <div class="sr"><span class="k">13</span><span>new-session</span><span class="a">host.ts:260</span><span><span class="chip">TC-34 · Verified</span></span></div>
+        <div class="sr"><span class="k">16 · 19</span><span>open-group → place group</span><span class="a">tools.ts · controller.ts</span><span style="display: flex; gap: 4px"><span class="chip">TC-34 · Verified</span><span class="chip">TC-50 · Not built</span></span></div>
+        <div class="sr"><span class="k">0 2 4 …</span><span class="muted">14 steps</span><span></span><span class="muted">No TC mentions them. Fine for plumbing (7, 12, 18); worth one for 2 (token check) and 5 (confirm)</span></div>
+        <div style="display: flex; gap: 8px; padding: 10px 12px; border-top: 1px solid #EEEEEB"><button class="btn">Suggest TC links…</button><button class="btn">Open tracking.py</button></div>
+      </div>
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 10px; font-size: 13px; line-height: 1.65">
+        <span>对应关系来源：agent 读 TC 的步骤和预期（例如 TC-34 “开 3 个 subagent”），提出“TC-34 管第 1、3、6、13、16、19、21 步”，你确认后写进图的 requirements。TC 的状态（已验证、未实现）每次从 tracking.py 读，不抄进图。</span>
+        <span>e2e 用例按 <span class="mono">tcXX-…e2e.ts</span> 命名（e2e/tests 现有 4 个），等第三期能收 e2e 覆盖后（CU8），“哪个 TC 的 e2e 跑到了哪几步”就能自动算，不用猜。</span>
+        <span>和集群的 QA 一样：QA 按完成标准和用例逐条验收，这一层让 QA 交的汇报里能写“这个任务动到的流程里，第 7、8、10–12 步没有 TC 管”。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">6 · 颜色和图例（只表达状态）</span>
+    <div class="tbl" style="grid-template-columns: 170px repeat(4, minmax(0, 1fr))">
+      <span class="th"></span><span class="th">Anchors</span><span class="th">Review</span><span class="th">Tests</span><span class="th">Requirements</span>
+      <span class="td">绿 status-running</span><span class="td">原地，或挪了行号、已自动跟上（后面写 +11）</span><span class="td">Confirmed</span><span class="td">Run（带 fakes 时加灰色小签）</span><span class="td">—（TC 小签不着色，状态写字）</span>
+      <span class="td">黄 status-waiting</span><span class="td">Needs re-check：锚点所在的函数改过</span><span class="td">Unsure · Missing（幽灵箭头，虚线）</span><span class="td">—</span><span class="td">—</span>
+      <span class="td">红 status-error</span><span class="td">Stale：原文没了</span><span class="td">Wrong</span><span class="td">—（没跑到不是错，不用红）</span><span class="td">—</span>
+      <span class="td">空心 · 短线</span><span class="td">—</span><span class="td">Unverified（证据不成立）用空心</span><span class="td">空心 Not run · 短线 Not loaded</span><span class="td">没有签 = 没人管</span>
+    </div>
+    <span style="font-size: 12.5px; line-height: 1.6; color: #5F5F5A">标题栏的 tag 用 attention 色字，只写最要紧的一件（例如 “1 wrong · 5 missing”）；窗口边框不变色。agent 身份色只用在“谁画的、谁核的”旁边的小方块上。</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":3300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

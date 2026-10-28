@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>研究和竞赛 · Kaggle</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.at{position:absolute}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1280px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.tag{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:11.5px;background:#F2F2EF;color:#5F5F5A;white-space:nowrap}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#8A8A85}
+.pf{position:absolute;box-sizing:border-box;border:1px solid #CFCFCA;border-radius:12px;background:rgba(255,255,255,0.35)}
+.pfh{position:absolute;font-size:12px;color:#5F5F5A}
+.cf{position:absolute;box-sizing:border-box;border:1.5px solid #1A1A1A;border-radius:12px;background:rgba(255,255,255,0.55)}
+.cfh{position:absolute;left:0;top:0;right:0;height:40px;box-sizing:border-box;padding:0 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #E3E3E0;background:#FFFFFF;border-radius:11px 11px 0 0;font-size:12px}
+.dot{width:7px;height:7px;border-radius:50%;flex:none;box-sizing:border-box;display:inline-block}
+.am{width:6px;height:6px;border-radius:1.5px;flex:none;display:inline-block}
+.btn{display:inline-flex;align-items:center;height:22px;padding:0 8px;border:1px solid #D6D6D2;border-radius:6px;font-size:11px;background:#FFFFFF;color:#1A1A1A;white-space:nowrap}
+.btn.pri{background:#1A1A1A;color:#FFFFFF;border-color:#1A1A1A}
+.win{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;overflow:hidden;font-size:11px}
+.wt{display:flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-bottom:1px solid #EEEEEB;white-space:nowrap}
+.wb{padding:6px 9px;font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.7;color:#6B6B6B}
+.gs{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;font-size:11px;display:flex;flex-direction:column}
+.gsh{padding:7px 10px;border-bottom:1px solid #EEEEEB;font-weight:600}
+.gsr{display:flex;align-items:center;gap:6px;padding:5px 10px;white-space:nowrap}
+.sl{font-size:10px;font-weight:600;color:#8A8A85;letter-spacing:0.04em;padding:6px 10px 2px}
+.rt{display:grid;grid-template-columns:44px 104px 72px minmax(0,1fr) 128px 66px 54px 64px;font-size:10.5px;line-height:1.45}
+.rt>span{padding:5px 7px;border-top:1px solid #EEEEEB;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rt>.h{border-top:none;background:#F7F7F5;color:#6B6B6B;font-weight:600}
+.rt>.b{font-weight:600;color:#1A1A1A;background:#EDEDEA}
+.box{box-sizing:border-box;border:1px solid #E3E3E0;border-radius:8px;padding:10px 12px;background:#FFFFFF;font-size:12.5px;line-height:1.55;display:flex;flex-direction:column;gap:4px}
+.box.gate{border:1.5px dashed #BF8700}
+.box.ad{border:1.5px solid #1A1A1A}
+.bt{font-size:11px;font-weight:600;color:#8A8A85;letter-spacing:0.04em}
+.arrow{font-size:18px;color:#8A8A85;align-self:center;flex:none}
+.kv{display:grid;grid-template-columns:120px minmax(0,1fr);gap:4px 12px;font-size:12px;line-height:1.55}
+.kv .k{color:#8A8A85}
+.panel{box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:12px}
+.ph{display:flex;align-items:center;gap:8px;height:34px;padding:0 12px;border-bottom:1px solid #EEEEEB;font-weight:600}
+.item{padding:12px 14px;display:flex;flex-direction:column;gap:7px;border-top:1px solid #EEEEEB}
+.ex{display:flex;flex-direction:column;gap:10px;font-size:13.5px;line-height:1.65}
+.ok{color:#1A1A1A}
+</style>
+</helmet>
+<div style="width: 1760px; height: 3760px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">E1 · Kaggle 竞赛：几个方向并行，按同一个分数比，你点了才提交</h1>
+      <span class="concept">2026-10-28 按推荐先定，待你确认</span>
+    </div>
+    <p class="lead">研究第一期的样子：在<b>自由模式</b>（C6）里开集群，New crew 里多填一个打分命令（E3 第 3 节）。Lead 读题、读数据、写好验证集划分和打分脚本，AgentDeck 把它们锁住；Lead 先跑 baseline，再一个方向开一个子 session。每次实验是一行 Run，分数由 AgentDeck 在那次提交上自己跑打分命令算；几小时的训练是 Job，agent 不用盯着。交到 Kaggle 只能走收件箱里的 Submit，由你点、由 AgentDeck 交。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 白板上：集群框、Results 窗口、JOBS</span>
+    <div class="fig" style="width: 1632px; height: 980px">
+      <div class="pf" style="left: 14px; top: 14px; width: 1604px; height: 952px"></div>
+      <span class="pfh" style="left: 28px; top: 20px">s6e11-churn · main</span>
+
+      <div class="cf" style="left: 30px; top: 44px; width: 1572px; height: 906px">
+        <div class="cfh">
+          <b style="font-size: 13px">Crew · s6e11-churn</b>
+          <span class="tag">No template</span>
+          <span class="tag">Results</span>
+          <span style="flex: 1"></span>
+          <span style="display: inline-flex; align-items: center; gap: 5px"><span class="dot" style="background: #1A7F37"></span>2 running</span>
+          <span style="display: inline-flex; align-items: center; gap: 5px"><span class="dot" style="background: #BF8700"></span>1 needs you</span>
+          <span class="muted">· 7 runs · best R8 0.8544 · 2 of 3 slots · 3h10m</span>
+          <span class="btn">Outputs · 4</span><span class="btn">Report</span><span class="btn">Pause crew</span><span class="muted">⋯</span>
+        </div>
+
+        <div class="win" style="left: 14px; top: 54px; width: 440px; height: 432px; border: 1.5px solid #1A1A1A">
+          <div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="am" style="background: #A8503A"></span><span class="mono" style="font-weight: 500">Lead · claude</span><span style="flex: 1"></span><span class="muted">Running</span></div>
+          <div class="wb">› Playground S6E11, churn. Try a few directions,<br>  tell me before you submit anything.<br><br>● Read rules, data and metric (ROC AUC).<br>  Wrote cv/folds.csv (5 folds) and score.py.<br>  ⎿ locked: cv/**, score.py, data/**<br>● run start --label baseline · job start …<br>  ⎿ R1 0.8412 ± 0.0031 (scored by AgentDeck)<br>● session spawn --agent codex --label fe<br>● session spawn --agent claude --label cat<br>● session spawn --agent codex --label nn<br>● run list --sort cv<br>  ⎿ R8 0.8544  R5 0.8611 (flagged)  R4 0.8530 …<br><br><span style="color: #1A1A1A">R5 looks too good: its fold scores spread 4× more<br>than the baseline. I asked fe to check for target<br>leakage before we trust it. R8 (blend) is our best<br>clean run. Want me to ask you to submit R8?</span></div>
+        </div>
+
+        <div class="gs" style="left: 462px; top: 54px; width: 168px; height: 432px">
+          <span class="gsh">3 directions</span>
+          <span class="sl">OWN WORKTREE</span>
+          <span class="gsr" style="background: #EDEDEA; font-weight: 600"><span class="dot" style="background: #1A7F37"></span>sub-1 · fe</span>
+          <span class="gsr"><span class="dot" style="border: 1px solid #8A8A85"></span>sub-2 · cat</span>
+          <span class="gsr"><span class="dot" style="border: 1px solid #8A8A85"></span>sub-3 · nn <span class="muted">· J4</span></span>
+          <span style="flex: 1"></span>
+          <span class="gsr muted" style="border-top: 1px solid #EEEEEB; padding-top: 7px">Show all · Collapse</span>
+        </div>
+
+        <div class="win" style="left: 644px; top: 54px; width: 914px; height: 432px">
+          <div class="wt"><span class="mono" style="font-weight: 500">Results · s6e11-churn</span><span class="btn" style="height: 18px; background: #EDEDEA">Runs · 7</span><span class="btn" style="height: 18px">Claims</span><span style="flex: 1"></span><span class="muted">⋯</span></div>
+          <div style="padding: 6px 10px; font-size: 10.5px; color: #6B6B6B; border-bottom: 1px solid #EEEEEB">Metric <b style="color: #1A1A1A">ROC AUC</b> · higher is better · scored by AgentDeck with <span class="mono">python score.py --oof {oof}</span> · locked <span class="mono">cv/** score.py data/**</span></div>
+          <div class="rt">
+            <span class="h">Run</span><span class="h">Direction</span><span class="h">Commit</span><span class="h">What changed</span><span class="h">CV · 5 folds</span><span class="h">Public LB</span><span class="h">Took</span><span class="h">Where</span>
+            <span class="mono">R1</span><span><span class="am" style="background: #A8503A"></span> baseline</span><span class="mono">a91c2e0</span><span>LightGBM, default params</span><span class="mono">0.8412 ± 0.0031</span><span class="mono">0.8398</span><span>6m</span><span>local</span>
+            <span class="mono">R4</span><span><span class="am" style="background: #2F5E9E"></span> fe</span><span class="mono">3f2a1c9</span><span>+12 ratio features</span><span class="mono">0.8530 ± 0.0025</span><span class="mono">0.8519</span><span>18m</span><span>local</span>
+            <span class="mono">R5</span><span><span class="am" style="background: #2F5E9E"></span> fe</span><span class="mono">7d10b4a</span><span>+ target encoding · <span style="color: #B45309">folds spread 4× baseline</span></span><span class="mono">0.8611 ± 0.0102</span><span class="muted">—</span><span>20m</span><span>local</span>
+            <span class="mono">R7</span><span><span class="am" style="background: #A8503A"></span> cat</span><span class="mono">c55e019</span><span>CatBoost, R4 features</span><span class="mono">0.8497 ± 0.0028</span><span class="muted">—</span><span>41m</span><span>local</span>
+            <span class="mono b">R8</span><span class="b"><span class="am" style="background: #A8503A"></span> cat</span><span class="mono b">0be4d21</span><span class="b">Blend R4 · R7 (0.6 / 0.4)</span><span class="mono b">0.8544 ± 0.0024</span><span class="muted b">—</span><span class="b">2m</span><span class="b">local</span>
+            <span class="mono">R9</span><span><span class="am" style="background: #2F5E9E"></span> nn</span><span class="mono">e02b77d</span><span>MLP on R4 features</span><span><span class="dot" style="background: #1A7F37"></span> J4 · epoch 14/30</span><span class="muted">—</span><span>1h12m</span><span>gpu1</span>
+            <span class="mono">R6</span><span><span class="am" style="background: #2F5E9E"></span> nn</span><span class="mono">9a8f310</span><span>MLP, batch 4096</span><span><span class="dot" style="background: #CF222E"></span> <span style="color: #CF222E">CUDA out of memory</span></span><span class="muted">—</span><span>3m</span><span>gpu1</span>
+          </div>
+          <div style="position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-top: 1px solid #EEEEEB; font-size: 10.5px; color: #6B6B6B">Sorted by CV · best clean run bold · click a row for its run card<span style="flex: 1"></span><span class="btn">Export CSV</span><span class="btn">Compare…</span><span class="btn pri">Submit R8…</span></div>
+        </div>
+
+        <div class="win" style="left: 14px; top: 502px; width: 440px; height: 250px">
+          <div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="am" style="background: #2F5E9E"></span><span class="mono" style="font-weight: 500">sub-1 · codex · fe</span><span style="flex: 1"></span><span class="muted">Running</span></div>
+          <div class="wb">• agentdeck run start --label "target encoding"<br>  ⎿ R5 · crew/s6e11/fe @ 7d10b4a (committed)<br>• agentdeck job start -- python train.py \<br>    --config configs/fe_v4.yaml --oof outputs/R5/oof.csv<br>  ⎿ J3 · local · log outputs/R5/train.log<br>I’ll stop here until J3 is done.<br><span style="color: #8A8A85">── 19m later, sent by AgentDeck ──</span><br><span style="color: #1A1A1A">› Job J3 finished (exit 0, 19m42s). AgentDeck scored<br>  R5: 0.8611 ± 0.0102. Run agentdeck run show R5.</span></div>
+        </div>
+
+        <div class="win" style="left: 462px; top: 502px; width: 1096px; height: 124px">
+          <div class="wt"><b style="font-size: 10.5px; letter-spacing: 0.04em; color: #8A8A85">JOBS</b><span>1 running · 1 queued · 4 done</span><span class="muted">· GPU budget 3h20m of 12h</span><span style="flex: 1"></span><span class="muted">Jobs keep running when an agent hits its usage limit</span></div>
+          <div class="rt" style="grid-template-columns: 44px 70px 110px 130px minmax(0, 1fr) 90px">
+            <span class="mono">J4</span><span>nn · R9</span><span>gpu1 · ssh</span><span><span class="dot" style="background: #1A7F37"></span> Running 1h12m</span><span class="mono">epoch 14/30  train_loss 0.412  val_auc 0.8463</span><span><span class="btn" style="height: 18px">Open log</span></span>
+            <span class="mono">J5</span><span>cat · R10</span><span>gpu1 · ssh</span><span class="muted">Queued</span><span class="muted">1 of 1 GPU busy on gpu1 · starts after J4</span><span><span class="btn" style="height: 18px">Cancel</span></span>
+            <span class="mono">J3</span><span>fe · R5</span><span>local</span><span class="muted">Done 19m42s</span><span class="mono muted">exit 0 · scored 0.8611</span><span><span class="btn" style="height: 18px">Open log</span></span>
+          </div>
+        </div>
+
+        <div class="win" style="left: 462px; top: 642px; width: 540px; height: 160px">
+          <div class="wt"><span class="dot" style="border: 1px solid #8A8A85"></span><span class="am" style="background: #2F5E9E"></span><span class="mono" style="font-weight: 500">sub-3 · codex · nn</span><span style="flex: 1"></span><span class="muted">Idle · waiting for J4</span></div>
+          <div class="wb">• agentdeck job start --on gpu1 -- python train_nn.py …<br>  ⎿ J4 · gpu1 · copied 3f2a1c9 → ~/agentdeck-jobs/s6e11/R9<br>Waiting for J4. AgentDeck will tell me when it ends.<br><span style="color: #8A8A85">(no tokens spent while it waits)</span></div>
+        </div>
+
+        <div class="box" style="position: absolute; left: 1016px; top: 642px; width: 542px; height: 160px">
+          <span class="bt">OUTPUTS · 4</span>
+          <span class="mono" style="font-size: 11px; line-height: 1.8">report.md <span class="muted">· draft · lead</span><br>runs.csv <span class="muted">· from Results</span><br>outputs/R4/sub.csv <span class="muted">· R4 · submitted 10:42 · LB 0.8519</span><br>outputs/R8/sub.csv <span class="muted">· R8 · format checked</span></span>
+          <span class="muted" style="font-size: 11px">Click to open on the board · saved with the crew when it ends</span>
+        </div>
+
+        <span class="at muted" style="left: 14px; top: 822px; width: 1540px; font-size: 11px; line-height: 1.6">Lead 终端、侧边栏、子 session 小框和 C6 一样（零件不变）。新的是右上的 <b>Results</b> 窗口（一种新窗口，跟着集群框；单独开也行）、中间一条 <b>JOBS</b>（集群框里固定一行，和 Integration 小框同一个零件）、右下的 <b>Outputs</b>。颜色只表达状态：在跑绿点、出错红、R5 的分数异常用等你的橙字提示，最好的一行只加粗不上色。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 一次实验的卡片（Run card）：从分数点回源码</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start">
+      <div class="panel" style="width: 760px; flex: none">
+        <div class="ph"><span class="mono">R4</span><span>· fe · +12 ratio features</span><span style="flex: 1"></span><span class="muted" style="font-weight: 400">Done · 18m</span><span class="muted">×</span></div>
+        <div style="padding: 14px 16px; display: flex; flex-direction: column; gap: 12px">
+          <div class="kv">
+            <span class="k">Session</span><span><span class="am" style="background: #2F5E9E"></span> sub-1 · codex · fe <span class="muted">· Go to terminal</span></span>
+            <span class="k">Commit</span><span class="mono">crew/s6e11/fe @ 3f2a1c9 <span class="muted">· clean · Open worktree read-only</span></span>
+            <span class="k">Command</span><span class="mono">python train.py --config configs/fe_v3.yaml --seed 42 --oof outputs/R4/oof.csv</span>
+            <span class="k">Changed vs R1</span><span class="mono">features.py +48 −3 · configs/fe_v3.yaml (new) · Show diff</span>
+            <span class="k">Data</span><span class="mono">data/train.csv sha256 9b1e…  data/test.csv 51c2… <span class="muted">(locked)</span></span>
+            <span class="k">Environment</span><span class="mono">uv.lock 4c0d… · python 3.12.7 · lightgbm 4.6.0 · macOS arm64</span>
+            <span class="k">Job</span><span class="mono">J2 · local · exit 0 · 17m51s · Open log</span>
+            <span class="k">Score</span><span><b class="mono">0.8530 ± 0.0025</b> <span class="muted">· folds 0.8551 0.8504 0.8533 0.8517 0.8545 · AgentDeck ran score.py at 3f2a1c9</span></span>
+            <span class="k">Agent said</span><span class="mono">0.8531 <span class="muted">· matches within 0.0005</span></span>
+            <span class="k">Public LB</span><span class="mono">0.8519 <span class="muted">· submitted 10:42 by you · gap −0.0011</span></span>
+            <span class="k">Artifacts</span><span class="mono">outputs/R4/oof.csv · sub.csv · model.txt (3 files, 41 MB)</span>
+          </div>
+          <div style="display: flex; gap: 8px"><span class="btn">Rerun</span><span class="btn">Copy as Markdown</span><span class="btn">Submit…</span></div>
+        </div>
+      </div>
+      <div class="ex">
+        <span><b>Run 什么时候算数</b>：agent 跑 <span class="mono">agentdeck run start</span>，工作区有没提交的改动就拒绝（“Commit your changes first, the run must point at a commit.”），所以每个 Run 都指向一个提交。数据和锁住的文件记哈希；环境记锁文件的哈希和几个关键包的版本。</span>
+        <span><b>分数谁算</b>：<span class="mono">run done</span> 时 AgentDeck 在这个提交的 worktree 里跑 New crew 里填的打分命令（Lead 写、你在 Plan 里看过、之后锁住），读它输出的数。agent 自己报的数只放在 Agent said 一行作对照，差太多时这一行标出来。这和 C3 的“检查是调度器自己跑的，不信 agent 嘴上说的测试都过了”是同一条规矩。</span>
+        <span><b>可疑的数</b>：分数比 baseline 高很多、各折分数散得厉害、OOF 文件行数不对、改动碰了锁住的目录，都在表里标一句（只提示，不拦）。要更严的话，Lead 可以开一个别家的子 session 用你库里的实验审计类 skill 查一遍。</span>
+        <span><b>Rerun</b>：在同一个提交上按同一条命令再开一个 Job，结果记成新的 Run，用来看分数稳不稳。</span>
+        <span class="muted">一次实验不是一个 session：一个方向一个 session，里面一行行 Run。session 被压缩、换一家接着做（SE6）时，Runs 都在 AgentDeck 里，不靠对话记着。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · GPU 和长时间训练放在哪：Jobs</span>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px">
+      <div class="box ad"><span class="bt">LOCAL · 第一期</span><b style="font-size: 14px">这台 Mac</b><span>AgentDeck 自己的 tmux 里开一个隐藏的窗口跑命令，输出写进日志，结束时记下退出码。适合表格类比赛（LightGBM、CatBoost 用 CPU）、小模型、评测、转写（mlx-whisper / whisper.cpp）。</span><span class="muted">Mac 没有 CUDA：要 CUDA 的训练和复现放到 SSH 机器上。</span></div>
+      <div class="box ad"><span class="bt">SSH HOST · 第二期</span><b style="font-size: 14px">你自己的 GPU 机器</b><span>Settings › Compute 里加一台（用你 <span class="mono">~/.ssh/config</span> 里的名字，免密登录）。AgentDeck 把这次 Run 的提交打包传过去（<span class="mono">git archive</span>），在那边的 tmux 里跑，定时看日志和退出码，结束后把声明过的产物拉回 worktree。数据目录在那台机器上配一次。按 GPU 数量排队。</span><span class="muted">断网不影响训练（在远端 tmux 里），恢复后接着看。</span></div>
+      <div class="box"><span class="bt">COMMAND · 你自己的</span><b style="font-size: 14px">Kaggle Notebooks、Modal、vast.ai……</b><span>AgentDeck 不租、不开、不关云机器，也不拿你的云账号。agent 用你装的命令和 skill（如 serverless-modal、vast-gpu）组一条命令，交给 Job 跑；能马上返回的平台再给一条查询命令，AgentDeck 按它看状态。</span><span class="muted">花钱的事永远是你的命令、你的账号。</span></div>
+    </div>
+    <div style="display: flex; align-items: stretch; gap: 8px">
+      <div class="box" style="width: 260px"><span class="bt">AGENT</span><span class="mono" style="font-size: 11.5px">agentdeck job start --on gpu1 -- python train.py …</span><span class="muted">马上返回 J4，agent 结束这一轮</span></div>
+      <span class="arrow">→</span>
+      <div class="box ad" style="width: 260px"><span class="bt">AGENTDECK</span><span>排队、启动、每 30 秒看一次日志和退出码</span><span class="muted">不叫模型，不花 token</span></div>
+      <span class="arrow">→</span>
+      <div class="box ad" style="width: 270px"><span class="bt">结束时</span><span>按 PL3 的发送方式把 “Job J4 finished …” 打进开它的 session；那个账号正在等额度时排在续跑后面（PL5）</span></div>
+      <span class="arrow">→</span>
+      <div class="box" style="width: 240px"><span class="bt">AGENT</span><span class="mono" style="font-size: 11.5px">agentdeck run done R9</span><span class="muted">AgentDeck 打分，Results 多一行</span></div>
+    </div>
+    <span style="font-size: 12.5px; color: #5F5F5A">为什么不让 agent 自己在 shell 里跑：claude 的 Bash 一次最多等 10 分钟（默认 2 分钟，待核对当前版本），放到后台也要反复去读输出、每读一次花一轮 token；额度一用完，没人看训练；session 关了或交接了，训练的去向也丢了。Jobs 跟着集群，不跟着某个 agent 的对话。整夜跑时 Stop after 管 agent，GPU budget 管 Jobs：用完不再开新的，在跑的跑完。</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · 提交关卡：Submit to Kaggle</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start">
+      <div class="panel" style="width: 760px; flex: none">
+        <div class="ph">Needs you · 1<span style="flex: 1"></span><span class="muted" style="font-weight: 400">⌘J</span></div>
+        <div class="sl" style="padding: 8px 14px 0">CREW · S6E11-CHURN</div>
+        <div class="item" style="border-top: none">
+          <div style="display: flex; align-items: center; gap: 8px"><span class="dot" style="background: #BF8700"></span><b>Submit to Kaggle</b><span class="muted">· asked by Lead · claude</span><span style="flex: 1"></span><span class="muted">2m</span></div>
+          <span><span class="mono">R8</span> · Blend R4 · R7 · CV <b class="mono">0.8544 ± 0.0024</b> · best clean run</span>
+          <span class="mono" style="font-size: 11px; line-height: 1.8">✓ columns match sample_submission.csv (id, Churn)<br>✓ 25,000 rows, every test id once<br>✓ values between 0 and 1<br>· 3 of 5 submissions left today · resets 00:00 UTC</span>
+          <span style="font-size: 11.5px; color: #6B6B6B">Message: <span class="mono" style="color: #1A1A1A">R8 blend lgbm-fe + catboost, cv 0.8544</span></span>
+          <div style="display: flex; gap: 8px"><span class="btn">View file</span><span class="btn">Not now</span><span class="btn">Ask lead…</span><span style="flex: 1"></span><span class="btn pri">Submit</span></div>
+        </div>
+        <div class="item">
+          <div style="display: flex; align-items: center; gap: 8px"><span class="dot" style="background: #CF222E"></span><b>Submitted outside the gate</b><span class="muted">· s6e11-churn</span><span style="flex: 1"></span><span class="muted">10:57</span></div>
+          <span style="font-size: 11.5px">Kaggle shows a submission at 10:56 that AgentDeck didn’t make. A terminal in this crew may have run <span class="mono">kaggle competitions submit</span>. 2 left today.</span>
+          <div style="display: flex; gap: 8px"><span class="btn">Show terminals</span><span class="btn">Dismiss</span></div>
+        </div>
+      </div>
+      <div class="ex">
+        <span><b>谁能提交</b>：只有这个关卡。Lead 跑 <span class="mono">agentdeck submit ask R8 "&lt;message&gt;"</span> 申请，你点 Submit 后由 AgentDeck 用你的 Kaggle 命令行交（CSV 类比赛），交完把公榜分数取回 Results。命令行和 MCP 都没有“直接提交”。</span>
+        <span><b>格式检查</b>：对着 <span class="mono">sample_submission.csv</span> 看列名、行数、id 是否一一对应、取值范围；不过就灰掉 Submit 并写原因，省下当天的次数。</span>
+        <span><b>次数</b>：每天能交几次每个比赛不一样（常见是 5 次，待核对），从 Kaggle 读不到时让 Lead 在 Plan 里写，界面上写 “? left today”。</span>
+        <span><b>挡不住的</b>：agent 有 shell，你的 Kaggle 凭据在 <span class="mono">~/.kaggle/</span> 或环境变量里（kaggle-cli 文档，2026-10-28 读），它能自己去交。和 IS-99（main 在关卡外被改）一样只能发现：AgentDeck 定时看一下提交列表，多出来的报红；Auto-approve 永远不替你放行这条命令（待加进它的名单）。</span>
+        <span><b>代码类比赛</b>（要在 Kaggle Notebook 里跑、不能直接传 CSV）：命令行能不能提交待核对（有人 2026-02 报告接口拒绝）；不行就把关卡换成 Submit in browser：给出 Notebook 和要贴的代码，你在网页上交，交完 AgentDeck 读回分数。</span>
+        <span><b>最后选哪两个</b>算最终成绩，也是你在 Kaggle 上选；汇报里列出候选和理由。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">5 · 汇报（CR7 扩展）：产物和实验表进汇报</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start">
+      <div class="panel" style="width: 760px; flex: none">
+        <div class="ph">Crew report · s6e11-churn<span class="tag" style="font-weight: 400">Stopped by you</span><span style="flex: 1"></span><span class="muted" style="font-weight: 400">Started 21:10 · stopped 07:35</span></div>
+        <div style="padding: 12px 16px; display: flex; flex-direction: column; gap: 10px">
+          <span style="font-size: 12px; line-height: 1.8">14 runs in 3 directions · best clean <span class="mono">R8 0.8544</span> (baseline 0.8412)<br>2 submissions · best public LB <span class="mono">0.8531</span><br>Jobs 9h05m (gpu1 6h20m) · 1h15m paused for claude’s 5-hour reset</span>
+          <span class="sl" style="padding: 0">RUNS · TOP 5 OF 14</span>
+          <span class="mono" style="font-size: 11px; line-height: 1.8">R8   blend R4·R7        0.8544 ± 0.0024   LB 0.8531<br>R12  nn + R8 blend      0.8541 ± 0.0026   —<br>R4   +12 ratio feats    0.8530 ± 0.0025   LB 0.8519<br>R7   catboost           0.8497 ± 0.0028   —<br>R1   baseline           0.8412 ± 0.0031   LB 0.8398</span>
+          <span class="sl" style="padding: 0">NOT TRUSTED · 1</span>
+          <span style="font-size: 11.5px">R5 target encoding: 0.8611, fold spread 4× baseline. fe found the encoder was fit on all rows (leak). Fixed in R11: 0.8521.</span>
+          <span class="sl" style="padding: 0">OUTPUTS · 5</span>
+          <span class="mono" style="font-size: 11px">report.md · runs.csv · R8/sub.csv · R4/sub.csv · R12/oof.csv</span>
+          <span class="sl" style="padding: 0">NOTES · DECISIONS · USAGE</span>
+          <span class="muted" style="font-size: 11.5px">（和 C4 第 3 节一样）</span>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap"><span class="btn">Open outputs</span><span class="btn">Copy as Markdown</span><span class="btn">Save outputs to…</span><span style="flex: 1"></span><span class="btn">Merge into main</span><span class="btn pri">Accept</span></div>
+        </div>
+      </div>
+      <div class="ex">
+        <span><b>汇报多出来的几节</b>（有就出，没有不出）：RUNS（前几名加 baseline，分数都来自 Run）、NOT TRUSTED（被标出来的 run 和后来怎么处理的）、SUBMISSIONS、CLAIMS（复现）、SOURCES（用到的资料库条目）、OUTPUTS。原来的 NOTES、DECISIONS、USAGE 照旧；USAGE 多一行 Jobs 用了多少时间、在哪台机器。</span>
+        <span><b>产物存在哪</b>：在各自的 worktree 里产生（<span class="mono">outputs/</span>，建议加进 .gitignore），登记路径和哈希；集群结束前 AgentDeck 复制一份到 <span class="mono">&lt;数据目录&gt;/crews/&lt;id&gt;/outputs/</span>，再清 worktree（C3 写了集群结束时清掉任务 worktree）。超过 500 MB 的只记路径和哈希、不复制，对应的 worktree 留着，汇报里写明。</span>
+        <span><b>最后一道关</b>：研究类集群是 <b>Accept</b>（收下这批产物，集群结束）；Save outputs to… 复制到你选的文件夹；集群分支上有值得留的代码时才用 Merge into main（和原来一样永远你点）。竞赛的提交在过程中一次次走 Submit，不在这里。</span>
+        <span class="muted">报告本身是 Lead 写的 Markdown，表格部分由 AgentDeck 从 Runs 生成后贴进去，不让 Lead 抄数。编辑报告的体验等“文档”页 D0–D2（M15）。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">6 · 新加的命令（agentdeck 命令行，C7 的同一个入口）</span>
+    <div class="tbl" style="grid-template-columns: 340px 200px minmax(0, 1fr)">
+      <span class="th">命令</span><span class="th">谁能用</span><span class="th">做什么 · AgentDeck 守的规矩</span>
+      <span class="td mono">run start [--label] · run done &lt;id&gt; [--said 0.85]</span><span class="td">Lead 和子 session</span><span class="td">开一行 Run（工作区不干净就拒绝）；done 时 AgentDeck 跑打分命令。只能写自己 session 的 Run</span>
+      <span class="td mono">run list [--sort cv] · run show &lt;id&gt;</span><span class="td">Lead（子 session 只看自己的）</span><span class="td">读表，JSON；Lead 被压缩后靠它找回（和 crew status 一起）</span>
+      <span class="td mono">job start [--on host] -- &lt;cmd&gt; · job list · job tail · job cancel</span><span class="td">Lead 和子 session</span><span class="td">马上返回；超过 GPU 预算拒绝；同一台机器按 GPU 数排队（和 session 的上限不同，Job 排队不拒绝）</span>
+      <span class="td mono">out add &lt;path&gt; [--kind report|table|slides|submission] [--run R4]</span><span class="td">Lead 和子 session</span><span class="td">登记产物；路径要在自己的 worktree 或共享目录里</span>
+      <span class="td mono">submit ask &lt;run&gt; "&lt;message&gt;"</span><span class="td">只有 Lead</span><span class="td">进收件箱等你；只能申请，提交只在界面上点</span>
+      <span class="td mono">claim add · claim link（复现，E2）</span><span class="td">只有 Lead</span><span class="td">写论文里的目标数；Plan 关卡过后锁住</span>
+    </div>
+    <span style="font-size: 12.5px; color: #5F5F5A">子 session 的第一条提示词多 4 行（<span class="mono">run start · run done · job start · out add</span>，约 80 token），只在开了 Results 或 Jobs 的集群里有；它们照样不能开 session、不能申请提交。</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":3760}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

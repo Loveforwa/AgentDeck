@@ -116,7 +116,7 @@
       "y": 5300
     },
     "spec/SpecTerminal.dc.html": {
-      "h": 3000,
+      "h": 3040,
       "page": "spec",
       "title": "5 · 终端窗口",
       "w": 1760,
@@ -129,7 +129,7 @@
       "title": "6 · 终端状态与提醒",
       "w": 1760,
       "x": 0,
-      "y": 11140
+      "y": 11180
     },
     "spec/SpecBrowser.dc.html": {
       "h": 1500,
@@ -137,7 +137,7 @@
       "title": "7 · 网页窗口",
       "w": 1760,
       "x": 0,
-      "y": 13460
+      "y": 13500
     },
     "spec/SpecScm.dc.html": {
       "h": 2560,
@@ -145,7 +145,7 @@
       "title": "8 · 源代码管理面板",
       "w": 1760,
       "x": 0,
-      "y": 15120
+      "y": 15160
     },
     "spec/SpecPersist.dc.html": {
       "h": 2000,
@@ -153,7 +153,7 @@
       "title": "9 · 保存与重启",
       "w": 1760,
       "x": 0,
-      "y": 17840
+      "y": 17880
     },
     "spec/SpecRules.dc.html": {
       "h": 1640,
@@ -161,7 +161,7 @@
       "title": "10 · 全局规则：删除、快捷键、范围、验收",
       "w": 1760,
       "x": 0,
-      "y": 20000
+      "y": 20040
     },
     "spec/Term.dc.html": {
       "h": 140,
@@ -316,7 +316,7 @@
       "y": 10860
     },
     "spec/PluginQueue.dc.html": {
-      "h": 2920,
+      "h": 3080,
       "page": "plugins",
       "title": "PL3 · Prompt queue：额度用完后到点接着发排好的提示词",
       "w": 1760,
@@ -324,7 +324,7 @@
       "y": 4630
     },
     "spec/CrewOverview.dc.html": {
-      "h": 1640,
+      "h": 2060,
       "page": "crew",
       "title": "C0 · Agent 集群：按模板组一队 agent 做复杂任务",
       "w": 1760,
@@ -337,15 +337,15 @@
       "title": "C1 · 新建集群：选模板或 No template、写目标、定分工",
       "w": 1760,
       "x": 0,
-      "y": 1800
+      "y": 2220
     },
     "spec/CrewBoard.dc.html": {
-      "h": 2100,
+      "h": 2280,
       "page": "crew",
       "title": "C2 · 白板上的集群：集群框、任务看板、各任务的 worktree",
       "w": 1760,
       "x": 0,
-      "y": 4760
+      "y": 5180
     },
     "spec/CrewTask.dc.html": {
       "h": 2560,
@@ -353,15 +353,15 @@
       "title": "C3 · 一个任务的一生：调度规则和 agent 用的命令",
       "w": 1760,
       "x": 0,
-      "y": 7020
+      "y": 7620
     },
     "spec/CrewInbox.dc.html": {
-      "h": 2720,
+      "h": 2800,
       "page": "crew",
       "title": "C4 · 关卡、收件箱、汇报：只在需要你时叫你",
       "w": 1760,
       "x": 0,
-      "y": 9740
+      "y": 10340
     },
     "spec/CrewTemplates.dc.html": {
       "h": 2580,
@@ -369,7 +369,7 @@
       "title": "C5 · 模板、分期、已定",
       "w": 1760,
       "x": 0,
-      "y": 12620
+      "y": 13300
     },
     "spec/PluginResume.dc.html": {
       "h": 3640,
@@ -377,7 +377,7 @@
       "title": "PL4 · Auto-resume：被额度打断的任务，恢复后自己接着做",
       "w": 1760,
       "x": 0,
-      "y": 7710
+      "y": 7870
     },
     "spec/CrewFree.dc.html": {
       "h": 3560,
@@ -385,15 +385,15 @@
       "title": "C6 · 自由模式（No template）：一个 Lead 按需开子 session",
       "w": 1760,
       "x": 0,
-      "y": 15360
+      "y": 16040
     },
     "spec/CrewCli.dc.html": {
-      "h": 2960,
+      "h": 3000,
       "page": "crew",
       "title": "C7 · agentdeck 命令行：crew 命令不进 MCP，只在 Lead 里打开",
       "w": 1760,
       "x": 0,
-      "y": 19080
+      "y": 19760
     },
     "spec/CrewLead.dc.html": {
       "h": 3560,
@@ -401,15 +401,15 @@
       "title": "C8 · Lead 和收件箱：谁记进度、谁叫你、谁跟你聊",
       "w": 1760,
       "x": 0,
-      "y": 22200
+      "y": 22920
     },
     "spec/CrewPositioning.dc.html": {
-      "h": 2760,
+      "h": 3060,
       "page": "crew",
       "title": "C9 · 定位：做什么、不做什么（和竞品对照）",
       "w": 1760,
       "x": 0,
-      "y": 25920
+      "y": 26640
     },
     "spec/SessionModel.dc.html": {
       "h": 3200,
@@ -428,7 +428,7 @@
       "y": 3360
     },
     "spec/AgentsSettings.dc.html": {
-      "h": 2240,
+      "h": 2700,
       "page": "adapters",
       "title": "A0 · Settings › Agents：每家 agent 能做什么、靠什么做、核对到哪个版本",
       "w": 1760,
@@ -441,7 +441,7 @@
       "title": "A1 · 接入和升级一家 agent：同一套合格测试、记录、照记录开关功能",
       "w": 1760,
       "x": 0,
-      "y": 2400
+      "y": 2860
     },
     "spec/SkillsManage.dc.html": {
       "h": 2740,
@@ -474,6 +474,166 @@
       "w": 1760,
       "x": 0,
       "y": 2640
+    },
+    "spec/ResearchOverview.dc.html": {
+      "h": 3960,
+      "page": "research",
+      "title": "E0 · 研究和竞赛：一队 agent 做 Kaggle、收论文、复现、视频转 PPT",
+      "w": 1760,
+      "x": 0,
+      "y": 0
+    },
+    "spec/ResearchCompetition.dc.html": {
+      "h": 3760,
+      "page": "research",
+      "title": "E1 · Kaggle 竞赛：几个方向并行，按同一个分数比，你点了才提交",
+      "w": 1760,
+      "x": 0,
+      "y": 4120
+    },
+    "spec/ResearchLibrary.dc.html": {
+      "h": 3800,
+      "page": "research",
+      "title": "E2 · 资料库和读论文、复现对照表、视频转 PPT",
+      "w": 1760,
+      "x": 0,
+      "y": 8040
+    },
+    "spec/ResearchTemplates.dc.html": {
+      "h": 3560,
+      "page": "research",
+      "title": "E3 · 四个研究模板（C5 格式草稿）和 New crew 里的研究设置",
+      "w": 1760,
+      "x": 0,
+      "y": 12000
+    },
+    "spec/DocWindow.dc.html": {
+      "h": 3040,
+      "page": "docs",
+      "title": "D0 · 文档窗口：在白板上和 agent 一起写需求、技术、实现、实验文档",
+      "w": 1760,
+      "x": 0,
+      "y": 0
+    },
+    "spec/DocAnchors.dc.html": {
+      "h": 2780,
+      "page": "docs",
+      "title": "D1 · 代码锚点和核查：path:line 点得回去，代码变了也对得上",
+      "w": 1760,
+      "x": 0,
+      "y": 3200
+    },
+    "spec/DocSkill.dc.html": {
+      "h": 1940,
+      "page": "docs",
+      "title": "D2 · agentdeck-docs skill：用人话写，少 AI 味，关键的话都能点回代码",
+      "w": 1760,
+      "x": 0,
+      "y": 6140
+    },
+    "spec/FlowWindow.dc.html": {
+      "h": 2700,
+      "page": "flow",
+      "title": "F0 · Flow 窗口：每一步都能点回源码的序列图",
+      "w": 1760,
+      "x": 0,
+      "y": 0
+    },
+    "spec/FlowCoverage.dc.html": {
+      "h": 3300,
+      "page": "flow",
+      "title": "F1 · 三种覆盖：图漏了什么、测试跑到哪、需求管到哪",
+      "w": 1760,
+      "x": 0,
+      "y": 2860
+    },
+    "spec/FlowLinks.dc.html": {
+      "h": 3200,
+      "page": "flow",
+      "title": "F2 · 和终端、编辑器、文档联动；代码变了；集群里谁用",
+      "w": 1760,
+      "x": 0,
+      "y": 6320
+    },
+    "spec/AgentDayRun.dc.html": {
+      "h": 3620,
+      "page": "longrun",
+      "title": "W0 · 一个 agent 跑一整天：同一张队列卡片，排好就自己往下做",
+      "w": 1760,
+      "x": 0,
+      "y": 0
+    },
+    "spec/AgentLessons.dc.html": {
+      "h": 3900,
+      "page": "longrun",
+      "title": "W1 · Lessons：反复踩的坑记一次，五家、每个 worktree、每个新 session 都知道",
+      "w": 1760,
+      "x": 0,
+      "y": 3780
+    },
+    "spec/AgentDayReport.dc.html": {
+      "h": 1760,
+      "page": "longrun",
+      "title": "W2 · 跑完一天，你回来看什么：一条推送、收件箱、一份报告",
+      "w": 1760,
+      "x": 0,
+      "y": 7840
+    },
+    "spec/ForgeFlow.dc.html": {
+      "h": 3360,
+      "page": "forge",
+      "title": "I0 · 开源项目的 issue 和 PR：主流程、谁做什么、对外发言只在你点的时候",
+      "w": 1760,
+      "x": 0,
+      "y": 0
+    },
+    "spec/ForgeBoard.dc.html": {
+      "h": 3540,
+      "page": "forge",
+      "title": "I1 · 白板上：Issues & PRs 窗口、框上的 #编号、面板里这个工作区的 PR",
+      "w": 1760,
+      "x": 0,
+      "y": 3520
+    },
+    "spec/ForgeGate.dc.html": {
+      "h": 3420,
+      "page": "forge",
+      "title": "I2 · 对外发言的关卡、审别人的 PR、喂给 agent 的字怎么防注入",
+      "w": 1760,
+      "x": 0,
+      "y": 7220
+    },
+    "spec/MultiShepherd.dc.html": {
+      "h": 3120,
+      "page": "multi",
+      "title": "O0 · “牧羊人”面板：借哪几样、放在哪",
+      "w": 1760,
+      "x": 0,
+      "y": 0
+    },
+    "spec/MultiConflicts.dc.html": {
+      "h": 3260,
+      "page": "multi",
+      "title": "O1 · 几个 agent 改同一个仓库：隔离、重叠提示、合并预演、同目录提醒",
+      "w": 1760,
+      "x": 0,
+      "y": 3280
+    },
+    "spec/LearnAssist.dc.html": {
+      "h": 3820,
+      "page": "learn",
+      "title": "L0 · 学习和辅助：/teach 和数据库终端",
+      "w": 1760,
+      "x": 0,
+      "y": 0
+    },
+    "spec/AgentsNewTwo.dc.html": {
+      "h": 3440,
+      "page": "adapters",
+      "title": "A2 · 接入 OpenCode 和 Hermes：能力表草稿和预计档位",
+      "w": 1760,
+      "x": 0,
+      "y": 5580
     }
   },
   "createdOnFiles": {
@@ -575,6 +735,62 @@
       "text": "Agent 接入 · 能力报告、合格测试、Settings › Agents",
       "x": 0,
       "y": -300
+    },
+    "head_research": {
+      "kind": "title1",
+      "maxW": 1760,
+      "page": "research",
+      "text": "研究和竞赛 · Kaggle、收论文、复现、视频转 PPT",
+      "x": 0,
+      "y": -300
+    },
+    "head_docs": {
+      "kind": "title1",
+      "maxW": 1760,
+      "page": "docs",
+      "text": "文档 · 在白板上和 agent 一起写，引用点得回代码",
+      "x": 0,
+      "y": -300
+    },
+    "head_flow": {
+      "kind": "title1",
+      "maxW": 1760,
+      "page": "flow",
+      "text": "代码理解 · 每一步都能点回源码的序列图",
+      "x": 0,
+      "y": -300
+    },
+    "head_longrun": {
+      "kind": "title1",
+      "maxW": 1760,
+      "page": "longrun",
+      "text": "长期运行 · Lessons · 一个 agent 跑一整天，反复踩的坑记一次",
+      "x": 0,
+      "y": -300
+    },
+    "head_forge": {
+      "kind": "title1",
+      "maxW": 1760,
+      "page": "forge",
+      "text": "Issue · PR · 开源项目的 issue 和 PR，对外发言只在你点的时候",
+      "x": 0,
+      "y": -300
+    },
+    "head_multi": {
+      "kind": "title1",
+      "maxW": 1760,
+      "page": "multi",
+      "text": "多 agent 同仓协作 · 牧羊人面板、重叠提示、合并预演",
+      "x": 0,
+      "y": -300
+    },
+    "head_learn": {
+      "kind": "title1",
+      "maxW": 1760,
+      "page": "learn",
+      "text": "学习和辅助 · /teach 和数据库终端",
+      "x": 0,
+      "y": -300
     }
   },
   "order": [
@@ -632,10 +848,30 @@
     "spec/SessionBoard.dc.html",
     "spec/AgentsSettings.dc.html",
     "spec/AgentsOnboard.dc.html",
+    "spec/AgentsNewTwo.dc.html",
     "spec/SkillsManage.dc.html",
     "spec/SkillsAgents.dc.html",
     "spec/RemoteOverview.dc.html",
-    "spec/RemoteMobile.dc.html"
+    "spec/RemoteMobile.dc.html",
+    "spec/ResearchOverview.dc.html",
+    "spec/ResearchCompetition.dc.html",
+    "spec/ResearchLibrary.dc.html",
+    "spec/ResearchTemplates.dc.html",
+    "spec/DocWindow.dc.html",
+    "spec/DocAnchors.dc.html",
+    "spec/DocSkill.dc.html",
+    "spec/FlowWindow.dc.html",
+    "spec/FlowCoverage.dc.html",
+    "spec/FlowLinks.dc.html",
+    "spec/AgentDayRun.dc.html",
+    "spec/AgentLessons.dc.html",
+    "spec/AgentDayReport.dc.html",
+    "spec/ForgeFlow.dc.html",
+    "spec/ForgeBoard.dc.html",
+    "spec/ForgeGate.dc.html",
+    "spec/MultiShepherd.dc.html",
+    "spec/MultiConflicts.dc.html",
+    "spec/LearnAssist.dc.html"
   ],
   "pages": [
     {
@@ -669,6 +905,34 @@
     {
       "id": "remote",
       "name": "手机 · 远程"
+    },
+    {
+      "id": "research",
+      "name": "研究和竞赛"
+    },
+    {
+      "id": "docs",
+      "name": "文档"
+    },
+    {
+      "id": "flow",
+      "name": "代码理解"
+    },
+    {
+      "id": "longrun",
+      "name": "长期运行 · Lessons"
+    },
+    {
+      "id": "forge",
+      "name": "Issue · PR"
+    },
+    {
+      "id": "multi",
+      "name": "多 agent 同仓协作"
+    },
+    {
+      "id": "learn",
+      "name": "学习和辅助"
     },
     {
       "id": "v2",

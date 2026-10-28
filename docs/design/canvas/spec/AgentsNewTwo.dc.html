@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>接入 OpenCode 和 Hermes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.at{position:absolute}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1240px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.g{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:20px;padding:0 6px;border-radius:4px;border:1px solid #D6D6D2;font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:500;color:#1A1A1A;background:#FFFFFF;box-sizing:border-box}
+.g0{color:#6B6B6B;border-style:dashed}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#6B6B6B}
+.node{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #D6D6D2;border-radius:8px;padding:10px 12px;font-size:12.5px;line-height:1.5;display:flex;flex-direction:column;gap:3px}
+.node b{font-size:13px}
+.arr{position:absolute;font-size:18px;color:#8A8A85}
+.who{position:absolute;font-size:11px;color:#6B6B6B;font-weight:600;letter-spacing:0.04em}
+.card{box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.6}
+.card b{font-size:15px}
+.dlg{box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,0.10);display:flex;flex-direction:column;overflow:hidden;font-size:12px}
+.dlg-h{display:flex;align-items:center;height:40px;padding:0 16px;border-bottom:1px solid #EEEEEB;font-size:13px;font-weight:600}
+.nav{width:168px;flex:none;border-right:1px solid #EEEEEB;padding:8px;display:flex;flex-direction:column;gap:1px;box-sizing:border-box}
+.ni{display:flex;align-items:center;gap:7px;height:26px;padding:0 8px;border-radius:5px;font-size:12px}
+.nh{padding:8px 8px 3px;font-size:10.5px;font-weight:600;letter-spacing:0.04em;color:#6B6B6B}
+.sq{width:8px;height:8px;border-radius:2px;flex:none}
+.page{flex:1;padding:16px 20px;display:flex;flex-direction:column;gap:10px;box-sizing:border-box}
+.btn{display:inline-flex;align-items:center;height:24px;padding:0 10px;border:1px solid #D6D6D2;border-radius:6px;background:#FFFFFF;font-size:11.5px;font-family:inherit;color:#1A1A1A}
+.cg{display:grid;grid-template-columns:130px 70px 150px minmax(0,1fr);font-size:11.5px;line-height:1.4;border:1px solid #EEEEEB;border-radius:6px;overflow:hidden}
+.cg span{padding:5px 9px;border-top:1px solid #EEEEEB}
+.cg .ch{border-top:none;background:#F7F7F5;font-size:10.5px;font-weight:600;color:#6B6B6B}
+.code{box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;padding:10px 12px;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.7;color:#1A1A1A;white-space:pre}
+</style>
+</helmet>
+<div style="width: 1760px; height: 3440px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">A2 · 接入 OpenCode 和 Hermes：按 AH0 的能力报告逐项填，预计 OpenCode 到第一档，Hermes 停在通用档</h1>
+      <span class="concept">2026-10-28 按推荐先定，待你确认</span>
+    </div>
+    <p class="lead">用户笔记第 1 条要 AgentDeck 支持 Codex、Claude Code、OpenCode、Hermes Code。这一页套 A1 定下的接入流程（A1：写能力声明 → L1 → L2 → compat 记录 → 界面照记录开关），先把两家的能力表草稿填出来。两家本机都没跑过合格测试，表里的档位是读文档和 --help 得出的预计，L2 跑完才算数。“Hermes Code” 查不到同名产品，按本机装着的 Nous Research Hermes Agent 理解。2026-10-28 按推荐先定，待你确认：OpenCode 用官方插件和本地服务接，过了合格测试就按能力报告进第一档，排在集群第一期之后（这改了 C9 的“只深做 claude、codex”）；Hermes 按通用档接，不往 ~/.hermes 装插件。任务是 M10 的 AH8（OpenCode）、AH9（Hermes）、AH10（身份色和名字）。</p>
+  </div>
+
+  <!-- 1 · 两家是什么 -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 两家是什么（2026-10-28 核对）</span>
+    <div class="tbl" style="grid-template-columns: 200px minmax(0, 1fr) minmax(0, 1fr)">
+      <span class="th">项</span><span class="th">OpenCode</span><span class="th">Hermes Agent（用户写作 Hermes Code，待确认）</span>
+      <span class="td">是什么</span><span class="td">开源的终端编码 agent，任意模型提供方。仓库 anomalyco/opencode（原 sst/opencode）</span><span class="td">Nous Research 的 hermes-agent：通用 agent，有 CLI / TUI、消息网关（Telegram、Slack…）、定时任务、kanban；写代码是其中一种用途</span>
+      <span class="td">最新版本</span><span class="td mono">v2.2.0 · 2026-10-27</span><span class="td mono">v0.22.5 · 2026-10-23</span>
+      <span class="td">本机</span><span class="td">没装（<span class="mono">which opencode</span> 找不到）。下面的参数全部来自 opencode.ai/docs（cli、plugins、permissions、config、server、skills）</span><span class="td">装了 <span class="mono">~/.local/bin/hermes</span> → <span class="mono">~/hermes-agent</span>，v0.13.0（2026-05-07），比最新版落后很多；只读看过 <span class="mono">--help</span> 和仓库里的文档，结论要在 v0.22.5 上重核</span>
+      <span class="td">界面</span><span class="td">TUI；启动时自己带一个本地 HTTP 服务（<span class="mono">--port</span>、<span class="mono">--hostname</span>），<span class="mono">/event</span> 推事件，<span class="mono">/tui/*</span> 能往输入框里填字</span><span class="td">默认是经典 REPL（prompt_toolkit），<span class="mono">--tui</span> 换成 Ink 写的新界面</span>
+      <span class="td">协议出口</span><span class="td"><span class="mono">opencode acp</span>、<span class="mono">serve</span>、<span class="mono">attach</span></span><span class="td"><span class="mono">hermes acp</span>、<span class="mono">hermes mcp serve</span></span>
+      <span class="td">自己开 worktree</span><span class="td">实验开关 <span class="mono">OPENCODE_EXPERIMENTAL_WORKSPACES</span>，默认关</span><span class="td"><span class="mono">-w</span>，或用户配置里 <span class="mono">worktree: true</span> 时每次都开。AgentDeck 不传 <span class="mono">-w</span>；用户配置开着时要提示（见第 5 节）</span>
+    </div>
+  </div>
+
+  <!-- 2 · 能力表 -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 能力表草稿（AH0 的 14 项，另加 shell-tool）</span>
+    <p class="lead">档位照 A0：<span class="g">A</span> 官方参数、钩子或插件 API；<span class="g">B</span> 私有文件、推断或没在真 TUI 核对；<span class="g">C</span> 认屏、发按键；<span class="g g0">—</span> 没有。原则不变：AgentDeck 只用启动参数和环境变量带东西进去，不改用户的 <span class="mono">~/.config/opencode</span>、<span class="mono">~/.hermes</span>。</p>
+    <div class="tbl" style="grid-template-columns: 150px minmax(0, 1fr) 54px minmax(0, 1fr) 54px; font-size: 12.5px">
+      <span class="th">能力（key）</span><span class="th">OpenCode 怎么做</span><span class="th">档</span><span class="th">Hermes 怎么做</span><span class="th">档</span>
+      <span class="td mono">first-prompt</span><span class="td">TUI 参数 <span class="mono">--prompt "&lt;text&gt;"</span>。会不会直接提交待核对；不提交就再调内置服务的 <span class="mono">/tui/submit-prompt</span></span><span class="td"><span class="g">A</span></span><span class="td">交互模式没有带消息的参数（<span class="mono">-q</span> 是一次性、非交互）。走 AH1 的“启动后发送”：终端安静后 <span class="mono">send-keys -l</span> 加回车</span><span class="td"><span class="g">C</span></span>
+      <span class="td mono">status</span><span class="td">AgentDeck 自带一个插件，用 <span class="mono">OPENCODE_CONFIG_DIR</span> 临时加载（文档：这个目录在全局配置之后加载、和它合并），把 <span class="mono">session.status</span>、<span class="mono">session.idle</span>、<span class="mono">session.error</span> 转给 HookServer。做法和 pi、omp 的扩展一样</span><span class="td"><span class="g">A</span></span><span class="td">只看输出活动。钩子和插件只能写进 <span class="mono">~/.hermes/config.yaml</span> 或 <span class="mono">~/.hermes/plugins</span>，项目里的插件还要先设开关；AgentDeck 不改这两处</span><span class="td"><span class="g">C</span></span>
+      <span class="td mono">approval-wait</span><span class="td">插件收 <span class="mono">permission.asked</span>，带工具名和参数</span><span class="td"><span class="g">A</span></span><span class="td">认屏：只有 rm -rf、sudo 这类危险命令才弹确认框（Approve Once / Session / Always / Deny）</span><span class="td"><span class="g">C</span></span>
+      <span class="td mono">question</span><span class="td">有 question 工具；插件在 <span class="mono">tool.execute.before</span> 里认出它（待核对事件名）</span><span class="td"><span class="g">B</span></span><span class="td">clarify 工具，认屏（待核对）</span><span class="td"><span class="g">C</span></span>
+      <span class="td mono">session-id</span><span class="td">启动时不能指定；插件收到 <span class="mono">session.created</span> 再报上来（同 omp）</span><span class="td"><span class="g">B</span></span><span class="td">不能指定（<span class="mono">--pass-session-id</span> 只是写进系统提示词）；启动后在 <span class="mono">hermes sessions list</span> 里找这次新建的那条，靠推断</span><span class="td"><span class="g">C</span></span>
+      <span class="td mono">resume</span><span class="td"><span class="mono">--session &lt;id&gt;</span>、<span class="mono">--continue</span></span><span class="td"><span class="g">A</span></span><span class="td"><span class="mono">--resume &lt;id 或标题&gt;</span>、<span class="mono">-c</span></span><span class="td"><span class="g">A</span></span>
+      <span class="td mono">fork</span><span class="td"><span class="mono">--session &lt;id&gt; --fork</span>。fork 到另一个 worktree 能不能接上待核对（会话按项目存）</span><span class="td"><span class="g">A</span></span><span class="td">只有会话里的 <span class="mono">/branch</span>，没有启动参数。菜单里 Fork 灰掉，写 “Hermes can't fork from the command line”</span><span class="td"><span class="g g0">—</span></span>
+      <span class="td mono">history</span><span class="td"><span class="mono">opencode session list --format json</span>（官方命令，不用读私有文件）</span><span class="td"><span class="g">A</span></span><span class="td"><span class="mono">hermes sessions list</span>，或读 <span class="mono">state.db</span>（SQLite，有标题、来源、token 数）</span><span class="td"><span class="g">B</span></span>
+      <span class="td mono">usage</span><span class="td"><span class="mono">opencode export &lt;id&gt;</span> 的 JSON 里每条消息有 tokens；插件的 <span class="mono">message.updated</span></span><span class="td"><span class="g">B</span></span><span class="td">state.db 里的输入、输出 token 数；<span class="mono">/usage</span></span><span class="td"><span class="g">B</span></span>
+      <span class="td mono">quota</span><span class="td">模型提供方很多，限额各不相同；<span class="mono">session.error</span> 里的重试信息待核对</span><span class="td"><span class="g">C</span></span><span class="td"><span class="mono">/usage</span> 的 Account limits（只有部分提供方有），认屏</span><span class="td"><span class="g">C</span></span>
+      <span class="td mono">approve-keys</span><span class="td">不用按键：调 TUI 内置服务 <span class="mono">POST /session/:id/permissions/:pid</span>，<span class="mono">response: "once"</span>。Approve all 用启动参数 <span class="mono">--auto</span></span><span class="td"><span class="g">A</span></span><span class="td">认屏后发 <span class="mono">1</span>（Approve Once），没在真 TUI 核对；<span class="mono">--yolo</span> 是全部放行，不用它</span><span class="td"><span class="g">C</span></span>
+      <span class="td mono">agentdeck-mcp</span><span class="td"><span class="mono">OPENCODE_CONFIG_CONTENT</span> 里加 <span class="mono">mcp.agentdeck</span>（remote，url，头里带这个终端的钥匙 AGENTDECK_TERM_KEY），和用户配置合并</span><span class="td"><span class="g">A</span></span><span class="td">只能用 <span class="mono">hermes mcp add</span> 写进用户配置。不挂；要进集群走 <span class="mono">agentdeck</span> 命令行</span><span class="td"><span class="g g0">—</span></span>
+      <span class="td mono">skills</span><span class="td"><span class="mono">OPENCODE_CONFIG_DIR/skills/&lt;name&gt;/SKILL.md</span>。它还会自己读 <span class="mono">~/.claude/skills</span>、<span class="mono">.agents/skills</span>，K0 的总览（SK0）要算进去；<span class="mono">OPENCODE_DISABLE_EXTERNAL_SKILLS</span> 能关</span><span class="td"><span class="g">A</span></span><span class="td"><span class="mono">-s &lt;name&gt;</span> 只能按名字预载它自己目录里的 skill，带不了 AgentDeck 库里的</span><span class="td"><span class="g">C</span></span>
+      <span class="td mono">subagents</span><span class="td">task 工具开子会话；事件待核对</span><span class="td"><span class="g">C</span></span><span class="td">delegate_task；<span class="mono">subagent_stop</span> 只有钩子收得到</span><span class="td"><span class="g g0">—</span></span>
+      <span class="td mono">shell-tool</span><span class="td">bash 工具</span><span class="td"><span class="g">A</span></span><span class="td">terminal 工具</span><span class="td"><span class="g">A</span></span>
+    </div>
+    <span style="font-size: 12.5px; color: #5F5F5A">合计（15 格）：OpenCode A 10 · B 3 · C 2；Hermes A 2 · B 2 · C 8 · 没有 3。对照 A0 的表，OpenCode 接近 claude、codex，Hermes 接近 kimi。</span>
+  </div>
+
+  <!-- 3 · 档位 -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · 预计到哪一档：档位从能力报告算出来，不写死</span>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px">
+      <div class="card"><b>第一档 · 深做</b><span>条件：status、approval-wait 是 A（钩子或插件，不认屏）；first-prompt、resume、session-id 至少 B；能挂 AgentDeck MCP 或有 shell-tool。</span><span>能做：集群 Lead / Worker、Auto-approve 不靠按键、收件箱里直接 Approve、用量。</span><span class="muted">现在：claude、codex。<br>预计：<b style="font-size: 13px">OpenCode</b>（L2 过了以后，排在集群第一期之后；quota、subagents 两格先是 Partial）</span></div>
+      <div class="card"><b>第二档 · 跟上</b><span>条件：有扩展报状态，但批准或会话 id 有一部分靠按键、推断。</span><span>能做：同第一档，C 档的项版本一超过核对版本就自动关（AH3）。</span><span class="muted">现在：omp、pi。</span></div>
+      <div class="card"><b>第三档 · 通用</b><span>条件：状态只看输出活动。</span><span>能做：普通终端；自由模式的子 session（不带 crew 和 session 命令，五家都行）；能跑 shell 的可以用 <span class="mono">agentdeck</span> 命令行进集群。黄灯不亮，收件箱里看不到它在等你，悬停写 “Status from terminal activity · no hooks”。</span><span class="muted">现在：kimi。<br>预计：<b style="font-size: 13px">Hermes</b>。已定不往 ~/.hermes 装插件，停在通用档</span></div>
+    </div>
+  </div>
+
+  <!-- 4 · 接法 -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · 怎么接：OpenCode 用插件收事件、用它自带的服务回答批准；Hermes 走通用适配器</span>
+    <div class="fig" style="width: 1632px; height: 460px">
+      <span class="who" style="left: 24px; top: 20px">OPENCODE</span>
+      <div class="node" style="left: 24px; top: 44px; width: 300px"><b>AgentService.start</b><span class="mono" style="font-size: 11px">opencode --prompt "&lt;第一条&gt;"<br>  --hostname 127.0.0.1 --port &lt;空闲端口&gt;</span><span class="mono" style="font-size: 11px">OPENCODE_CONFIG_DIR=&lt;AgentDeck&gt;/opencode<br>OPENCODE_CONFIG_CONTENT={"mcp":{"agentdeck":…}}<br>OPENCODE_SERVER_PASSWORD=&lt;每个终端一个&gt;</span></div>
+      <span class="arr" style="left: 332px; top: 90px">→</span>
+      <div class="node" style="left: 356px; top: 44px; width: 260px"><b>tmux 里的 OpenCode TUI</b><span>界面还是它自己的；同一个进程里起了只听 127.0.0.1 的服务，带密码</span></div>
+      <span class="arr" style="left: 624px; top: 90px">→</span>
+      <div class="node" style="left: 648px; top: 44px; width: 300px"><b>AgentDeck 插件（opencode/plugins/agentdeck.ts）</b><span>session.status / idle / error → 状态机<br>permission.asked → 等你（黄灯、收件箱）<br>session.created → 会话 id<br>file.edited → O1 的 L4 改动记录（CO2）</span></div>
+      <span class="arr" style="left: 956px; top: 90px">→</span>
+      <div class="node" style="left: 980px; top: 44px; width: 240px"><b>HookServer</b><span>和 pi、omp 的扩展同一个入口，按 AGENTDECK_TERM_KEY 认终端</span></div>
+      <div class="node" style="left: 980px; top: 200px; width: 300px"><b>回答批准</b><span>收件箱里点 Approve、Auto-approve 开着时：</span><span class="mono" style="font-size: 11px">POST /session/:id/permissions/:pid<br>{"response":"once"}</span><span>不发按键，所以版本升级不会按错</span></div>
+      <span class="arr" style="left: 940px; top: 240px">←</span>
+      <div class="node" style="left: 648px; top: 200px; width: 284px"><b>回到 TUI</b><span>确认框由 OpenCode 自己关掉（待核对：服务回答后 TUI 的框会不会立刻消失）</span></div>
+      <div class="node" style="left: 1312px; top: 44px; width: 296px"><b>不用的</b><span><span class="mono">opencode acp</span>：界面要自己画，违背 D1（DR-66）<br><span class="mono">--auto</span>：只在 Approve all 时传</span></div>
+
+      <span class="who" style="left: 24px; top: 330px">HERMES</span>
+      <div class="node" style="left: 24px; top: 354px; width: 300px"><b>AgentService.start</b><span class="mono" style="font-size: 11px">hermes        # 不加 -w，不加 --yolo<br>hermes --resume &lt;id&gt;</span></div>
+      <span class="arr" style="left: 332px; top: 380px">→</span>
+      <div class="node" style="left: 356px; top: 354px; width: 260px"><b>tmux 里的 Hermes</b><span>经典 REPL（<span class="mono">--tui</span> 的认屏规则另算，先不支持）</span></div>
+      <span class="arr" style="left: 624px; top: 380px">→</span>
+      <div class="node" style="left: 648px; top: 354px; width: 300px"><b>通用适配器（known.ts 加一行）</b><span>状态看输出活动；第一条消息启动后发送；确认框认屏，先不自动按（同 kimi 的做法）</span></div>
+      <span class="arr" style="left: 956px; top: 380px">→</span>
+      <div class="node" style="left: 980px; top: 354px; width: 300px"><b>历史和用量</b><span>读 <span class="mono">hermes sessions list</span> 或 state.db（只读）</span></div>
+    </div>
+  </div>
+
+  <!-- 5 · 界面 -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">5 · 界面上多了什么：Settings › Agents 两页，New terminal 菜单两项，HISTORY 两种身份色</span>
+    <div style="display: flex; gap: 24px; align-items: flex-start">
+      <div class="dlg" style="width: 900px; height: 470px">
+        <div class="dlg-h">Settings</div>
+        <div style="display: flex; flex: 1; min-height: 0">
+          <div class="nav">
+            <span class="ni">General</span>
+            <span class="nh">AGENTS</span>
+            <span class="ni"><span class="sq" style="background: #A8503A"></span>Claude Code</span>
+            <span class="ni"><span class="sq" style="background: #2F5E9E"></span>Codex</span>
+            <span class="ni" style="background: #EDEDEA"><span class="sq" style="background: #8A8A85"></span>OpenCode</span>
+            <span class="ni"><span class="sq" style="background: #8A8A85"></span>Hermes Agent</span>
+            <span class="ni"><span class="sq" style="background: #7347A8"></span>Pi</span>
+            <span class="ni"><span class="sq" style="background: #0F6F7F"></span>Oh My Pi</span>
+            <span class="ni"><span class="sq" style="background: #4A4F7A"></span>Kimi</span>
+          </div>
+          <div class="page">
+            <div style="display: flex; align-items: center; gap: 10px"><b style="font-size: 14px">OpenCode</b><span class="muted mono" style="font-size: 11px">2.2.0 · not checked yet</span><span style="flex: 1"></span><button type="button" class="btn">Check again</button></div>
+            <div class="cg">
+              <span class="ch">Capability</span><span class="ch">Level</span><span class="ch">How</span><span class="ch">Note</span>
+              <span>Status</span><span>Yes</span><span>Plugin</span><span class="muted">AgentDeck plugin via OPENCODE_CONFIG_DIR</span>
+              <span>Approval wait</span><span>Yes</span><span>Plugin</span><span class="muted">permission.asked</span>
+              <span>Approve</span><span>Yes</span><span>Local server</span><span class="muted">Answers through OpenCode's own server, no keys</span>
+              <span>Session id</span><span>Yes</span><span>Plugin</span><span class="muted">Known after the first message</span>
+              <span>Fork</span><span>Yes</span><span>Flag</span><span class="muted">--session --fork</span>
+              <span>AgentDeck MCP</span><span>Yes</span><span>Flag</span><span class="muted">OPENCODE_CONFIG_CONTENT</span>
+              <span>Quota</span><span>Partial</span><span>Output</span><span class="muted">Limits differ by provider</span>
+              <span>Subagents</span><span>No</span><span>—</span><span class="muted">Not supported for OpenCode yet</span>
+            </div>
+            <span class="muted" style="font-size: 11px">“not checked yet” 是 compat 记录还没有这一家时的写法；L2 跑过后换成 Checked up to 2.2.0。</span>
+          </div>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 14px; width: 708px">
+        <div class="card" style="padding: 14px 16px; font-size: 12.5px"><b style="font-size: 13.5px">Hermes Agent 页顶上的一句（只在用户配置开了 worktree 时）</b><span class="mono" style="font-size: 11.5px">Your Hermes config has worktree: true. Hermes will make its own worktree, and this workspace won't see its changes.</span><span class="muted">muted 文字，不用黄色（不是在等你）。AgentDeck 只读这个文件，不改。这是 IS-144 的一种：AH2 加一条 K18，启动时不传 --worktree，发现 agent 自己另开 worktree 时提示。开 Hermes 终端时也用 Toast 说一次。</span></div>
+        <div class="card" style="padding: 14px 16px; font-size: 12.5px"><b style="font-size: 13.5px">别处</b><span>New terminal ▸ 多 OpenCode、Hermes 两项（没装的不列）。</span><span>HISTORY 的 agent 小标题要两种新身份色：<span class="mono">--agent-opencode</span>、<span class="mono">--agent-hermes</span>（design-tokens 里新加，两种主题都过 4.5:1）。加之前回退到 muted，图里先画成灰。</span><span>标题栏右键 Fork conversation into… 对 Hermes 灰掉，hint 用报告里的原因。</span><span>New crew 的角色下拉照能力报告算（CR4 已改成这样）：OpenCode 过了 L2 就能选；Hermes 只能当自由模式的子 session。</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6 · 步骤和待核对 -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">6 · 接入步骤和要先核对的事</span>
+    <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px">
+      <div class="code">OpenCode（AH8）
+1  adapters/opencode.ts：launch、env、端口和密码
+2  tools/agentdeck-notify 加 opencode 插件
+3  能力声明 → L1（fixture：事件样例、session list JSON）
+4  L2：本地假 OpenAI 兼容服务（provider 配成它，不花额度）
+   K1–K17 逐项跑，写 compat/opencode.json
+5  对照这一页看 Settings › Agents
+Hermes（AH9）
+1  known.ts 加一行：commands ['hermes']，resume ['--resume','{id}']，
+   fork null，extension null，approveOnceKeys null
+2  第一条消息走 AH1 的 sendAfterReady
+3  启动前只读 ~/.hermes/config.yaml，worktree: true 时提示
+4  L2 在 v0.22.5 上跑（本机的 0.13.0 太旧）</div>
+      <div class="tbl" style="grid-template-columns: 40px minmax(0, 1fr); font-size: 12.5px">
+        <span class="th">#</span><span class="th">待核对（L2 之前不改档位）</span>
+        <span class="td mono">1</span><span class="td">OpenCode 的 <span class="mono">--prompt</span> 是填进输入框还是直接发出去</span>
+        <span class="td mono">2</span><span class="td"><span class="mono">OPENCODE_CONFIG_DIR</span> 是叠加在用户的 <span class="mono">~/.config/opencode</span> 上，还是顶掉它（文档写的是在它之后加载、能覆盖）</span>
+        <span class="td mono">3</span><span class="td">通过内置服务回答批准后，TUI 里的确认框会不会消失；服务密码在 TUI 模式下是否生效</span>
+        <span class="td mono">4</span><span class="td">OpenCode 会话 fork 到另一个 worktree 后能不能接着聊</span>
+        <span class="td mono">5</span><span class="td">Hermes v0.22.5 有没有加每次启动临时挂钩子、插件或 MCP 的办法（0.13.0 没有）</span>
+        <span class="td mono">6</span><span class="td">Hermes 经典 REPL 的确认框和 clarify 提问长什么样（认屏规则）</span>
+        <span class="td mono">7</span><span class="td">“Hermes Code” 已定按 Hermes Agent 理解；还有一个同名的 Hermes IDE（把几家 CLI 包在一个 TUI 里的壳），它不是 agent，不接</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":3440}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

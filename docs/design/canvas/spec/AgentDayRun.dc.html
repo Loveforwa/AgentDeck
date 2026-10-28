@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>单 agent 跑一整天</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.plain{background-image:none;background-color:#FBFBFA}
+.at{position:absolute}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1240px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.tag{display:inline-flex;align-items:center;height:18px;padding:0 7px;border-radius:999px;font-size:10.5px;background:#F2F2EF;color:#5F5F5A;white-space:nowrap}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#8A8A85}
+.win{box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;overflow:hidden;font-size:11px}
+.wt{display:flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-bottom:1px solid #EEEEEB;white-space:nowrap}
+.wb{padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.7;color:#3D3D3A;white-space:pre-wrap}
+.dot{width:7px;height:7px;border-radius:50%;flex:none;box-sizing:border-box;display:inline-block}
+.am{width:6px;height:6px;border-radius:1.5px;flex:none;display:inline-block}
+.q{position:absolute;height:16px;padding:0 7px;display:flex;align-items:center;gap:5px;font-size:9.5px;border:1px solid #D6D6D2;border-top:none;border-radius:0 0 4px 4px;white-space:nowrap;background:#FFFFFF;color:#3D3D3A;box-sizing:border-box}
+.btn{display:inline-flex;align-items:center;height:22px;padding:0 8px;border:1px solid #D6D6D2;border-radius:6px;font-size:11px;background:#FFFFFF;color:#1A1A1A;white-space:nowrap}
+.btn.pri{background:#1A1A1A;border-color:#1A1A1A;color:#FFFFFF}
+.card{box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,0.08);font-size:12px}
+.qr{display:grid;grid-template-columns:18px 16px 92px 1fr 210px;gap:8px;align-items:start;padding:6px 12px;border-top:1px solid #F0F0ED;line-height:1.45;font-size:11.5px}
+.qh{display:grid;grid-template-columns:18px 16px 92px 1fr 210px;gap:8px;padding:5px 12px;font-size:10px;font-weight:600;color:#8A8A85;letter-spacing:0.04em}
+.fld{display:flex;flex-direction:column;gap:3px;font-size:11px}
+.inp{box-sizing:border-box;height:22px;border:1px solid #D6D6D2;border-radius:5px;padding:0 7px;display:flex;align-items:center;background:#FFFFFF;font-size:11px}
+.sw{display:inline-flex;align-items:center;width:26px;height:14px;border-radius:999px;background:#1A1A1A;box-sizing:border-box;padding:2px;justify-content:flex-end}
+.sw i{display:block;width:10px;height:10px;border-radius:50%;background:#FFFFFF}
+.new{outline:1.5px dashed #8A8A85;outline-offset:3px;border-radius:6px}
+.ex{display:flex;flex-direction:column;gap:10px;font-size:13.5px;line-height:1.65}
+.lane{position:absolute;left:0;width:150px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;padding-left:16px;box-sizing:border-box}
+.bar{position:absolute;height:26px;box-sizing:border-box;border:1px solid #D6D6D2;background:#FFFFFF;border-radius:5px;font-size:10.5px;display:flex;align-items:center;padding:0 6px;white-space:nowrap;overflow:hidden;color:#3D3D3A}
+.pause{background:#FFF7E6;border:1px dashed #BF8700;color:#9A6700}
+.mk{position:absolute;font-size:10px;line-height:1.35;color:#3D3D3A;white-space:nowrap}
+.tick{position:absolute;width:1px;background:#E3E3E0}
+.box{box-sizing:border-box;border:1px solid #D6D6D2;border-radius:8px;background:#FFFFFF;padding:9px 11px;font-size:12px;line-height:1.5;display:flex;flex-direction:column;gap:2px}
+.box.ink{border:1.5px solid #1A1A1A}
+.arr{position:absolute;font-size:11px;color:#8A8A85;white-space:nowrap}
+.decide{display:grid;grid-template-columns:36px 1fr;gap:6px 10px;font-size:13px;line-height:1.6}
+</style>
+</helmet>
+<div style="width: 1760px; height: 3620px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">W0 · 一个 agent 跑一整天：同一张队列卡片，排好就自己往下做</h1>
+      <span class="concept">2026-10-28 按推荐先定，待你确认</span>
+    </div>
+    <p class="lead">不是一队 agent，是<b>一个终端、一个 session</b>：你早上排好几件事（按 skill 做的流程、定时的、一件接一件的），它一件件做；每件做没做完由 AgentDeck 跑检查说了算；额度用完先等恢复（Auto-resume），或者交给另一家（交接）；要你拍板的进收件箱；一天下来出一份报告。界面上就是 Prompt queue（PL3）那张卡片，打开 <b>Run all day</b> 以后每条多几个字段。执行从界面挪到主进程。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 卡片和书签：打开 Run all day 以后</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start">
+      <div class="fig" style="width: 1060px; height: 760px">
+        <div class="at win" style="left: 24px; top: 24px; width: 380px; height: 300px; border-color: #1A1A1A">
+          <div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="am" style="background: #A8503A"></span><span class="mono" style="font-weight: 500">claude</span><span class="muted">· agenduck · fix/history</span><span style="flex: 1"></span><span class="muted">Running · 14m</span></div>
+          <div class="wb"><span style="color: #1A1A1A">› Write the e2e for TC-55: reopen a stopped
+  session from the history sidebar.</span>
+
+● Read(e2e/tests/history.spec.ts)
+● Edit(e2e/tests/history.spec.ts)
+  ⎿ Added 42 lines
+● Bash(pnpm e2e -g TC-55)
+  ⎿ 1 passed (38s)
+
+Done. The test opens the sidebar, picks the
+stopped session and checks the frame.</div>
+        </div>
+        <div class="q new" style="left: 40px; top: 324px"><span class="dot" style="background: #1A7F37"></span>Run · 3 of 7 · checking</div>
+
+        <div class="at card" style="left: 430px; top: 24px; width: 606px">
+          <div style="display: flex; align-items: center; gap: 8px; padding: 10px 12px"><b>Queue</b><span class="muted">· 7 items</span><span style="flex: 1"></span><span class="new" style="display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px">Run all day <span class="sw"><i></i></span></span></div>
+          <div style="padding: 0 12px 8px; font-size: 11px; color: #5F5F5A">claude · agenduck · fix/history · started 08:25 · stops at 18:25</div>
+          <div class="qh new"><span>#</span><span></span><span>WHEN</span><span>PROMPT · SKILL</span><span>DONE WHEN</span></div>
+          <div class="qr"><span class="muted mono">1</span><span class="muted">✓</span><span>08:30</span><span><span class="mono">/triage-issues</span></span><span class="muted">no check · done 08:55</span></div>
+          <div class="qr"><span class="muted mono">2</span><span class="muted">✓</span><span>After 1</span><span>Fix the failing store test</span><span><span class="mono" style="font-size: 10.5px">pnpm --filter store test</span><br><span class="muted">passed on try 2</span></span></div>
+          <div class="qr" style="background: #F2F2EF"><span class="muted mono">3</span><span class="dot" style="background: #1A7F37; margin-top: 4px"></span><span>After 2</span><span>Write the e2e for TC-55: reopen a stopped session from the history sidebar.</span><span><span class="mono" style="font-size: 10.5px">pnpm e2e -g TC-55</span><br><span style="color: #1A7F37">checking…</span></span></div>
+          <div class="qr"><span class="muted mono">4</span><span class="muted">○</span><span>At 14:00</span><span><span class="mono">/release-notes 0.3.0</span></span><span class="muted">—</span></div>
+          <div class="qr" style="outline: 1.5px solid #1A1A1A; outline-offset: -1px"><span class="muted mono">5</span><span class="muted">○</span><span>After 4</span><span>Split the history reader into one file per agent<br><span class="muted">max 90m · if stuck: skip</span></span><span><span class="mono" style="font-size: 10.5px">pnpm --filter agent-adapters test</span></span></div>
+          <div class="qr"><span class="muted mono">6</span><span class="muted">○</span><span>After 5<br><span class="muted">fresh context</span></span><span>Review today’s diff on this branch and list anything risky.</span><span class="muted">—</span></div>
+          <div class="qr"><span class="muted mono">7</span><span class="muted">○</span><span>Weekdays 09:00</span><span><span class="mono">/triage-issues</span><br><span class="muted">repeats · next tomorrow 09:00</span></span><span class="muted">—</span></div>
+          <div style="padding: 8px 12px; border-top: 1px solid #F0F0ED"><div style="box-sizing: border-box; height: 30px; border: 1px solid #D6D6D2; border-radius: 6px; padding: 6px 8px; color: #A3A39E">Add an item… (⌘↩ to add)</div></div>
+          <div class="new" style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 8px 12px; border-top: 1px solid #F0F0ED; font-size: 11px; color: #3D3D3A">
+            <span>On usage limit <span class="btn">Wait and resume ▾</span></span>
+            <span>Stop after <span class="btn">10h ▾</span></span>
+            <span>☑ Keep Mac awake</span>
+            <span>☑ Reflect after trouble</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-top: 1px solid #F0F0ED"><span class="btn">Pause run</span><span class="btn">Stop run</span><span style="flex: 1"></span><span class="muted" style="font-size: 11px">Auto-approve is on for this terminal</span></div>
+        </div>
+
+        <div class="at card new" style="left: 24px; top: 372px; width: 380px">
+          <div style="display: flex; align-items: center; gap: 8px; padding: 10px 12px"><b>Item 5</b><span style="flex: 1"></span><span class="muted">×</span></div>
+          <div style="display: flex; flex-direction: column; gap: 9px; padding: 0 12px 12px">
+            <div class="fld"><span class="muted">Prompt</span><div class="inp" style="height: 40px; align-items: flex-start; padding-top: 5px">Split the history reader into one file per agent</div></div>
+            <div style="display: flex; gap: 10px">
+              <div class="fld" style="flex: 1"><span class="muted">Skill</span><div class="inp">None ▾</div></div>
+              <div class="fld" style="flex: 1"><span class="muted">When</span><div class="inp">After previous ▾</div></div>
+            </div>
+            <div class="fld"><span class="muted">Done when (AgentDeck runs it)</span><div class="inp mono">pnpm --filter agent-adapters test</div></div>
+            <div style="display: flex; gap: 10px">
+              <div class="fld" style="flex: 1"><span class="muted">Context</span><span>(•) Keep  ( ) Fresh</span></div>
+              <div class="fld" style="flex: 1"><span class="muted">Max time</span><div class="inp">90m ▾</div></div>
+            </div>
+            <div class="fld"><span class="muted">If stuck</span><span>(•) Skip to the next item  ( ) Stop the run</span></div>
+            <div class="fld"><span>☐ Keep going until done <span class="muted">· uses /goal · claude, codex</span></span></div>
+            <div style="display: flex; gap: 6px; justify-content: flex-end"><span class="btn">Cancel</span><span class="btn pri">Save</span></div>
+          </div>
+        </div>
+        <div class="at" style="left: 430px; top: 600px; width: 606px; font-size: 11.5px; line-height: 1.6; color: #5F5F5A">虚线框里是比 PL3 新加的。Run all day 关着时卡片就是 PL3 原来的样子（只有提示词一列，额度恢复后发）。When 的几种：Now、After previous、At 时间、Every day / Weekdays at、After usage limit（就是 PL3 原来那种）。书签和 Prompt queue、Auto-resume 的合成一个：Run · 3 of 7、Run · 3 of 7 · checking、… · fixing (try 2)、Paused · resumes 1:10pm、Run paused · AgentDeck was closed、✓ Run done · 6 of 7。</div>
+      </div>
+      <div class="ex" style="flex: 1">
+        <span><b>Skill 是“怎么做”，队列是“做什么、什么时候做”。</b>一条可以只写提示词，也可以选一个 skill（这个终端能用的，由 Skill 管理 K0、K1 决定能用哪些）。AgentDeck 用各家自己的写法调用：claude <span class="mono">/name</span>、codex <span class="mono">$name</span>、pi <span class="mono">/skill:name</span>（omp、kimi 待核对），不把 SKILL.md 正文贴进去。队列里用到的 skill 在开始前并进这个终端的选择。</span>
+        <span><b>Done when</b> 是一条命令，agent 回到空闲以后由 AgentDeck 在这个终端的目录里跑，不是 agent 自己说过了就算。没写就只看空闲。失败把最后 40 行和一句固定提示送回去，最多 2 次。</span>
+        <span><b>Context</b>：Fresh 时先发各家的清空命令（claude <span class="mono">/clear</span>、codex <span class="mono">/new</span>……），算同一个 Session 的新一段（S0）。一天的进度记在 AgentDeck 的队列里，不靠 agent 的上下文，清掉不丢。</span>
+        <span><b>Max time、If stuck</b>：到点先发一句“收尾：提交能用的、说清剩下什么”，再等 10 分钟算卡住；Skip 就跳到下一条，Stop 就停下进收件箱。</span>
+        <span><b>Keep going until done</b>：只给 claude、codex，替你发 <span class="mono">/goal</span>。默认关：判断做完靠 Done when 已经够，/goal 每轮多一次小模型判断。</span>
+        <span><b>无人值守</b>：Start run 时 Auto-approve 关着，会提示 “The agent will stop at the first permission prompt and wait for you.” 批准规则照 PL1，不因为在跑一整天就放宽。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 一天怎么走：你、AgentDeck、agent 各做什么</span>
+    <div class="fig plain" style="width: 1632px; height: 470px">
+      <div class="tick" style="left: 160px; top: 40px; height: 400px"></div>
+      <div class="tick" style="left: 280px; top: 40px; height: 400px"></div>
+      <div class="tick" style="left: 400px; top: 40px; height: 400px"></div>
+      <div class="tick" style="left: 520px; top: 40px; height: 400px"></div>
+      <div class="tick" style="left: 640px; top: 40px; height: 400px"></div>
+      <div class="tick" style="left: 760px; top: 40px; height: 400px"></div>
+      <div class="tick" style="left: 880px; top: 40px; height: 400px"></div>
+      <div class="tick" style="left: 1000px; top: 40px; height: 400px"></div>
+      <div class="tick" style="left: 1120px; top: 40px; height: 400px"></div>
+      <div class="tick" style="left: 1240px; top: 40px; height: 400px"></div>
+      <div class="tick" style="left: 1360px; top: 40px; height: 400px"></div>
+      <div class="tick" style="left: 1480px; top: 40px; height: 400px"></div>
+      <div class="mk muted" style="left: 148px; top: 20px">08:00</div>
+      <div class="mk muted" style="left: 268px; top: 20px">09:00</div>
+      <div class="mk muted" style="left: 388px; top: 20px">10:00</div>
+      <div class="mk muted" style="left: 508px; top: 20px">11:00</div>
+      <div class="mk muted" style="left: 628px; top: 20px">12:00</div>
+      <div class="mk muted" style="left: 748px; top: 20px">13:00</div>
+      <div class="mk muted" style="left: 868px; top: 20px">14:00</div>
+      <div class="mk muted" style="left: 988px; top: 20px">15:00</div>
+      <div class="mk muted" style="left: 1108px; top: 20px">16:00</div>
+      <div class="mk muted" style="left: 1228px; top: 20px">17:00</div>
+      <div class="mk muted" style="left: 1348px; top: 20px">18:00</div>
+      <div class="mk muted" style="left: 1468px; top: 20px">19:00</div>
+
+      <div class="lane" style="top: 70px; height: 26px"><span class="am" style="background: #A8503A"></span>claude</div>
+      <div class="bar" style="left: 220px; top: 70px; width: 50px">1</div>
+      <div class="bar" style="left: 270px; top: 70px; width: 170px">2 · store test</div>
+      <div class="bar" style="left: 440px; top: 70px; width: 160px">3 · e2e TC-55</div>
+      <div class="bar pause" style="left: 600px; top: 70px; width: 180px">usage limit · paused</div>
+      <div class="bar" style="left: 780px; top: 70px; width: 80px">3 cont.</div>
+      <div class="bar" style="left: 880px; top: 70px; width: 30px">4</div>
+      <div class="bar pause" style="left: 910px; top: 70px; width: 40px">?</div>
+      <div class="bar" style="left: 950px; top: 70px; width: 20px">4</div>
+      <div class="bar" style="left: 970px; top: 70px; width: 200px">5 · split reader</div>
+      <div class="bar" style="left: 1170px; top: 70px; width: 10px; border-color: #CF222E"></div>
+      <div class="bar" style="left: 1190px; top: 70px; width: 80px">6 · review</div>
+      <div class="mk" style="left: 220px; top: 102px">/triage-issues</div>
+      <div class="mk" style="left: 600px; top: 102px; color: #9A6700">11:40–13:10 · Auto-resume</div>
+      <div class="mk" style="left: 880px; top: 102px; color: #9A6700">asks a question</div>
+      <div class="mk" style="left: 1100px; top: 102px; color: #CF222E">stuck at 90m → reflect</div>
+
+      <div class="lane" style="top: 190px; height: 26px">AgentDeck</div>
+      <div class="mk" style="left: 214px; top: 176px">▼ sends 1</div>
+      <div class="mk" style="left: 352px; top: 176px"><span class="dot" style="background: #CF222E"></span> check failed → sends the tail</div>
+      <div class="mk" style="left: 430px; top: 200px"><span class="dot" style="background: #1A7F37"></span> passed → sends 3</div>
+      <div class="mk" style="left: 596px; top: 224px"><span class="dot" style="background: #BF8700"></span> limit: waits, LimitService (PL5)</div>
+      <div class="mk" style="left: 776px; top: 176px">▼ resume prompt (PL4)</div>
+      <div class="mk" style="left: 846px; top: 200px"><span class="dot" style="background: #1A7F37"></span> check passed</div>
+      <div class="mk" style="left: 876px; top: 224px">▼ 14:00 sends 4</div>
+      <div class="mk" style="left: 1096px; top: 176px">▼ wrap-up prompt at 90m</div>
+      <div class="mk" style="left: 1160px; top: 200px"><span class="dot" style="background: #CF222E"></span> skip 5 · lesson candidate</div>
+      <div class="mk" style="left: 1186px; top: 224px">▼ /clear · sends 6</div>
+      <div class="mk" style="left: 1270px; top: 176px">▼ 17:30 report · push</div>
+
+      <div class="lane" style="top: 320px; height: 26px">You</div>
+      <div class="mk" style="left: 196px; top: 312px">08:25 Start run</div>
+      <div class="mk" style="left: 910px; top: 312px">14:35 answer from the inbox<br><span class="muted">(or the phone, RM3)</span></div>
+      <div class="mk" style="left: 1470px; top: 312px">19:00 read the report<br><span class="muted">review 1 lesson</span></div>
+      <div class="mk muted" style="left: 160px; top: 400px; white-space: normal; width: 1400px; font-size: 11.5px; line-height: 1.6">灰条是 agent 在做，黄色虚线是停着等（额度、等你回答），红色是卡住。AgentDeck 一行全是确定的代码：派活、跑检查、等额度、清上下文、出报告，不花 token。你一天只出现三次。第 5 条卡住后 AgentDeck 让 agent 想一想“有没有下次该知道的坑”，有就提一条 Lesson 候选（W1），你晚上看报告时一起审。</div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · 一条怎么算做完</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start">
+      <div class="fig plain" style="width: 1060px; height: 430px">
+        <div class="at box ink" style="left: 24px; top: 30px; width: 150px"><b>Send</b><span class="muted">prompt or skill; /clear first if Fresh</span></div>
+        <div class="arr" style="left: 180px; top: 48px">→</div>
+        <div class="at box" style="left: 200px; top: 30px; width: 150px"><b>Agent works</b><span class="muted">AgentDeck waits for idle</span></div>
+        <div class="arr" style="left: 356px; top: 48px">→</div>
+        <div class="at box ink" style="left: 376px; top: 30px; width: 170px"><b>Run Done when</b><span class="muted">in the terminal’s folder, by AgentDeck</span></div>
+        <div class="arr" style="left: 552px; top: 48px">→ passed</div>
+        <div class="at box" style="left: 616px; top: 30px; width: 170px"><span><span class="dot" style="background: #1A7F37"></span> <b>Done</b></span><span class="muted">reflect if it needed retries</span></div>
+        <div class="arr" style="left: 792px; top: 48px">→</div>
+        <div class="at box ink" style="left: 812px; top: 30px; width: 220px"><b>Next item</b><span class="muted">by its When; nothing due → idle until the next time</span></div>
+
+        <div class="arr" style="left: 430px; top: 104px">↓ failed</div>
+        <div class="at box" style="left: 376px; top: 130px; width: 170px"><b>Send the tail</b><span class="muted">last 40 lines + fixed prompt · up to 2 times</span></div>
+        <div class="arr" style="left: 430px; top: 204px">↓ still failing / max time</div>
+        <div class="at box" style="left: 376px; top: 230px; width: 170px"><span><span class="dot" style="background: #CF222E"></span> <b>Stuck</b></span><span class="muted">wrap-up prompt, then reflect</span></div>
+        <div class="arr" style="left: 552px; top: 248px">→ If stuck: Skip → next item · Stop → inbox (counted)</div>
+
+        <div class="arr" style="left: 230px; top: 104px">↓ waits for you</div>
+        <div class="at box" style="left: 200px; top: 130px; width: 150px"><span><span class="dot" style="background: #BF8700"></span> <b>Needs you</b></span><span class="muted">approval or question → inbox; the clock stops</span></div>
+        <div class="arr" style="left: 230px; top: 204px">↓ usage limit</div>
+        <div class="at box" style="left: 24px; top: 230px; width: 326px"><span><span class="dot" style="background: #BF8700"></span> <b>Usage limit</b></span><span class="muted">Wait and resume: Auto-resume (PL4) finishes this turn, then AgentDeck runs the check. Hand off to codex: SE6 opens a child session with the handoff note; the rest of the queue moves to it.</span></div>
+        <div class="at" style="left: 24px; top: 362px; width: 1010px; font-size: 11.5px; line-height: 1.6; color: #5F5F5A">一个终端只有一个“派活的人”：Day run 开着时，Prompt queue 的发送规则并进同一个 QueueService；额度的识别、归组、错开仍然只在 LimitService 里（PL5）；选 Wait 时 owner 是 auto-resume，它续完这一轮再由 QueueService 跑检查；选 Hand off 时 owner 是 run，Auto-resume 不插手。集群里的终端不能开 Day run（归 CR8 调度器）。</div>
+      </div>
+      <div class="ex" style="flex: 1">
+        <span><b>为什么由 AgentDeck 跑检查</b>：agent 说“做完了”不一定对；检查是确定的，换哪家都一样，不花 token。和集群“检查必跑”是同一个执行器。</span>
+        <span><b>为什么失败只回 2 次</b>：再多就是同一个错来回改，花额度。卡住的交给 If stuck 和报告，由你明天看。</span>
+        <span><b>Reflect after trouble</b>：只在检查重试过或卡住时发一次固定提示（“如果挡住你的是这个项目下次还会碰到的，用 agentdeck lesson propose 提一条；没有就回 no lesson”），平时不发，不多花。</span>
+        <span><b>重开应用</b>：只对账、不自动发。上一条是 running 的进收件箱 “Day run paused”，你点 Continue run 后先跑那一条的检查，过了直接下一条。</span>
+        <span><b>定时</b>：只在应用开着时生效，错过的写 Missed、不补跑（和 claude 的 /loop 一样）；终端忙着时等这一轮结束。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · 和已有部分怎么接（只接上，不重做）</span>
+    <div class="tbl" style="grid-template-columns: 200px 1fr 1fr; max-width: 1632px">
+      <span class="th">已有的</span><span class="th">Day run 用它做什么</span><span class="th">要改它什么</span>
+      <span class="td"><b>Prompt queue</b><br><span class="muted">PL3 · 插件页</span></span><span class="td">同一张卡片、同一份队列；PL3 的“额度恢复后发”变成 When 的一种。</span><span class="td">第一版照原样提交（含 IS-113 的修法）；之后执行搬进主进程，队列从白板 JSON 搬进 SQLite，挂在 Session 上。</span>
+      <span class="td"><b>Auto-resume · LimitService</b><br><span class="muted">PL4–PL9</span></span><span class="td">额度停了就等它续完这一轮；“额度停着时不派”看它。</span><span class="td">owner 加一种 run（选了交接时）。</span>
+      <span class="td"><b>交接</b><br><span class="muted">SE6 · Session 页</span></span><span class="td">On usage limit › Hand off to …：开子 session、第一条是交接说明、剩下的队列跟过去。</span><span class="td">交接说明里加当前这条、Done when、最后的检查输出。</span>
+      <span class="td"><b>Session</b><br><span class="muted">M9</span></span><span class="td">队列和 Day run 挂在 Session 上，关窗口不丢；/clear 是同一个 Session 的新一段。</span><span class="td">不改。左边栏悬停卡片多一行 “Day run · Oct 28 · 6 of 7”。</span>
+      <span class="td"><b>Skill 管理</b><br><span class="muted">K0 · M11</span></span><span class="td">决定这个终端能用哪些 skill；队列只按名字引用。</span><span class="td">SK6 加一句：队列里用到的 skill 开始前并进这个终端的选择。</span>
+      <span class="td"><b>收件箱 · 汇报</b><br><span class="muted">CR1 · C4</span></span><span class="td">等你的照常进收件箱；跑完的报告用 C4 汇报的版式（W2）。</span><span class="td">收件箱加 DAY RUNS、LESSONS TO REVIEW 两组，都不算进 Needs you。</span>
+      <span class="td"><b>推送 · 手机</b><br><span class="muted">RM1–RM3</span></span><span class="td">跑完、停下、交接时推一条；在手机上答问题。</span><span class="td">RM1 的推送时机加这三种。</span>
+      <span class="td"><b>Lessons</b><br><span class="muted">W1</span></span><span class="td">每次开 session、/clear 后都在系统提示里；卡住后提候选。</span><span class="td">—</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">5 · 和集群自由模式、和各家自带的有什么不一样</span>
+    <div class="tbl" style="grid-template-columns: 170px 1fr 1fr 1fr 1fr; max-width: 1632px">
+      <span class="th"></span><span class="th">Day run（本画板）</span><span class="th">集群 · 自由模式（C6）</span><span class="th">claude /loop、/goal</span><span class="th">Codex 应用的定时任务</span>
+      <span class="td"><b>几个 agent</b></span><span class="td">一个终端、一个 session，一件接一件</span><span class="td">一个 Lead 加最多 3 个并行的子 session</span><span class="td">一个会话</span><span class="td">每次新开一个会话（或回到一个会话）</span>
+      <span class="td"><b>下一件谁定</b></span><span class="td">你排的队列和时间</span><span class="td">Lead 自己拆、自己派</span><span class="td">/loop 按时间重发；/goal 一个目标做到底</span><span class="td">定时</span>
+      <span class="td"><b>worktree · 合并</b></span><span class="td">就在这个终端的目录和分支，不开、不合</span><span class="td">每个子 session 一个 worktree，合进集群分支，合回 main 你点</span><span class="td">不管</span><span class="td">可选 worktree 或本地</span>
+      <span class="td"><b>做完了没有</b></span><span class="td">AgentDeck 跑 Done when</span><span class="td">Lead 叫 AgentDeck 跑检查</span><span class="td">/goal 用小模型看对话判断</span><span class="td">agent 自己说</span>
+      <span class="td"><b>额度用完</b></span><span class="td">Auto-resume，或交给另一家</span><span class="td">CR8 调度器（换家或等）</span><span class="td">claude 自己续；/goal 暂停后接着</span><span class="td">待核对</span>
+      <span class="td"><b>能换家</b></span><span class="td">五家都能跑；能交接</span><span class="td">子 session 五家都行</span><span class="td">只 claude</span><span class="td">只 codex</span>
+      <span class="td"><b>回来看什么</b></span><span class="td">Day report + 收件箱</span><span class="td">集群汇报 + 收件箱 + 问 Lead</span><span class="td">翻对话</span><span class="td">Scheduled 一栏</span>
+      <span class="td"><b>适合</b></span><span class="td">一串各自独立、能检查的小活；日常维护</span><span class="td">一个大目标、要拆开并行</span><span class="td">盯一件事</span><span class="td">在 Codex 应用里定时跑</span>
+    </div>
+    <span style="font-size: 12.5px; line-height: 1.6; color: #5F5F5A; max-width: 1632px">来源（2026-10-28 读）：code.claude.com/docs/en/scheduled-tasks（/loop 会话内、最短 1 分钟、最多 50 个、7 天过期、错过不补）；code.claude.com/docs/en/goal（每轮后小模型判断，条件最长 4,000 字符，撞额度暂停）；learn.chatgpt.com/docs/automations（独立的每次新开会话，本地项目要应用开着）。Day run 不替代它们：在 AgentDeck 的 claude 终端里照样能用 /loop、/goal。</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">6 · 按推荐先定（2026-10-28），待你确认</span>
+    <div class="decide" style="max-width: 1500px">
+      <b>1</b><span><b>做法</b>：<b>扩展 PL3 的队列</b>（同一张卡片，打开 Run all day 才多出字段），执行搬进主进程；不单独做一个插件，也不建在集群上。PL3 第一版照原样提交（含 IS-113 的修法）。</span>
+      <b>2</b><span><b>额度用完</b>：默认 <b>Wait and resume</b>（等额度恢复），Hand off to …（交给另一家）每次运行可选。</span>
+      <b>3</b><span><b>/goal</b>：默认不用，做完与否由 Done when 定；条目上可选 Keep going until done（只 claude、codex）。</span>
+      <b>4</b><span><b>卡住了</b>：默认 Skip to the next item，写进报告；Stop the run 可选。</span>
+      <b>5</b><span><b>Reflect after trouble</b>：默认开（只在重试过或卡住时多一轮）。</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":3620}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

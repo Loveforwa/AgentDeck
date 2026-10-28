@@ -3,7 +3,7 @@
 实现过程中和一开始设想不一样的地方：原来以为什么、实际是什么、怎么决定的、好处和代价。
 由 `docs/research/build.py` 从 `docs/research/entries.py` 生成，不要直接改这个文件。更新于 2026-10-28。
 
-共 84 条：已解决 41，进行中 29，推迟 4，待验证 10。
+共 117 条：已解决 41，进行中 59，推迟 4，待验证 13。
 
 编号规则（全项目统一）：DR-xx 调研记录 · TC-xx 端到端用例 · IS-xx 问题 · F1、T2、X3 等是 MVP 任务表的任务编号。用例和问题在 MVP 验收报告（docs/status/index.html）里；每条调研下面列出相关的用例和问题。
 
@@ -19,6 +19,16 @@
   - [DR-73 Agent as Memory、收件箱、调度器的任务表：进度放哪，人从哪进来](#dr-73)（进行中）
   - [DR-79 定位：原来说的三样（跨家协作、白板看全局、原生 TUI）还是只有我们有吗（2026-10 竞品对照）](#dr-79)（进行中）
   - [DR-81 AgentDeck 要不要管 skill、管到哪一步、一处存放放在哪](#dr-81)（进行中）
+  - [DR-85 研究和竞赛：先在自由模式上补记账，模板放到最后](#dr-85)（进行中）
+  - [DR-91 集群的产物和最后一道关：不只合回 main，还有 Accept outputs 和 Submit](#dr-91)（进行中）
+  - [DR-92 “像 Canvas 一样写文档”现在有哪几种做法，AgentDeck 该学哪一种](#dr-92)（进行中）
+  - [DR-101 “覆盖”是哪种：图覆盖代码、测试覆盖图、需求覆盖图，先做哪种、子 agent 怎么判](#dr-101)（进行中）
+  - [DR-103 用户说的 Octop 是什么，为什么不引入](#dr-103)（进行中）
+  - [DR-105 反复踩的坑记在哪、谁来记：各家自带的 memory 够不够，跨家怎么办（DR-74 的补充）](#dr-105)（进行中）
+  - [DR-107 一个 agent 跑一整天：扩展 Prompt queue、用集群，还是用各家自带的 /loop、/goal、定时任务](#dr-107)（进行中）
+  - [DR-111 issue / PR 放在白板哪里，PR 和它的 worktree、session、CI 怎么连](#dr-111)（进行中）
+  - [DR-113 现有工具怎么处理 issue 和 PR：Copilot coding agent、@claude、Codex cloud、Sweep、OpenHands、Conductor](#dr-113)（进行中）
+  - [DR-116 “牧羊人”面板是哪个产品，借什么；tmux 多 pane 复制不顺手在 AgentDeck 里是什么情况](#dr-116)（进行中）
 - **技术方案**：定技术选型时推翻的设想
   - [DR-04 终端进程交给 tmux，AgentDeck 只负责显示](#dr-04)（进行中）
   - [DR-05 Git 不监听文件，只在三个时机刷新](#dr-05)（已解决）
@@ -28,6 +38,19 @@
   - [DR-69 换一家 agent 接着做：转换对话格式，还是传一份交接说明](#dr-69)（进行中）
   - [DR-76 搜索要不要 AgentDeck 自己做](#dr-76)（进行中）
   - [DR-77 手机和远程走哪条路](#dr-77)（进行中）
+  - [DR-86 实验记录和分数：记在 AgentDeck 里，分数由 AgentDeck 跑锁住的打分命令算](#dr-86)（进行中）
+  - [DR-87 GPU 和长时间训练：AgentDeck 的 Jobs 看着，本机和 SSH 机器，不管云](#dr-87)（进行中）
+  - [DR-88 资料库：一条一个 Markdown 文件加索引，写入时由 AgentDeck 去重，AgentDeck 开着时定期跑](#dr-88)（进行中）
+  - [DR-89 复现：先写 Claims 表并锁住，环境建在 worktree 里，Δ 由 AgentDeck 算](#dr-89)（进行中）
+  - [DR-93 文档窗口：文档存在哪、agent 怎么写、用什么编辑器](#dr-93)（进行中）
+  - [DR-94 代码锚点：文档里的 path:line 怎么在代码变了以后还对得上](#dr-94)（进行中）
+  - [DR-100 序列图从哪来：agent 写、运行时录、还是静态调用图](#dr-100)（进行中）
+  - [DR-102 图存成什么、存在哪：自己的 JSON 还是 Mermaid / PlantUML；仓库还是数据目录](#dr-102)（进行中）
+  - [DR-108 issue / PR 的数据从哪来、用谁的登录：gh / glab 命令、自己调 API、还是交给 agent 的 GitHub MCP](#dr-108)（进行中）
+  - [DR-109 对外动作怎么拦：agent 起草、收件箱 Ready to post、你点了由 AgentDeck 发；从 issue 开的终端不带你的凭据](#dr-109)（进行中）
+  - [DR-110 喂给 agent 的 issue / PR 内容怎么防注入，别人的 PR 代码怎么跑](#dr-110)（进行中）
+  - [DR-112 几百个 issue 怎么排、同时最多几个，和集群上限、额度续跑的关系](#dr-112)（进行中）
+  - [DR-117 现有多 agent 工具怎么防止并发修改互相覆盖，AgentDeck 补哪几层](#dr-117)（进行中）
 - **需求细节**：在设计画布上评论、逐条改需求时改掉的做法
   - [DR-08 运行中的终端换不了目录，拖进别的框只能新开或 Fork](#dr-08)（进行中）
   - [DR-09 添加项目不用从访达拖，改成固定入口](#dr-09)（已解决）
@@ -37,6 +60,7 @@
   - [DR-13 “全部选 yes”改成先列清单的 Approve all](#dr-13)（推迟）
   - [DR-14 “关闭”分三种，重开能接回原来的对话](#dr-14)（推迟）
   - [DR-70 父子关系在白板和左边栏上怎么画](#dr-70)（进行中）
+  - [DR-96 写文档的 skill：重点放在“少 AI 味”还是“引用够密”](#dr-96)（进行中）
 - **接口与并发**：先定接口再并发开发，过程中发现的问题
   - [DR-15 先定接口再并发，接口第一版不够用](#dr-15)（已解决）
   - [DR-16 窗口组件的 props 漏在接口外面](#dr-16)（已解决）
@@ -44,6 +68,7 @@
   - [DR-18 检查规则比部分代码晚到](#dr-18)（已解决）
   - [DR-19 并行开发需要正式的仓库目录](#dr-19)（已解决）
   - [DR-20 第 2 波又收到约 30 条接口意见](#dr-20)（进行中）
+  - [DR-97 你、agent、几个 agent 同时改一篇文档时怎么办；评论怎么挂、怎么发](#dr-97)（进行中）
 - **实现中的技术问题**：真正写代码、跑真实 agent 时撞到的
   - [DR-21 跨 contextBridge 的错误会丢掉 code](#dr-21)（已解决）
   - [DR-22 claude 在 tmux 里自己降到 256 色](#dr-22)（进行中）
@@ -96,6 +121,14 @@
   - [DR-82 各家怎么只对一次启动隐藏 skill 或只给名字](#dr-82)（待验证）
   - [DR-83 codex 能不能在启动时加上 AgentDeck 库里的 skill](#dr-83)（待验证）
   - [DR-84 被额度打断的任务能不能恢复后自己接着做；各家自带什么，AgentDeck 是复用还是自己发](#dr-84)（进行中）
+  - [DR-90 视频：五家都走字幕或转写加关键帧，能看视频的只补看画面](#dr-90)（待验证）
+  - [DR-95 语义核查：怎么让子 agent 判断“这句话和代码对不对得上”](#dr-95)（待验证）
+  - [DR-98 用户说的 “Matt Pike 的 teach skill” 是什么；在 AgentDeck 里怎么用来学东西](#dr-98)（进行中）
+  - [DR-99 数据库管理 TUI 在工作台里怎么用；要加什么、不加什么](#dr-99)（进行中）
+  - [DR-104 测试覆盖怎么收：vitest、Electron 的主进程、utility 进程、界面进程](#dr-104)（待验证）
+  - [DR-106 Lessons 怎么进每家 agent 的上下文、每轮多付多少 token](#dr-106)（进行中）
+  - [DR-114 OpenCode 怎么接：插件收事件、用它 TUI 自带的服务回答批准](#dr-114)（进行中）
+  - [DR-115 “Hermes Code”是什么，怎么接](#dr-115)（进行中）
   - [DR-42 claude 能不能把对话 fork 到另一个目录](#dr-42)（已解决）
   - [DR-43 Approve all 发的“允许一次”按键对不对](#dr-43)（待验证）
   - [DR-44 经过 tmux 后的手感，要人在真界面上确认](#dr-44)（待验证）
@@ -152,7 +185,7 @@
 
 - **原来以为**：（N1 之后的设想）agent 用 open_terminals 自己开子 agent、自己分工，AgentDeck 只负责把窗口摆出来；“claude 做完交给 codex 审”这种两步流程已经能手动做到。
 - **实际情况**：2026-10-27 推演 AgentDeck 自己的开发流程（先定 contracts、再分线并行、换家审、按依赖合并）：让一个 agent 当总指挥时，上下文满了或压缩后会忘任务表，断了接不上；它说“做完了、检查过了”没人核对；改了别的线的目录、动了 contracts 没人拦；只能用它自己那家的额度，额度一完整个集群停；你还是得守着它。这些都不需要模型的判断，是确定的规则。真正需要模型的是拆任务、写代码、审代码、解冲突。2026-10-27 竞品对照（DR-79）：TermCanvas 的 Hydra、AgentGrid、Nodeterm 都是 Lead agent 自己管流程；Claude 的 agent teams、Projects 只用一家。还没看到确定的调度器加关卡的做法。
-- **决策**：2026-10-27 用户定：模板定结构（角色、阶段、关卡、上限），agent 填内容（任务表、代码、审查意见）。调度器是 AgentDeck 里的一段代码，不是 agent：它保存任务表（只存在 AgentDeck 里，不往仓库写，agent 用 crew 工具读写）、按依赖派活、给每个任务开 worktree（crew/<name>/<任务>）和终端、自己跑检查命令、比对任务的 owns 目录（越界打回）、锁住 contracts（要改走关卡）、换一家审（最多两轮）、merge --no-ff 进集群分支（冲突才开 Integrator）、额度用完换家或等恢复、重启后对账接上。界面上叫 Crew；默认分工总设计 claude、实现 codex（用完换 claude）、审查 claude、验收 codex；同时最多 3 个 agent；收件箱（CR1）先单独做；第一期只给 claude、codex、omp（DR-65）。分三期：CR0–CR6 只有 Contract-first build 一个模板，CR7–CR8 加 Integrator、QA、汇报、换家、整夜跑，CR9 开放模板文件和其余四种模板。2026-10-28 主 agent 补：crew 工具做成 agentdeck 命令行（agentdeck crew …），不进 AgentDeck MCP，说明只给 Lead（DR-72，CR3、CR12–CR17）。模板之外加自由模式（No template）：只开一个 Lead，流程交给它，安全和记账仍由 AgentDeck 守；第一期先做 CR1 收件箱，再做 1a 自由模式、1b 模板模式，互转放第二期（DR-71，CR10、CR11）。一个任务对应一串 session（实现者、每轮审查者、交接后的接班者），CrewTask 存 SessionId、不存 TerminalId；换一家接着做用 SE6 的交接（DR-68、DR-69）。Lead 不记进度但负责跟你聊进度：进度以任务表和 Decisions 为准，Lead 说之前先读 AgentDeck 生成的进度摘要，压缩、重开、换一家后从摘要接上；收件箱管要你拍板的事，Lead 能建议、不能代按，第二期按授权只答 worker 的问题（DR-73、DR-75，CR18–CR20）。进集群的名单见 DR-65。
+- **决策**：2026-10-27 用户定：模板定结构（角色、阶段、关卡、上限），agent 填内容（任务表、代码、审查意见）。调度器是 AgentDeck 里的一段代码，不是 agent：它保存任务表（只存在 AgentDeck 里，不往仓库写，agent 用 crew 工具读写）、按依赖派活、给每个任务开 worktree（crew/<name>/<任务>）和终端、自己跑检查命令、比对任务的 owns 目录（越界打回）、锁住 contracts（要改走关卡）、换一家审（最多两轮）、merge --no-ff 进集群分支（冲突才开 Integrator）、额度用完换家或等恢复、重启后对账接上。界面上叫 Crew；默认分工总设计 claude、实现 codex（用完换 claude）、审查 claude、验收 codex；同时最多 3 个 agent；收件箱（CR1）先单独做；第一期只给 claude、codex、omp（DR-65）。分三期：CR0–CR6 只有 Contract-first build 一个模板，CR7–CR8 加 Integrator、QA、汇报、换家、整夜跑，CR9 开放模板文件和其余四种模板。2026-10-28 主 agent 补：crew 工具做成 agentdeck 命令行（agentdeck crew …），不进 AgentDeck MCP，说明只给 Lead（DR-72，CR3、CR12–CR17）。模板之外加自由模式（No template）：只开一个 Lead，流程交给它，安全和记账仍由 AgentDeck 守；第一期先做 CR1 收件箱，再做 1a 自由模式、1b 模板模式，互转放第二期（DR-71，CR10、CR11）。一个任务对应一串 session（实现者、每轮审查者、交接后的接班者），CrewTask 存 SessionId、不存 TerminalId；换一家接着做用 SE6 的交接（DR-68、DR-69）。Lead 不记进度但负责跟你聊进度：进度以任务表和 Decisions 为准，Lead 说之前先读 AgentDeck 生成的进度摘要，压缩、重开、换一家后从摘要接上；收件箱管要你拍板的事，Lead 能建议、不能代按，第二期按授权只答 worker 的问题（DR-73、DR-75，CR18–CR20）。进集群的名单见 DR-65。2026-10-28 补（第二轮）：研究和竞赛（第 10 点）同样是“调度器加记账”的思路：分数由 AgentDeck 在提交上跑锁住的打分命令算、长训练由 Jobs 看着、Kaggle 提交只走 Submit 关卡；研究模板放到 CR9 之后（DR-85）。集群结束时，研究集群先给登记过的产物存快照，再清 worktree（DR-91）。
 - **好处**：进度和规矩不靠模型记，断了能续、能核对；能跨家用额度；你只在关卡（确认任务表、改接口、卡住、合回 main）上出现；第一个模板就是我们自己在用的流程，能拿 AgentDeck 自己的任务验证。
 - **代价**：调度器、crew 工具、集群框都是新东西，第一期就有 7 个任务；模板的形状是我们定的，第三期才开放给用户改；agent 不守 crew 工具的约定（比如不跑 agentdeck crew done）时要靠超时和检查兜底。
 
@@ -180,7 +213,7 @@
 
 - **原来以为**：（DR-64 之后）复杂任务只有模板一种做法；不要模板时就用 N1 的 open_terminals，AgentDeck 只摆窗口。文章《对下一代 Harness 的理解》主张由主 agent 自己写交接提示词、harness 不加强约束。
 - **实际情况**：2026-10-27 对照 DR-64 推演的问题：Lead 忘进度、自称做完没人核对、越界没人拦、额度一完全停、你得守着。其中“越界”“自称做完”“换家审”是流程，任务形状说不清时由 Lead 判断更合适；“开过谁记不住”“开太多”“一层套一层”“合进 main”“重启接不上”是安全和记账，不需要模型判断。现有代码：N1 的 open_terminals / create_workspace / read_terminal / send_to_terminal 已经能开子终端（packages/mcp-server/src/tools.ts），窗口组 WindowGroupRef 和 N2 侧边栏已经能把它们挂在 Lead 旁边；缺记录、等待、关闭、合并、累计上限、深度限制和关卡。子 session 只要 AgentDeck 能发第一条提示词、认得出空闲，就不需要任何 crew 工具，所以 pi、kimi 也能当子 session。待核对：pi、kimi 的空闲识别（没有钩子，靠输出活动）和从会话文件读最后一条回复；codex 跑 shell 命令的超时（wait 要按它分段）。
-- **决策**：2026-10-28 主 agent 定：两种都做。New crew 里选 No template 是自由模式：只开一个 Lead，流程交给它。安全和记账由 AgentDeck 守：只有 Lead 能开子 session（按调用者终端硬拒绝），同时最多 3 个（超了拒绝，不排队），只开勾选的几家，worktree 和分支由 AgentDeck 开（默认每个子 session 一个 crew/<name>/<label>，可选共用 Lead 的目录），记下子 session 表，等你的事进收件箱，合回 main 永远你点；另有 Auto-approve、最长时间、重启对账。流程交给 Lead：任务表和 Approve plan、检查必跑（改成 Lead 叫 AgentDeck 跑，Ready to merge 时跑一次不拦）、owns 打回（只提示）、锁 contracts（可选 Locked paths）、换家审、额度换家。发给子 session 的提示词前加几行固定说明（目录和分支、提交到本分支、不合并、不开新 session、最后总结）。Lead 用 wait / result 等子 session 做完、拿结果；子 session 不带任何工具，所以五家都能当子 session，pi 和 kimi 默认不勾。合并由 Lead 叫、AgentDeck 执行 merge --no-ff 进集群分支。crew-service 分成 core 和 template 两层，CrewSession 建在 Session（DR-68）上。第一期的顺序：CR1 收件箱 → 1a 自由模式（CR0、CR2 core、CR3 的 Lead 操作、CR4 的 No template、CR5 的自由模式框、CR10）→ 1b 模板模式；两种模式互转放第二期（CR11）。
+- **决策**：2026-10-28 主 agent 定：两种都做。New crew 里选 No template 是自由模式：只开一个 Lead，流程交给它。安全和记账由 AgentDeck 守：只有 Lead 能开子 session（按调用者终端硬拒绝），同时最多 3 个（超了拒绝，不排队），只开勾选的几家，worktree 和分支由 AgentDeck 开（默认每个子 session 一个 crew/<name>/<label>，可选共用 Lead 的目录），记下子 session 表，等你的事进收件箱，合回 main 永远你点；另有 Auto-approve、最长时间、重启对账。流程交给 Lead：任务表和 Approve plan、检查必跑（改成 Lead 叫 AgentDeck 跑，Ready to merge 时跑一次不拦）、owns 打回（只提示）、锁 contracts（可选 Locked paths）、换家审、额度换家。发给子 session 的提示词前加几行固定说明（目录和分支、提交到本分支、不合并、不开新 session、最后总结）。Lead 用 wait / result 等子 session 做完、拿结果；子 session 不带任何工具，所以五家都能当子 session，pi 和 kimi 默认不勾。合并由 Lead 叫、AgentDeck 执行 merge --no-ff 进集群分支。crew-service 分成 core 和 template 两层，CrewSession 建在 Session（DR-68）上。第一期的顺序：CR1 收件箱 → 1a 自由模式（CR0、CR2 core、CR3 的 Lead 操作、CR4 的 No template、CR5 的自由模式框、CR10）→ 1b 模板模式；两种模式互转放第二期（CR11）。2026-10-28 补（第二轮）：上面“子 session 不带任何工具”改为“子 session 不带 crew 和 session 命令”（DR-72 的 2026-10-28 补）。研究集群（开了 Results 或 Compute）发给子 session 的固定说明多 4 行 run start、run done、job start、out add（约 80 token），仍然不能开 session、不能申请提交（DR-86）。“超过上限直接拒绝，不排队”只管 session；Job 按机器的 GPU 数排队（DR-87）。
 - **好处**：任务形状说不清时也能用集群，和文章的用法一致；core 是模板模式本来就要做的底座，先做自由模式能更早用上、更早验证 agentdeck 命令行（DR-72）；子 session 零工具，pi、kimi 也能进来；Lead 压缩后靠 status 找回进度。
 - **代价**：1a 做完时只有自由模式，DR-64 担心的“Lead 忘进度、自称做完”在这段时间更容易出现（子 session 表和 wait / result 兜底）；每个子 session 一个 worktree，装依赖慢、占磁盘；Lead 有 shell，main 不能硬保护，只能检测（IS-99）；pi、kimi 的 wait 可能提前或推迟返回；Lead 自己碰到额度上限时整组停。
 
@@ -202,7 +235,7 @@
 
 ### DR-79 定位：原来说的三样（跨家协作、白板看全局、原生 TUI）还是只有我们有吗（2026-10 竞品对照）
 
-状态：进行中 · 出处：设计画布“Agent 集群”页 C9 · CR21 · README · docs/design/agentdeck-plan.html · M8 CR1–CR6 · 旧编号 —
+状态：进行中 · 出处：设计画布“Agent 集群”页 C9 · CR21 · README · docs/design/agentdeck-plan.html · M8 CR1–CR6 · 第 13 点代码理解：不引入 Octop 这类 agent 平台当核心（DR-103），图对到源码属于“产物能对应到源码” · 旧编号 —
 
 相关：IS-109
 
@@ -213,7 +246,7 @@
 跨家：几乎所有第三方都能接几家。按流程协作也有人在做：TermCanvas 的 Hydra（Lead 驱动，角色文件定用哪家，result.json 当关卡，CLI + skill 不用 MCP）、AgentGrid（主 agent 派活，额度快满时换 agent 接着做）、Synara（provider handoff）、Agent Deck（conductor 常驻会话盯别的会话）。
 官方在补单家多 session：Claude Code 的 agent view（2026-05，预览）、agent teams（实验，Lead + 队友 + 共享任务表）、Projects（公测，一个协调对话开云端 thread，Overview 列出 Waiting on you）、Remote Control（2026-02）；Codex App 的 threads、worktree、subagents、Automations，ChatGPT 手机 app 控 Mac（2026-05）。
 还没看到有人做的：调度器是一段确定的代码，不是 Lead agent。它守 owns 目录、锁接口、换家审、额度用完换家、重启后对账，关卡进统一收件箱。也就是 M8 的设计。
-- **决策**：2026-10-28 主 agent 定，用户确认：定位一句话：几家 agent 一起把大任务可靠地做完，你只在关卡出现。跨家协作、白板看全局、原生 TUI 降为基础设施底座，上面的复杂业务场景（集群、研究和竞赛、文档、issue / MR）各自单独设计。集群排在所有新方向前面，M5、M6 只做验收、修问题。只深做 claude、codex；omp 等 AH1 修好后跟上；pi、kimi 走 generic 加命令行。不做自己的聊天界面、统一工具集、记忆系统、搜索、云端执行；远程先借各家的（claude 在我们的终端里能 /remote-control），手机上看收件箱、批关卡见 M12。定位文案 CR21：内部文档现在改，README 首句等集群第一期合进再改。和开源项目 Agent Deck 同名（IS-109）：先在 README 加一句区分，公开推广前要不要改名由用户定。官方多 agent 功能（/remote-control、agent teams 分屏）在 AgentDeck 里的兼容实测：AH6。
+- **决策**：2026-10-28 主 agent 定，用户确认：定位一句话：几家 agent 一起把大任务可靠地做完，你只在关卡出现。跨家协作、白板看全局、原生 TUI 降为基础设施底座，上面的复杂业务场景（集群、研究和竞赛、文档、issue / MR）各自单独设计。集群排在所有新方向前面，M5、M6 只做验收、修问题。只深做 claude、codex；omp 等 AH1 修好后跟上；pi、kimi 走 generic 加命令行。不做自己的聊天界面、统一工具集、记忆系统、搜索、云端执行；远程先借各家的（claude 在我们的终端里能 /remote-control），手机上看收件箱、批关卡见 M12。定位文案 CR21：内部文档现在改，README 首句等集群第一期合进再改。和开源项目 Agent Deck 同名（IS-109）：先在 README 加一句区分，公开推广前要不要改名由用户定。官方多 agent 功能（/remote-control、agent teams 分屏）在 AgentDeck 里的兼容实测：AH6。2026-10-28 补（第二轮）：主 agent 定（按推荐，待用户确认）：改上面“只深做 claude、codex”：OpenCode 用官方插件和本地服务接，过了合格测试（AH2）就按能力报告进第一档，排在集群第一期之后（DR-114）；Hermes 按通用档接（DR-115）。
 - **好处**：对外说的是别人还没做完整的东西；和官方（单家）、T3 / Synara（协议接入）、Nodeterm / TermCanvas（Lead agent 自己管）都分得开；集群已经设计好（C0–C5），不用另起方向。
 - **代价**：集群做出来之前没有新的东西能对外说；窗口期有限，Hydra 和 AgentGrid 在接近；M5、M6 的验收和远程手机往后排；竞品变得快，这张表过一两个月就旧了。
 
@@ -230,6 +263,144 @@
 - **决策**：2026-10-28 主 agent 定：选 C，新开 M11「Skill 管理」（SK0–SK7）。总览：只读扫描五家的目录，看出重名、过时的副本和 token 占用。存放：一处存放 = AgentDeck 的库（自带的和 Add skill… 进来的），加上各家目录（只读，当作来源，不复制、不搬、不建软链）。启用分三层：全局（Settings › Skills）→ 项目（Project settings › Skills）→ 终端（N9），不做按框、按 agent 种类的层。能减：用各家的启动参数，把用户目录里的 skill 按项目设成 Names only 或 Off，不改用户目录。集群角色用一套预设（SK6）。按需加载（索引 skill 或 agentdeck skill find）放第二期，先做实验（SK7）。AgentDeck 永远不写、不删、不搬用户的 skill 目录。SK0–SK2、SK5 可以和 M8 第一期并行。
 - **好处**：不改用户目录就能按项目把每轮的 skill 描述从上万 token 减到几百；换一家 agent 时库里的 skill 自动带过去（codex 除外）；集群的 Worker 天然只带要的那几个。
 - **代价**：每家的减法参数又是一处耦合，要逐家核对、跟着升级；codex 只能减不能加，也没有 name-only；磁盘上的重复副本 AgentDeck 不清理，只指出来；在 AgentDeck 外面开的 agent 照旧全量加载。
+
+<a id="dr-85"></a>
+
+### DR-85 研究和竞赛：先在自由模式上补记账，模板放到最后
+
+状态：进行中 · 出处：设计画布 E0、E3 · M14 RS0–RS14 · 建在 C6 / CR10 上 · 旧编号 —
+
+相关：TC-85、TC-91、TC-93、TC-94、TC-95、IS-116、IS-117、IS-119
+
+- **原来以为**：用户笔记第 2 条（2026-10-28）：让多 agent 打 Kaggle、收论文新闻日程并辅助读、复现论文、视频转 PPT。直觉做法是照 C5 再写几个集群模板；另一种看法是自由模式（C6）加上 skill 就够了。
+- **实际情况**：2026-10-28 对照现有设计推演：四种场景都能放进同一条流水线（读题拆方向 → 锁住怎么算分 → 几路并行 → 跑和记 → 比 → 产物 → 你点）。和写代码的集群比，缺的不是“怎么做”（读论文、做特征、转写、出 pptx 都在 skill 里，用户库里已经有 arxiv、research-lit、run-experiment、experiment-queue、vast-gpu、paper-slides、pptx 等），而是记账：分数谁算、长训练谁看、提交谁交、产物放哪、收到的东西怎么去重、多久跑一次。这些属于 C6 说的“安全和记账”，不能交给 Lead。模板文件要到 CR9（第三期）才开放；Kaggle 每个比赛形状不同，先在自由模式里跑几次更稳。参考：MLE-bench（arXiv 2410.07095，75 个 Kaggle 比赛）、AIDE（arXiv 2502.13138，按验证分数做树搜索）、R&D-Agent（GitHub README 自称 MLE-bench 第一）都是“几路试、按验证分数选”的做法。
+- **决策**：2026-10-28 主 agent 定（按推荐，待用户确认）：分三层：第一层 skill 和各家工具（现在就有，AgentDeck 不写研究 skill、不打包 yt-dlp / whisper）；第二层集群核心里的记账：研究第一期 Runs、Jobs（本机）、Outputs、Submit、Claims，第二期 SSH 机器、Library、Schedule、条目进度，两种模式都能用；第三层四个研究模板（Competition、Literature watch、Paper reproduction、Video to slides），等 CR9，加 explore、fanout、deliver 三种阶段。新开 M14「研究和竞赛」，任务前缀 RS，研究第一期排在 CR10 之后。
+- **好处**：第一期就能在自由模式里用；做的是 C6 已经认定该由代码守的那一类事；模板晚做，形状可以从真用过的几次里抽出来；skill 和各家工具的进步直接受益。
+- **代价**：第一期没有模板，整夜跑的流程靠 Lead；要新写 Results 窗口、Jobs、Library 等不小的界面和服务；四个模板要等 CR9。
+
+<a id="dr-91"></a>
+
+### DR-91 集群的产物和最后一道关：不只合回 main，还有 Accept outputs 和 Submit
+
+状态：进行中 · 出处：E1 第 4、5 节 · RS5、RS6 · 扩展 CR7 · 旧编号 —
+
+相关：TC-88、TC-89、IS-116、IS-118
+
+- **原来以为**：集群的产物就是集群分支，汇报（CR7）列任务和合并，最后 Merge into main 或 Create PR。
+- **实际情况**：2026-10-28：研究类的产物多数不进 git，C3 写了结束时清 worktree；对外的动作不只 git push，还有 Kaggle 提交（每天有限、交了就算）。Kaggle 命令行用 kaggle auth login、KAGGLE_API_TOKEN、~/.kaggle/access_token 或旧的 kaggle.json 认证（Kaggle/kaggle-cli docs/README.md，2026-10-28 读），agent 都能读到；每日次数各比赛不同（常见 5 次，待核对）；代码类比赛能不能用命令行提交待核对（2026-02 有人报告接口拒绝）。
+- **决策**：2026-10-28 主 agent 定（按推荐，待用户确认）：加 Outputs（登记、快照、在白板上打开）和三种最后一道关：Merge into main（原样）、Accept outputs（研究类，收下产物、可 Save to…）、Submit（竞赛，每次提交都问，由 AgentDeck 执行并做格式检查，绕过关卡的提交报红，Auto-approve 永远不放行 kaggle competitions submit）。模板用 deliver 阶段声明要哪种。汇报按有无加 RUNS、NOT TRUSTED、SUBMISSIONS、CLAIMS、SOURCES、OUTPUTS 几节，表格由 AgentDeck 生成。集群结束时先给登记过的产物存快照，再清 worktree。
+- **好处**：研究成果不会随 worktree 被清；对外动作都在你手里；汇报里的数都来自记录。
+- **代价**：CR7 的范围变大；快照占磁盘（大文件只记路径）；挡不住 agent 用你的凭据自己交，只能发现。
+
+<a id="dr-92"></a>
+
+### DR-92 “像 Canvas 一样写文档”现在有哪几种做法，AgentDeck 该学哪一种
+
+状态：进行中 · 出处：设计画布“文档”页 D0 · p11/report.txt 第 2 节 · 旧编号 —
+
+相关：TC-96、TC-97、TC-102、IS-125
+
+- **原来以为**：（用户 2026-10-28 的笔记）在 client 里加一个类似 Claude Code 桌面版 Canvas 的文档编辑体验；Canvas 的实现形式待调研。
+- **实际情况**：2026-10-28 网上核对（多为二手来源，标了的待核对）。① Claude：artifact（对话旁边的页面，可以选中一段让 Claude 改，support.anthropic.com「What are artifacts」）；Claude Docs（2026-09-17 发布，beta，可直接编辑、共享给同事一起改、导出 Word / Google Docs，propakistani.pk 2026-09-17；本会话里 Claude Docs 连接器的说明写明：按块 id 改、每次写入带 ifHash/ifRev，别人先改了就拒绝并以对方为准，评论挂在原文几个字上，发给 Claude 的评论它在同一线程回复，人写过的线程它不能关）；Claude Code 的 /design（2.1.233 起，研究预览，每个文件一张画板放在一张可缩放的画布上，保存时两人冲突不合并，wmedia.es 2026-08-23；我们的设计画布就是这种，画板是 .dc.html 文件）。Claude Code 桌面版改版加了文件编辑器（bensbites 新闻条目，细节待核对）。② ChatGPT Canvas（2024-10 推出）：左对话右文档、选中一段让它改、Suggest edits 把建议挂在原文旁边、版本箭头和 Show changes（DataCamp 2024-12-10）；2026-05-28 起在 GPT-5.5 上不再提供，由聊天里的 writing blocks / code blocks 接替，2026-06-08 writing blocks 加了全屏编辑器（felloai.com 引 OpenAI 发布说明，2026-10-08 更新，待对 OpenAI 原文核对）。③ Cursor Plan Mode（2025-10-07，cursor.com/blog/plan-mode）：计划是 markdown，可以直接改、加删 to-do，可以存进仓库；论坛里有“手改的计划 agent 没读到”“Plan 模式不能改计划文件”的问题。Windsurf Planning Mode：本地 markdown 计划文件，人和 Cascade 都能改，路径在 .windsurf 或 ~/.codeium/windsurf/brain（文档前后说法不一）；Windsurf Codemaps（2025-11）：AI 生成的代码地图，每个节点点回文件和函数，是快照，文档没说代码变了怎么办。④ Notion：Notion Agent 能建和改页面、读评论、查版本历史，不能写评论（notion.com/help/notion-agent）；2024 年的 Suggested edits 是人对人的建议修改。⑤ 本地 markdown + AI：Obsidian 插件（Smart Composer 一键应用修改、Smart Note Agent 每次写入先给 diff 等你批、Claudian 把 Claude Code / Codex 嵌进库里直接改文件）；Kiro 的 spec 是仓库里的 requirements.md / design.md / tasks.md；Claude Code 的 VS Code 扩展把你选中的那段自动给 Claude、@file#L5-10 引用行。⑥ 代码相关：Swimm 把文档和代码片段、符号、路径绑在一起，每次提交检查，变了自动同步或标过时（docs.swimm.io，原文没打开，待核对）；DeepWiki 的回答带点到 GitHub 某一行的引用，不说钉在哪个提交（第三方指南）。
+- **决策**：2026-10-28 主 agent 定（按推荐，待用户确认）：走“文件 + 窗口 + 终端”：文档是仓库里的 .md，白板上开一个文档窗口放在 agent 终端旁边，agent 用自己的文件工具写；从 Claude Docs 学评论挂在原文上、发给 agent、只有人能关，学“对方先改了就以对方为准”；从 ChatGPT Canvas 学 Show changes；从 Swimm 学引用跟着代码走；不学云端存储和专用编辑接口。
+- **好处**：五家 agent 都不用学新东西；文档跟分支走、能进 PR；和 AgentDeck 的“原生 TUI”定位一致（DR-66）。
+- **代价**：评论在别的编辑器里看不到；没有服务商那种多人实时协作；ChatGPT 撤掉 Canvas 说明“对话旁边单独一个文档面板”这个形态本身也在变。
+
+<a id="dr-101"></a>
+
+### DR-101 “覆盖”是哪种：图覆盖代码、测试覆盖图、需求覆盖图，先做哪种、子 agent 怎么判
+
+状态：进行中 · 出处：设计画布“代码理解”页 F1 · CU4、CU5、CU6 · 旧编号 —
+
+相关：TC-113、TC-114、TC-115、IS-131、IS-132
+
+- **原来以为**：（用户）由子 agent 判断覆盖情况，没有说是哪一种覆盖。
+- **实际情况**：三种问的人和算的人都不同：① 图覆盖代码（图上说得对不对、漏了哪些分支）只能靠 agent 判断，open_terminals 一张图就能找出 5 个没画的出错分支（tools.ts:318、332、345，agent-service.ts:88，server.ts:100）和 1 处说错（IS-76）；② 测试覆盖图机器就能算：V8 覆盖按锚点行一查即可，实测 7 / 1 / 14（跑到 / 没跑到 / 没加载），但“跑到”不等于“断言了”；③ 需求覆盖图要把 TC 的文字对到步骤上，只能 agent 提、人确认。三层都叠在图上，图错了叠上去也是错的。
+- **决策**：2026-10-28 主 agent 定（按推荐，待用户确认）：先做 ①，它就是用户说的“子 agent 判断”：Verifier 子 session 默认换一家（claude 画的 codex 核），只读，每步交 confirmed / wrong / unsure 和证据锚点，漏掉的分支也要带锚点；AgentDeck 先核证据原文在不在，不在的结论标 Unverified 不算数；你逐条 Accept / Reject。② 紧跟（第一期末，单元测试），子 agent 只补判“跑到的有没有断言”。③ 第二期。代码变了只把锚点所在函数改过的步骤交回去重核。agentdeck flow 所有 AgentDeck 终端都有，verdicts 只认 Verifier（DR-72 的 2026-10-28 补）。
+- **好处**：先把图做对；机器能做的（锚点、覆盖数字）不花 token；每条结论都能复核；和集群“换家审”同一个思路。
+- **代价**：核一次几万到十几万 token（待实测）；换家要求两家都有额度；结论的粒度和措辞要靠 flow skill 约束。
+
+<a id="dr-103"></a>
+
+### DR-103 用户说的 Octop 是什么，为什么不引入
+
+状态：进行中 · 出处：本报告 · 画板 F0 第 3 节脚注 · 旧编号 —
+
+- **原来以为**：（用户笔记 2026-10-28）“而不是引入 Octop 作为核心方案”。
+- **实际情况**：2026-10-28 查：最可能是 github.com/TencentCloud/Octop（腾讯云，2026-07 开源，MIT，GitHub 页面写 11.2k star、版本 1.0.3b1）：自托管、多用户、多 agent 的 AI 助手，网页面板 + 命令行 + 飞书 / 钉钉 / QQ 等 IM，AgentTeams（Beta）由协调者调度多个专家，RAG 知识库（对文档，不对代码仓库），经 ACP 把编码的活交给 OpenCode、Claude Code、Codex。README 里没有代码理解、代码索引、序列图、覆盖率。名字相近的还有 Octocode（bgauryy，代码研究 MCP，MIT）、Octopus Review（AI PR 审查）、Claude Octopus（Claude Code 插件，并行调 Codex、Gemini）。
+- **决策**：2026-10-28 主 agent 定（待用户确认说的是 TencentCloud/Octop；视频链接待用户给）：不引入。它是另一个 agent 平台，和 AgentDeck 的定位（DR-79：几家 agent 一起把大任务做完，原生 TUI 当底座）重叠，接进来等于把核心换掉；它本身也没有“图对到源码”和覆盖的能力。代码理解按 DR-100 自己做，只依赖锚点层（第 11 点）和可选的 codegraph。
+- **好处**：不多一个平台层；代码理解的数据（seq.json）在仓库里，谁都能用。
+- **代价**：如果用户说的是别的项目或别的用法（例如只借它的 ACP 或知识库），结论要重看。
+
+<a id="dr-105"></a>
+
+### DR-105 反复踩的坑记在哪、谁来记：各家自带的 memory 够不够，跨家怎么办（DR-74 的补充）
+
+状态：进行中 · 出处：M13 LR0–LR5、LR11 · 设计画布 W1 · contracts（lessons.ts）· store（lessons 表）· agent-adapters（追加系统提示）· tools/agentdeck-cli（lesson）· ui/canvas（Project settings › Lessons）· ui/panels/inbox · 旧编号 —
+
+相关：TC-119、TC-120、TC-121、TC-122、IS-133
+
+- **原来以为**：（DR-74）长期记忆不由 AgentDeck 管，用各家的 AGENTS.md / CLAUDE.md / memory；短期变长期由你把汇报里的东西抄进 AGENTS.md。
+- **实际情况**：2026-10-28 查文档、本机只读看各家 --help：claude 2.1.291 有 CLAUDE.md（你写）和 auto memory（它写，默认开，~/.claude/projects/<仓库>/memory/，同一仓库所有 worktree 共用，MEMORY.md 每次会话读前 200 行或 25KB，主题文件按需读），记 user / feedback / project / reference 四类，但明确“跳过能从代码推出来的：架构、文件路径、debugging fixes”；被另一个 Claude 会话启动的会话里不能打开；--bare 会跳过（code.claude.com/docs/en/memory）。codex 0.164：memories 默认关（[features] memories = true；[memories] generate_memories、use_memories、disable_on_external_context、min_rate_limit_remaining_percent、extract_model、consolidation_model），存在 ~/.codex/memories/ 一处，没有按项目分；会话闲置一段时间后后台提炼、再由一个子 agent 全局合并，写 memory_summary.md、MEMORY.md、raw_memories.md、rollout_summaries/，按 max_unused_days 淘汰；注入的是 memory_summary（第三方读源码说约 5,000 token 封顶，待核对）；欧洲经济区、英国、瑞士上线时不可用；文档说“团队必须遵守的放 AGENTS.md，memories 只当回忆层”（learn.chatgpt.com/docs/customization/memories、github openai/codex codex-rs/memories/README.md）。omp 18.0.4 有自己的记忆（omp --help 里 tiny-models 写 “session titles + memory”；第三方博客说用 Hindsight，retain / recall 工具，默认按项目，待核对）。pi 0.83 没有记忆，有 --append-system-prompt 和 --no-context-files。kimi 2.3.2 没有记忆，--help 里没有追加系统提示的参数，有 --agent-file（待核对能不能只追加）。五家都读 AGENTS.md（claude 2.1.277 起在没有 CLAUDE.md 时读；本仓库是 CLAUDE.md 里 @AGENTS.md）。所以：各家的 memory 记的是偏好和进度，不记“坑”；不跨家；codex 的还不分项目、要等几小时、不好审。唯一跨家的是 AGENTS.md，但它跟着分支走，别的 worktree 在合进去之前看不到，而且整份每次都读（本仓库约 3.5k token）。第三方的跨家记忆工具（akitaonrails/ai-memory、claude-mem）都是把记录塞进下一轮提示，靠 MCP 或钩子，没有审核和上限。
+- **决策**：2026-10-28 主 agent 定（按推荐，待用户确认）：选 D：AgentDeck 只管一种窄的东西，叫 Lessons（反复踩的坑），不做通用记忆。存在 AgentDeck 的库里（SQLite，按项目，所有 worktree 共用；可选 All projects 一档放你手动加的个人偏好），只有你点了 Accept 的才生效；启动时用各家的追加系统提示参数注入一小块（项目 1,000 token、All projects 400 token 封顶，只对新 session 生效、会话中途不改）；候选来自 agent（agentdeck lesson propose，所有 AgentDeck 终端都有）、AgentDeck 看到的重复失败（自己跑的检查，同签名两个 session 内）、和你（Add lesson…、汇报和收件箱里的 Save as lesson）；值得全队长期留的你点 Move to AGENTS.md，AgentDeck 只改工作区、不提交，之后不再注入。偏好照 DR-74：写 AGENTS.md / CLAUDE.md，claude 的 auto memory 照你的设置；集群 worker 关 auto memory（CR4）不变，Lessons 照样注入给它们。这是 DR-74 的一条例外，不推翻 DR-74；kimi 先灰掉（DR-106）；Move to AGENTS.md 属于“往用户文件写东西”的例外，你点了才写、不提交。
+- **好处**：跨五家、跨 worktree、新 session 马上生效；不经你确认不进上下文，不会越记越乱；每轮 token 有硬上限且显示出来；不和各家的 memory 抢（它们记偏好和进度，Lessons 只记坑）；能进仓库，AgentDeck 外面也读得到。
+- **代价**：推翻了 DR-74 的半句（“也不往每个终端注入”），AgentDeck 多一个数据和一块界面；kimi 可能拿不到；codex 的 developer_instructions 和 pi、omp 的追加参数要逐家核对、跟着升级；在 AgentDeck 外面开的 agent 拿不到没进 AGENTS.md 的那些；agent 提的候选要你花时间审。
+
+<a id="dr-107"></a>
+
+### DR-107 一个 agent 跑一整天：扩展 Prompt queue、用集群，还是用各家自带的 /loop、/goal、定时任务
+
+状态：进行中 · 出处：M13 LR6–LR10 · 设计画布 W0、W2 · contracts（queue.ts、run.ts）· apps/desktop（QueueService）· packages/ui/canvas plugins（queue）· ui/panels/inbox · 依赖 PL3、PL5、SE6、CR1 · 旧编号 —
+
+相关：TC-124、TC-125、TC-126、TC-127、TC-128、IS-134、IS-135
+
+- **原来以为**：（PL3、PL4）队列只在额度恢复后发；续跑只管被打断的那一件；长任务和整夜跑交给集群（M8）。
+- **实际情况**：2026-10-28 查文档：claude 的 /loop 是会话内的定时（最短 1 分钟，一个会话最多 50 个，循环任务 7 天自动过期，应用关了不跑、错过的不补跑），/goal 每轮后用小模型判断条件到没到、到了才停（条件最长 4,000 字符，撞额度时暂停、恢复后接着），Desktop 定时任务和云端 routines 每次新开会话（code.claude.com/docs/en/scheduled-tasks、/goal）；Codex 应用的定时任务分独立（每次新开会话、在 worktree 或本地跑、结果进 Scheduled 一栏当收件箱）和会话内两种，本地项目要应用开着（learn.chatgpt.com/docs/automations）；codex 也有 /goal（第 9 点）。这些都只管自己那家，不跑 AgentDeck 的检查，不接 Auto-resume 和交接，看结果要去各家自己的界面。AgentDeck 已有的零件：PL3 的队列和卡片、PL5 的 LimitService、SE6 的交接、CR1 的收件箱、C4 的汇报版式、N9 / SK 的按终端带 skill、PL2 的用量。
+- **决策**：2026-10-28 主 agent 定（按推荐，待用户确认）：扩展 PL3 的队列，不另做一个插件，也不建在集群上：每条加 When、Skill、Done when、Context、Max time、If stuck；卡片底部加 Run all day 开关和 On usage limit（Wait and resume / Hand off to …）、Stop after、Keep Mac awake；执行挪到主进程的 QueueService（IS-134），状态存 SQLite、挂在 Session 上。一条做完 = agent 回到空闲 + AgentDeck 自己跑的检查通过（没写检查就只看空闲）；失败把输出尾巴送回去最多 2 次；超时先发收尾提示；卡住按 If stuck 跳过或停下。Skill 用各家自己的写法调用（claude /name、codex $name、pi /skill:name，其余待核对），用到的 skill 在开始前并进这个终端的选择（第 8 点 SK）。Fresh context 发各家的清空命令（/clear 等），算同一个 Session 的新一段。额度交给 Auto-resume，选了交接就调 SessionService.handoff 并把剩下的队列挂过去。跑完由代码生成 Day report。/goal 不默认用，条目上可选 Keep going until done（只 claude、codex）。PL3 第一版照原样提交（含 IS-113 的修法），之后再扩成 Run all day。卡住了默认 Skip 到下一条、写进报告；额度用完默认 Wait and resume，每次可选 Hand off to 另一家；Day report 只附 agent 最后一条回复的原文。
+- **好处**：一个零件（队列）从“额度恢复后发”长成“全天派活”，用户只学一张卡片；成没成由 AgentDeck 的检查定，不靠 agent 自己说；额度、交接、收件箱、汇报都复用已定的；五家都能用（skill 写法不同而已）；比集群省：一个上下文、不开 worktree、不合并。
+- **代价**：PL3 的卡片变复杂（默认只显示提示词一列，打开 Run all day 才出其余列）；要把 QueueRunner 搬进主进程；各家调 skill 和清空上下文的写法要逐家核对；无人值守时如果 Auto-approve 关着，第一个批准就会停下等你；应用关着、Mac 合盖时不跑。
+
+<a id="dr-111"></a>
+
+### DR-111 issue / PR 放在白板哪里，PR 和它的 worktree、session、CI 怎么连
+
+状态：进行中 · 出处：第 15 点 report 4.5、5 D4 · 画板 I1 · 旧编号 —
+
+相关：TC-132、TC-134、TC-135、IS-136
+
+- **原来以为**：（第 15 点开题时）可能在右边栏加一个 issue / PR 面板，和源代码管理面板并列。
+- **实际情况**：2026-10-28：右边面板 280–480 宽、跟着焦点变（聚焦窗口 → 它的工作区的 SCM，没聚焦 → BoardNav，docs/design/components/components/SidePanel）；ScmPanel 只在 agent 结束一轮、操作完成或点 Refresh 时刷新。Conductor 把 CI、PR 评论和 review 线程放在每个 workspace 的 Checks 页，未解决的评论可以发给 agent（conductor.build/docs/reference/checks，0.31.1 2026-01-16），从 issue 建 workspace（0.66.0 2026-06-16）。几百行的表、多列排序、和分拣终端并排看，放在 480 宽、跟着焦点变的面板里不合适。
+- **决策**：2026-10-28 主 agent 定（按推荐，待用户确认）：列表做成白板上的 Issues & PRs 窗口（新 widget，放在项目主分支的框里），页签 Triage · Up next · Working · My PRs · Review requests · All；右边面板 ScmPanel 加一节 PULL REQUEST（CHECKS、REVIEW THREADS、DRAFTS），只管聚焦的这个工作区的 PR；工作区框标题挂 “#18231 → PR #18240” 标签和 PR 状态灯（CI 在跑绿、失败红、有待发草稿黄、合并后 ✓ merged），聚焦时画虚线到列表那一行（同 SE4 的关系线）。数据：ForgeItem → ForgeLink（项目、工作区、issue、change）→ Workspace → Session（origin forge）→ Checks / Threads / Drafts。
+- **好处**：白板看全局：缩小时几十个 issue 框一眼看出谁红、谁等你；面板不加第三种跟焦点无关的内容；状态灯只用已有的三种状态色。
+- **代价**：多一个 widget 包；窗口关了列表就不在眼前；一个 issue 多个工作区时只能有一个开 PR。
+
+<a id="dr-113"></a>
+
+### DR-113 现有工具怎么处理 issue 和 PR：Copilot coding agent、@claude、Codex cloud、Sweep、OpenHands、Conductor
+
+状态：进行中 · 出处：第 15 点 report 三 · 画板 I0 第 4 节 · 旧编号 —
+
+相关：IS-136
+
+- **原来以为**：（第 15 点开题时）有成熟的“issue 进、PR 出”工具可以照抄。
+- **实际情况**：2026-10-28 核对：（1）Copilot cloud agent：指派 issue 或在 agents 面板开，在 Actions 的临时环境里跑，一个任务一个 PR，59 分钟；只有写权限的人能触发、非写权限的评论不交给它、过滤 HTML 注释、只能推 copilot/ 分支、workflow 要人点 Approve and run、请求人不能批准；只支持 GitHub（docs.github.com about-coding-agent、risks-and-mitigations）。（2）@claude（claude-code-action@v1）：评论、review、新 issue 里 @claude 或按事件自动跑，在你的 runner 上，进度写成评论，能推提交、开 PR、写行内 review；触发者要写权限、bot 默认不能触发；GitLab 另有 CI/CD 集成（code.claude.com/docs/en/github-actions）。（3）Codex：@codex review 贴标准 review，只报 P0/P1，可自动审，按 AGENTS.md 的 Code Review Rules；其他 @codex 评论开云端任务，可推修复；GitLab 是 Beta（learn.chatgpt.com/docs/third-party/github，细节待核对）。（4）Sweep：原来是 issue 转 PR 的机器人，创始人说达不到想要的可靠性，转做 JetBrains 插件（第三方转载，无正式公告，待核对）。（5）OpenHands：fix-me 标签或 @openhands-agent；Cloud 接 GitLab 用 openhands 标签或 @openhands，觉得解决了就开 MR（docs.all-hands.dev，GitHub Action 页 404，待核对）。（6）Conductor：本地 Mac 应用，每个 workspace 一个 worktree；从 issue / PR 建 workspace，Checks 页集中 CI、评论、review 线程，可把失败检查和评论发给 agent，没看到 GitLab（conductor.build docs 和 changelog）。另：GitLab Duo Developer Flow 把 issue 变成草稿 MR（服务账号，18.8 GA）。
+- **决策**：2026-10-28 主 agent 定：AgentDeck 不做机器人（不收 webhook、不在云上跑、不用 bot 账号），做成你本机的工作台：借 Conductor 的“每个工作区一个 PR 页、评论和失败检查发给 agent”，借 Copilot 的“过滤隐藏内容、标出谁写的”，多出来的是“对外发言一律草稿、收件箱你点”和“白板上几十个 issue 同时看”。全自动 issue → PR 不做（Sweep 的教训）。
+- **好处**：不和云端产品比谁更自动，站在跨家、白板、你只在关卡出现这三样上（DR-79）。
+- **代价**：AgentDeck 关着时不做事；别人 @ 你的请求不会自动触发（要你在列表里看到）。
+
+<a id="dr-116"></a>
+
+### DR-116 “牧羊人”面板是哪个产品，借什么；tmux 多 pane 复制不顺手在 AgentDeck 里是什么情况
+
+状态：进行中 · 出处：ui/panels/board-nav · ui/widgets/terminal · ui/window-shell（StatusLamp 文字）· docs/design/components（TerminalWindow、BoardNav、StatusLamp）· 画板 O0 · 旧编号 —
+
+相关：TC-147、TC-148、IS-143
+
+- **原来以为**：用户说研究“牧羊人”面板、考虑集成进现有 panel，又说 terder 有底层逻辑问题、tmux 多 pane 复制不顺手、不如我们现在这样；没给链接。
+- **实际情况**：2026-10-28 查到两个候选（待用户确认）：Shepherd Terminal（shepherd.kotoro.click，Mac，2026-10-27 上 Product Hunt；Agent Monitor 跨工作区列会话和计数、悬停看对话、⌥⌘1–4 跳、working / waiting for you / done since you last looked；Changes / History 侧栏；内置浏览器点元素写意见发给 agent；给 agent 开分屏、往邻屏打字、读邻屏输出的工具；SSH 远端；iPhone 实时活动）和 herdr（herdr.dev，github.com/ogulcancelik/herdr，Rust 的 tmux 式复用器，文档 v0.9.5；侧边栏 working / blocked / idle / done，done 留到你看过；socket API 让 Lead 开分屏、等别的 agent；复制走它自己的选中模式，issue #2399 报过剪贴板丢失）。“terder”很可能是 herdr。另看了 Nodeterm（画布节点、连线互读对话、看板接 GitHub Issues）。AgentDeck 这边：每个终端窗口是自己的 xterm.js 接自己的一个 tmux 会话（tmux-host new-session，不分屏），所以“跨 pane 选中”不存在；拖选松手即复制（tmux.conf:69 copy-pipe-and-cancel，OSC 52 → clipboard 插件）；codex 要鼠标时要按住 Option；没有“把选中的发给另一个终端”；组件库的复制说明和实际不一致。BoardNav 已经是“所有窗口一张表”，缺按状态分组、做完没看、悬停预览、数字跳转。
+- **决策**：2026-10-28 主 agent 定（按推荐，待用户确认是 Shepherd Terminal 和 herdr）：借四样：BoardNav 加 Agents 视图（按状态分组，⌥⌘1–9）；Idle 加 Unseen（只改文字，不加颜色）；Agents 视图悬停看最后一条回复；终端内容区右键 Send selection to ▸（只粘贴不发，跳过等你的终端）。收件箱和 HISTORY 不动。网页窗口点元素写意见留第二期候选。不改底层：tmux 只托管进程，交互继续是 xterm.js 窗口。Send selection to ▸ 和第 12 点的合成一个任务 CO3；Agents 视图和 Unseen 是 CO4。
+- **好处**：都是在已有零件上加一点（BoardNav、StatusLamp 的文字、右键菜单），不用新面板；补上“人把一段输出交给另一个 agent”这条最常见的路。
+- **代价**：产品没确认，功能可能对不上用户看的那个视频；Unseen 要记界面状态并随白板保存；程序要鼠标时右键菜单要换成 ⌃ 单击（待核对 xterm 的 contextmenu 在鼠标上报模式下能不能拿到）。
 
 ## 技术方案
 
@@ -329,7 +500,7 @@
 
 - **原来以为**：（文章的说法）有标准答案的搜索走 API（Exa、DeepSeek Search），主观讨论类的走复用浏览器登录态的工具（OpenCLI），harness 应该把这两样都接好。
 - **实际情况**：2026-10-27 核对：claude 自带 WebSearch / WebFetch（Anthropic 服务端工具；Bedrock 上没有，第三方网关上能不能用没查到官方说法，待核对）。codex 的 config 有 web_search = "cached"（默认）/ "live"（同 --search）/ "disabled"，full access 时默认 live（learn.chatgpt.com 的 Config basics）。omp 的搜索能接 exa、brave、jina、kimi、perplexity、gemini 等（第三方整理，待核对官方）。pi 内置只有读写改和 bash，搜索靠扩展（待核对）。kimi-cli 原仓库已归档，新的 Kimi Code CLI 能搜能抓网页（待核对工具名）。DeepSeek 2026-10-17 开放 Search / Fetch 接口（第三方报道，约 0.75 美元每千次，待核对官方文档）。OpenCLI（github.com/jackwener/opencli，Apache-2.0，约 3 万星）是一个 Chrome 扩展加本机守护进程（localhost:19825），把小红书、知乎、B 站、Reddit 等 100 多个网站做成命令，给 agent 用（带 skill），用的是你 Chrome 里的登录态；没看到 linux.do 的适配器。AgentDeck 自己的网页窗口外部网站走 <webview partition="persist:agentdeck-web">，登录态独立、重启后还在，MCP 的 open_browser 只能开网页、不能读内容。
-- **决策**：2026-10-28 主 agent 定：AgentDeck 不做搜索，交给各家 agent 自己的能力和用户自己装的工具（Exa / DeepSeek 的 MCP 或命令行、OpenCLI），只写一页说明（RM4）。复用登录态替 agent 操作浏览器不做。以后的两个候选（未定）：（1）agentdeck 命令行（CR15）落地后，插件 “Web search” 在启动时给终端带上 agentdeck search / fetch 和 API 密钥（密钥放钥匙串），补上 pi 和走代理的 claude；（2）网页窗口插件 “Share page with agents”：用户自己在白板网页窗口里登录、搜索，打开这个插件后 agent 只能读这个窗口的文字，不能点、不能打字、不能提交。
+- **决策**：2026-10-28 主 agent 定：AgentDeck 不做搜索，交给各家 agent 自己的能力和用户自己装的工具（Exa / DeepSeek 的 MCP 或命令行、OpenCLI），只写一页说明（RM4）。复用登录态替 agent 操作浏览器不做。以后的两个候选（未定）：（1）agentdeck 命令行（CR15）落地后，插件 “Web search” 在启动时给终端带上 agentdeck search / fetch 和 API 密钥（密钥放钥匙串），补上 pi 和走代理的 claude；（2）网页窗口插件 “Share page with agents”：用户自己在白板网页窗口里登录、搜索，打开这个插件后 agent 只能读这个窗口的文字，不能点、不能打字、不能提交。2026-10-28 补（第二轮）：资料库（第 10 点）只管存和去重，不做搜索；下载视频要不要用浏览器登录态每次问你，默认不用（DR-88、DR-90）。
 - **好处**：不重复各家已有的能力，也不追 OpenCLI 的 100 多个适配器；不在 AgentDeck 里替 agent 握着你的登录态；候选（2）和“白板看全局”一致：agent 看的就是你眼前那个窗口。
 - **代价**：pi、走代理的 claude 暂时没有搜索，要用户自己配；主观讨论类的搜索要用户自己装 OpenCLI（它的守护进程在本机端口上能驱动你登录着的 Chrome，有没有认证待核对，社交内容里的提示词注入也直接进 agent）；以后做插件时 API 密钥要安全存放。
 
@@ -346,6 +517,188 @@
 - **决策**：2026-10-28 主 agent 定：远程分三步，新开 M12「远程」（RM0–RM4），M12 等 CR1。RM1 推送（ntfy、Bark，默认只写种类和数量）：可以和 CR8 一起提前做。RM2 只读手机页：只听 127.0.0.1，经 tailscale serve 给自己的 tailnet，扫码配对拿设备令牌，再对上 Tailscale 的登录账号。RM3 手机上处理（等 CR6）：可以批集群关卡、非破坏性命令、回答问题；Merge into main、破坏性命令、随便打字都不行。第一版不支持局域网直连，不用 Funnel。手机上不放 Merge into main（2026-10-28 用户确认）。ssh + tmux attach 和 claude 的 /remote-control 写进文档（RM4），不包装成功能；Codex 的手机端和 Happy 这类不用。
 - **好处**：只做跨家的那一层（收件箱、集群、汇报），单家的聊天远程留给 Claude / Codex 自己；复用 CR1 的收件箱和 CR6 的关卡，手机页就是收件箱的另一种显示；不对公网开端口，不经第三方中转我们的数据（推送只带最少的字）。
 - **代价**：手机页要装 Tailscale（国内连接质量待核对）；Mac 要醒着、AgentDeck 要开着（合上盖子会睡，Keep Mac awake 只防闲置睡眠）；多一个对外的服务就多一块要审的安全面；推送经过 ntfy.sh 或 Bark 的公共服务器。
+
+<a id="dr-86"></a>
+
+### DR-86 实验记录和分数：记在 AgentDeck 里，分数由 AgentDeck 跑锁住的打分命令算
+
+状态：进行中 · 出处：E1 第 1、2 节 · RS3、RS4 · contracts research.ts · 旧编号 —
+
+相关：TC-85、TC-86、TC-93、IS-117
+
+- **原来以为**：让 agent 把结果写进仓库里的 results.csv 或 MLflow / W&B，Lead 读来比较。
+- **实际情况**：2026-10-28：仓库里的文件 agent 能随手改，分数可能抄错、口径不一、泄漏甚至编造（用户库里有专门的实验审计 skill，说明这是真问题）；MLflow、W&B 要装服务或账号，而且同样只记 agent 交上去的数。C3 已经定了“检查是调度器自己跑的，不信 agent 嘴上说的”，打分是同一类事。claude 等 agent 的 shell 在 worktree 里，AgentDeck 能在 Run 指向的提交上自己跑命令。
+- **决策**：2026-10-28 主 agent 定（按推荐，待用户确认）：Run 记在 AgentDeck 的 SQLite（和任务表一样，不写进仓库）：session、分支和提交（工作区不干净拒绝开 Run）、命令和配置、种子、数据和锁住文件的哈希、环境指纹、Job、各折分数、产物、agent 报的数（said）；分数由 AgentDeck 在该提交上跑 New crew 里的打分命令读出；划分和打分脚本在 Plan 后进 Locked paths；可疑 Run 只标不拦。导出 CSV 进 Outputs；以后可以只读导入 MLflow / W&B，不作为真源。
+- **好处**：几个方向口径一致；分数作不了假；每个数能点回提交和日志；Lead 被压缩、换家后靠 run list 找回。
+- **代价**：用户或 Lead 要先写一个能输出分数的打分命令；每次 run done 多跑一次打分（大数据时要几分钟）；和用户已有的实验平台各管各的。
+
+<a id="dr-87"></a>
+
+### DR-87 GPU 和长时间训练：AgentDeck 的 Jobs 看着，本机和 SSH 机器，不管云
+
+状态：进行中 · 出处：E1 第 3 节 · RS1、RS2 · 依赖 PL5、CR8 · 旧编号 —
+
+相关：TC-87、TC-90、IS-119、IS-123
+
+- **原来以为**：训练由 agent 在自己的 shell 里跑，或者 AgentDeck 接云 GPU（租、开、关机器）。
+- **实际情况**：2026-10-28：claude 的 Bash 默认等 2 分钟、最多 10 分钟（BASH_DEFAULT_TIMEOUT_MS / BASH_MAX_TIMEOUT_MS，Claude Code 设置文档，待核对当前版本），后台运行也要反复读输出；agent 一轮 token 都花在等上；额度用完（第 9 点）后没人接；AgentDeck 只支持 macOS（docs/decisions.md），没有 CUDA。AgentDeck 已经托管 tmux（tmux -L agentdeck），能在里面开隐藏窗口跑命令；用户的 GPU 机器通常已经在 ~/.ssh/config 里。云平台（Modal、vast.ai、Kaggle Notebooks）各有自己的命令，用户库里也有对应 skill；替用户租机器涉及花钱和云账号。
+- **决策**：2026-10-28 主 agent 定（按推荐，待用户确认）：加 Job：agentdeck job start [--on host] -- <cmd> 马上返回；本机在 tmux 隐藏窗口跑（研究第一期），SSH 机器用 git archive 传提交、在远端 tmux 跑、轮询日志和退出码、拉回声明的产物（研究第二期，Settings › Compute）；云平台只当“你自己的命令”跑，AgentDeck 不租不开不关、不拿云账号。Job 结束时用 PL3 的发送方式把结果打进开它的 session，该账号受限时排在 PL5 续跑之后；同一台机器按 GPU 数排队（Job 排队，session 仍然超了就拒绝）；GPU budget 和 Stop after 分开。研究第一期只做本机 tmux，SSH 机器放第二期。
+- **好处**：等训练不花 token；额度、重启、交接都不打断训练；GPU 不会被挤爆；花钱的事永远是用户自己的命令。
+- **代价**：要写远端同步、轮询和断线重连；远端要有 tmux 和 git；只支持 Linux 远端；云平台的体验取决于用户自己的 skill。
+
+<a id="dr-88"></a>
+
+### DR-88 资料库：一条一个 Markdown 文件加索引，写入时由 AgentDeck 去重，AgentDeck 开着时定期跑
+
+状态：进行中 · 出处：E2 第 1、2 节 · RS7、RS8、RS9 · 旧编号 —
+
+相关：TC-91、TC-92、IS-121、IS-120
+
+- **原来以为**：第 6 点定了搜索 AgentDeck 不做；收来的东西放在各 agent 的对话或随手写的文件里。
+- **实际情况**：2026-10-28：五家 agent 都能读文件，但不是每家都能调 AgentDeck 的命令（kimi 每条命令要批）；用户可能想放进自己的笔记库。论文的同一性有现成的 id（arXiv 号、DOI、OpenAlex、Semantic Scholar），新闻靠规范化网址，日程靠名字加日期，视频靠平台加视频号；标题相似只能当“疑似”。仓库里没有定时任务（只有自动保存、用量轮询）。系统 launchd 起无头 agent 可以在 AgentDeck 关着时跑，但要用 -p 一类非交互模式，和“原生 TUI”底座不一致；各家云端定时只支持自家、碰不到本地资料库。
+- **决策**：2026-10-28 主 agent 定（按推荐，待用户确认）：资料库 = 一个文件夹（默认 <数据目录>/library，Settings 里可换成用户的笔记库或仓库），一条一个带 frontmatter 的 Markdown，附件在旁边；SQLite 索引可重建。agentdeck lib add 写入时去重（任何 id 对上就合并、记新来源和新版本；只有标题指纹像的进 POSSIBLE DUPLICATES 等你点），永远不删；直接放进文件夹的下次扫描进索引。左边栏加 Library 页。Schedule 只在 AgentDeck 开着时跑，错过补一次，跑完不进 Needs you。搜索仍然是各家 agent 和用户装的工具（RM4）。只有你主动改了位置才写到别处；往你选的文件夹写 Markdown 属于“往用户文件写东西”的例外（DR-74 的 2026-10-28 补），你选了才写，AgentDeck 自己不提交。
+- **好处**：五家都能读；能放进用户自己的笔记库；去重规则在代码里，不靠 agent 记得；不碰登录态。
+- **代价**：写进用户选的文件夹是 AgentDeck 第一次往用户目录写内容（要用户选，默认在数据目录）；AgentDeck 关着时不跑；疑似重复要人点。
+
+<a id="dr-89"></a>
+
+### DR-89 复现：先写 Claims 表并锁住，环境建在 worktree 里，Δ 由 AgentDeck 算
+
+状态：进行中 · 出处：E2 第 3、4 节 · RS10、RS13 · 旧编号 —
+
+相关：TC-93、IS-123
+
+- **原来以为**：复现时让 agent 跑完自己写“结果和论文基本一致”；环境用容器或 conda 全局环境隔离。
+- **实际情况**：2026-10-28：“基本一致”说不清差多少、按什么容差；跑完再定目标容易挑好看的数。多数论文仓库给 requirements.txt 或 environment.yml，不给镜像；Mac 上容器拿不到 GPU，x86 镜像要模拟；worktree 已经是 AgentDeck 隔离代码的单位，环境放进去删得干净。pip 的 PIP_REQUIRE_VIRTUALENV 能防止装进全局；conda 的环境目录变量待核对。
+- **决策**：2026-10-28 主 agent 定（按推荐，待用户确认）：Lead 先把要对的数写成 Claims（出处页码、设置、论文值、方差、估计 GPU 时间），Plan 关卡里你勾、定容差，批准后锁住；环境默认建在 worktree 里（.venv 或 conda -p 前缀），仓库自带 Dockerfile 或要系统库时在 Linux SSH 机器上用容器，要 CUDA 的作为 Job 去 SSH 机器；研究集群终端加护栏变量；Ours 来自 Run，多种子取均值标准差，Status（Reproduced / Close / Off / Not comparable / Not run）由 AgentDeck 按容差算；为跑通改的设置用 crew note --kind deviation 记，汇报单列。
+- **好处**：差多少、为什么差都写在表里；目标不能事后改；不污染用户环境。
+- **代价**：Lead 读论文抽数可能抽错（要你在 Plan 里看）；容差规则过于机械时要人判断；没有代码的论文不在范围。
+
+<a id="dr-93"></a>
+
+### DR-93 文档窗口：文档存在哪、agent 怎么写、用什么编辑器
+
+状态：进行中 · 出处：M15 DC0、DC2、DC3、DC4 · 设计画布 D0 第 6 节 · packages/ui/widgets/doc（新）、packages/doc-service（新） · 旧编号 —
+
+相关：TC-96、TC-97、TC-106、IS-125
+
+- **原来以为**：（原来没定）可能像 Claude Docs 一样把文档存在 AgentDeck 自己的库里，agent 通过命令按块改。
+- **实际情况**：白板加一种窗口的路子是现成的：网页窗口就是一个 widget 包加一次 registerWindow（packages/ui/widgets/browser/src/index.ts:13-23 browserWindowType，apps/desktop/src/renderer/src/main.tsx:17），窗口只靠 WindowComponentProps 和 window.agentdeck 工作（packages/contracts/src/board.ts:221、275）。终端里的文件链接现在交给编辑器（TerminalWindow.tsx:243-247）。五家 agent 都会读写文件，claude 的 Edit 在文件读过后被改会拒绝（待逐家核对 codex apply_patch、omp、pi、kimi）。所见即所得的 markdown 编辑器（ProseMirror / Tiptap / Milkdown 一类）存盘时会按自己的规则重新排版 markdown，agent 和 git diff 都会看到大量无关改动（待用 2–3 个库实测）；CodeMirror 6 编辑的是原文本身。仓库里还没有任何 markdown 相关依赖。
+- **决策**：2026-10-28 主 agent 定（按推荐，待用户确认）：A：文档就是工作区里的 .md 文件，agent 用自己的工具写；评论、引用核对缓存、核查结论、快照、“你看过哪一版”存在 AgentDeck 的 SQLite（按文件绝对路径），不往仓库或文档里加任何附加内容。新 widget packages/ui/widgets/doc（type doc）：Read 是渲染视图（默认，能评论），Edit 是 CodeMirror 6 的 markdown 原文；不做所见即所得。新服务包 packages/doc-service（DocService、CodeAnchorService、评论、核查），通过 contracts 的接口用 GitService（由 apps/desktop 注入，同 crew-service 的做法）。AgentDeck 数据目录里的文件（集群汇报）只读打开。终端里单击 .md 打开文档窗口，⌥ 单击仍用编辑器打开（改画板 5 的交互）。
+- **好处**：git 管历史和合并；PR 里看得到文档；不碰用户仓库的格式；agent 侧零学习；CodeMirror 不改动原文，diff 干净。
+- **代价**：Edit 是原文编辑，表格要手写；评论离开 AgentDeck 就看不到；新加一个服务包要改 .dependency-cruiser.cjs 的 SERVICES 和样例；要加 markdown 渲染和 CodeMirror 依赖。
+
+<a id="dr-94"></a>
+
+### DR-94 代码锚点：文档里的 path:line 怎么在代码变了以后还对得上
+
+状态：进行中 · 出处：M15 DC1、DC2 · 设计画布 D1 第 1–4 节 · p11/measure · packages/git-service、packages/doc-service（新） · 旧编号 —
+
+相关：TC-99、TC-100、TC-101、IS-126、IS-127
+
+- **原来以为**：（原来没定）文档里写行号就够了，或者像 GitHub permalink 一样钉一个提交。
+- **实际情况**：2026-10-28 本仓库实测（p11/measure/drift.py，被引用最多的 10 个文件，到 HEAD 871dd81）：10、30、100 个提交前写下的行号，现在还对的分别是 81%、72%、3%；用 git diff 把行号挪过去以后能找回 100%、100%、94%，剩下 6% 是那几行被改或删了。第一轮报告的 13 处行号引用里 5 处是短路径（IS-126）；93 处路径引用里 42 处不在仓库（暂存目录、别的仓库、计划新建、没合进 main）。钉提交（GitHub permalink，docs.github.com「Creating a permanent link to a code snippet」）永远不漂但会悄悄过时；Swimm 的做法是绑片段、符号、路径，每次提交检查（待核对）；SCIP 的符号串能跨文件精确定位（github.com/sourcegraph/scip 的 scip.proto），但要每种语言一个索引器。GitService 现在没有 blame、按版本读文件、行号映射（packages/contracts/src/git.ts:130-177）。第 13 点的序列图草稿用的锚点是 {path, line, symbol, text} + commit，状态 ok / moved / missing。
+- **决策**：2026-10-28 主 agent 定（按推荐，待用户确认）：文档里只写人看得懂的 path:行（加符号）；AgentDeck 按顺序取基准：写死的 @版本 > 上次核对通过时记下的 > git blame 这一行文档所在的提交 > 工作区现在；用 git diff -U0 基准→工作区挪行号；再对这几行的原文和符号；得出 ok / moved / changed / gone / ambiguous / outside 六种状态，缓存在库里。按文档所在的 worktree 解析。符号第一期只做文字查找，第二期和第 13 点一起用 tree-sitter。和第 13 点共用 CodeAnchor、AnchorState、CodeAnchorService（建议放在 doc-service，通过 contracts 给序列图用）；第 13 点的 missing 对应 gone。和第 13 点共用这一层，格式以本条为准，锚点必须保留原文 text（DR-100）。
+- **好处**：不往文件里存东西，别处看文档和平常一样；按实测能自动跟上九成以上的移动；只把真要人看的（changed、gone、ambiguous）标出来。
+- **代价**：文档被整段重排（换行、改格式）后 blame 的基准会变新，可能把没核对过的引用当成 ok（Mark as checked 的记录能部分补上）；文档没提交时只能以现在为准；不是 git 仓库的项目只能显示 outside。
+
+<a id="dr-100"></a>
+
+### DR-100 序列图从哪来：agent 写、运行时录、还是静态调用图
+
+状态：进行中 · 出处：设计画布“代码理解”页 F0 第 3 节 · CU1、CU4、CU8 · 暂存实验 p13/measure（seqcheck.py、open-terminals.seq.json） · 旧编号 —
+
+相关：TC-111、TC-113、IS-131
+
+- **原来以为**：（用户 2026-10-28 笔记）做一个能索引到源码的序列图工具。可能的来源：agent 读代码写 Mermaid / PlantUML、从运行时 trace 生成、从静态调用图（本机 codegraph MCP）生成。
+- **实际情况**：2026-10-28 拿 AgentDeck 自己的“agent 通过 MCP 开终端”实测（暂存目录 p13/measure）。agent 写：22 步、9 个参与者、跨主进程 / utility / 界面三个进程和 tmux，约 15 次读代码调用，22 个锚点的原文全部能找到；锚点只能证明“引用的代码存在”，证明不了顺序和条件说得对（第 9 步“argv 带第一条消息”对 pi、omp、kimi 不成立，IS-76）。静态：codegraph 0.9.9 给 508 个文件建索引 1.6 秒（6,615 个节点、19,358 条边）；22 个锚点里 5 步边全对、3 步部分对（例如 tools.ts:526 直接连到 AgentServiceImpl.start，跳过了注册表 Proxy）、4 步指错（agent-service.ts:128 的 terminals.create 指到网页窗口的 create；index.ts:306 指到 boundary-fixtures 里的样例；index.ts:308 的 store.terminals.put 指到一个测试文件；events.ts:16 的 target.send 指到终端组件的 send）、10 步没有边（HTTP、utilityProcess 消息、Proxy、事件、preload、tmux 参数）；同名方法会混（callees launch 把 8 个 launch 合在一起）。运行时：OpenTelemetry 的 JS 自动插桩只管 http 等库，内部调用要手写 span；没找到现成的“trace → 序列图”工具；AppMap 的 appmap-node 能包住 node / jest / vitest 录函数调用、出序列图（README 没提 Electron；@appland/sequence-diagram 是 Commons Clause + MIT）。同类产品：Ilograph Agent Skills（2026-09-09，Apache-2.0：agent 写 ilograph.yaml，每步引用代码行，/update-ilograph 更新）、Google Code Wiki（2025-11：序列图随代码重生成、链回代码，准确度没有公开评测）。
+- **决策**：2026-10-28 主 agent 定（按推荐，待用户确认）：主路是 agent 写：图的真身是结构化 JSON，每步一个锚点（path、line、symbol、text、commit），AgentDeck 机器核锚点、再请另一家 agent 逐步核说法（DR-101）。codegraph 只当旁证：用户自己装了、仓库里已有 .codegraph/ 时只读打开，给核对的 agent 候选（这一步所在函数还调了谁）和反证，不当真相、不自动 init。运行时只在关口记录（注册表、IPC 事件、TerminalProxy、MCP、钩子 socket 五处），第三期做，用来核跨进程那几步。锚点格式和第 11 点共用，以 DR-94 为准（保留原文 text）。
+- **好处**：跨进程、Proxy、事件这些静态分析断掉的地方 agent 都画得出；锚点让每一步可核；不绑定任何一个外部工具；codegraph 有就用、没有也能跑。
+- **代价**：每张图几万 token；说法对不对最终靠第二家 agent 和你；只覆盖有人画过的流程；关口记录要改 apps/desktop 的几个关口，第三期才有。
+
+<a id="dr-102"></a>
+
+### DR-102 图存成什么、存在哪：自己的 JSON 还是 Mermaid / PlantUML；仓库还是数据目录
+
+状态：进行中 · 出处：CU0、CU2 · 画板 F0 第 2 节 · 旧编号 —
+
+相关：TC-111、TC-118、IS-131
+
+- **原来以为**：序列图就写 Mermaid（agent 都会写，Markdown 能直接渲染）。
+- **实际情况**：Mermaid 的 sequenceDiagram 只能给参与者挂链接（link / links 菜单），消息上不能挂链接，有 autonumber（mermaid.js.org，2026-10-28 读）；PlantUML 消息能不能挂链接待核对。我们要每一步能点、能挂四层状态、能按锚点核对，Mermaid 文本里放不下这些。Ilograph 用自己的 YAML、放进仓库；Google Code Wiki 存在它自己的服务里。
+- **决策**：2026-10-28 主 agent 定（按推荐，待用户确认）：真身是 seq.json（contracts 定格式），Flow 窗口自己画；能导出 Mermaid（autonumber）加“编号 → path:line”表，贴进 PR 和文档。先存草稿在 AgentDeck 数据目录；你点 Save to repo 才写进仓库 docs/flows/<id>.seq.json，跟代码一起进 PR、给别的 agent 读。自动跟上的行号只记在 AgentDeck 里，Save 或 flow check --fix 时才写回仓库。Save to repo 属于“往用户文件写东西”的例外：你点了才写，AgentDeck 自己不提交（DR-74 的 2026-10-28 补）。
+- **好处**：每步可点、可核、可叠层；存进仓库后跟着分支走、能审；不存仓库也能用。
+- **代价**：要自己写渲染（生命线 + 箭头，比 Mermaid 简单但要做）；草稿和仓库两份要说清哪份为准（以仓库为准，草稿是没保存的改动）。
+
+<a id="dr-108"></a>
+
+### DR-108 issue / PR 的数据从哪来、用谁的登录：gh / glab 命令、自己调 API、还是交给 agent 的 GitHub MCP
+
+状态：进行中 · 出处：第 15 点 report 4.3、5 D1 · 画板 I0 · 旧编号 —
+
+相关：TC-129、TC-137、IS-136、IS-140
+
+- **原来以为**：（第 15 点开题时）可能要做一套 GitHub / GitLab 的 API 客户端和 OAuth 登录，或者干脆让 agent 自己用 GitHub MCP。
+- **实际情况**：2026-10-28 核对：gh 有 `gh api` / `gh api graphql`、`gh pr checks --json`、`gh run view --log-failed`、`gh pr create`、`gh pr merge`，本机 gh 2.91.0；glab 有 `glab api`、`glab mr create`、`glab ci status`、`glab ci trace`（第三方 skill 整理，`glab ci view` 是交互 TUI，agent 不好用），本机没装 glab，待实测。两家 CLI 自己处理多主机（GHE、自建 GitLab）和登录。GitHub REST 和 GraphQL 每个用户每小时各 5000 次 / 点；pending review = 建 review 时不带 event，之后单独 submit（docs.github.com 的 Pulls reviews REST 页）；GitLab 的 draft notes 只有作者看得见，`…/draft_notes/bulk_publish` 一次发出（docs.gitlab.com/api/draft_notes）。云端同类产品（Copilot cloud agent、@claude、@codex、OpenHands）都用自己的 GitHub App / bot 身份；Conductor 本地应用支持 GH_TOKEN（changelog 0.25.5）和细粒度 GitHub 权限（0.0.21）。agent 自己的 GitHub MCP 带写令牌，读陌生人 issue 时正好是 Invariant Labs 2025-05 的 toxic agent flow；GitHub MCP 2025-12-10 的 lockdown 模式只是尽力过滤。
+- **决策**：2026-10-28 主 agent 定（按推荐，待用户确认）：第一期 AgentDeck 主进程调用户已登录的 gh / glab，只当“登录 + 传输”，数据形状按 API（读用 graphql 批量，写用 api）；AgentDeck 不存令牌、不做登录界面，没装或没登录时显示要跑的命令。第二期给没装 CLI 的人加令牌登录（钥匙串）作为备选。不把写权限交给 agent 自己的 MCP / gh。
+- **好处**：零令牌存储；GHE、自建 GitLab 的地址和证书交给 CLI；以后换成直接 API 只换传输层；用户已有的权限范围原样生效。
+- **代价**：必须装 gh / glab；每次调用一个子进程；和用户平时的 gh 共用限额；CLI 输出会随版本变，要有合格测试。
+
+<a id="dr-109"></a>
+
+### DR-109 对外动作怎么拦：agent 起草、收件箱 Ready to post、你点了由 AgentDeck 发；从 issue 开的终端不带你的凭据
+
+状态：进行中 · 出处：第 15 点 report 4.2、4.4、5 D2 D3 · 画板 I2 · 旧编号 —
+
+相关：TC-130、TC-131、TC-133、TC-134、TC-138、IS-137、IS-139
+
+- **原来以为**：（第 15 点开题时）在 issue 或 PR 上评论、提交 review、合并要等你点；怎么和收件箱（CR1）、关卡（CR6）结合没定。
+- **实际情况**：2026-10-28：云端产品的关卡都放在“合并 / 跑 workflow”（Copilot：要有写权限的人点 Approve and run workflows，叫它开 PR 的人不能批准；@claude：触发者要有写权限，bot 不能触发），因为它们用的是 bot 身份；AgentDeck 在本机用你的身份，每句话都是你说的。现状：AgentDeck 的终端继承登录 shell 的环境（packages/agent-adapters/src/env.ts、apps/desktop/src/main/login-env.ts），带着 gh 登录和 git 凭据。暂存目录实测：gh 2.91.0 在 GH_CONFIG_DIR 指向空目录、去掉 GH_TOKEN / GITHUB_TOKEN 时报 “You are not logged into any GitHub hosts”；git 2.50.1 用 GIT_CONFIG_COUNT 把 remote.origin.pushurl 设成 agentdeck-blocked:// 后 `git push origin` 失败、`git fetch origin` 照常，但 `git push <地址>` 能绕过，所以要同时清掉 credential.helper、去掉 SSH_AUTH_SOCK；agent 有 shell 时仍可能直接读 ~/.ssh 的私钥。
+- **决策**：2026-10-28 主 agent 定（按推荐，待用户确认）：所有对外动作（标签、评论、关 issue、认领、推送、开 PR、回复 / resolve 线程、重跑 CI、提交 review、合并、fork）都由 agent 用 agentdeck forge 写成草稿，进收件箱新的一类 Ready to post（算进 Needs you，按项目分组），你看过全文点 Post 后由 AgentDeck 主进程用你的 gh / glab 执行，发前重新拉状态、查令牌和本机路径、只发一次、记进 Decisions。推送到自己的 PR 分支也要点（备选：项目设置允许，默认关）。Auto-approve、Approve all、Lead suggests / answer 永远不碰 Ready to post；手机上第一版只看不发。从 issue / PR 开的终端（Session.origin forge）启动时去掉 gh / glab 登录和推送凭据（只用环境变量，不改用户配置），claude 加 deny 规则；这是去掉顺手的凭据，不是沙箱。Auto-approve、Lead、手机都碰不到 Ready to post。
+- **好处**：“发什么”和“发不发”分开，一处看、改、记录；和“合回 main 永远你点”同一个原则；agent 被注入也发不出去；不改用户任何配置。
+- **代价**：每次推送、回复多一次点击；草稿可能过期（发前重拉）；agent 里的 gh 查不了私有仓库（用 agentdeck forge show）；用户自己给 agent 配的 GitHub MCP 挡不住，只能提示。
+
+<a id="dr-110"></a>
+
+### DR-110 喂给 agent 的 issue / PR 内容怎么防注入，别人的 PR 代码怎么跑
+
+状态：进行中 · 出处：第 15 点 report 4.4、5 D6 · 画板 I2 第 3、4 节 · 旧编号 —
+
+相关：TC-131、TC-136、IS-137、IS-138
+
+- **原来以为**：（第 15 点开题时）把 issue 正文直接贴进 agent 的第一条消息；审 PR 时让 agent 自己 checkout 跑测试。
+- **实际情况**：2026-10-28：Copilot cloud agent 过滤隐藏字符（HTML 注释不交给 agent）、没有写权限的人的评论不交给它、防火墙默认开（docs.github.com 的 risks-and-mitigations）；GitHub MCP 的 lockdown 模式只返回有推送权限的人写的内容，第三方称是尽力过滤不是边界；@claude 的工作流里 fork 来的 PR 拿不到 secrets（code.claude.com/docs/en/github-actions）。GitHub GraphQL 每条 issue、评论都有 authorAssociation（OWNER、MEMBER、COLLABORATOR、CONTRIBUTOR、FIRST_TIME_CONTRIBUTOR、NONE 等）；GitLab 要按成员级别另查（成本待核对）。Mac 上的隔离：容器要装 Docker / OrbStack，很多前端 dev server 在容器里不好用；sandbox-exec 已标弃用（待核对现状）。
+- **决策**：2026-10-28 主 agent 定：内容一律清洗（去 HTML 注释、零宽和双向控制字符、<details> 展开、图片 / 链接换占位、8k 截断）后包进 <untrusted source author association fetched> 块，前面固定一句英文说明；列表、收件箱、第一条消息都标作者身份；agentdeck forge show / search 只回本项目仓库。别人的 PR：只读 diff 不用点，装依赖、跑测试、开 dev server 前必须你点 Run this PR’s code（每次新提交再点），非成员加警告，运行环境去掉令牌类变量；第一期不做沙箱，第二期调研。
+- **好处**：降低注入成功率，兜底靠“发不出去 + 你看全文”；你始终知道什么时候在跑陌生人的代码。
+- **代价**：清洗会丢掉 issue 里有用的隐藏内容（例如折叠的日志，已用展开 <details> 缓解）；点了 Run 之后风险和你自己 checkout 一样大。
+
+<a id="dr-112"></a>
+
+### DR-112 几百个 issue 怎么排、同时最多几个，和集群上限、额度续跑的关系
+
+状态：进行中 · 出处：第 15 点 report 4.6、5 D5 · 画板 I1 第 5 节 · 旧编号 —
+
+相关：TC-132、TC-139、IS-136
+
+- **原来以为**：（第 15 点开题时）让 agent 读一遍所有 issue 排优先级；能开多少开多少。
+- **实际情况**：2026-10-28：Copilot cloud agent 一个任务一个 PR、会话 59 分钟上限；GitLab Duo 的 Developer Flow 文档建议任务小而具体，大任务容易撞迭代上限。集群自由模式默认同时 3 个、超了直接拒绝（DR-71）；额度按“agent + 配置目录”算账号（PL5 LimitService），普通终端撞额度归 Auto-resume（PL4），集群归 CR8。真正的瓶颈是人：每个 PR、每条回复都要你看、你点。
+- **决策**：2026-10-28 主 agent 定（按推荐，待用户确认）：排序由代码算分、能看 Why、能 Pin / Hide（紧急标签 +30、10×log2(1+反应数+评论人数)、7 天内有动静 +10、help wanted / good first issue +5（贡献者 +15）、已有开着的关联 PR −20、needs-info −15；指派给别人的默认不显示），agent 的优先级建议只单独一列。项目级 Issue slots 默认 3、最多 8：Work on it、Review 各占一个，分拣终端另算（一个项目一个），从 issue 开的集群占 1 个（子 session 按集群自己的 At most）。满了进 Up next 排队；Start the next one automatically 默认关，开着时三种情况不开：这个项目待你发的草稿 ≥ 6、选的 agent 的账号 limited（有 Fallback agent 时用它）、Mac 要睡。跑到一半撞额度照已有规矩（Auto-resume / CR8 / SE6 换家）。
+- **好处**：几百条排序便宜、稳定、可解释；背压按你的处理速度来，不会堆一屏草稿；不会同时烧光一个账号。
+- **代价**：分数公式是默认值，要在真项目上调（第二期能改权重）；没有跨项目的总上限。
+
+<a id="dr-117"></a>
+
+### DR-117 现有多 agent 工具怎么防止并发修改互相覆盖，AgentDeck 补哪几层
+
+状态：进行中 · 出处：packages/git-service（overlaps）· packages/contracts（WorkspaceOverlap，单独提交）· ui/panels/scm · ui/canvas（框头）· packages/crew-service（CR2、CR10）· packages/agent-adapters（PreToolUse）· apps/desktop（改动表）· 画板 O1 · 旧编号 —
+
+相关：TC-143、TC-144、TC-145、TC-146、IS-141、IS-142
+
+- **原来以为**：每个框一个 worktree、集群 owns 加锁 contracts 就够了，冲突留到合并时由 git 或 Integrator 处理。
+- **实际情况**：2026-10-28 读官方文档或仓库：Conductor、Claude Squad、Crystal（2026-02 改名 Nimbalyst）、Nodeterm、TermCanvas（Hydra）、Cursor、Codex app 都是“每个 agent 一个 worktree”，合并交给 git 或 PR；Claude agent teams 默认同一个目录，文档原话是两个队友改同一个文件会互相覆盖、要按文件分工，认领任务用文件锁（锁任务、不锁文件）。8 家没有一家在合并前提示两个分支改了同一处，没有一家锁文件。AgentDeck 现在：L0 隔离、L1 分工（owns、contracts 锁）已有；但同一个框里开几个终端、N1 的 open_terminals 默认同一个目录，是 agent teams 那种“同目录”情况，没有任何保护。实测（2026-10-28，暂存目录，git 2.50）：git stash create 和临时 GIT_INDEX_FILE 加 write-tree、commit-tree 都能在不碰工作区和 stash 列表的情况下给有改动（含没 add 的新文件）的 worktree 拍快照；git merge-tree --write-tree --name-only 对两个快照退出码 0 表示能自动合（同文件不同段）、1 表示冲突并列出文件，每次约 6 毫秒（小仓库）。claude、codex 的 PostToolUse 钩子 AgentDeck 已经在收（claude.ts:108、codex.ts:38），PreToolUse 还没注册。
+- **决策**：2026-10-28 主 agent 定（按推荐，待用户确认）：补三层，都只提醒、不拦：L2 跨 worktree 的重叠提示（快照 + merge-tree，框头和 SCM 面板，crew status 也给 Lead），L3 合并前预演（CR2 的合并、CR10 的 Ready to merge、Merge into main 先跑 merge-tree，有冲突不碰分支），L4 同目录改动提醒（改动表 + PreToolUse 附加说明；会带走别人改动的 git 命令在别人有没提交的改动时变成要你批准）。L2、L3 先做（纯 git，五家都管用），L4 第二期。不做硬锁。
+- **好处**：比所有对照产品多一步“合并前就知道”；L2、L3 不靠钩子，kimi、hermes 也受保护；L4 给同目录多 agent（现在就有）补上最危险的两种情况；计算时机和 SCM 面板一样，不监视文件。
+- **代价**：快照会往仓库对象库里写临时对象（不写分支、不写 stash，git gc 会清）；worktree 多时两两比是 n²（同一仓库 10 个就是 45 次）；L4 只对能收到改文件事件的 agent 有效，codex 的 PreToolUse 能不能拦 apply_patch 待核对；提醒是给 agent 的一句话，agent 不一定照做。
 
 ## 需求细节
 
@@ -461,6 +814,20 @@
 - **好处**：平时不多占地方；跨框也看得出来；和两家官方 App 的习惯一致。
 - **代价**：agent 身份色多用在一处（子 session 行的小方块），组件库的规则要改；悬停才画线，第一次用的人不一定发现。
 
+<a id="dr-96"></a>
+
+### DR-96 写文档的 skill：重点放在“少 AI 味”还是“引用够密”
+
+状态：进行中 · 出处：M15 DC7 · 设计画布 D2 · p11/drafts/agentdeck-docs-SKILL.md · 旧编号 —
+
+相关：TC-104、IS-126
+
+- **原来以为**：（用户 2026-10-28）文档 skill 要用人话写、降低 AI 味，并让关键论述密集地对应到代码位置。
+- **实际情况**：2026-10-28 p11/measure/tone.py：第一轮 9 份报告里 skill 列的套话只出现 1 次（“链路”），破折号 2 处，加粗 106 处（每万字 12.7）；同时只有 13 处带行号的引用（IS-126）。本项目的文风规矩（根目录 AGENTS.md、BRIEF 的写法要求）已经压住了套话。维基百科 WikiProject AI Cleanup 的 “Signs of AI writing” 指南列了套话、收尾总结、宣传腔、伪造引用等信号，并说明单个信号不能判定（TechCrunch 2025-11-20 报道）。
+- **决策**：2026-10-28 主 agent 定（按推荐，待用户确认）：agentdeck-docs 自带 skill（草稿 p11/drafts/agentdeck-docs-SKILL.md）：篇幅大头放在“代码引用”的 11 条规则和交付前自查，词表只留一张短清单（中英各一），四类文档各一个提纲（和 DR、TC 的写法一致）；默认不勾，AgentDeck 为文档开的终端自动勾上，没勾的终端第一次收到文档提示词时带一句“先读 SKILL.md 的路径”；不做单独的文风 lint 命令。
+- **好处**：规则能检查（路径存在、每段有引用），不靠感觉；描述每轮只多约 47 token。
+- **代价**：正文约 2.5k token，每次写文档都要读一次；中文的“人话”很难写成能机械检查的规则，只能靠示例。
+
 ## 接口与并发
 
 先定接口再并发开发，过程中发现的问题
@@ -538,6 +905,20 @@
 - **决策**：出 contracts 0.1.3，全部只加不改；能直接接上的（命令通道、repairWorktrees、stash 来源、假实现）当场改完，其余在各包的 CONTRACT_NOTES.md 里标为“待某条线跟进”。
 - **好处**：线 1 一开始就用 0.1.3，不用再改一轮。
 - **代价**：有一批新字段已经在接口里、但实现还没用上，要各条线再跟进一次。
+
+<a id="dr-97"></a>
+
+### DR-97 你、agent、几个 agent 同时改一篇文档时怎么办；评论怎么挂、怎么发
+
+状态：进行中 · 出处：M15 DC2、DC3、DC6 · 设计画布 D0 第 3、5 节 · 旧编号 —
+
+相关：TC-98、TC-102
+
+- **原来以为**：（原来没定）也许要像 Google Docs 一样做实时协同（CRDT）。
+- **实际情况**：AgentDeck 是本机应用，同一时刻改一篇文档的是“你 + 一两个 agent”，agent 不会说 CRDT，只会整文件读写或打补丁。Claude Docs 的做法是每次写入带版本，别人先改了就拒绝、以对方为准。agent 的 PostToolUse 钩子带着 tool_input 里的文件路径（packages/agent-adapters/src/hook-payload.ts:63，现在只用来算批准摘要，PostToolUse 被映射成 prompt-submitted，:90），可以拿来认“谁改的”（codex、omp 带不带待核对）。send_to_terminal 把换行变成空格（packages/mcp-server/src/tools.ts:279），多行评论直接打进去不可靠；IS-102 定了不往正在等你的终端里打字。评论挂在原文上的通用做法是 W3C Web Annotation 的 TextQuoteSelector（exact + prefix + suffix）。
+- **决策**：2026-10-28 主 agent 定（按推荐，待用户确认）：不做 CRDT。文件是唯一真相：窗口保存带 baseHash，磁盘变了就三方合并，同一段冲突才让你选；你没改时直接换成新的。两个 agent 改同一篇不拦，只提示；集群里按 owns 管。评论存在库里、用 TextQuoteSelector 挂、改了以后重新找位置，找不到就 Detached；Send 只发一行提示词（让 agent 用 agentdeck doc comments 读），按 PL3 的方式在空闲时发；没有命令行的 agent 退回多行粘贴原文。agent 只能回复和标 Addressed，只有你能 Resolve。agentdeck doc 所有 AgentDeck 终端都有，不只 Lead（DR-72 的 2026-10-28 补）。
+- **好处**：实现小，不引入协同框架；agent 侧不用改；评论不会被 agent 误删（不在文件里）。
+- **代价**：多人实时协作不支持；“谁改的”认不出时只能写 Changed on disk；评论的位置在大改之后可能找错（模糊匹配有误差）。
 
 ## 实现中的技术问题
 
@@ -1093,7 +1474,7 @@
 
 - **原来以为**：（待核对）白板上能开的 agent（claude、codex、pi、omp、kimi）都能当集群里的角色。
 - **实际情况**：2026-10-27 按现有能力对照：进集群要能调 AgentDeck MCP（crew 工具）、能在启动时收到第一条提示词、最好读得到额度上限（换家用）。claude、codex 接了 AgentDeck MCP（N1，codex 用 app-server 真连过），omp 也能接；pi、kimi 没有 AgentDeck MCP。omp 走 generic 适配器，第一条消息现在会被丢掉（IS-76），要先修。额度上限只有 claude、codex 读得到（DR-63）。2026-10-28 补（DR-72）：crew 改成 agentdeck 命令行以后，进集群要能跑 shell 命令、能收到第一条提示词（调度器启动后发送，不依赖启动参数）、有回合结束信号（钩子或扩展），最好读得到额度上限。claude、codex、omp、pi 都满足（pi 有扩展报回合结束、从不请求批准）；kimi 能跑 shell，但没有钩子、不支持 Auto-approve，每条命令都要你批。
-- **怎么验证**：2026-10-27 用户定：第一期只给 claude、codex、omp；New crew 对话框里每个角色的下拉只列这三个，pi、kimi 灰掉写 “No AgentDeck MCP yet”。omp 进集群前先修 IS-76；omp 没有额度读取时不参加换家，只按失败重试。2026-10-28 主 agent 定（改 2026-10-27 第 6 件决定，2026-10-28 用户确认）：第一期能当 Lead 和 Worker 的是 claude、codex、omp、pi，kimi 灰掉写 “Needs approval for every command”；自由模式的子 session 不带任何工具，五家都行（pi、kimi 默认不勾，DR-71）。名单不再写死，由能力报告（AH0）按“能跑 shell 命令、有回合结束信号”算出，下拉灰掉的原因也从报告取（DR-66）。第一条消息由调度器在启动后发，IS-76 不再挡集群，但照常单独修（AH1），不放在 CR3 里。
+- **怎么验证**：2026-10-27 用户定：第一期只给 claude、codex、omp；New crew 对话框里每个角色的下拉只列这三个，pi、kimi 灰掉写 “No AgentDeck MCP yet”。omp 进集群前先修 IS-76；omp 没有额度读取时不参加换家，只按失败重试。2026-10-28 主 agent 定（改 2026-10-27 第 6 件决定，2026-10-28 用户确认）：第一期能当 Lead 和 Worker 的是 claude、codex、omp、pi，kimi 灰掉写 “Needs approval for every command”；自由模式的子 session 不带任何工具，五家都行（pi、kimi 默认不勾，DR-71）。名单不再写死，由能力报告（AH0）按“能跑 shell 命令、有回合结束信号”算出，下拉灰掉的原因也从报告取（DR-66）。第一条消息由调度器在启动后发，IS-76 不再挡集群，但照常单独修（AH1），不放在 CR3 里。2026-10-28 补（第二轮）：自由模式“子 session 不带任何工具”改为“子 session 不带 crew 和 session 命令”：只碰自己产物的命令（agentdeck doc、flow、lesson，研究集群里的 run / job / out）它们照样有（DR-72 的 2026-10-28 补）。OpenCode 用官方插件和本地服务接，过了合格测试（AH2）后按能力报告进第一档，能当 Lead、Worker（DR-114）；Hermes 按通用档接（DR-115）。名单仍按能力报告算，不写死。
 
 <a id="dr-67"></a>
 
@@ -1117,7 +1498,7 @@
 
 - **原来以为**：（CR3 原计划）crew 工具加进 AgentDeck MCP，按 x-agentdeck-terminal 只给对应角色；文章说 MCP 每轮注入几万 token、缓存读取叠起来很大。
 - **实际情况**：2026-10-27 量（真的 McpServer + 内存 transport 跑 tools/list，按模型看到的 name、description、input_schema 序列化，字符数 / 4 估算，UTF-8 字节数 / 4 一样）：现有 11 个工具完整定义约 1,910 token，server instructions 约 210，合计约 2,120；自带 agentdeck skill 的描述约 65。CR3 的 12 个 crew 工具照同样写法起草约 1,590。但三家默认都不把 MCP 工具定义预先放进上下文：claude（2.1.291，文档“Scale with MCP tool search”）默认延迟加载，只常驻工具名（约 80）和 server instructions（约 210）；codex 源码 main（2026-10-26）写 tool_search 可用时 MCP 工具总是延迟，0.164.0 待实测；omp 18.0.4 默认 tools.xdev 把 MCP 工具挂成 xd:// 设备，系统提示里只有路由列表（约 160）。所以现在每个 claude 终端每轮约 360（1000 次请求 0.36M），只有关了 tool search 时才到约 2,190（2.19M）；CR3 做成 MCP 后延迟加载约 500、预先加载约 3,780。真正的差别不在 token：MCP 只有 claude、codex、omp 能挂（pi 不内置 MCP，kimi 启动时挂不上）；open_terminals 在每个终端里都有，Worker 也能再开 session。命令行这边：pi、kimi、codex、claude、omp 都能跑 shell；claude 的 Bash 要批准（可预先放行 Bash(agentdeck:*)）；codex 默认沙箱只放行名单里的 unix socket 和本机端口（源码 main 的 network.unix_sockets），不放行就每次走批准；kimi 每条命令都要批准，又没有 Auto-approve。各家只给一个终端带说明：claude、omp 的 skill 支持 disable-model-invocation（描述不进上下文、只能 /crew 打开），pi 同样支持并有 --prompt-template，kimi 有 /skill:<name> 但能不能不进上下文待核对，codex 启动时加不进 skill（N9），只能放进第一条提示词或 -c developer_instructions（待实测）。
-- **决策**：2026-10-28 主 agent 定：混合方案。现有 11 个 MCP 工具不动，SERVER_INSTRUCTIONS 缩短；crew 和 session 的命令只做成 agentdeck 命令行（同一个 127.0.0.1 服务的 /cli，或 unix socket，按 CR12 的实测定），不在 MCP 里列出。说明只给 Lead：模板模式写进调度器发的第一条提示词，自由模式用 built in 的 crew skill（disable-model-invocation，只给勾了它的终端）。每个终端一把自己的钥匙 AGENTDECK_TERM_KEY = HMAC(密钥, 终端 id)，不再共用一个 token；命令只能申请关卡，批准和合回 main 只在界面上。集群里非 Lead 的终端不再提供 open_terminals、create_workspace、send_to_terminal；Worker 只在提示词里拿到四五行命令，服务按角色拒绝 Lead 的命令和 session 命令。省 token 不是主要理由（实测每轮约 2.1k，延迟加载时约 360）；真正的理由是 Worker 拿不到开 session 的命令、不会一层套一层，能跑 shell 的 agent 都能进集群。改 2026-10-27 第 6 件决定（2026-10-28 用户确认）：第一期能当 Lead 和 Worker 的是 claude、codex、omp、pi，kimi 灰掉写 “Needs approval for every command”，自由模式的子 session 五家都行；第一条消息由调度器在启动后发，IS-76 不再挡集群，但照常修（AH1）。任务 CR12–CR17，CR3 改成在 /cli 上实现。
+- **决策**：2026-10-28 主 agent 定：混合方案。现有 11 个 MCP 工具不动，SERVER_INSTRUCTIONS 缩短；crew 和 session 的命令只做成 agentdeck 命令行（同一个 127.0.0.1 服务的 /cli，或 unix socket，按 CR12 的实测定），不在 MCP 里列出。说明只给 Lead：模板模式写进调度器发的第一条提示词，自由模式用 built in 的 crew skill（disable-model-invocation，只给勾了它的终端）。每个终端一把自己的钥匙 AGENTDECK_TERM_KEY = HMAC(密钥, 终端 id)，不再共用一个 token；命令只能申请关卡，批准和合回 main 只在界面上。集群里非 Lead 的终端不再提供 open_terminals、create_workspace、send_to_terminal；Worker 只在提示词里拿到四五行命令，服务按角色拒绝 Lead 的命令和 session 命令。省 token 不是主要理由（实测每轮约 2.1k，延迟加载时约 360）；真正的理由是 Worker 拿不到开 session 的命令、不会一层套一层，能跑 shell 的 agent 都能进集群。改 2026-10-27 第 6 件决定（2026-10-28 用户确认）：第一期能当 Lead 和 Worker 的是 claude、codex、omp、pi，kimi 灰掉写 “Needs approval for every command”，自由模式的子 session 五家都行；第一条消息由调度器在启动后发，IS-76 不再挡集群，但照常修（AH1）。任务 CR12–CR17，CR3 改成在 /cli 上实现。2026-10-28 补（第二轮）：命令行的分工改成两类（修订上面“只给 Lead”的说法）。开 session、管子 session、跑 crew 流程的命令，只给 Lead。只碰自己产物的命令，所有 AgentDeck 终端都有：agentdeck doc（DR-97）、agentdeck flow（verdicts 只认 Verifier，DR-101）、agentdeck lesson propose / list / search（DR-105）、研究集群里的 run start / run done / job start / out add（DR-86、DR-87）。认身份靠终端钥匙；这些命令都不能开终端、不能批准、不能提交、不能合并。自由模式“子 session 不带任何工具”改为“子 session 不带 crew 和 session 命令”。第 10 点的研究命令（run、job、out、submit ask、claim、lib、crew item）、第 15 点的 agentdeck forge（只给从 issue / PR 开的终端，只写草稿，DR-109）同样只走命令行，不进 MCP。“现有 11 个 MCP 工具不动”指不改成命令行、不删；Hide from agents、遮掉命令里的密码这类收紧行为是允许的（DR-99）。会动现有 MCP 默认行为的任务（AH7、AH11）实现时要单独写进 docs/decisions.md。
 - **好处**：没打开的终端不多付 token（普通终端每轮从约 360 降到约 200，只因为 instructions 缩短）；Worker 没有开 session 的命令，不会一层套一层；pi 能进集群，换家审多一家；命令每次现读地址，AgentDeck 换了端口还活着的 agent 也能连上（MCP 的地址是启动时写死的）；人和脚本也能用同一套命令调试和写测试。
 - **代价**：多一个要打包的命令（像 agentdeck-notify 一样要 node 或用 Electron 当 node 跑）；claude 的 Bash 批准、codex 的沙箱要分别处理，codex 不放行时每条命令要批准；agent 要自己拼命令行和引号（长内容走 stdin）；两个入口要一起维护（同一份实现能减轻）；同一个 macOS 用户下故意去读别的终端环境的进程仍能冒充（和现在能 tmux send-keys 进任何终端同一级）。
 
@@ -1130,10 +1511,10 @@
 相关：TC-69、IS-105
 
 - **原来以为**：（第二版画板 2）工作区设置里 “Share with every agent · Instructions · AGENTS.md · Also links CLAUDE.md and GEMINI.md”：AgentDeck 负责把说明文件同步给框里的每个 agent。
-- **实际情况**：2026-10-27 查文档（code.claude.com/docs/en/memory、developers.openai.com/codex/memories，未在本机核对）：claude 有 CLAUDE.md 和 auto memory 两套，都在每次会话开头读；2.1.277 起没有 CLAUDE.md 时直接读 AGENTS.md；auto memory 默认开，存在 ~/.claude/projects/<仓库>/memory/，同一仓库的所有 worktree 共用，记 user / feedback / project / reference 四类，其中 project 类就包括“正在做的事”；可用 CLAUDE_CODE_DISABLE_AUTO_MEMORY=1 或 autoMemoryEnabled 关。codex 读 ~/.codex/AGENTS.md 和仓库里的 AGENTS.md；memories 默认关（[features] memories = true），存在 ~/.codex/memories/。pi、omp、kimi 读 AGENTS.md（待核对）。画板 2 的 Instructions 同步一直没做（代码里没有）。
-- **决策**：2026-10-28 主 agent 定：长期记忆不由 AgentDeck 管，也不往每个终端注入偏好（每轮都要付 token），用各家自己的 AGENTS.md / CLAUDE.md / memory。集群里非 Lead 的 claude（Worker、Reviewer、QA）启动时关掉 auto memory（LaunchSpec.env 设 CLAUDE_CODE_DISABLE_AUTO_MEMORY=1，不改用户配置），Lead 照用户设置（CR4）。第二版画板 2 的 Instructions 同步降级成工作区设置里的“把不进 git 的说明（CLAUDE.local.md、AGENTS.override.md）带进新 worktree”，以后再做。短期变长期由你做：汇报里的 Decisions 和 notes 用 Copy as Markdown 抄进 AGENTS.md，AgentDeck 不自动写仓库。
+- **实际情况**：2026-10-27 查文档（code.claude.com/docs/en/memory、developers.openai.com/codex/memories，未在本机核对）：claude 有 CLAUDE.md 和 auto memory 两套，都在每次会话开头读；2.1.277 起没有 CLAUDE.md 时直接读 AGENTS.md；auto memory 默认开，存在 ~/.claude/projects/<仓库>/memory/，同一仓库的所有 worktree 共用，记 user / feedback / project / reference 四类，其中 project 类就包括“正在做的事”；可用 CLAUDE_CODE_DISABLE_AUTO_MEMORY=1 或 autoMemoryEnabled 关。codex 读 ~/.codex/AGENTS.md 和仓库里的 AGENTS.md；memories 默认关（[features] memories = true），存在 ~/.codex/memories/。pi、omp、kimi 读 AGENTS.md（待核对）。画板 2 的 Instructions 同步一直没做（代码里没有）。2026-10-28 补（第二轮）：补查：claude 的 auto memory 文档写明跳过 debugging fixes 这类能从代码推出来的东西；codex 的 memories 只有 ~/.codex/memories/ 一处、不分项目，闲置后后台提炼，文档让团队规则放 AGENTS.md（详见 DR-105）。
+- **决策**：2026-10-28 主 agent 定：长期记忆不由 AgentDeck 管，也不往每个终端注入偏好（每轮都要付 token），用各家自己的 AGENTS.md / CLAUDE.md / memory。集群里非 Lead 的 claude（Worker、Reviewer、QA）启动时关掉 auto memory（LaunchSpec.env 设 CLAUDE_CODE_DISABLE_AUTO_MEMORY=1，不改用户配置），Lead 照用户设置（CR4）。第二版画板 2 的 Instructions 同步降级成工作区设置里的“把不进 git 的说明（CLAUDE.local.md、AGENTS.override.md）带进新 worktree”，以后再做。短期变长期由你做：汇报里的 Decisions 和 notes 用 Copy as Markdown 抄进 AGENTS.md，AgentDeck 不自动写仓库。2026-10-28 补（第二轮）：主 agent 定（按推荐，待用户确认）：本条补一条例外，不推翻：Lessons（反复踩的坑）归 AgentDeck，按项目存在库里、所有 worktree 共用；只收你点过 Accept 的；每条一句话，项目上限 1,000 token；All projects 一组只收你手动加的，上限 400 token；开 session 时追加进系统提示，kimi 先灰掉；你点 Move to AGENTS.md 才改工作区，并且不提交，之后不再注入（DR-105、DR-106）。偏好和进度仍照本条：AGENTS.md / CLAUDE.md / 各家 memory。往用户文件写东西的例外都要你点了才写，AgentDeck 自己不提交：Save to repo（docs/flows/，DR-102）、Move to AGENTS.md、你选到别处的资料库文件夹（DR-88）。
 - **好处**：不和各家抢、不和它们的新功能冲突；不多付 token；集群不会污染你的长期记忆。
-- **代价**：跨家的偏好要你自己写进 AGENTS.md 才共享（claude 的 auto memory 别家读不到）；关掉 worker 的 auto memory 后它们学到的东西不留（集群的 notes 代替）；pi、omp、kimi 读哪些文件没核对。
+- **代价**：跨家的偏好要你自己写进 AGENTS.md 才共享（claude 的 auto memory 别家读不到）；关掉 worker 的 auto memory 后它们学到的东西不留（集群的 notes 代替）；pi、omp、kimi 读哪些文件没核对。2026-10-28 补（第二轮）：反复踩的坑各家都不记（claude 跳过 debugging fixes），由 Lessons 补（DR-105）。
 
 <a id="dr-75"></a>
 
@@ -1210,6 +1591,112 @@
 - **决策**：2026-10-28 主 agent 定：PL3 先修一个 P1 缺陷再提交（IS-113）：加 armed 标记；claude 自己续跑的那一轮结束后再发；claude 在 stale 状态时不粘贴。续跑另开插件 Auto-resume（名字2026-10-28 用户确认），任务 PL4–PL9：贴在白板上（框、终端可单独关），默认关（2026-10-28 用户定，原推荐默认开）；只看这一轮是不是被额度结束的；先续跑，做完再发 PL3 排着的；续跑提示词是一段可改的英文模板，因额度 failed 的子 agent 逐个点名（claude 让它用 SendMessage 接回，codex 让它重开）；按“agent + 配置目录”算账号，同一账号的一起停，恢复后按被打断的先后、每 30 秒续一个；PL3 发第一条的条件改成“这个账号碰到上限后”（2026-10-28 用户确认）；连续两次续了又撞、读不到恢复时间时停下来进收件箱；Mac 睡过恢复时间 30 分钟以上时先问你，不直接续（2026-10-28 用户确认）。claude 自己会续的，AgentDeck 只盯着（等 quota_auto_resume_fired；stale 时进收件箱，你点 Continue 才替你按回车；disabled 或恢复 3 分钟后没动静才自己发），续完补发子 agent 那一段，不重复发。omp 先只显示 “handled by omp”，pi、kimi 读不到恢复时间只给 Resume now（PL9 核对后再定）。集群里的终端归 CR8 调度器。识别、归组、错开发送只在主进程的 LimitService（agent-adapters limits）里写一份，插件和 CR8 共用。
 - **好处**：队列空也能接着做；同一账号一处看、一处取消；和 claude 自己的续跑不打架；集群和插件共用一份识别和发送。
 - **代价**：又多一个主进程模块和 contracts 接口；claude 走它自己的续跑，claude 终端没法错开；依赖各家记录和钩子的格式，升级后要核对（并入 DR-60）；续跑会用掉新窗口的额度，你回来时可能已经用掉一部分。
+
+<a id="dr-90"></a>
+
+### DR-90 视频：五家都走字幕或转写加关键帧，能看视频的只补看画面
+
+状态：待验证 · 出处：E2 第 5、6 节 · RS11、RS14（调研）· 第 1 点 AH0 · 旧编号 —
+
+相关：TC-94、IS-122、IS-120
+
+- **原来以为**：让 agent 直接“看”视频再总结。
+- **实际情况**：2026-10-28 网上核对（待实测）：Claude Code 没有视频输入，2025-11-29 有开着的功能请求（claudeissues.com 转载的 issue）；Codex CLI 能看图，没找到视频输入的说明（第三方文章）；Kimi Code CLI 文档写了能粘贴视频片段，取决于模型的 video_in（kimi.com/code/docs 的 Interaction and input）；Gemini API 能直接收 YouTube 网址（ai.google.dev video understanding），但不在五家里；pi、omp 看接的模型。工具：yt-dlp 能先只取字幕（--write-subs --write-auto-subs --skip-download），B 站 AI 字幕要登录 cookies（社区说法）；Apple 芯片上 mlx-whisper 和 whisper.cpp 都能本地转写，速度差不多（社区测速）；ffmpeg 按画面变化截帧。
+- **怎么验证**：2026-10-28 主 agent 定（按推荐，实测后修正）：标准路线：yt-dlp 取信息和字幕 → 没有才取音频转写（Job）→ ffmpeg 截关键帧给模型当图片读 → 带 [mm:ss] 的大纲 → 换一家用自己的搜索核对 → pptx 加 PDF 预览。能看视频的 agent（现在是 kimi）只当可选的 viewer；AH0 加 image-input、video-input。AgentDeck 不打包这些工具，只在 New crew 检查装没装；用浏览器 cookies 每次问你，默认不用；下载守平台条款。
+
+<a id="dr-95"></a>
+
+### DR-95 语义核查：怎么让子 agent 判断“这句话和代码对不对得上”
+
+状态：待验证 · 出处：M15 DC8、DC11 · 设计画布 D1 第 5 节 · p11/drafts/prompts.txt · 旧编号 —
+
+相关：TC-103
+
+- **原来以为**：（原来没定）写文档的 agent 写完自己检查一遍就行。
+- **实际情况**：机械核对只能说“这几行变没变”，说不了“这句话对不对”。让作者自查容易顺着自己的思路；常见做法是零上下文的复核（只给论断和证据）。AgentDeck 已经定了“换家审”（集群 C3）和“原生 TUI，协议只当旁路”（DR-66）。claude 的 plan 模式、codex 的 read-only 沙箱能让核查者不改文件（各家参数待按 AH0 能力报告核对）。第一轮报告的 13 处行号引用人工核对全部说得对，说明错误的大头在写法和时效，不在内容；语义核查的准确率还没量过。
+- **怎么验证**：2026-10-28 主 agent 定（按推荐，待用户确认）：第二期做 Verify claims：抽出带引用的句子（id = 文字 + 引用的哈希），开一个只读的核查终端，默认换一家，第一条提示词里只有句子和代码位置、不带作者的对话；核查者用 agentdeck doc verdict 逐条交 supported / partly / wrong / unclear 和理由、可选的改法；结论按句子文字和引用代码的哈希缓存，任何一个变了才作废；结论只是标记，改不改由你或原作者。先做实验（DC11）：20 句里埋 5 句错的，claude、codex 各当一次核查者，记准确率和 token。
+
+<a id="dr-98"></a>
+
+### DR-98 用户说的 “Matt Pike 的 teach skill” 是什么；在 AgentDeck 里怎么用来学东西
+
+状态：进行中 · 出处：设计画布 L0 第 1、2 节 · apps/desktop/src/main/browser（FileRoots）· docs（学习用法一页） · 旧编号 —
+
+相关：TC-107、IS-128
+
+- **原来以为**：（用户 2026-10-28 的笔记）有一个 “Matt Pike” 写的 teach skill，能生成课程和学习计划；可能要在 AgentDeck 里加学习相关的功能（模板、进度）。
+- **实际情况**：2026-10-28 查（github.com/mattpocock/skills 的 README 和 skills/productivity/teach/ 下的文件、GitHub API）。是 Matt Pocock（不是 Pike）的 skills 仓库（“Skills for Real Engineers”，约 30.5 万星，MIT，2026-02 建，2026-10-27 还在推送）里的 teach，路径 skills/productivity/teach/：SKILL.md 加 MISSION-、RESOURCES-、LEARNING-RECORD-、GLOSSARY-FORMAT.md 和 agents/openai.yaml。frontmatter：disable-model-invocation: true，argument-hint “What would you like to learn about?”，codex 那边 allow_implicit_invocation: false，所以只能手动调、平时不占上下文。它把运行 /teach 的当前目录当教学工作区，状态全是文件：MISSION.md（为什么学）、RESOURCES.md（可信资料）、NOTES.md（偏好）、learning-records/0001-….md（像 ADR，只在你表现出真懂、说了已有基础、纠正了误解、目标变了时写）、lessons/0001-….html（一节短的、能打印的 HTML 课，带引用、主要资料、测验）、reference/（速查、术语表）、assets/（共用样式和组件）。它不先排整份大纲：每次读记录估“最近发展区”，现算下一节。2026-10-07 的 #1183 修了课被写进 ~/.claude/skills 的问题（#377），说明它强依赖 cwd。装法：claude plugin install mattpocock-skills@claude-plugins-official；codex plugin marketplace add mattpocock/skills 再 codex plugin add mattpocock-skills@mattpocock；其他 npx skills@latest add mattpocock/skills -a <agent>（只装一个用 --skill teach，第三方目录站的写法，待核对）。抖音、B 站的链接没传过来，待用户给链接；网上有一个视频 “I Tried /teach and 10x’d My Ability To Learn” 讲的就是它（作者待核对）。AgentDeck 这边：plain 项目已支持（contracts/src/project.ts），open_browser 能开本地 HTML（mcp-server/src/tools.ts），但本地文件只放行所在目录（apps/desktop/src/main/browser/local-files.ts），课引用的 ../assets 读不到（IS-128）。用户自己的学习手册（/next、/check 两个 skill，只看了名字和描述）：进度在一个 artifact 页面和 Obsidian 笔记里，/check 还会跑代码测试；和 /teach 一样，进度在 AgentDeck 之外。
+- **决策**：2026-10-28 主 agent 定（按推荐，待用户确认）：1）不内置 teach，用户用各家的插件或 Add skill… 自己装，文档写一页怎么在 AgentDeck 里用；2）一个学习文件夹 = 一个普通项目（plain 或 git init），只用主目录工作区、不开 worktree，课在白板浏览器里看；3）进度就是学习文件夹里的文件，AgentDeck 不存、不读、不汇总（和第 5 点“长期记忆不归 AgentDeck 管”一致）；4）不做学习类集群模板，也不写自由模式的学习用法，收集资料归第 10 点；5）修 IS-128。
+- **好处**：AgentDeck 不加新概念；跟着上游更新；进度可以 git、可以放进 Obsidian vault；手动调用的 skill 每轮 0 描述 token，不用做减法。
+- **代价**：用户要自己装、自己建文件夹；在代码仓库的框里误跑 /teach 会把课写进仓库（只能靠文档提醒）；codex 用不了 AgentDeck 库里的 skill（DR-59、DR-83），只能走 codex 自己的插件。
+
+<a id="dr-99"></a>
+
+### DR-99 数据库管理 TUI 在工作台里怎么用；要加什么、不加什么
+
+状态：进行中 · 出处：设计画布 L0 第 3、4 节 · packages/ui/canvas（BoardMenu、对话框、设置页）· packages/ui/widgets/terminal · packages/mcp-server · contracts（settings、TerminalWindowData）· docs · 旧编号 —
+
+相关：TC-108、TC-109、TC-110、IS-129、IS-130
+
+- **原来以为**：（用户 2026-10-28 的笔记）要“探索数据库管理 TUI 在工作台里的用途”，可能要给 AgentDeck 加数据库相关的功能。
+- **实际情况**：2026-10-28 查（各仓库 README、GitHub API）：harlequin（Python，MIT，6.5k 星，v2.17.0 2026-10-26；自带 DuckDB、SQLite，其余装 adapter；带 hsql，给 agent 和脚本用的无界面查询，--read-only 和 --timeout 在数据库做不到时拒绝启动；profile 里 ${MYPASSWORD} 读环境变量，秘密字段打印时遮住）；lazysql（Go，MIT，4.4k；MySQL、Postgres、SQLite、MSSQL、ClickHouse、MongoDB；config.toml 加往上到 git 根的 .lazysql.toml；${env:VAR}；--read-only；有遥测，--no-telemetry）；gobang（Rust，MIT，3.3k，最后推送 2023-11，基本停了）；pgcli（Python，BSD-3，13.4k；REPL 不是全屏 TUI；keyring 默认开，PG* 环境变量，destructive_warning）；rainfrog（Rust，MIT，5.4k；DATABASE_URL 或 .env，密码可存钥匙串）；usql、dblab、sqlit 同类。AgentDeck 现状：custom 适配器（packages/agent-adapters/src/adapters/shell.ts）直接执行命令，StartAgentRequest.command 带命令；白板菜单因为没有问命令的对话框把 custom 藏掉了（packages/ui/canvas/src/model/agents.ts，IS-21）；Shell 带命令时用 $SHELL -l -c 跑；MCP open_terminal 能开 shell 并带 command；重开时 custom 变 Shell、命令填好不跑（packages/ui/widgets/terminal/src/restore.ts）。安全上：list_terminals 返回完整命令、read_terminal 能读任何终端、send_to_terminal 把换行变空格并默认按回车（packages/mcp-server/src/tools.ts），所以 agent 能看到连接串里的密码、读到查出来的数据、往 pgcli 里打语句；终端里的右键交给 TUI，窗口菜单只在标题栏（packages/ui/canvas/src/react/WindowNodeView.tsx）；终端组件已有带 bracketed paste 的粘贴（packages/ui/widgets/terminal/src/session.ts）。
+- **决策**：2026-10-28 主 agent 定（按推荐，待用户确认）：数据库 TUI 就是自定义命令终端，AgentDeck 不做数据库功能。只加四样：1）New terminal ▸ 的 COMMANDS 预设和 Custom command… 对话框，预设存 AgentDeck 设置、不进仓库；2）Send selection to ▸：贴进去不按回车，人来跑（和第 16 点的 Send selection 合成一个任务 CO3）；3）Hide from agents：Custom command… 和预设默认勾上，agent 列不到、读不到、打不进；所有终端的 list_terminals 命令里遮掉密码；4）命令里带 scheme://用户:密码@ 或 PGPASSWORD= 这类前缀时不让打开。agent 只读查库：不做内置 skill、不做数据库 MCP，文档给一个 db-readonly 示例 skill（hsql --read-only --timeout 30 或 psql + 只读账号），真正的保护是数据库的只读账号。Hide from agents 和遮掉密码由 AH11 做，和 AH7 放在同一处检查；这是收紧现有 MCP 工具的行为，不算改动“现有 11 个 MCP 工具”（DR-72 的 2026-10-28 补），实现时单独写进 docs/decisions.md。
+- **好处**：后台已经有的东西接上入口，代码量小；SQL 由人在自己熟悉的工具里看过再跑；密码和查询结果不进 agent 的上下文；不和各家数据库工具抢活。
+- **代价**：密码检查只认几种写法，挡不全；Hide from agents 让 agent 不能替你看 TUI 里的结果（要它查库得走 db-readonly 那条路）；改了 list_terminals、read_terminal、send_to_terminal 的行为（工具和参数不变）；.env 里的连接串照旧会被复制进 worktree、agent 读得到。
+
+<a id="dr-104"></a>
+
+### DR-104 测试覆盖怎么收：vitest、Electron 的主进程、utility 进程、界面进程
+
+状态：待验证 · 出处：CU5、CU8 · 暂存实验 p13/measure（v8probe、exp/json-hook.mjs） · 旧编号 —
+
+相关：TC-114、IS-132
+
+- **原来以为**：给 vitest 和 e2e 设 NODE_V8_COVERAGE 就能拿到所有进程的覆盖。
+- **实际情况**：（2026-10-28 部分实测）给 vitest 5.0.5（pool forks）设 NODE_V8_COVERAGE 只录到了 vitest 主进程，fork 出来的测试进程没写出覆盖文件；改用 node 25 直接跑同一段（--experimental-transform-types --enable-source-maps，加一个给 .json 补 import 属性的钩子），覆盖文件里带 source-map-cache，按 source map 换回源码行可行。vitest 文档（v5.0.5）有 v8 / istanbul 两种 provider，没写“每个测试覆盖了哪些行”。Electron 主进程、utilityProcess 认不认 NODE_V8_COVERAGE，界面进程能不能用 Playwright 的 Chromium 覆盖：待实验。
+- **怎么验证**：2026-10-28 主 agent 定：单元测试用 @vitest/coverage-v8 的 json 报告，按测试文件（或 -t）单跑来归属；e2e 由 CU8 先在暂存目录实验三个进程，结果写回这条。给仓库装覆盖率（@vitest/coverage-v8，pnpm coverage，不进 pnpm check）可以提前单独做，作为 CU0 之后的独立小任务。
+
+<a id="dr-106"></a>
+
+### DR-106 Lessons 怎么进每家 agent 的上下文、每轮多付多少 token
+
+状态：进行中 · 出处：LR2 · agent-adapters（prepareLaunch、能力报告）· contracts（AgentCapabilityReport 的 key、InjectionEstimate） · 旧编号 —
+
+相关：TC-123、IS-133
+
+- **原来以为**：（没想过）要么写进仓库的 AGENTS.md，要么像 CR18 一样用 SessionStart 钩子塞进去。
+- **实际情况**：2026-10-28 本机只读看 --help：claude 2.1.291 有 --append-system-prompt / --append-system-prompt-file；pi 0.83、omp 18.0.4 有 --append-system-prompt（可以给文件、能重复）；codex 0.164 的配置参考里有“额外的 developer instructions 注入会话”一项（developer_instructions，CR12 也打算实测），用 -c 能临时给；kimi 2.3.2 没有追加系统提示，只有 --agent-file（加载一个 agent 定义，待核对能不能保留默认提示只追加）。放进系统提示比 SessionStart 钩子好：压缩、/clear 以后还在，不用每次补；只在启动时定，会话中途不改，缓存前缀不变。大小：示例 12 条约 1,680 字符，按 SK1 的 chars/3.5 估约 480 token；20 条约 800。对照：AgentDeck MCP 每轮约 2.1k（DR-72）、claude 的 MEMORY.md 最多 200 行或 25KB（约 6k）、codex 的 memory_summary 约 5k（待核对）、本仓库 AGENTS.md 约 3.5k、omp 用户目录的 skill 描述约 10.5k（DR-81）。每轮多付的是缓存读取：Anthropic 的缓存读取按输入价的 0.1 算，一天 300 轮 × 500 token = 15 万缓存读取，约等于 1.5 万全价输入 token；每次新 session 或 /clear 后写一次缓存。OpenAI 的缓存折扣待核对。订阅额度里缓存读取怎么折算，各家没写，待核对。
+- **决策**：2026-10-28 主 agent 定：启动时注入，不用钩子：claude --append-system-prompt-file、codex -c developer_instructions、pi / omp --append-system-prompt <文件>；kimi 先灰掉写 “Not supported for kimi yet”，LR2 核对 --agent-file 后再定。内容是一块固定格式的英文（标题行写条数、一行怎么提新的、每条一行 L<n> When … : …），按状态和最近碰到排序，超上限的不进；项目 1,000 token、All projects 400 token 封顶。能力报告（AH0）加一项 append-instructions。SKILLS · MCP 一节加一行 Lessons · N · ~tokens（用 CR13 的 InjectionEstimate）。第二期实验（LR11）：只在相关时注入，即 claude、codex 的 PostToolUse 钩子看到命令或错误对上某条的 match 时才用 additionalContext 补那一条，平时不放。
+- **好处**：跨家一致；压缩和 /clear 不丢；不让缓存中途失效；只付几百 token，而且看得见。
+- **代价**：每家一个参数，又多一处耦合（并进 AH2 的合格测试）；改了 Lessons 只对新 session 生效；kimi 可能没有；系统提示里的东西 agent 也可能不照做（和 AGENTS.md 一样）。
+
+<a id="dr-114"></a>
+
+### DR-114 OpenCode 怎么接：插件收事件、用它 TUI 自带的服务回答批准
+
+状态：进行中 · 出处：packages/agent-adapters（adapters/opencode.ts、compat/opencode.json）· tools/agentdeck-notify（opencode 插件）· 画板 A2 · 旧编号 —
+
+相关：TC-141、IS-145
+
+- **原来以为**：（第 1 点的接入流程）新加一家 agent 要么写进 known.ts 用通用适配器（状态靠输出或扩展），要么像 codex 那样写专门的适配器；批准靠认屏发键。
+- **实际情况**：2026-10-28 读 opencode.ai/docs（cli、plugins、permissions、config、server、skills、acp）和 GitHub：最新 v2.2.0（2026-10-27），本机没装。TUI 参数有 --prompt、--session、--continue、--fork、--agent、--auto、--port、--hostname；opencode session list --format json、export、stats。插件可以放在 OPENCODE_CONFIG_DIR 指的目录（在全局配置之后加载、能覆盖），事件有 session.status、session.idle、session.error、session.created、permission.asked、permission.replied、file.edited、tool.execute.before/after、message.updated；OPENCODE_CONFIG_CONTENT 是内联配置（和其他配置合并），可以带 mcp；OPENCODE_PERMISSION 内联权限。TUI 启动时自己起一个 HTTP 服务（OPENCODE_SERVER_PASSWORD 开基本认证），/event 是 SSE，POST /session/:id/permissions/:permissionID 回答批准，/tui/append-prompt、/tui/submit-prompt 能往输入框里填字并提交。skill 目录除了 .opencode/skills、~/.config/opencode/skills，还会读 .claude/skills、~/.claude/skills、.agents/skills（OPENCODE_DISABLE_EXTERNAL_SKILLS 能关）。另有 opencode acp。能力表草稿 15 格：A 10、B 3、C 2（画板 A2）。
+- **决策**：2026-10-28 主 agent 定（改第 7 点“只深做 claude、codex”，按推荐，待用户确认）：写专门的 opencode 适配器：环境变量带 AgentDeck 的插件目录和内联的 mcp 配置，插件把事件转给 HookServer（和 pi、omp 的扩展同一个入口）；批准不发按键，调 TUI 自带服务（只听 127.0.0.1、每个终端一个密码）；Approve all 用 --auto。不走 ACP 窗口（DR-66）。L2 合格测试过了以后，按能力报告它进第一档：能当集群 Lead / Worker、能用 Auto-approve。排在集群第一期之后（DR-79 的 2026-10-28 补）。
+- **好处**：状态、批准、会话 id、MCP、skill 都走官方接口，不认屏、不按键，升级不容易坏；不改用户的 ~/.config/opencode；接近 claude、codex 的体验。
+- **代价**：本机没装，所有结论都要 L2 核对：--prompt 是否直接提交、OPENCODE_CONFIG_DIR 是叠加还是顶掉、服务回答批准后 TUI 的框会不会消失、fork 到另一个 worktree 能不能接上；每个终端多开一个本地端口；OpenCode 版本发得很勤，合格测试要常跑。
+
+<a id="dr-115"></a>
+
+### DR-115 “Hermes Code”是什么，怎么接
+
+状态：进行中 · 出处：packages/agent-adapters（adapters/known.ts、compat/hermes.json）· 画板 A2 · 旧编号 —
+
+相关：TC-142、IS-144、IS-145
+
+- **原来以为**：用户笔记里写“支持 Codex、Claude Code、OpenCode、Hermes Code 等”，以为 Hermes Code 是一个和它们同类的编码 CLI。
+- **实际情况**：2026-10-28 网上没有叫 Hermes Code 的产品。最接近的是 Nous Research 的 Hermes Agent（github.com/NousResearch/hermes-agent，最新 v0.22.5，2026-10-23）：通用 agent，有 CLI / TUI、消息网关、定时任务、kanban、ACP；本机装着它（~/.local/bin/hermes → ~/hermes-agent，v0.13.0，2026-05-07），只读看了 --help 和仓库文档。另有一个 Hermes IDE（把几家 CLI 包在一个 TUI 里的壳），不是 agent。Hermes 交互模式没有带第一条消息的参数（-q 是一次性非交互）；--resume <id 或标题> 能接回；fork 只有会话里的 /branch；会话在 ~/.hermes/state.db（SQLite），hermes sessions list 能列；钩子（shell hooks、插件、网关钩子）和 MCP 都只能写在 ~/.hermes/config.yaml、~/.hermes/plugins，项目里的插件还要 HERMES_ENABLE_PROJECT_PLUGINS 并在用户配置里启用，没有每次启动临时带的办法（0.13.0）；pre_approval_request 钩子只能看不能答；确认框只给危险命令（rm -rf、sudo 这类），选项 Approve Once / Session / Always / Deny；-w 或配置 worktree: true 会自己开 worktree。能力表草稿 15 格：A 2、B 2、C 8、没有 3。
+- **决策**：2026-10-28 主 agent 定（按推荐，待用户确认 Hermes Code 就是 Nous Research 的 Hermes Agent）：先按通用 agent 接（known.ts 一行）：状态看输出活动，第一条消息启动后发送，不挂 MCP，不自动按确认框；不传 -w、--yolo；启动前只读它的配置，worktree: true 时提示。它能跑 shell，可以当自由模式的子 session，也能用 agentdeck 命令行进集群。要升到第二档只能往 ~/.hermes/plugins 装 AgentDeck 的插件，这和“AgentDeck 不改用户配置”冲突，不做：不往 ~/.hermes 装插件，按通用档用。
+- **好处**：不碰用户的 Hermes 配置和记忆；接入成本只有一行加合格测试；能力缺口在 Settings › Agents 和菜单里都有原因。
+- **代价**：黄灯不亮，收件箱看不到它在等你（和 kimi 一样）；会话 id 靠推断；本机版本太旧，结论要在 v0.22.5 上重核；Hermes 本身更像一个“会写代码的通用助手”，在 AgentDeck 里的用处可能主要是研究、整理类的子任务。
 
 <a id="dr-42"></a>
 

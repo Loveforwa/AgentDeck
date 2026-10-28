@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>研究和竞赛 · 资料库、复现、视频</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.at{position:absolute}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1280px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.tag{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:11.5px;background:#F2F2EF;color:#5F5F5A;white-space:nowrap}
+.kind{display:inline-flex;align-items:center;height:16px;padding:0 5px;border:1px solid #D6D6D2;border-radius:4px;font-size:9.5px;color:#6B6B6B;flex:none;letter-spacing:0.03em}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#8A8A85}
+.cf{position:absolute;box-sizing:border-box;border:1.5px solid #1A1A1A;border-radius:12px;background:rgba(255,255,255,0.55)}
+.cfh{position:absolute;left:0;top:0;right:0;height:40px;box-sizing:border-box;padding:0 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #E3E3E0;background:#FFFFFF;border-radius:11px 11px 0 0;font-size:12px}
+.dot{width:7px;height:7px;border-radius:50%;flex:none;box-sizing:border-box;display:inline-block}
+.am{width:6px;height:6px;border-radius:1.5px;flex:none;display:inline-block}
+.btn{display:inline-flex;align-items:center;height:22px;padding:0 8px;border:1px solid #D6D6D2;border-radius:6px;font-size:11px;background:#FFFFFF;color:#1A1A1A;white-space:nowrap}
+.btn.pri{background:#1A1A1A;color:#FFFFFF;border-color:#1A1A1A}
+.win{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;overflow:hidden;font-size:11px}
+.wt{display:flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-bottom:1px solid #EEEEEB;white-space:nowrap}
+.wb{padding:6px 9px;font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.7;color:#6B6B6B}
+.side{position:absolute;box-sizing:border-box;background:#FFFFFF;border-right:1px solid #E3E3E0;font-size:11.5px;display:flex;flex-direction:column}
+.li{display:flex;flex-direction:column;gap:2px;padding:7px 12px;border-top:1px solid #EEEEEB}
+.lr{display:flex;align-items:center;gap:6px}
+.sl{font-size:10px;font-weight:600;color:#8A8A85;letter-spacing:0.04em;padding:8px 12px 3px}
+.code{box-sizing:border-box;background:#FBFBFA;border:1px solid #E3E3E0;border-radius:10px;padding:14px 16px;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.7;color:#3D3D3A;white-space:pre}
+.ex{display:flex;flex-direction:column;gap:10px;font-size:13.5px;line-height:1.65}
+.ct{display:grid;font-size:10.5px;line-height:1.45}
+.ct>span{padding:6px 8px;border-top:1px solid #EEEEEB}
+.ct>.h{border-top:none;background:#F7F7F5;color:#6B6B6B;font-weight:600}
+.box{box-sizing:border-box;border:1px solid #E3E3E0;border-radius:8px;padding:10px 12px;background:#FFFFFF;font-size:12.5px;line-height:1.55;display:flex;flex-direction:column;gap:4px}
+.box.ad{border:1.5px solid #1A1A1A}
+.bt{font-size:11px;font-weight:600;color:#8A8A85;letter-spacing:0.04em}
+.arrow{font-size:18px;color:#8A8A85;align-self:center;flex:none}
+.cell{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.stack{display:flex;flex-direction:column;gap:6px}
+.lay{box-sizing:border-box;border:1px solid #D6D6D2;border-radius:8px;padding:8px 12px;background:#FFFFFF;font-size:12px;line-height:1.5}
+</style>
+</helmet>
+<div style="width: 1760px; height: 3800px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">E2 · 资料库和读论文、复现对照表、视频转 PPT</h1>
+      <span class="concept">2026-10-28 按推荐先定，待你确认</span>
+    </div>
+    <p class="lead">另外三种场景。<b>收资料</b>：搜索是各家 agent 自己的事（RM4），AgentDeck 只管收到以后放在哪、怎么去重、怎么每天跑。<b>复现</b>：先把论文里要对的数写成表、锁住，再在隔离的环境里跑，差多少由 AgentDeck 算。<b>视频</b>：五家都能走“字幕或转写 + 关键帧”这条路，能直接看视频的（kimi、Gemini）只用来补看画面。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 资料库（Library）和辅助读论文</span>
+    <div class="fig" style="width: 1632px; height: 720px">
+      <div class="side" style="left: 0; top: 0; width: 370px; height: 718px">
+        <div style="display: flex; align-items: center; gap: 6px; padding: 10px 12px; border-bottom: 1px solid #EEEEEB"><span class="btn">History</span><span class="btn" style="background: #EDEDEA; font-weight: 600">Library</span><span style="flex: 1"></span><span class="muted">⋯</span></div>
+        <div style="padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; border-bottom: 1px solid #EEEEEB">
+          <span class="btn" style="justify-content: flex-start; color: #8A8A85; height: 26px">Search library</span>
+          <div style="display: flex; gap: 4px; flex-wrap: wrap"><span class="btn" style="background: #EDEDEA">All</span><span class="btn">Papers 128</span><span class="btn">News 41</span><span class="btn">Events 9</span><span class="btn">Videos 6</span></div>
+          <span style="font-size: 10.5px; color: #6B6B6B">Literature watch · daily 07:00 · last run 07:02 · 12 new · <span style="color: #1A1A1A; text-decoration: underline">Run now</span></span>
+        </div>
+        <span class="sl">NEW · 12</span>
+        <div class="li" style="border-top: none; background: #EDEDEA"><div class="lr"><span class="kind">PAPER</span><b>Keeping long-running coding agents on track</b></div><span class="muted mono" style="font-size: 10px">arXiv 2610.01234 v2 · 3 sources · PDF</span></div>
+        <div class="li"><div class="lr"><span class="kind">PAPER</span><b>Scoring what agents can’t fake: locked evaluators</b></div><span class="muted mono" style="font-size: 10px">DOI 10.1145/… · also arXiv 2607.0921 · 2 sources</span></div>
+        <div class="li"><div class="lr"><span class="kind">NEWS</span><b>A coding CLI adds video input</b></div><span class="muted mono" style="font-size: 10px">1 story · 4 sources · Oct 27</span></div>
+        <div class="li"><div class="lr"><span class="kind">EVENT</span><b>Workshop on agentic coding · deadline</b></div><span class="mono" style="font-size: 10px; color: #6B6B6B">Nov 14 AoE · <span style="color: #B45309">changed from Nov 10</span></span></div>
+        <div class="li"><div class="lr"><span class="kind">VIDEO</span><b>Talk: multi-agent harnesses</b></div><span class="muted mono" style="font-size: 10px">bilibili BV1x… · 1:12:40 · transcript</span></div>
+        <span class="sl">POSSIBLE DUPLICATES · 2</span>
+        <div class="li" style="border-top: none"><div class="lr"><span>Same talk on YouTube and bilibili?</span><span style="flex: 1"></span><span class="btn">Review</span></div></div>
+        <span class="sl">EARLIER</span>
+        <div class="li muted" style="border-top: none"><div class="lr"><span class="kind">PAPER</span><span>Attention sinks in tool-use traces</span></div></div>
+        <div class="li muted"><div class="lr"><span class="kind">PAPER</span><span>A survey of ML engineering agents</span></div></div>
+      </div>
+
+      <div class="win" style="left: 392px; top: 18px; width: 600px; height: 470px; border: 1.5px solid #1A1A1A">
+        <div class="wt"><span class="mono" style="font-weight: 500">2610.01234v2.pdf</span><span class="muted">· p.5 of 18</span><span style="flex: 1"></span><span class="muted">‹ ›  Open in browser</span></div>
+        <div style="padding: 18px 30px; display: flex; flex-direction: column; gap: 9px">
+          <span style="font-size: 12px; font-weight: 600">3.2 Progress outside the context window</span>
+          <div style="height: 6px; background: #E3E3E0; width: 96%"></div><div style="height: 6px; background: #E3E3E0; width: 90%"></div><div style="height: 6px; background: #E3E3E0; width: 94%"></div>
+          <div style="box-sizing: border-box; padding: 6px 8px; background: #EDEDEA; border-left: 2px solid #1A1A1A; display: flex; flex-direction: column; gap: 6px"><div style="height: 6px; background: #BDBDB8; width: 92%"></div><div style="height: 6px; background: #BDBDB8; width: 78%"></div></div>
+          <div style="height: 6px; background: #E3E3E0; width: 95%"></div><div style="height: 6px; background: #E3E3E0; width: 60%"></div>
+          <div style="margin-top: 10px; border: 1px solid #D6D6D2; height: 120px; display: flex; align-items: center; justify-content: center; color: #8A8A85; font-size: 11px">Table 3</div>
+          <div style="height: 6px; background: #E3E3E0; width: 93%"></div><div style="height: 6px; background: #E3E3E0; width: 88%"></div>
+        </div>
+      </div>
+
+      <div class="win" style="left: 1008px; top: 18px; width: 606px; height: 470px">
+        <div class="wt"><span class="dot" style="border: 1px solid #8A8A85"></span><span class="am" style="background: #A8503A"></span><span class="mono" style="font-weight: 500">reader · claude</span><span style="flex: 1"></span><span class="muted">Idle</span></div>
+        <div class="wb">› How do they keep progress after the context is<br>  compacted? Is it like our crew status?<br><br>● They keep a task ledger outside the model and feed<br>  a fixed-size digest back after compaction<br>  (<span style="color: #1A1A1A; text-decoration: underline">p.5 §3.2</span>). The digest is capped at 2k tokens<br>  (<span style="color: #1A1A1A; text-decoration: underline">p.7 Table 3</span>). Close to crew status (C8), except<br>  they also let the model edit the ledger, which<br>  C8 doesn’t allow.<br><br>  Not in the paper: how they handle a model that<br>  disagrees with the ledger.<br><br>● agentdeck lib note arxiv:2610.01234 &lt; notes.md<br>  ⎿ saved · library/papers/2610.01234.md#notes</div>
+      </div>
+
+      <div class="box" style="position: absolute; left: 392px; top: 506px; width: 1222px">
+        <span class="bt">ITEM · ARXIV:2610.01234</span>
+        <span style="font-size: 12px">Keeping long-running coding agents on track · v2 (v1 seen Oct 3) · status <b>new</b> → <b>noted</b></span>
+        <span class="mono" style="font-size: 10.5px; color: #6B6B6B">seen on arxiv cs.SE (Oct 3, codex) · hf papers (Oct 4, claude) · hacker news (Oct 6, codex) · files: 2610.01234v2.pdf · notes 6 lines</span>
+        <div style="display: flex; gap: 8px"><span class="btn">Open PDF</span><span class="btn pri">Read with agent</span><span class="btn">Copy citation</span><span class="btn">Skip</span></div>
+      </div>
+      <span class="at muted" style="left: 392px; top: 630px; width: 1222px; font-size: 11px; line-height: 1.6">Library 是左边栏的第二页（N11 的 History 旁边，同一个侧栏零件）。Read with agent：在白板上开 PDF 窗口（网页窗口零件，内置 PDF 查看待核对），旁边开一个带读论文 skill 的终端，第一条提示词带上 PDF 路径和你的笔记；agent 写的 <span class="mono">p.5 §3.2</span> 是 <span class="mono">…pdf#page=5</span> 的链接，点了 PDF 窗口跳到那一页。新的加粗，颜色只用在“日期改了”这种要你注意的地方。</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 放在哪、怎么去重、怎么每天跑</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start">
+      <div class="code" style="width: 720px; flex: none">library/papers/2610.01234.md
+
+---
+id: arxiv:2610.01234
+kind: paper
+title: Keeping long-running coding agents on track
+authors: [A. Author, B. Author]
+date: 2026-10-02
+ids: { arxiv: 2610.01234, doi: 10.48550/arXiv.2610.01234 }
+version: v2          # v1 seen 2026-10-03, v2 seen 2026-10-20
+sources:
+  - { site: arxiv cs.SE, url: https://arxiv.org/abs/2610.01234,
+      seen: 2026-10-03, by: lit-watch · codex }
+  - { site: hf papers, seen: 2026-10-04, by: lit-watch · claude }
+  - { site: hacker news, seen: 2026-10-06, by: lit-watch · codex }
+files: [2610.01234v2.pdf]
+status: noted        # new · read · noted · skipped
+tags: [harness, memory]
+---
+## Summary (written by an agent, check before citing)
+…
+## Notes
+- p.5 §3.2 progress lives in a ledger outside the model</div>
+      <div class="ex">
+        <span><b>放在哪</b>：一条一个 Markdown 文件，放在资料库文件夹（默认 <span class="mono">&lt;数据目录&gt;/library</span>，Settings 里能换成你的笔记库或一个 git 仓库）；PDF、字幕等附件放在旁边。AgentDeck 另有一份 SQLite 索引，丢了能从文件重建。五家 agent 都能直接读这些文件（grep、Read），不需要 AgentDeck 的命令。</span>
+        <span><b>谁来写</b>：agent 用 <span class="mono">agentdeck lib add</span> 写，AgentDeck 先查重再落盘，返回 <span class="mono">new</span>、<span class="mono">updated</span>（新版本、新来源）或 <span class="mono">duplicate-of</span>。你或别的工具直接放进文件夹的，下次扫描时进索引，疑似重复的列出来等你合并。</span>
+        <span><b>不是搜索</b>：搜什么、在哪搜（arXiv、Semantic Scholar、OpenAlex、Exa、OpenCLI 读社交站点……）是各家 agent 和你装的 skill 的事（RM4）。资料库里的摘要是 agent 写的，标 “check before citing”。</span>
+      </div>
+    </div>
+    <div class="tbl" style="grid-template-columns: 110px minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1fr)">
+      <span class="th">种类</span><span class="th">认成同一条</span><span class="th">像但不确定</span><span class="th">碰到时怎么办</span>
+      <span class="td"><b>论文</b></span><span class="td">arXiv 号（去掉 v1、v2）、DOI（小写）、OpenAlex / Semantic Scholar 号，任何一个对上</span><span class="td">只有标题指纹对上（小写、去标点和 LaTeX、加第一作者姓和年份）</span><span class="td">对上：合进同一条，记新来源；新版本更新 version，旧的记一行。只有标题像：进 POSSIBLE DUPLICATES 等你点 Merge / Not the same</span>
+      <span class="td"><b>新闻</b></span><span class="td">规范化后的网址（去 utm_*、fbclid、#、m. 和 amp）</span><span class="td">3 天内标题很像的不同网址</span><span class="td">同一网址合并；像的归成一个 story，下面挂几个来源，不合并</span>
+      <span class="td"><b>日程</b></span><span class="td">名字 + 开始日期 + 地点（线上算一个地点）</span><span class="td">同名、日期不同</span><span class="td">当成改期：更新日期，留一行 “changed from …”，标橙等你看；截止时间带时区（AoE）</span>
+      <span class="td"><b>视频</b></span><span class="td">平台 + 视频号（YouTube v=、bilibili BV、抖音作品号）</span><span class="td">不同平台、标题像、时长差 2 秒以内</span><span class="td">同号合并；跨平台的进 POSSIBLE DUPLICATES</span>
+    </div>
+    <span style="font-size: 12.5px; color: #5F5F5A"><b>永远不自动删</b>：合并保留所有来源；Skip 只改状态。<b>每天跑</b>（Schedule）：集群框 ⋯ › Repeat… 选每天几点；AgentDeck 开着时到点用同一套设置新开一个集群（目标、来源、角色、上限都一样），跑完不进 Needs you，资料库顶上写 “12 new”，可选发一个通知；Mac 睡着或 AgentDeck 没开错过了，下次打开时只补跑一次并写 “Ran late”；那个账号在等额度就等（PL5），不换家。</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · 复现论文：Claims 对照表</span>
+    <div style="display: flex; gap: 32px; align-items: flex-start">
+      <div class="win" style="position: relative; width: 1020px; height: 330px; flex: none">
+        <div class="wt"><span class="mono" style="font-weight: 500">Results · repro-effvit</span><span class="btn" style="height: 18px">Runs · 9</span><span class="btn" style="height: 18px; background: #EDEDEA">Claims · 5</span><span style="flex: 1"></span><span class="muted">⋯</span></div>
+        <div style="padding: 6px 10px; font-size: 10.5px; color: #6B6B6B; border-bottom: 1px solid #EEEEEB">Paper <b style="color: #1A1A1A">arXiv 2601.04321</b> · code <span class="mono">github.com/…/effvit @ 81c0e2a</span> · tolerance <b style="color: #1A1A1A">1% relative, or 2× the paper’s std</b> · claims locked after you approved the plan</div>
+        <div class="ct" style="grid-template-columns: 40px minmax(0, 1.3fr) 54px 60px 110px 96px 116px 70px">
+          <span class="h">Claim</span><span class="h">What</span><span class="h">Where</span><span class="h">Paper</span><span class="h">Ours</span><span class="h">Δ</span><span class="h">Status</span><span class="h">Runs</span>
+          <span class="mono">C1</span><span>ImageNet top-1 · ViT-S · released checkpoint, eval only</span><span>p.6 T2</span><span class="mono">80.3</span><span class="mono">80.2</span><span class="mono">−0.1 (−0.1%)</span><span><b>Reproduced</b></span><span class="mono">R2</span>
+          <span class="mono">C2</span><span>ImageNet top-1 · ViT-S · trained 100 epochs</span><span>p.6 T2</span><span class="mono">79.1</span><span class="mono">78.4 ± 0.2 (3)</span><span class="mono">−0.7 (−0.9%)</span><span><b>Reproduced</b></span><span class="mono">R5 R6 R7</span>
+          <span class="mono">C3</span><span>ImageNet top-1 · ViT-B · trained 100 epochs</span><span>p.6 T2</span><span class="mono">82.0</span><span class="mono">79.4 ± 0.3 (2)</span><span class="mono">−2.6 (−3.2%)</span><span>Off · 3.2× tolerance</span><span class="mono">R8 R9</span>
+          <span class="mono">C4</span><span>Throughput, images/s</span><span>p.7 F3</span><span class="mono">1,980</span><span class="mono">1,410</span><span class="muted">—</span><span class="muted">Not comparable · A100 vs RTX 4090</span><span class="mono">R3</span>
+          <span class="mono">C5</span><span>ADE20K mIoU · UperNet, 160k iters</span><span>p.8 T4</span><span class="mono">47.2</span><span class="muted">—</span><span class="muted">—</span><span class="muted">Not run · over GPU budget</span><span class="muted">—</span>
+        </div>
+        <div style="margin: 8px 10px 0; padding: 8px 10px; border: 1px solid #E3E3E0; border-radius: 6px; font-size: 10.5px; line-height: 1.6; color: #3D3D3A"><b>DIFFERENCES FROM THE PAPER · 4</b><br>batch 1024 → 256 with gradient accumulation ×4 (GPU memory) · torch 2.1 → 2.5, CUDA 11.8 → 12.4 · 1 GPU instead of 8 · ImageNet val from your copy (sha 7aa1…)</div>
+      </div>
+      <div class="ex">
+        <span><b>先写表再跑</b>：Lead 读论文，把要对的数一条条写成 Claim（表或图的编号、页码、数据集、指标、设置、论文里的值、有没有给方差），再估每条要多少 GPU 小时。Plan 关卡里你勾哪些要跑、容差多少；批准后 Claims 锁住，跑完不能回头改目标。</span>
+        <span><b>差多少谁算</b>：Ours 来自 Run（AgentDeck 跑评测命令读出来的数，几颗种子就取均值和标准差），Δ 和 Status 由 AgentDeck 按容差算：在容差内 Reproduced，两倍以内 Close，再远 Off；硬件不同的写 Not comparable，没跑的写原因。</span>
+        <span><b>差异要写清</b>：为了能跑而改的设置（批大小、卡数、版本、数据来源）由 agent 用 <span class="mono">agentdeck crew note --kind deviation</span> 记，汇报里单独一节，和对照表放在一起看。</span>
+        <span class="muted">你库里的 paper-claim-audit、result-to-claim 这类 skill 可以带给审查的角色，查“这个数能不能支撑论文的说法”；AgentDeck 只管数从哪来、差多少。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · 复现的环境怎么隔离</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start">
+      <div class="stack" style="width: 560px; flex: none">
+        <div class="lay"><b>代码</b>：每个尝试一个 worktree（<span class="mono">crew/&lt;name&gt;/&lt;label&gt;</span>），论文仓库的某个提交 + 为了能跑打的补丁。<span class="muted">AgentDeck 本来就这么做。</span></div>
+        <div class="lay" style="border: 1.5px solid #1A1A1A"><b>Python 环境</b>：放在 worktree 里面：<span class="mono">.venv</span>（uv / pip）或 <span class="mono">.conda</span>（micromamba / conda 的 <span class="mono">-p</span> 前缀）。不装进你的全局 Python、不动你的 base 环境；下载缓存共用一份。<span class="muted">默认。</span></div>
+        <div class="lay"><b>容器</b>：仓库自带 Dockerfile、或要系统库时用；放在 Linux 的 SSH 机器上跑。<span class="muted">Mac 上的 Docker 用不了 GPU，x86 镜像在 Apple 芯片上要模拟，很慢。</span></div>
+        <div class="lay"><b>GPU</b>：要 CUDA 的训练和评测作为 Job 放到 SSH 机器（E1 第 3 节），那边同样建在本次 Run 的目录里。</div>
+      </div>
+      <div class="ex">
+        <span><b>AgentDeck 做什么</b>：不替你建环境（那是 agent 和 skill 的事），只做两件：给研究集群的终端加护栏环境变量（<span class="mono">PIP_REQUIRE_VIRTUALENV=1</span>，pip 不能装进全局；conda 的环境目录指到 worktree 里，待核对变量名），以及在每个 Run 上记环境指纹（锁文件哈希、Python、torch、CUDA、GPU 型号）。</span>
+        <span><b>为什么不默认容器</b>：大多数论文仓库给的是 requirements.txt 或 environment.yml，不给镜像；Mac 上容器拿不到 GPU；一个容器几 GB。worktree 里的环境够隔离、删 worktree 就删干净。</span>
+        <span><b>环境本身也是一个小关卡</b>：Builder 搭好后跑一次冒烟（导入、加载权重、跑 10 个 batch），过了才开始正式的 Run；装不上的包和换掉的版本记成 deviation。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">5 · 视频转 PPT：每个视频一行进度</span>
+    <div class="fig" style="width: 1632px; height: 380px">
+      <div class="cf" style="left: 16px; top: 16px; width: 1600px; height: 348px">
+        <div class="cfh">
+          <b style="font-size: 13px">Crew · talk-to-deck</b><span class="tag">No template</span><span class="tag">3 videos</span>
+          <span style="flex: 1"></span>
+          <span style="display: inline-flex; align-items: center; gap: 5px"><span class="dot" style="background: #1A7F37"></span>2 running</span>
+          <span style="display: inline-flex; align-items: center; gap: 5px"><span class="dot" style="background: #BF8700"></span>1 needs you</span>
+          <span class="btn">Outputs · 3</span><span class="btn">Report</span><span class="muted">⋯</span>
+        </div>
+        <div class="win" style="left: 14px; top: 54px; width: 1570px; height: 150px">
+          <div class="wt"><b style="font-size: 10.5px; letter-spacing: 0.04em; color: #8A8A85">ITEMS</b><span>3 videos · 1 done · 1 running · 1 needs you</span></div>
+          <div class="ct" style="grid-template-columns: minmax(0, 1.4fr) 70px 110px 170px 100px 120px 120px 110px">
+            <span class="h">Video</span><span class="h">Length</span><span class="h">Info</span><span class="h">Words</span><span class="h">Frames</span><span class="h">Outline</span><span class="h">Verify</span><span class="h">Slides</span>
+            <span><span class="kind">BILIBILI</span> Talk: multi-agent harnesses <span class="muted mono">BV1x…</span></span><span class="mono">1:12:40</span><span class="cell">✓ by codex</span><span class="cell">✓ subtitles · zh · uploader</span><span class="cell">✓ 46 kept</span><span class="cell">✓ 18 points</span><span class="cell"><span class="dot" style="background: #1A7F37"></span> 9 of 14</span><span class="cell muted">waiting</span>
+            <span><span class="kind">YOUTUBE</span> Panel: evaluating agents <span class="muted mono">v=…</span></span><span class="mono">48:10</span><span class="cell">✓</span><span class="cell"><span class="dot" style="background: #1A7F37"></span> no subtitles · J7 whisper 62%</span><span class="cell">✓ 31 kept</span><span class="cell muted">—</span><span class="cell muted">—</span><span class="cell muted">—</span>
+            <span><span class="kind">DOUYIN</span> Short demo <span class="muted mono">7431…</span></span><span class="mono">2:05</span><span class="cell"><span class="dot" style="background: #BF8700"></span> <span style="color: #8A6700">needs sign-in</span></span><span class="cell muted">—</span><span class="cell muted">—</span><span class="cell muted">—</span><span class="cell muted">—</span><span class="cell muted">—</span>
+          </div>
+        </div>
+        <div class="box" style="position: absolute; left: 14px; top: 218px; width: 760px">
+          <span class="bt">IN NEEDS YOU</span>
+          <span style="font-size: 12px"><b>Douyin needs a signed-in browser</b> · fetcher · codex asks: “yt-dlp can’t get this video without cookies. Use your Chrome cookies for douyin.com, once?”</span>
+          <div style="display: flex; gap: 8px"><span class="btn">Skip this video</span><span class="btn">Use a local file…</span><span class="btn">Allow once</span></div>
+        </div>
+        <div class="box" style="position: absolute; left: 790px; top: 218px; width: 794px">
+          <span class="bt">OUTPUTS · 3</span>
+          <span class="mono" style="font-size: 11px; line-height: 1.75">deck.pptx · 15 slides · draft · Open preview (PDF)<br>talk1/transcript.srt · outline.md (every point has [mm:ss])<br>checks.md · 9 confirmed · 2 disputed · 3 unverified</span>
+        </div>
+      </div>
+    </div>
+    <div style="display: flex; align-items: stretch; gap: 8px">
+      <div class="box" style="width: 180px"><span class="bt">INFO</span><span class="mono" style="font-size: 11px">yt-dlp -J &lt;url&gt;</span><span class="muted">标题、时长、有没有字幕</span></div>
+      <span class="arrow">→</span>
+      <div class="box" style="width: 250px"><span class="bt">WORDS</span><span class="mono" style="font-size: 11px">yt-dlp --write-subs --write-auto-subs --skip-download</span><span class="muted">没有字幕才转写：<span class="mono">yt-dlp -x</span> 取音频 → mlx-whisper / whisper.cpp（Job）</span></div>
+      <span class="arrow">→</span>
+      <div class="box" style="width: 200px"><span class="bt">FRAMES</span><span class="mono" style="font-size: 11px">ffmpeg 按画面变化截帧</span><span class="muted">讲座取每次换幻灯片；agent 当图片读</span></div>
+      <span class="arrow">→</span>
+      <div class="box" style="width: 190px"><span class="bt">OUTLINE</span><span>要点、论证、数据，每条带 <span class="mono">[mm:ss]</span></span></div>
+      <span class="arrow">→</span>
+      <div class="box" style="width: 200px"><span class="bt">VERIFY · 上网核对</span><span>换一家 agent 用自己的搜索核对事实：Confirmed / Disputed / Unverified + 网址</span></div>
+      <span class="arrow">→</span>
+      <div class="box" style="width: 200px"><span class="bt">SLIDES</span><span>pptx（python-pptx 或你库里的 pptx skill），转 PDF 在白板上预览</span></div>
+    </div>
+    <span style="font-size: 12.5px; color: #5F5F5A">这一行进度是通用的“条目进度”（模板的 <span class="mono">fanout</span> 阶段；自由模式里 Lead 用 <span class="mono">agentdeck crew item &lt;id&gt; &lt;step&gt; done</span> 报），收论文时每个来源一行也是它，不为视频单做界面。AgentDeck 不打包 yt-dlp、ffmpeg、whisper，New crew 里只检查装没装（Needs yt-dlp, ffmpeg, whisper · 2 of 3 found）。下载要守平台条款和版权，产物只给你自己看；用浏览器登录态（cookies）每次问你，默认不用（和 R0 “AgentDeck 不替 agent 握着登录态”一致）。抖音、B 站的具体链接待用户给，用来实测。</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">6 · 各家 agent 能不能直接看视频（2026-10-28 网上核对）</span>
+    <div class="tbl" style="grid-template-columns: 150px 150px minmax(0, 1fr) minmax(0, 1fr)">
+      <span class="th">agent</span><span class="th">看图</span><span class="th">看视频</span><span class="th">在这个流程里</span>
+      <span class="td"><span class="am" style="background: #A8503A"></span> claude</span><span class="td">能（读图片文件、粘贴）</span><span class="td">不能；Claude Code 的视频输入是 2025-11-29 开的功能请求，没找到官方支持的说明（待核对）</span><span class="td">读字幕和关键帧，写大纲、出 PPT（默认 Lead）</span>
+      <span class="td"><span class="am" style="background: #2F5E9E"></span> codex</span><span class="td">能（图片附件、粘贴）</span><span class="td">没找到支持的说明（第三方文章，待核对）</span><span class="td">取视频、转写、截帧（默认 fetcher）；核对</span>
+      <span class="td"><span class="am" style="background: #4A4F7A"></span> kimi</span><span class="td">能</span><span class="td">Kimi Code CLI 文档写了能粘贴视频片段，取决于当前模型有没有 video_in（kimi.com 文档）</span><span class="td">可选的 viewer：画面重要时（演示、图表）补看原视频。只当自由模式的子 session（进集群当 Lead / Worker 仍灰掉）</span>
+      <span class="td"><span class="am" style="background: #7347A8"></span> pi · <span class="am" style="background: #0F6F7F"></span> omp</span><span class="td">看接的模型</span><span class="td">看接的模型和服务商（待核对）</span><span class="td">和 codex 一样走字幕 + 关键帧</span>
+      <span class="td muted">Gemini（不在五家里）</span><span class="td muted">能</span><span class="td muted">API 直接收 YouTube 网址（ai.google.dev 文档）</span><span class="td muted">你库里有 Gemini 类 skill 时可以给 viewer 用；AgentDeck 不接它</span>
+    </div>
+    <span style="font-size: 12.5px; color: #5F5F5A">AH0 的能力报告加 <span class="mono">image-input</span>、<span class="mono">video-input</span> 两项，New crew 选 viewer 时按它灰掉不支持的。</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":3800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

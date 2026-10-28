@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Issue · PR · 白板和面板</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.at{position:absolute}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1300px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.tag{display:inline-flex;align-items:center;gap:4px;height:18px;padding:0 7px;border-radius:999px;font-size:10.5px;background:#F2F2EF;color:#5F5F5A;white-space:nowrap}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#8A8A85}
+.dot{width:7px;height:7px;border-radius:50%;flex:none;box-sizing:border-box;display:inline-block}
+.am{width:6px;height:6px;border-radius:1.5px;flex:none;display:inline-block}
+.btn{display:inline-flex;align-items:center;height:22px;padding:0 8px;border:1px solid #D6D6D2;border-radius:6px;font-size:11px;background:#FFFFFF;color:#1A1A1A;white-space:nowrap}
+.btn.pri{background:#1A1A1A;border-color:#1A1A1A;color:#FFFFFF}
+.btn.dis{opacity:0.4}
+.pf{position:absolute;box-sizing:border-box;border:1px solid #CFCFCA;border-radius:12px;background:rgba(255,255,255,0.35)}
+.pfh{position:absolute;font-size:12px;color:#5F5F5A;white-space:nowrap}
+.wf{position:absolute;box-sizing:border-box;border:1px solid #BDBDB8;border-radius:12px;background:rgba(255,255,255,0.55)}
+.wfh{position:absolute;left:0;right:0;top:0;height:30px;box-sizing:border-box;padding:0 12px;display:flex;align-items:center;gap:8px;font-size:11.5px;white-space:nowrap;overflow:hidden}
+.win{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;overflow:hidden;font-size:11px}
+.wt{display:flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-bottom:1px solid #EEEEEB;white-space:nowrap}
+.wb{padding:6px 9px;font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.7;color:#6B6B6B}
+.ft{position:absolute;inset:24px 0 0 0;display:flex;flex-direction:column;font-size:11px}
+.fbar{display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid #EEEEEB;white-space:nowrap}
+.tabs{display:flex;gap:2px;padding:4px 8px;border-bottom:1px solid #EEEEEB}
+.tab{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:6px;color:#5F5F5A;white-space:nowrap}
+.tab.on{background:#EDEDEA;color:#1A1A1A;font-weight:600}
+.rows{display:grid;align-items:center}
+.rows>span{padding:0 6px;height:28px;display:flex;align-items:center;gap:4px;border-top:1px solid #F0F0ED;white-space:nowrap;overflow:hidden}
+.rows>.rh{height:22px;font-size:10px;color:#8A8A85;font-weight:600;border-top:none}
+.sel>span{background:#F2F2EF}
+.panel{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:10px;font-size:11.5px;overflow:hidden;display:flex;flex-direction:column}
+.eh{font-size:10px;font-weight:600;color:#8A8A85;letter-spacing:0.04em;white-space:nowrap}
+.sec{display:flex;flex-direction:column;gap:5px;padding:8px 12px;border-top:1px solid #F0F0ED}
+.pr{display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden;line-height:1.4}
+.new{outline:1.5px dashed #8A8A85;outline-offset:-3px;border-radius:8px}
+.box{box-sizing:border-box;border:1px solid #E3E3E0;border-radius:8px;padding:10px 12px;background:#FFFFFF;font-size:12.5px;line-height:1.55;display:flex;flex-direction:column;gap:4px}
+.arrow{font-size:18px;color:#8A8A85;align-self:center;flex:none}
+.ex{display:flex;flex-direction:column;gap:10px;font-size:13.5px;line-height:1.65}
+.dlg{box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;box-shadow:0 8px 20px rgba(0,0,0,0.08);font-size:12px;display:flex;flex-direction:column}
+.fl{display:flex;flex-direction:column;gap:5px;padding:8px 16px}
+.lab{font-size:11px;color:#5F5F5A;font-weight:600}
+.inp{box-sizing:border-box;height:26px;border:1px solid #D6D6D2;border-radius:6px;padding:0 8px;display:flex;align-items:center;gap:6px;font-size:12px}
+.rad{display:flex;align-items:center;gap:8px;line-height:1.5}
+.rd{width:12px;height:12px;border-radius:50%;border:1px solid #8A8A85;box-sizing:border-box;flex:none}
+.rd.on{border:4px solid #1A1A1A}
+.cb{width:12px;height:12px;border-radius:3px;border:1px solid #8A8A85;box-sizing:border-box;flex:none}
+.cb.on{background:#1A1A1A;border-color:#1A1A1A}
+.warn{font-size:11px;color:#8A6700;line-height:1.5}
+</style>
+</helmet>
+<div style="width: 1760px; height: 3540px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">I1 · 白板上：Issues &amp; PRs 窗口、框上的 #编号、面板里这个工作区的 PR</h1>
+      <span class="concept">2026-10-28 按推荐先定，待你确认</span>
+    </div>
+    <p class="lead">三处界面：项目主分支的框里一个 <b>Issues &amp; PRs</b> 窗口（列表、分拣、排队、认领）；每个从 issue 开的工作区框标题上挂 <b>#18231 → PR #18240</b> 和 PR 的状态灯；右边源代码管理面板加一节 <b>PULL REQUEST</b>（这个工作区的 CI、review 线程、待发草稿）。虚线框是新加的。一个 issue 就是一个工作区框，和现在的 worktree 用法一样；缩小白板时几十个 issue 框一眼看出谁红、谁等你。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 一个开源项目的白板：分拣、三个在修、一个在审</span>
+    <div class="fig" style="width: 1632px; height: 1060px">
+      <div class="pf" style="left: 14px; top: 14px; width: 1170px; height: 1032px"></div>
+      <span class="pfh" style="left: 28px; top: 20px"><b style="color: #1A1A1A">vite</b> · vitejs/vite</span>
+
+      <div class="wf" style="left: 30px; top: 44px; width: 1138px; height: 470px">
+        <div class="wfh"><b>vite</b><span class="mono muted">main</span><span style="flex: 1"></span><span class="dot" style="background: #1A7F37"></span><span>1 running</span></div>
+      </div>
+      <div class="win new" style="left: 44px; top: 80px; width: 720px; height: 420px; border: 1.5px solid #1A1A1A">
+        <div class="wt"><span class="mono" style="font-weight: 500">Issues &amp; PRs</span><span class="muted">· vitejs/vite</span><span style="flex: 1"></span><span class="muted">⤢ ×</span></div>
+        <div class="ft">
+          <div class="fbar"><b>vitejs/vite</b><span class="muted">@liu · Maintainer</span><span style="flex: 1"></span><span class="muted">Synced 2m ago</span><span class="btn">Refresh</span></div>
+          <div class="tabs"><span class="tab">Triage <span class="muted">37</span></span><span class="tab">Up next <span class="muted">2</span></span><span class="tab">Working <span class="muted">3</span></span><span class="tab">My PRs <span class="muted">4</span></span><span class="tab">Review requests <span class="muted">2</span></span><span class="tab on">All <span class="muted">412</span></span><span style="flex: 1"></span><span class="tab muted">Sort: Score ▾</span></div>
+          <div class="rows" style="grid-template-columns: 44px 56px 1fr 104px 136px 28px 102px">
+            <span class="rh">SCORE</span><span class="rh">#</span><span class="rh">TITLE</span><span class="rh">LABELS</span><span class="rh">AUTHOR</span><span class="rh">+1</span><span class="rh">STATE</span>
+            <span>86</span><span class="mono">#18231</span><span>HMR drops CSS after an @import edit</span><span><span class="tag">regression</span><span class="tag">css</span></span><span>@mira <span class="muted">· contributor</span></span><span>14</span><span><span class="dot" style="background: #CF222E"></span>PR #18240</span>
+            <span>74</span><span class="mono">#18197</span><span>SSR: .json import fails on Windows</span><span><span class="tag">bug</span><span class="tag">ssr</span></span><span>@k-tan <span class="muted">· none</span></span><span>9</span><span><span class="dot" style="background: #1A7F37"></span>Working</span>
+            <span>61</span><span class="mono">#18252</span><span>Docs: build.lib example is outdated</span><span><span class="tag">docs</span></span><span>@newbie <span class="muted">· first-time</span></span><span>2</span><span class="muted">Up next · 1</span>
+            <span>52</span><span class="mono">#18244</span><span>feat: allow globs in server.warmup</span><span><span class="tag">PR</span></span><span>@p-chen <span class="muted">· contributor</span></span><span>6</span><span><span class="dot" style="background: #BF8700"></span>Reviewing</span>
+            <span>47</span><span class="mono">#18209</span><span>optimizeDeps skips nested packages</span><span><span class="tag">needs-info</span></span><span>@ab <span class="muted">· none</span></span><span>3</span><span class="muted">Triaged</span>
+            <span>44</span><span class="mono">#18260</span><span>Vite 7 breaks my monorepo after upgrade</span><span class="muted">—</span><span>@zz <span class="muted">· none</span></span><span>1</span><span class="muted">Untriaged</span>
+            <span>39</span><span class="mono">#18190</span><span>Allow custom HMR overlay theme</span><span><span class="tag">feat</span></span><span>@dk <span class="muted">· none</span></span><span>11</span><span class="muted">—</span>
+            <span class="muted">…</span><span></span><span class="muted">405 more</span><span></span><span></span><span></span><span></span>
+          </div>
+        </div>
+      </div>
+      <div class="win" style="left: 778px; top: 80px; width: 376px; height: 420px">
+        <div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="am" style="background: #A8503A"></span><span class="mono" style="font-weight: 500">Triage · claude</span><span style="flex: 1"></span><span class="muted">Running · 3m</span></div>
+        <div class="wb">› Triage these 10 issues.<br>● agentdeck forge next<br>  ⎿ #18260 “Vite 7 breaks my monorepo…”<br>    &lt;untrusted author="@zz" association="NONE"&gt;<br>● agentdeck forge search "monorepo workspace<br>  resolve after upgrade"<br>  ⎿ #17988 closed · #18102 open<br>● Same symptom as #18102 (symlinked<br>  workspace packages). No repro steps.<br>● agentdeck forge triage 18260 --labels<br>  bug,pending-triage --dup 18102 --ask-repro<br>  ⎿ Saved as a draft. Nothing was posted.<br>● agentdeck forge next<br>  ⎿ #18261 …<br><br><span style="color: #1A1A1A">7 of 10 done · drafts are in the inbox</span></div>
+      </div>
+
+      <svg class="at" style="left: 0; top: 0" width="1190" height="1060" aria-hidden="true"><path d="M44 210 L34 210 L34 524 L214 524 L214 548" fill="none" stroke="#1A1A1A" stroke-width="1" stroke-dasharray="4 3"></path><circle cx="214" cy="548" r="2.5" fill="#1A1A1A"></circle></svg>
+      <span class="at muted" style="left: 40px; top: 504px; font-size: 10.5px; background: #F7F7F5; padding: 0 4px">聚焦这个框时画到列表那一行</span>
+
+      <div class="wf" style="left: 30px; top: 534px; width: 372px; height: 496px; border: 1.5px solid #1A1A1A">
+        <div class="wfh"><span class="mono">issue/18231-hmr-css</span><span class="tag new" style="outline-offset: 2px; border-radius: 999px"><span class="mono">#18231 → PR #18240</span></span><span style="flex: 1"></span><span class="dot" style="background: #CF222E"></span><span style="color: #CF222E">CI failed</span></div>
+      </div>
+      <div class="win" style="left: 44px; top: 572px; width: 344px; height: 444px">
+        <div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="am" style="background: #2F5E9E"></span><span class="mono" style="font-weight: 500">codex</span><span class="muted">· #18231</span><span style="flex: 1"></span><span class="muted">Running · 1m</span></div>
+        <div class="wb">› CI failed on PR #18240: lint (eslint).<br>  &lt;untrusted source="github actions log"&gt;<br>  css.ts:455:7 no-unused-vars 'graph'<br>  … 198 more lines …<br>  &lt;/untrusted&gt;<br>  Fix it, commit, and draft a reply if a<br>  review thread is about the same line.<br><br>• Edited packages/vite/src/node/plugins/css.ts<br>• Running pnpm lint<br>  ⎿ 0 problems<br>• git commit -m "fix(css): drop unused graph"<br>• agentdeck forge reply --thread r_91 &lt; r.md<br>  ⎿ Saved as a draft. It’s in the inbox;<br>    nothing was posted.<br><br><span style="color: #1A1A1A">Done. 1 commit and 1 reply wait for you.</span></div>
+      </div>
+
+      <div class="wf" style="left: 414px; top: 534px; width: 372px; height: 496px">
+        <div class="wfh"><span class="mono">issue/18197-ssr-json</span><span class="tag new" style="outline-offset: 2px; border-radius: 999px"><span class="mono">#18197</span></span><span style="flex: 1"></span><span class="dot" style="background: #1A7F37"></span><span>1 running</span></div>
+      </div>
+      <div class="win" style="left: 428px; top: 572px; width: 344px; height: 444px">
+        <div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="am" style="background: #A8503A"></span><span class="mono" style="font-weight: 500">claude</span><span class="muted">· #18197</span><span style="flex: 1"></span><span class="muted">Running · 12m</span></div>
+        <div class="wb">› Work on issue #18197 in vitejs/vite.<br>  &lt;untrusted source="github issue #18197"<br>   author="@k-tan" association="NONE"&gt;<br>  …<br>  &lt;/untrusted&gt;<br><br>● Reproduced with a C:\ path in a unit test.<br>● Edited packages/vite/src/node/ssr/<br>  ssrModuleLoader.ts<br>● pnpm test-unit ssr<br>  ⎿ 214 passed<br>● Writing the PR description…</div>
+      </div>
+
+      <div class="wf" style="left: 798px; top: 534px; width: 372px; height: 496px">
+        <div class="wfh"><span class="mono">review/18244</span><span class="tag new" style="outline-offset: 2px; border-radius: 999px"><span class="mono">Reviewing #18244</span></span><span style="flex: 1"></span><span class="dot" style="background: #BF8700"></span><span style="color: #8A6700">1 waiting</span></div>
+      </div>
+      <div class="win" style="left: 812px; top: 572px; width: 344px; height: 250px; border: 1.5px solid #BF8700">
+        <div class="wt"><span class="dot" style="background: #BF8700"></span><span class="am" style="background: #A8503A"></span><span class="mono" style="font-weight: 500">claude</span><span class="muted">· review #18244</span><span style="flex: 1"></span><span style="color: #8A6700">Waiting</span></div>
+        <div class="wb">● Read the diff: 6 files, +210 −18.<br>● Bash(pnpm install &amp;&amp; pnpm test)<br>  ⎿ Running this PR’s code needs your OK.<br>    Ask the user to click Run this PR’s<br>    code on the frame.<br><br><span style="color: #1A1A1A">I need to run the tests to check the glob<br>edge cases. Waiting for you.</span></div>
+      </div>
+      <div class="at new" style="left: 812px; top: 832px; width: 344px; padding: 8px 10px; box-sizing: border-box; background: #FFFFFF; border: 1px solid #E3E3E0; border-radius: 8px; display: flex; flex-direction: column; gap: 6px; font-size: 11px">
+        <span style="line-height: 1.5"><b>@p-chen</b> is a contributor, not a member. Their code runs on your Mac with your user’s access.</span>
+        <span style="display: flex; gap: 6px"><span class="btn pri">Run this PR’s code</span><span class="btn">Not now</span></span>
+      </div>
+      <div class="win" style="left: 812px; top: 914px; width: 344px; height: 102px; opacity: 0.55">
+        <div class="wt"><span class="muted">localhost:5173</span><span style="flex: 1"></span><span class="muted">opens after you allow</span></div>
+      </div>
+
+      <div class="panel" style="left: 1198px; top: 14px; width: 420px; height: 1032px">
+        <div style="padding: 10px 12px 6px; display: flex; flex-direction: column; gap: 4px"><span class="eh">SOURCE CONTROL</span><span class="mono" style="font-size: 11px">issue/18231-hmr-css <span class="muted">· ~/vite-issues/18231</span></span><span class="btn mono" style="align-self: flex-start">⎇ issue/18231-hmr-css ↑1</span></div>
+        <div class="new" style="display: flex; flex-direction: column; margin: 4px 4px; padding: 2px 0">
+          <div class="sec" style="border-top: none">
+            <div class="pr"><span class="eh">PULL REQUEST</span><span class="mono" style="font-weight: 600">#18240</span><span class="tag">Open</span><span style="flex: 1"></span><span class="muted">Open on GitHub ↗</span></div>
+            <span style="font-weight: 600">fix(css): keep the @import graph on HMR</span>
+            <span class="muted">Closes #18231 · into vitejs/vite:main · 2 approvals needed, 0 so far</span>
+          </div>
+          <div class="sec">
+            <div class="pr"><span class="eh">CHECKS · 1 FAILED</span></div>
+            <div class="pr"><span class="dot" style="background: #CF222E"></span><span>lint · eslint</span><span style="color: #CF222E">Failed · 6m</span><span style="flex: 1"></span><span class="btn">Send log to agent</span><span class="btn">Re-run…</span></div>
+            <div class="pr"><span class="dot" style="background: #1A7F37"></span><span>build</span><span class="muted">Running · 2m</span></div>
+            <div class="pr"><span class="muted">✓</span><span>test (ubuntu, node 22)</span></div>
+            <div class="pr"><span class="muted">✓</span><span>test (windows, node 22)</span></div>
+            <span class="muted" style="font-size: 10.5px">The log went to codex automatically · round 1 of 3</span>
+          </div>
+          <div class="sec">
+            <div class="pr"><span class="eh">REVIEW THREADS · 2 UNRESOLVED</span></div>
+            <div class="pr"><span class="cb on"></span><span><b>@sapphi-red</b> <span class="muted">· member</span></span><span class="mono muted">css.ts:412</span></div>
+            <span style="padding-left: 18px; color: #3D3D3A; line-height: 1.45">“Can we update the graph before invalidating, so the second edit doesn’t miss it?”</span>
+            <div class="pr"><span class="cb"></span><span><b>@bluwy</b> <span class="muted">· member</span></span><span class="mono muted">css.ts:455</span></div>
+            <span style="padding-left: 18px; color: #3D3D3A; line-height: 1.45">“nit: graph is unused now”</span>
+            <div class="pr"><span class="btn">Send 1 to agent</span><span class="muted">1 already has a draft reply</span></div>
+          </div>
+          <div class="sec">
+            <div class="pr"><span class="eh">DRAFTS · 1 TO POST</span></div>
+            <div class="pr"><span class="dot" style="background: #BF8700"></span><span>Push 1 commit and reply to 1 thread</span><span style="flex: 1"></span><span class="btn">Review in inbox</span></div>
+          </div>
+          <div class="sec">
+            <div class="pr"><span class="btn dis">Merge…</span><span class="muted">Needs 2 approving reviews · lint failing</span></div>
+          </div>
+        </div>
+        <div class="sec"><span class="eh">MESSAGE</span><div class="inp muted">Message (⌘↩ to commit)</div></div>
+        <div class="sec"><span class="eh">CHANGES · 0</span><span class="muted">Nothing to commit. 1 commit not pushed: it’s in the draft above.</span></div>
+        <div class="sec"><span class="eh">SKILLS · MCP</span><span class="muted">…</span></div>
+      </div>
+    </div>
+    <div class="ex" style="max-width: 1500px">
+      <span><b>Issues &amp; PRs 窗口</b>：放在项目主分支的框里（项目框菜单 › Issues &amp; PRs 打开），能放大。页签 Triage · Up next · Working · My PRs · Review requests · All；行上悬停出 Work on it… / Triage / Review… / Open on GitHub。列表在窗口里不在面板里：几百行要宽表、要和分拣终端并排看，面板跟着焦点变，不适合放全局列表。</span>
+      <span><b>框标题上的标签</b>：分支后面一个安静的标签 <span class="mono">#18231 → PR #18240</span>（GitLab 写 <span class="mono">!</span> 编号），后面是 PR 的灯：CI 在跑绿、CI 失败红、有要你发的草稿黄（算进 “n waiting”）、合并后写 ✓ merged。单击标签打开面板的 PULL REQUEST 一节；聚焦这个框时画一条 1px 墨色虚线到列表里那一行（和 S1 的父子关系线同一种画法）。</span>
+      <span><b>面板的 PULL REQUEST 一节</b>：只管聚焦的这个工作区的 PR，放在分支和提交框之间。失败的检查能 Send log to agent、Re-run…；review 线程勾几条 Send to agent；草稿在这里只列出来，统一在收件箱发；Merge… 照仓库规则，不满足时灰掉写原因。刷新时机照 ScmPanel 原来的规矩，另加：CI 跑着时每 60 秒、同步到新线程时。</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 窗口的几种状态</span>
+    <div class="fig" style="width: 1632px; height: 380px">
+      <div class="win" style="left: 24px; top: 24px; width: 500px; height: 330px">
+        <div class="wt"><span class="mono" style="font-weight: 500">Issues &amp; PRs</span><span class="muted">· Triage</span></div>
+        <div class="ft">
+          <div class="tabs"><span class="tab on">Triage <span class="muted">37</span></span><span class="tab">Up next</span><span class="tab">Working</span><span style="flex: 1"></span><span class="btn">Triage with ▸</span></div>
+          <div class="rows" style="grid-template-columns: 30px 60px 1fr 120px">
+            <span class="rh"></span><span class="rh">#</span><span class="rh">TITLE</span><span class="rh">AUTHOR</span>
+            <span><span class="cb on"></span></span><span class="mono">#18260</span><span>Vite 7 breaks my monorepo after upgrade</span><span>@zz · none</span>
+            <span><span class="cb on"></span></span><span class="mono">#18261</span><span>Error overlay shows the wrong file</span><span>@q · none</span>
+            <span><span class="cb on"></span></span><span class="mono">#18263</span><span>Support .mts in vite.config</span><span>@ty · contributor</span>
+            <span><span class="cb"></span></span><span class="mono">#18265</span><span>Question about plugin order</span><span>@mm · none</span>
+            <span class="muted"></span><span class="muted">…</span><span class="muted">33 more · Untriaged = no labels or pending-triage</span><span></span>
+          </div>
+          <div class="fbar" style="border-top: 1px solid #EEEEEB; border-bottom: none"><span>3 selected</span><span style="flex: 1"></span><span class="btn">Select first 10</span><span class="btn pri">Triage 3 with claude</span></div>
+        </div>
+      </div>
+      <div class="at" style="left: 548px; top: 24px; width: 340px; padding: 12px; box-sizing: border-box; background: #FFFFFF; border: 1px solid #E3E3E0; border-radius: 8px; box-shadow: 0 8px 20px rgba(0,0,0,0.08); font-size: 11.5px; line-height: 1.6; display: flex; flex-direction: column; gap: 2px">
+        <b>Score 86 · #18231</b>
+        <span>+30 · label regression</span>
+        <span>+38 · 14 reactions, 9 people commented</span>
+        <span>+10 · updated 2 days ago</span>
+        <span>+8 · a member asked for a fix</span>
+        <span class="muted">Triage suggested: high (not in the score)</span>
+        <span style="display: flex; gap: 6px; margin-top: 6px"><span class="btn">Pin to top</span><span class="btn">Hide</span></span>
+      </div>
+      <span class="at muted" style="left: 548px; top: 250px; width: 340px; font-size: 11px; line-height: 1.6">悬停分数出 Why。分数由代码算，agent 的优先级建议只写一行参考；你可以 Pin 或 Hide。</span>
+      <div class="win" style="left: 912px; top: 24px; width: 330px; height: 150px">
+        <div class="wt"><span class="mono" style="font-weight: 500">Issues &amp; PRs</span></div>
+        <div style="padding: 16px; font-size: 12px; line-height: 1.6; display: flex; flex-direction: column; gap: 8px"><span>You’re not signed in to GitHub. Run <span class="mono">gh auth login</span> in a terminal, then Refresh.</span><span style="display: flex; gap: 6px"><span class="btn">Open a terminal here</span><span class="btn">Refresh</span></span></div>
+      </div>
+      <div class="win" style="left: 912px; top: 196px; width: 330px; height: 150px">
+        <div class="wt"><span class="mono" style="font-weight: 500">Issues &amp; PRs</span></div>
+        <div style="padding: 16px; font-size: 12px; line-height: 1.6; display: flex; flex-direction: column; gap: 8px"><span>Install the GitHub CLI to see issues here: <span class="mono">brew install gh</span></span><span class="muted">AgentDeck uses your gh login and never stores a token.</span></div>
+      </div>
+      <div class="win" style="left: 1266px; top: 24px; width: 340px; height: 150px">
+        <div class="wt"><span class="mono" style="font-weight: 500">Issues &amp; PRs</span></div>
+        <div style="padding: 12px 16px; font-size: 12px; line-height: 1.6; display: flex; flex-direction: column; gap: 6px"><span><span class="dot" style="background: #BF8700; margin-right: 6px"></span>GitHub rate limit: 412 left until 10:40.</span><span class="muted">Auto sync is paused. CI checks on your PRs still update.</span></div>
+      </div>
+      <span class="at muted" style="left: 1266px; top: 196px; width: 340px; font-size: 11px; line-height: 1.6">没装 gh、没登录、限额快用完时的样子。AgentDeck 不弹登录框、不收令牌，只告诉你在终端里跑什么。GitLab 项目写 glab、MRs、Open on GitLab。</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · 一个 PR 和它的 worktree、session、CI 怎么连</span>
+    <div style="display: flex; gap: 10px; align-items: stretch">
+      <div class="box" style="width: 210px"><b>Issue #18231</b><span class="muted">ForgeItem · 标题、标签、作者身份、+1、分数</span></div>
+      <span class="arrow">→</span>
+      <div class="box" style="width: 230px"><b>ForgeLink</b><span class="muted">项目 · 工作区 · issue 号 · PR 号 · CI 自动轮次</span><span class="muted">一个 issue 可以有几个工作区（试两种修法），只有一个能开 PR</span></div>
+      <span class="arrow">→</span>
+      <div class="box" style="width: 230px"><b>Workspace</b><span class="mono" style="font-size: 11.5px">issue/18231-hmr-css</span><span class="muted">普通的工作区框和 worktree</span></div>
+      <span class="arrow">→</span>
+      <div class="box" style="width: 240px"><b>Session（origin forge）</b><span class="muted">可以有几段、换过几家（SE6 交接）；从 issue 开的终端拿不到你的 gh 登录（I2）</span></div>
+      <span class="arrow">→</span>
+      <div class="box" style="width: 200px"><b>PR #18240</b><span class="muted">你点 Open PR 后才有</span></div>
+      <span class="arrow">→</span>
+      <div class="box" style="width: 250px"><b>Checks · Threads · Drafts</b><span class="muted">面板 PULL REQUEST 一节；草稿进收件箱</span></div>
+    </div>
+    <div class="tbl" style="grid-template-columns: 260px 1fr 1fr">
+      <span class="th">框标题上显示</span><span class="th">什么时候</span><span class="th">颜色</span>
+      <span class="td mono">#18231</span><span class="td">开了工作区，还没 PR</span><span class="td">只有标签，灯照终端原来的</span>
+      <span class="td"><span class="mono">#18231 → PR #18240</span> · CI running</span><span class="td">CI 在跑</span><span class="td">绿（running）</span>
+      <span class="td"><span class="mono">… → PR #18240</span> · CI failed</span><span class="td">有失败的必过检查</span><span class="td">红（error）</span>
+      <span class="td"><span class="mono">… → PR #18240</span> · 1 to post</span><span class="td">有要你发的草稿（算进 n waiting 和 Needs you）</span><span class="td">黄（waiting）</span>
+      <span class="td"><span class="mono">… → PR #18240</span> · 3 new comments</span><span class="td">同步到新的 review 线程</span><span class="td">ink 文字，不着色（要不要处理由你决定）</span>
+      <span class="td"><span class="mono">… → PR #18240</span> · ✓ merged</span><span class="td">合并了；框收成标签</span><span class="td">ink</span>
+    </div>
+    <span class="muted" style="font-size: 12.5px">颜色只用已有的三种状态色；PR、分支、标签本身不着色。agent 的身份色只在终端标题的小方块上。</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · Work on it：一个 issue 开一个 worktree 和一个 session</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start">
+      <div class="dlg new" style="width: 520px">
+        <div style="padding: 14px 16px 6px; display: flex; flex-direction: column; gap: 3px"><b style="font-size: 15px">Work on #18231</b><span class="muted">HMR drops CSS after editing an @import’ed file · @mira · contributor</span></div>
+        <div class="fl"><span class="lab">How</span>
+          <span class="rad"><span class="rd on"></span>Single session</span>
+          <span class="rad"><span class="rd"></span>Crew · No template <span class="muted">· a lead opens sessions as needed</span></span>
+          <span class="rad"><span class="rd"></span>Crew · Contract-first build</span>
+        </div>
+        <div class="fl"><span class="lab">Agent</span><div class="inp"><span class="am" style="background: #2F5E9E"></span><span class="mono">codex</span><span style="flex: 1"></span><span class="muted">▾</span></div></div>
+        <div class="fl" style="flex-direction: row; gap: 10px">
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 5px"><span class="lab">Branch</span><div class="inp mono">issue/18231-hmr-css</div></div>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 5px"><span class="lab">From</span><div class="inp mono">upstream/main ▾</div></div>
+        </div>
+        <div class="fl">
+          <span class="rad"><span class="cb"></span>Claim on GitHub <span class="muted">· drafts a comment for the inbox</span></span>
+          <span class="rad"><span class="cb"></span>Auto-approve <span class="muted">· this terminal reads text from strangers</span></span>
+          <span class="warn">codex has its own GitHub MCP in ~/.codex/config.toml. AgentDeck can’t stop it from posting.</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-top: 1px solid #F0F0ED"><span class="muted">2 of 3 issue slots in use</span><span style="flex: 1"></span><span class="btn">Cancel</span><span class="btn pri">Start</span></div>
+      </div>
+      <div class="ex" style="flex: 1">
+        <span><b>Start 以后</b>：开 worktree 和工作区框（分支默认 <span class="mono">issue/&lt;号&gt;-&lt;短标题&gt;</span>，从仓库默认分支切；你是贡献者时从 upstream 切），开 session，第一条消息是清洗、包好的 issue 和几行固定说明（在这个分支上提交、不推送、用 <span class="mono">agentdeck forge pr</span> 交 PR 草稿）。</span>
+        <span><b>Crew</b>：打开 New crew（C1），Goal 已经填好（issue 标题和链接，正文以包好的形式进 Lead 的第一条消息）。集群在 Issue slots 里占 1 个，子 session 按集群自己的上限。集群做完时 Ready to merge 的主按钮是 <b>Open PR</b>，Merge into main 退到次按钮。</span>
+        <span><b>Claim on GitHub</b> 默认不勾：开工是你自己的事，告诉别人“我在做”是一次对外发言，勾了也只是起草一条进收件箱。</span>
+        <span><b>警告那一行</b>只在检测到这家 agent 自己配了 GitHub / GitLab MCP 时出现（只读检测，不改它的配置）。仓库的 CONTRIBUTING 或 AGENTS 里有 AI 相关规定时，这里多一行提醒。</span>
+        <span style="color: #5F5F5A">槽位满了 Start 变成 <b>Add to Up next</b>，写 “3 of 3 slots in use. It starts when one frees up.”</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">5 · 几百个 issue：怎么排、同时几个、和集群上限与额度</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start">
+      <div class="win" style="position: relative; width: 520px; height: 250px; flex: none">
+        <div class="wt"><span class="mono" style="font-weight: 500">Issues &amp; PRs</span><span class="muted">· Up next</span></div>
+        <div class="ft">
+          <div class="fbar"><span>3 of 3 slots in use</span><span style="flex: 1"></span><span class="rad"><span class="cb on"></span>Start the next one automatically</span></div>
+          <div class="fbar" style="background: #FFFBF0"><span class="dot" style="background: #BF8700"></span><span>Paused: 6 drafts are waiting for you.</span><span style="flex: 1"></span><span class="btn">Open inbox</span></div>
+          <div class="rows" style="grid-template-columns: 26px 60px 1fr 230px">
+            <span class="rh">#</span><span class="rh">ISSUE</span><span class="rh">TITLE</span><span class="rh">AGENT</span>
+            <span>1</span><span class="mono">#18252</span><span>Docs: build.lib…</span><span><span class="am" style="background: #2F5E9E"></span>codex</span>
+            <span>2</span><span class="mono">#18209</span><span>optimizeDeps skips…</span><span><span class="am" style="background: #A8503A"></span>claude <span class="muted">· waits for reset 9:01pm</span></span>
+            <span>3</span><span class="mono">#18270</span><span>Review: fix(ssr) externals</span><span><span class="am" style="background: #A8503A"></span>claude · review</span>
+          </div>
+        </div>
+      </div>
+      <div class="tbl" style="flex: 1; grid-template-columns: 150px 1fr">
+        <span class="th">规则</span><span class="th">怎么做</span>
+        <span class="td"><b>排序</b></span><span class="td">代码算分、能看 Why：紧急标签（security、regression、crash、P0，项目设置能改）+30；10 × log2(1 + 反应数 + 评论人数)；7 天内有动静 +10；help wanted / good first issue +5（你是贡献者 +15）；已有开着的关联 PR −20；needs-info −15；指派给别人的默认不显示。agent 的优先级建议不进分数。</span>
+        <span class="td"><b>同时几个</b></span><span class="td">项目设置 Issue slots，默认 3、最多 8。Work on it、Review 各占一个；分拣终端另算（一个项目同时一个）；从 issue 开的集群占 1 个。满了进 Up next 排队（你在排，所以排队；不像自由模式里 Lead 开子 session 超了直接拒绝）。</span>
+        <span class="td"><b>背压</b></span><span class="td">这个项目待你发的草稿 ≥ 6 条时不自动开下一个：瓶颈是你看草稿的速度，agent 再多也只是堆草稿。</span>
+        <span class="td"><b>额度</b></span><span class="td">开下一个之前看 LimitService（PL5）里这个账号是不是 limited；设了 Fallback agent 就用它开。跑到一半撞额度：普通 issue 终端归 Auto-resume（PL4），集群里的归 CR8，要换家用 Hand off to ▸（SE6）。</span>
+        <span class="td"><b>同步</b></span><span class="td">首次只拉最近更新的 500 条，之后按更新时间增量、窗口开着时 5 分钟一次；只轮询挂在工作区上的 PR 的 CI（60 秒，跑完就停）；限额剩 10% 时暂停自动同步。</span>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":3540}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

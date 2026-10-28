@@ -41,7 +41,7 @@ body{margin:0}
 .tl{display:flex;flex-direction:column;gap:2px;font-size:12px;line-height:1.5}
 </style>
 </helmet>
-<div style="width: 1760px; height: 2920px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+<div style="width: 1760px; height: 3080px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
 
   <div style="display: flex; flex-direction: column; gap: 10px">
     <div style="display: flex; align-items: center; gap: 10px">
@@ -81,6 +81,7 @@ body{margin:0}
         <span>书签写现在的状态：排了几条、什么时候发。点书签打开小卡片，在里面写、排、删提示词。</span>
         <span>和 Auto-approve 一起开就能整夜无人值守：发出去的提示词要批准时由 Auto-approve 替你按；破坏性命令、选择题照样停下来等你。</span>
         <span style="color: #5F5F5A">只给 agent 终端；shell、自定义命令的菜单里没有这一项。</span>
+        <span style="color: #5F5F5A">打开 Run all day 后，同一张卡片变成一个 agent 的全天工作队列，见“长期运行 · Lessons”页 W0（第一版照本页提交，执行以后搬进主进程，LR6）。</span>
       </div>
     </div>
   </div>
@@ -195,7 +196,7 @@ body{margin:0}
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":2920}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":3080}}'>
 class Component extends DCLogic {
   renderVals() {
     return {};

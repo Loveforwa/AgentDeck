@@ -2,6 +2,57 @@
 
 按时间倒序。改动其中任何一条，先在这里写清楚再动代码。
 
+## 2026-10-28（第二轮：研究和竞赛、文档、学习、代码理解、长期运行、Issue · PR、同仓协作）
+
+来自用户的笔记和 13 点清单。主 agent 补了第 14–16 点，加上原来的第 10–13 点，共 7 点。
+- 需求：设计画布新页“研究和竞赛”（E0–E3）、“文档”（D0–D2）、“代码理解”（F0–F2）、“长期运行 · Lessons”（W0–W2）、“Issue · PR”（I0–I2）、“多 agent 同仓协作”（O0、O1）、“学习和辅助”（L0），以及“Agent 接入”页的 A2。
+- 任务：M13 LR0–LR11、M14 RS0–RS14、M15 DC0–DC11、M16 CU0–CU8、M17 FG0–FG13、M18 CO0–CO4、M19 LA0–LA3，M10 加 AH8–AH11。
+- 用例 TC-85～148，问题 IS-116～145，调研 DR-85～117。
+
+主 agent 按推荐定了下面这些，要用户确认的标在每条后面。
+
+- **研究和竞赛（M14）**：不先做模板。先在自由模式上补记账：
+  - Runs：分数由 AgentDeck 在提交上跑锁住的打分命令算；
+  - Jobs：长训练由 AgentDeck 看着，先本机，SSH 机器放第二期；
+  - Outputs：产物在集群结束前存快照；
+  - Submit：Kaggle 只经关卡提交，Auto-approve 永远不放行；
+  - Claims：复现时和论文的数对照。
+
+  资料库是一个文件夹，一条一个 Markdown，默认在数据目录。四个研究模板等 CR9。
+- **文档（M15）**：文档就是仓库里的 .md 文件。
+  - 白板加文档窗口：阅读视图，Edit 是原文编辑。
+  - 代码锚点：git blame 加 diff 挪行号，再核对原文。
+  - 评论存在 AgentDeck，经 `agentdeck doc` 回到 agent。
+  - 逐句核查放第二期。
+  - 单击 .md 打开文档窗口，⌥ 单击用编辑器。
+- **代码理解（M16）**：agent 写带锚点的序列图（seq.json），静态调用图只当旁证。
+  - 覆盖先看图对不对（换一家的 Verifier 核），再叠测试覆盖，最后对上 TC。
+  - 草稿存在 AgentDeck，用户点 Save to repo 才进 `docs/flows/`。
+  - 不引入 Octop（待用户确认是 TencentCloud/Octop）。
+- **长期运行 · Lessons（M13）**：DR-74 补一条例外。
+  - 反复踩的坑（Lessons）归 AgentDeck，按项目存，用户点 Accept 才生效。
+  - 每条一句话，项目上限 1,000 token。
+  - 开 session 时追加进系统提示；用户点 Move to AGENTS.md 才写进仓库，不提交。
+  - 单 agent 全天：扩展 PL3 的队列（Run all day），执行搬进主进程；PL3 第一版照原样提交。
+- **Issue · PR（M17）**：
+  - 对外发言（评论、推送、开 PR、回 review、合并）只进收件箱的 “Ready to post”，用户点了才用用户的 gh / glab 发出去。
+  - AgentDeck 不存令牌，从 issue 开的终端不带推送凭据。
+- **同仓协作（M18）**：
+  - 两个框改了同一个文件时提前提示（L2）；合并前在内存里预演（L3）。都只提醒、不拦，不做硬锁。
+  - 借“牧羊人”的四样（待用户确认是 Shepherd Terminal）：Agents 视图、Unseen、悬停看最后一条回复、Send selection to ▸（CO3，只粘贴不发）。
+- **新 agent（M10 AH8–AH10）**：
+  - OpenCode 用官方插件接，过了合格测试按能力报告进第一档，排在集群第一期之后。这一条改了 DR-79 “只深做 claude、codex”。
+  - Hermes 按 Nous Research Hermes Agent 通用档接，不往 `~/.hermes` 装插件（待用户确认）。
+- **学习和辅助（M19）**：
+  - /teach 不内置。
+  - 数据库 TUI 加启动预设、Custom command… 和 Hide from agents。命令里带密码时直接挡住。
+  - agent 能看到命令里的密码、读到数据库终端（IS-129，P1），用 AH11 修。
+- **命令行分工**（修订 DR-72）：
+  - 开 session、管子 session、跑 crew 流程的命令只给 Lead。
+  - `agentdeck doc / flow / lesson`，以及研究集群的 run / job / out 记账命令，所有 AgentDeck 终端都有。这些命令都不能开终端、批准、提交、合并。
+  - 自由模式的子 session 改为“不带 crew 和 session 命令”。
+- **往用户文件写东西**都要用户点了才写，AgentDeck 不提交：Save to repo、Move to AGENTS.md，以及用户另选位置的资料库文件夹。
+
 ## 2026-10-28（下一代 harness 九点：Session、接入加固、Skill 管理、远程、集群补充、Auto-resume）
 
 起因是用户贴来的一篇讲“下一代 Harness”的文章。这次调研了 9 点（第 8、9 点是用户加的），由主 agent 定下面这些。2026-10-28 用户确认：Auto-resume 改成默认关、产品改名为 Trireme，其余都按推荐。
