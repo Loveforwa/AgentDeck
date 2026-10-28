@@ -59,6 +59,12 @@ AGENTDECK_E2E_KEEP=1 pnpm e2e              # 不删沙盒（打印路径和 tmux
 
 bracketed paste（`ESC[200~ … ESC[201~`，LimitService 续跑时这样送）里的换行当空格，不提交。每个钩子、每次批准都写进 `$AGENTDECK_E2E_LOG_DIR/<启动时的会话 id>.jsonl`（clear 以后也写同一个文件）（`deck.agentLog(terminalId)` 读），测试用它核对后台真的发生了什么。
 `fake-agent/dev-server.mjs` 是 TC-06 用的“dev server”：打印 `Local: http://localhost:<端口>/`，每个请求记一行，故意带 `X-Frame-Options: DENY`。
+`fake-agent/web-server.mjs` 是 TC-27 / TC-28 用的“外部网站”：一个端口按 Host 分站（example.test 301 到 www、localhost 302 到 /login、
+app.test 像 github 带登录和第三方登录弹窗、auth.test 是授权页），每个请求记一行（host、path、UA）。测试启动应用时带
+`--host-resolver-rules`（*.test → 127.0.0.1，其余解析失败）和 `--no-proxy-server`（不走系统代理），碰不到真网站。
+
+`deck.launch({ args, waitForBoard })`：额外的 Chromium 参数；`waitForBoard: false` 不等白板（TC-19 的 tmux 说明页）。
+`support/g4-env.ts`：`shieldRealAgents`（见下面「已知问题」）、zsh 的登录配置、读进程环境（TC-20）。
 
 ## 写测试
 
@@ -97,13 +103,21 @@ bracketed paste（`ESC[200~ … ESC[201~`，LimitService 续跑时这样送）�
 | TC-38 | tc38-outside-workspace | Shell 里 `cd /tmp` → 标题栏状态后面 “outside workspace”（--muted 色），title 写 Now in … / Workspace: … → `cd -` 消失；tmux pane_current_path 对得上 |
 | TC-39 | tc39-skills-mcp | 沙盒 HOME：折起再展开 SKILLS · MCP → agentdeck（built in）、agentdeck MCP（Connected）、repo-notes（repo，灰着勾上）、accept-hello（library，没勾）→ 勾上出 Changes apply after restart → Restart and resume：假 claude `--resume <原会话>`、`--plugin-dir` 那套目录多了 accept-hello，提示消失；~/.claude 和仓库都没变。真 claude 里 /skills 要人工看 |
 | TC-12 | tc07-tc12-git | 右键框 Delete workspace… → 连目录删 → 有未提交改动要勾选再确认 → 框消失、目录没了、分支还在、终端结束 |
+| TC-14 | tc14-restore-after-reboot | ⌘Q + kill tmux 服务模拟重启 → “Restore your last session?”（2 terminals in 1 workspace）→ Restore all：窗口原位，假 claude 用 `--resume <原会话 id>` 接回（SessionStart source resume），Shell 在 worktree 里、`sleep 600` 填在输入行没运行。真重启、codex resume 要人工 |
+| TC-19 | tc19-tmux-missing | 假 tmux 报 3.4 → 说明页（3.5 or later、brew install tmux、Retry），只跑了 `tmux -V`；换回真 tmux 点 Retry → 白板、能开终端。坏掉的 tmux 同样是说明页。“完全没装”做不到：findTmux 固定看 /opt/homebrew/bin |
+| TC-20 | tc20-dock-launch-env | 用 launchd 那样的最小环境（有 / 没有 SHELL）启动 → 假 claude 照样找到、能回答；agent 进程的 PATH 是登录配置里的、带代理变量。真从程序坞打开打包的应用要人工 |
+| TC-27 | tc27-tc28-web | example.test 301 → www：webview 跟过去、没有 “isn’t responding”；localhost 302 → /login：iframe 跟过去；ping 只问了原地址 |
+| TC-28 | 同上 | app.test（带 X-Frame-Options: DENY）用 webview、persist:agentdeck-web 分区、UA 不带 Electron；登录后重开应用还登录着；第三方登录弹窗同一分区；⌘[ ⌘] ⌘R（按键见下）；缩到 50% 网页跟着缩。真 google / github 登录要人工 |
+| TC-52（SE2 后台） | tc52-tc55-sessions | 假 claude 聊两轮 → `clear` → 同一条 Session 两段（start、clear）、只有一条 Session；关窗口后 stopped、两段都在。界面等 SE4、SE5 |
+| TC-55（SE1 后台） | 同上 | 新库降成 schema 1（迁移 1 的 SQL 从 migrations.ts 原文读）+ 白板加 open_terminals 的 group → 重开：每个终端窗口一条 Session、data.session 写回、子终端 parentId 是 Lead、origin spawn · open_terminals、label；tmux 里没有的旧终端记录清掉；关 Lead 后子终端 group 去掉、父子关系还在。界面等 SE4、SE5 |
+| TC-77（SK5） | tc77-skill-sets-cleanup | skill-sets/ 里 8 天前没人用的删掉；在用的、1 天前的、名字不是 AgentDeck 起的不动；终端退出后下次清理删掉它那个；沙盒 HOME 的 skill 目录和配置一个字节没变。其余等 SK2 |
 
 `test.fail` 标着的两条是**已知缺口**（现在失败才算通过；修好后会报“意外通过”，那时去掉 `test.fail`）：
 
 - TC-01：选子文件夹时界面不提示“用了仓库根目录”（`ProjectProbe.usedRepoRoot` 有，`addProject` 没用）。
 - TC-06：第二次单击同一个地址只聚焦、不刷新（终端打开网页时没带 `reloadToken`）。
 
-没写的：TC-04（主要看后台通知，系统通知点不到）、TC-13（系统通知）、TC-14（未实现）。
+没写的：TC-04（主要看后台通知，系统通知点不到）、TC-13（系统通知）。
 
 ## 已知问题（测试里绕开的，见各处注释）
 
@@ -111,6 +125,10 @@ bracketed paste（`ESC[200~ … ESC[201~`，LimitService 续跑时这样送）�
   只在 Playwright 接管时见到（直接启动只有一次）。`support/app.ts` 启动后先刷新一次页面绕开。根上的问题是 preload 只认第一条端口（`ipcRenderer.once`），收到新端口时不会换。
 - **Playwright 默认的单击（按下和抬起之间没有间隔）点没聚焦的终端**：按下时聚焦、窗口重排，click 落到白板空白处又把焦点清掉。`deck.focusWindow` 用 80ms 的按压绕开；真人点击没见到这个问题。
 - **IS-07**：500ms 内连开两个终端，第二个可能显示 “Previous session ended”。`openTerminal` 两次之间隔 600ms。
+- **登录 PATH 末尾补的常见目录**：AgentDeck 在读到的 PATH 后面补 /opt/homebrew/bin、/usr/local/bin 等（login-env.ts 的 withCommonPaths），
+  本机这些目录里装着真的 codex、pi、omp，检测时会跑它们的 `--version`。新写的测试先调 `shieldRealAgents(sb)`（fakebin 里放同名的假程序挡住）。
+- **Playwright 的键盘进不了 webview**：CDP 的按键只到白板页面，网页里收不到、主进程的 before-input-event 也不触发。TC-28 的 ⌘[ ⌘] ⌘R
+  从主进程对 webview 发 `webContents.sendInputEvent`。
 - IS-08：重开应用后状态显示 Idle，TC-10 只断言状态机登记了终端，不断言 Running。
 
 ## 不许碰

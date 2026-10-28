@@ -14,6 +14,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { parseHooksList } from '../../src/adapters/codex.ts';
 import type { CodexTrustQuery } from '../../src/adapters/codex.ts';
 import { createDefaultAdapters } from '../../src/adapters/index.ts';
+import { KNOWN_AGENTS } from '../../src/adapters/known.ts';
 import type { AdapterLaunchContext, AgentAdapterExt } from '../../src/adapters/types.ts';
 import { AgentServiceImpl } from '../../src/agent-service.ts';
 import { declared } from '../../src/capabilities/declare.ts';
@@ -536,4 +537,24 @@ describe('compat records', () => {
       }
     }
   });
+});
+
+// TC-49 第 4 步在 L1 上：故意把已知表里的 resume 参数改错，对应的 K9 必须失败（别的 K 照样过）——L1 真能抓到参数改错。
+// 改的是运行时的 KNOWN_AGENTS（通用适配器直接读它），测完改回来。真程序上的同一步（L2，compat 记 fail、verifiedUpTo 不前进）要人工跑。
+describe('L1 catches a deliberately wrong argument', () => {
+  for (const def of KNOWN_AGENTS) {
+    if (def.launch.resume === null) continue;
+    it(`${def.id}: a wrong resume argument makes K9 fail, K10 still passes`, async () => {
+      const launch = def.launch as { resume: string[] | null };
+      const original = launch.resume;
+      launch.resume = ['--resume-wrong', '{id}'];
+      try {
+        await expect(L1.K9(def.id, null)).rejects.toThrow();
+        if (def.launch.fork !== null) await expect(L1.K10(def.id, null)).resolves.toBeUndefined();
+      } finally {
+        launch.resume = original;
+      }
+      await expect(L1.K9(def.id, null)).resolves.toBeUndefined();
+    });
+  }
 });

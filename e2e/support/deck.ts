@@ -3,7 +3,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, type ElectronApplication, type Locator, type Page, type TestInfo } from '@playwright/test';
-import { closeApp, launchApp, quitApp, type RunningApp } from './app.ts';
+import { closeApp, launchApp, quitApp, type LaunchOptions, type RunningApp } from './app.ts';
 import type { Sandbox } from './sandbox.ts';
 
 /** 白板状态里测试关心的部分（能序列化的）。 */
@@ -44,8 +44,8 @@ export class Deck {
     return this.running.page;
   }
 
-  async launch(): Promise<Page> {
-    this.running = await launchApp(this.sb);
+  async launch(opts: LaunchOptions = {}): Promise<Page> {
+    this.running = await launchApp(this.sb, opts);
     await this.guardMainProcess();
     return this.running.page;
   }
