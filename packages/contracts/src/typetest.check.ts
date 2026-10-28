@@ -7,7 +7,7 @@ import type {
   AgentCapabilityReport, LaunchSpec,
   AccountLimit, LimitedTerminal, AgentHookEvent,
   CrewId, CrewMembership, CrewSession, InboxItem, InboxItemId, CliRequest, CliResponse, InjectionEstimate,
-  CodeRef, DocVerifyService, DocWindowData, DocWriteResult, LineMapHunk, ResolvedRef,
+  CodeRef, DocVerifyService, DocWindowData, DocWriteResult, LineMapHunk, ResolvedRef, WorkspaceOverlap,
 } from './index.ts';
 import { effectiveSkillSelection, FIRE_AND_FORGET, isAutoApproveOn, skillsRestartNeeded, findInlineSecret, redactCommand, capabilitiesFromReport, cliCommandAllowed, TERMINAL_KEY_ENV, API_ENDPOINT_FILE, parseCodeRefs } from './index.ts';
 
@@ -216,3 +216,8 @@ void api.git.blameLines('/r', 'docs/a.md').then((b) => b[0]?.commit);
 const docData: DocWindowData = { path: '/r/a.md', view: 'read', linkedTerminal: null, seenHash: null };
 const verifier: Pick<DocVerifyService, 'submit'> = { submit: async () => {} };
 void docData; void verifier;
+// CO0 / CO4（0.1.21）：worktree 两两的重叠，终端的 Unseen
+void api.git.overlaps('/r', [{ workspaceId: 'w1' as WorkspaceId, path: '/r' }, { workspaceId: 'w2' as WorkspaceId, path: '/wt/b' }])
+  .then((xs: WorkspaceOverlap[]) => xs.flatMap((o) => o.files.filter((f) => f.verdict === 'conflict').map((f) => [o.a, o.b, f.path])));
+const unseen: TerminalWindowData = { ...termData, unseen: true };
+void unseen;

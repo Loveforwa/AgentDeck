@@ -158,6 +158,11 @@ export interface TerminalWindowData {
    * PL4：这个终端单独的 Auto-resume 设置。true 单独开，false 单独关；不填或 null 跟着框（FrameNode.autoResume），再跟着白板（BoardState.autoResume）。
    */
   autoResume?: boolean | null;
+  /**
+   * CO4：一轮结束后、这个终端被聚焦之前为 true（标题栏写 “Idle · Unseen”，Agents 视图里粗体，不加颜色）。聚焦时清掉。
+   * 随白板保存。不填当 false。
+   */
+  unseen?: boolean;
 }
 
 /** PL3：一条排着的提示词。 */

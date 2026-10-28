@@ -2,7 +2,7 @@
 // 实现：packages/git-service（线 3），运行在主进程，命令在子进程里跑，不阻塞。
 // 所有方法的第一个参数都是仓库目录（一个 worktree 的路径）。多仓库工作区由调用方按仓库各调一次。
 
-import type { AbsPath, IsoTime } from './common.ts';
+import type { AbsPath, IsoTime, WorkspaceId } from './common.ts';
 
 /** 对应 git status --porcelain=v2 的 X / Y 字段。 */
 export type ChangeKind = 'unmodified' | 'modified' | 'added' | 'deleted' | 'renamed' | 'copied' | 'untracked' | 'ignored';
@@ -189,6 +189,26 @@ export interface GitService {
    * 文件被改名时按改名后的路径给（hunk 里看不出新路径，调用方用 status / log 的改名找）。没有变化返回空数组。
    */
   lineMap(repo: AbsPath, path: string, from: string, to: 'worktree' | string): Promise<LineMapHunk[]>;
+
+  /**
+   * CO0：同一仓库的几个 worktree 两两算重叠（哪些文件两边都改了、git 能不能自动合）。只读：不碰工作区、index、stash 列表，不写 ref
+   * （有改动的 worktree 用临时 GIT_INDEX_FILE 拍快照，会往对象库里写临时对象）。已经合进另一边的不比；没有重叠的一对不返回。
+   * 最多 12 个 worktree，多了抛 invalid-argument。不监视文件，调用时机由调用方定（和 SCM 面板刷新同一套）。
+   * worktrees 带上工作区 id：git-service 不认识工作区，结果按调用方给的 id 写。
+   */
+  overlaps(repo: AbsPath, worktrees: { workspaceId: WorkspaceId; path: AbsPath }[]): Promise<WorkspaceOverlap[]>;
+}
+
+/** CO0：重叠文件的结论。clean：两边都改了但 git 能自动合；conflict：会冲突；unknown：git 低于 2.38（没有 merge-tree --write-tree），只知道两边都改了。 */
+export type OverlapVerdict = 'clean' | 'conflict' | 'unknown';
+
+/** CO0：两个 worktree 的重叠。 */
+export interface WorkspaceOverlap {
+  a: WorkspaceId;
+  b: WorkspaceId;
+  /** 两边都改了的文件（相对仓库根目录）。 */
+  files: { path: string; verdict: OverlapVerdict }[];
+  checkedAt: IsoTime;
 }
 
 /** lineMap 的一段：旧文件从 oldStart 起的 oldLines 行变成新文件从 newStart 起的 newLines 行（同 @@ -a,b +c,d @@，行数 0 时 start 是前一行）。 */
