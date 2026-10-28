@@ -2,7 +2,7 @@
 // 碰到上限 → 到恢复时间 + 1 分钟、agent 空闲时发第一条 → 做完一轮发下一条 → 发完；又碰到上限就停下来等；Keep Mac awake。
 import { act, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import type { PromptQueueSettings, TerminalId, TerminalWindowData, UsageLimit, WindowComponentProps } from '@agentdeck/contracts';
+import type { AccountLimit, LimitedTerminal, PromptQueueSettings, TerminalId, TerminalWindowData, UsageLimit, WindowComponentProps } from '@agentdeck/contracts';
 import { createFakeApi, SAMPLE, type FakeApi } from '@agentdeck/fakes';
 import { BoardController } from '../src/controller.ts';
 import {
@@ -12,6 +12,8 @@ import {
   addPrompt,
   armedFrom,
   decide,
+  limitGate,
+  limitViewOf,
   movePrompt,
   pasteKeys,
   queueLabel,
@@ -233,6 +235,93 @@ describe('Prompt queue · armed and claude resuming on its own (IS-113)', () => 
   });
 });
 
+// ---- PL5：LimitService 驱动（contracts 0.1.22） ----
+
+const RESET = T0 + 30 * 60_000;
+const DUE = RESET + RESUME_GRACE_MS;
+const iso = (t: number) => new Date(t).toISOString();
+function account(terminals: Partial<LimitedTerminal>[], patch: Partial<AccountLimit> = {}): AccountLimit {
+  return {
+    key: 'claude:/Users/you/.claude:all',
+    agent: 'claude',
+    configDir: '/Users/you/.claude',
+    scope: 'all',
+    kind: 'five_hour',
+    resetsAt: iso(RESET),
+    at: iso(T0 - 60_000),
+    detail: null,
+    needsYou: null,
+    terminals: terminals.map((t) => ({ terminalId: TID, state: 'interrupted', owner: 'auto-resume', resumeAt: null, lostSubagents: 0, ...t })),
+    ...patch,
+  };
+}
+const gateOf = (a: AccountLimit, now: number, prev: LimitedTerminal['state'] | null = null) => limitGate(limitViewOf([a], TID)!, now, prev);
+
+describe('Prompt queue · LimitService decides (PL5)', () => {
+  it('an idle terminal on the limited account sends at the resumeAt LimitService gives it', () => {
+    const a = account([{ state: 'idle', resumeAt: iso(DUE + 30_000), autoResume: false }]);
+    expect(gateOf(a, DUE)).toEqual({ kind: 'wait', why: 'scheduled', at: DUE + 30_000 });
+    expect(gateOf(a, DUE + 30_000)).toEqual({ kind: 'send' });
+    // 没给 resumeAt：恢复 + 1 分钟
+    expect(gateOf(account([{ state: 'idle' }]), DUE)).toEqual({ kind: 'send' });
+  });
+
+  it('claude resumes on its own: wait (claude resumes 3:30pm), resuming waits, resumed sends', () => {
+    const a = account([{ owner: 'agent', selfResume: 'waiting', autoResume: true }]);
+    expect(gateOf(a, RESET + 10 * 60_000)).toEqual({ kind: 'wait', why: 'self-resume', at: RESET });
+    const label = queueLabel(queue(['x']), null, 'idle', 'claude', T0, { limits: { view: limitViewOf([a], TID), gate: gateOf(a, T0) } });
+    expect(label.mark).toMatch(/^Queue · 1 · claude resumes \d+:\d\d(am|pm)$/);
+    const resuming = account([{ owner: 'agent', state: 'resuming', selfResume: 'fired', autoResume: true }]);
+    expect(gateOf(resuming, RESET + 60_000)).toEqual({ kind: 'wait', why: 'resuming', at: null });
+    expect(queueLabel(queue(['x']), null, 'running', 'claude', RESET, { limits: { view: limitViewOf([resuming], TID), gate: gateOf(resuming, RESET) } }).mark).toBe('Queue · 1 · claude resuming');
+    expect(gateOf(account([{ owner: 'agent', state: 'resumed', selfResume: 'fired' }]), RESET + 60_000)).toEqual({ kind: 'send' });
+  });
+
+  it('claude does not start and Auto-resume is off: sends 3 minutes after the reset (nobody else will)', () => {
+    const a = account([{ owner: 'agent', selfResume: 'waiting', autoResume: false }]);
+    expect(gateOf(a, RESET + SELF_RESUME_FALLBACK_MS - 1).kind).toBe('wait');
+    expect(gateOf(a, RESET + SELF_RESUME_FALLBACK_MS)).toEqual({ kind: 'send' });
+    // Auto-resume 开着：LimitService 会自己兜底，这边一直等
+    expect(gateOf(account([{ owner: 'agent', selfResume: 'waiting', autoResume: true }]), RESET + 60 * 60_000).kind).toBe('wait');
+  });
+
+  it('stale and slept never paste, however late it is', () => {
+    const stale = account([{ owner: 'agent', selfResume: 'stale' }], { needsYou: 'stale' });
+    expect(gateOf(stale, RESET + 5 * 3600_000)).toEqual({ kind: 'wait', why: 'self-stale', at: null });
+    expect(queueLabel(queue(['x']), null, 'idle', 'claude', RESET, { limits: { view: limitViewOf([stale], TID), gate: gateOf(stale, RESET) } }).mark).toBe('Queue · 1 · claude waits for Enter');
+    const slept = account([{ state: 'idle' }], { needsYou: 'slept' });
+    expect(gateOf(slept, RESET + 5 * 3600_000)).toEqual({ kind: 'wait', why: 'slept', at: null });
+  });
+
+  it('Auto-resume on (codex too): waits for the resume round to finish before the first prompt, even past the reset', () => {
+    const codex = account([{ autoResume: true, resumeAt: iso(DUE) }], { key: 'codex:/Users/you/.codex:all', agent: 'codex' });
+    expect(gateOf(codex, DUE + 10 * 60_000)).toEqual({ kind: 'wait', why: 'auto-resume', at: DUE });
+    const label = queueLabel(queue(['x']), null, 'idle', 'codex', T0, { limits: { view: limitViewOf([codex], TID), gate: gateOf(codex, T0) } });
+    expect(label.mark).toMatch(/^Queue · 1 · resumes /);
+    expect(label.line).toContain('Auto-resume continues codex');
+    expect(gateOf({ ...codex, terminals: [{ ...codex.terminals[0]!, state: 'resuming' }] }, DUE + 60_000).kind).toBe('wait');
+    expect(gateOf({ ...codex, terminals: [{ ...codex.terminals[0]!, state: 'resumed' }] }, DUE + 60_000)).toEqual({ kind: 'send' });
+    // 开关关着：到点 LimitService 标 skipped，不发续跑；第一条在恢复 + 1 分钟发
+    const off = account([{ autoResume: false }]);
+    expect(gateOf(off, DUE - 1)).toEqual({ kind: 'wait', why: 'scheduled', at: DUE });
+    expect(gateOf(off, DUE)).toEqual({ kind: 'send' });
+    expect(gateOf(account([{ state: 'skipped', autoResume: false }]), DUE, 'interrupted')).toEqual({ kind: 'send' });
+  });
+
+  it('skipped by you (Don’t resume, unticked) pauses the queue', () => {
+    expect(gateOf(account([{ state: 'skipped', autoResume: true }]), DUE + 60_000, 'interrupted')).toEqual({ kind: 'pause' });
+    expect(gateOf(account([{ state: 'skipped', autoResume: false }]), DUE + 60_000, 'idle')).toEqual({ kind: 'pause' });
+    expect(gateOf(account([{ state: 'skipped', autoResume: false }]), T0, 'interrupted')).toEqual({ kind: 'pause' });
+  });
+
+  it('decide: a limit LimitService has not released stops a running queue; a released one sends when idle', () => {
+    const running = { ...queue(['b']), running: true };
+    expect(decide({ q: running, limit: null, status: 'idle', now: T0, inFlight: false, gate: { kind: 'wait', why: 'auto-resume', at: null } })).toEqual({ kind: 'stop-running' });
+    expect(decide({ q: queue(['b']), limit: null, status: 'idle', now: T0, inFlight: false, gate: { kind: 'send' } })).toEqual({ kind: 'send', running: true });
+    expect(decide({ q: queue(['b']), limit: null, status: 'running', now: T0, inFlight: false, gate: { kind: 'send' } })).toEqual({ kind: 'wait' });
+  });
+});
+
 describe('Prompt queue · runner', () => {
   let api: FakeApi;
   let c: BoardController;
@@ -328,6 +417,93 @@ describe('Prompt queue · runner', () => {
     expect(sendKeys).toHaveBeenNthCalledWith(1, TID, [pasteKeys('first')]);
     expect(q().armed).toBeNull();
     expect(q().running).toBe(true);
+  });
+
+  const limitsChanged = (limits: AccountLimit[]) => act(() => api.bus.emit({ type: 'limits.changed', limits }));
+
+  it('PL5: Auto-resume on — the queue waits for the resume round (resumed), then sends; only once for this limit', async () => {
+    await boot();
+    const sendKeys = vi.spyOn(api.terminals, 'sendKeys');
+    now = T0;
+    api.fakes.status.set(TID, 'idle');
+    setQueue(c, win().id, queue(['first', 'second']));
+    runner.start();
+    // 没有 usage.limit：只有 LimitService 说撞上了
+    limitsChanged([account([{ autoResume: true, resumeAt: iso(DUE) }])]);
+    await waitFor(() => expect(q().armed).toEqual({ resetsAt: RESET, at: T0 - 60_000 }));
+    await waitFor(() => expect(api.fakes.app.keepAwake).toBe(true));
+    for (now = T0; now <= DUE + 60_000; now += 5_000) act(() => runner.reconcile());
+    expect(sendKeys).not.toHaveBeenCalled();
+    // Auto-resume 发了续跑：这一轮在跑
+    limitsChanged([account([{ autoResume: true, state: 'resuming' }])]);
+    act(() => api.fakes.status.set(TID, 'running'));
+    act(() => runner.reconcile());
+    expect(sendKeys).not.toHaveBeenCalled();
+    // 续跑这一轮做完：发第一条
+    act(() => api.fakes.status.set(TID, 'idle'));
+    limitsChanged([account([{ autoResume: true, state: 'resumed' }])]);
+    await waitFor(() => expect(sendKeys).toHaveBeenCalledWith(TID, ['Enter']));
+    expect(sendKeys).toHaveBeenNthCalledWith(1, TID, [pasteKeys('first')]);
+    expect(q().running).toBe(true);
+    expect(q().armed).toBeNull();
+    // 账号还列着（同一次上限）：不再当成新的一次
+    limitsChanged([account([{ autoResume: true, state: 'resumed' }])]);
+    act(() => runner.reconcile());
+    expect(sendKeys).toHaveBeenCalledTimes(2);
+    expect(q().running).toBe(true);
+  });
+
+  it('PL5: an idle terminal on the limited account (no limit of its own) sends at its resumeAt', async () => {
+    await boot();
+    const sendKeys = vi.spyOn(api.terminals, 'sendKeys');
+    now = T0;
+    api.fakes.status.set(TID, 'idle');
+    setQueue(c, win().id, queue(['go']));
+    runner.start();
+    limitsChanged([account([{ state: 'idle', resumeAt: iso(DUE + 30_000), autoResume: false }])]);
+    now = DUE + 29_000;
+    act(() => runner.reconcile());
+    expect(sendKeys).not.toHaveBeenCalled();
+    now = DUE + 30_000;
+    act(() => runner.reconcile());
+    await waitFor(() => expect(sendKeys).toHaveBeenCalledWith(TID, [pasteKeys('go')]));
+  });
+
+  it('PL5: claude resuming on its own — waits while listed, sends once the account is gone from the list', async () => {
+    await boot();
+    const sendKeys = vi.spyOn(api.terminals, 'sendKeys');
+    now = T0;
+    api.fakes.status.set(TID, 'idle');
+    setQueue(c, win().id, queue(['next']));
+    runner.start();
+    limitsChanged([account([{ owner: 'agent', selfResume: 'waiting', autoResume: true }])]);
+    expect(runner.limitsOf(TID)?.gate).toEqual({ kind: 'wait', why: 'self-resume', at: RESET });
+    now = RESET + 10 * 60_000;
+    act(() => runner.reconcile());
+    expect(sendKeys).not.toHaveBeenCalled();
+    // claude 续完、账号了结了（LimitService 不再列出）
+    limitsChanged([]);
+    await waitFor(() => expect(sendKeys).toHaveBeenCalledWith(TID, [pasteKeys('next')]));
+  });
+
+  it('PL5: stale never pastes; Don’t resume pauses the queue', async () => {
+    await boot();
+    const sendKeys = vi.spyOn(api.terminals, 'sendKeys');
+    now = T0;
+    api.fakes.status.set(TID, 'idle');
+    setQueue(c, win().id, queue(['a', 'b']));
+    runner.start();
+    limitsChanged([account([{ owner: 'agent', selfResume: 'stale' }], { needsYou: 'stale' })]);
+    now = RESET + 3 * 3600_000;
+    act(() => runner.reconcile());
+    expect(sendKeys).not.toHaveBeenCalled();
+    // 你在收件箱点了 Don’t resume：账号的终端都 skipped
+    limitsChanged([account([{ owner: 'agent', state: 'skipped', autoResume: true }])]);
+    await waitFor(() => expect(q().paused).toBe(true));
+    limitsChanged([]);
+    act(() => runner.reconcile());
+    expect(sendKeys).not.toHaveBeenCalled();
+    expect(q().prompts.map((p) => p.text)).toEqual(['a', 'b']);
   });
 
   it('Send next now sends one without starting the run', async () => {

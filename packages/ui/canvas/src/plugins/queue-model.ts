@@ -9,8 +9,31 @@
 // 发完第一条才清；发第一条看 armed，不看当下的 limit。claude 自己会续时（SelfResume）：恢复后先等它续的那一轮（离开空闲再回到空闲）
 // 做完再发；恢复 3 分钟后还空闲、没开始过才按原规则发；恢复时 AgentDeck 没看着（电脑睡了、应用关着）、醒来已过恢复时间 30 分钟，
 // claude 多半在等你按回车（stale），这时不粘贴（粘进去它会发这一条、不再续原来的事），等它自己那一轮跑完。
+//
+// PL5 之后（contracts 0.1.22）：主进程的 LimitService 认出撞上、按账号归组、管续跑，limits.changed 带着每个终端走到哪一步。
+// 列表里有这个终端时按它发（limitGate），上面那套猜测（armed + trackSelfResume）只在 LimitService 没列出它时兜底
+// （假实现、老版本、重开应用后 LimitService 还没认出来）：
+// - 终端出现在一个账号里就算“碰到上限”，同一账号当时空闲的终端也一样，这次恢复后照发；
+// - owner agent + interrupted（claude 自己会续）：不发，书签写 claude resumes <时间>（Auto-resume 关着、恢复 3 分钟后它还没开始才发）；
+//   resuming：等；resumed 或从列表里消失：发第一条；
+// - 账号 needsYou 是 stale（claude 在等回车）或 slept（Mac 睡过了恢复时间）：从不粘贴；
+// - 这个终端开着 Auto-resume（codex 也是）：先等它续完（resumed）再发，免得续跑提示和第一条撞在一起；
+// - 当时空闲的终端：到 LimitService 给的 resumeAt 发（它也会在那时把终端标成 resumed）；
+// - skipped：你去掉了勾或点了 Don’t resume，队列暂停（Auto-resume 关着、到点被标 skipped 的不算，照常在恢复 + 1 分钟发）。
+// 同一次上限（账号 + 恢复时间）只按它发一次第一条，之后照常一轮一条（running）。
 
-import type { PromptQueueSettings, QueuedPrompt, TerminalStatus, TerminalWindowData, UsageLimit, WindowNode } from '@agentdeck/contracts';
+import type {
+  AccountLimit,
+  LimitedTerminal,
+  LimitedTerminalState,
+  PromptQueueSettings,
+  QueuedPrompt,
+  TerminalId,
+  TerminalStatus,
+  TerminalWindowData,
+  UsageLimit,
+  WindowNode,
+} from '@agentdeck/contracts';
 
 /** 先支持这两个：恢复时间读得到（DR-63）。别的 agent 菜单里灰掉。 */
 export const QUEUE_AGENTS = ['claude', 'codex'] as const;
@@ -104,6 +127,117 @@ export function dueAt(limit: UsageLimit | null): number | null {
   return Number.isNaN(t) ? null : t + RESUME_GRACE_MS;
 }
 
+// ---- LimitService 那边（PL5，contracts 0.1.22） ----
+
+/** LimitService 列出的这个终端和它所在的账号。 */
+export interface LimitView {
+  account: AccountLimit;
+  terminal: LimitedTerminal;
+}
+
+/** limits.changed 的列表里找这个终端。 */
+export function limitViewOf(limits: readonly AccountLimit[], terminalId: TerminalId): LimitView | null {
+  for (const account of limits) {
+    const terminal = account.terminals.find((t) => t.terminalId === terminalId);
+    if (terminal) return { account, terminal };
+  }
+  return null;
+}
+
+/** 这一次上限的键：账号 + 恢复时间。同一次只按它发一次第一条；续了又撞（恢复时间变了）是新的一次。 */
+export function limitCycle(v: LimitView): string {
+  return `${v.account.key}|${v.account.resetsAt ?? 'unknown'}`;
+}
+
+/** LimitService 记下的这次上限，也存成 armed（重开应用、LimitService 不在时兜底）。规则同 armedFrom：比记下的新、比最后发出去的晚。 */
+export function armedFromLimit(q: PromptQueueSettings, v: LimitView): Armed | null {
+  const cur = q.armed ?? null;
+  const at = Date.parse(v.account.at);
+  const resetsAt = v.account.resetsAt ? Date.parse(v.account.resetsAt) : NaN;
+  if (Number.isNaN(at) || Number.isNaN(resetsAt)) return cur;
+  if (cur && at <= cur.at && resetsAt === cur.resetsAt) return cur;
+  const lastSent = q.sent.at(-1);
+  if (lastSent && at <= Date.parse(lastSent.sentAt)) return cur;
+  return { resetsAt, at };
+}
+
+/** 为什么还不发（书签的写法跟着它）。 */
+export type LimitWait =
+  /** claude 自己会续，还没到 / 还没动静。 */
+  | 'self-resume'
+  /** claude 卡在等你按回车（stale）。 */
+  | 'self-stale'
+  /** Mac 睡过了恢复时间（slept），等你在收件箱里点。 */
+  | 'slept'
+  /** 续跑这一轮在跑（不管是 claude 自己还是 Auto-resume）。 */
+  | 'resuming'
+  /** 开着 Auto-resume：等它先续完。 */
+  | 'auto-resume'
+  /** 集群或 Day run 管续跑。 */
+  | 'other-owner'
+  /** 到 at 再发（空闲的终端是 LimitService 给的 resumeAt，Auto-resume 关着的是恢复 + 1 分钟）。 */
+  | 'scheduled'
+  /** 续了又撞两次、发不出按键（gave-up）。 */
+  | 'gave-up'
+  /** 读不到恢复时间。 */
+  | 'reset-unknown';
+
+export type LimitGate =
+  /** 轮到它了：空闲就发第一条。 */
+  | { kind: 'send' }
+  | { kind: 'wait'; why: LimitWait; at: number | null }
+  /** 你去掉了勾或点了 Don’t resume：队列暂停。 */
+  | { kind: 'pause' };
+
+/**
+ * 按 LimitService 的说法现在能不能发第一条。prev 是上一次看到的这个终端的状态（判断 skipped 是你点的还是开关关着到点标的）。
+ * 只管“这次上限放没放开”；空闲、没在发这些由 decide 管。
+ */
+export function limitGate(v: LimitView, now: number, prev: LimitedTerminalState | null = null): LimitGate {
+  const { account: a, terminal: t } = v;
+  const resets = a.resetsAt ? Date.parse(a.resetsAt) : NaN;
+  const due = Number.isNaN(resets) ? null : resets + RESUME_GRACE_MS;
+  const afterDue = (): LimitGate => (due === null || now >= due ? { kind: 'send' } : { kind: 'wait', why: 'scheduled', at: due });
+  if (a.needsYou === 'stale') return { kind: 'wait', why: 'self-stale', at: null };
+  if (a.needsYou === 'slept') return { kind: 'wait', why: 'slept', at: null };
+  switch (t.state) {
+    case 'resumed':
+      return { kind: 'send' };
+    case 'resuming':
+      return { kind: 'wait', why: 'resuming', at: null };
+    case 'gave-up':
+      return { kind: 'wait', why: 'gave-up', at: null };
+    case 'skipped':
+      // 你点的：开关开着、原来是空闲的（只有你能去掉它）、还没到恢复 + 1 分钟（开关关着的要到那时才被标 skipped）
+      if (t.autoResume === true || prev === 'idle' || (prev !== null && prev !== 'skipped' && due !== null && now < due)) return { kind: 'pause' };
+      return afterDue();
+    case 'took-over':
+    case 'handed-off':
+      return afterDue();
+    case 'idle': {
+      if (due === null) return { kind: 'wait', why: 'reset-unknown', at: null };
+      const at = t.resumeAt ? Date.parse(t.resumeAt) : due;
+      return now >= at ? { kind: 'send' } : { kind: 'wait', why: 'scheduled', at };
+    }
+    case 'interrupted': {
+      if (due === null) return { kind: 'wait', why: 'reset-unknown', at: null };
+      if (t.owner === 'agent') {
+        if (t.selfResume === 'stale') return { kind: 'wait', why: 'self-stale', at: null };
+        // Auto-resume 关着时没人替它兜底：claude 恢复 3 分钟后还没开始（LimitService 没把它标 resuming），按原规则发
+        if (t.autoResume !== true && now >= Math.max(resets + SELF_RESUME_FALLBACK_MS, due)) return { kind: 'send' };
+        return { kind: 'wait', why: 'self-resume', at: resets };
+      }
+      if (t.owner === 'crew' || t.owner === 'run') return { kind: 'wait', why: 'other-owner', at: null };
+      // Auto-resume 开着（老实现不报 autoResume 时看它有没有排 resumeAt）：先等续完
+      if (t.autoResume === true || (t.autoResume === undefined && t.resumeAt !== null)) {
+        return { kind: 'wait', why: 'auto-resume', at: t.resumeAt ? Date.parse(t.resumeAt) : due };
+      }
+      // 开关关着：LimitService 到点把它标 skipped、不发续跑；第一条在恢复 + 1 分钟发
+      return afterDue();
+    }
+  }
+}
+
 export type QueueDecision =
   /** 发下一条；running 为 true 时把队列标成“正在接着发”。 */
   | { kind: 'send'; running: boolean }
@@ -120,6 +254,11 @@ export interface QueueInput {
   inFlight: boolean;
   /** agent 自己会续跑（claude ≥ 2.1.234）且记下了上限时有值，见 trackSelfResume。 */
   selfResume?: SelfResume | null;
+  /**
+   * PL5：LimitService 列着这个终端（或刚从列表里消失）、这一次上限还没按它发过第一条时有值（limitGate；消失了是 send）。
+   * 有它时不看 armed、selfResume。
+   */
+  gate?: LimitGate | null;
 }
 
 /**
@@ -131,8 +270,13 @@ export interface QueueInput {
  *     恢复 3 分钟后还空闲、没开始过，按原规则发；stale（它在等回车）时不发。
  *   - 别的：到了恢复时间 + 1 分钟、agent 空闲就发第一条，并开始接着发。
  */
-export function decide({ q, limit, status, now, inFlight, selfResume }: QueueInput): QueueDecision {
+export function decide({ q, limit, status, now, inFlight, selfResume, gate }: QueueInput): QueueDecision {
   if (!q.on || q.paused || q.prompts.length === 0 || status === null) return { kind: 'wait' };
+  if (gate) {
+    // LimitService 说这次上限还没放开：正在接着发的先停下
+    if (gate.kind !== 'send') return q.running ? { kind: 'stop-running' } : { kind: 'wait' };
+    return status === 'idle' && !inFlight ? { kind: 'send', running: true } : { kind: 'wait' };
+  }
   const armed = armedFrom(q, limit);
   if (q.running) {
     const lastSent = q.sent.at(-1);
@@ -179,6 +323,8 @@ export interface QueueLabelOptions {
   selfResumes?: boolean;
   /** QueueRunner 看到的续跑情况（还没看过为 null）。 */
   selfResume?: SelfResume | null;
+  /** PL5：LimitService 列着这个终端、这次上限还没按它发过时（QueueRunner.limitOf）。有它时按它写。 */
+  limits?: { view: LimitView | null; gate: LimitGate } | null;
 }
 
 export function queueLabel(q: PromptQueueSettings, limit: UsageLimit | null, status: TerminalStatus | null, agent: string, now: number, opts: QueueLabelOptions = {}): QueueLabel {
@@ -195,6 +341,7 @@ export function queueLabel(q: PromptQueueSettings, limit: UsageLimit | null, sta
     if (waitingForYou) return { tone: 'waiting', mark: `${count} · needs you`, line: `${agent} is waiting for you. The next prompt goes out once it’s done.` };
     return { tone: 'running', mark: `Sending · ${n} left`, line: `Sending one by one: the next goes out when ${agent} finishes this round.` };
   }
+  if (opts.limits) return limitLabel(count, opts.limits.view, opts.limits.gate, status, agent, now);
   const armed = armedFrom(q, limit);
   if (!armed) {
     if (limit && dueAt(limit) === null)
@@ -229,6 +376,67 @@ export function queueLabel(q: PromptQueueSettings, limit: UsageLimit | null, sta
   if (now < due) return { tone: 'waiting', mark: `${count} · sends ${clock(due, now)}`, line: `${name} reached · resets ${clock(resets, now)} · sends the first prompt at ${clock(due, now)}` };
   if (waitingForYou) return { tone: 'waiting', mark: `${count} · needs you`, line: `${name} has reset, but ${agent} is waiting for you.` };
   return { tone: 'waiting', mark: `${count} · waiting for ${agent}`, line: `${name} has reset. The first prompt goes out as soon as ${agent} is idle.` };
+}
+
+/** 按 LimitService 写书签（queueLabel 里，队列有东西、没暂停、没在接着发时）。 */
+function limitLabel(count: string, view: LimitView | null, gate: LimitGate, status: TerminalStatus | null, agent: string, now: number): QueueLabel {
+  const waitingForYou = status === 'needs-approval' || status === 'needs-reply';
+  const name = view ? LIMIT_NAME[view.account.kind] : 'Usage limit';
+  const resets = view?.account.resetsAt ? Date.parse(view.account.resetsAt) : null;
+  if (gate.kind !== 'wait') {
+    if (waitingForYou) return { tone: 'waiting', mark: `${count} · needs you`, line: `${name} has reset, but ${agent} is waiting for you.` };
+    return { tone: 'waiting', mark: `${count} · waiting for ${agent}`, line: `${name} has reset. The first prompt goes out as soon as ${agent} is idle.` };
+  }
+  const at = gate.at;
+  const resetsText = resets !== null ? ` · resets ${clock(resets, now)}` : '';
+  switch (gate.why) {
+    case 'self-resume':
+      return {
+        tone: 'muted',
+        mark: `${count} · ${agent} resumes ${clock(at ?? resets ?? now, now)}`,
+        line: `${name} reached${resetsText} · ${agent} continues on its own then; the first prompt goes out after that round.`,
+      };
+    case 'self-stale':
+      return {
+        tone: 'waiting',
+        mark: `${count} · ${agent} waits for Enter`,
+        line: `${name} reset while AgentDeck wasn’t watching, so ${agent} is waiting for you to press Enter. The first prompt goes out after that round, or use Send next now.`,
+      };
+    case 'slept':
+      return {
+        tone: 'waiting',
+        mark: `${count} · waiting for you`,
+        line: `${name} reset while the Mac was asleep. Resume ${agent} from the inbox, or use Send next now.`,
+      };
+    case 'resuming':
+      return {
+        tone: 'running',
+        mark: `${count} · ${agent} resuming`,
+        line: `${agent} is continuing the task the limit stopped. The first prompt goes out when it finishes this round.`,
+      };
+    case 'auto-resume':
+      return {
+        tone: 'waiting',
+        mark: at !== null ? `${count} · resumes ${clock(at, now)}` : `${count} · waiting to resume`,
+        line: `${name} reached${resetsText} · Auto-resume continues ${agent}${at !== null ? ` at ${clock(at, now)}` : ''}; the first prompt goes out after that round.`,
+      };
+    case 'other-owner':
+      return { tone: 'waiting', mark: `${count} · waiting to resume`, line: `${name} reached${resetsText} · the first prompt goes out after ${agent} is resumed.` };
+    case 'scheduled':
+      return {
+        tone: 'waiting',
+        mark: `${count} · sends ${clock(at ?? now, now)}`,
+        line: `${name} reached${resetsText} · sends the first prompt at ${clock(at ?? now, now)}`,
+      };
+    case 'gave-up':
+      return { tone: 'waiting', mark: `${count} · needs you`, line: `${agent} hit the limit again after resuming. Check the inbox, or use Send next now.` };
+    case 'reset-unknown':
+      return {
+        tone: 'waiting',
+        mark: `${count} · reset time unknown`,
+        line: `${name} reached, but ${agent} didn’t say when it resets. Use Send next now when it’s back.`,
+      };
+  }
 }
 
 // ---- 队列的增删改（返回新的设置，界面写进窗口数据） ----

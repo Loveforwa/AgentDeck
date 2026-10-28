@@ -9,10 +9,22 @@
 //   时让 app.setKeepAwake(true)。
 // - IS-113：碰到上限记成 armed 存进队列（limit 被成功的请求清掉也不忘，发完第一条才清）；claude ≥ 2.1.234 自己会续跑，
 //   恢复后先等它续的那一轮做完再发，3 分钟没动静才按原规则发，它在等回车（stale）时不粘贴（见 queue-model 的 decide）。
+// - PL5 之后（contracts 0.1.22）：主进程的 LimitService 列着这个终端时按它发（limits.list + limits.changed，规则见 queue-model 的
+//   limitGate）：开着 Auto-resume 的先等续完、claude 自己续的等它那一轮、空闲的到 resumeAt、stale / slept 不粘贴、你点了 Don’t resume
+//   就暂停。上面 IS-113 的那套只在 LimitService 没列出这个终端时兜底（假实现、老版本、重开应用后还没认出来）。
 // - 书签挂在终端底边左侧，排在 Auto-approve 书签后面；点开卡片写、排、删提示词，Send next now、Pause、Keep Mac awake。
 
 import { useLayoutEffect, useRef, useState } from 'react';
-import type { PromptQueueSettings, TerminalId, TerminalStatus, UsageLimit, WindowId, WindowNode } from '@agentdeck/contracts';
+import type {
+  AccountLimit,
+  LimitedTerminalState,
+  PromptQueueSettings,
+  TerminalId,
+  TerminalStatus,
+  UsageLimit,
+  WindowId,
+  WindowNode,
+} from '@agentdeck/contracts';
 import { Button, Popover } from '@agentdeck/ui-kit';
 import type { BoardController } from '../controller.ts';
 import { agentOf, isAgentTerminal, terminalIdOf } from '../model/windows.ts';
@@ -22,8 +34,11 @@ import {
   START_TIMEOUT_MS,
   addPrompt,
   armedFrom,
+  armedFromLimit,
   clock,
   decide,
+  limitCycle,
+  limitGate,
   movePrompt,
   pasteKeys,
   queueLabel,
@@ -32,6 +47,8 @@ import {
   selfResumes,
   takeFirst,
   trackSelfResume,
+  type LimitGate,
+  type LimitView,
   type SelfResume,
 } from './queue-model.ts';
 import type { PluginDefinition } from './types.ts';
@@ -46,9 +63,24 @@ export function setQueue(c: BoardController, windowId: WindowId, next: PromptQue
 
 // ---- 发送 ----
 
+/** LimitService 列过的一个终端：最后一次看到的样子；从列表里消失了 gone 为 true（这次上限放开了）。 */
+interface SeenLimit {
+  view: LimitView;
+  cycle: string;
+  gone: boolean;
+}
+
 /** 每块白板一个：看着开了队列的终端，到点就发。 */
 export class QueueRunner {
   private readonly limits = new Map<TerminalId, UsageLimit | null>();
+  /** PL5：LimitService 列过的终端（limits.changed）。 */
+  private readonly seen = new Map<TerminalId, SeenLimit>();
+  /** 每个终端在 LimitService 里上一个（不同的）状态：判断 skipped 是你点的还是开关关着到点标的。 */
+  private readonly prevState = new Map<TerminalId, LimitedTerminalState | null>();
+  /** 已经按 LimitService 发过第一条（或已经暂停）的那一次上限（limitCycle）。 */
+  private readonly consumed = new Map<TerminalId, string>();
+  /** 收到过几次 limits.changed（启动时 list 的结果比事件旧就不用）。 */
+  private limitEvents = 0;
   private readonly watched = new Set<TerminalId>();
   /** 已经拿到第一次用量（知道有没有碰到上限）的终端。拿到之前不发：重开应用时 running 还是 true，不能抢在读到上限之前发。 */
   private readonly ready = new Set<TerminalId>();
@@ -79,6 +111,18 @@ export class QueueRunner {
         this.limits.set(e.usage.terminalId, e.usage.limit ?? null);
         this.reconcile();
       }),
+      this.c.api.on('limits.changed', (e) => {
+        this.limitEvents += 1;
+        this.noteLimits(e.limits);
+      }),
+    );
+    // LimitService 不在（老版本）时 list 失败：只用兜底的那套。list 回来之前已经来了 limits.changed 的，以事件为准（更新）
+    const events = this.limitEvents;
+    void this.c.api.limits?.list().then(
+      (list) => {
+        if (this.limitEvents === events && this.timer) this.noteLimits(list);
+      },
+      () => undefined,
     );
     // 恢复时间是“到点”，没有事件：每 5 秒看一次
     this.timer = setInterval(() => this.reconcile(), 5000);
@@ -94,6 +138,9 @@ export class QueueRunner {
     this.watched.clear();
     this.ready.clear();
     this.resumes.clear();
+    this.seen.clear();
+    this.prevState.clear();
+    this.consumed.clear();
     this.lastTick = null;
     if (this.awake) void this.c.api.app.setKeepAwake(false).catch(() => undefined);
     this.awake = false;
@@ -101,6 +148,37 @@ export class QueueRunner {
 
   limitOf(terminalId: TerminalId | null): UsageLimit | null {
     return terminalId ? (this.limits.get(terminalId) ?? null) : null;
+  }
+
+  /** PL5：LimitService 的一份新列表。记下每个终端走到哪、谁从列表里消失了（这次上限放开了）。 */
+  noteLimits(list: readonly AccountLimit[]): void {
+    const listed = new Set<TerminalId>();
+    for (const account of list) {
+      for (const terminal of account.terminals) {
+        const tid = terminal.terminalId;
+        listed.add(tid);
+        const before = this.seen.get(tid);
+        const prev = before && !before.gone ? before.view.terminal.state : null;
+        if (prev !== terminal.state) this.prevState.set(tid, prev);
+        const view = { account, terminal };
+        this.seen.set(tid, { view, cycle: limitCycle(view), gone: false });
+      }
+    }
+    for (const [tid, s] of this.seen) if (!listed.has(tid)) s.gone = true;
+    this.reconcile();
+  }
+
+  /** PL5：LimitService 列着（或刚放开）、这一次上限还没按它发过时，现在能不能发；不归它管为 null。 */
+  private gateOf(tid: TerminalId, now: number): { seen: SeenLimit; gate: LimitGate } | null {
+    const s = this.seen.get(tid);
+    if (!s || this.consumed.get(tid) === s.cycle) return null;
+    return { seen: s, gate: s.gone ? { kind: 'send' } : limitGate(s.view, now, this.prevState.get(tid) ?? null) };
+  }
+
+  /** 书签用：LimitService 那边的情况；不归它管为 null。 */
+  limitsOf(terminalId: TerminalId | null, now: number = this.now()): { view: LimitView | null; gate: LimitGate } | null {
+    const g = terminalId ? this.gateOf(terminalId, now) : null;
+    return g ? { view: g.seen.gone ? null : g.seen.view, gate: g.gate } : null;
   }
 
   /** agent 自己续跑时看到的情况（书签用）；没有为 null。 */
@@ -152,8 +230,11 @@ export class QueueRunner {
       this.limits.delete(tid);
       this.inFlight.delete(tid);
       this.resumes.delete(tid);
+      this.consumed.delete(tid);
       void this.c.api.usage.unwatch(tid, OWNER).catch(() => undefined);
     }
+    // 放开过、也按它发过的不用再记
+    for (const [tid, s] of this.seen) if (s.gone && this.consumed.get(tid) === s.cycle) this.seen.delete(tid);
     for (const { tid } of list) {
       if (this.watched.has(tid)) continue;
       this.watched.add(tid);
@@ -181,21 +262,30 @@ export class QueueRunner {
         if ((f.started && status === 'idle') || now - f.at > START_TIMEOUT_MS) this.inFlight.delete(tid);
       }
       const ready = this.ready.has(tid);
-      // 碰到上限就记下（armed，IS-113）：之后 limit 被成功的请求清掉也不忘
-      const armed = ready ? armedFrom(saved, limit) : (saved.armed ?? null);
-      const sr = this.selfResumes(w) ? trackSelfResume(this.resumes.get(tid) ?? null, armed, status, now, prevTick) : null;
+      // PL5：LimitService 列着这个终端时按它发
+      const g = this.gateOf(tid, now);
+      if (g?.gate.kind === 'pause') {
+        // 你去掉了勾或点了 Don’t resume：排着的也不发（暂停），这次上限不再按它发
+        this.consumed.set(tid, g.seen.cycle);
+        if (saved.prompts.length > 0 && !saved.paused) setQueue(this.c, w.id, { ...saved, paused: true, running: false, armed: null });
+        continue;
+      }
+      // 碰到上限就记下（armed，IS-113）：之后 limit 被成功的请求清掉也不忘。LimitService 列着时按它的账号记（兜底用）
+      const armed = g ? (g.seen.gone ? (saved.armed ?? null) : armedFromLimit(saved, g.seen.view)) : ready ? armedFrom(saved, limit) : (saved.armed ?? null);
+      const sr = !g && this.selfResumes(w) ? trackSelfResume(this.resumes.get(tid) ?? null, armed, status, now, prevTick) : null;
       if (sr) this.resumes.set(tid, sr);
       else this.resumes.delete(tid);
-      if (!ready) continue;
+      if (!ready && !g) continue;
       let q = saved;
       if (armed !== (saved.armed ?? null)) {
         q = { ...saved, armed };
         setQueue(this.c, w.id, q);
       }
-      const d = decide({ q, limit, status, now, inFlight: this.inFlight.has(tid), selfResume: sr });
+      const d = decide({ q, limit, status, now, inFlight: this.inFlight.has(tid), selfResume: sr, gate: g?.gate ?? null });
       if (d.kind === 'stop-running') setQueue(this.c, w.id, { ...q, running: false });
-      else if (d.kind === 'send') void this.send(w.id, tid, d.running);
-      if (q.keepAwake && !q.paused && q.prompts.length > 0 && (armed !== null || q.running)) wantAwake = true;
+      else if (d.kind === 'send') void this.send(w.id, tid, d.running, g?.seen.cycle);
+      const waitingForLimit = g !== null && g.gate.kind === 'wait';
+      if (q.keepAwake && !q.paused && q.prompts.length > 0 && (armed !== null || q.running || waitingForLimit)) wantAwake = true;
     }
     if (wantAwake !== this.awake) {
       this.awake = wantAwake;
@@ -203,13 +293,18 @@ export class QueueRunner {
     }
   }
 
-  /** 发第一条（Send next now 也走这里，running 为 false：只发一条，不开始接着发）。 */
-  async send(windowId: WindowId, tid: TerminalId, running: boolean): Promise<boolean> {
+  /**
+   * 发第一条（Send next now 也走这里，running 为 false：只发一条，不开始接着发）。
+   * cycle：按 LimitService 的哪一次上限发的（发了就不再按这一次发第一条）。
+   */
+  async send(windowId: WindowId, tid: TerminalId, running: boolean, cycle?: string): Promise<boolean> {
     const w = this.c.windowById(windowId);
     if (!w || this.inFlight.has(tid)) return false;
     const before = queueSettings(w);
     const { q, prompt } = takeFirst(before, new Date(this.now()).toISOString(), running);
     if (!prompt) return false;
+    const consumedBefore = this.consumed.get(tid);
+    if (cycle !== undefined) this.consumed.set(tid, cycle);
     this.inFlight.set(tid, { at: this.now(), started: false });
     this.busy = true;
     try {
@@ -228,6 +323,10 @@ export class QueueRunner {
     } catch {
       // 没发出去：放回队首，别丢；记下的上限也放回去
       setQueue(this.c, windowId, (cur) => ({ ...cur, prompts: [prompt, ...cur.prompts], sent: cur.sent.slice(0, -1), armed: cur.armed ?? before.armed ?? null }));
+      if (cycle !== undefined) {
+        if (consumedBefore === undefined) this.consumed.delete(tid);
+        else this.consumed.set(tid, consumedBefore);
+      }
       this.inFlight.delete(tid);
       return false;
     }
@@ -282,9 +381,11 @@ export function QueueMark({ windowId }: { windowId: WindowId }) {
     const off = c.api.on('usage.changed', (e) => {
       if (e.usage.terminalId === tid) tick((n) => n + 1);
     });
+    const offLimits = c.api.on('limits.changed', () => tick((n) => n + 1));
     return () => {
       clearInterval(t);
       off();
+      offLimits();
     };
   }, [c, tid]);
   // Auto-approve 书签开着时排在它后面：量它的右边
@@ -304,6 +405,7 @@ export function QueueMark({ windowId }: { windowId: WindowId }) {
   const label = queueLabel(q, limit, status, agent, Date.now(), {
     selfResumes: runner?.selfResumes(node) ?? false,
     selfResume: runner?.selfResumeOf(tid) ?? null,
+    limits: runner?.limitsOf(tid, Date.now()) ?? null,
   });
   return (
     <>
