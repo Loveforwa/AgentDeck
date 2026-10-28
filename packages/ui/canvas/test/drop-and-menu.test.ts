@@ -103,6 +103,7 @@ describe('context menus (B3)', () => {
     expect(labels({ kind: 'window', windowId: 'win-login-claude' as WindowId })).toEqual([
       'Rename…',
       'Maximize',
+      'Send selection to', // CO3
       '-',
       'PLUGINS',
       'Auto-approve',
@@ -143,6 +144,7 @@ describe('context menus (B3)', () => {
     expect(items.map((i) => (i.type === 'separator' ? '-' : i.label))).toEqual([
       'Rename…',
       'Maximize',
+      'Send selection to', // CO3
       '-',
       'Clear',
       'Restart',

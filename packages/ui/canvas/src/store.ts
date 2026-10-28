@@ -64,7 +64,9 @@ export type MenuTarget =
   /** 框里的空白处：和白板的右键菜单相同，但新建的东西放进这个框。 */
   | { kind: 'frame-body'; workspaceId: WorkspaceId }
   | { kind: 'frame-title'; workspaceId: WorkspaceId }
-  | { kind: 'window'; windowId: WindowId };
+  | { kind: 'window'; windowId: WindowId }
+  /** CO3：窗口内容区（终端屏幕）右键、⌃ 单击：Copy · Paste · Send selection to ▸。 */
+  | { kind: 'window-content'; windowId: WindowId };
 
 export interface MenuState {
   /** 屏幕坐标，菜单放在这里。 */

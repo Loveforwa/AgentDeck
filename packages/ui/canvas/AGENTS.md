@@ -24,6 +24,7 @@ registerWindow<TerminalWindowData>({
 });
 ```
 
+- CO3 · 窗口内容（Send selection to ▸）：`registerWindowContent(windowId, { selectionText(), paste(text, { requireBracketed?, fresh? }) })` 在窗口组件挂上时登记选中文字和粘贴的句柄（返回撤销函数，`PasteResult` 不成功时带给用户看的原因）；内容区要白板的右键菜单时从内容里的元素发冒泡的 `CONTENT_MENU_EVENT`（detail `{ clientX, clientY }`）。只在界面里，不经过服务、contracts 里没有。`createWindowContentRegistry()` 测试用，`BoardController` 的 `contents` 选项可以换。
 - `registerWindow(def)` 返回撤销函数；同一个 type 再注册会替换（热更新）。`getWindowType`、`listWindowTypes`、`isSummarySize`、`createWindowRegistry`（测试用的独立注册表）。
 - 白板给组件的 props 照 contracts 0.1.2 的 `WindowComponentProps`：
   - `contentSize` 是内容区（不含 28px 标题栏和边框）的像素，**改大小松手后才变**；拖动中外框在变，组件拿到的不变。
@@ -141,6 +142,11 @@ import '@agentdeck/ui-kit/base.css';
   - 每个窗口连同贴着它的东西（`withGroup`：标记、Usage 条、侧边栏、停靠的子终端、后台 agent 面板）算一块，整块挪；带着停靠子终端的 lead 只挪不改大小；放大中的、收起的不动。顺序按原来的位置先上后下、先左后右（上下差 40 以内算一行），新开的排最后。排到框内区域的左上角起，框缩到正好装下（不小于 FRAME_MIN），挤到的框照 V3 挪。点标题右上角的图标排版时框的**右上角不动**（框连同窗口往右挪齐原来的右边），图标留在指针底下；Auto-arrange 因新开、关掉窗口自动排时左上角不动。点图标记成一步（⌘Z）。
   - Auto-arrange：`noteFrameMembers` 看每个框里窗口的增减（store 订阅），开着的框在下一个微任务里按上次的排法（没点过 Tidy）重排；拖动中先不排，松手后排。这次重排不单独记撤销。框的右键菜单（标题、空白处）也有 Auto-arrange new windows。
 
+- Send selection to ▸（CO3，TC-147，`src/model/send.ts`、`BoardMenu.tsx` 的 `sendSelectionItem`、controller 的 `selectionOf` / `pasteClipboard` / `sendSelection` / `sendSelectionToNew`）：
+  - 终端内容区右键（`CONTENT_MENU_EVENT`，菜单目标 `window-content`；没聚焦时右键盖层也出这个菜单）：Copy ⌘C（复制选中的文字）、Paste ⌘V（读剪贴板，照 ⌘V 贴）、Send selection to ▸。终端标题栏菜单在 Maximize 后面也有 Send selection to ▸。没有选中的文字时 Copy 和它灰掉。选中的文字在打开菜单时取一次。
+  - 子菜单：`sendTargets` 按 `windowOrder` 把别的终端按框分组，源终端的框在前，散放的在最后（小标题 “NOT IN A WORKSPACE”）；小标题是工作区名的大写；行 = `.ad-group-lamp` 灯（Menu 的 `icon`）+ 等宽名字 + 灰字（窗口名或组身份）。不列：源终端、在等你的（计数，底下灰字 “Waiting terminals are skipped”）、已退出 / 出错退出的、没有 terminalId 的。最后 New terminal here… ▸（`terminalItems`，开在源终端旁边、同一个框）。
+  - 选了：`trimForSend` 去掉末尾换行 → `jumpToWindow`（收起的组成员先显示）、拉小的摘要卡 `expandSummary` → 等目标登记句柄（3 秒，新开的 10 秒）→ `paste(text, { requireBracketed: true })`。不成功时 Toast 写原因。只粘贴，不按回车，不经过 MCP。
+  - 测试：`test/send-selection.test.tsx`。
 - 放大的窗口（2026-10-26）：平移、缩放白板时自动还原（`viewportChanged` 里，放大 / 还原自己的动画期间 `maximizeMotionUntil` 不算），视口不动，记成一步 Restore window。
 
 ## dev 页面
