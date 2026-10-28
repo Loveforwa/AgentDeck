@@ -10,5 +10,6 @@ Toast is a one-line fact at the bottom centre of the window with at most one act
 - It closes after 4 s, or 6 s when it has an action. Hover or focus pauses the timer.
 - At most 3 toasts show at once; the oldest is dropped.
 - When the user typed in the last 2 s, a service notification only flashes the window and shows no toast.
+- Window components use `useOptionalToast()`: it returns `null` instead of throwing when there is no `ToastProvider` (a widget alone in a test or dev page), so they skip the toast.
 
 **Copy:** a past-tense fact: "Removed api-server · feat/oauth from the board" + Undo, "Restored 5 terminals.", "claude · agentdeck · feat/login: Tests passed".
