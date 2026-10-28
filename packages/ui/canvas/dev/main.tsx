@@ -8,7 +8,7 @@ import './dev.css';
 
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import type { BoardState, TerminalId } from '@agentdeck/contracts';
+import type { BoardState, LimitedTerminalState, LimitOwner, SelfResumeState, TerminalId, WindowId } from '@agentdeck/contracts';
 import { createFakeApi, SAMPLE } from '@agentdeck/fakes';
 import { Button } from '@agentdeck/ui-kit';
 import { BoardController, Workbench, type PanelContext } from '../src/index.ts';
@@ -147,6 +147,51 @@ function bumpUsage(id: TerminalId) {
   });
 }
 
+// PL6：Auto-resume 书签的各种样子（FakeLimitService 直接摆出来，不等时间）。每组三个终端：feat/login 的 claude、codex，fix/cart-total 的 claude
+type LimitPick = { state?: LimitedTerminalState; owner?: LimitOwner; selfResume?: SelfResumeState; autoResume?: boolean; messageDelivered?: boolean };
+type LimitDemo = { label: string; resetsAt?: 'soon' | null; needsYou?: 'slept' | 'stale'; omp?: boolean; terms: [LimitPick, LimitPick, LimitPick] };
+const LIMIT_DEMOS: LimitDemo[] = [
+  { label: 'waiting', terms: [{ owner: 'agent', selfResume: 'waiting' }, { autoResume: true }, { autoResume: false }] },
+  { label: 'running', terms: [{ owner: 'agent', selfResume: 'fired', state: 'resuming' }, { state: 'resuming', autoResume: true }, { state: 'gave-up' }] },
+  { label: 'needs you', needsYou: 'stale', terms: [{ owner: 'agent', selfResume: 'stale' }, { state: 'took-over' }, { state: 'skipped' }] },
+  { label: 'unknown', resetsAt: null, omp: true, terms: [{ state: 'idle' }, { autoResume: true }, { autoResume: true }] },
+  { label: 'slept', needsYou: 'slept', terms: [{ owner: 'agent', selfResume: 'waiting', messageDelivered: true }, { autoResume: true }, { autoResume: true }] },
+];
+let limitDemo = -1;
+
+function showLimitDemo(n: number) {
+  limitDemo = ((n % LIMIT_DEMOS.length) + LIMIT_DEMOS.length) % LIMIT_DEMOS.length;
+  const d = LIMIT_DEMOS[limitDemo]!;
+  api.fakes.limits.clear();
+  // omp 自己处理额度：把 fix/cart-total 的 claude 暂时当成 omp
+  controller.updateData('win-shop-claude' as WindowId, { agent: d.omp ? 'omp' : 'claude' });
+  const resetsAt = d.resetsAt === null ? null : new Date(Date.now() + 25 * 60_000).toISOString();
+  const ids = [T.loginClaude, T.loginCodex, T.shopClaude];
+  d.terms.forEach((t, i) => {
+    api.fakes.limits.hit({
+      agent: i === 1 ? 'codex' : 'claude',
+      configDir: i === 1 ? '/Users/you/.codex' : `/Users/you/.claude-${i}`,
+      resetsAt,
+      terminals: [{ terminalId: ids[i]!, ...t }],
+    });
+  });
+  // 假服务不认 needsYou / messageDelivered 的参数：直接改它的列表再发一次
+  void api.limits.list().then((list) => {
+    for (const a of list) {
+      a.needsYou = d.resetsAt === null ? 'reset-unknown' : (d.needsYou ?? null);
+      for (const t of a.terminals) {
+        const pick = d.terms[ids.indexOf(t.terminalId)];
+        if (pick?.messageDelivered) {
+          t.messageDelivered = true;
+          t.message = 'Use the new API instead.';
+        }
+      }
+    }
+    api.bus.emit({ type: 'limits.changed', limits: list });
+  });
+}
+(window as unknown as { __limitDemo: (n: number) => void }).__limitDemo = showLimitDemo;
+
 function DemoPanel({ workspace }: PanelContext) {
   const pendingFor = (id: TerminalId) => api.fakes.status.pending().find((p) => p.terminalId === id);
   return (
@@ -211,6 +256,19 @@ function DemoPanel({ workspace }: PanelContext) {
         </Button>
         <Button size="sm" onClick={() => bumpUsage(T.loginClaude)}>
           claude in feat/login makes a request (Usage)
+        </Button>
+        <Button size="sm" onClick={() => showLimitDemo(limitDemo + 1)}>
+          Usage limit: next Auto-resume bookmarks
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => {
+            api.fakes.limits.clear();
+            controller.updateData('win-shop-claude' as WindowId, { agent: 'claude' });
+          }}
+        >
+          Usage limit: clear
         </Button>
         <Button size="sm" onClick={() => api.scenario.devServerStarts(T.devServer)}>
           Dev server prints its URL

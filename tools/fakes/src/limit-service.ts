@@ -163,6 +163,12 @@ export class FakeLimitService implements LimitService {
     return key;
   }
 
+  /** 清掉所有受限账号（dev 页面换一组演示用）。 */
+  clear(): void {
+    this.accounts.clear();
+    this.bus.emit({ type: 'limits.changed', limits: [] });
+  }
+
   /** 到了恢复时间：owner 为 auto-resume 的按先后开始续（crew 的等调度器调 resumeNow，agent 的自己续）。 */
   reset(account: AccountKey): void {
     const a = this.require(account);
