@@ -77,6 +77,23 @@ export interface TerminalUsage {
   rateLimits: { primary: RateLimitWindow | null; secondary: RateLimitWindow | null } | null;
   /** 最后一条用量记录的时间。 */
   updatedAt: IsoTime | null;
+  /**
+   * PL3：agent 最近一次碰到账号额度上限、还没恢复（之后没有成功的请求）。没碰到、或已经恢复为 null；老的实现不填。
+   * claude 读会话记录里 error "rate_limit" 那一行的 quotaLimits，codex 读 usage_limit_exceeded 和 rate_limits（DR-63）。
+   */
+  limit?: UsageLimit | null;
+}
+
+/** PL3：碰到的额度上限。 */
+export interface UsageLimit {
+  /** five_hour：5 小时额度；weekly：每周额度；other：别的（按原样写在 detail 里）。 */
+  kind: 'five_hour' | 'weekly' | 'other';
+  /** 什么时候恢复。agent 没记下时为 null。 */
+  resetsAt: IsoTime | null;
+  /** 碰到上限的时间（那一条记录的时间）。 */
+  at: IsoTime | null;
+  /** agent 原样的说法，例如 "You've hit your usage limit … try again at 3:30 PM."。 */
+  detail: string | null;
 }
 
 export interface UsageService {
@@ -86,8 +103,12 @@ export interface UsageService {
    * 开始跟踪这个终端：之后每次有变化发 usage.changed。返回当前值。重复调用没有副作用。
    * 插件在这个终端上开着时调；关掉时调 unwatch，不留监听。
    */
-  watch(terminalId: TerminalId): Promise<TerminalUsage>;
-  unwatch(terminalId: TerminalId): Promise<void>;
+  watch(terminalId: TerminalId, owner?: string): Promise<TerminalUsage>;
+  /**
+   * owner（PL3 起）：谁在看，例如 'usage-strip'、'prompt-queue'。同一个终端可以有好几个 owner 同时 watch，
+   * 最后一个 unwatch 了才停；不给时当成 'default'。
+   */
+  unwatch(terminalId: TerminalId, owner?: string): Promise<void>;
 }
 
 export type UsageEvent = { type: 'usage.changed'; usage: TerminalUsage };

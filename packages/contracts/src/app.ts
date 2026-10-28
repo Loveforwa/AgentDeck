@@ -47,6 +47,11 @@ export interface AppService {
   quit(req: QuitRequest): Promise<void>;
   /** 程序坞角标数字；0 清除。 */
   setBadge(count: number): void;
+  /**
+   * PL3：Prompt queue 在等额度恢复、或正在接着发时不让 Mac 睡（系统睡眠，不管屏幕）；false 放开。重复调用没有副作用。
+   * 合盖照样会睡。
+   */
+  setKeepAwake(on: boolean): Promise<void>;
 }
 
 export type AppEvent =
