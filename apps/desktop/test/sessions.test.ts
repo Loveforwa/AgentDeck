@@ -55,7 +55,7 @@ class ProcessHost {
     this.children.get(id)?.stdin?.write(`${line}\n`);
   }
 
-  kill(id: TerminalId): void {
+  async kill(id: TerminalId): Promise<void> {
     this.children.get(id)?.kill('SIGHUP');
   }
 
