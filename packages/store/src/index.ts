@@ -9,4 +9,6 @@ export type {
   TerminalRecord,
   TerminalRepository,
   ApprovalRepository,
+  SessionRepository,
+  SessionStateChange,
 } from './types.ts';

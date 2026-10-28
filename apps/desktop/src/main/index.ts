@@ -291,9 +291,14 @@ async function main(): Promise<void> {
     if (!agent) return null;
     return { terminalId: id, agent, sessionId: st?.sessionId ?? rec?.sessionId ?? null, cwd: rec?.cwd ?? null, startedAt: startedAt.get(id) ?? null };
   };
+  // IS-95：kimi 推断会话时只和还活着的终端比（状态机在跟、进程没退出），不再遍历整张表
+  const alive = (id: TerminalId) => {
+    const s = rt.status.get(id)?.status;
+    return s !== undefined && s !== 'exited' && s !== 'error';
+  };
   usage = new UsageServiceImpl({
     lookup: usageTarget,
-    targets: () => store.terminals.list().flatMap((r) => usageTarget(r.terminalId) ?? []),
+    targets: () => store.terminals.list().flatMap((r) => (alive(r.terminalId) ? (usageTarget(r.terminalId) ?? []) : [])),
     emit,
     roots: defaultUsageRoots(homedir(), loginEnv),
   });
@@ -339,6 +344,8 @@ async function main(): Promise<void> {
   };
   void Promise.all([terminals.list(), rt.agents.list()]).then(
     ([live, infos]) => {
+      // IS-95：tmux 里已经没有的终端，记录清掉（拿不到列表时走不到这里，不会误删）
+      store.terminals.prune(live.map((t) => t.id));
       const hooked = new Set(infos.filter((a) => a.capabilities.hooks).map((a) => a.id));
       for (const t of live) {
         const rec = store.terminals.get(t.id);
