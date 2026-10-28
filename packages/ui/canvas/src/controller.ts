@@ -3,7 +3,7 @@
 
 import type { AgentDeckApi, AgentDeckErrorData, BackgroundAgent, FrameArrange, FrameLayout, AgentKind, BoardState, LaunchMode, CreateWorkspaceRequest, ErrorCode, FrameNode, OpenWindowRequest, ProjectId, ProjectPatch, Rect, Settings, Size, TerminalId, TerminalWindowData, Unsubscribe, Viewport, WindowCommand, WindowGroupId, WindowGroupMemberRequest, WindowId, WindowNode, WindowStatusBadge, Workspace, WorkspaceId } from '@agentdeck/contracts';
 import { TITLE_BAR_HEIGHT, resizeRect, type ResizeEdge } from '@agentdeck/ui-window-shell';
-import { isSummarySize, windowRegistry, type WindowDefinition, type WindowRegistry } from './registry.ts';
+import { isSummarySize, windowContents, windowRegistry, type WindowContentRegistry, type WindowDefinition, type WindowRegistry } from './registry.ts';
 import { ApprovalsModel } from './approvals/model.ts';
 import { usageOutset } from './plugins/usage-model.ts';
 import { PLUGIN_MARK_HEIGHT } from './plugins/types.ts';
@@ -52,6 +52,7 @@ import {
 import { BoardHistory, applyStep, diffLayout, type BoardLayout, type Direction, type HistoryStep } from './model/history.ts';
 import { adjacentWindow, windowOrder } from './model/navigation.ts';
 import { restoreResultMessage, type RestoreOutcome, type RestoreSessionItem } from './model/restore.ts';
+import { trimForSend } from './model/send.ts';
 import { boxFrom, boxSelection, byWorkspace, toggleSelection, translate, windowsInBox } from './model/selection.ts';
 import type { ShortcutId } from './model/shortcuts.ts';
 import { NEAR_FRAME_PX, SNAP_PX, snapMove, snapResize, type Guide } from './model/snap.ts';
@@ -89,6 +90,8 @@ export interface ViewportApi {
 export interface BoardControllerOptions {
   api: AgentDeckApi;
   registry?: WindowRegistry;
+  /** CO3：窗口内容的登记表（选中文字、粘贴）。不给用全局的 windowContents。 */
+  contents?: WindowContentRegistry;
   /** 散放的终端在哪个目录运行。contracts 里没有取主目录的方法，默认交给服务展开 '~'（见 CONTRACT_NOTES.md）。 */
   homeDir?: string;
   /** 保存防抖，默认 500ms。 */
@@ -169,6 +172,8 @@ function errorCode(e: unknown): string | null {
 export class BoardController {
   readonly store: BoardStore;
   readonly registry: WindowRegistry;
+  /** CO3：窗口内容的句柄（选中文字、粘贴），窗口组件挂上时登记。 */
+  readonly contents: WindowContentRegistry;
   viewportApi: ViewportApi | null = null;
   readonly api: AgentDeckApi;
   private readonly opts: BoardControllerOptions;
@@ -198,6 +203,7 @@ export class BoardController {
     this.opts = opts;
     this.api = opts.api;
     this.registry = opts.registry ?? windowRegistry;
+    this.contents = opts.contents ?? windowContents;
     this.store = createBoardStore();
     this.approvals = new ApprovalsModel(this, (message) => this.notify(message));
     this.autosave = createAutosave<BoardState>({
@@ -1938,6 +1944,70 @@ export class BoardController {
 
   closeMenu(): void {
     if (this.state.menu) this.set({ menu: null });
+  }
+
+  // ---- CO3：Copy · Paste · Send selection to ▸ ----
+
+  /** 窗口里现在选中的文字（窗口组件登记了句柄才有）；没有为 ''。 */
+  selectionOf(id: WindowId): string {
+    try {
+      return this.contents.get(id)?.selectionText() ?? '';
+    } catch {
+      return '';
+    }
+  }
+
+  /** 内容区右键菜单的 Paste：读系统剪贴板，照 ⌘V 贴进这个窗口（多行时也贴，和 ⌘V 一样）。 */
+  async pasteClipboard(id: WindowId): Promise<boolean> {
+    const h = this.contents.get(id);
+    if (!h) return false;
+    let text: string;
+    try {
+      text = (await navigator.clipboard?.readText()) ?? '';
+    } catch {
+      this.notify('Couldn’t read the clipboard');
+      return false;
+    }
+    if (!text) return false;
+    const r = await h.paste(text, { requireBracketed: false });
+    if (!r.ok) this.notify(r.reason);
+    return r.ok;
+  }
+
+  /**
+   * Send selection to ▸：把 text 当作一次粘贴放进目标终端，不按回车；先跳过去并聚焦它（收起的组成员先显示、拉小的摘要卡恢复大小），
+   * 目标还没接上显示就等它接上再贴。不经过服务（MCP 的 send_to_terminal 会把换行变成空格、还会按回车）。
+   */
+  async sendSelection(fromId: WindowId, toId: WindowId, text: string, opts: { fresh?: boolean } = {}): Promise<boolean> {
+    const body = trimForSend(text);
+    const target = this.windowById(toId);
+    if (!body || !target || toId === fromId) return false;
+    this.jumpToWindow(toId);
+    // 拉小成摘要卡的窗口不接上显示，先恢复原来的大小
+    const def = this.definitionOf(target);
+    if (def && isSummarySize(def, target.rect) && target.restoreRect) this.expandSummary(toId);
+    const name = defaultName(target, def?.label);
+    const h = await this.contents.whenRegistered(toId, opts.fresh ? 10_000 : 3_000);
+    if (!h) {
+      this.notify(`Couldn’t send to ${name}: the window isn’t open`);
+      return false;
+    }
+    const r = await h.paste(body, { requireBracketed: true, ...(opts.fresh ? { fresh: true } : {}) });
+    if (!r.ok) {
+      this.notify(r.reason);
+      return false;
+    }
+    return true;
+  }
+
+  /** 子菜单最后的 New terminal here…：在源终端旁边（同一个框）开一个新终端，等程序准备好后贴进去。 */
+  async sendSelectionToNew(fromId: WindowId, agent: AgentKind, text: string): Promise<WindowId | null> {
+    const from = this.windowById(fromId);
+    if (!from || !trimForSend(text)) return null;
+    const id = await this.newTerminal({ agent, workspaceId: from.workspaceId, nextTo: fromId });
+    if (!id) return null;
+    await this.sendSelection(fromId, id, text, { fresh: true });
+    return id;
   }
 
   /** W5 的 Open new：在目标框里新开一个同款 agent，放在松手的位置。 */

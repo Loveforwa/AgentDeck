@@ -55,6 +55,21 @@
   text-overflow: ellipsis;
 }
 
+/* 终端名、命令名：和标题栏一样用等宽字 */
+.ad-menu-label--mono {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+
+/* 标签前的小标记（状态灯）。同一层里有一项带标记时每项都留这一格 */
+.ad-menu-icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 8px;
+}
+
 .ad-menu-hint {
   flex: none;
   max-width: 220px;
