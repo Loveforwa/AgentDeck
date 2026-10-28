@@ -1,0 +1,55 @@
+// PL4：假 LimitService 回放“撞上 → 等 → 续上”和“取消”。
+import { describe, expect, it } from 'vitest';
+import type { TerminalId } from '@agentdeck/contracts';
+import { FakeEventBus } from '../src/bus.ts';
+import { FakeLimitService } from '../src/limit-service.ts';
+
+const T = (s: string) => s as TerminalId;
+
+describe('FakeLimitService', () => {
+  it('replays hit → wait → resume, staggered and in order', async () => {
+    const bus = new FakeEventBus();
+    const limits = new FakeLimitService({ bus });
+    const resetsAt = '2026-10-28T13:00:00.000Z';
+    const key = limits.hit({
+      agent: 'codex', configDir: '/Users/you/.codex', resetsAt,
+      terminals: [{ terminalId: T('t5') }, { terminalId: T('t6') }, { terminalId: T('docs'), state: 'idle' }],
+    });
+    const [waiting] = await limits.list();
+    expect(waiting?.key).toBe('codex:/Users/you/.codex:all');
+    expect(waiting?.terminals.map((t) => t.resumeAt)).toEqual([
+      '2026-10-28T13:01:00.000Z', '2026-10-28T13:01:30.000Z', '2026-10-28T13:02:00.000Z',
+    ]);
+
+    limits.reset(key);
+    expect(limits.resumed).toEqual(['t5', 't6']); // 空闲的不发续跑提示
+    expect((await limits.list())[0]?.terminals.map((t) => t.state)).toEqual(['resuming', 'resuming', 'resuming']);
+    for (const id of ['t5', 't6', 'docs']) limits.finish(T(id));
+    expect(await limits.list()).toEqual([]);
+    expect(bus.eventsOf('limits.changed').at(-1)?.limits).toEqual([]);
+
+    // 一步回放
+    limits.playHitWaitResume([T('a'), T('b')]);
+    expect(await limits.list()).toEqual([]);
+  });
+
+  it('replays cancel, skip, crew owners and giving up', async () => {
+    const limits = new FakeLimitService();
+    const key = await limits.playCancel([T('x'), T('y')]);
+    expect(await limits.list()).toEqual([]);
+    await expect(limits.resumeNow(key)).rejects.toMatchObject({ code: 'not-found' });
+
+    const k2 = limits.hit({ agent: 'claude', configDir: '/Users/you/.claude', resetsAt: null, terminals: [{ terminalId: T('c1') }, { terminalId: T('c2') }] });
+    expect((await limits.list())[0]?.needsYou).toBe('reset-unknown');
+    await limits.setOwner(T('c2'), 'crew', 'Continue T4');
+    await limits.skip(T('c1'));
+    limits.reset(k2); // crew 的不归 Auto-resume 续
+    expect(limits.resumed).toEqual([]);
+    await limits.resumeNow(k2, [T('c2')]);
+    expect(limits.resumed).toEqual(['c2']);
+    expect(limits.prompts.get(T('c2'))).toBe('Continue T4');
+    limits.hitAgain(T('c2'));
+    limits.hitAgain(T('c2'));
+    expect((await limits.list())[0]?.terminals.find((t) => t.terminalId === 'c2')?.state).toBe('gave-up');
+  });
+});

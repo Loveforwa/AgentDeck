@@ -33,6 +33,8 @@ export { FakeSubagentService, fakeBackgroundAgent } from './subagent-service.ts'
 export { FakeHistoryService, fakeSession } from './history-service.ts';
 export { FakeSessionService } from './session-service.ts';
 export type { FakeSessionInit, FakeSessionServiceOptions } from './session-service.ts';
+export { FakeLimitService } from './limit-service.ts';
+export type { FakeLimitHit } from './limit-service.ts';
 export type { FakeSubagentServiceOptions } from './subagent-service.ts';
 export type { FakeSkillsServiceOptions } from './skills-service.ts';
 export { Scenario, createFakeApi, createFakeServices, defaultRecordingFor } from './api.ts';
