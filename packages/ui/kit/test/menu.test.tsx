@@ -197,3 +197,30 @@ describe('Menu headings and hints', () => {
     expect(usage.querySelector('.ad-menu-hint')?.textContent).toBe('Not supported for kimi yet');
   });
 });
+
+describe('Menu icons and mono labels (CO3)', () => {
+  it('leaves an icon slot on every item of a level that has an icon, and sets mono labels in the mono face', () => {
+    render(
+      <Menu
+        aria-label="Send selection to"
+        items={[
+          { type: 'heading', label: 'SHOP · FIX/CART' },
+          { id: 'a', label: 'claude', mono: true, icon: <span data-testid="lamp" />, hint: 'sub-1 · api' },
+          { type: 'separator' },
+          { id: 'new', label: 'New terminal here…' },
+        ]}
+      />,
+    );
+    const a = screen.getByRole('menuitem', { name: /claude/ });
+    expect(a.querySelector('.ad-menu-icon [data-testid="lamp"]')).not.toBeNull();
+    expect(a.querySelector('.ad-menu-label')?.className).toContain('ad-menu-label--mono');
+    const plain = screen.getByRole('menuitem', { name: 'New terminal here…' });
+    expect(plain.querySelector('.ad-menu-icon')?.childElementCount).toBe(0);
+    expect(plain.querySelector('.ad-menu-label')?.className).toBe('ad-menu-label');
+  });
+
+  it('draws no icon slot when nothing in the level has an icon', () => {
+    render(<Menu aria-label="m" items={[{ id: 'x', label: 'Copy', shortcut: '⌘C' }]} />);
+    expect(document.querySelector('.ad-menu-icon')).toBeNull();
+  });
+});
