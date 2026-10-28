@@ -36,6 +36,7 @@ import {
   parseWorktrees,
   type ParsedCommit,
 } from './parse.ts';
+import { OverlapChecker, hasMergeTreeWriteTree, parseGitVersion } from './overlaps.ts';
 import { GitCommandError, createRunner, type RunOptions, type RunResult, type Runner } from './run.ts';
 
 export interface GitServiceOptions {
@@ -55,6 +56,8 @@ export interface GitServiceOptions {
   refreshingAfterMs?: number;
   /** log 里基础分支上至少带几条，默认 3。 */
   baseCommits?: number;
+  /** 当成 `git --version` 的输出（测试里模拟老版本 git，例如 'git version 2.37.0'）。不给就问 git。 */
+  gitVersion?: string;
 }
 
 const STASH_ID = /^stash@\{\d+\}$/;
@@ -73,6 +76,8 @@ export class SystemGitService implements GitService {
   private readonly refreshingAfterMs: number;
   private readonly baseCommits: number;
   private readonly queues = new Map<string, Promise<unknown>>();
+  private readonly overlapChecker: OverlapChecker;
+  private version: Promise<[number, number] | null> | null = null;
 
   constructor(private readonly opts: GitServiceOptions) {
     this.run = createRunner({
@@ -83,6 +88,11 @@ export class SystemGitService implements GitService {
     this.longTimeoutMs = opts.longTimeoutMs ?? 300_000;
     this.refreshingAfterMs = opts.refreshingAfterMs ?? 1000;
     this.baseCommits = opts.baseCommits ?? 3;
+    this.overlapChecker = new OverlapChecker(
+      (cwd, args, o) => this.git(cwd, args, o),
+      async () => hasMergeTreeWriteTree(await this.gitVersion()),
+      this.longTimeoutMs,
+    );
   }
 
   // ---- 状态 ----
@@ -411,12 +421,22 @@ export class SystemGitService implements GitService {
     throw notYet('lineMap');
   }
 
-  // CO0 还没做
-  async overlaps(_repo: AbsPath, _worktrees: { workspaceId: WorkspaceId; path: AbsPath }[]): Promise<WorkspaceOverlap[]> {
-    throw notYet('overlaps');
+  /** CO0：见 overlaps.ts。 */
+  async overlaps(repo: AbsPath, worktrees: { workspaceId: WorkspaceId; path: AbsPath }[]): Promise<WorkspaceOverlap[]> {
+    return this.overlapChecker.overlaps(repo, worktrees);
   }
 
   // ---- 内部 ----
+
+  /** git 的主、次版本号，只问一次。 */
+  private gitVersion(): Promise<[number, number] | null> {
+    this.version ??= (
+      this.opts.gitVersion !== undefined
+        ? Promise.resolve(this.opts.gitVersion)
+        : this.run(process.cwd(), ['--version']).then((r) => r.stdout)
+    ).then(parseGitVersion, () => null);
+    return this.version;
+  }
 
   /** 跑一条 git；“不是仓库”统一成 not-a-git-repo。 */
   private async git(repo: AbsPath, args: string[], opts?: RunOptions): Promise<RunResult> {
