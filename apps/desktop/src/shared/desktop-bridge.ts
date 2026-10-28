@@ -24,7 +24,9 @@ export type MenuShortcutId =
   | 'open-settings'
   /** X10：Edit › Undo / Redo。焦点在白板（或终端）上时撤销白板上的操作，在输入框、网页里时照系统的撤销（nativeEdit）。 */
   | 'undo'
-  | 'redo';
+  | 'redo'
+  /** CO4：⌥⌘1–9 跳到 BoardNav 的 Agents 视图第 1–9 行（Go › Jump to Agent）。 */
+  | `jump-agent-${1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9}`;
 
 export const DESKTOP_IPC = {
   startup: 'agentdeck-desktop:startup',

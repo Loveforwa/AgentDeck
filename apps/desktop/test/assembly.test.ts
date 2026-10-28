@@ -316,7 +316,13 @@ describe('menu', () => {
       ['Previous Waiting Terminal', 'Shift+CmdOrCtrl+J'],
       ['Next Window', 'Shift+CmdOrCtrl+]'],
       ['Previous Window', 'Shift+CmdOrCtrl+['],
+      ['Jump to Agent', undefined],
     ]);
+    // CO4：⌥⌘1–9 跳到 Agents 视图的第 n 行
+    const jump = (go.submenu as (Item & { label?: string })[]).find((i) => i.label === 'Jump to Agent')!;
+    expect((jump.submenu as (Item & { label?: string })[]).map((i) => [i.label, i.accelerator])).toEqual(
+      [1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => [`Row ${n}`, `Alt+CmdOrCtrl+${n}`]),
+    );
   });
   it('Settings… ⌘, opens the settings dialog in the board instead of the file', () => {
     const shortcut = vi.fn();
