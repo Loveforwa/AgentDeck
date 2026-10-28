@@ -4,7 +4,7 @@
 // 改规则时同步改样例和根目录 AGENTS.md 的「模块边界」一节。
 
 /** 服务包：实现 contracts 里的服务，跑在主进程。 */
-const SERVICES = ['tmux-host', 'git-service', 'workspace-service', 'agent-adapters', 'port-watch', 'store', 'mcp-server'];
+const SERVICES = ['tmux-host', 'git-service', 'workspace-service', 'agent-adapters', 'port-watch', 'store', 'mcp-server', 'doc-service'];
 const SERVICE = `^packages/(${SERVICES.join('|')})/`;
 
 /** 内部代码（相对仓库根目录或样例根目录）。第三方包和 node 内置模块不匹配。 */

@@ -21,6 +21,7 @@
     "@agentdeck/history-panel": "workspace:*",
     "@agentdeck/contracts": "workspace:*",
     "@agentdeck/design-tokens": "workspace:*",
+    "@agentdeck/doc-service": "workspace:*",
     "@agentdeck/git-service": "workspace:*",
     "@agentdeck/mcp-server": "workspace:*",
     "@agentdeck/port-watch": "workspace:*",
@@ -36,6 +37,7 @@
     "node-pty": "1.1.0"
   },
   "devDependencies": {
+    "@agentdeck/fakes": "workspace:*",
     "@types/node": "^26.6.5",
     "@types/react": "18.3.31",
     "@types/react-dom": "18.3.7",

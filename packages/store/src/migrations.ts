@@ -140,6 +140,45 @@ export const migrations: readonly Migration[] = [
       sessionsFromBoard(db, new Date().toISOString());
     },
   },
+  {
+    // M15 · DC2：文档里代码引用的核对结果缓存和“核对过”的记录（doc-service 的 CodeAnchorService）。
+    // 文档按绝对路径记（每个 worktree 一份），不往仓库里写任何东西（TC-106）。
+    version: 3,
+    name: 'doc-anchors',
+    up(db) {
+      db.exec(`
+        -- 上次核对的结果：按（文档、引用、基准、目标文件现在的哈希）。只留每篇文档最近一次用到的。
+        CREATE TABLE doc_anchor_cache (
+          doc_path TEXT NOT NULL,
+          ref_key TEXT NOT NULL,             -- 路径、起止行、符号、钉住的版本
+          baseline TEXT NOT NULL,            -- pinned:<rev> / verified:<blob> / blame:<commit> / worktree
+          target_hash TEXT NOT NULL,         -- 工作区里被引用文件的 sha1
+          result TEXT NOT NULL,              -- JSON：state、now、detail、text……
+          checked_at TEXT NOT NULL,
+          PRIMARY KEY (doc_path, ref_key, baseline, target_hash)
+        );
+
+        -- Mark as checked：以那时的文件内容为基准。blob 是 git 的 blob id（内容的哈希），全文在 doc_anchor_blobs。
+        CREATE TABLE doc_anchor_verified (
+          doc_path TEXT NOT NULL,
+          ref_key TEXT NOT NULL,
+          path TEXT NOT NULL,                -- 核对时被引用文件的路径（相对仓库根）
+          start_line INTEGER NOT NULL,       -- 核对时在那个版本里的行号
+          end_line INTEGER NOT NULL,
+          blob TEXT NOT NULL REFERENCES doc_anchor_blobs (blob),
+          lines_hash TEXT NOT NULL,          -- 这几行原文的 sha1
+          verified_at TEXT NOT NULL,
+          PRIMARY KEY (doc_path, ref_key)
+        );
+        CREATE INDEX doc_anchor_verified_blob ON doc_anchor_verified (blob);
+
+        CREATE TABLE doc_anchor_blobs (
+          blob TEXT PRIMARY KEY,
+          text TEXT NOT NULL
+        );
+      `);
+    },
+  },
 ];
 
 /**

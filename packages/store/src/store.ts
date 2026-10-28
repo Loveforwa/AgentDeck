@@ -5,6 +5,7 @@ import { dirname } from 'node:path';
 import Database from 'better-sqlite3';
 import { createApprovalRepository } from './approvals.ts';
 import { createBoardStore } from './board.ts';
+import { createDocAnchorRepository } from './doc-anchors.ts';
 import { currentVersion, migrate } from './migrations.ts';
 import { createProjectRepository } from './projects.ts';
 import { createSessionRepository } from './sessions.ts';
@@ -42,6 +43,7 @@ export function openStore(path: string): Store {
     terminals: createTerminalRepository(db),
     approvals: createApprovalRepository(db),
     sessions: createSessionRepository(db),
+    docAnchors: createDocAnchorRepository(db),
     transaction: (fn) => db.transaction(fn)(),
     schemaVersion: () => currentVersion(db),
     close: () => db.close(),

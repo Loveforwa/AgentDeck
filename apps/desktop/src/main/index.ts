@@ -46,6 +46,7 @@ import {
   UsageServiceImpl,
   type UsageTarget,
 } from '@agentdeck/agent-adapters';
+import { createDocServices } from '@agentdeck/doc-service';
 import { createGitService } from '@agentdeck/git-service';
 import { openStore } from '@agentdeck/store';
 import { createWorkspaceServices } from '@agentdeck/workspace-service';
@@ -150,7 +151,10 @@ async function main(): Promise<void> {
   let onStatus: (s: StatusSnapshot) => void = () => {};
   const emit = (event: AgentDeckEvent) => {
     broadcast(event);
-    if (event.type === 'git.status') workspaces.noteStatus(event.status);
+    if (event.type === 'git.status') {
+      workspaces.noteStatus(event.status);
+      documents.noteGitEvent(event);
+    }
     if (event.type === 'status.changed') {
       statusOf.set(event.snapshot.terminalId, event.snapshot);
       store.terminals.updateStatus(event.snapshot.terminalId, event.snapshot.status, event.snapshot.exitCode);
@@ -196,6 +200,8 @@ async function main(): Promise<void> {
     emit,
     homeDir: paths.worktreeHome,
   });
+  // 文档窗口和代码锚点（M15 · DC2）：核对缓存在库里；数据目录里的文件（集群汇报）只读
+  const documents = createDocServices({ git, store: store.docAnchors, emit, readOnlyRoots: [paths.dataDir] });
 
   // ---- agent、状态机、钩子 socket ----
   const notifyCommand = await writeNotifyWrapper({
@@ -246,6 +252,8 @@ async function main(): Promise<void> {
       const hook = { terminalId: h.terminalId, agent: h.agent, hookName: h.hookName, payload: h.envelope.payload };
       sessions.noteHook(h);
       subagents.noteHook(hook);
+      // “谁改的”：PostToolUse 带着它写的文件路径（DocSnapshot.by）
+      documents.noteToolUse({ ...hook, cwd: store.terminals.get(h.terminalId)?.cwd ?? null });
       return usage?.noteHook(hook) ?? false;
     },
     env: () => loginEnv,
@@ -438,6 +446,7 @@ async function main(): Promise<void> {
     clearInterval(skillSetsTimer);
     usage?.close();
     subagents.close();
+    documents.close();
     // ⌘Q 只断开（会话留在 tmux 里继续跑）；Stop all and quit 才结束 tmux 服务
     await terminals.stop(stopTerminals);
     host.stop();
@@ -488,6 +497,8 @@ async function main(): Promise<void> {
   registry.register('sessions', sessions);
   // N11：各 agent 的历史会话（左边栏），只读它们自己的会话文件
   registry.register('history', new HistoryServiceImpl({ roots: defaultUsageRoots(homedir(), loginEnv) }));
+  registry.register('docs', documents.api.docs);
+  registry.register('anchors', documents.api.anchors);
   registerBrowserService(registry);
 
   // ---- 应用壳自己的 IPC（src/shared/desktop-bridge.ts）----

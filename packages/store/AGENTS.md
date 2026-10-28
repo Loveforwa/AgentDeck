@@ -16,6 +16,7 @@ store.workspaces   // WorkspaceRepository
 store.terminals    // TerminalRepository
 store.approvals    // ApprovalRepository
 store.sessions     // SessionRepository（M9 · SE1；服务在 apps/desktop/src/main/sessions.ts）
+store.docAnchors   // DocAnchorRepository（M15 · DC2；用的人是 doc-service 的 CodeAnchorService，由 apps/desktop 注入）
 store.transaction(() => { ... }) // 几步写入放进一个事务，抛错全部回滚；可以嵌套
 store.close()
 ```
@@ -25,7 +26,7 @@ store.close()
 - `put` 都是“有就整条更新、没有就插入”（`ON CONFLICT DO UPDATE`，不会触发级联删除）。部分字段的合并（比如 `ProjectPatch`）由服务先 `get` 再 `put`。
 - `openStore` 打开时自动跑迁移；文件所在的文件夹不存在会建出来。打开失败（比如数据库来自更新版本的应用）抛 `AgentDeckError`，code 为 `unsupported`。
 
-## 表结构（迁移 1、2）
+## 表结构（迁移 1、2、3）
 
 | 表 | 主键 | 内容 |
 | --- | --- | --- |
@@ -35,6 +36,9 @@ store.close()
 | `workspaces` | id | `Workspace`；`project_id` → projects（级联删除）；`repos` 是 JSON；每个项目最多一个 `mode = 'main-folder'`（部分唯一索引） |
 | `terminals` | terminal_id | 恢复信息：window_id（唯一，可空）、workspace_id → workspaces（级联删除，可空）、agent、cmd、args（JSON）、cwd、agent_session_id（agent 自己的会话 id，迁移 1 里叫 session_id）、session_id → sessions（迁移 2，SessionId，删 Session 时置空）、start_command、last_status、exit_code、updated_at |
 | `sessions` | id | 迁移 2 · `Session`：agent、workspace_id → workspaces（**删工作区时置空**，Session 留着当散放的）、cwd、parent_id → sessions（删父时置空）、origin（JSON `SessionOrigin`）、label、title、terminal_id（停了为空，不加外键）、state、handed_off_to → sessions、handoff_note、created_at、updated_at；索引 `(parent_id, created_at)`、`created_at DESC`、terminal_id |
+| `doc_anchor_cache` | (doc_path, ref_key, baseline, target_hash) | 迁移 3 · 文档里代码引用上次的核对结果：doc_path 是文档的绝对路径（每个 worktree 一份）、ref_key（路径、起止行、符号、钉住的版本）、baseline（`pinned:` / `verified:` / `blame:` / `worktree`）、target_hash（工作区里被引用文件的 sha1）、result（doc-service 的 JSON，本包不解析）、checked_at。每篇整篇替换（`replaceCache`） |
+| `doc_anchor_verified` | (doc_path, ref_key) | 迁移 3 · Mark as checked 的记录：path、start_line、end_line（核对时那个版本里的位置）、blob → doc_anchor_blobs、lines_hash（这几行原文的 sha1）、verified_at |
+| `doc_anchor_blobs` | blob | 迁移 3 · 核对时被引用文件的全文（blob 是 git 的 blob id）。`putVerified` 顺手删掉没有记录再用到的 |
 | `session_agent_ids` | (session_id, seq) | 迁移 2 · `Session.agentSessions` 的每一段：session_id → sessions（级联删除）、seq 从 1 起、agent_session_id（有索引，`findByAgentSession` 用）、started_at、reason |
 | `approval_history` | seq（自增） | `ApprovalRecord` 拆成列：request_id、terminal_id、workspace_id → workspaces（级联删除）、agent、kind、summary、command、destructive、requested_at、by、at；索引 `(workspace_id, at DESC)` |
 
@@ -77,6 +81,7 @@ pnpm --filter @agentdeck/store typecheck
 
 - `test/migrations.test.ts`：空库建表、重复执行不变、升级保留数据、失败回滚、断外键回滚、拒绝新版本的库、迁移序号不连续；迁移 2 把旧白板的终端窗口和窗口组变成 Session 和父子关系（TC-55 的后台部分）。
 - `test/board.test.ts`：空库加载、往返、整份替换、中途失败回滚、拒绝未知版本、关闭重开。
+- `test/doc-anchors.test.ts`：核对缓存整篇替换、核对记录和全文往返、改 key、没人用的全文删掉；`test/migrations.test.ts` 里有 2 → 3 的升级。
 - `test/repositories.test.ts`：五个仓储的往返（Session：分段、排序、按 agent 会话 id / 终端找、改状态、删父和删工作区后子 session 还在）、`terminals.prune`、查询排序、唯一约束、外键和级联、`transaction` 回滚和嵌套。
 
 ## 不许碰

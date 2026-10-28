@@ -172,7 +172,8 @@ tmux -L agentdeck-pkgtest kill-server; hdiutil detach /tmp/ad-mnt
 - **钩子**：每次启动在 `<数据目录>/bin/agentdeck-notify` 写一个 sh 入口（带 `AGENTDECK_HOOK_SOCKET`；用登录 shell 里的 node，没有就用 Electron 当 node），把它的绝对路径交给适配器。pi、omp 的扩展 `tools/agentdeck-notify/bin/agentdeck-pi-extension.mjs`（打包后放 Resources）的路径作为 `agentExtension` 传给 agent runtime。
   重开应用接回终端时，“带不带钩子”按 `agents.list()` 里各 agent 的 `capabilities.hooks` 定。
   `custom` 照常交给界面，白板自己不列它（IS-21，见 `packages/ui/canvas/src/model/agents.ts`）。
-- **git**：git-service 的 `git.status` 事件同时交给 workspace-service 的 `noteStatus`（分支变了更新框标题）。
+- **git**：git-service 的 `git.status` 事件同时交给 workspace-service 的 `noteStatus`（分支变了更新框标题）和 doc-service 的 `noteGitEvent`（HEAD 变了重算开着的文档的引用）。
+- **文档、代码锚点**（M15 · DC2）：`createDocServices({ git, store: store.docAnchors, emit, readOnlyRoots: [数据目录] })`，`docs`、`anchors` 注册的是只含 contracts 方法的 `api`。git 传的是 git-service 的 `SystemGitService`（多出的 `renamedPath`、`listFiles` 一起用上）。钩子经 `tapHook` 给 `noteToolUse`（PostToolUse 的 `tool_input.file_path`，相对路径按 store 里终端的 cwd 算）认“谁改的”；退出时 `close`。测试：`test/doc-anchors.test.ts`（真 git + 真 store：TC-97–100、106 的后台部分、100 处引用的耗时；`AGENTDECK_DRIFT=1` 时对照第 11 点的 drift.py）。
 - **token 用量**（PL2）：`UsageServiceImpl`（agent-adapters）注册成 `usage` 服务；`lookup` 用状态机的 agent / 会话 id 和 store 的 cwd，启动时间只记本次运行里 `agents.start` 的（kimi 推断用；重开应用接回的终端没有，退回取同目录最近活动的会话）；钩子经 `tapHook` 先给它；`status.changed` 时 `noteSession`；退出时 `close`。
 - **网页**：`registerBrowserService(registry)`。onHeadersReceived 每个 session 只能有一个，现在只有 browser 模块用；别的地方要改响应头，合进 `browser/index.ts` 的 `installOnSession`。
 - **菜单**：白板快捷键注册成 accelerator，点击时发给界面（`agentdeck-desktop:shortcut`），界面调 `runShortcut`；同一组合键白板页面刚处理过（500ms 内）就不再执行。编辑菜单是 copy / paste 必需的。

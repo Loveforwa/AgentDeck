@@ -128,6 +128,45 @@ export interface SessionRepository {
   remove(id: SessionId): boolean;
 }
 
+/** doc_anchor_cache 的一行（M15 · DC2）。result 是 doc-service 自己定的 JSON，本包不解析。 */
+export interface DocAnchorCacheRow {
+  refKey: string;
+  /** pinned:<rev> / verified:<blob> / blame:<commit> / worktree */
+  baseline: string;
+  /** 工作区里被引用文件的 sha1。 */
+  targetHash: string;
+  result: string;
+  checkedAt: IsoTime;
+}
+
+/** Mark as checked 记下的一处引用：以那时的文件内容（blob）里的 start–end 行为基准。 */
+export interface DocAnchorVerified {
+  docPath: AbsPath;
+  refKey: string;
+  /** 相对仓库根。 */
+  path: string;
+  start: number;
+  end: number;
+  /** git 的 blob id（文件内容的哈希），全文存在 doc_anchor_blobs。 */
+  blob: string;
+  /** 这几行原文的 sha1。 */
+  linesHash: string;
+  verifiedAt: IsoTime;
+}
+
+/** 文档里代码引用的核对缓存和核对记录（迁移 3）。按文档的绝对路径，每个 worktree 一份。 */
+export interface DocAnchorRepository {
+  cache(docPath: AbsPath): DocAnchorCacheRow[];
+  /** 整篇换成这几行（一个事务）。 */
+  replaceCache(docPath: AbsPath, rows: DocAnchorCacheRow[]): void;
+  verified(docPath: AbsPath): DocAnchorVerified[];
+  /** 记下（或更新）几条核对记录和它们用到的全文；没有记录再用到的全文顺手删掉。 */
+  putVerified(records: DocAnchorVerified[], blobs: { blob: string; text: string }[]): void;
+  /** 改了行号（Update line numbers）以后记录跟着换 key；to 已有记录时被替换。 */
+  moveVerified(docPath: AbsPath, from: string, to: string): void;
+  blob(blob: string): string | null;
+}
+
 export interface Store {
   board: BoardStore;
   projects: ProjectRepository;
@@ -135,6 +174,8 @@ export interface Store {
   terminals: TerminalRepository;
   approvals: ApprovalRepository;
   sessions: SessionRepository;
+  /** 文档里代码引用的核对缓存和核对记录（DC2）。 */
+  docAnchors: DocAnchorRepository;
   /** 在一个事务里跑 fn，fn 抛错时全部回滚。fn 必须是同步的。可以嵌套（内层用 savepoint）。 */
   transaction<T>(fn: () => T): T;
   /** 当前数据库结构的版本号。 */

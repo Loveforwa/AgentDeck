@@ -26,6 +26,9 @@ describe('migrate', () => {
     expect(tables(db)).toEqual([
       'approval_history',
       'board',
+      'doc_anchor_blobs',
+      'doc_anchor_cache',
+      'doc_anchor_verified',
       'projects',
       'schema_version',
       'session_agent_ids',
@@ -250,5 +253,20 @@ describe('migration 2 · sessions (SE1, TC-55)', () => {
     expect(store.sessions.list()).toEqual([]);
     expect(store.terminals.get('t-lead' as TerminalId)?.sessionId).toBe('conv-lead');
     store.close();
+  });
+});
+
+describe('migration 3 · doc anchors (DC2)', () => {
+  it('adds the anchor tables to a version-2 database and keeps its data', () => {
+    const file = join(tmp.dir, 'v2.db');
+    const db = new Database(file);
+    migrate(db, migrations.slice(0, 2));
+    db.prepare(
+      "INSERT INTO projects (id, name, kind, path, repos, worktree_root, copy_into_worktrees, last_used_at) VALUES ('p1', 'web', 'git', '/r', '[]', '/w', '[]', '2026-10-28T00:00:00Z')",
+    ).run();
+    expect(migrate(db)).toEqual({ from: 2, to: latestVersion() });
+    expect(db.prepare('SELECT name FROM projects').get()).toEqual({ name: 'web' });
+    expect(tables(db)).toEqual(expect.arrayContaining(['doc_anchor_blobs', 'doc_anchor_cache', 'doc_anchor_verified']));
+    db.close();
   });
 });
