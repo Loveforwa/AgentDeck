@@ -1,7 +1,8 @@
 // agent 接入：每个 agent 一个适配器，加一个 agent 就是加一个文件再注册一行。
 // 需求见「5 · 终端窗口」「6 · 终端状态与提醒」。实现：packages/agent-adapters（线 4）。
 
-import type { AbsPath, AgentKind, AgentSessionId, IsoTime, TermSize, TerminalId, WorkspaceId } from './common.ts';
+import type { AbsPath, AgentKind, AgentSessionId, IsoTime, SessionId, TermSize, TerminalId, WorkspaceId } from './common.ts';
+import type { AgentSessionReason, SessionOrigin } from './session.ts';
 import type { McpEndpoint } from './mcp.ts';
 
 export interface AgentCapabilities {
@@ -50,7 +51,8 @@ export interface LaunchSpec {
 
 /** 钩子原始负载转换后的统一事件。 */
 export type AgentHookEvent =
-  | { type: 'session-start'; sessionId: AgentSessionId }
+  /** reason（SE0 加）：claude SessionStart 的 source 等；agent 不报时不填，按 unknown 处理。 */
+  | { type: 'session-start'; sessionId: AgentSessionId; reason?: AgentSessionReason }
   | { type: 'prompt-submitted' }
   | {
       type: 'permission-request';
@@ -111,6 +113,12 @@ export interface StartAgentRequest {
    * 恢复上次会话时用；不要和 command 一起给（command 会直接运行）。X6 加。
    */
   prefill?: string;
+  /** SE0：开回这条已有的 Session（Reopen、恢复）。不填时服务新建一条（parent、origin 记在新的上面）。 */
+  session?: SessionId;
+  /** SE0：新建 Session 时的父。不填或 null 是没有父。 */
+  parent?: SessionId | null;
+  /** SE0：新建 Session 时的来历。不填按 { kind: 'user' }。 */
+  origin?: SessionOrigin;
 }
 
 export interface StartAgentResult {
@@ -120,6 +128,8 @@ export interface StartAgentResult {
   /** 存进 TerminalWindowData，重启后按同样的命令恢复。 */
   cmd: string;
   args: string[];
+  /** SE0：这个终端对应的 Session（存进 TerminalWindowData.session）。还没接上 SessionService 的实现不填。 */
+  session?: SessionId;
 }
 
 export interface AgentService {

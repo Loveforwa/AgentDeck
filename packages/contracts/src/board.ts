@@ -6,6 +6,7 @@ import type {
   AgentSessionId,
   IsoTime,
   Rect,
+  SessionId,
   Size,
   TermSize,
   TerminalId,
@@ -68,7 +69,10 @@ export interface WindowNode<TData = unknown> {
   data: TData;
 }
 
-/** 窗口在组里的身份。同一组的窗口 id 相同，一组只有一个 lead。N1 加。 */
+/**
+ * 窗口在组里的身份。同一组的窗口 id 相同，一组只有一个 lead。N1 加。
+ * SE0 起只管显示（N2 侧边栏的停靠和收起）：谁开了谁、算不算一组看 Session.parentId（session.ts），关掉 lead 时关系不丢。
+ */
 export interface WindowGroupRef {
   id: WindowGroupId;
   /** lead：开出这一组的主 agent；member：子终端（按在 BoardState.windows 里的先后排）。 */
@@ -131,6 +135,11 @@ export interface TerminalWindowData {
    * read_terminal、send_to_terminal 拒绝（AH11）。不填当 false。随白板保存。
    */
   hideFromAgents?: boolean;
+  /**
+   * SE0：这个窗口显示的 Session。窗口只引用它，名字、父子、来历都在 Session 上。
+   * 老数据没有它，升级时由 store 补一条（SE1）；不填或 null 时 agents.start 兜底新建。
+   */
+  session?: SessionId | null;
 }
 
 /** PL3：一条排着的提示词。 */

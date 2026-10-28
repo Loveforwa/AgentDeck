@@ -3,6 +3,7 @@ import type {
   AgentDeckApi, ApproveResult, BoardState, FrameArrange, PromptQueueSettings, UsageLimit, SessionSummary, BackgroundAgent, TerminalBackgroundAgents, TranscriptLine, AutoApproveState, CommitInfo, EventOf, GitService, LogOptions, SkillItemId, TerminalHost, TerminalId,
   TerminalSkills, TerminalUsage, TerminalWindowData, UsageService, WindowGroupId, WindowId, WindowNode, WindowRestoreSupport, WorkspaceId,
   LaunchPreset, ProjectPatch, Settings,
+  Session, SessionId, SessionOrigin, AgentSessionSegment, HandoffResult,
 } from './index.ts';
 import { effectiveSkillSelection, FIRE_AND_FORGET, isAutoApproveOn, skillsRestartNeeded, findInlineSecret, redactCommand } from './index.ts';
 
@@ -149,3 +150,17 @@ const hidden: TerminalWindowData = { ...termData, hideFromAgents: true };
 const blocked: boolean = findInlineSecret('pgcli postgres://a:b@h/db') !== null;
 const shown: string = redactCommand('pgcli postgres://a:b@h/db');
 void globalPresets; void projectPresets; void hidden; void blocked; void shown;
+// SE0（0.1.16）：Session
+api.on('session.changed', (e: EventOf<'session.changed'>) => {
+  const s: Session = e.session;
+  if (s.origin.kind === 'crew') void [s.origin.crewId, s.origin.taskId, s.origin.role];
+  if (s.origin.kind === 'forge') void s.origin.number;
+  void s.agentSessions.map((seg: AgentSessionSegment) => seg.reason);
+});
+void api.sessions.children('s1' as SessionId).then((xs) => xs.length);
+void api.sessions.handoff({ from: 's1' as SessionId, agent: 'codex', note: 'Goal: …' }).then((r: HandoffResult) => r.session.handoffNote);
+void api.agents.start({ agent: 'codex', cwd: '/r', workspaceId: null, mode: { kind: 'new' }, parent: 's1' as SessionId, origin: { kind: 'spawn', tool: 'open_terminals' } })
+  .then((r) => r.session);
+const withSession: TerminalWindowData = { ...termData, session: 's1' as SessionId };
+const origin: SessionOrigin = { kind: 'fork', agentSessionId: null };
+void withSession; void origin;
