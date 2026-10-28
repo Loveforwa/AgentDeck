@@ -1,7 +1,7 @@
 // MCP 工具：白板里的 agent 用它们开终端、开工作区、开网页、看和指挥别的终端。
 // 只靠注入的服务（contracts 的类型）工作，不 import 别的服务包。工具名、参数名、返回的文字都是英文。
 
-import { AgentDeckError, isAgentDeckErrorData } from '@agentdeck/contracts';
+import { AgentDeckError, isAgentDeckErrorData, redactCommand } from '@agentdeck/contracts';
 import type {
   AbsPath,
   AgentKind,
@@ -27,6 +27,8 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
+import { assertAgentTerminalAccess } from './guard.ts';
+import type { AgentTerminalTarget } from './guard.ts';
 
 /** 工具用到的服务，组装时从主进程的注册表拿。 */
 export interface McpToolDeps {
@@ -60,6 +62,11 @@ export interface McpToolDeps {
   confirm?: (req: { title: string; body: string; confirm: string }) => Promise<boolean>;
   /** notify 工具发了一条通知（白板那边由 board.notify 处理）。组装时用来在应用不在前台时发系统通知。 */
   onNotify?: (n: { terminalId: TerminalId | null; message: string }) => void;
+  /**
+   * AH11：用户勾了 Hide from agents 的终端（组装时从保存的白板算，见 hiddenTerminalIds）。这些终端 list_terminals、
+   * list_windows 不列，read_terminal、send_to_terminal 拒绝。没有时当作都没隐藏。抛错时工具报错（宁可不给看）。
+   */
+  hiddenFromAgents?: () => Promise<ReadonlySet<TerminalId>>;
 }
 
 /** 这次调用来自哪个终端。不是从 AgentDeck 的终端里调的时为 null。 */
@@ -126,7 +133,7 @@ export function registerTools(server: McpServer, deps: McpToolDeps, caller: McpC
     {
       title: 'List terminals',
       description:
-        'List the terminals AgentDeck is running (agents and shells) with their status: starting, running, needs-approval, needs-reply, idle, exited or error. Your own terminal is marked with "self": true.',
+        'List the terminals AgentDeck is running (agents and shells) with their status: starting, running, needs-approval, needs-reply, idle, exited or error. Your own terminal is marked with "self": true. Terminals the user hid from agents are not listed, and passwords in commands are shown as ***.',
       inputSchema: {
         workspace_id: z.string().optional().describe('Only terminals in this workspace.'),
       },
@@ -134,17 +141,24 @@ export function registerTools(server: McpServer, deps: McpToolDeps, caller: McpC
     },
     ({ workspace_id }) =>
       run(async () => {
-        const [terminals, statuses, workspaces] = await Promise.all([deps.terminals.list(), deps.status.snapshot(), deps.workspaces.list()]);
+        const [terminals, statuses, workspaces, hidden] = await Promise.all([
+          deps.terminals.list(),
+          deps.status.snapshot(),
+          deps.workspaces.list(),
+          ctx.hidden(),
+        ]);
         const byId = new Map(statuses.map((s) => [s.terminalId, s]));
         return {
           terminals: terminals
+            .filter((t) => !hidden.has(t.id))
             .map((t) => ({ t, s: byId.get(t.id), ws: ctx.workspaceIdOf(t.id, byId.get(t.id), t.cwd, workspaces) }))
             .filter(({ ws }) => workspace_id === undefined || ws === workspace_id)
             .map(({ t, s, ws }) => ({
               id: t.id,
               workspaceId: ws,
               status: s?.status ?? (t.alive ? 'running' : 'exited'),
-              command: t.command,
+              // AH11：scheme://用户:密码@、PGPASSWORD= 这类写明的密码换成 ***
+              command: redactCommand(t.command),
               cwd: t.cwd,
               alive: t.alive,
               exitCode: t.exitCode,
@@ -256,7 +270,8 @@ export function registerTools(server: McpServer, deps: McpToolDeps, caller: McpC
     'read_terminal',
     {
       title: 'Read terminal',
-      description: 'Read the last lines shown in another terminal, e.g. to check what another agent did or why a dev server failed.',
+      description:
+        'Read the last lines shown in another terminal, e.g. to check what another agent did or why a dev server failed. Terminals the user hid from agents can’t be read.',
       inputSchema: {
         terminal_id: z.string().describe('Terminal id from list_terminals.'),
         lines: z.number().int().min(1).max(MAX_READ_LINES).default(DEFAULT_READ_LINES),
@@ -266,8 +281,10 @@ export function registerTools(server: McpServer, deps: McpToolDeps, caller: McpC
     ({ terminal_id, lines }) =>
       run(async () => {
         const id = terminal_id as TerminalId;
-        const [text, status] = await Promise.all([deps.terminals.lastLines(id, lines), ctx.statusOf(id)]);
-        return { terminalId: id, status: status?.status ?? null, lines: trimTrailingBlank(text).join('\n') };
+        const target = await ctx.accessTarget(id);
+        assertAgentTerminalAccess('read', target);
+        const text = await deps.terminals.lastLines(id, lines);
+        return { terminalId: id, status: target.status?.status ?? null, lines: trimTrailingBlank(text).join('\n') };
       }),
   );
 
@@ -276,7 +293,7 @@ export function registerTools(server: McpServer, deps: McpToolDeps, caller: McpC
     {
       title: 'Send to terminal',
       description:
-        'Type text into another terminal, as if the user typed it: a message for another agent, or a command for a shell. Presses Enter afterwards unless "submit" is false. Line breaks are sent as spaces. Cannot send to your own terminal.',
+        'Type text into another terminal, as if the user typed it: a message for another agent, or a command for a shell. Presses Enter afterwards unless "submit" is false. Line breaks are sent as spaces. Cannot send to your own terminal. Refused while the terminal is waiting for the user (status needs-approval or needs-reply): approvals and answers go through the user’s inbox. Refused for terminals the user hid from agents.',
       inputSchema: {
         terminal_id: z.string().describe('Terminal id from list_terminals.'),
         text: z.string().min(1),
@@ -287,9 +304,12 @@ export function registerTools(server: McpServer, deps: McpToolDeps, caller: McpC
       run(async () => {
         const id = terminal_id as TerminalId;
         if (id === caller.terminalId) throw new AgentDeckError({ code: 'invalid-argument', message: 'Can’t send to your own terminal' });
+        assertAgentTerminalAccess('send', await ctx.accessTarget(id));
         await deps.terminals.sendKeys(id, literalKeys(text));
         if (submit) {
           await sleep(deps.submitDelayMs ?? 150);
+          // 文字打出去后到回车之间，目标可能刚好停下来问你：这时不按回车，免得替人按了批准。
+          assertAgentTerminalAccess('send', await ctx.accessTarget(id));
           await deps.terminals.sendKeys(id, ['Enter']);
         }
         deps.onInput?.(id);
@@ -363,7 +383,7 @@ export function registerTools(server: McpServer, deps: McpToolDeps, caller: McpC
     {
       title: 'List windows',
       description:
-        'List the windows on the AgentDeck board (terminals and browser windows) with their workspace, status, conversation topic (the title the agent set) and group (terminals opened together with open_terminals). Your own terminal is marked with "self": true. Windows opened in the last second may be missing.',
+        'List the windows on the AgentDeck board (terminals and browser windows) with their workspace, status, conversation topic (the title the agent set) and group (terminals opened together with open_terminals). Your own terminal is marked with "self": true. Windows opened in the last second may be missing. Terminals the user hid from agents are not listed.',
       inputSchema: {
         workspace_id: z.string().nullable().optional().describe('Only windows in this workspace; null for loose windows.'),
       },
@@ -372,11 +392,18 @@ export function registerTools(server: McpServer, deps: McpToolDeps, caller: McpC
     ({ workspace_id }) =>
       run(async () => {
         if (!deps.board) throw new AgentDeckError({ code: 'unsupported', message: 'The board isn’t available' });
-        const [board, terminals, statuses] = await Promise.all([deps.board.load(), deps.terminals.list(), deps.status.snapshot()]);
+        const [board, terminals, statuses, hidden] = await Promise.all([deps.board.load(), deps.terminals.list(), deps.status.snapshot(), ctx.hidden()]);
         const infoById = new Map(terminals.map((t) => [t.id, t]));
         const statusById = new Map(statuses.map((s) => [s.terminalId, s]));
+        // AH11：隐藏的终端窗口也不列（和 list_terminals 一样），白板上直接勾着的也算
+        const isHidden = (w: (typeof board.windows)[number]) => {
+          if (w.type !== 'terminal') return false;
+          const d = w.data as Partial<TerminalWindowData> | undefined;
+          return d?.hideFromAgents === true || (!!d?.terminalId && hidden.has(d.terminalId));
+        };
         return {
           windows: board.windows
+            .filter((w) => !isHidden(w))
             .filter((w) => workspace_id === undefined || w.workspaceId === workspace_id)
             .map((w) => {
               const term = w.type === 'terminal' ? (w.data as Partial<TerminalWindowData>) : null;
@@ -467,6 +494,17 @@ class ToolContext {
 
   async statusOf(id: TerminalId): Promise<StatusSnapshot | undefined> {
     return (await this.deps.status.snapshot()).find((s) => s.terminalId === id);
+  }
+
+  /** 用户对 agent 隐藏的终端（McpToolDeps.hiddenFromAgents）。 */
+  async hidden(): Promise<ReadonlySet<TerminalId>> {
+    return (await this.deps.hiddenFromAgents?.()) ?? new Set();
+  }
+
+  /** agentTerminalRefusal 要的目标情况（guard.ts）。 */
+  async accessTarget(id: TerminalId): Promise<AgentTerminalTarget> {
+    const [status, hidden] = await Promise.all([this.statusOf(id), this.hidden()]);
+    return { status, hidden: hidden.has(id) };
   }
 
   async callerWorkspaceId(): Promise<WorkspaceId | null> {
