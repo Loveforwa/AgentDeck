@@ -1,6 +1,9 @@
 // 账号的额度上限、被打断的终端、续跑（插件 Auto-resume 的第一步，M7 · PL4；需求见设计画布“MVP 插件”页 PluginResume，调研 DR-84）。
 // 额度是按账号算的：一个账号用完，同一家的几个终端一起停。识别、按账号归组、错开续跑、Keep Mac awake 只在主进程写一份
-// （packages/agent-adapters 的 limits 模块，PL5），Auto-resume、Prompt queue（PL3）和集群（CR8）都经过这里。
+// （packages/agent-adapters 的 limits 模块，PL5），Auto-resume（PL6）和集群（CR8）都经过这里。
+// 0.1.23：Prompt queue（PL3）2026-10-28 退役（各家 agent 自己会排提示词；要紧的是撞上限那一刻的续跑和改续跑的话），
+// 剩下的部分并进 Auto-resume：卡片里能改这一次续跑发的文字（setMessage、LimitedTerminal.message / defaultMessage）。
+// 下面提到 PL3 的地方是老说法，留着不删（只加不改）。
 // 调用：收件箱的 Usage limit 一条（CR1）、终端底边的书签、集群调度器。
 
 import type { AbsPath, AgentKind, IsoTime, TerminalId } from './common.ts';
@@ -66,6 +69,21 @@ export interface LimitedTerminal {
    * 别的终端、老的实现不填。Prompt queue（PL3）据此决定等它续完再发，不再自己猜。
    */
   selfResume?: SelfResumeState;
+  /**
+   * 0.1.23（PL6）：你在 Auto-resume 卡片里为这一次上限改过的续跑文字（setMessage）。null 或不填是没改，发 defaultMessage。
+   * 只管这一次：发出去以后、这一次了结后都清掉，下一次上限从默认开始。
+   */
+  message?: string | null;
+  /**
+   * 0.1.23（PL6）：没改时会发的文字：Settings 的 Resume prompt（没填用内置的那段）+ claude 断掉的后台子 agent（逐个点名）/ codex 的一句。
+   * 卡片拿它预填、Reset to default 回到它。不归 AgentDeck 发（claude 自己续）时也给。老的实现不填。
+   */
+  defaultMessage?: string;
+  /**
+   * 0.1.23（PL6）：owner 是 agent（claude 自己续）时，改过的文字已经送进终端：claude 在等恢复时收到消息，恢复时改发这一条、
+   * 不发它自己的 continue（DR-84，待用真 claude 核对）。送进去以后不能再改。别的情况不填。
+   */
+  messageDelivered?: boolean;
 }
 
 /**
@@ -104,12 +122,20 @@ export interface LimitService {
   resumeNow(account: AccountKey, terminalIds?: TerminalId[]): Promise<void>;
   /** 去掉一个终端的勾：这次不续它（state 变 skipped）。 */
   skip(terminalId: TerminalId): Promise<void>;
-  /** Don’t resume：这个账号的终端都不续，排着的提示词也不发（PL3 队列变 paused）。 */
+  /** Don’t resume：这个账号的终端都不续，排着的提示词也不发（PL3 队列变 paused；0.1.23 起 PL3 已退役）。 */
   cancel(account: AccountKey): Promise<void>;
   /**
    * 改谁来续（集群接管、Day run 选 Hand off）。prompt 是续跑时发的提示词（集群的带任务编号），不给用 Settings 里的 Resume prompt。
    */
   setOwner(terminalId: TerminalId, owner: LimitOwner, prompt?: string): Promise<void>;
+  /**
+   * 0.1.23（PL6）：改这个终端这一次续跑发的文字（Auto-resume 卡片的 Message）。text 为 null 或空白是回到默认（defaultMessage）。
+   * 发的时候用它代替模板；setOwner 给的 prompt（集群）仍然优先。claude 自己续（owner agent）时改过的文字马上送进终端
+   * （它恢复时改发这一条，见 LimitedTerminal.messageDelivered），没改就什么都不发。
+   * 终端不在受限账号里抛 not-found；这一次已经发出去了（resuming 以后、或已经送进 claude）抛 invalid-argument。
+   * 可选：老的实现没有它，界面就不让改。
+   */
+  setMessage?(terminalId: TerminalId, text: string | null): Promise<void>;
 }
 
 /** 受限的账号变了（新撞上、续了一个、取消、全部续完）。带完整的新列表。 */

@@ -21,7 +21,7 @@ export interface Settings {
   };
   /** LA0：New terminal ▸ 里所有项目都有的启动预设（COMMANDS 一组的 All projects）。老设置没有它，按空数组。 */
   launchPresets?: LaunchPreset[];
-  /** PL4 / PL5：Settings › Agents › Resume prompt，续跑时发的英文模板。不填用内置的那段。 */
+  /** PL4 / PL5：Settings › Agents › Resume prompt，续跑时发的英文模板。不填用内置的那段。PL6 的卡片里还能只改某一次的（LimitService.setMessage）。 */
   resumePrompt?: string;
 }
 
@@ -55,6 +55,7 @@ export interface AppService {
   /**
    * PL3：Prompt queue 在等额度恢复、或正在接着发时不让 Mac 睡（系统睡眠，不管屏幕）；false 放开。重复调用没有副作用。
    * 合盖照样会睡。
+   * @deprecated 0.1.23：Prompt queue 已退役，界面不再调；不让 Mac 睡由主进程的 LimitService（PL5）自己管。
    */
   setKeepAwake(on: boolean): Promise<void>;
 }
