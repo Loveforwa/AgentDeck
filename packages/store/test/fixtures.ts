@@ -10,6 +10,8 @@ import type {
   Project,
   ProjectId,
   RequestId,
+  Session,
+  SessionId,
   TerminalId,
   WindowId,
   Workspace,
@@ -63,9 +65,31 @@ export function terminal(over: Partial<TerminalRecord> = {}): TerminalRecord {
     args: ['--session-id', 's-123'],
     cwd: '/Users/me/.agentdeck/worktrees/web/feat-login',
     sessionId: 's-123' as AgentSessionId,
+    session: null,
     startCommand: null,
     lastStatus: 'running',
     exitCode: null,
+    updatedAt: '2026-10-02T09:05:00.000Z',
+    ...over,
+  };
+}
+
+export function session(over: Partial<Session> = {}): Session {
+  return {
+    id: 'ses1' as SessionId,
+    agent: 'claude',
+    workspaceId: 'w1' as WorkspaceId,
+    cwd: '/Users/me/.agentdeck/worktrees/web/feat-login',
+    parentId: null,
+    origin: { kind: 'user' },
+    label: null,
+    title: null,
+    agentSessions: [{ id: 's-123' as AgentSessionId, startedAt: '2026-10-02T09:05:00.000Z', reason: 'start' }],
+    terminalId: 't1' as TerminalId,
+    state: 'running',
+    handedOffTo: null,
+    handoffNote: null,
+    createdAt: '2026-10-02T09:05:00.000Z',
     updatedAt: '2026-10-02T09:05:00.000Z',
     ...over,
   };

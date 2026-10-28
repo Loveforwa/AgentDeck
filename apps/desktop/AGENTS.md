@@ -26,6 +26,7 @@ src/main/
   browser/          网页窗口的主进程部分（线 5）：BrowserService、响应头改写、agentdeck-file://、iframe 小桥
   mcp.ts            AgentDeck 的 MCP 服务（M1，packages/mcp-server）：工具通过注册表调服务
   skills.ts         Skills · MCP（N9）：写自带 skill、记下刚 kill 的终端、启动时按白板找这个终端的选择
+  sessions.ts       AgentDeck 自己的 Session（M9 · SE2）：SessionServiceImpl，包住 agents.start、听钩子和终端退出，注册成 sessions
 src/utility/
   tmux-host.ts      utilityProcess 入口：startTmuxHost + port-watch，输出按 viewId 写进窗口端口
 src/preload/        window.agentdeck（contracts 的 AgentDeckApi）、window.agentdeckDesktop、window.agentdeckFiles
@@ -48,6 +49,22 @@ N1（MVP v3）：
 - 新的白板事件 `board.open-group`、`board.focus-window`、`board.notify` 同样走 `emit` 广播，白板（ui/canvas）处理。
 
 AH11：`startAppMcp` 给 `hiddenFromAgents`：每次调用读保存的白板，`hiddenTerminalIds` 挑出 `TerminalWindowData.hideFromAgents` 为 true 的终端，agent 看不到、读不了、打不进（白板改动后半秒保存，刚勾上的有这点延迟）。
+
+## Session（M9 · SE2）
+
+`src/main/sessions.ts` 的 `SessionServiceImpl` 实现 contracts 的 `SessionService`，数据在 store 的 sessions 表（SE1）。服务不知道窗口：
+窗口和 Session 的对应只在白板上（`TerminalWindowData.session`，界面拿 `StartAgentResult.session` 存，SE4 接）。组装（index.ts 里几行）：
+
+- `agents.start` = `sessions.start(req, (r) => rt.agents.start(r))`，再照旧写 terminals 表（多写 `session`）。接回哪条：`req.session`（库里没有就用这个 id 新建）；
+  没带、mode 是 resume 时按 agent 会话 id 找（X6 恢复、历史栏 Resume 在界面写 data.session 之前也能接对）；都没有新建。
+  parent 不在库里当没有；origin 不填时 fork 记 fork（父按被 fork 的对话找）、resume 记 adopted、其余 user。agent 不一样的不接。launch 抛错什么也不记。
+- `tapHook` 里 `sessions.noteHook(h)`：session-start 换了 agent 会话 id 才加一段，原因取 SessionStart 的 source（agent-adapters 的 `parseSessionStart`）；
+  和最后一段同一个 id（启动时报的、resume 同一个、compact）不加。启动时不知道 id（codex、omp）且钩子不带原因时，第一段按启动方式记（start / resume / fork），之后的记 unknown。
+  start 返回前就到的钩子和退出事件留 10 秒，对上终端后补上。
+- `terminals.onEvent` 里 `sessions.noteTerminalEvent(event)`：terminal.exit 改 stopped、terminalId 清掉（handed-off 的保持）；terminal.host-lost 全部停。
+- 启动拿到 `terminals.list()` 后 `store.terminals.prune(...)`（IS-95）和 `sessions.reconcile(live)`：对不上活着的进程的改 stopped。
+- `handoff` 经 `agents.start` 开子 session（origin handoff，第一条消息是说明），原来那条 handed-off，窗口和进程不动；`handoffSummary` 先只写目标、目录、上一段对话，SE6 补分支、diff、最后的输出。
+- 测试 `test/sessions.test.ts`：真的 AgentService、claude 适配器、钩子 socket、agentdeck-notify，对着 `e2e/fake-agent/fake-claude.mjs`（子进程，不用 tmux）。
 
 ## Skills · MCP（N9）
 

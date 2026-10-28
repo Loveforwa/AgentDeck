@@ -5,11 +5,16 @@ import type {
   AbsPath,
   AgentKind,
   AgentSessionId,
+  AgentSessionSegment,
   ApprovalRecord,
   BoardStore,
   IsoTime,
   Project,
   ProjectId,
+  Session,
+  SessionId,
+  SessionListOptions,
+  SessionState,
   TerminalId,
   TerminalStatus,
   WindowId,
@@ -52,7 +57,10 @@ export interface TerminalRecord {
   cmd: string;
   args: string[];
   cwd: AbsPath;
+  /** agent 自己的会话 id（列名 agent_session_id）。 */
   sessionId: AgentSessionId | null;
+  /** SE1：这个终端跑的是哪条 Session（列名 session_id）。不填当 null。 */
+  session?: SessionId | null;
   startCommand: string | null;
   lastStatus: TerminalStatus;
   exitCode: number | null;
@@ -75,6 +83,11 @@ export interface TerminalRepository {
   /** 改 sessionId（session-start 钩子到了才知道）。终端不存在时返回 false。 */
   updateSession(terminalId: TerminalId, sessionId: AgentSessionId | null, at?: IsoTime): boolean;
   remove(terminalId: TerminalId): boolean;
+  /**
+   * IS-95：只留 keep 里的终端（tmux 里还在的），其余的记录删掉，返回删了几条。
+   * 重开应用、拿到 TerminalHost.list() 之后调一次；拿不到列表时不要调（会把记录全删掉）。
+   */
+  prune(keep: readonly TerminalId[]): number;
 }
 
 export interface ApprovalRepository {
@@ -83,12 +96,45 @@ export interface ApprovalRepository {
   history(workspaceId: WorkspaceId, limit: number): ApprovalRecord[];
 }
 
+/** SessionRepository.updateState 改哪几样；不填的保持原样。 */
+export interface SessionStateChange {
+  state?: SessionState;
+  /** 停了为 null。 */
+  terminalId?: TerminalId | null;
+  /** 只在 state 为 handed-off 时留下；改成别的状态时清掉。 */
+  handedOffTo?: SessionId | null;
+  /** updatedAt，默认现在。 */
+  at?: IsoTime;
+}
+
+/** AgentDeck 自己的 Session（SE1）。服务在 apps/desktop 的主进程（SE2），这里只管存。 */
+export interface SessionRepository {
+  /** 新的在前（createdAt）。 */
+  list(opts?: SessionListOptions): Session[];
+  get(id: SessionId): Session | null;
+  /** 直接的子 session，按 createdAt 先后。 */
+  listByParent(parentId: SessionId): Session[];
+  /** 哪条 Session 下面挂着这段 agent 会话；有几条时取最近更新的。 */
+  findByAgentSession(agent: AgentKind, agentSessionId: AgentSessionId): Session | null;
+  /** 现在（或最后）跑在这个终端里的那条。 */
+  findByTerminal(terminalId: TerminalId): Session | null;
+  /** 有就整条更新（连同 agentSessions 分段），没有就插入。parentId、handedOffTo、workspaceId 必须指向已有的行（外键）。 */
+  put(session: Session): void;
+  /** 改 state、terminalId、handedOffTo。不存在返回 null，否则返回新值。 */
+  updateState(id: SessionId, change: SessionStateChange): Session | null;
+  /** 在最后加一段 agent 会话。不存在返回 null，否则返回新值。at 是 updatedAt，默认现在。 */
+  addSegment(id: SessionId, segment: AgentSessionSegment, at?: IsoTime): Session | null;
+  /** 删掉一条（分段一起删；子 session 的 parentId 变 null）。不存在返回 false。 */
+  remove(id: SessionId): boolean;
+}
+
 export interface Store {
   board: BoardStore;
   projects: ProjectRepository;
   workspaces: WorkspaceRepository;
   terminals: TerminalRepository;
   approvals: ApprovalRepository;
+  sessions: SessionRepository;
   /** 在一个事务里跑 fn，fn 抛错时全部回滚。fn 必须是同步的。可以嵌套（内层用 savepoint）。 */
   transaction<T>(fn: () => T): T;
   /** 当前数据库结构的版本号。 */

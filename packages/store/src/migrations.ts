@@ -1,6 +1,7 @@
 // 版本化迁移：schema_version 表记下已经跑过的迁移，启动时按序号把没跑过的依次跑完。
 // 规则：已经发布的迁移不再修改，改表结构只能追加新的迁移。
 
+import { randomUUID } from 'node:crypto';
 import type { Database } from 'better-sqlite3';
 import { AgentDeckError } from '@agentdeck/contracts';
 
@@ -94,7 +95,139 @@ export const migrations: readonly Migration[] = [
       `);
     },
   },
+  {
+    // M9 · SE1：AgentDeck 自己的 Session。terminals.session_id 原来存的是 agent 的会话 id，改名 agent_session_id，
+    // session_id 改存 SessionId。白板上已有的终端窗口每个补一条 Session（见 sessionsFromBoard）。
+    version: 2,
+    name: 'sessions',
+    up(db) {
+      db.exec(`
+        CREATE TABLE sessions (
+          id TEXT PRIMARY KEY,
+          agent TEXT NOT NULL,
+          -- 工作区删掉后 Session 留着（散放），父子关系不断
+          workspace_id TEXT REFERENCES workspaces (id) ON DELETE SET NULL,
+          cwd TEXT NOT NULL,
+          parent_id TEXT REFERENCES sessions (id) ON DELETE SET NULL,
+          origin TEXT NOT NULL,              -- JSON SessionOrigin
+          label TEXT,
+          title TEXT,
+          terminal_id TEXT,                  -- 停了为 null
+          state TEXT NOT NULL,
+          handed_off_to TEXT REFERENCES sessions (id) ON DELETE SET NULL,
+          handoff_note TEXT,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        );
+        CREATE INDEX sessions_parent_id ON sessions (parent_id, created_at);
+        CREATE INDEX sessions_created_at ON sessions (created_at DESC);
+        CREATE INDEX sessions_terminal_id ON sessions (terminal_id) WHERE terminal_id IS NOT NULL;
+
+        -- 一条 Session 下面按先后挂的 agent 会话 id（/clear、compact、resume 各算一段）。
+        CREATE TABLE session_agent_ids (
+          session_id TEXT NOT NULL REFERENCES sessions (id) ON DELETE CASCADE,
+          seq INTEGER NOT NULL,
+          agent_session_id TEXT NOT NULL,
+          started_at TEXT NOT NULL,
+          reason TEXT NOT NULL,
+          PRIMARY KEY (session_id, seq)
+        );
+        CREATE INDEX session_agent_ids_agent_session_id ON session_agent_ids (agent_session_id);
+
+        ALTER TABLE terminals RENAME COLUMN session_id TO agent_session_id;
+        ALTER TABLE terminals ADD COLUMN session_id TEXT REFERENCES sessions (id) ON DELETE SET NULL;
+      `);
+      sessionsFromBoard(db, new Date().toISOString());
+    },
+  },
 ];
+
+/**
+ * 迁移 2 的升级部分：白板上每个还没有 session 的终端窗口补一条 Session，写回 TerminalWindowData.session；
+ * WindowNode.group 转成父子：member 的 parentId 是同一组 lead 的那条，origin 记 spawn · open_terminals。
+ * group 本身留在白板上（N2 侧边栏照旧用它停靠）。名字取 group.label，没有再取窗口的 Rename。
+ * 有 terminalId 的记成 running（进程还在不在要等应用启动时对 tmux 才知道，SE2 对不上的改 stopped），没有的 stopped。
+ * 窗口记着的 agent 会话 id 记成第一段，原因 unknown。白板读不出来时不动它，不让整个迁移失败。
+ * 只用 SQL，不调仓储：仓储以后会改，已经发布的迁移不能跟着变。
+ */
+function sessionsFromBoard(db: Database, now: string): void {
+  const row = db.prepare<[], { state: string }>('SELECT state FROM board WHERE id = 1').get();
+  if (!row) return;
+  let board: { version?: unknown; windows?: unknown };
+  try {
+    board = JSON.parse(row.state) as typeof board;
+  } catch {
+    return;
+  }
+  if (board.version !== 1 || !Array.isArray(board.windows)) return;
+
+  type Obj = Record<string, unknown>;
+  const isObj = (v: unknown): v is Obj => typeof v === 'object' && v !== null && !Array.isArray(v);
+  const str = (v: unknown): string | null => (typeof v === 'string' && v.length > 0 ? v : null);
+
+  const workspaceExists = db.prepare<[string], { id: string }>('SELECT id FROM workspaces WHERE id = ?');
+  const sessionExists = db.prepare<[string], { id: string }>('SELECT id FROM sessions WHERE id = ?');
+  const insert = db.prepare(`
+    INSERT INTO sessions (id, agent, workspace_id, cwd, parent_id, origin, label, title, terminal_id, state, handed_off_to, handoff_note, created_at, updated_at)
+    VALUES (@id, @agent, @workspaceId, @cwd, NULL, @origin, @label, NULL, @terminalId, @state, NULL, NULL, @now, @now)
+  `);
+  const setParent = db.prepare<[string, string]>('UPDATE sessions SET parent_id = ? WHERE id = ?');
+  const insertSegment = db.prepare(`
+    INSERT INTO session_agent_ids (session_id, seq, agent_session_id, started_at, reason) VALUES (?, 1, ?, ?, 'unknown')
+  `);
+  const linkTerminal = db.prepare<[string, string]>('UPDATE terminals SET session_id = ? WHERE terminal_id = ?');
+
+  interface Made {
+    id: string;
+    group: { id: string; role: string } | null;
+    existing: boolean;
+  }
+  const made: Made[] = [];
+  for (const w of board.windows) {
+    if (!isObj(w) || w.type !== 'terminal' || !isObj(w.data)) continue;
+    const data = w.data;
+    const g = isObj(w.group) ? w.group : null;
+    const group = g && str(g.id) ? { id: g.id as string, role: g.role === 'lead' ? 'lead' : 'member' } : null;
+    const existing = str(data.session);
+    if (existing) {
+      // 已经有 session 的窗口不再补；库里真有那条时，它可以是别的窗口的 lead
+      if (sessionExists.get(existing)) made.push({ id: existing, group, existing: true });
+      continue;
+    }
+    const agent = str(data.agent);
+    const cwd = str(data.cwd);
+    if (!agent || !cwd) continue;
+    const ws = str(w.workspaceId);
+    const terminalId = str(data.terminalId);
+    const id = randomUUID();
+    insert.run({
+      id,
+      agent,
+      workspaceId: ws && workspaceExists.get(ws) ? ws : null,
+      cwd,
+      origin: JSON.stringify(group?.role === 'member' ? { kind: 'spawn', tool: 'open_terminals' } : { kind: 'user' }),
+      label: (g ? str(g.label) : null) ?? str(w.title),
+      terminalId,
+      state: terminalId ? 'running' : 'stopped',
+      now,
+    });
+    const agentSessionId = str(data.sessionId);
+    if (agentSessionId) insertSegment.run(id, agentSessionId, now);
+    if (terminalId) linkTerminal.run(id, terminalId);
+    data.session = id;
+    made.push({ id, group, existing: false });
+  }
+  if (!made.some((m) => !m.existing)) return;
+
+  const leads = new Map<string, string>();
+  for (const m of made) if (m.group?.role === 'lead' && !leads.has(m.group.id)) leads.set(m.group.id, m.id);
+  for (const m of made) {
+    if (m.existing || m.group?.role !== 'member') continue;
+    const lead = leads.get(m.group.id);
+    if (lead) setParent.run(lead, m.id);
+  }
+  db.prepare<[string]>('UPDATE board SET state = ? WHERE id = 1').run(JSON.stringify(board));
+}
 
 export function latestVersion(list: readonly Migration[] = migrations): number {
   return list.length === 0 ? 0 : list[list.length - 1]!.version;

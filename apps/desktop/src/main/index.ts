@@ -29,6 +29,7 @@ import {
 import {
   type AgentDeckEvent,
   type StartAgentRequest,
+  type StartAgentResult,
   type StatusSnapshot,
   type TerminalId,
   type TerminalWindowData,
@@ -61,6 +62,7 @@ import { startAppMcp, writeMcpPluginDir } from './mcp.ts';
 import { createRecentKills, skillSelectionFor, writeBuiltinSkills } from './skills.ts';
 import { resolvePaths } from './paths.ts';
 import { createScreenshotter } from './screenshot.ts';
+import { SessionServiceImpl } from './sessions.ts';
 import { guardGitService, guardWorkspaceService } from './self-repo-guard.ts';
 import { emit as broadcast, registry } from './services.ts';
 import { defaultSettings, openSettingsFile } from './settings.ts';
@@ -158,6 +160,9 @@ async function main(): Promise<void> {
     }
   };
 
+  // AgentDeck 自己的 Session（M9 · SE2）：agents.start 建或接回，钩子加分段，进程退出改 stopped。见 sessions.ts
+  const sessions: SessionServiceImpl = new SessionServiceImpl({ repo: store.sessions, emit, startAgent: (req) => agents.start(req) });
+
   // agent 自带的后台子 agent（N10）：只靠钩子和 agent 自己的记录，不保存
   const subagents = new SubagentServiceImpl({ emit });
 
@@ -239,6 +244,7 @@ async function main(): Promise<void> {
     },
     tapHook: (h) => {
       const hook = { terminalId: h.terminalId, agent: h.agent, hookName: h.hookName, payload: h.envelope.payload };
+      sessions.noteHook(h);
       subagents.noteHook(hook);
       return usage?.noteHook(hook) ?? false;
     },
@@ -294,6 +300,7 @@ async function main(): Promise<void> {
     if (event.type === 'terminal.input') rt.noteInput(event.id);
     // agent 进程没了，它的后台子 agent 也没了
     if (event.type === 'terminal.exit') subagents.noteTerminalGone(event.id);
+    sessions.noteTerminalEvent(event);
   });
 
   // 本次运行里启动的终端的启动时间：kimi 新建会话没有 id，用量模块按目录和启动时间推断是哪个会话
@@ -305,9 +312,14 @@ async function main(): Promise<void> {
     if (!agent) return null;
     return { terminalId: id, agent, sessionId: st?.sessionId ?? rec?.sessionId ?? null, cwd: rec?.cwd ?? null, startedAt: startedAt.get(id) ?? null };
   };
+  // IS-95：kimi 推断会话时只和还活着的终端比（状态机在跟、进程没退出），不再遍历整张表
+  const alive = (id: TerminalId) => {
+    const s = rt.status.get(id)?.status;
+    return s !== undefined && s !== 'exited' && s !== 'error';
+  };
   usage = new UsageServiceImpl({
     lookup: usageTarget,
-    targets: () => store.terminals.list().flatMap((r) => usageTarget(r.terminalId) ?? []),
+    targets: () => store.terminals.list().flatMap((r) => (alive(r.terminalId) ? (usageTarget(r.terminalId) ?? []) : [])),
     emit,
     roots: defaultUsageRoots(homedir(), loginEnv),
   });
@@ -315,9 +327,9 @@ async function main(): Promise<void> {
   const agents = {
     list: () => rt.agents.list(),
     refresh: () => rt.agents.refresh(),
-    async start(req: StartAgentRequest) {
+    async start(req: StartAgentRequest): Promise<StartAgentResult> {
       const t0 = Date.now();
-      const res = await rt.agents.start(req);
+      const res = await sessions.start(req, (r) => rt.agents.start(r));
       startedAt.set(res.terminalId, t0);
       store.terminals.put({
         terminalId: res.terminalId,
@@ -328,6 +340,7 @@ async function main(): Promise<void> {
         args: res.args,
         cwd: req.cwd,
         sessionId: res.sessionId,
+        session: res.session ?? null,
         startCommand: req.command ?? null,
         lastStatus: 'starting',
         exitCode: null,
@@ -353,6 +366,9 @@ async function main(): Promise<void> {
   };
   void Promise.all([terminals.list(), rt.agents.list()]).then(
     ([live, infos]) => {
+      // IS-95：tmux 里已经没有的终端，记录清掉（拿不到列表时走不到这里，不会误删）
+      store.terminals.prune(live.map((t) => t.id));
+      sessions.reconcile(live);
       const hooked = new Set(infos.filter((a) => a.capabilities.hooks).map((a) => a.id));
       for (const t of live) {
         const rec = store.terminals.get(t.id);
@@ -469,6 +485,7 @@ async function main(): Promise<void> {
   registry.register('usage', usage);
   registry.register('skills', skills);
   registry.register('subagents', subagents);
+  registry.register('sessions', sessions);
   // N11：各 agent 的历史会话（左边栏），只读它们自己的会话文件
   registry.register('history', new HistoryServiceImpl({ roots: defaultUsageRoots(homedir(), loginEnv) }));
   registerBrowserService(registry);

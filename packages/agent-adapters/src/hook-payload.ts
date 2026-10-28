@@ -2,7 +2,7 @@
 // 两边钩子的名字和负载基本一致（codex 的 hooks 就是照 claude 的格式做的），差别在各适配器里处理。
 // 字段以本机实测为准：claude 2.1.291、codex 0.159.2，记录见 AGENTS.md「钩子实测」。
 
-import type { AgentHookEvent, AgentSessionId } from '@agentdeck/contracts';
+import type { AgentHookEvent, AgentSessionId, AgentSessionReason } from '@agentdeck/contracts';
 
 type Json = Record<string, unknown>;
 
@@ -36,9 +36,33 @@ const QUESTION_TOOLS = new Set(['AskUserQuestion', 'ExitPlanMode', 'request_user
  */
 const FILE_TOOLS = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit', 'edit', 'write']);
 
+/**
+ * SessionStart 的 source（SE2）：claude 报 startup / resume / clear / compact（2.1.291 实测 startup，其余按官方文档）；
+ * codex 的 SessionStart 照 claude 的格式，有 source 时同样读。pi / omp 的扩展只报 session_id（没有 source），不填 reason。
+ * 认不出的值记 unknown。
+ */
+const SESSION_START_SOURCES: Record<string, AgentSessionReason> = {
+  startup: 'start',
+  start: 'start',
+  new: 'start',
+  resume: 'resume',
+  clear: 'clear',
+  compact: 'compact',
+  fork: 'fork',
+};
+
+export function sessionStartReason(source: unknown): AgentSessionReason | undefined {
+  const s = str(source);
+  if (s === null) return undefined;
+  return SESSION_START_SOURCES[s.toLowerCase()] ?? 'unknown';
+}
+
 export function parseSessionStart(payload: unknown): AgentHookEvent | null {
-  const id = str(obj(payload)?.session_id);
-  return id ? { type: 'session-start', sessionId: id as AgentSessionId } : null;
+  const p = obj(payload);
+  const id = str(p?.session_id);
+  if (!id) return null;
+  const reason = sessionStartReason(p?.source);
+  return reason ? { type: 'session-start', sessionId: id as AgentSessionId, reason } : { type: 'session-start', sessionId: id as AgentSessionId };
 }
 
 export function parsePermissionRequest(payload: unknown): AgentHookEvent | null {

@@ -7,6 +7,7 @@ import { createApprovalRepository } from './approvals.ts';
 import { createBoardStore } from './board.ts';
 import { currentVersion, migrate } from './migrations.ts';
 import { createProjectRepository } from './projects.ts';
+import { createSessionRepository } from './sessions.ts';
 import { createTerminalRepository } from './terminals.ts';
 import type { Store } from './types.ts';
 import { createWorkspaceRepository } from './workspaces.ts';
@@ -40,6 +41,7 @@ export function openStore(path: string): Store {
     workspaces: createWorkspaceRepository(db),
     terminals: createTerminalRepository(db),
     approvals: createApprovalRepository(db),
+    sessions: createSessionRepository(db),
     transaction: (fn) => db.transaction(fn)(),
     schemaVersion: () => currentVersion(db),
     close: () => db.close(),
