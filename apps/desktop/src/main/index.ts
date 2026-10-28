@@ -37,6 +37,7 @@ import {
   DEFAULT_DESTRUCTIVE_PATTERNS,
   defaultUsageRoots,
   findExecutable,
+  SKILL_SETS_CLEANUP_INTERVAL_MS,
   SkillsServiceImpl,
   SubagentServiceImpl,
   HistoryServiceImpl,
@@ -213,6 +214,8 @@ async function main(): Promise<void> {
       return agent && rec ? { agent, cwd: rec.cwd } : null;
     },
     mcpRunning: () => mcp !== null,
+    // IS-112：清理 skill-sets/ 时哪些终端还活着（tmux 里的会话）；tmux 不可用时 list 抛错，这一轮不清理
+    liveTerminals: async () => (await terminals.list()).filter((t) => t.alive).map((t) => t.id),
     emit,
     homeDir: homedir(),
     env: () => loginEnv,
@@ -221,7 +224,7 @@ async function main(): Promise<void> {
     skills: async (req) =>
       skills.prepareLaunch({ agent: req.agent, cwd: req.cwd, selection: await skillSelectionFor(req, { board: store.board, recentKills }) }),
     onStarted: (s) => {
-      if (s.skills) skills.noteLaunched(s.terminalId, s.skills.ids);
+      if (s.skills) skills.noteLaunched(s.terminalId, s.skills.ids, s.skills.setDir);
     },
     tapHook: (h) => {
       const hook = { terminalId: h.terminalId, agent: h.agent, hookName: h.hookName, payload: h.envelope.payload };
@@ -355,6 +358,18 @@ async function main(): Promise<void> {
     (e: unknown) => console.warn(`[agentdeck] terminals unavailable: ${e instanceof Error ? e.message : String(e)}`),
   ).then(restoreAutoApprove).catch((e: unknown) => console.warn(`[agentdeck] could not restore Auto-approve: ${e instanceof Error ? e.message : String(e)}`));
 
+  // IS-112：启动时和之后每天清理一次 skill-sets/（终端用着的不动，其余超过 7 天的删）。失败只记日志，不影响应用。
+  const cleanSkillSets = () =>
+    skills.cleanupSkillSets().then(
+      (r) => {
+        if (r.removed.length > 0) console.log(`[agentdeck] removed ${r.removed.length} old skill-sets folder(s)`);
+      },
+      (e: unknown) => console.warn(`[agentdeck] skill-sets cleanup failed: ${e instanceof Error ? e.message : String(e)}`),
+    );
+  void cleanSkillSets();
+  const skillSetsTimer = setInterval(() => void cleanSkillSets(), SKILL_SETS_CLEANUP_INTERVAL_MS);
+  skillSetsTimer.unref();
+
   // ---- 窗口、通知、角标 ----
   let mainWindow: BrowserWindow | null = null;
   let quitting = false;
@@ -393,6 +408,7 @@ async function main(): Promise<void> {
     }
     for (const win of BrowserWindow.getAllWindows()) win.destroy();
     await rt.close().catch(() => undefined);
+    clearInterval(skillSetsTimer);
     usage?.close();
     subagents.close();
     // ⌘Q 只断开（会话留在 tmux 里继续跑）；Stop all and quit 才结束 tmux 服务

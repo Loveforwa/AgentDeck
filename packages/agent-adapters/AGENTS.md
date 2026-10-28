@@ -238,7 +238,10 @@ token 本身只放进 `LaunchSpec.env`，不进命令行。和用户自己配的
   经 `createAgentRuntime({ skills })` → `AgentServiceImpl` → `AdapterLaunchContext.skills` 给适配器。没勾 built-in 的 agentdeck MCP 时不给 `LaunchContext.mcp`。
   出错时当作没有（照常启动，不带）。`onStarted` 报回 `StartedAgent.skills`，组装方 `noteLaunched` 记成 running（`stateFile`，重开应用后还在）。
 - setDir：claude、omp、kimi 要一个目录：`<setsDir>/<agent>-<内容哈希>/`，`skills/<name>/` 是选中 skill 的副本，`.claude-plugin/plugin.json` 是清单
-  （名字 `agentdeck-skills`；omp 的清单里还有库里的 MCP）。目录名按内容（含 skill 文件的大小、修改时间）算，一样就复用，不改正在用的目录；旧目录目前不清理。
+  （名字 `agentdeck-skills`；omp 的清单里还有库里的 MCP）。目录名按内容（含 skill 文件的大小、修改时间）算，一样就复用（复用时把目录的修改时间更新到现在），不改正在用的目录。
+- 清理旧目录（IS-112）：`cleanupSkillSets()`（组装方启动时调一次、之后每天一次，`SKILL_SETS_CLEANUP_INTERVAL_MS`）。只看 `setsDir` 里名字是 `<agent>-<16 位十六进制>`（或写到一半留下的 `….tmp-<uuid>`）的真目录，别的名字、文件、符号链接不碰；
+  `noteLaunched(终端, ids, setDir)` 把每个终端用的目录记进 `stateFile`（`sets`），`liveTerminals()`（组装方给：tmux 里还活着的终端）里的终端用着的不删，其余修改时间超过 7 天的删；删之前确认路径在 `setsDir` 里面。
+  没给 `liveTerminals` 时记过的每个终端都算在用；读不到活着的终端、或活着的 claude / omp / kimi 终端没有记录（旧版本启动的）时这一轮不删。`prepareLaunch` 刚给出去还没 `noteLaunched` 的目录 10 分钟内不碰。
 
 | agent | skill（built in + library） | MCP（agentdeck + library） | repo 里它自己读的 | 核对 |
 | --- | --- | --- | --- | --- |
