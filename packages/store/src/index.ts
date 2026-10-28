@@ -11,4 +11,7 @@ export type {
   ApprovalRepository,
   SessionRepository,
   SessionStateChange,
+  DocAnchorCacheRow,
+  DocAnchorRepository,
+  DocAnchorVerified,
 } from './types.ts';

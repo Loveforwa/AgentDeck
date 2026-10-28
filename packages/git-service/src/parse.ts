@@ -8,6 +8,7 @@ import type {
   CommitRef,
   FileChange,
   IsoTime,
+  LineMapHunk,
   StashInfo,
   WorktreeInfo,
 } from '@agentdeck/contracts';
@@ -317,4 +318,47 @@ export function parseStashes(out: string): StashInfo[] {
 export function toIso(text: string): IsoTime {
   const t = Date.parse(text);
   return Number.isNaN(t) ? text : new Date(t).toISOString();
+}
+
+// ---- 代码锚点（DC1）：blame --porcelain、diff -U0 的 @@ 头 ----
+
+/** `git blame --porcelain` → 每行（1 起）最后改它的提交。没提交的行是 40 个 0。按行号排。 */
+export function parseBlamePorcelain(out: string): { line: number; commit: string }[] {
+  const lines: { line: number; commit: string }[] = [];
+  for (const l of out.split('\n')) {
+    // 正文行以 tab 开头，不会被当成头
+    if (l === '' || l[0] === '\t') continue;
+    const m = /^([0-9a-f]{40}|[0-9a-f]{64}) \d+ (\d+)(?: \d+)?$/.exec(l);
+    if (m) lines.push({ line: Number(m[2]), commit: m[1]! });
+  }
+  return lines.sort((a, b) => a.line - b.line);
+}
+
+/** `git diff -U0` 的 @@ 头 → hunk。行数省略时是 1；行数 0 时 start 是前一行（git 的写法）。 */
+export function parseHunks(out: string): LineMapHunk[] {
+  const hunks: LineMapHunk[] = [];
+  for (const m of out.matchAll(/^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/gm)) {
+    hunks.push({
+      oldStart: Number(m[1]),
+      oldLines: m[2] === undefined ? 1 : Number(m[2]),
+      newStart: Number(m[3]),
+      newLines: m[4] === undefined ? 1 : Number(m[4]),
+    });
+  }
+  return hunks;
+}
+
+/** `git diff --name-status -z -M --diff-filter=R` → 旧路径 → 新路径。 */
+export function parseRenames(out: string): Map<string, string> {
+  const renames = new Map<string, string>();
+  const parts = out.split('\0');
+  for (let i = 0; i < parts.length; i += 1) {
+    const status = parts[i] ?? '';
+    if (!/^[RC]\d*$/.test(status)) continue;
+    const from = parts[i + 1];
+    const to = parts[i + 2];
+    i += 2;
+    if (status[0] === 'R' && from && to) renames.set(from, to);
+  }
+  return renames;
 }
