@@ -47,6 +47,7 @@ export const SERVICE_METHODS = {
     'blameLines',
     'showFile',
     'lineMap',
+    'overlaps',
   ],
   terminals: ['create', 'kill', 'list', 'attach', 'detach', 'write', 'resize', 'sendKeys', 'lastLines', 'attachCommand', 'recentLinks'],
   agents: ['list', 'refresh', 'start', 'check'],

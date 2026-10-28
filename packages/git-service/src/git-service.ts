@@ -5,6 +5,8 @@ import { existsSync, realpathSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import type {
   LineMapHunk,
+  WorkspaceId,
+  WorkspaceOverlap,
   AbsPath,
   BranchInfo,
   CommitInfo,
@@ -407,6 +409,11 @@ export class SystemGitService implements GitService {
 
   async lineMap(_repo: AbsPath, _path: string, _from: string, _to: string): Promise<LineMapHunk[]> {
     throw notYet('lineMap');
+  }
+
+  // CO0 还没做
+  async overlaps(_repo: AbsPath, _worktrees: { workspaceId: WorkspaceId; path: AbsPath }[]): Promise<WorkspaceOverlap[]> {
+    throw notYet('overlaps');
   }
 
   // ---- 内部 ----

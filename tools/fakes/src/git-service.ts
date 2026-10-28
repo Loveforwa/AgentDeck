@@ -3,6 +3,9 @@
 
 import type {
   LineMapHunk,
+  OverlapVerdict,
+  WorkspaceId,
+  WorkspaceOverlap,
   AbsPath,
   AgentDeckErrorData,
   BranchInfo,
@@ -121,6 +124,7 @@ export class FakeGitService implements GitService {
   private readonly files = new Map<string, string>();
   private readonly blames = new Map<string, string[]>();
   private readonly lineMaps = new Map<string, LineMapHunk[]>();
+  private readonly overlapVerdicts = new Map<string, OverlapVerdict>();
   private hashCounter = 0;
   private seedClock = 0;
   /** discard 移到废纸篓的未跟踪文件，绝对路径。 */
@@ -524,6 +528,39 @@ export class FakeGitService implements GitService {
     await this.enter('lineMap');
     this.locate(repo);
     return clone(this.lineMaps.get(`${from}\0${to}\0${path}`) ?? []);
+  }
+
+  /**
+   * CO0：按每个 worktree 现在的改动（changes）两两求交集。结论默认 clean，setOverlapVerdict 预置的文件按预置的回
+   * （例如 conflict，或模拟 git 太旧时的 unknown）。
+   */
+  async overlaps(repo: AbsPath, worktrees: { workspaceId: WorkspaceId; path: AbsPath }[]): Promise<WorkspaceOverlap[]> {
+    await this.enter('overlaps');
+    const { repo: r } = this.locate(repo);
+    if (worktrees.length > 12) fail('invalid-argument', 'Too many worktrees to compare (at most 12)');
+    const changed = worktrees.map((w) => {
+      const tree = r.trees.get(w.path);
+      if (!tree) fail('not-found', `${w.path} is not a worktree of ${repo}`);
+      return { id: w.workspaceId, files: [...tree.changes.keys()] };
+    });
+    const out: WorkspaceOverlap[] = [];
+    const checkedAt = nowIso();
+    for (let i = 0; i < changed.length; i += 1) {
+      for (let j = i + 1; j < changed.length; j += 1) {
+        const a = changed[i];
+        const b = changed[j];
+        if (!a || !b) continue;
+        const both = a.files.filter((f) => b.files.includes(f)).sort();
+        if (both.length === 0) continue;
+        out.push({ a: a.id, b: b.id, files: both.map((path) => ({ path, verdict: this.overlapVerdicts.get(path) ?? 'clean' })), checkedAt });
+      }
+    }
+    return out;
+  }
+
+  /** CO0：预置某个文件在 overlaps 里的结论。 */
+  setOverlapVerdict(path: string, verdict: OverlapVerdict): void {
+    this.overlapVerdicts.set(path, verdict);
   }
 
   /** 预置某个版本的文件全文（showFile 用）。 */

@@ -11,7 +11,7 @@ contracts 里每个服务的内存假实现（任务 F6）。第 2 波各条线�
 | 导出 | 实现的接口 | 能控制的东西（假实现专用方法） |
 | --- | --- | --- |
 | `FakeTerminalHost` | TerminalHost | `createWith(req, { id, recording, history, exited })`、`feed(id, data)`、`exit(id, code)`、`play(id, recording?)`、`hostLost()`、`get(id)`（看输入、按键、输出）、`views()`、`dispose()` |
-| `FakeGitService` | GitService | `setFileAt(rev, path, text)`、`setBlame(path, commits, rev?)`、`setLineMap(path, from, to, hunks)`（DC0 的三个只读方法按预置回）、`addRepo({...})`、`setChanges` / `addChanges`、`setOperation`、`setTracking`、`setBaseBranch`、`failNext(method, error)`、`stashes()`、`deleteBranch()`、`refresh()`、`trashed` |
+| `FakeGitService` | GitService | `setFileAt(rev, path, text)`、`setBlame(path, commits, rev?)`、`setLineMap(path, from, to, hunks)`（DC0 的三个只读方法按预置回）、`setOverlapVerdict(path, verdict)`（CO0 的 overlaps 按各 worktree 的改动两两求交集，结论默认 clean）、`addRepo({...})`、`setChanges` / `addChanges`、`setOperation`、`setTracking`、`setBaseBranch`、`failNext(method, error)`、`stashes()`、`deleteBranch()`、`refresh()`、`trashed` |
 | `FakeProjectService` | ProjectService | `seed(project)`、`setMissing(id, bool)`、`get(id)`、`touch(id)` |
 | `FakeWorkspaceService` | WorkspaceService | `seed(ws)`、`setMissing(id, bool)`、`get(id)` |
 | `FakeAgentService` | AgentService | `setAgent(id, patch)`（改安装情况、能力）、`approveOnceKeys(agent)`、`started` |

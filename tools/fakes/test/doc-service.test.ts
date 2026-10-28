@@ -1,6 +1,6 @@
 // DC0：假 DocService（内存文件、baseHash 冲突、doc.changed）和假 CodeAnchorService（固定表、fixLines）。
 import { describe, expect, it } from 'vitest';
-import type { TerminalId } from '@agentdeck/contracts';
+import type { TerminalId, WorkspaceId } from '@agentdeck/contracts';
 import { createFakeServices } from '../src/api.ts';
 
 const DOC = '/Users/you/code/app/docs/design.md';
@@ -54,5 +54,34 @@ describe('FakeCodeAnchorService', () => {
     expect(await fakes.git.showFile(repo, 'HEAD', 'nope.ts')).toBeNull();
     expect(await fakes.git.lineMap(repo, 'src/a.ts', 'HEAD', 'worktree')).toHaveLength(1);
     await expect(fakes.git.blameLines(repo, 'missing.md')).rejects.toMatchObject({ code: 'not-found' });
+  });
+});
+
+describe('FakeGitService.overlaps (CO0)', () => {
+  it('pairs worktrees that changed the same files', async () => {
+    const { fakes } = createFakeServices();
+    const ROOT = '/Users/you/code/api';
+    const A = '/Users/you/.agentdeck/worktrees/api/feat-oauth';
+    const B = '/Users/you/.agentdeck/worktrees/api/fix-rate-limit';
+    fakes.git.addRepo({
+      path: ROOT,
+      commits: ['Initial commit'],
+      branches: [{ name: 'feat/oauth' }, { name: 'fix/rate-limit' }],
+      worktrees: [
+        { path: A, branch: 'feat/oauth', changes: [{ path: 'src/config/index.ts', unstaged: 'modified' }, { path: 'src/auth/session.ts', unstaged: 'modified' }] },
+        { path: B, branch: 'fix/rate-limit', changes: [{ path: 'src/auth/session.ts', unstaged: 'modified' }, { path: 'src/config/index.ts', unstaged: 'modified' }, { path: 'src/middleware/limiter.ts', unstaged: 'modified' }] },
+      ],
+    });
+    fakes.git.setOverlapVerdict('src/auth/session.ts', 'conflict');
+    const res = await fakes.git.overlaps(ROOT, [
+      { workspaceId: 'wa' as WorkspaceId, path: A },
+      { workspaceId: 'wb' as WorkspaceId, path: B },
+      { workspaceId: 'main' as WorkspaceId, path: ROOT },
+    ]);
+    expect(res).toHaveLength(1);
+    expect(res[0]).toMatchObject({
+      a: 'wa', b: 'wb',
+      files: [{ path: 'src/auth/session.ts', verdict: 'conflict' }, { path: 'src/config/index.ts', verdict: 'clean' }],
+    });
   });
 });
