@@ -2,7 +2,7 @@
 // 没装 tmux 或版本低于 3.5 时整组跳过。
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, realpathSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
@@ -353,6 +353,39 @@ describe.skipIf(!tmuxOk)('TmuxHost with real tmux', () => {
       await host.sendKeys(after, ['Enter']);
       await waitFor(() => existsSync(join(dir, 'ran-marker')));
       await host.kill(after);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }, 20_000);
+
+  // CO3 · Send selection to ▸（TC-147、TC-109）：界面那边 xterm 的 paste() 在程序开了 bracketed paste 时发 ESC[200~ … ESC[201~，
+  // 换行变成 CR。这里用真 tmux 和真 zsh 确认这段字节经过 tmux 到了 shell 的输入行：多行带 -- 注释的 SQL 原样在输入行里、一行都没执行。
+  const zshPath = findExecutable('zsh', { PATH: `${env.PATH}:/bin:/usr/bin:/opt/homebrew/bin` });
+  it.skipIf(!zshPath)('CO3: a bracketed paste of multi-line SQL lands in zsh’s input line unchanged and is not run (TC-147)', async () => {
+    const dir = realpathSync(mkdtempSync(join(tmpdir(), 'adt-paste-')));
+    try {
+      const dump = join(dir, 'buffer.txt');
+      // ⌃X ⌃D 把 zsh 输入行的内容原样写进文件（不执行），用来核对“到了什么”
+      writeFileSync(join(dir, '.zshrc'), `PROMPT='$ '\ndump-buffer() { print -rn -- "$BUFFER" > ${dump} }\nzle -N dump-buffer\nbindkey '^X^D' dump-buffer\n`);
+      const sql = ['SELECT o.id, o.total, c.email', 'FROM orders o', 'JOIN customers c ON c.id = o.customer_id', '-- only last week', "WHERE o.created_at > now() - interval '7 days';"].join('\n');
+      const t = id();
+      await host.create({ id: t, cmd: zshPath!, args: ['-i'], cwd: dir, env: { ZDOTDIR: dir }, size: { cols: 100, rows: 20 } });
+      const { viewId } = await host.attach(t, { cols: 100, rows: 20 });
+      await waitFor(async () => (await host.lastLines(t, 1)).some((l) => l.startsWith('$')));
+      // zsh 在提示符下开了 bracketed paste，tmux 把这个模式转给外层（xterm 据此加标记）
+      await waitFor(() => (data.get(viewId) ?? '').includes('\x1b[?2004h'));
+      host.write(viewId, `\x1b[200~${sql.replace(/\n/g, '\r')}\x1b[201~`);
+      await waitFor(async () => (await host.lastLines(t, 6)).some((l) => l.includes('interval')));
+      await sleep(300);
+      const lines = await host.lastLines(t, 6);
+      expect(lines.join('\n')).toBe(`$ ${sql}`);
+      expect(lines.join('\n')).not.toMatch(/command not found|parse error/);
+      expect((await host.list()).find((i) => i.id === t)?.foregroundCommand).toBeNull();
+      await host.sendKeys(t, ['C-x', 'C-d']);
+      await waitFor(() => existsSync(dump));
+      expect(readFileSync(dump, 'utf8')).toBe(sql);
+      await host.detach(viewId);
+      await host.kill(t);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
