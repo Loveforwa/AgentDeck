@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { MCP_SERVER_NAME, MCP_TERMINAL_HEADER, MCP_TOKEN_ENV, TERMINAL_ID_ENV } from '@agentdeck/contracts';
 import type { AgentCapabilities, AgentHookEvent, AgentSessionId, LaunchSpec, McpEndpoint } from '@agentdeck/contracts';
 import { atLeast, shellQuote } from '../env.ts';
-import { parseClaudeNotification, parseCommonHook } from '../hook-payload.ts';
+import { parseClaudeNotification, parseClaudeStopFailure, parseCommonHook } from '../hook-payload.ts';
 import type { McpServerDef } from '../skills/types.ts';
 import type { AdapterDeps, AdapterLaunchContext, AgentAdapterExt, DetectResult } from './types.ts';
 import { detectCommand, NO_CAPABILITIES } from './types.ts';
@@ -93,7 +93,7 @@ export class ClaudeAdapter implements AgentAdapterExt {
       case 'Notification':
         return parseClaudeNotification(payload);
       case 'StopFailure':
-        return { type: 'turn-end' };
+        return parseClaudeStopFailure(payload);
       default:
         return parseCommonHook(hookName, payload);
     }

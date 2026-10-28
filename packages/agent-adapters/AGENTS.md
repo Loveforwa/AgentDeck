@@ -11,6 +11,7 @@
 - **批准**（PL1 Auto-approve、X3 Approve all）：`ApprovalServiceImpl` 实现 `ApprovalService`，见下面「Auto-approve 和 Approve all」。
 - **后台通知规则**（S4）：`backgroundAlerts()` / `badgeCount()`，纯函数；真正发通知、设角标在 apps/desktop。
 - **token 用量**（PL2 · Usage 插件，DR-55）：`src/usage/`，`UsageServiceImpl` 实现 contracts 的 `UsageService`，读各 agent 自己的会话文件。见下面「token 用量」。
+- **额度上限**（M7 · PL5，插件 Auto-resume）：`src/limits/`，`LimitServiceImpl` 实现 contracts 的 `LimitService`：认出被额度打断的终端、按账号归组、恢复后错开续跑。见下面「额度上限」。
 - **Skills · MCP**（MVP v3 · N9）：`src/skills/`，`SkillsServiceImpl` 实现 contracts 的 `SkillsService`（库、仓库里的 skill、每种 agent 怎么带），启动前算出这次带什么交给适配器。见下面「Skills · MCP」。
 
 不许碰：`packages/contracts`（不够用写进本目录的 `CONTRACT_NOTES.md`）、`apps/desktop`、其他包。
@@ -63,6 +64,8 @@ tmuxHostEvents.on((e) => rt.onTerminalEvent(e));  // terminal.activity / silence
 | `backgroundAlerts` / `badgeCount` | S4 规则 |
 | `UsageServiceImpl` / `defaultUsageRoots` / `USAGE_HOOK` | token 用量（见「token 用量」）；各 agent 的读取器 `ClaudeUsageParser` 等也导出 |
 | `SkillsServiceImpl` / `SkillLibrary` / `skillsSupport` / `builtinSkillFiles` / `scanRepoSkills` | N9，见「Skills · MCP」；`codexLibraryMcpOverrides`、`claudeMcpConfig(mcp, library)` 是库里 MCP 的启动参数 |
+| `LimitServiceImpl` / `limitConfigDir` / `effectiveAutoResume` / `resumePromptText` / `claudeSelfResumes` | PL5，见「额度上限」 |
+| `parseClaudeStopFailure` / `parseClaudeNotification` | claude 的 StopFailure（带 error）、Notification（elicitation、quota_auto_resume_*） |
 | `DEFAULT_DESTRUCTIVE_PATTERNS` | 建议的 Settings 默认值，在整段命令里找：rm -r/-f、sudo rm、find -delete、git push -f/--force/+refspec、reset --hard、clean -f、checkout -- / .、restore、stash drop/clear、DROP/TRUNCATE/DELETE FROM 无 WHERE、FLUSHDB/ALL、mkfs、dd of=、写 /dev/sd*、chmod -R 777、kubectl delete、terraform destroy、.env |
 
 ## 各 agent 怎么启动
@@ -257,6 +260,48 @@ token 本身只放进 `LaunchSpec.env`，不进命令行。和用户自己配的
 - 面板的状态点：只有 built in 的 agentdeck（AgentDeck 的 MCP 服务起来了是绿、没起来是红）；库里的 MCP 连没连上不知道，不画。
 - 版本门槛：codex 的库里 MCP 同 N1（0.164.0），omp 的 setDir 同 N1（18.0.4）。版本取不到时按够新处理。running 记的是选中的 id，版本太低被适配器跳过的也算在里面（只影响 “Changes apply after restart” 的提示）。
 - 测试：`test/skills.test.ts`（临时目录里的库、repo、每种 agent 列出什么、prepareLaunch 写的目录、每种 agent 的启动参数、running 存档、选择规则）。
+
+## 额度上限（PL5 · 插件 Auto-resume，DR-63、DR-84）
+
+`src/limits/`：主进程里只有这一份，Auto-resume、Prompt queue（PL3）和集群（CR8）共用。规则（纯函数、各种时长）在 `rules.ts`，服务在 `service.ts`。
+
+```ts
+const limits = new LimitServiceImpl({
+  emit,                                            // limits.changed（完整列表）
+  lookup: (id) => ({ terminalId: id, agent, configDir: limitConfigDir(agent, loginEnv, homedir()), selfResumes: claudeSelfResumes(版本) }),
+  targets: () => [...所有终端],                     // 标“同一账号、当时空闲”的
+  sendKeys: (id, keys) => tmux.sendKeys(id, keys), // bracketed paste 一段 + Enter（同 PL3）
+  setKeepAwake: (on) => …,                         // 离恢复 12 小时以内有终端在等时 true
+  usage, subagents,                                // UsageServiceImpl（get / watch / unwatch）、SubagentServiceImpl（list）
+  board: () => store.board.load(),                 // Auto-resume 开关、Prompt queue 排着的
+  resumePrompt: () => settings.resumePrompt,
+  staggerMs, graceMs,                              // AGENTDECK_RESUME_STAGGER_MS、AGENTDECK_LIMIT_GRACE_MS（组装方读环境）
+});
+limits.start();
+// tapHook → limits.noteHook；usage.changed → noteUsage；status.changed → noteStatus；terminal.input → noteInput；terminal.exit → noteTerminalGone
+```
+
+- **怎么认出撞上**：claude 的 StopFailure `error: "rate_limit"`（马上），再读会话记录的 rate_limit 行拿恢复时间、范围（seven_day_opus / sonnet）；
+  codex 只能读会话记录（最后一个 task_complete 带 usage_limit_exceeded），所以 codex 终端一直 watch 用量，claude 撞上后才 watch（第一次见到时 get 一次，
+  接回重开应用前停在额度上的）。恢复时间过去 12 小时以上的旧记录不管。
+- **账号**：`<agent>:<配置目录>:<范围>`，配置目录是登录环境的 CLAUDE_CONFIG_DIR / CODEX_HOME（没设是 ~/.claude、~/.codex）。同一账号别的活着的终端标 idle；
+  Opus / Sonnet 的只标最近用同一家族模型的。钩子先到时按 all 建，读到 Opus 再挪过去。
+- **状态**：interrupted（这一轮是被额度结束的）→ resuming（发了续跑 / claude 自己开始续）→ resumed（这一轮做完、没再撞）；
+  idle（同账号、自己没撞）：到点直接 resumed，开着 Prompt queue、有排着的给一个错开的位置（PL3 发第一条）；
+  took-over：撞完后你打过字（`noteInput`，自己发的按键 3 秒内不算）或发了新消息（UserPromptSubmit，claude 的 task-notification 不算）；
+  gave-up：连续两次续了又撞（codex 的 Stop 可能比会话记录先到，续完 2 分钟内又撞也算），或发不出按键 3 次；skipped：skip / cancel / 开关关着。
+  了结了的账号先带着最后的状态发一次 limits.changed，再去掉（书签能写 “you took over”）。
+- **什么时候发**：恢复时间 + 1 分钟（graceMs），按被打断的先后、隔 30 秒（staggerMs）；终端那时不空闲就等下一次检查。5 秒检查一次，下一件事更早时按点叫醒。
+  文字 = Settings 的 Resume prompt（或 setOwner 给的，集群带任务编号）+ claude 跟着断掉的后台子 agent（SubagentService 里 failed、主线撞上前 5 分钟之后结束的，逐个点名、让它 SendMessage）/ codex 的一句。
+- **Auto-resume 开关**：`effectiveAutoResume(白板, 终端)` = 终端 → 框 → 白板，默认关。关着的照样列出来，不发按键、不阻止睡眠，到点变 skipped；Resume now 不看开关。
+- **claude 自己续**（`claudeSelfResumes`：2.1.234 起，恢复在 24 小时内）：owner agent，不发；quota_auto_resume_fired（或恢复后看到它开始干活）→ resuming；
+  stale → 账号 needsYou 'stale'，你点 Continue（`resumeNow(账号, [终端])`）只按回车；disabled → owner auto-resume，按上面的规矩发；
+  恢复 3 分钟后（从开始看着算）还没动静 → 自己发。它续完那一轮后，子 agent 还 failed、这一轮没有 SubagentStart，就补发子 agent 那一段（只一次）。
+- **睡过头**：恢复前最近一次检查离现在超过 150 秒（Mac 睡着、应用没开），醒来已过恢复时间 30 分钟以上：needsYou 'slept'，不续，等 Resume now。
+  读不到恢复时间 1 分钟后：needsYou 'reset-unknown'。
+- **owner**：crew 等集群调 `resumeNow`；run（Day run 选了 Hand off）不管；`setOwner` 可以在撞上之前先登记。
+- 状态只在内存里；和 PL3 那边共用的几个数（宽限、2.1.234、3 分钟、30 分钟、150 秒）各写一份，改的时候两边一起改。
+- 测试：`test/limits.test.ts`（注入的时钟、按键、用量、子 agent、白板，不起定时器）。
 
 ## 历史会话（N11，DR-62，2026-10-26 本机核对）
 

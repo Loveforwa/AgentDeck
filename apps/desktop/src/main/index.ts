@@ -53,6 +53,7 @@ import tmuxHostPath from '../utility/tmux-host.ts?modulePath';
 import { DESKTOP_IPC, type BoardReadyInfo, type StartupInfo } from '../shared/desktop-bridge.ts';
 import { createAlerts } from './alerts.ts';
 import { createAppService, openFileInEditor } from './app-service.ts';
+import { createKeepAwake, createLimits, limitsApi } from './limits.ts';
 import { registerBrowserService } from './browser/index.ts';
 import { startHostProcess } from './host-process.ts';
 import { installIpc, type IpcMainLike } from './ipc.ts';
@@ -107,15 +108,9 @@ async function main(): Promise<void> {
   // 开发时（pnpm dev）程序坞里默认是 Electron 的图标：换成和打包版、README 一样的 AgentDeck 图标。打包版用 build-resources/icon.icns
   if (isDev && process.platform === 'darwin') app.dock?.setIcon(join(app.getAppPath(), 'build-resources', 'icon.png'));
 
-  // PL3：Prompt queue 在等额度恢复、或正在接着发时不让 Mac 睡（prevent-app-suspension：系统不睡，屏幕照常关）
-  let awakeId: number | null = null;
-  const keepAwake = (on: boolean): void => {
-    if (on && awakeId === null) awakeId = powerSaveBlocker.start('prevent-app-suspension');
-    else if (!on && awakeId !== null) {
-      powerSaveBlocker.stop(awakeId);
-      awakeId = null;
-    }
-  };
+  // PL3：Prompt queue 在等额度恢复、或正在接着发时不让 Mac 睡（prevent-app-suspension：系统不睡，屏幕照常关）；
+  // PL5：LimitService 有终端在等恢复时也要。两边各报各的，都不要了才放开
+  const keepAwake = createKeepAwake({ start: () => powerSaveBlocker.start('prevent-app-suspension'), stop: (id) => powerSaveBlocker.stop(id) });
 
   const repoRoot = isDev ? resolve(app.getAppPath(), '../..') : null;
   const paths = resolvePaths({
@@ -147,6 +142,8 @@ async function main(): Promise<void> {
   const statusOf = new Map<TerminalId, StatusSnapshot>();
   // 终端的 token 用量（插件 PL2），建好 agent runtime 后创建；钩子里 pi / omp 扩展报的上下文、claude 的 transcript_path 先给它
   let usage: UsageServiceImpl | null = null;
+  // 额度上限（PL5），建好 usage 后创建；用量、状态、钩子、输入都交给它
+  let limits: ReturnType<typeof createLimits> | null = null;
   let onStatus: (s: StatusSnapshot) => void = () => {};
   const emit = (event: AgentDeckEvent) => {
     broadcast(event);
@@ -157,7 +154,9 @@ async function main(): Promise<void> {
       if (event.snapshot.sessionId) store.terminals.updateSession(event.snapshot.terminalId, event.snapshot.sessionId);
       usage?.noteSession(event.snapshot.terminalId);
       onStatus(event.snapshot);
+      limits?.noteStatus(event.snapshot);
     }
+    if (event.type === 'usage.changed') limits?.noteUsage(event.usage);
   };
 
   // AgentDeck 自己的 Session（M9 · SE2）：agents.start 建或接回，钩子加分段，进程退出改 stopped。见 sessions.ts
@@ -246,6 +245,7 @@ async function main(): Promise<void> {
       const hook = { terminalId: h.terminalId, agent: h.agent, hookName: h.hookName, payload: h.envelope.payload };
       sessions.noteHook(h);
       subagents.noteHook(hook);
+      limits?.noteHook({ ...hook, event: h.event });
       return usage?.noteHook(hook) ?? false;
     },
     env: () => loginEnv,
@@ -297,9 +297,15 @@ async function main(): Promise<void> {
     emit(event);
     rt.onTerminalEvent(event);
     // 状态机的兜底规则（claude 拒绝批准、Esc 打断都没有钩子）要知道用户输入过，tmux-host 在 write / sendKeys 时发 terminal.input
-    if (event.type === 'terminal.input') rt.noteInput(event.id);
+    if (event.type === 'terminal.input') {
+      rt.noteInput(event.id);
+      limits?.noteInput(event.id);
+    }
     // agent 进程没了，它的后台子 agent 也没了
-    if (event.type === 'terminal.exit') subagents.noteTerminalGone(event.id);
+    if (event.type === 'terminal.exit') {
+      subagents.noteTerminalGone(event.id);
+      limits?.noteTerminalGone(event.id);
+    }
     sessions.noteTerminalEvent(event);
   });
 
@@ -322,6 +328,21 @@ async function main(): Promise<void> {
     targets: () => store.terminals.list().flatMap((r) => (alive(r.terminalId) ? (usageTarget(r.terminalId) ?? []) : [])),
     emit,
     roots: defaultUsageRoots(homedir(), loginEnv),
+  });
+  limits = createLimits({
+    emit,
+    agentOf: (id) => rt.status.get(id)?.agent ?? store.terminals.get(id)?.agent ?? null,
+    terminalIds: () => store.terminals.list().map((r) => r.terminalId),
+    agents: () => rt.agents.list(),
+    loginEnv: () => loginEnv,
+    homeDir: homedir(),
+    sendKeys: (id, keys) => terminals.sendKeys(id, keys),
+    setKeepAwake: (on) => keepAwake('limits', on),
+    usage,
+    subagents,
+    board: () => store.board.load(),
+    resumePrompt: () => settings.get().resumePrompt,
+    env: process.env,
   });
 
   const agents = {
@@ -437,6 +458,7 @@ async function main(): Promise<void> {
     await rt.close().catch(() => undefined);
     clearInterval(skillSetsTimer);
     usage?.close();
+    limits?.close();
     subagents.close();
     // ⌘Q 只断开（会话留在 tmux 里继续跑）；Stop all and quit 才结束 tmux 服务
     await terminals.stop(stopTerminals);
@@ -470,7 +492,7 @@ async function main(): Promise<void> {
       trashItem: (p) => shell.trashItem(p),
       quit,
       setBadge: (count) => alerts.setBoardBadge(count),
-      setKeepAwake: (on) => keepAwake(on),
+      setKeepAwake: (on) => keepAwake('queue', on),
     }),
   );
   registry.register('projects', projects);
@@ -486,6 +508,8 @@ async function main(): Promise<void> {
   registry.register('skills', skills);
   registry.register('subagents', subagents);
   registry.register('sessions', sessions);
+  // PL5：按账号的额度上限、被打断的终端、续跑（Auto-resume、Prompt queue、集群共用）
+  registry.register('limits', limitsApi(limits));
   // N11：各 agent 的历史会话（左边栏），只读它们自己的会话文件
   registry.register('history', new HistoryServiceImpl({ roots: defaultUsageRoots(homedir(), loginEnv) }));
   registerBrowserService(registry);

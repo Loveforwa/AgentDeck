@@ -327,3 +327,28 @@ describe('menu', () => {
     expect(shortcut).toHaveBeenCalledWith('open-settings');
   });
 });
+
+describe('limits assembly (PL5)', () => {
+  it('reads the test timings from the environment', async () => {
+    const { limitTimingFromEnv } = await import('../src/main/limits.ts');
+    expect(limitTimingFromEnv({ AGENTDECK_RESUME_STAGGER_MS: '2000', AGENTDECK_LIMIT_GRACE_MS: '5000' })).toEqual({ staggerMs: 2000, graceMs: 5000 });
+    expect(limitTimingFromEnv({ AGENTDECK_RESUME_STAGGER_MS: 'soon' })).toEqual({});
+    expect(limitTimingFromEnv({})).toEqual({});
+  });
+
+  it('keeps the Mac awake while the queue or the limits want it, and lets go when neither does', async () => {
+    const { createKeepAwake } = await import('../src/main/limits.ts');
+    const start = vi.fn(() => 7);
+    const stop = vi.fn();
+    const keepAwake = createKeepAwake({ start, stop });
+    keepAwake('queue', true);
+    keepAwake('limits', true);
+    expect(start).toHaveBeenCalledTimes(1);
+    keepAwake('queue', false);
+    expect(stop).not.toHaveBeenCalled();
+    keepAwake('limits', false);
+    expect(stop).toHaveBeenCalledWith(7);
+    keepAwake('limits', false);
+    expect(stop).toHaveBeenCalledTimes(1);
+  });
+});
