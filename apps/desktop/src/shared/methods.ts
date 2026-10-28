@@ -55,6 +55,7 @@ export const SERVICE_METHODS = {
   skills: ['forTerminal', 'library', 'addSkill', 'addMcp'],
   subagents: ['list', 'watchTranscript', 'unwatchTranscript'],
   history: ['list'],
+  sessions: ['list', 'get', 'children', 'rename', 'handoff', 'handoffSummary'],
 } as const satisfies { readonly [S in ServiceName]: readonly MethodsOf<S>[] };
 
 // 穷尽检查：漏掉的方法名会出现在报错信息里。
