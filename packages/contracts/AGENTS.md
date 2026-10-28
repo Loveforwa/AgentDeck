@@ -26,6 +26,8 @@
 | crew.ts | CrewService（Agent 集群，模板和自由模式、任务表、关卡、子 session 表、Decisions，CR0） | packages/crew-service（调度器） | 集群框、收件箱、mcp-server 的 /cli |
 | inbox.ts | 收件箱的一条 InboxItem（CR0 定形状，服务见 CR1） | 收件箱服务（CR1） | 顶栏 Needs you、⌘J |
 | cli.ts | agentdeck 命令行的线路（CliRequest / CliResponse、TERMINAL_KEY_ENV、API_ENDPOINT_FILE）和谁能用哪组命令（cliCommandAllowed，CR13） | mcp-server 的 /cli（CR14） | tools/agentdeck-cli（CR15） |
+| docs.ts | DocService、CodeAnchorService（文档窗口、代码锚点，DC0），第二期的评论和核查形状 | packages/doc-service（DC2） | 文档窗口、序列图（CU0） |
+| code-refs.ts | 纯函数 parseCodeRefs：从 markdown 读出代码引用 | 纯函数 | 文档窗口、doc-service |
 | app.ts | AppService、Settings | 组装（apps/desktop） | 所有界面 |
 | ipc.ts | AgentDeckApi、事件总表、线路约定 | M0 · F3 IPC 层 | 所有界面 |
 

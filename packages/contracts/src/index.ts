@@ -20,4 +20,6 @@ export * from './limits.ts';
 export * from './crew.ts';
 export * from './inbox.ts';
 export * from './cli.ts';
+export * from './docs.ts';
+export * from './code-refs.ts';
 export * from './ipc.ts';

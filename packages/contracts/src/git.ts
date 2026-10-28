@@ -175,6 +175,28 @@ export interface GitService {
   repairWorktrees(repo: AbsPath): Promise<void>;
   defaultBranch(repo: AbsPath): Promise<string>;
   init(dir: AbsPath): Promise<void>;
+
+  // 以下给代码锚点用（DC0 加，DC1 实现）。都只读。
+  /**
+   * 每行最后改它的提交（git blame --porcelain，只要每行的提交）。rev 不填是工作区（没提交的行 commit 为 40 个 0）。
+   * line 从 1 起。文件不存在抛 not-found。
+   */
+  blameLines(repo: AbsPath, path: string, opts?: { rev?: string }): Promise<{ line: number; commit: string }[]>;
+  /** 某个版本的文件全文（git show rev:path）；那个版本里没有这个文件返回 null。 */
+  showFile(repo: AbsPath, rev: string, path: string): Promise<string | null>;
+  /**
+   * 行号映射：git diff -U0 --no-color -M from [to] -- path 的 @@ 头。to 为 'worktree' 时对工作区（含没提交的改动）。
+   * 文件被改名时按改名后的路径给（hunk 里看不出新路径，调用方用 status / log 的改名找）。没有变化返回空数组。
+   */
+  lineMap(repo: AbsPath, path: string, from: string, to: 'worktree' | string): Promise<LineMapHunk[]>;
+}
+
+/** lineMap 的一段：旧文件从 oldStart 起的 oldLines 行变成新文件从 newStart 起的 newLines 行（同 @@ -a,b +c,d @@，行数 0 时 start 是前一行）。 */
+export interface LineMapHunk {
+  oldStart: number;
+  oldLines: number;
+  newStart: number;
+  newLines: number;
 }
 
 export type GitEvent =

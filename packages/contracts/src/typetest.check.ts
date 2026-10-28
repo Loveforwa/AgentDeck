@@ -7,8 +7,9 @@ import type {
   AgentCapabilityReport, LaunchSpec,
   AccountLimit, LimitedTerminal, AgentHookEvent,
   CrewId, CrewMembership, CrewSession, InboxItem, InboxItemId, CliRequest, CliResponse, InjectionEstimate,
+  CodeRef, DocVerifyService, DocWindowData, DocWriteResult, LineMapHunk, ResolvedRef,
 } from './index.ts';
-import { effectiveSkillSelection, FIRE_AND_FORGET, isAutoApproveOn, skillsRestartNeeded, findInlineSecret, redactCommand, capabilitiesFromReport, cliCommandAllowed, TERMINAL_KEY_ENV, API_ENDPOINT_FILE } from './index.ts';
+import { effectiveSkillSelection, FIRE_AND_FORGET, isAutoApproveOn, skillsRestartNeeded, findInlineSecret, redactCommand, capabilitiesFromReport, cliCommandAllowed, TERMINAL_KEY_ENV, API_ENDPOINT_FILE, parseCodeRefs } from './index.ts';
 
 declare const api: AgentDeckApi;
 api.on('status.changed', (e) => {
@@ -202,3 +203,16 @@ const crewFrame: NonNullable<BoardState['crews']>[number] = { crewId: 'c1' as Cr
 const est: InjectionEstimate = { itemId: 'skill:built-in:crew', tokensPerTurn: null, mode: 'on-demand' };
 const key: string = TERMINAL_KEY_ENV + API_ENDPOINT_FILE;
 void item; void req; void res; void crewFrame; void est; void key; void cliCommandAllowed('crew status', { crew: null, origin: null });
+// DC0（0.1.20）：文档窗口、代码锚点、GitService 的 blame / show / lineMap
+api.on('doc.changed', (e: EventOf<'doc.changed'>) => void (e.by?.kind === 'agent' ? e.by.terminalId : null));
+api.on('doc.anchors', (e) => void e.summary.counts.moved);
+void api.docs.write('/r/a.md', 'x', { baseHash: 'h' }).then((r: DocWriteResult) => (r.ok ? r.hash : r.conflict.theirs.text));
+void api.anchors.resolve('/r/a.md').then((r) => r.refs.map((x: ResolvedRef) => [x.state, x.baseline.source]));
+const refs: CodeRef[] = parseCodeRefs('src/a.ts:12-30 `onLink`');
+void api.anchors.fixLines('/r/a.md', refs);
+void api.git.lineMap('/r', 'src/a.ts', 'HEAD~1', 'worktree').then((h: LineMapHunk[]) => h.map((x) => x.newStart));
+void api.git.showFile('/r', 'HEAD', 'src/a.ts').then((t) => t ?? '');
+void api.git.blameLines('/r', 'docs/a.md').then((b) => b[0]?.commit);
+const docData: DocWindowData = { path: '/r/a.md', view: 'read', linkedTerminal: null, seenHash: null };
+const verifier: Pick<DocVerifyService, 'submit'> = { submit: async () => {} };
+void docData; void verifier;

@@ -11,6 +11,7 @@ import type { GitEvent, GitService } from './git.ts';
 import type { HistoryService } from './history.ts';
 import type { LimitEvent, LimitService } from './limits.ts';
 import type { CrewEvent, CrewService } from './crew.ts';
+import type { CodeAnchorService, DocEvent, DocService } from './docs.ts';
 import type { SessionEvent, SessionService } from './session.ts';
 import type { ProjectEvent, ProjectService } from './project.ts';
 import type { ApprovalService, StatusEvent, StatusService } from './status.ts';
@@ -20,7 +21,7 @@ import type { SubagentEvent, SubagentService } from './subagents.ts';
 import type { UsageEvent, UsageService } from './usage.ts';
 import type { WorkspaceEvent, WorkspaceService } from './workspace.ts';
 
-export const CONTRACTS_VERSION = '0.1.19';
+export const CONTRACTS_VERSION = '0.1.20';
 
 /** 所有从服务推给界面的事件。新增事件只能往这里加，不能改已有事件的形状。 */
 export type AgentDeckEvent =
@@ -36,7 +37,8 @@ export type AgentDeckEvent =
   | SubagentEvent
   | SessionEvent
   | LimitEvent
-  | CrewEvent;
+  | CrewEvent
+  | DocEvent;
 export type AgentDeckEventType = AgentDeckEvent['type'];
 export type EventOf<T extends AgentDeckEventType> = Extract<AgentDeckEvent, { type: T }>;
 
@@ -66,6 +68,10 @@ export interface Services {
   limits: LimitService;
   /** Agent 集群（M8 · CR0）。带 caller 的方法是命令行替终端调的，界面不调。 */
   crew: CrewService;
+  /** 文档窗口读写 .md（M15 · DC0）。 */
+  docs: DocService;
+  /** 文档和序列图里的代码锚点（M15 · DC0）。评论、核查（DocCommentService、DocVerifyService）是第二期，先只定形状。 */
+  anchors: CodeAnchorService;
 }
 
 export type ServiceName = keyof Services;
