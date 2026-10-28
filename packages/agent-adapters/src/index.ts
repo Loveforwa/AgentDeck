@@ -131,7 +131,6 @@ export {
   CODEX_SUBAGENT_LINE,
   DEFAULT_RESUME_PROMPT,
   effectiveAutoResume,
-  hasQueuedPrompts,
   LIMIT_AGENTS,
   limitConfigDir,
   limitScopeOf,

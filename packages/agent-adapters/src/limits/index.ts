@@ -8,7 +8,6 @@ export {
   CODEX_SUBAGENT_LINE,
   DEFAULT_RESUME_PROMPT,
   effectiveAutoResume,
-  hasQueuedPrompts,
   KEEP_AWAKE_WITHIN_MS,
   LIMIT_AGENTS,
   limitConfigDir,

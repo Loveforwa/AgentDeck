@@ -1,8 +1,7 @@
 // 额度上限（插件 Auto-resume，M7 · PL5）的纯规则：账号键、范围、开关怎么算、续跑提示词、各种时长。
 // 不碰时钟、不碰服务，service.ts 和测试都用它。需求见设计画布“MVP 插件”页 PluginResume，调研 DR-63、DR-84。
 //
-// 和 Prompt queue（PL3，packages/ui/canvas/src/plugins/queue-model.ts）共用的几个数（宽限 1 分钟、claude 2.1.234 起自己续、
-// 恢复 3 分钟后没动静才发、睡过 30 分钟算 stale、两次检查隔 150 秒算“中间没看着”）要和那边保持一样；界面包不能 import 本包，只能各写一份。
+// Prompt queue（PL3）2026-10-28 退役，原来和它各写一份的几个数现在只在这里（界面的 Auto-resume 书签只读 LimitService 的列表）。
 
 import type {
   AbsPath,
@@ -97,13 +96,6 @@ export function effectiveAutoResume(board: BoardState | null, terminalId: Termin
   const frame = w.workspaceId ? board.frames.find((f) => f.workspaceId === w.workspaceId) : undefined;
   if (typeof frame?.autoResume === 'boolean') return frame.autoResume;
   return board.autoResume === true;
-}
-
-/** 这个终端开着 Prompt queue、有排着的、没暂停（恢复后给它留一个错开的位置，让 PL3 发第一条）。 */
-export function hasQueuedPrompts(board: BoardState | null, terminalId: TerminalId): boolean {
-  const w = board?.windows.find((n) => n.type === 'terminal' && (n.data as Partial<TerminalWindowData> | null)?.terminalId === terminalId);
-  const q = (w?.data as Partial<TerminalWindowData> | undefined)?.queue;
-  return !!q && q.on && !q.paused && q.prompts.length > 0;
 }
 
 /** Settings › Agents › Resume prompt 没填时用的那段（设计画布 PluginResume 第 4 节）。 */

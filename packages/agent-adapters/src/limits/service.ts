@@ -1,5 +1,5 @@
 // LimitService（插件 Auto-resume，M7 · PL5）：认出被额度打断的终端、按账号归组、恢复后错开续跑。主进程里只有这一份，
-// Auto-resume、Prompt queue（PL3）和集群（CR8）共用。需求见设计画布“MVP 插件”页 PluginResume，调研 DR-63、DR-84。
+// Auto-resume（PL6）和集群（CR8）共用（Prompt queue PL3 2026-10-28 退役）。需求见设计画布“MVP 插件”页 PluginResume，调研 DR-63、DR-84。
 //
 //   钩子（noteHook）：claude StopFailure error "rate_limit" → 这一轮是被额度结束的；Notification quota_auto_resume_* → claude 自己续跑的进展；
 //                     UserPromptSubmit（不是 claude 自己插的）→ 你接手了；SubagentStart → 续跑那一轮重派了子 agent
@@ -8,6 +8,10 @@
 //   输入（noteInput，terminal.input）：撞完以后你打过字 → took-over（自己发的按键不算）
 //   时钟（tick，5 秒一次，另按下一件事的时间叫醒）：恢复时间 + 1 分钟按被打断的先后、隔 30 秒发续跑提示；Mac 睡过头先问你
 //   → limits.changed（完整列表）；setKeepAwake；sendKeys（bracketed paste + Enter，同 PL3）
+//
+// PL6（contracts 0.1.23）：卡片里能改这一次续跑发的文字（setMessage）。发的时候用改过的文字代替模板（断掉的子 agent 没被点名的
+// 照样补在后面）；claude 自己续（owner agent）时改过的文字马上送进终端，它恢复时改发这一条（DR-84，待用真 claude 核对）。
+// 改过的文字只管这一次：发出去、这一次了结、续了又撞都清掉。
 //
 // Auto-resume 默认关（2026-10-28 用户定）：开关没开的终端照样列出来（账号受限是事实，PL3、收件箱、CR8 要用），
 // 但不发任何按键、不阻止睡眠；到了恢复时间，被打断的变 skipped（这次不续）。你点 Resume now（resumeNow）不看开关。
@@ -42,7 +46,6 @@ import { isClaudeSyntheticPrompt } from '../subagents/claude.ts';
 import {
   accountKey,
   effectiveAutoResume,
-  hasQueuedPrompts,
   IGNORE_RESET_OLDER_THAN_MS,
   isLimitAgent,
   KEEP_AWAKE_WITHIN_MS,
@@ -86,7 +89,7 @@ export interface LimitServiceOptions {
   usage: Pick<UsageService, 'get' | 'watch' | 'unwatch'>;
   /** 跟着额度断掉的 claude 后台子 agent（N10）。不给就不点名。 */
   subagents?: Pick<SubagentService, 'list'>;
-  /** 白板（Auto-resume 开关、Prompt queue 排着的）。不给时开关都算关。 */
+  /** 白板（Auto-resume 开关）。不给时开关都算关。 */
   board?: () => Promise<BoardState>;
   /** Settings › Agents › Resume prompt。 */
   resumePrompt?: () => string | null | undefined;
@@ -151,6 +154,10 @@ interface Term {
   lost: BackgroundAgent[];
   failures: number;
   checking: boolean;
+  /** PL6：你为这一次改过的续跑文字（setMessage）；null 是没改。 */
+  message: string | null;
+  /** PL6：claude 自己续时改过的文字已经送进终端。 */
+  delivered: boolean;
 }
 
 interface Account {
@@ -262,15 +269,16 @@ export class LimitServiceImpl implements LimitService {
       a.watchedFrom ??= now;
     }
     for (const t of chosen) {
-      if (t.state === 'idle' && !hasQueuedPrompts(this.board, t.id)) {
+      if (t.state === 'idle') {
         t.state = 'resumed';
         t.resumedAt = now;
         continue;
       }
       if (t.state === 'interrupted' && t.owner === 'agent') {
         // claude 卡在等回车：替你按回车，它接着续自己的；没卡着时发续跑提示（它在等的时候收到消息会改发这一条）
-        t.sendEnter = t.stale;
-        if (!t.stale) t.owner = 'auto-resume';
+        // 改过的文字已经送进去了（PL6）：也只按回车，不再发一遍
+        t.sendEnter = t.stale || t.delivered;
+        if (!t.sendEnter) t.owner = 'auto-resume';
         t.ownerFixed = true;
       }
       t.slot = this.nextSlot(a, now);
@@ -295,6 +303,35 @@ export class LimitServiceImpl implements LimitService {
       if (!SETTLED.includes(t.state) && t.state !== 'resuming') {
         t.state = 'skipped';
         t.slot = null;
+      }
+    }
+    this.changed();
+  }
+
+  /**
+   * PL6：改这一次续跑发的文字。null、空白、和默认一样的都算回到默认。claude 自己续（owner agent、还在等）时改过的文字马上送进去：
+   * claude 在等恢复时收到消息，恢复时改发这一条、不发它自己的 continue（DR-84，待用真 claude 核对）。
+   */
+  async setMessage(terminalId: TerminalId, text: string | null): Promise<void> {
+    const found = this.find(terminalId);
+    if (!found) throw new AgentDeckError({ code: 'not-found', message: 'Terminal is not paused by a usage limit' });
+    const { t } = found;
+    if (!WAITING.includes(t.state) || t.delivered || (t.slot !== null && t.slot <= this.now())) {
+      throw new AgentDeckError({ code: 'invalid-argument', message: 'The resume message was already sent' });
+    }
+    const trimmed = text?.trim() ?? '';
+    t.message = trimmed === '' || trimmed === this.defaultMessage(t).trim() ? null : text!.replace(/\s+$/, '');
+    if (t.message !== null && t.owner === 'agent' && t.state === 'interrupted') {
+      t.delivered = true;
+      // 改过的文字里已经点了子 agent 的名：claude 续完以后不用再补发那一段
+      if (t.lost.length > 0) t.followUpSent = true;
+      this.changed();
+      const ok = await this.type(t.id, this.messageFor(t));
+      if (!ok) {
+        t.delivered = false;
+        t.followUpSent = false;
+        this.changed();
+        throw new AgentDeckError({ code: 'internal', message: 'Could not type the message into the terminal' });
       }
     }
     this.changed();
@@ -567,6 +604,8 @@ export class LimitServiceImpl implements LimitService {
     t.subagentStarts = 0;
     t.followUpSent = false;
     t.failures = 0;
+    t.message = null;
+    t.delivered = false;
   }
 
   /** 同一账号的别的终端：当时空闲、自己没撞（Opus / Sonnet 额度只算用同一家族模型的）。 */
@@ -644,6 +683,8 @@ export class LimitServiceImpl implements LimitService {
       lost: [],
       failures: 0,
       checking: false,
+      message: null,
+      delivered: false,
     };
   }
 
@@ -790,12 +831,9 @@ export class LimitServiceImpl implements LimitService {
         if (this.autoOn(t.id)) t.slot = this.nextSlot(a, now);
         else t.state = 'skipped'; // Auto-resume 关着：这次不续
       } else if (t.state === 'idle') {
-        // 当时空闲的不发续跑；排着提示词的留一个位置给 PL3 发第一条
-        if (hasQueuedPrompts(this.board, t.id)) t.slot = this.nextSlot(a, now);
-        else {
-          t.state = 'resumed';
-          t.resumedAt = now;
-        }
+        // 当时空闲的不发续跑（PL3 排着的提示词 2026-10-28 退役，不再给它留位置）
+        t.state = 'resumed';
+        t.resumedAt = now;
       }
       // agent：claude 自己续（上面的兜底）；crew：等集群调 resumeNow；run：Day run 自己管
     }
@@ -828,11 +866,11 @@ export class LimitServiceImpl implements LimitService {
     t.subagentStarts = 0;
     const enter = t.sendEnter;
     t.sendEnter = false;
-    const text = enter
-      ? null
-      : resumePromptText({ agent: t.agent, template: this.opts.resumePrompt?.() ?? null, override: t.prompt, lost: t.agent === 'claude' ? t.lost : [] });
+    const text = enter ? null : this.messageFor(t);
     this.changed();
     const ok = await this.type(t.id, text);
+    // 改过的文字只管这一次：发出去了就清掉（没发出去留着，重试时还用它）
+    if (ok && !enter) t.message = null;
     if (!ok && t.state === 'resuming') {
       t.failures += 1;
       t.state = t.failures >= MAX_SEND_FAILURES ? 'gave-up' : 'interrupted';
@@ -932,6 +970,23 @@ export class LimitServiceImpl implements LimitService {
     this.wake.unref?.();
   }
 
+  // ---- 续跑的文字（PL6） ----
+
+  /** 没改时发的：setOwner 的提示词（集群）或 Settings 的 Resume prompt（或内置的）+ claude 断掉的子 agent / codex 的一句。 */
+  private defaultMessage(t: Term): string {
+    return resumePromptText({ agent: t.agent, template: this.opts.resumePrompt?.() ?? null, override: t.prompt, lost: t.agent === 'claude' ? t.lost : [] });
+  }
+
+  /**
+   * 这次真正发的：集群给的提示词优先；你改过就用改过的，claude 断掉的子 agent 里文字没点到 id 的照样补在后面
+   * （改的时候删掉了也补：接不回子 agent 的代价比多一段话大）；codex 那一句不补。没改用默认的。
+   */
+  private messageFor(t: Term): string {
+    if (t.message === null || t.prompt) return this.defaultMessage(t);
+    const missing = t.agent === 'claude' ? t.lost.filter((a) => !t.message!.includes(a.id)) : [];
+    return missing.length > 0 ? `${t.message}\n\n${resumePromptText({ agent: t.agent, lost: missing, subagentsOnly: true })}` : t.message;
+  }
+
   // ---- 小工具 ----
 
   private autoOn(id: TerminalId): boolean {
@@ -969,9 +1024,7 @@ export class LimitServiceImpl implements LimitService {
       const terminals: LimitedTerminal[] = this.ordered(a).map((t) => {
         let resumeAt: number | null = t.slot;
         if (resumeAt === null && !a.runStarted && base !== null && a.needsYou !== 'slept') {
-          const eligible =
-            (t.state === 'interrupted' && t.owner === 'auto-resume' && this.autoOn(t.id)) || (t.state === 'idle' && hasQueuedPrompts(this.board, t.id));
-          if (eligible) resumeAt = base + k++ * this.staggerMs;
+          if (t.state === 'interrupted' && t.owner === 'auto-resume' && this.autoOn(t.id)) resumeAt = base + k++ * this.staggerMs;
         }
         const self = selfResumeOf(t);
         return {
@@ -982,6 +1035,9 @@ export class LimitServiceImpl implements LimitService {
           lostSubagents: t.lost.length,
           autoResume: this.autoOn(t.id),
           ...(self ? { selfResume: self } : {}),
+          message: t.message,
+          defaultMessage: this.defaultMessage(t),
+          ...(t.delivered ? { messageDelivered: true } : {}),
         };
       });
       out.push({

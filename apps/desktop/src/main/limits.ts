@@ -1,5 +1,5 @@
 // 额度上限（插件 Auto-resume · PL5）的组装：把 agent-adapters 的 LimitServiceImpl 接到终端（sendKeys）、用量、后台子 agent、
-// 白板（Auto-resume 开关、Prompt queue）、设置（Resume prompt）和“不让 Mac 睡”上。规则都在 agent-adapters/src/limits，这里只接线。
+// 白板（Auto-resume 开关）、设置（Resume prompt）和“不让 Mac 睡”上。规则都在 agent-adapters/src/limits，这里只接线。
 //
 // 环境变量（测试用）：AGENTDECK_RESUME_STAGGER_MS（同一账号几个终端续跑的间隔，默认 30 秒）、
 //                    AGENTDECK_LIMIT_GRACE_MS（恢复时间后再等多久，默认 1 分钟）。
