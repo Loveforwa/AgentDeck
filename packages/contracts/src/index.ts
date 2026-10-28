@@ -15,4 +15,5 @@ export * from './subagents.ts';
 export * from './history.ts';
 export * from './launch.ts';
 export * from './session.ts';
+export * from './capabilities.ts';
 export * from './ipc.ts';

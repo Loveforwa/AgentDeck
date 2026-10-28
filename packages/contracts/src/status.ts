@@ -45,6 +45,11 @@ export interface StatusSnapshot {
    * 界面拿到后存进 TerminalWindowData.sessionId，恢复会话和 Fork 用。
    */
   sessionId?: AgentSessionId | null;
+  /**
+   * AH0：状态退回按输出判断时的原因（英文），例如 "Hooks didn't report · status from terminal activity"（钩子该来没来，IS-74）、
+   * "Status from terminal activity · Kimi has no hooks"。状态灯悬停写这一句。没降级为 null 或不填。
+   */
+  degraded?: string | null;
 }
 
 export interface StatusService {

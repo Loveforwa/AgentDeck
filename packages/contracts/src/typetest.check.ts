@@ -4,8 +4,9 @@ import type {
   TerminalSkills, TerminalUsage, TerminalWindowData, UsageService, WindowGroupId, WindowId, WindowNode, WindowRestoreSupport, WorkspaceId,
   LaunchPreset, ProjectPatch, Settings,
   Session, SessionId, SessionOrigin, AgentSessionSegment, HandoffResult,
+  AgentCapabilityReport, LaunchSpec,
 } from './index.ts';
-import { effectiveSkillSelection, FIRE_AND_FORGET, isAutoApproveOn, skillsRestartNeeded, findInlineSecret, redactCommand } from './index.ts';
+import { effectiveSkillSelection, FIRE_AND_FORGET, isAutoApproveOn, skillsRestartNeeded, findInlineSecret, redactCommand, capabilitiesFromReport } from './index.ts';
 
 declare const api: AgentDeckApi;
 api.on('status.changed', (e) => {
@@ -164,3 +165,9 @@ void api.agents.start({ agent: 'codex', cwd: '/r', workspaceId: null, mode: { ki
 const withSession: TerminalWindowData = { ...termData, session: 's1' as SessionId };
 const origin: SessionOrigin = { kind: 'fork', agentSessionId: null };
 void withSession; void origin;
+// AH0 / AH1（0.1.17）：能力报告、Check again、降级原因、第一条消息
+void api.agents.check('omp').then((r: AgentCapabilityReport) => r.entries.filter((e) => e.level !== 'yes').map((e) => [e.key, e.reason]));
+void api.agents.list().then((xs) => xs.map((x) => (x.report ? capabilitiesFromReport(x.report).hooks : x.capabilities.hooks)));
+api.on('status.changed', (e) => void e.snapshot.degraded);
+const kimiLaunch: LaunchSpec = { cmd: 'kimi', args: [], sessionId: null, consumed: { prompt: false }, sendAfterReady: 'reply with PELICAN' };
+void kimiLaunch;
