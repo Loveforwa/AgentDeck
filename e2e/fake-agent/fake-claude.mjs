@@ -10,7 +10,7 @@
 //   work            → UserPromptSubmit，进入 running，一直干活，直到 done
 //   ask [命令]       → UserPromptSubmit + PermissionRequest（Bash，默认命令 ls -la），屏幕上画确认框；
 //                     等批准时按 1 或回车 = 允许一次 → PostToolUse，回到 running；按 2 或 Esc = 拒绝（和真 claude 一样不发钩子）
-//   done            → Stop（一轮结束，idle）
+//   done [回复]      → Stop（一轮结束，idle）；带回复时像真 claude 一样画一行 “● 回复”（CO4 的最后一条回复从屏幕上认它）
 //   quit / exit     → SessionEnd，退出码 0
 //   crash           → 不发钩子，退出码 3（状态机记成 error）
 // 每发一个钩子、每收到一次批准，都往 $AGENTDECK_E2E_LOG_DIR/<会话 id>.jsonl 写一行，测试读它核对后台发生了什么。
@@ -176,7 +176,7 @@ async function runLine(input) {
     case 'done':
       state = 'idle';
       await emitHook('Stop', { stop_hook_active: false });
-      write('  Done.\n');
+      write(rest.length > 0 ? `\n● ${rest.join(' ')}\n\n` : '  Done.\n');
       prompt();
       return;
     case 'crash':
