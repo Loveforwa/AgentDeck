@@ -70,6 +70,12 @@ export interface TerminalHost {
 
   /** 不用接上显示就能发按键（tmux send-keys），用于批准请求、填入命令。 */
   sendKeys(id: TerminalId, keys: string[]): Promise<void>;
+  /**
+   * 0.1.22：按原文打一段字（tmux send-keys -l）：不认按键名、不把结尾的 ; 当命令分隔符。不按回车，要提交另外 sendKeys(['Enter'])。
+   * 控制字符原样送进去（换行在多数 TUI 里等于回车），调用方要先自己换掉。和 sendKeys 一样先退出回滚、发 terminal.input。
+   * 可选：没实现时调用方退回 sendKeys。
+   */
+  sendText?(id: TerminalId, text: string): Promise<void>;
   /** 最后 n 行纯文本（tmux capture-pane），给摘要卡用。 */
   lastLines(id: TerminalId, n: number): Promise<string[]>;
   /** 在系统终端里接上同一个会话用的命令。 */

@@ -39,6 +39,15 @@ export type LimitedTerminalState =
  */
 export type LimitOwner = 'auto-resume' | 'crew' | 'agent' | 'run';
 
+/**
+ * 0.1.22：agent 自己续跑（owner agent，claude 2.1.234 起）走到哪一步，对应 claude 的 Notification quota_auto_resume_*：
+ * - waiting：还没恢复，或恢复了还没动静（等它自己续）；
+ * - fired：它开始续了（收到 fired，或恢复后看到它开始干活）；
+ * - stale：卡在等你按回车（Mac 睡过了恢复时间）；
+ * - disabled：用户关了 claude 自己的续跑，改由 AgentDeck 发（owner 随之变成 auto-resume）。
+ */
+export type SelfResumeState = 'waiting' | 'fired' | 'stale' | 'disabled';
+
 export interface LimitedTerminal {
   terminalId: TerminalId;
   state: LimitedTerminalState;
@@ -47,6 +56,16 @@ export interface LimitedTerminal {
   resumeAt: IsoTime | null;
   /** 因为额度停掉、还没接回的后台子 agent 数（N10）。 */
   lostSubagents: number;
+  /**
+   * 0.1.22：这次算下来这个终端的 Auto-resume 开没开（终端 → 框 → 白板，默认关）。关着时 owner 仍是 auto-resume、resumeAt 为 null，
+   * 到了恢复时间变 skipped。不填是不知道（老的实现）。
+   */
+  autoResume?: boolean;
+  /**
+   * 0.1.22：agent 自己续跑走到哪一步（见 SelfResumeState）。只在 agent 自己会续（claude 2.1.234 起）的终端上有；
+   * 别的终端、老的实现不填。Prompt queue（PL3）据此决定等它续完再发，不再自己猜。
+   */
+  selfResume?: SelfResumeState;
 }
 
 /**

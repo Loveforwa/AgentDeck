@@ -153,6 +153,17 @@ export interface StartAgentResult {
   session?: SessionId;
 }
 
+/**
+ * 0.1.22（CO4）：终端里 agent 最后一条回复。读 agent 自己的会话记录（claude、codex，和 CrewService.result 同一段代码）；
+ * 读不到时退回屏幕最后几行（source 为 screen，at 为 null）。text 为 null 表示什么都没读到。
+ */
+export interface AgentLastReply {
+  text: string | null;
+  source: 'transcript' | 'screen';
+  /** 这条回复写进会话记录的时间；屏幕上读的为 null。 */
+  at: IsoTime | null;
+}
+
 export interface AgentService {
   /** 已注册的 agent 和安装情况，New terminal ▸ 菜单用。 */
   list(): Promise<AgentInfo[]>;
@@ -168,6 +179,11 @@ export interface AgentService {
    * 不发提示词、不写 agent 自己的配置，返回新的报告。不认识的 agent 抛 not-found。
    */
   check(agent: AgentKind): Promise<AgentCapabilityReport>;
+  /**
+   * 0.1.22（CO4）：这个终端里 agent 最后一条回复（Agents 视图的悬停提示）。只读，不碰终端。终端不存在抛 not-found。
+   * 可选：没实现时调用方自己读屏幕（terminals.lastLines）。
+   */
+  lastReply?(terminalId: TerminalId): Promise<AgentLastReply>;
 }
 
 // ---- 钩子传输协议 ----

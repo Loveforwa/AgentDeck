@@ -197,6 +197,17 @@ export interface GitService {
    * worktrees 带上工作区 id：git-service 不认识工作区，结果按调用方给的 id 写。
    */
   overlaps(repo: AbsPath, worktrees: { workspaceId: WorkspaceId; path: AbsPath }[]): Promise<WorkspaceOverlap[]>;
+
+  /**
+   * 0.1.22（DC1）：from → to（'worktree' 是工作区，默认）之间 path 被改名成了什么（git diff --name-status -M --diff-filter=R）；
+   * 没改名返回 null。代码锚点据此提示新路径。可选：没实现时改名的文件只能报 gone。
+   */
+  renamedPath?(repo: AbsPath, path: string, from: string, to?: 'worktree' | string): Promise<string | null>;
+  /**
+   * 0.1.22（DC1）：仓库里的文件，跟踪的 + 没被忽略的未跟踪文件（git ls-files --cached --others --exclude-standard），
+   * 相对仓库根，去重排序。文档窗口列 .md、按路径后缀找短路径的候选。可选：没实现时调用方自己走目录。
+   */
+  listFiles?(repo: AbsPath): Promise<string[]>;
 }
 
 /** CO0：重叠文件的结论。clean：两边都改了但 git 能自动合；conflict：会冲突；unknown：git 低于 2.38（没有 merge-tree --write-tree），只知道两边都改了。 */

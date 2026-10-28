@@ -8,6 +8,7 @@ import type {
   AccountLimit, LimitedTerminal, AgentHookEvent,
   CrewId, CrewMembership, CrewSession, InboxItem, InboxItemId, CliRequest, CliResponse, InjectionEstimate,
   CodeRef, DocVerifyService, DocWindowData, DocWriteResult, LineMapHunk, ResolvedRef, WorkspaceOverlap,
+  AgentLastReply, SelfResumeState, AgentService,
 } from './index.ts';
 import { effectiveSkillSelection, FIRE_AND_FORGET, isAutoApproveOn, skillsRestartNeeded, findInlineSecret, redactCommand, capabilitiesFromReport, cliCommandAllowed, TERMINAL_KEY_ENV, API_ENDPOINT_FILE, parseCodeRefs } from './index.ts';
 
@@ -221,3 +222,20 @@ void api.git.overlaps('/r', [{ workspaceId: 'w1' as WorkspaceId, path: '/r' }, {
   .then((xs: WorkspaceOverlap[]) => xs.flatMap((o) => o.files.filter((f) => f.verdict === 'conflict').map((f) => [o.a, o.b, f.path])));
 const unseen: TerminalWindowData = { ...termData, unseen: true };
 void unseen;
+// 0.1.22：额度的范围、续跑的两个字段、最后一条回复、按原文打字、改名和列文件（都是可选的，老实现照样能用）
+const opusLimit: UsageLimit = { kind: 'weekly', resetsAt: null, at: null, detail: null, scope: 'opus' };
+const selfLimited: LimitedTerminal = { terminalId: 't1' as TerminalId, state: 'interrupted', owner: 'agent', resumeAt: null, lostSubagents: 0, autoResume: false, selfResume: 'waiting' };
+const oldLimited: LimitedTerminal = { terminalId: 't1' as TerminalId, state: 'idle', owner: 'auto-resume', resumeAt: null, lostSubagents: 0 };
+const stale: SelfResumeState = 'stale';
+void opusLimit; void selfLimited; void oldLimited; void stale;
+const oldAgents: Pick<AgentService, 'list' | 'refresh' | 'start' | 'check'> = api.agents;
+void oldAgents;
+void api.agents.lastReply?.('t1' as TerminalId).then((r: AgentLastReply) => (r.source === 'transcript' ? r.at : r.text));
+void api.terminals.sendText?.('t1' as TerminalId, 'Enter;');
+void api.git.renamedPath?.('/r', 'src/old.ts', 'HEAD~1').then((p) => p ?? 'gone');
+void api.git.listFiles?.('/r').then((xs: string[]) => xs.filter((x) => x.endsWith('.md')));
+const oldHost: Omit<TerminalHost, 'sendText'> = {} as TerminalHost;
+const asHost: TerminalHost = oldHost;
+const oldGit: Omit<GitService, 'renamedPath' | 'listFiles'> = {} as GitService;
+const asGit: GitService = oldGit;
+void asHost; void asGit;

@@ -6,6 +6,7 @@
 // 原则：读不到的就是没有，不估。整体读不到时 state 为 'no-data'；某一项 agent 不报时那一项为 null。
 
 import type { AbsPath, AgentKind, AgentSessionId, IsoTime, TerminalId } from './common.ts';
+import type { LimitScope } from './limits.ts';
 
 /** 一组 token 数。累计和“最近一次请求”都用它。 */
 export interface TokenCounts {
@@ -94,6 +95,11 @@ export interface UsageLimit {
   at: IsoTime | null;
   /** agent 原样的说法，例如 "You've hit your usage limit … try again at 3:30 PM."。 */
   detail: string | null;
+  /**
+   * 0.1.22（PL5）：这是哪一份额度。claude 每周的 Opus / Sonnet 单独额度（quotaLimits.rateLimitType 为 seven_day_opus / seven_day_sonnet）
+   * 是 opus / sonnet，只算用同一家族模型的终端；不填是 all（整个账号）。
+   */
+  scope?: LimitScope;
 }
 
 export interface UsageService {
