@@ -55,9 +55,46 @@ export function compareVersions(a: string, b: string): number {
   return 0;
 }
 
-/** version 为 null（取不到版本）时按“够新”处理：多数情况是版本输出格式变了，而不是装了旧版。 */
-export function atLeast(version: string | null, min: string): boolean {
-  return version === null || compareVersions(version, min) >= 0;
+/**
+ * 版本够不够新。AH3（DR-60）：version 为 null（读不出版本）时**不再当作够新**，按没核对处理：
+ * 给了 help（`--help` 的输出和这一项要带的参数）时看 help 里有没有这个参数，有才算；没给就算不够（不带可能让 agent 起不来的参数）。
+ */
+export function atLeast(version: string | null, min: string, help?: { text: string | null; flag: string } | null): boolean {
+  if (version !== null) return compareVersions(version, min) >= 0;
+  return !!help?.text && helpHasFlag(help.text, help.flag);
+}
+
+/**
+ * `--help` 的输出里有没有这个参数（`--settings`、`-e`）或子命令（`resume`，写成 `command:resume`）。
+ * 参数后面跟空格、逗号、=、<、[ 或行尾才算，免得 `--session` 认成 `--session-id`。
+ */
+export function helpHasFlag(help: string, flag: string): boolean {
+  if (flag.startsWith('command:')) {
+    const name = flag.slice('command:'.length).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp(`^\\s+${name}(?:\\s|,|\\|)`, 'm').test(help);
+  }
+  const esc = flag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`(?:^|[\\s,\\[(|])${esc}(?![\\w-])`, 'm').test(help);
+}
+
+/** 运行 `<path> --help`（或给的参数），返回输出（stdout + stderr，最多 256KB）。失败、超时返回 null。 */
+export function readHelp(path: AbsPath, env: Env, args: string[] = ['--help'], timeoutMs = 5000): Promise<string | null> {
+  return new Promise((resolve) => {
+    execFile(path, args, { env, timeout: timeoutMs, maxBuffer: 256 * 1024 }, (_err, stdout, stderr) => {
+      const out = `${stdout ?? ''}\n${stderr ?? ''}`;
+      resolve(out.trim() ? out : null);
+    });
+  });
+}
+
+/** 可执行文件的修改时间（毫秒，IS-77：agent 自己升级后据此重读版本、作废缓存）。读不到为 null。 */
+export async function fileStamp(path: string | null): Promise<number | null> {
+  if (!path) return null;
+  try {
+    return (await stat(path)).mtimeMs;
+  } catch {
+    return null;
+  }
 }
 
 /**

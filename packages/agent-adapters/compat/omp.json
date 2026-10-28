@@ -83,10 +83,9 @@
       "verifiedUpTo": "18.0.4"
     },
     "K16": {
-      "result": "skip",
+      "result": "pass",
       "suite": "L2",
-      "reason": "Comes with AH3 (fall back to terminal activity when hooks do not report)",
-      "verifiedUpTo": null
+      "verifiedUpTo": "18.0.4"
     },
     "K17": {
       "result": "skip",

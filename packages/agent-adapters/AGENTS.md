@@ -50,7 +50,7 @@ tmuxHostEvents.on((e) => rt.onTerminalEvent(e));  // terminal.activity / silence
 | --- | --- |
 | `createAgentRuntime(opts)` | 把下面几块接好：`agents`、`status`、`approvals`、`hookServer`、`onTerminalEvent`、`noteInput`、`start`、`close` |
 | `conversationExists(roots)` / `conversationCheckFromEnv(env)` | X4：fork 前找原来的对话文件（见「Fork 对话」）；runtime 默认按登录环境接好，`sessionRoots: null` 关掉 |
-| `AgentServiceImpl` | `AgentService`。`onStarted` 回调告诉状态机这次启动是否真的带上了钩子 |
+| `AgentServiceImpl` | `AgentService`（含 AH3 的 `check`）。`onStarted` 回调告诉状态机这次启动是否真的带上了钩子、钩子什么时候该来、一开始的降级原因；`cachedReport(agent)`、`noteLaunch(agent, reason)` 给 runtime 用 |
 | `createDefaultAdapters({ env, agentExtension? })` | `[ClaudeAdapter, CodexAdapter, …已知表里的每一行（KnownAgentAdapter）, ShellAdapter, CustomCommandAdapter]` |
 | `KNOWN_AGENTS` / `KnownAgentAdapter` / `EXTENSION_ENV` | 已知 agent 表、通用适配器、扩展读的环境变量名 |
 | `codexMcpOverrides` / `mcpPluginFiles` / `MCP_URL_ENV` | N1：codex 挂 MCP 的 `-c` 参数；omp 的插件目录内容（相对路径 → 文本）和清单里 url 读的环境变量 |
@@ -63,13 +63,15 @@ tmuxHostEvents.on((e) => rt.onTerminalEvent(e));  // terminal.activity / silence
 | `backgroundAlerts` / `badgeCount` | S4 规则 |
 | `UsageServiceImpl` / `defaultUsageRoots` / `USAGE_HOOK` | token 用量（见「token 用量」）；各 agent 的读取器 `ClaudeUsageParser` 等也导出 |
 | `SkillsServiceImpl` / `SkillLibrary` / `skillsSupport` / `builtinSkillFiles` / `scanRepoSkills` | N9，见「Skills · MCP」；`codexLibraryMcpOverrides`、`claudeMcpConfig(mcp, library)` 是库里 MCP 的启动参数 |
+| `COMPAT_RECORDS` / `SCENARIOS` / `buildReport` / `strategyFromReport` / `HOOKS_DIDNT_REPORT` | AH2、AH3：合格测试记录（src/compat/records.ts，由 compat/*.json 生成）、K1–K18、能力报告的算法、按报告改 Auto-approve 做法、钩子没来时快照里的那句话 |
+| `literalKeys` / `FirstMessageTyper` | AH1：启动后打第一条消息 |
 | `DEFAULT_DESTRUCTIVE_PATTERNS` | 建议的 Settings 默认值，在整段命令里找：rm -r/-f、sudo rm、find -delete、git push -f/--force/+refspec、reset --hard、clean -f、checkout -- / .、restore、stash drop/clear、DROP/TRUNCATE/DELETE FROM 无 WHERE、FLUSHDB/ALL、mkfs、dd of=、写 /dev/sd*、chmod -R 777、kubectl delete、terraform destroy、.env |
 
 ## 各 agent 怎么启动
 
 | agent | 新建 | resume | fork | 钩子 | “允许一次” |
 | --- | --- | --- | --- | --- | --- |
-| claude | `claude --session-id <新 uuid> --settings <json>` | `--resume <id>` | `--resume <id> --fork-session --session-id <新 uuid>` | `--settings` 里的 hooks | `Enter` |
+| claude | `claude --session-id <新 uuid> --settings <json>` | `--resume <id>` | `--resume <id> --fork-session --session-id <新 uuid>` | `--settings` 里的 hooks | `1`（不发 Enter：用户按过方向键时 Enter 可能选成“以后都允许”） |
 | codex | `codex -c hooks.…（7 条）-c hooks.state={…}` | `codex resume <id> …` | `codex fork -C <cwd> <id> …` | `-c` 覆盖 + 信任哈希 | `y` |
 | shell | `$SHELL -l`；带命令时 `$SHELL -l -c <命令>` | 不支持 | 不支持 | 无 | 无 |
 | custom | 按 shell 规则拆开的命令 | 不支持 | 不支持 | 无 | 无 |
@@ -80,9 +82,9 @@ tmuxHostEvents.on((e) => rt.onTerminalEvent(e));  // terminal.activity / silence
 - 用户在 Settings 里加的启动参数放在最后。claude 的 LaunchSpec.env 带 `CLAUDE_CODE_TMUX_TRUECOLOR=1`。
 - 恢复上次会话（X6）：白板按记下的会话 id 用上表的 resume 重开（`test/agent-service.test.ts` 逐个 agent 核对进 tmux 的参数）。`StartAgentRequest.prefill` 只对不带 command 的 shell 转给 `terminals.create`（Shell 在输入行里填好上次的命令、不运行），agent 和 `-c` 跑命令的 shell 忽略它。
 - `--settings` 的值是一整段 JSON，**线 1 的 tmux-host 建会话时要按参数数组传**（`new-session … -- cmd arg1 arg2`），不要拼成一行 shell 命令，否则要自己转义。
-- 检测：在传入环境的 PATH 里找命令，跑 `--version` 取 x.y.z。版本取不到时按“够新”处理。
+- 检测：在传入环境的 PATH 里找命令，跑 `--version` 取 x.y.z。版本取不到时**不当作够新**（AH3）：再读一次 `--help`，要带的参数在里面才带（`env.ts` 的 `atLeast(version, min, help)`），见「运行时降级」。
 - claude 的钩子要 2.0 以上（粗略下限），StopFailure 事件只在 2.1 以上加；codex 的钩子要 0.159 以上（本机实测的版本，更早的没验证）。
-- “允许一次”的按键是看确认框得出的（claude “❯ 1. Yes” 默认选中；codex “1. Yes, proceed (y)”），**待线 1 用真终端核对 send-keys 的效果**。
+- “允许一次”的按键是看确认框得出的（claude “❯ 1. Yes”，发 `1`；codex “1. Yes, proceed (y)”，发 `y`）；线 1 用真终端核对过 send-keys 的效果（tmux-host/AGENTS.md「Approve all 的按键核对」）。
 
 ## Fork 对话（X4，DR-42，2026-10-26 实测）
 
@@ -221,7 +223,7 @@ token 本身只放进 `LaunchSpec.env`，不进命令行。和用户自己配的
 | pi 0.83.0 | 否 | — | — | pi 不内置 MCP：README 写 “No MCP.”、`docs/usage.md` 说故意不做，要用扩展自己实现。我们的 `agentdeck-pi-extension.mjs` 可以加一个 MCP 客户端（initialize + tools/list，用 `pi.registerTool` 注册代理工具），留到以后 |
 | kimi 2.3.1 | 否 | — | — | `--help` 没有 MCP 参数，也没有 `mcp` 子命令。它只从 `$KIMI_CODE_HOME/mcp.json`、仓库根的 `.mcp.json`、`<cwd>/.kimi-code/mcp.json` 读；改 `KIMI_CODE_HOME` 会连账号和设置一起换掉，项目里的两个文件要写进用户的仓库，而且只在用户信任过这个目录时才读（`~/.kimi-code/workspace-trust/`），每个新 worktree 都要点一次。按会话加 MCP 只有 ACP（`kimi acp` 的 `session/new mcpServers`），TUI 用不上 |
 
-- 版本：codex 低于 0.164.0 不挂（`-c` 里不认识的字段可能让整份配置加载失败、codex 起不来）；omp 低于 18.0.4 不挂。版本取不到时按够新处理（同钩子）。
+- 版本：codex 低于 0.164.0 不挂（`-c` 里不认识的字段可能让整份配置加载失败、codex 起不来）；omp 低于 18.0.4 不挂。版本取不到时看 `--help` 里有没有 `--plugin-dir`（codex 的 `-c mcp_servers` 看不出来，不挂；AH3）。
 - omp 在 tmux 里有没有真的连上、工具名在 omp 里显示成什么，没有在真 TUI 里核对（只核对了配置解析）。
 
 ## 第一条消息（`StartAgentRequest.prompt`，AH1，IS-76）
@@ -268,7 +270,7 @@ MCP 的 open_terminals / create_workspace 把这句原样返回给调用的 agen
 | shell、custom | — | — | — | 小节写 “Skills and MCP servers are for agents” |
 
 - 面板的状态点：只有 built in 的 agentdeck（AgentDeck 的 MCP 服务起来了是绿、没起来是红）；库里的 MCP 连没连上不知道，不画。
-- 版本门槛：codex 的库里 MCP 同 N1（0.164.0），omp 的 setDir 同 N1（18.0.4）。版本取不到时按够新处理。running 记的是选中的 id，版本太低被适配器跳过的也算在里面（只影响 “Changes apply after restart” 的提示）。
+- 版本门槛：codex 的库里 MCP 同 N1（0.164.0），omp 的 setDir 同 N1（18.0.4）。版本取不到时看 `--help` 里有没有那个参数（AH3）。running 记的是选中的 id，版本太低被适配器跳过的也算在里面（只影响 “Changes apply after restart” 的提示）。
 - 测试：`test/skills.test.ts`（临时目录里的库、repo、每种 agent 列出什么、prepareLaunch 写的目录、每种 agent 的启动参数、running 存档、选择规则）。
 
 ## 历史会话（N11，DR-62，2026-10-26 本机核对）
@@ -347,6 +349,33 @@ pi 扩展 `agentdeck-pi-extension.mjs` 也要一起放进 Resources（它在 age
 - K18（IS-144）：AgentDeck 生成的参数里没有让 agent 自己另开 worktree 的（claude `--worktree`/`-w`/`--tmux`、codex `--worktree`、omp `--cwd`），终端的目录就是框的目录；
   L2 里再看窗格的当前目录、claude 钩子负载里的 cwd、`git worktree list` 没多出来。用户在 Settings 里自己加的参数不管。
 
+## 运行时降级（AH3，DR-60 P0，画布 A0 的规则、A1）
+
+能力报告（`AgentInfo.report`、`agents.check` 的返回值）= 适配器的声明 + 合格测试记录 + 运行时的情况，在 `src/capabilities/report.ts`：
+
+- **verifiedUpTo**：这一项对应的 K 在 `compat/<agent>.json` 里通过的最低版本（有一项从没通过就是 null；跳过的不算）。没有 K 的能力为 null。
+- **版本超过核对版本**（比记录新、读不出版本、没有记录）：替你按东西的（`approve-keys`，以及靠认屏 `screen` 的）降为 no，`downgrade: 'off'`，
+  reason “Untested on <版本>”（读不出版本时 “Untested: couldn't read the <Label> version”）。钩子、扩展、会话文件、启动参数（A、B 档）照常，
+  界面拿 `report.version` 和 `verifiedUpTo` 比，自己写 “newer than checked”。`createAgentRuntime` 给 ApprovalService 的策略跟着报告走
+  （`strategyFromReport`）：omp 超过 18.0.4 时 Auto-approve / Approve all 报 unsupported、note 是同一句，开着 Auto-approve 的终端发
+  `approval.needs-you`（reason unsupported），不发键（TC-48）。kimi 的第一条消息也是按键打进去的，但只是打字，不关。
+- **版本读不出**：不再当作够新（`env.ts` 的 `atLeast`）。检测时再读一次 `--help`：claude 有 `--settings` 才带钩子，pi / omp 有 `-e` 才带扩展，
+  omp 有 `--plugin-dir` 才挂 MCP、带 skill，kimi 有 `--skills-dir` 才带 skill；codex 的钩子、MCP 从 help 看不出来，不带（也不带会顶掉用户 notify 的 legacy notify）。
+- **钩子该来没来**（IS-74，状态表第 20–23 行）：claude、pi、omp 启动后 10 秒、codex 第一次输入后 10 秒没有任何钩子，这个终端改按输出判断，
+  `StatusSnapshot.degraded` 写 “Hooks didn't report · status from terminal activity”，报告的 status 一项写 Partial · output “Hooks didn't report at the last launch”；
+  之后钩子来了恢复（这个终端回到钩子规则，下一次有钩子的启动清掉报告里的说明）。没有钩子的 agent（kimi）一开始就带 “Status from terminal activity · Kimi has no hooks”。
+- **启动参数被拒**（IS-73）：版本没核对过、这次运行里也还没正常起来过的那次启动，等 3 秒：非 0 退出、输出里有 unknown option / unrecognized / unexpected argument 之类时，
+  收掉它，用 `AdapterLaunchContext.sessionOnly` 只带会话参数（新建 / 接回 / fork 的 id 和第一条消息）重开一次，返回新的终端；不带钩子、MCP、skill、用户的额外参数。
+  终端标降级（“Started with session options only · <那一行>”），报告的 status 写同一句，`AgentInfo.warning` 也是它。同一版本之后直接只带会话参数，不再等。
+  核对过的版本不等（每次启动不会多 3 秒）；起来过一次的版本也不再等。
+- **agent 自己升级了**（IS-77）：启动前看可执行文件的修改时间，变了就重读这一家（版本、help、报告）；codex 的信任哈希缓存按“notify 路径 + codex 路径 + 修改时间”存。
+  本机 kimi 会自己在后台升级（合格测试期间从 2.3.2 升到了 2.3.3）。
+- **Check again**（`agents.check`）：重读版本；在 `--help` 里找每次会带的参数（`launchFlags()`），没有的那几项 no、`downgrade: 'failed'`、reason “--plugin-dir isn't in claude --help”；
+  有钩子、不是 codex、知道上次在哪个目录启动过时，在那个目录带钩子空启动一次（不发提示词），等 10 秒钩子再关掉：来了清掉 status 的说明，没来写 “Hooks didn't report when checked”。
+  空启动的终端不交给状态机（runtime 的 `waitForHook`）。不写 agent 自己的配置。
+- 没做：IS-75（回了 allow 后几秒内没有 PostToolUse / Stop 就退回 needs-approval），重开应用接回终端时按那次启动实际带没带钩子（要 apps/desktop 记下来）。
+- 测试：`test/degradation.test.ts`（TC-48、读不出版本、参数被拒、升级后重读、Check again、钩子没来）、`test/status-machine.test.ts`（第 20–23 行）、合格测试 L1 的 K16、K17（K17 用真子进程跑会拒参数的假程序）。
+
 ### 新增或升级一家 agent（五步）
 
 1. **加一行或写适配器**：known.ts 加一行（命令名、启动参数模板、扩展、第一条消息怎么带、能力声明）；钩子、扩展、读文件不够时才写专门的适配器。参数先用真程序核对（`--help`、源码、真跑一次）。
@@ -359,10 +388,10 @@ pi 扩展 `agentdeck-pi-extension.mjs` 也要一起放进 Resources（它在 age
 
 | agent | 版本 | pass | fail | skip | 说明 |
 | --- | --- | --- | --- | --- | --- |
-| claude | 2.1.291 | 15 | 0 | 3 | K13 不读额度；K16（AH3）；K17 L2 不跑。K6、K14、K15 是以前手工核对的（manual） |
-| codex | 0.165.0 | 14 | 0 | 4 | K8 没有提问工具；K15 不支持；K16；K17。K6（0.159.2）、K14（0.164.0）是 manual |
-| pi | 0.83.0 | 11 | 0 | 7 | K5、K6、K8 pi 不问；K13；K14 没有 MCP；K16；K17。K15 是 manual |
-| omp | 18.0.4 | 14 | 0 | 4 | K6 第一次在真 TUI 里核对（确认框标题在上边框里，见 screens.ts）；K13；K14 只核对了配置解析；K16；K17。K15 是 manual |
+| claude | 2.1.291 | 16 | 0 | 2 | K13 不读额度；K17 L2 不跑（L1 用假程序覆盖）。K6、K14、K15 是以前手工核对的（manual） |
+| codex | 0.165.0 | 15 | 0 | 3 | K8 没有提问工具；K15 不支持；K17。K6（0.159.2）、K14（0.164.0）是 manual |
+| pi | 0.83.0 | 12 | 0 | 6 | K5、K6、K8 pi 不问；K13；K14 没有 MCP；K17。K15 是 manual |
+| omp | 18.0.4 | 15 | 0 | 3 | K6 第一次在真 TUI 里核对（确认框标题在上边框里，见 screens.ts）；K13；K14 只核对了配置解析；K17。K15 是 manual |
 | kimi | 2.3.3 | 9 | 0 | 9 | 本机 kimi 跑测试期间自己从 2.3.2 升到了 2.3.3。K5、K6、K8 不认等待；K10 不能 fork；K13；K14；K15 没在 kimi 里核对；K16 没有钩子；K17 |
 
 ## 测试

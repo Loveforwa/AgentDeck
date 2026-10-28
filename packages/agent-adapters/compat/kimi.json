@@ -77,7 +77,7 @@
     "K14": {
       "result": "skip",
       "suite": "L2",
-      "reason": "Needs AgentDeck's MCP server running; packages/mcp-server checks it with real agents",
+      "reason": "No AgentDeck MCP yet",
       "verifiedUpTo": null
     },
     "K15": {
@@ -89,7 +89,7 @@
     "K16": {
       "result": "skip",
       "suite": "L2",
-      "reason": "Comes with AH3 (fall back to terminal activity when hooks do not report)",
+      "reason": "No hooks to lose: status already comes from terminal activity",
       "verifiedUpTo": null
     },
     "K17": {

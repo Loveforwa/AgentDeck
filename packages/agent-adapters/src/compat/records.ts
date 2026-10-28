@@ -90,10 +90,9 @@ export const COMPAT_RECORDS: Readonly<Record<string, CompatRecord>> = {
         "verifiedUpTo": "2.1.291"
       },
       "K16": {
-        "result": "skip",
+        "result": "pass",
         "suite": "L2",
-        "reason": "Comes with AH3 (fall back to terminal activity when hooks do not report)",
-        "verifiedUpTo": null
+        "verifiedUpTo": "2.1.291"
       },
       "K17": {
         "result": "skip",
@@ -190,14 +189,13 @@ export const COMPAT_RECORDS: Readonly<Record<string, CompatRecord>> = {
       "K15": {
         "result": "skip",
         "suite": "L2",
-        "reason": "Checked with the agent's own loader (AGENTS.md, Skills · MCP), not in the TUI yet",
+        "reason": "Not supported for codex",
         "verifiedUpTo": null
       },
       "K16": {
-        "result": "skip",
+        "result": "pass",
         "suite": "L2",
-        "reason": "Comes with AH3 (fall back to terminal activity when hooks do not report)",
-        "verifiedUpTo": null
+        "verifiedUpTo": "0.165.0"
       },
       "K17": {
         "result": "skip",
@@ -291,7 +289,7 @@ export const COMPAT_RECORDS: Readonly<Record<string, CompatRecord>> = {
       "K14": {
         "result": "skip",
         "suite": "L2",
-        "reason": "Needs AgentDeck's MCP server running; packages/mcp-server checks it with real agents",
+        "reason": "No AgentDeck MCP yet",
         "verifiedUpTo": null
       },
       "K15": {
@@ -303,7 +301,7 @@ export const COMPAT_RECORDS: Readonly<Record<string, CompatRecord>> = {
       "K16": {
         "result": "skip",
         "suite": "L2",
-        "reason": "Comes with AH3 (fall back to terminal activity when hooks do not report)",
+        "reason": "No hooks to lose: status already comes from terminal activity",
         "verifiedUpTo": null
       },
       "K17": {
@@ -404,10 +402,9 @@ export const COMPAT_RECORDS: Readonly<Record<string, CompatRecord>> = {
         "verifiedUpTo": "18.0.4"
       },
       "K16": {
-        "result": "skip",
+        "result": "pass",
         "suite": "L2",
-        "reason": "Comes with AH3 (fall back to terminal activity when hooks do not report)",
-        "verifiedUpTo": null
+        "verifiedUpTo": "18.0.4"
       },
       "K17": {
         "result": "skip",
@@ -500,7 +497,7 @@ export const COMPAT_RECORDS: Readonly<Record<string, CompatRecord>> = {
       "K14": {
         "result": "skip",
         "suite": "L2",
-        "reason": "Needs AgentDeck's MCP server running; packages/mcp-server checks it with real agents",
+        "reason": "Pi has no MCP",
         "verifiedUpTo": null
       },
       "K15": {
@@ -510,10 +507,9 @@ export const COMPAT_RECORDS: Readonly<Record<string, CompatRecord>> = {
         "verifiedUpTo": "0.83.0"
       },
       "K16": {
-        "result": "skip",
+        "result": "pass",
         "suite": "L2",
-        "reason": "Comes with AH3 (fall back to terminal activity when hooks do not report)",
-        "verifiedUpTo": null
+        "verifiedUpTo": "0.83.0"
       },
       "K17": {
         "result": "skip",

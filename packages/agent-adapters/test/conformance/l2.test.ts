@@ -9,7 +9,7 @@
 // 屏幕上的启动对话框（omp 的首次设置、kimi 的信任框）由这里的脚手架代替用户处理，产品代码不认这些字。
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -23,6 +23,7 @@ import { compareVersions, findExecutable, readVersion } from '../../src/env.ts';
 import { HistoryServiceImpl } from '../../src/history/service.ts';
 import type { ReceivedHook } from '../../src/hook-server.ts';
 import { createAgentRuntime } from '../../src/runtime.ts';
+import { HOOKS_DIDNT_REPORT } from '../../src/status/machine.ts';
 import type { AgentRuntime } from '../../src/runtime.ts';
 import { defaultUsageRoots, UsageServiceImpl } from '../../src/usage/index.ts';
 import type { UsageRoots } from '../../src/usage/index.ts';
@@ -33,6 +34,9 @@ import { ConformanceTmuxHost } from './support/tmux-host.ts';
 
 const REAL = process.env.AGENTDECK_REAL_AGENTS === '1';
 const ONLY = (process.env.AGENTDECK_CONFORMANCE_AGENTS ?? '').split(',').filter(Boolean);
+/** 只跑这几项（例如 K16），其余保留原来的记录：给要账号的 agent 补跑一项时用，省额度。 */
+const ONLY_K = (process.env.AGENTDECK_CONFORMANCE_ONLY ?? '').split(',').filter(Boolean);
+const wanted = (id: string) => ONLY_K.length === 0 || ONLY_K.includes(id);
 const PKG = fileURLToPath(new URL('../..', import.meta.url));
 const NOTIFY = fileURLToPath(new URL('../../../../tools/agentdeck-notify/bin/agentdeck-notify.mjs', import.meta.url));
 const EXTENSION = fileURLToPath(new URL('../../../../tools/agentdeck-notify/bin/agentdeck-pi-extension.mjs', import.meta.url));
@@ -250,6 +254,7 @@ for (const agent of selected) {
     let first: { terminalId: TerminalId; sessionId: string | null } | null = null;
     let worktreesBefore: string[] = [];
     let sockDir: string | null = null;
+    const loginEnv = { ...(process.env as Record<string, string>) };
     let ready = false;
     const worktreeList = (): string[] => {
       try {
@@ -291,13 +296,17 @@ for (const agent of selected) {
     /** 记一项。fn 抛错算 fail（照样往外抛，测试显示失败）。 */
     function k(id: ScenarioId, fn: () => Promise<void>, timeoutMs = 180_000) {
       const s = SCENARIOS.find((x) => x.id === id)!;
+      if (!wanted(id)) {
+        it.skip(`${id} ${s.title} — not selected`, () => {});
+        return;
+      }
       it(`${id} ${s.title}`, async () => {
         if (!installed) {
           outcomes.set(id, { result: 'skip', reason: `${agent} is not installed here` });
           return;
         }
-        // 除了 K1、K2，都要用 K2 开起来的那个会话
-        if (id !== 'K1' && id !== 'K2' && !first) {
+        // 除了 K1、K2、K16，都要用 K2 开起来的那个会话
+        if (id !== 'K1' && id !== 'K2' && id !== 'K16' && !first) {
           outcomes.set(id, { result: 'skip', reason: 'K2 did not pass, so there is no session to use' });
           return;
         }
@@ -319,7 +328,7 @@ for (const agent of selected) {
     function skip(id: ScenarioId, reason: string) {
       const s = SCENARIOS.find((x) => x.id === id)!;
       it.skip(`${id} ${s.title} — skip: ${reason}`, () => {});
-      outcomes.set(id, { result: 'skip', reason });
+      if (wanted(id)) outcomes.set(id, { result: 'skip', reason });
     }
 
     beforeAll(async () => {
@@ -340,7 +349,6 @@ for (const agent of selected) {
       sockDir = mkdtempSync(join(tmpdir(), 'adconf-'));
       const socketPath = join(sockDir, 'hooks.sock');
       host = new ConformanceTmuxHost(() => ({ ...sb.paneEnv, AGENTDECK_HOOK_SOCKET: socketPath }));
-      const loginEnv = { ...(process.env as Record<string, string>) };
       rt = createAgentRuntime({
         env: () => loginEnv,
         terminals: host,
@@ -363,7 +371,7 @@ for (const agent of selected) {
 
     afterAll(async () => {
       if (!installed) {
-        for (const s of SCENARIOS) if (!outcomes.has(s.id)) outcomes.set(s.id, { result: 'skip', reason: `${agent} is not installed here` });
+        for (const s of SCENARIOS) if (!outcomes.has(s.id) && wanted(s.id)) outcomes.set(s.id, { result: 'skip', reason: `${agent} is not installed here` });
       }
       host?.dispose();
       await rt?.close();
@@ -513,9 +521,50 @@ for (const agent of selected) {
       expect(u.rateLimits?.primary?.resetsAt).toBeTruthy();
     });
 
-    skip('K14', "Needs AgentDeck's MCP server running; packages/mcp-server checks it with real agents");
-    skip('K15', "Checked with the agent's own loader (AGENTS.md, Skills · MCP), not in the TUI yet");
-    it.todo('K16 missing hooks fall back to terminal activity and say so (AH3)');
+    // K14、K15 不在 L2 里跑；以前手工核对过的（compat 里 suite: manual）保留
+    const K14_SKIP: Record<string, string> = {
+      omp: 'Only the config parsing was checked on 18.0.4 (N1), not in the terminal',
+    };
+    const K15_SKIP: Record<string, string> = {
+      kimi: 'Not checked in Kimi yet (only --help and the bundled source)',
+    };
+    if (agent === 'pi' || agent === 'kimi') k('K14', async () => {});
+    else skip('K14', K14_SKIP[agent] ?? "Needs AgentDeck's MCP server running; packages/mcp-server checks it with real agents");
+    if (agent === 'codex') k('K15', async () => {});
+    else skip('K15', K15_SKIP[agent] ?? "Checked with the agent's own loader (AGENTS.md, Skills · MCP), not in the TUI yet");
+    if (agent === 'kimi') skip('K16', 'No hooks to lose: status already comes from terminal activity');
+    else
+      k('K16', async () => {
+        // 钩子都送不到（notify 换成什么都不做的脚本）：10 秒后退回按输出判断，快照和报告都写原因（IS-74）
+        const noop = join(root, 'noop-notify');
+        writeFileSync(noop, '#!/bin/sh\nexit 0\n');
+        chmodSync(noop, 0o755);
+        const sock = join(sockDir!, 'k16.sock');
+        const rt2 = createAgentRuntime({
+          env: () => loginEnv,
+          terminals: host,
+          notifyCommand: noop,
+          agentExtension: EXTENSION,
+          socketPath: sock,
+          emit: () => {},
+          destructivePatterns: () => [],
+          extraArgs: (a) => (a === agent ? sb.extraArgs : []),
+          sessionRoots: sb.roots,
+          hookTimeoutMs: 10_000,
+        });
+        host.on((e) => rt2.onTerminalEvent(e));
+        await rt2.start();
+        try {
+          // codex 的 SessionStart 要等第一次输入：带一条很短的第一条消息
+          const res = await rt2.agents.start({ agent, cwd: cwdA, workspaceId: null, mode: { kind: 'new' }, ...(agent === 'codex' ? { prompt: 'reply with the word HERON' } : {}) });
+          await waitFor('degraded', res.terminalId, () => rt2.status.get(res.terminalId)?.degraded === HOOKS_DIDNT_REPORT, 30_000);
+          const info = (await rt2.agents.list()).find((a) => a.id === agent)!;
+          expect(declared(info.report!.entries, 'status')).toMatchObject({ level: 'partial', via: 'output', reason: "Hooks didn't report at the last launch" });
+          await host.kill(res.terminalId);
+        } finally {
+          await rt2.close();
+        }
+      }, 90_000);
     skip('K17', "Can't make a real agent reject an option on purpose; L1 covers it with a fake program");
 
     k('K18', async () => {

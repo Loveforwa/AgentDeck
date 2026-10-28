@@ -34,6 +34,13 @@
 // 19  | 任何                           | 钩子事件                      | 照有钩子的规则处理（例如旧版 codex 的 notify 发来的 turn-end）
 //
 // “这一轮开始”指收到 prompt-submitted / permission-request / question，turn-end 时结束。
+//
+//  -- 钩子没来（AH3，IS-74）--
+// 20  | 有钩子，track 时 watchHooks 是 startup（claude、pi、omp：一启动就有 SessionStart）| 10 秒内没有任何钩子
+//     |                                |                               | 改按没有钩子的规则（17、18）判断，StatusSnapshot.degraded 写原因，告诉 onDegraded
+// 21  | 有钩子，watchHooks 是 first-input（codex：SessionStart 要等第一次输入）| 第一次输入后 10 秒内没有钩子 | 同 20
+// 22  | 第 20、21 行降级之后            | 钩子又来了                    | 回到有钩子的规则，degraded 清掉
+// 23  | track 时给了 degraded（没有钩子的 agent、只带会话参数重开的）| — | 快照一直带着这句（状态灯悬停写它）
 
 import { WAITING_STATUSES } from '@agentdeck/contracts';
 import type {
@@ -60,7 +67,18 @@ export interface TrackOptions {
   /** 重开应用时接上已经在跑的终端可以给 'idle' 之类；默认 starting。 */
   status?: TerminalStatus;
   sessionId?: AgentSessionId | null;
+  /**
+   * AH3（IS-74）：钩子什么时候该来。startup：启动后 hookTimeoutMs 内（claude、pi、omp 一启动就报 SessionStart）；
+   * first-input：第一次 noteInput 之后 hookTimeoutMs 内（codex 的 SessionStart 要等第一次输入）。没来就退回按输出判断（第 20、21 行）。
+   * 不给时不看（重开应用接回的终端、测试）。
+   */
+  watchHooks?: 'startup' | 'first-input' | null;
+  /** 一开始就退回按输出判断的原因（第 23 行），例如 "Status from terminal activity · Kimi has no hooks"。 */
+  degraded?: string | null;
 }
+
+/** 钩子该来没来时快照里写的原因（contracts StatusSnapshot.degraded 的例子）。 */
+export const HOOKS_DIDNT_REPORT = "Hooks didn't report · status from terminal activity";
 
 export interface TrackedTerminal {
   terminalId: TerminalId;
@@ -78,6 +96,12 @@ export interface HookHint {
 
 export interface StatusMachineOptions {
   emit: (event: StatusEvent) => void;
+  /** AH3：钩子该来没来、退回按输出判断时（第 20、21 行）。AgentService 记下来写进能力报告（“Hooks didn't report at the last launch”）。 */
+  onDegraded?: (d: { terminalId: TerminalId; agent: AgentKind; reason: string }) => void;
+  /** AH3：一个终端第一次收到钩子（钩子活着）。AgentService 据此清掉报告里 “上次钩子没来” 的说明。 */
+  onHooksAlive?: (d: { terminalId: TerminalId; agent: AgentKind }) => void;
+  /** 钩子最多等多久（毫秒），默认 10000。 */
+  hookTimeoutMs?: number;
   /** Settings › Approvals 的破坏性名单（正则字符串）。每次判断时取，改设置立即生效。 */
   destructivePatterns: () => readonly string[];
   now?: () => Date;
@@ -93,6 +117,13 @@ interface Entry {
   turnActive: boolean;
   /** 用户输入过、之后还没收到任何钩子（第 15 行）。 */
   inputSinceHook: boolean;
+  /** 第 20–23 行。 */
+  watch: 'startup' | 'first-input' | null;
+  sawHook: boolean;
+  hookTimer: ReturnType<typeof setTimeout> | null;
+  /** 钩子没来被降级了（第 22 行据此恢复）。 */
+  hookFailed: boolean;
+  degraded: string | null;
 }
 
 const ENDED: readonly TerminalStatus[] = ['exited', 'error'];
@@ -106,9 +137,11 @@ export class StatusMachine implements StatusService {
   private patternsSource: readonly string[] | null = null;
   private patterns: RegExp[] = [];
   private readonly early = new Map<TerminalId, { event: AgentHookEvent | null; hint: HookHint; at: number }[]>();
+  private readonly hookTimeoutMs: number;
 
   constructor(private readonly opts: StatusMachineOptions) {
     this.now = opts.now ?? (() => new Date());
+    this.hookTimeoutMs = opts.hookTimeoutMs ?? 10_000;
   }
 
   async snapshot(): Promise<StatusSnapshot[]> {
@@ -120,15 +153,32 @@ export class StatusMachine implements StatusService {
   /** 开始跟踪一个终端（AgentService.onStarted，或重开应用时接上已有终端）。 */
   track(terminalId: TerminalId, t: TrackOptions): void {
     const status = t.status ?? 'starting';
-    this.entries.set(terminalId, {
+    this.stopWatch(this.entries.get(terminalId));
+    const degraded = t.degraded ?? null;
+    const e: Entry = {
       agent: t.agent,
       workspaceId: t.workspaceId,
       hooks: t.hooks,
       sessionId: t.sessionId ?? null,
-      snap: { terminalId, status, since: this.iso(), exitCode: null, pending: null, ...(t.sessionId ? { sessionId: t.sessionId } : {}) },
+      snap: {
+        terminalId,
+        status,
+        since: this.iso(),
+        exitCode: null,
+        pending: null,
+        ...(t.sessionId ? { sessionId: t.sessionId } : {}),
+        ...(degraded ? { degraded } : {}),
+      },
       turnActive: false,
       inputSinceHook: false,
-    });
+      watch: t.hooks ? (t.watchHooks ?? null) : null,
+      sawHook: false,
+      hookTimer: null,
+      hookFailed: false,
+      degraded,
+    };
+    this.entries.set(terminalId, e);
+    if (e.watch === 'startup') this.startWatch(terminalId, e); // 20
     this.emitStatus(terminalId);
     const early = this.early.get(terminalId);
     this.early.delete(terminalId);
@@ -137,6 +187,7 @@ export class StatusMachine implements StatusService {
 
   /** 窗口关了、终端也结束了，不再需要它的状态。 */
   forget(terminalId: TerminalId): void {
+    this.stopWatch(this.entries.get(terminalId));
     this.entries.delete(terminalId);
   }
 
@@ -148,6 +199,18 @@ export class StatusMachine implements StatusService {
     }
     if (this.ended(e)) return; // 4
     e.inputSinceHook = false;
+    if (!e.sawHook && e.watch !== null) this.opts.onHooksAlive?.({ terminalId, agent: e.agent });
+    e.sawHook = true;
+    this.stopWatch(e);
+    if (e.hookFailed) {
+      // 22：钩子来晚了，回到有钩子的规则
+      e.hookFailed = false;
+      e.hooks = true;
+      e.degraded = null;
+      const { degraded: _gone, ...rest } = e.snap;
+      e.snap = rest;
+      this.emitStatus(terminalId);
+    }
     if (!event) return;
     switch (event.type) {
       case 'session-start':
@@ -188,6 +251,7 @@ export class StatusMachine implements StatusService {
         const e = this.entries.get(event.id);
         if (!e || this.ended(e)) return; // 4
         e.turnActive = false;
+        this.stopWatch(e);
         this.set(event.id, e, event.code === 0 ? 'exited' : 'error', null, event.code); // 1 2
         return;
       }
@@ -195,6 +259,7 @@ export class StatusMachine implements StatusService {
         for (const [id, e] of this.entries) {
           if (this.ended(e)) continue;
           e.turnActive = false;
+          this.stopWatch(e);
           this.set(id, e, 'error'); // 3
         }
         return;
@@ -236,7 +301,10 @@ export class StatusMachine implements StatusService {
    */
   noteInput(terminalId: TerminalId): void {
     const e = this.entries.get(terminalId);
-    if (e && e.hooks && !this.ended(e)) e.inputSinceHook = true;
+    if (e && e.hooks && !this.ended(e)) {
+      e.inputSinceHook = true;
+      if (e.watch === 'first-input' && !e.sawHook && !e.hookTimer) this.startWatch(terminalId, e); // 21
+    }
   }
 
   // ---- 给组装和 ApprovalService 用 ----
@@ -263,6 +331,30 @@ export class StatusMachine implements StatusService {
   }
 
   // ---- 内部 ----
+
+  /** 第 20、21 行：hookTimeoutMs 内没有任何钩子就退回按输出判断。 */
+  private startWatch(terminalId: TerminalId, e: Entry): void {
+    this.stopWatch(e);
+    e.hookTimer = setTimeout(() => {
+      e.hookTimer = null;
+      if (this.entries.get(terminalId) !== e || this.ended(e) || e.sawHook) return;
+      e.hooks = false;
+      e.hookFailed = true;
+      e.inputSinceHook = false;
+      e.degraded = HOOKS_DIDNT_REPORT;
+      e.snap = { ...e.snap, degraded: HOOKS_DIDNT_REPORT };
+      this.emitStatus(terminalId);
+      this.opts.onDegraded?.({ terminalId, agent: e.agent, reason: HOOKS_DIDNT_REPORT });
+    }, this.hookTimeoutMs);
+    e.hookTimer.unref?.();
+  }
+
+  private stopWatch(e: Entry | undefined): void {
+    if (e?.hookTimer) {
+      clearTimeout(e.hookTimer);
+      e.hookTimer = null;
+    }
+  }
 
   private keepEarly(terminalId: TerminalId, event: AgentHookEvent | null, hint: HookHint): void {
     const t = this.now().getTime();
@@ -304,6 +396,7 @@ export class StatusMachine implements StatusService {
       exitCode,
       pending,
       ...(e.sessionId ? { sessionId: e.sessionId } : {}),
+      ...(e.degraded ? { degraded: e.degraded } : {}),
     };
     this.emitStatus(terminalId);
   }

@@ -94,6 +94,8 @@ export interface KnownAgent {
    * 没核对过的写 partial 并说明，没做的写 no 并说明；合格测试（test/conformance）按它逐项跑。
    */
   declared: CapabilityEntry[];
+  /** AH3：启动参数里用、但 `--help` 不列的参数（Check again 不在 help 里找它们）。 */
+  helpHides?: string[];
 }
 
 export const KNOWN_AGENTS: readonly KnownAgent[] = [
@@ -142,6 +144,8 @@ export const KNOWN_AGENTS: readonly KnownAgent[] = [
     label: 'Oh My Pi',
     commands: ['omp'],
     launch: { new: [], resume: ['--resume', '{id}'], fork: ['--fork', '{id}'] },
+    // --fork 能用（cli/flag-tables.ts），但 18.0.4 的 --help 不列它
+    helpHides: ['--fork'],
     // 本机实测的版本。更早的版本可能也有这些事件，没验证过就按没有处理。
     extension: { flag: '-e', turnEnd: 'agent_end', minVersion: '18.0.0' },
     askTool: true,

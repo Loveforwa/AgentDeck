@@ -11,7 +11,8 @@ import { autoApproveSupportFromReport, capabilitiesFromReport } from '@agentdeck
 import type { AgentCapabilityReport, AgentKind, CapabilityEntry, StatusEvent, TerminalId } from '@agentdeck/contracts';
 import { FakeTerminalHost } from '@agentdeck/fakes';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import { CODEX_HOOK_EVENTS, parseHooksList } from '../../src/adapters/codex.ts';
+import { parseHooksList } from '../../src/adapters/codex.ts';
+import type { CodexTrustQuery } from '../../src/adapters/codex.ts';
 import { createDefaultAdapters } from '../../src/adapters/index.ts';
 import type { AdapterLaunchContext, AgentAdapterExt } from '../../src/adapters/types.ts';
 import { AgentServiceImpl } from '../../src/agent-service.ts';
@@ -19,16 +20,17 @@ import { declared } from '../../src/capabilities/declare.ts';
 import { COMPAT_RECORDS } from '../../src/compat/records.ts';
 import { CONFORMANCE_AGENTS, SCENARIOS } from '../../src/compat/scenarios.ts';
 import type { Scenario, ScenarioId } from '../../src/compat/scenarios.ts';
-import { shellQuote } from '../../src/env.ts';
 import { readClaudeSession, readCodexSession, readPiSession, parseCodexIndex, parseKimiState } from '../../src/history/readers.ts';
 import { hookHint } from '../../src/hook-payload.ts';
 import { matchOmpApproval } from '../../src/status/screens.ts';
-import { StatusMachine } from '../../src/status/machine.ts';
+import { HOOKS_DIDNT_REPORT, StatusMachine } from '../../src/status/machine.ts';
+import { createAgentRuntime } from '../../src/runtime.ts';
 import { approvalStrategy } from '../../src/status/support.ts';
 import { ClaudeUsageParser, CodexUsageParser, KimiUsageParser, PiUsageParser, parseKimiIndex } from '../../src/usage/index.ts';
 import type { UsageParser } from '../../src/usage/index.ts';
 import { claude as claudeHooks, codex as codexHooks } from '../fixtures.ts';
 import { readCompatFiles, recordsSource } from './records.mjs';
+import { ProcessHost } from './support/process-host.ts';
 import { fill, indexOfRun, VERIFIED } from './verified.ts';
 
 const PKG = fileURLToPath(new URL('../..', import.meta.url));
@@ -56,8 +58,10 @@ afterAll(() => {
 const env = () => ({ PATH: bin, SHELL: '/bin/sh' });
 
 /** codex 的信任哈希：假的 app-server 把我们这几条钩子都列出来。 */
-const queryTrust = async () =>
-  parseHooksList(codexHooks.hooksList(CODEX_HOOK_EVENTS.map((e) => `${shellQuote(NOTIFY)} codex ${e}`)));
+const queryTrust: CodexTrustQuery = async ({ overrides }) => {
+  const commands = overrides.filter((_, i) => i % 2 === 1).map((o) => JSON.parse(/command=("(?:[^"\\]|\\.)*")/.exec(o)![1]!) as string);
+  return parseHooksList(codexHooks.hooksList(commands));
+};
 
 function adapters(): AgentAdapterExt[] {
   return createDefaultAdapters({ env, agentExtension: EXTENSION, mcpPluginDir: MCP_PLUGIN, queryTrust });
@@ -124,7 +128,7 @@ const now = () => new Date().toISOString();
 
 type Check = (agent: AgentKind, entry: CapabilityEntry | null) => Promise<void>;
 
-const L1: Record<ScenarioId, Check | 'AH3'> = {
+const L1: Record<ScenarioId, Check> = {
   async K1(agent) {
     const a = adapters().find((x) => x.id === agent)!;
     expect(await a.detect()).toEqual({ installed: true, version: VERIFIED[agent]!.version, path: join(bin, agent) });
@@ -347,8 +351,80 @@ const L1: Record<ScenarioId, Check | 'AH3'> = {
     expect(spec.args).toContain(VERIFIED[agent]!.skillFlag!);
   },
 
-  K16: 'AH3',
-  K17: 'AH3',
+  async K16(agent) {
+    // 钩子一直不来（notify 路径是错的、用户关掉了钩子……）：hookTimeoutMs 之后退回按输出判断，快照和报告都说明原因
+    const terminals = new FakeTerminalHost({ silenceMs: 0 });
+    const rt = createAgentRuntime({
+      env,
+      terminals,
+      adapters: adapters(),
+      notifyCommand: '/nonexistent/agentdeck-notify',
+      emit: () => {},
+      destructivePatterns: () => [],
+      socketPath: join(work, `k16-${agent}.sock`),
+      sessionRoots: null,
+      hookTimeoutMs: 50,
+    });
+    try {
+      const { terminalId: id } = await rt.agents.start({ agent, cwd: '/repo', workspaceId: null, mode: { kind: 'new' } });
+      rt.noteInput(id); // codex 从第一次输入开始等
+      await vi.waitFor(() => expect(rt.status.get(id)!.degraded).toBe(HOOKS_DIDNT_REPORT), { timeout: 2000 });
+      const info = (await rt.agents.list()).find((a) => a.id === agent)!;
+      expect(declared(info.report!.entries, 'status')).toMatchObject({ level: 'partial', via: 'output', reason: "Hooks didn't report at the last launch" });
+      // 之后按输出判断
+      rt.onTerminalEvent({ type: 'terminal.activity', id, at: now() });
+      expect(rt.status.get(id)!.status).toBe('running');
+      rt.onTerminalEvent({ type: 'terminal.silence', id, at: now() });
+      expect(rt.status.get(id)!.status).toBe('idle');
+    } finally {
+      await rt.close();
+      terminals.dispose();
+    }
+  },
+
+  async K17(agent) {
+    // 假程序：版本没核对过；参数里有 --agentdeck-bogus 时像 commander 一样报 unknown option、退出 2，否则一直开着
+    const pbin = mkdtempSync(join(tmpdir(), 'conf-k17-'));
+    const prog = join(pbin, agent);
+    writeFileSync(
+      prog,
+      [
+        '#!/bin/sh',
+        'case "$1" in --version|-V|-v) echo "99.0.0"; exit 0 ;; esac',
+        'for a in "$@"; do',
+        '  if [ "$a" = "--agentdeck-bogus" ]; then echo "error: unknown option \'--agentdeck-bogus\'" >&2; exit 2; fi',
+        'done',
+        'exec sleep 30',
+        '',
+      ].join('\n'),
+    );
+    chmodSync(prog, 0o755);
+    const penv = () => ({ PATH: `${pbin}:/usr/bin:/bin`, SHELL: '/bin/sh' });
+    let s: AgentServiceImpl | null = null;
+    const host = new ProcessHost(penv(), (e) => s?.onTerminalEvent(e));
+    const started: { hooks: boolean; degraded: string | null }[] = [];
+    s = new AgentServiceImpl({
+      adapters: createDefaultAdapters({ env: penv, agentExtension: EXTENSION, mcpPluginDir: MCP_PLUGIN, queryTrust }),
+      terminals: host,
+      env: penv,
+      notifyCommand: NOTIFY,
+      extraArgs: () => ['--agentdeck-bogus'],
+      onStarted: (x) => started.push(x),
+      launchTiming: { earlyExitMs: 2000 },
+    });
+    try {
+      const res = await s.start({ agent, cwd: work, workspaceId: null, mode: { kind: 'new' } });
+      expect(host.created).toHaveLength(2);
+      expect(host.created[0]!.args).toContain('--agentdeck-bogus');
+      expect(res.args).not.toContain('--agentdeck-bogus');
+      expect(host.alive(res.terminalId)).toBe(true);
+      expect(started.at(-1)).toMatchObject({ hooks: false, degraded: "Started with session options only · error: unknown option '--agentdeck-bogus'" });
+    } finally {
+      host.dispose();
+      s.dispose();
+      rmSync(pbin, { recursive: true, force: true });
+    }
+  },
 
   async K18(agent) {
     const a = await adapterFor(agent);
@@ -419,8 +495,6 @@ for (const agent of CONFORMANCE_AGENTS) {
         it(`${name} — declared No without a reason`, () => expect.fail(`${agent} declares ${s.capability} as No but gives no reason`));
       } else if (reason !== null) {
         it.skip(`${name} — skip: ${reason}`, () => {});
-      } else if (check === 'AH3') {
-        it.todo(`${name} (AH3)`);
       } else {
         it(name, () => check(agent, entry));
       }

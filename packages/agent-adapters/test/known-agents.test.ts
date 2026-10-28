@@ -101,13 +101,16 @@ describe('known agents table', () => {
     });
     const list = await rt.agents.list();
     const pick = (id: string) => list.find((a) => a.id === id);
-    expect(pick('pi')).toEqual({
+    expect(pick('pi')).toMatchObject({
       id: 'pi',
       label: 'Pi',
       installed: true,
       version: '0.83.0',
       capabilities: { hooks: true, resume: true, fork: true, askTool: false },
     });
+    // AH0 / AH3：能力报告跟着来，核对过的版本照声明
+    expect(pick('pi')!.report).toMatchObject({ agent: 'pi', version: '0.83.0' });
+    expect(pick('pi')!.report!.entries.find((e) => e.key === 'status')).toMatchObject({ level: 'yes', via: 'extension', verifiedUpTo: '0.83.0' });
     expect(pick('omp')?.capabilities).toEqual({ hooks: true, resume: true, fork: true, askTool: true });
     expect(pick('kimi')?.capabilities).toEqual({ hooks: false, resume: true, fork: false, askTool: false });
   });
@@ -118,7 +121,8 @@ describe('KnownAgentAdapter capabilities', () => {
     const env = () => ({});
     const pi = new KnownAgentAdapter(def('pi'), { env, agentExtension: EXTENSION });
     expect(pi.capabilities('0.83.0')).toEqual({ hooks: true, resume: true, fork: true, askTool: false });
-    expect(pi.capabilities(null).hooks).toBe(true);
+    // AH3：读不出版本时不再当作够新（也没有 --help 可看）
+    expect(pi.capabilities(null).hooks).toBe(false);
     // agent_settled 0.80.4 才有
     expect(pi.capabilities('0.79.0')).toEqual({ hooks: false, resume: true, fork: true, askTool: false });
     expect(new KnownAgentAdapter(def('pi'), { env }).capabilities('0.83.0').hooks).toBe(false);

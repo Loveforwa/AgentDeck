@@ -76,7 +76,7 @@
     "K14": {
       "result": "skip",
       "suite": "L2",
-      "reason": "Needs AgentDeck's MCP server running; packages/mcp-server checks it with real agents",
+      "reason": "Pi has no MCP",
       "verifiedUpTo": null
     },
     "K15": {
@@ -86,10 +86,9 @@
       "verifiedUpTo": "0.83.0"
     },
     "K16": {
-      "result": "skip",
+      "result": "pass",
       "suite": "L2",
-      "reason": "Comes with AH3 (fall back to terminal activity when hooks do not report)",
-      "verifiedUpTo": null
+      "verifiedUpTo": "0.83.0"
     },
     "K17": {
       "result": "skip",

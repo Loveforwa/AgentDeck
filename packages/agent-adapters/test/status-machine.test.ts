@@ -8,9 +8,9 @@ import type {
   TerminalStatus,
   WorkspaceId,
 } from '@agentdeck/contracts';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_DESTRUCTIVE_PATTERNS } from '../src/status/destructive.ts';
-import { StatusMachine } from '../src/status/machine.ts';
+import { HOOKS_DIDNT_REPORT, StatusMachine } from '../src/status/machine.ts';
 import type { HookHint } from '../src/status/machine.ts';
 
 const T = 'term-1' as TerminalId;
@@ -393,5 +393,94 @@ describe('since and duplicate events', () => {
     track(true);
     m.forget(T);
     expect(await m.snapshot()).toEqual([]);
+  });
+});
+
+describe('hooks that never report (AH3, IS-74)', () => {
+  let degradedNotes: { terminalId: TerminalId; agent: string; reason: string }[];
+  let alive: string[];
+  beforeEach(() => {
+    vi.useFakeTimers();
+    degradedNotes = [];
+    alive = [];
+    m = new StatusMachine({
+      emit: (e) => events.push(e),
+      destructivePatterns: () => DEFAULT_DESTRUCTIVE_PATTERNS,
+      now: () => new Date(clock),
+      hookTimeoutMs: 10_000,
+      onDegraded: (d) => degradedNotes.push(d),
+      onHooksAlive: (d) => alive.push(d.agent),
+    });
+  });
+  afterEach(() => vi.useRealTimers());
+
+  const snap = () => m.get(T)!;
+
+  it('20: no hook within 10 s of the start → status from terminal activity, with the reason on the snapshot', () => {
+    m.track(T, { agent: 'claude', workspaceId: WS, hooks: true, watchHooks: 'startup' });
+    activity();
+    expect(status()).toBe('running');
+    silence();
+    // 有钩子时启动画面画完就是 idle（第 14 行）；钩子没来之前照常
+    expect(status()).toBe('idle');
+    vi.advanceTimersByTime(9_999);
+    expect(snap().degraded).toBeUndefined();
+    vi.advanceTimersByTime(1);
+    expect(snap().degraded).toBe(HOOKS_DIDNT_REPORT);
+    expect(changes().at(-1)).toMatchObject({ snapshot: { degraded: HOOKS_DIDNT_REPORT } });
+    expect(degradedNotes).toEqual([{ terminalId: T, agent: 'claude', reason: HOOKS_DIDNT_REPORT }]);
+    // 之后按没有钩子的规则：有输出 running，安静 idle（第 17、18 行），不发 turn-end
+    activity();
+    expect(status()).toBe('running');
+    silence();
+    expect(status()).toBe('idle');
+    expect(turnEnds()).toHaveLength(0);
+  });
+
+  it('20: a hook in time keeps the hook rules and says the hooks are alive', () => {
+    m.track(T, { agent: 'claude', workspaceId: WS, hooks: true, watchHooks: 'startup' });
+    hook({ type: 'session-start', sessionId: 's1' as AgentSessionId });
+    vi.advanceTimersByTime(20_000);
+    expect(snap().degraded).toBeUndefined();
+    expect(degradedNotes).toEqual([]);
+    expect(alive).toEqual(['claude']);
+  });
+
+  it('21: codex waits from the first input, not from the start', () => {
+    m.track(T, { agent: 'codex', workspaceId: WS, hooks: true, watchHooks: 'first-input' });
+    vi.advanceTimersByTime(60_000);
+    expect(snap().degraded).toBeUndefined();
+    m.noteInput(T);
+    vi.advanceTimersByTime(10_000);
+    expect(snap().degraded).toBe(HOOKS_DIDNT_REPORT);
+  });
+
+  it('22: a late hook brings the hook rules back and clears the reason', () => {
+    m.track(T, { agent: 'claude', workspaceId: WS, hooks: true, watchHooks: 'startup' });
+    vi.advanceTimersByTime(10_000);
+    expect(snap().degraded).toBe(HOOKS_DIDNT_REPORT);
+    hook({ type: 'prompt-submitted' });
+    expect(status()).toBe('running');
+    expect(snap().degraded).toBeUndefined();
+    // 回到有钩子的规则：输出不改状态（第 16 行）
+    silence();
+    expect(status()).toBe('running');
+  });
+
+  it('23: a reason given at track time stays on every snapshot', () => {
+    m.track(T, { agent: 'kimi', workspaceId: WS, hooks: false, degraded: 'Status from terminal activity · Kimi has no hooks' });
+    activity();
+    silence();
+    expect(snap()).toMatchObject({ status: 'idle', degraded: 'Status from terminal activity · Kimi has no hooks' });
+    vi.advanceTimersByTime(60_000);
+    expect(degradedNotes).toEqual([]);
+  });
+
+  it('an exit before the timeout stops the watch', () => {
+    m.track(T, { agent: 'claude', workspaceId: WS, hooks: true, watchHooks: 'startup' });
+    exit(1);
+    vi.advanceTimersByTime(20_000);
+    expect(degradedNotes).toEqual([]);
+    expect(snap().degraded).toBeUndefined();
   });
 });

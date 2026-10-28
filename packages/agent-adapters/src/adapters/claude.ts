@@ -8,8 +8,8 @@ import { no, statusFromActivity, yes } from '../capabilities/declare.ts';
 import { atLeast, shellQuote } from '../env.ts';
 import { parseClaudeNotification, parseCommonHook } from '../hook-payload.ts';
 import type { McpServerDef } from '../skills/types.ts';
-import type { AdapterDeps, AdapterLaunchContext, AgentAdapterExt, DetectResult } from './types.ts';
-import { detectCommand, NO_CAPABILITIES } from './types.ts';
+import type { AdapterDeps, AdapterLaunchContext, AgentAdapterExt, DetectResult, LaunchFlag } from './types.ts';
+import { detectWithHelp, NO_CAPABILITIES } from './types.ts';
 
 /** PermissionRequest 钩子在 2.0 里才稳定；更老的版本只能靠输出活动判断。粗略下限，待有旧版本时再核对。 */
 const MIN_HOOKS_VERSION = '2.0.0';
@@ -35,6 +35,8 @@ export class ClaudeAdapter implements AgentAdapterExt {
   /** “1. Yes” = 允许一次。发 '1' 而不是 Enter：Enter 选的是当前高亮的那一行，用户按过方向键时可能变成“以后都允许”（线 1 实测，tmux-host/AGENTS.md「Approve all 的按键核对」）。 */
   readonly approveOnceKeys = ['1'];
   private lastVersion: string | null = null;
+  /** 读不出版本时的 --help 输出（AH3：按它决定带不带 --settings）。 */
+  private lastHelp: string | null = null;
   private readonly newSessionId: () => string;
 
   constructor(private readonly deps: ClaudeAdapterOptions) {
@@ -42,20 +44,39 @@ export class ClaudeAdapter implements AgentAdapterExt {
   }
 
   async detect(): Promise<DetectResult> {
-    const r = await detectCommand(this.command, this.deps);
-    this.lastVersion = r.version;
-    return r;
+    const { result, help } = await detectWithHelp(this.command, this.deps);
+    this.lastVersion = result.version;
+    this.lastHelp = help;
+    return result;
   }
 
   capabilities(version: string | null): AgentCapabilities {
-    if (!atLeast(version, MIN_HOOKS_VERSION)) return { ...NO_CAPABILITIES, resume: true, fork: true };
+    if (!this.hooksFor(version)) return { ...NO_CAPABILITIES, resume: true, fork: true };
     return { hooks: true, resume: true, fork: true, askTool: true };
+  }
+
+  /** AH3：Check again 在 --help 里找的参数。 */
+  launchFlags(version: string | null): LaunchFlag[] {
+    return [
+      { flag: '--session-id', keys: ['session-id', 'first-prompt'] },
+      { flag: '--resume', keys: ['resume', 'fork'] },
+      { flag: '--fork-session', keys: ['fork'] },
+      ...(this.hooksFor(version) ? [{ flag: '--settings', keys: ['status', 'approval-wait', 'question', 'approve-keys', 'subagents'] } satisfies LaunchFlag] : []),
+      { flag: '--mcp-config', keys: ['agentdeck-mcp'] },
+      { flag: '--plugin-dir', keys: ['skills'] },
+      { flag: '--append-system-prompt', keys: ['append-instructions'] },
+    ];
+  }
+
+  /** 钩子（--settings）：版本够新，或者读不出版本但 --help 里有 --settings。 */
+  private hooksFor(version: string | null): boolean {
+    return atLeast(version, MIN_HOOKS_VERSION, version === null ? { text: this.lastHelp, flag: '--settings' } : null);
   }
 
   /** AH0 / AH2：能力声明（画布 A0 第 2 节）。合格测试按它逐项跑（test/conformance）。 */
   declareCapabilities(version: string | null): CapabilityEntry[] {
-    const hooks = this.capabilities(version).hooks;
-    const needHooks = `Needs Claude Code ${MIN_HOOKS_VERSION} or later`;
+    const hooks = this.hooksFor(version);
+    const needHooks = version === null ? "Couldn't read the Claude Code version" : `Needs Claude Code ${MIN_HOOKS_VERSION} or later`;
     return [
       yes('first-prompt', 'flag'),
       hooks ? yes('status', 'hook') : statusFromActivity(`${needHooks}; status comes from terminal activity`),
@@ -96,20 +117,23 @@ export class ClaudeAdapter implements AgentAdapterExt {
         args.push('--resume', ctx.mode.sessionId, '--fork-session', '--session-id', sessionId);
         break;
     }
-    if (this.capabilities(this.lastVersion).hooks) {
+    // AH3：只带会话参数重开时（IS-73）钩子、skill、MCP、用户参数都不带
+    const full = !ctx.sessionOnly;
+    if (full && this.hooksFor(this.lastVersion)) {
       args.push('--settings', JSON.stringify(claudeHookSettings(ctx.notifyCommand, this.lastVersion)));
     }
     // claude 在 tmux 里检测到 $TMUX 会自己降到 256 色（docs/decisions.md）。
     const env: Record<string, string> = { CLAUDE_CODE_TMUX_TRUECOLOR: '1' };
     // N9：选中的 skill 在那套目录的 skills/ 里，--plugin-dir 只对这次会话有效（2.1.291 实测），不写 ~/.claude
-    const skills = ctx.skills;
+    const skills = full ? ctx.skills : undefined;
     if (skills?.setDir && skills.skills.length > 0) args.push('--plugin-dir', skills.setDir);
     const library = skills?.mcp ?? [];
-    if (ctx.mcp || library.length > 0) {
-      args.push('--mcp-config', JSON.stringify(claudeMcpConfig(ctx.mcp ?? null, library)));
-      if (ctx.mcp) env[MCP_TOKEN_ENV] = ctx.mcp.token;
+    const mcp = full ? ctx.mcp : undefined;
+    if (mcp || library.length > 0) {
+      args.push('--mcp-config', JSON.stringify(claudeMcpConfig(mcp ?? null, library)));
+      if (mcp) env[MCP_TOKEN_ENV] = mcp.token;
     }
-    args.push(...ctx.extraArgs);
+    if (full) args.push(...ctx.extraArgs);
     // --mcp-config 和不少用户参数后面能跟多个值，提示词放在 -- 之后才不会被吃掉（2.1.291 实测）。
     const prompt = ctx.prompt && ctx.mode.kind === 'new' ? ctx.prompt : null;
     if (prompt) args.push('--', prompt);

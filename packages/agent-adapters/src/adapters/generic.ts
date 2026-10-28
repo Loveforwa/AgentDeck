@@ -18,8 +18,8 @@ import { parseCommonHook } from '../hook-payload.ts';
 import type { KnownAgent } from './known.ts';
 import { EXTENSION_ENV } from './known.ts';
 import { MCP_URL_ENV } from './mcp-plugin.ts';
-import type { AdapterDeps, AdapterLaunchContext, AgentAdapterExt, DetectResult } from './types.ts';
-import { detectCommand, unsupported } from './types.ts';
+import type { AdapterDeps, AdapterLaunchContext, AgentAdapterExt, DetectResult, LaunchFlag } from './types.ts';
+import { detectWithHelp, unsupported } from './types.ts';
 
 export interface KnownAgentAdapterOptions extends AdapterDeps {
   /** agentdeck-pi-extension.mjs 的绝对路径。没有时表里有 extension 的 agent 也按没有钩子处理。 */
@@ -39,6 +39,8 @@ export class KnownAgentAdapter implements AgentAdapterExt {
   /** 最近一次检测找到的命令名；没检测或没找到时是表里的第一个。 */
   command: string;
   private lastVersion: string | null = null;
+  /** 读不出版本时的 --help 输出（AH3：按它决定带不带 -e、--plugin-dir 这些）。 */
+  private lastHelp: string | null = null;
   private readonly newSessionId: () => string;
 
   constructor(
@@ -54,14 +56,16 @@ export class KnownAgentAdapter implements AgentAdapterExt {
 
   async detect(): Promise<DetectResult> {
     for (const command of this.def.commands) {
-      const r = await detectCommand(command, this.deps, this.def.versionArgs);
-      if (r.installed) {
+      const { result, help } = await detectWithHelp(command, this.deps, this.def.versionArgs);
+      if (result.installed) {
         this.command = command;
-        this.lastVersion = r.version;
-        return r;
+        this.lastVersion = result.version;
+        this.lastHelp = help;
+        return result;
       }
     }
     this.lastVersion = null;
+    this.lastHelp = null;
     return { installed: false, version: null, path: null };
   }
 
@@ -86,14 +90,17 @@ export class KnownAgentAdapter implements AgentAdapterExt {
       ? null
       : !this.deps.agentExtension
         ? "AgentDeck's extension isn't available"
-        : `Needs ${this.label} ${ext.minVersion} or later`;
+        : version === null
+          ? `Couldn't read the ${this.label} version`
+          : `Needs ${this.label} ${ext.minVersion} or later`;
+    const needs = (min: string) => (version === null ? `Couldn't read the ${this.label} version` : `Needs ${this.label} ${min} or later`);
     return this.def.declared.map((e) => {
-      if (e.key === 'agentdeck-mcp' && e.level !== 'no' && this.def.mcp && !atLeast(version, this.def.mcp.minVersion)) {
-        return no(e.key, `Needs ${this.label} ${this.def.mcp.minVersion} or later`);
+      if (e.key === 'agentdeck-mcp' && e.level !== 'no' && this.def.mcp && !this.gate(version, this.def.mcp.minVersion, this.def.mcp.flag)) {
+        return no(e.key, needs(this.def.mcp.minVersion));
       }
       const skillMin = this.def.skills?.minVersion;
-      if (e.key === 'skills' && e.level !== 'no' && skillMin && !atLeast(version, skillMin)) {
-        return no(e.key, `Needs ${this.label} ${skillMin} or later`);
+      if (e.key === 'skills' && e.level !== 'no' && skillMin && !this.gate(version, skillMin, this.def.skills!.flag)) {
+        return no(e.key, needs(skillMin));
       }
       if (hooks || e.via !== 'extension' || why === null) return e;
       if (e.key === 'status') return statusFromActivity(`${why}; status comes from terminal activity`);
@@ -123,8 +130,10 @@ export class KnownAgentAdapter implements AgentAdapterExt {
     const sessionId = ctx.mode.kind === 'resume' ? id : newId;
 
     const ext = this.def.extension;
+    // AH3：只带会话参数重开时（IS-73）扩展、MCP、skill、用户参数都不带
+    const full = !ctx.sessionOnly;
     let env: Record<string, string> | undefined;
-    if (ext && this.deps.agentExtension && this.hooksFor(this.lastVersion)) {
+    if (full && ext && this.deps.agentExtension && this.hooksFor(this.lastVersion)) {
       args.push(ext.flag, this.deps.agentExtension);
       env = {
         [EXTENSION_ENV.notify]: ctx.notifyCommand,
@@ -134,11 +143,11 @@ export class KnownAgentAdapter implements AgentAdapterExt {
     }
     // AgentDeck 的 MCP（N1）：插件目录是固定内容，url 和 token 走环境变量
     const mcp = this.def.mcp;
-    if (ctx.mcp && mcp && this.deps.mcpPluginDir && atLeast(this.lastVersion, mcp.minVersion)) {
+    if (full && ctx.mcp && mcp && this.deps.mcpPluginDir && this.gate(this.lastVersion, mcp.minVersion, mcp.flag)) {
       args.push(mcp.flag, this.deps.mcpPluginDir);
       env = { ...env, [MCP_URL_ENV]: ctx.mcp.url, [MCP_TOKEN_ENV]: ctx.mcp.token };
     }
-    args.push(...this.skillArgs(ctx));
+    if (full) args.push(...this.skillArgs(ctx));
     // AH1：第一条消息（只在新会话时带），做法见 known.ts 的 prompt 一列
     const how = this.def.prompt;
     const prompt = ctx.mode.kind === 'new' && ctx.prompt ? ctx.prompt : null;
@@ -148,7 +157,7 @@ export class KnownAgentAdapter implements AgentAdapterExt {
       args.push(/^[@-]/.test(prompt) ? ` ${prompt}` : prompt);
       consumed = true;
     }
-    args.push(...ctx.extraArgs);
+    if (full) args.push(...ctx.extraArgs);
     if (prompt && how?.kind === 'arg' && how.separator !== null) {
       args.push(how.separator, prompt);
       consumed = true;
@@ -186,7 +195,7 @@ export class KnownAgentAdapter implements AgentAdapterExt {
   private skillArgs(ctx: AdapterLaunchContext): string[] {
     const s = ctx.skills;
     const how = this.def.skills;
-    if (!s || !how || (how.minVersion && !atLeast(this.lastVersion, how.minVersion))) return [];
+    if (!s || !how || (how.minVersion && !this.gate(this.lastVersion, how.minVersion, how.flag))) return [];
     switch (how.kind) {
       case 'plugin-dir':
         return s.setDir ? [how.flag, s.setDir] : [];
@@ -199,6 +208,28 @@ export class KnownAgentAdapter implements AgentAdapterExt {
 
   private hooksFor(version: string | null): boolean {
     const ext = this.def.extension;
-    return !!ext && !!this.deps.agentExtension && atLeast(version, ext.minVersion);
+    return !!ext && !!this.deps.agentExtension && this.gate(version, ext.minVersion, ext.flag);
+  }
+
+  /** 版本够新；读不出版本时看 --help 里有没有这个参数（AH3，env.ts atLeast）。 */
+  private gate(version: string | null, min: string, flag: string): boolean {
+    return atLeast(version, min, version === null ? { text: this.lastHelp, flag } : null);
+  }
+
+  /** AH3：Check again 在 --help 里找的参数：会话参数、扩展、MCP、skill（helpHides 里的不找，例如 omp 的 --fork 不在 help 里）。 */
+  launchFlags(version: string | null): LaunchFlag[] {
+    const hidden = new Set(this.def.helpHides ?? []);
+    const flags: LaunchFlag[] = [];
+    const first = (t: string[] | null) => t?.find((a) => a.startsWith('-')) ?? null;
+    const add = (flag: string | null, keys: LaunchFlag['keys']) => {
+      if (flag && !hidden.has(flag) && !flags.some((f) => f.flag === flag)) flags.push({ flag, keys });
+    };
+    add(first(this.def.launch.new), ['session-id', 'first-prompt']);
+    add(first(this.def.launch.resume), ['resume']);
+    add(first(this.def.launch.fork), ['fork']);
+    if (this.hooksFor(version)) add(this.def.extension!.flag, ['status', 'approval-wait', 'question', 'session-id']);
+    if (this.def.mcp) add(this.def.mcp.flag, ['agentdeck-mcp']);
+    if (this.def.skills) add(this.def.skills.flag, ['skills']);
+    return flags;
   }
 }

@@ -1,12 +1,12 @@
 // Skills · MCP（N9）：库（临时目录里加 skill、加 MCP）、仓库里的 skill、每种 agent 列出什么、
 // 启动前算出的那套目录、每种 agent 的启动参数、running 的记录、“Changes apply after restart” 的规则。
 
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { effectiveSkillSelection, skillsRestartNeeded } from '@agentdeck/contracts';
 import type { AgentKind, CreateTerminalRequest, LaunchContext, TerminalId, TerminalSkillItem } from '@agentdeck/contracts';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { ClaudeAdapter, claudeMcpConfig } from '../src/adapters/claude.ts';
 import { CodexAdapter } from '../src/adapters/codex.ts';
 import { KnownAgentAdapter } from '../src/adapters/generic.ts';
@@ -319,8 +319,28 @@ describe('launch args per agent', () => {
     extraArgs: ['--user-arg'],
     ...over,
   });
-  const env = () => ({ PATH: '/nonexistent' });
-  const known = (id: string) => new KnownAgentAdapter(KNOWN_AGENTS.find((a) => a.id === id)!, { env, mcpPluginDir: '/data/mcp-plugin', newSessionId: () => 'n1' });
+  // 假 PATH 里放核对过的版本（AH3：读不出版本时不带 MCP、skill 这类参数）
+  let agentBin = '';
+  beforeAll(() => {
+    agentBin = mkdtempSync(join(tmpdir(), 'skills-bin-'));
+    for (const [name, out] of [
+      ['claude', '2.1.291 (Claude Code)'],
+      ['codex', 'codex-cli 0.165.0'],
+      ['pi', '0.83.0'],
+      ['omp', 'omp/18.0.4'],
+      ['kimi', '2.3.3'],
+    ] as const) {
+      writeFileSync(join(agentBin, name), `#!/bin/sh\necho "${out}"\n`);
+      chmodSync(join(agentBin, name), 0o755);
+    }
+  });
+  afterAll(() => rmSync(agentBin, { recursive: true, force: true }));
+  const env = () => ({ PATH: agentBin });
+  const known = async (id: string) => {
+    const a = new KnownAgentAdapter(KNOWN_AGENTS.find((x) => x.id === id)!, { env, mcpPluginDir: '/data/mcp-plugin', newSessionId: () => 'n1' });
+    await a.detect();
+    return a;
+  };
 
   it('claude: --plugin-dir <set>, library MCP merged into --mcp-config, user args last', () => {
     const spec = new ClaudeAdapter({ env, newSessionId: () => 'n1' }).launch(ctx({ mcp: MCP, skills }));
@@ -339,8 +359,10 @@ describe('launch args per agent', () => {
     expect(noOurs.env).toEqual({ CLAUDE_CODE_TMUX_TRUECOLOR: '1' });
   });
 
-  it('codex: -c mcp_servers.<name>.command/args or .url', () => {
-    const spec = new CodexAdapter({ env }).launch(ctx({ mcp: MCP, skills }));
+  it('codex: -c mcp_servers.<name>.command/args or .url', async () => {
+    const codex = new CodexAdapter({ env });
+    await codex.detect();
+    const spec = codex.launch(ctx({ mcp: MCP, skills }));
     const joined = spec.args.join(' ');
     expect(joined).toContain('-c mcp_servers.agentdeck.url="http://127.0.0.1:47621/mcp"');
     expect(joined).toContain('-c mcp_servers.github.command="npx" -c mcp_servers.github.args=["-y","gh"]');
@@ -349,18 +371,18 @@ describe('launch args per agent', () => {
     expect(spec.args.at(-1)).toBe('--user-arg');
   });
 
-  it('omp: our MCP plugin folder, then the set folder', () => {
-    const spec = known('omp').launch(ctx({ mcp: MCP, skills }));
+  it('omp: our MCP plugin folder, then the set folder', async () => {
+    const spec = (await known('omp')).launch(ctx({ mcp: MCP, skills }));
     expect(spec.args).toEqual(['--plugin-dir', '/data/mcp-plugin', '--plugin-dir', set, '--user-arg']);
     // agentdeck 没勾：AgentService 不给 ctx.mcp，只剩那套目录
-    expect(known('omp').launch(ctx({ skills })).args).toEqual(['--plugin-dir', set, '--user-arg']);
+    expect((await known('omp')).launch(ctx({ skills })).args).toEqual(['--plugin-dir', set, '--user-arg']);
   });
 
-  it('pi: one --skill per skill folder; kimi: --skills-dir for its own roots and the set', () => {
-    expect(known('pi').launch(ctx({ skills })).args).toEqual(['--session-id', 'n1', '--skill', '/data/skills/xlsx', '--user-arg']);
-    expect(known('kimi').launch(ctx({ skills })).args).toEqual(['--skills-dir', '/home/.kimi-code/skills', '--skills-dir', `${set}/skills`, '--user-arg']);
+  it('pi: one --skill per skill folder; kimi: --skills-dir for its own roots and the set', async () => {
+    expect((await known('pi')).launch(ctx({ skills })).args).toEqual(['--session-id', 'n1', '--skill', '/data/skills/xlsx', '--user-arg']);
+    expect((await known('kimi')).launch(ctx({ skills })).args).toEqual(['--skills-dir', '/home/.kimi-code/skills', '--skills-dir', `${set}/skills`, '--user-arg']);
     // 没选 skill：kimi 不加 --skills-dir（不顶掉它自己的发现）
-    expect(known('kimi').launch(ctx({ skills: { ...skills, skills: [] } })).args).toEqual(['--user-arg']);
+    expect((await known('kimi')).launch(ctx({ skills: { ...skills, skills: [] } })).args).toEqual(['--user-arg']);
   });
 
   it('AgentService: asks for the skills, leaves out our MCP when unticked, reports what it took', async () => {
@@ -376,9 +398,6 @@ describe('launch args per agent', () => {
       skills: async () => ({ ...skills, agentdeckMcp: false, mcp: [] }),
       onStarted: (s) => started.push(s.skills?.ids),
     });
-    (agents as unknown as { detection: Promise<unknown> }).detection = Promise.resolve([
-      { id: 'claude', label: 'Claude Code', installed: true, version: '2.1.291', capabilities: claude.capabilities('2.1.291') },
-    ]);
     await agents.start({ agent: 'claude', cwd: '/repo', workspaceId: null, mode: { kind: 'new' } });
     expect(created[0]!.args).toContain('--plugin-dir');
     expect(created[0]!.args).not.toContain('--mcp-config');
@@ -393,7 +412,6 @@ describe('launch args per agent', () => {
       mcp: () => MCP,
       skills: () => Promise.reject(new Error('disk full')),
     });
-    (failing as unknown as { detection: Promise<unknown> }).detection = (agents as unknown as { detection: Promise<unknown> }).detection;
     await failing.start({ agent: 'claude', cwd: '/repo', workspaceId: null, mode: { kind: 'new' } });
     expect(created[1]!.args).toContain('--mcp-config');
     expect(created[1]!.args).not.toContain('--plugin-dir');

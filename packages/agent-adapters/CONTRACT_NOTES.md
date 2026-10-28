@@ -40,6 +40,7 @@
   但 `AgentInfo.capabilities.hooks` 仍然是 true，界面不知道。
 - 建议：`AgentInfo.warning?: string`（英文，例如 "Hooks are disabled in your Claude settings; status uses terminal activity."），或在 StatusSnapshot 上加 `degraded?: boolean`。
 - 现在怎么做：没做。启动后一段时间没收到 SessionStart 就退回“看输出活动”可以在状态机里做，等定了接口再加。
+- 2026-10-28（AH3）：contracts 0.1.17 有了 `StatusSnapshot.degraded`，状态机做了（第 20–23 行），`AgentInfo.warning` 写上一次启动的说明。
 
 ## 需要说清楚（只改注释）
 
@@ -54,3 +55,18 @@
 ### 9. 没有钩子的程序要不要发 agent.turn-end
 - `agent.turn-end` 注释是“一轮结束”。Shell、自定义命令没有“一轮”，现在 running → idle 时**不发**（免得 dev server 每次停下都刷新源代码管理面板）。
   如果线 3 希望 Shell 里跑完 git 命令也刷新，可以改成发，或者另加事件。建议在注释里写明现在的做法。
+
+## AH1–AH3 留下的（2026-10-28）
+
+### 10. TerminalHost 没有“按原文打字”（send-keys -l）
+- kimi 的第一条消息是启动后打进去的（AH1）。`sendKeys` 不带 `-l`，现在用 `literalKeys()` 绕：控制字符换空格、结尾的 `;` 写成 `\;`、
+  没有空格的一段拆成单个字符（免得正好是 Enter 这类按键名）。
+- 建议：`TerminalHost.sendText(id, text)`（`send-keys -l`，可选 bracketed paste），之后换过去。
+
+### 11. 重开应用接回终端时不知道那次启动带没带钩子（IS-77 的一条）
+- apps/desktop 按当前适配器的能力 `track(id, { hooks })`，不是那次启动实际带的（codex 信任哈希没拿到、参数被拒只带会话参数重开的，都没带）。
+- 建议：`StartAgentResult` 加 `hooks: boolean`（或 `degraded`），存进 `TerminalWindowData`，重开时按它 track。
+
+### 12. 能力报告里的 “newer than checked”
+- 报告有 `version` 和每项的 `verifiedUpTo`，界面自己比。整体 “tested up to” 用的是 compat 记录的顶层 verifiedUpTo，报告里没有这一项；
+  AH4 画 Settings › Agents 顶上那行时要么按每项的最大值算，要么给 `AgentCapabilityReport` 加 `verifiedUpTo?: string | null`。

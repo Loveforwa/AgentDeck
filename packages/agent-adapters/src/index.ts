@@ -1,6 +1,6 @@
 // @agentdeck/agent-adapters：agent 适配器、AgentService、钩子 socket、状态机、后台通知规则。只在主进程里用。
 
-export { createAgentRuntime } from './runtime.ts';
+export { createAgentRuntime, strategyFromReport } from './runtime.ts';
 export type { AgentRuntime, AgentRuntimeOptions } from './runtime.ts';
 export { AgentServiceImpl, PENDING_TERMINAL_ID } from './agent-service.ts';
 export type { AgentServiceOptions, StartedAgent } from './agent-service.ts';
@@ -25,13 +25,22 @@ export { EXTENSION_ENV, KNOWN_AGENTS } from './adapters/known.ts';
 export type { KnownAgent } from './adapters/known.ts';
 export { CustomCommandAdapter, ShellAdapter } from './adapters/shell.ts';
 export type { CommandLaunchContext } from './adapters/shell.ts';
-export type { AdapterDeps, AdapterLaunchContext, AgentAdapterExt } from './adapters/types.ts';
-export { compareVersions, findExecutable, readVersion, shellQuote, splitCommand } from './env.ts';
+export type { AdapterDeps, AdapterLaunchContext, AgentAdapterExt, LaunchFlag } from './adapters/types.ts';
+export { atLeast, compareVersions, fileStamp, findExecutable, helpHasFlag, readHelp, readVersion, shellQuote, splitCommand } from './env.ts';
 export type { Env, EnvSource } from './env.ts';
 export { hookHint, parseCommonHook, parsePermissionRequest } from './hook-payload.ts';
 export { defaultHookSocketPath, HookServer, parseEnvelope } from './hook-server.ts';
 export type { HookServerOptions, ReceivedHook } from './hook-server.ts';
-export { StatusMachine } from './status/machine.ts';
+export { HOOKS_DIDNT_REPORT, StatusMachine } from './status/machine.ts';
+// AH0 / AH2 / AH3：能力声明、合格测试记录、报告
+export { no, partial, yes } from './capabilities/declare.ts';
+export { buildReport, newerThanChecked, verifiedUpTo } from './capabilities/report.ts';
+export type { BuildReportInput, RuntimeNotes } from './capabilities/report.ts';
+export { COMPAT_RECORDS } from './compat/records.ts';
+export { CONFORMANCE_AGENTS, SCENARIOS, scenariosFor } from './compat/scenarios.ts';
+export type { Scenario, ScenarioId } from './compat/scenarios.ts';
+export type { CompatItem, CompatRecord, CompatResult } from './compat/types.ts';
+export { FirstMessageTyper, literalKeys } from './first-message.ts';
 export type { HookHint, StatusMachineOptions, TrackedTerminal, TrackOptions } from './status/machine.ts';
 export { ApprovalServiceImpl } from './status/approval.ts';
 export type { ApprovalRecordStore, ApprovalServiceOptions, ApprovalStatusSource, ApprovalTiming } from './status/approval.ts';

@@ -80,14 +80,13 @@
     "K15": {
       "result": "skip",
       "suite": "L2",
-      "reason": "Checked with the agent's own loader (AGENTS.md, Skills · MCP), not in the TUI yet",
+      "reason": "Not supported for codex",
       "verifiedUpTo": null
     },
     "K16": {
-      "result": "skip",
+      "result": "pass",
       "suite": "L2",
-      "reason": "Comes with AH3 (fall back to terminal activity when hooks do not report)",
-      "verifiedUpTo": null
+      "verifiedUpTo": "0.165.0"
     },
     "K17": {
       "result": "skip",
