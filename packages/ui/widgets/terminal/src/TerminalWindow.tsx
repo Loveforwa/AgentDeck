@@ -8,6 +8,7 @@
 // - 命令找不到：“Command not found: claude” + Open Settings / Use Shell instead。
 // - 摘要卡（T8）：不 attach，用 lastLines 取最后 3 行；窗口够大、只是白板缩小时取整屏行数，画成文字快照（IS-41）。
 // - 标题栏状态：status.changed 按 terminalId 对上；带 sessionId 时写回 data（恢复会话、Fork 用）。
+//   CO4：data.unseen（白板在一轮结束、没聚焦时记上，聚焦时清）时 idle 写 “Idle · Unseen · now”。
 // - cd 出了工作区（IS-57，N7）：状态后面加淡色的 “outside workspace”，悬停看实际目录和工作区目录。只是提示。
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type DragEvent, type ReactNode } from 'react';
@@ -215,7 +216,7 @@ export function TerminalWindow(props: TerminalWindowProps): ReactNode {
         : phase.kind === 'failed'
           ? { text: 'Error', tone: 'error', dot: 'filled' }
           : snapshot
-            ? badgeFor(snapshot, now)
+            ? badgeFor(snapshot, now, { unseen: data.unseen === true })
             : exitCode !== null
               ? exitBadge(exitCode)
               : null;

@@ -22,7 +22,19 @@ export type ShortcutId =
   | 'undo' // ⌘Z（X10：白板上的操作）
   | 'redo' // ⌘⇧Z
   | 'delete-selection' // Delete / Backspace
-  | 'escape'; // Esc
+  | 'escape' // Esc
+  | JumpAgentShortcut; // ⌥⌘1–9（CO4：BoardNav 的 Agents 视图里第 1–9 行）
+
+/** CO4：⌥⌘1–9 跳到 Agents 视图（BoardNav）的第 n 行。 */
+export type JumpAgentShortcut = `jump-agent-${1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9}`;
+
+export const JUMP_AGENT_SHORTCUTS: readonly JumpAgentShortcut[] = [1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => `jump-agent-${n}` as JumpAgentShortcut);
+
+/** jump-agent-3 → 3；别的快捷键 → null。 */
+export function jumpAgentRow(id: ShortcutId): number | null {
+  const m = /^jump-agent-([1-9])$/.exec(id);
+  return m ? Number(m[1]) : null;
+}
 
 export interface KeyLike {
   key: string;
@@ -52,6 +64,11 @@ export interface ShortcutContext {
 export function matchShortcut(e: KeyLike, mac = true): ShortcutId | null {
   const mod = mac ? e.metaKey && !e.ctrlKey : e.ctrlKey && !e.metaKey;
   const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+  // ⌥⌘1–9（CO4）。按住 ⌥ 时 key 是 ¡ ™ £ 之类（还随键盘布局变），按物理键认
+  if (mod && e.altKey && !e.shiftKey) {
+    const digit = /^Digit([1-9])$/.exec(e.code ?? '')?.[1] ?? (/^[1-9]$/.test(key) ? key : null);
+    return digit ? (`jump-agent-${digit}` as JumpAgentShortcut) : null;
+  }
   if (mod && !e.altKey) {
     if (e.shiftKey) {
       if (key === 'n') return 'new-workspace';

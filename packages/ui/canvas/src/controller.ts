@@ -54,7 +54,8 @@ import { adjacentWindow, windowOrder } from './model/navigation.ts';
 import { restoreResultMessage, type RestoreOutcome, type RestoreSessionItem } from './model/restore.ts';
 import { trimForSend } from './model/send.ts';
 import { boxFrom, boxSelection, byWorkspace, toggleSelection, translate, windowsInBox } from './model/selection.ts';
-import type { ShortcutId } from './model/shortcuts.ts';
+import { jumpAgentRow, type ShortcutId } from './model/shortcuts.ts';
+import { clearUnseen, markUnseen } from './model/unseen.ts';
 import { NEAR_FRAME_PX, SNAP_PX, snapMove, snapResize, type Guide } from './model/snap.ts';
 import {
   BROWSER_TYPE,
@@ -100,6 +101,11 @@ export interface BoardControllerOptions {
   notify?(message: string): void;
   /** 换掉默认的 Add project… 流程（选文件夹 → probe → add）。返回新加的项目，取消返回 null。 */
   addProject?(): Promise<ProjectId | null>;
+  /**
+   * CO4：⌥⌘1–9 跳到第几个窗口。是 BoardNav 的 Agents 视图从上到下的顺序（board-nav-panel 的 agentOrder），
+   * 白板不能 import 面板，由组装方（apps/desktop）传进来。不给时 ⌥⌘1–9 不处理。
+   */
+  agentOrder?(state: BoardStoreState): readonly WindowId[];
 }
 
 /** 新窗口默认大小：终端 560×360（需求「5 · 终端窗口」）。没有注册时用这个。 */
@@ -245,6 +251,15 @@ export class BoardController {
     const { api } = this;
     this.unsubs.push(
       api.on('status.changed', (e) => this.set((s) => ({ statuses: { ...s.statuses, [e.snapshot.terminalId]: e.snapshot } }))),
+      // CO4：一轮结束时没在看这个终端，记 Unseen（随白板保存，聚焦时清）。用 agent.turn-end 不用 running → idle：
+      // 启动画面画完、dev server 停下这类 running → idle 不算一轮（状态机不发 turn-end）
+      api.on('agent.turn-end', (e) =>
+        this.set((s) => {
+          if (!s.loaded) return {};
+          const windows = markUnseen(s.windows, e.terminalId, s.focusedId);
+          return windows === s.windows ? {} : { windows };
+        }),
+      ),
       api.on('workspace.changed', (e) => this.set((s) => ({ workspaces: { ...s.workspaces, [e.workspace.id]: e.workspace } }))),
       api.on('workspace.removed', (e) => this.dropWorkspace(e.id)),
       api.on('workspace.progress', (e) =>
@@ -657,11 +672,11 @@ export class BoardController {
     const w = this.windowById(id);
     if (!w) return;
     const top = this.maxWindowZ();
-    this.set((st) => ({
-      focusedId: id,
-      selectedFrame: null,
-      windows: w.z === top && st.windows.filter((n) => n.z === top).length === 1 ? st.windows : st.windows.map((n) => (n.id === id ? { ...n, z: top + 1 } : n)),
-    }));
+    this.set((st) => {
+      const raised = w.z === top && st.windows.filter((n) => n.z === top).length === 1 ? st.windows : st.windows.map((n) => (n.id === id ? { ...n, z: top + 1 } : n));
+      // CO4：看过了，清掉 Unseen
+      return { focusedId: id, selectedFrame: null, windows: clearUnseen(raised, id) };
+    });
   }
 
   /** 单击框的标题栏：选中框（提到最上层），不改变聚焦的窗口以外的东西。 */
@@ -1139,6 +1154,17 @@ export class BoardController {
     const target = adjacentWindow(order, s.focusedId, step, frameStart);
     if (target) this.jumpToWindow(target);
     return target;
+  }
+
+  /** CO4：⌥⌘n 跳到 Agents 视图的第 n 行（和单击那一行一样：跳过去、闪一下、聚焦）。没有这一行返回 null。 */
+  jumpToAgentRow(n: number): WindowId | null {
+    const order = this.opts.agentOrder?.(this.state);
+    const id = order?.[n - 1] ?? null;
+    if (id && this.windowById(id)) {
+      this.jumpAndFlash(id);
+      return id;
+    }
+    return null;
   }
 
   /** 跳过去、闪一下并聚焦（⌘J 的效果）。面板的快速定位列表（V5）也用它。 */
@@ -2632,6 +2658,13 @@ export class BoardController {
       case 'redo':
         this.redo();
         return true;
+      default: {
+        // ⌥⌘1–9（CO4）。没有组装 Agents 视图时不处理，按键照常交给页面
+        const row = jumpAgentRow(id);
+        if (row === null || !this.opts.agentOrder) return false;
+        this.jumpToAgentRow(row);
+        return true;
+      }
     }
   }
 }
