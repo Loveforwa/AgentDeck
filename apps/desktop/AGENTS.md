@@ -19,7 +19,7 @@ src/main/
   terminal-service.ts 主进程里的 TerminalHost 转发层：调用交给 utilityProcess，attach 带上发起的窗口
   host-process.ts   启动终端 utilityProcess，转交端口和控制消息、收回复
   terminal-ports.ts 每个窗口一条 MessageChannelMain：port1 给 preload，port2 给 utilityProcess
-  menu.ts           应用菜单：白板快捷键注册成 accelerator；不占 ⌘R ⌘[ ⌘] ⌘L；Edit › Undo / Redo（X10）也发给界面，不归白板时界面回 nativeEdit 让主进程 webContents.undo() / redo()
+  menu.ts           应用菜单：白板快捷键注册成 accelerator（CO4 的 ⌥⌘1–9 在 Go › Jump to Agent › Row n）；不占 ⌘R ⌘[ ⌘] ⌘L；Edit › Undo / Redo（X10）也发给界面，不归白板时界面回 nativeEdit 让主进程 webContents.undo() / redo()
   screenshot.ts     AGENTDECK_SCREENSHOT 截图模式
   window-options.ts 主窗口选项：macOS 上 hiddenInset 标题栏，红黄绿按钮在 34px 顶栏里居中（MVP v2 · V1）；StartupInfo.trafficLights 告诉界面留位置
   services.ts / registry.ts / ipc.ts / events.ts   注册表、IPC 路由、事件广播（F3）
@@ -33,7 +33,7 @@ src/utility/
   tmux-host.ts      utilityProcess 入口：startTmuxHost + port-watch，输出按 viewId 写进窗口端口
 src/preload/        window.agentdeck（contracts 的 AgentDeckApi）、window.agentdeckDesktop、window.agentdeckFiles
 src/shared/         方法名单、线路工具、主进程 ↔ utilityProcess 协议、应用壳自己的 IPC（desktop-bridge.ts）
-src/renderer/       顶栏 + 白板（ui-canvas）+ 源代码管理面板（scm-panel），什么都没选中时换成快速定位列表（board-nav-panel，V5）；注册终端、网页两种窗口；演示模式（demo.ts）
+src/renderer/       顶栏 + 白板（ui-canvas）+ 源代码管理面板（scm-panel），什么都没选中时换成快速定位列表（board-nav-panel，V5；CO4 的 Agents 视图的顺序 `agentOrder` 交给 BoardController，⌥⌘1–9 用）；注册终端、网页两种窗口；演示模式（demo.ts）
 test/               Vitest：注册表、preload 代理、主进程接线、组装用到的纯逻辑（assembly.test.ts）、browser
 ```
 

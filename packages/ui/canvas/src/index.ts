@@ -7,7 +7,7 @@ export { Workbench, type LeftPanelContext, type PanelContext, type WorkbenchProp
 export { Board } from './react/Board.tsx';
 export { BoardProvider, useBoardState, useController } from './react/context.tsx';
 export { useShortcuts } from './react/useShortcuts.ts';
-export { matchShortcut, resolveShortcut, shouldHandle, textUndoTarget, SHORTCUT_LABELS, type ShortcutId } from './model/shortcuts.ts';
+export { matchShortcut, resolveShortcut, shouldHandle, textUndoTarget, jumpAgentRow, JUMP_AGENT_SHORTCUTS, SHORTCUT_LABELS, type JumpAgentShortcut, type ShortcutId } from './model/shortcuts.ts';
 export { BoardHistory, HISTORY_LIMIT, type HistoryStep } from './model/history.ts';
 export { summarize, nextWaiting, prevWaiting, waitingPosition, isWaiting, type AttentionSummary } from './model/attention.ts';
 export { windowOrder, adjacentWindow } from './model/navigation.ts';

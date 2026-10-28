@@ -1,4 +1,5 @@
 // 标题栏右侧的状态文字和点（需求「6 · 终端状态与提醒」）。数据来自 status.changed，按 terminalId 对上。
+// CO4：一轮结束后还没看过时 idle 写 “Idle · Unseen · now”（聚焦就清，由白板记在 TerminalWindowData.unseen）。
 // 时间写法：不到 1 分钟 “now”，不到 1 小时 “4m”，不到 1 天 “2h”，更早写日期 “Oct 21”。
 
 import type { StatusSnapshot, WindowStatusBadge } from '@agentdeck/contracts';
@@ -16,7 +17,12 @@ export function formatSince(since: string, now: number): string {
   return `${MONTHS[d.getMonth()]} ${d.getDate()}`;
 }
 
-export function badgeFor(snap: Pick<StatusSnapshot, 'status' | 'since' | 'exitCode'>, now: number): WindowStatusBadge {
+export interface BadgeOptions {
+  /** CO4：一轮结束后还没看过（TerminalWindowData.unseen）。只在 idle 时显示：“Idle · Unseen · now”，只改文字不加颜色。 */
+  unseen?: boolean;
+}
+
+export function badgeFor(snap: Pick<StatusSnapshot, 'status' | 'since' | 'exitCode'>, now: number, opts: BadgeOptions = {}): WindowStatusBadge {
   const t = formatSince(snap.since, now);
   const withTime = (text: string) => (t ? `${text} · ${t}` : text);
   switch (snap.status) {
@@ -30,7 +36,7 @@ export function badgeFor(snap: Pick<StatusSnapshot, 'status' | 'since' | 'exitCo
     case 'needs-reply':
       return { text: withTime('Waiting'), tone: 'attention', dot: 'filled', detail: 'Needs reply' };
     case 'idle':
-      return { text: withTime('Idle'), tone: 'muted', dot: 'hollow' };
+      return { text: withTime(opts.unseen ? 'Idle · Unseen' : 'Idle'), tone: 'muted', dot: 'hollow' };
     case 'exited':
       return { text: 'Exited', tone: 'muted', dot: 'none' };
     case 'error':

@@ -49,7 +49,7 @@ AGENTDECK_E2E_KEEP=1 pnpm e2e              # 不删沙盒（打印路径和 tmux
 | `ask [命令]` | UserPromptSubmit、PermissionRequest（Bash，默认 `ls -la`），画确认框 | needs-approval |
 | 等批准时按 `1` / 回车 / `y` | PostToolUse | running |
 | 等批准时按 `2` / Esc / `n` | 无（真 claude 拒绝后也没有钩子） | 3 秒后兜底回 idle |
-| `done` | Stop | idle |
+| `done [回复]` | Stop（带回复时画一行 “● 回复”，像真 claude 的最后一条回复） | idle |
 | `clear` | SessionStart（`source: clear`，新的会话 id，像真 claude 的 /clear） | 不变（Session 多一段，SE2） |
 | `compact` | SessionStart（`source: compact`，会话 id 不变） | 不变 |
 | `quit` / `exit` | SessionEnd，退出码 0 | exited |

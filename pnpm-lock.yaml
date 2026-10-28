@@ -398,6 +398,9 @@ importers:
       '@agentdeck/design-tokens':
         specifier: workspace:*
         version: link:../../../design-tokens
+      '@agentdeck/ui-kit':
+        specifier: workspace:*
+        version: link:../../kit
     devDependencies:
       '@agentdeck/fakes':
         specifier: workspace:*

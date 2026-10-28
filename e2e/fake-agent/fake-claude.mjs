@@ -10,7 +10,7 @@
 //   work            → UserPromptSubmit，进入 running，一直干活，直到 done
 //   ask [命令]       → UserPromptSubmit + PermissionRequest（Bash，默认命令 ls -la），屏幕上画确认框；
 //                     等批准时按 1 或回车 = 允许一次 → PostToolUse，回到 running；按 2 或 Esc = 拒绝（和真 claude 一样不发钩子）
-//   done            → Stop（一轮结束，idle）
+//   done [回复]      → Stop（一轮结束，idle）；带回复时像真 claude 一样画一行 “● 回复”（CO4 的最后一条回复从屏幕上认它）
 //   clear           → SessionStart（source: clear），换一个新的会话 id（和真 claude 的 /clear 一样）
 //   compact         → SessionStart（source: compact），会话 id 不变
 //   quit / exit     → SessionEnd，退出码 0
@@ -181,7 +181,7 @@ async function runLine(input) {
     case 'done':
       state = 'idle';
       await emitHook('Stop', { stop_hook_active: false });
-      write('  Done.\n');
+      write(rest.length > 0 ? `\n● ${rest.join(' ')}\n\n` : '  Done.\n');
       prompt();
       return;
     case 'clear':
