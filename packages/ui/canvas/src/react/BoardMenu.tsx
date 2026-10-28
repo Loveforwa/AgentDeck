@@ -99,7 +99,8 @@ export function menuItems(c: BoardController, menu: MenuState, available: { term
         ...create(ws, flow),
         { id: 'new-workspace', label: 'New workspace…', shortcut: SHORTCUT_LABELS['new-workspace'], onSelect: () => c.openNewWorkspace({ at: flow }) },
         { id: 'add-project', label: 'Add project…', onSelect: () => void c.addProject(flow) },
-        ...(ws ? plugins({ kind: 'frame', workspaceId: ws }) : []),
+        // 白板空白处：整块白板的插件（PL6 Auto-resume）
+        ...(ws ? plugins({ kind: 'frame', workspaceId: ws }) : plugins({ kind: 'board' })),
         ...(ws ? [autoArrangeItem(ws)] : []),
         { type: 'separator' },
         { id: 'show-all', label: 'Show all', shortcut: SHORTCUT_LABELS['show-all'], onSelect: () => c.showAll() },

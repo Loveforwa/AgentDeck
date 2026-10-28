@@ -91,7 +91,7 @@ describe('PL0 plugin entry in the context menus', () => {
     const items = windowMenu(c, CLAUDE);
     const labels = items.map((i) => (i.type === 'separator' ? '-' : i.label));
     const at = labels.indexOf('PLUGINS');
-    expect(labels.slice(at - 1, at + 5)).toEqual(['-', 'PLUGINS', 'Auto-approve', 'Usage', 'Prompt queue', '-']);
+    expect(labels.slice(at - 1, at + 5)).toEqual(['-', 'PLUGINS', 'Auto-approve', 'Usage', 'Auto-resume', '-']);
     const auto = item(items, 'Auto-approve');
     expect(auto.checked).toBe(false);
     expect(auto.items).toBeUndefined();
@@ -186,9 +186,9 @@ describe('PL0 plugin entry in the context menus', () => {
     };
     const plugins = [...PLUGINS, tokens];
     const terminal = pluginMenuSection(c, { kind: 'window', windowId: CLAUDE }, plugins).map((e) => (e.type === 'separator' ? '-' : e.label));
-    expect(terminal).toEqual(['PLUGINS', 'Auto-approve', 'Usage', 'Prompt queue', 'Tokens']);
+    expect(terminal).toEqual(['PLUGINS', 'Auto-approve', 'Usage', 'Auto-resume', 'Tokens']);
     const frame = pluginMenuSection(c, { kind: 'frame', workspaceId: W.agentdeckLogin }, plugins).map((e) => (e.type === 'separator' ? '-' : e.label));
-    expect(frame).toEqual(['PLUGINS', 'Auto-approve', 'Approval history…']);
+    expect(frame).toEqual(['PLUGINS', 'Auto-approve', 'Approval history…', 'Auto-resume']);
     // 不在 agents 里的终端灰掉
     const shellTokens = pluginMenuSection(c, { kind: 'window', windowId: 'win-shop-shell' as WindowId }, [tokens]);
     expect(shellTokens[1]).toMatchObject({ label: 'Tokens', disabled: true, hint: 'Not supported for shell' });
