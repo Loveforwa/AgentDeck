@@ -41,6 +41,22 @@
 - 建议：`AgentInfo.warning?: string`（英文，例如 "Hooks are disabled in your Claude settings; status uses terminal activity."），或在 StatusSnapshot 上加 `degraded?: boolean`。
 - 现在怎么做：没做。启动后一段时间没收到 SessionStart 就退回“看输出活动”可以在状态机里做，等定了接口再加。
 
+### 10. UsageLimit 没有额度的范围（PL5）
+- claude 的 Opus / Sonnet 每周额度（quotaLimits.rateLimitType 为 seven_day_opus / seven_day_sonnet）只算用同一家族模型的终端，账号键要带范围（LimitScope）。
+  UsageLimit 只有 kind（weekly），看不出是哪一种。
+- 建议：`UsageLimit.scope?: LimitScope`（不填是 all）。
+- 现在怎么做：本包的 `ScopedUsageLimit = UsageLimit & { scope?: LimitScope }`（`src/usage/types.ts`），claude 的读取器只在 Opus / Sonnet 时带上，
+  跟着 `TerminalUsage.limit` 原样传出去（界面会多看到一个字段，不影响）；limits 模块用 `limitScopeOf` 读。
+
+### 11. LimitedTerminal 看不出“Auto-resume 关着”和 claude 自己续跑到哪一步（PL5，给 PL3 / PL6）
+- Auto-resume 默认关（2026-10-28 用户定）。关着的终端照样列在账号里（PL3、收件箱、CR8 要知道这个账号受限），owner 是 auto-resume，
+  但 resumeAt 为 null，和“读不到恢复时间”分不开，界面要自己再读白板上的开关；到了恢复时间变 skipped。
+- claude 自己续跑的信号（Notification quota_auto_resume_fired / stale / disabled）现在只能拼出来：
+  owner agent + interrupted = 等它自己续；owner agent + resuming = fired 了（或看到它开始干活）；账号 needsYou 'stale' = 有终端卡在等回车（看不出是哪个）；
+  disabled = owner 从 agent 变成 auto-resume。
+- 建议：`LimitedTerminal.autoResume?: boolean`（这次算下来开没开）、`LimitedTerminal.selfResume?: 'waiting' | 'fired' | 'stale' | 'disabled' | null`。
+  有了后者 PL3 可以去掉 trackSelfResume 的猜测（见 PL5 的汇报）。
+
 ## 需要说清楚（只改注释）
 
 ### 7. AskUserQuestion 走的是 PermissionRequest

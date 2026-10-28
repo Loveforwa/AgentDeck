@@ -28,7 +28,7 @@ export type { CommandLaunchContext } from './adapters/shell.ts';
 export type { AdapterDeps, AdapterLaunchContext, AgentAdapterExt } from './adapters/types.ts';
 export { compareVersions, findExecutable, readVersion, shellQuote, splitCommand } from './env.ts';
 export type { Env, EnvSource } from './env.ts';
-export { hookHint, parseCommonHook, parsePermissionRequest } from './hook-payload.ts';
+export { hookHint, parseClaudeNotification, parseClaudeStopFailure, parseCommonHook, parsePermissionRequest } from './hook-payload.ts';
 export { defaultHookSocketPath, HookServer, parseEnvelope } from './hook-server.ts';
 export type { HookServerOptions, ReceivedHook } from './hook-server.ts';
 export { StatusMachine } from './status/machine.ts';
@@ -113,3 +113,19 @@ export type {
   SkillsServiceOptions,
   SkillsSupport,
 } from './skills/index.ts';
+export {
+  accountKey,
+  claudeSelfResumes,
+  CODEX_SUBAGENT_LINE,
+  DEFAULT_RESUME_PROMPT,
+  effectiveAutoResume,
+  hasQueuedPrompts,
+  LIMIT_AGENTS,
+  limitConfigDir,
+  limitScopeOf,
+  LimitServiceImpl,
+  resumePromptText,
+  RESUME_GRACE_MS,
+  RESUME_STAGGER_MS,
+} from './limits/index.ts';
+export type { LimitServiceOptions, LimitTarget, ResumePromptInput } from './limits/index.ts';
