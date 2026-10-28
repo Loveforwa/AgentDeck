@@ -34,6 +34,8 @@ export interface FrameNode {
   autoApprove: boolean;
   /** 一键排版（MVP v3 · N12，画板 15）。老数据没有它，按 { auto: false, layout: null }。 */
   arrange?: FrameArrange;
+  /** PL4：框上的 Auto-resume。true / false 单独设过；不填或 null 跟着白板（BoardState.autoResume）。规格只写了终端一级，框和白板两级照设计画布第 7 节加。 */
+  autoResume?: boolean | null;
 }
 
 /** 框里窗口的排法：tidy 紧凑网格（窗口大小不变）、columns 并排一样高、rows 上下叠一样宽。 */
@@ -140,6 +142,10 @@ export interface TerminalWindowData {
    * 老数据没有它，升级时由 store 补一条（SE1）；不填或 null 时 agents.start 兜底新建。
    */
   session?: SessionId | null;
+  /**
+   * PL4：这个终端单独的 Auto-resume 设置。true 单独开，false 单独关；不填或 null 跟着框（FrameNode.autoResume），再跟着白板（BoardState.autoResume）。
+   */
+  autoResume?: boolean | null;
 }
 
 /** PL3：一条排着的提示词。 */
@@ -204,6 +210,8 @@ export interface BoardState {
   panel: { open: boolean; width: number };
   /** 左边栏（MVP v3 · N11 历史会话）。老数据没有它，按收着、宽 280。 */
   leftPanel?: { open: boolean; width: number };
+  /** PL4：白板右键 PLUGINS 里的 Auto-resume all terminals。默认关（2026-10-28 用户定）；老数据没有它，按 false。 */
+  autoResume?: boolean;
   savedAt: IsoTime;
 }
 

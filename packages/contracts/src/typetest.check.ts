@@ -5,6 +5,7 @@ import type {
   LaunchPreset, ProjectPatch, Settings,
   Session, SessionId, SessionOrigin, AgentSessionSegment, HandoffResult,
   AgentCapabilityReport, LaunchSpec,
+  AccountLimit, LimitedTerminal, AgentHookEvent,
 } from './index.ts';
 import { effectiveSkillSelection, FIRE_AND_FORGET, isAutoApproveOn, skillsRestartNeeded, findInlineSecret, redactCommand, capabilitiesFromReport } from './index.ts';
 
@@ -171,3 +172,15 @@ void api.agents.list().then((xs) => xs.map((x) => (x.report ? capabilitiesFromRe
 api.on('status.changed', (e) => void e.snapshot.degraded);
 const kimiLaunch: LaunchSpec = { cmd: 'kimi', args: [], sessionId: null, consumed: { prompt: false }, sendAfterReady: 'reply with PELICAN' };
 void kimiLaunch;
+// PL4（0.1.18）：Auto-resume 的 LimitService
+api.on('limits.changed', (e: EventOf<'limits.changed'>) => {
+  const a: AccountLimit | undefined = e.limits[0];
+  void a?.terminals.filter((t: LimitedTerminal) => t.state === 'interrupted' && t.owner !== 'run').map((t) => t.resumeAt);
+  void a?.needsYou;
+});
+void api.limits.resumeNow('codex:/Users/you/.codex:all', ['t1' as TerminalId]);
+void api.limits.setOwner('t1' as TerminalId, 'crew', 'Your usage limit has reset. Continue T4.');
+const turnEnd: AgentHookEvent = { type: 'turn-end', error: 'rate_limit' };
+const fired: AgentHookEvent = { type: 'quota-resume', what: 'stale' };
+const resumeData: TerminalWindowData = { ...termData, autoResume: null };
+void turnEnd; void fired; void resumeData;

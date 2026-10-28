@@ -22,6 +22,7 @@
 | launch.ts | 启动预设 LaunchPreset、命令里的密码（findInlineSecret、redactCommand，LA0） | 纯类型和纯函数 | New terminal ▸、Custom command…、mcp-server 的 list_terminals |
 | session.ts | SessionService（AgentDeck 自己的 Session、父子、交接，M9 · SE0） | apps/desktop 主进程（SE2）、packages/store（SE1） | 白板标题栏标签、左边栏、Hand off to ▸ |
 | capabilities.ts | agent 能力报告（AH0）和由它推出旧的 AgentCapabilities、AutoApproveSupport 的纯函数 | 线 4 · agent-adapters 算报告 | Settings › Agents、菜单 hint、New crew 下拉 |
+| limits.ts | LimitService（按账号的额度上限、被打断的终端、续跑，插件 Auto-resume · PL4） | 线 4 · agent-adapters 的 limits 模块（PL5） | 收件箱、终端书签、集群调度器（CR8） |
 | app.ts | AppService、Settings | 组装（apps/desktop） | 所有界面 |
 | ipc.ts | AgentDeckApi、事件总表、线路约定 | M0 · F3 IPC 层 | 所有界面 |
 

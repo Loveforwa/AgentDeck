@@ -77,7 +77,10 @@ export type AgentHookEvent =
   | { type: 'question'; summary: string }
   /** 一个工具跑完了（claude 的 PostToolUse）。claude 会并行跑工具，跑完的不一定是还在等批准的那个。 */
   | { type: 'tool-done'; tool: string | null; summary: string }
-  | { type: 'turn-end' }
+  /** error（PL4 加）：这一轮是出错结束的，例如 claude StopFailure 的 "rate_limit"（额度用完）。正常结束不填。 */
+  | { type: 'turn-end'; error?: string | null }
+  /** PL4：claude 自己的额度续跑（Notification 钩子 quota_auto_resume_fired / stale / disabled，2.1.234 起）。 */
+  | { type: 'quota-resume'; what: 'fired' | 'stale' | 'disabled' }
   | { type: 'session-end' };
 
 export interface AgentAdapter {

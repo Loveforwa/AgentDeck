@@ -21,6 +21,8 @@ export interface Settings {
   };
   /** LA0：New terminal ▸ 里所有项目都有的启动预设（COMMANDS 一组的 All projects）。老设置没有它，按空数组。 */
   launchPresets?: LaunchPreset[];
+  /** PL4 / PL5：Settings › Agents › Resume prompt，续跑时发的英文模板。不填用内置的那段。 */
+  resumePrompt?: string;
 }
 
 export interface AgentSettings {
