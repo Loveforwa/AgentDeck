@@ -48,6 +48,7 @@ import {
 import { createGitService } from '@agentdeck/git-service';
 import { openStore } from '@agentdeck/store';
 import { createWorkspaceServices } from '@agentdeck/workspace-service';
+import { loadOrCreateToken, terminalKey } from '@agentdeck/mcp-server';
 import tmuxHostPath from '../utility/tmux-host.ts?modulePath';
 import { DESKTOP_IPC, type BoardReadyInfo, type StartupInfo } from '../shared/desktop-bridge.ts';
 import { createAlerts } from './alerts.ts';
@@ -76,24 +77,25 @@ app.setName('AgentDeck');
 // 开发时可以开 Chrome DevTools 协议，脚本驱动界面做端到端检查（AGENTDECK_DEBUG_PORT=9333）
 if (isDev && process.env['AGENTDECK_DEBUG_PORT']) app.commandLine.appendSwitch('remote-debugging-port', process.env['AGENTDECK_DEBUG_PORT']);
 
-async function writeNotifyWrapper(opts: { dir: string; script: string; hookSocket: string; env: Env }): Promise<string> {
-  // 钩子在 tmux 窗格里跑，PATH 里不一定有 node：先用登录 shell 里的 node，没有就用应用自带的 Electron 当 node 跑。
+/**
+ * <数据目录>/bin 下的 sh 入口（每次启动重写）：带上几个环境变量，运行一个 .mjs。
+ * 它在 tmux 窗格里跑，PATH 里不一定有 node：先用登录 shell 里的 node，没有就用应用自带的 Electron 当 node 跑。
+ */
+async function writeNodeWrapper(opts: { file: string; script: string; about: string; vars: Record<string, string>; env: Env }): Promise<string> {
   const node = await findExecutable('node', opts.env);
   const q = (s: string) => `'${s.replace(/'/g, `'\\''`)}'`;
   const run = node ? `exec ${q(node)} ${q(opts.script)} "$@"` : `ELECTRON_RUN_AS_NODE=1 exec ${q(process.execPath)} ${q(opts.script)} "$@"`;
   const body = [
     '#!/bin/sh',
-    '# AgentDeck 生成的钩子入口（每次启动重写）。agent 的钩子运行它，它把事件发到 AgentDeck 的钩子 socket。',
-    `AGENTDECK_HOOK_SOCKET=${q(opts.hookSocket)}`,
-    'export AGENTDECK_HOOK_SOCKET',
+    `# ${opts.about}`,
+    ...Object.entries(opts.vars).flatMap(([k, v]) => [`${k}=${q(v)}`, `export ${k}`]),
     ...(node ? [] : ['export ELECTRON_RUN_AS_NODE']),
     run,
     '',
   ].join('\n');
-  const file = join(opts.dir, 'agentdeck-notify');
-  await writeFile(file, body);
-  await chmod(file, 0o755);
-  return file;
+  await writeFile(opts.file, body);
+  await chmod(opts.file, 0o755);
+  return opts.file;
 }
 
 async function main(): Promise<void> {
@@ -193,12 +195,27 @@ async function main(): Promise<void> {
   });
 
   // ---- agent、状态机、钩子 socket ----
-  const notifyCommand = await writeNotifyWrapper({
-    dir: join(paths.dataDir, 'bin'),
+  const binDir = join(paths.dataDir, 'bin');
+  const notifyCommand = await writeNodeWrapper({
+    file: join(binDir, 'agentdeck-notify'),
     script: paths.notifyScript,
-    hookSocket: paths.hookSocket,
+    about: 'AgentDeck 生成的钩子入口（每次启动重写）。agent 的钩子运行它，它把事件发到 AgentDeck 的钩子 socket。',
+    vars: { AGENTDECK_HOOK_SOCKET: paths.hookSocket },
     env: loginEnv,
   });
+  // CR15：agentdeck 命令。只在 AgentDeck 开的终端里有（agent-adapters 把 binDir 放在它们 PATH 的最前面），系统自己的终端里没有。
+  // AGENTDECK_API_FILE 指向这个 AgentDeck 写的 api.json（数据目录不是 ~/.agentdeck 时，开发、测试不去读用户真的那份）。
+  const apiFile = join(paths.dataDir, 'run', 'api.json');
+  await writeNodeWrapper({
+    file: join(binDir, 'agentdeck'),
+    script: paths.cliScript,
+    about: 'AgentDeck 生成的 agentdeck 命令入口（每次启动重写），只在 AgentDeck 开的终端的 PATH 里。',
+    vars: { AGENTDECK_API_FILE: apiFile },
+    env: loginEnv,
+  }).catch((e: unknown) => console.warn('[agentdeck] agentdeck command not written', e));
+  // 终端钥匙（IS-101）由密钥算，要在开第一个终端前就能算，所以先读密钥（MCP 起不来也照样给钥匙，命令行连不上时自己报错）。
+  // token 跟着数据目录走（默认数据目录下就是 ~/.agentdeck/run/mcp-token）：AGENTDECK_DATA_DIR 指向别处时（开发、测试打包版）不碰用户真实的 ~/.agentdeck
+  const mcpToken = await loadOrCreateToken(join(paths.dataDir, 'run', 'mcp-token'));
   // AgentDeck 的 MCP（M1、N1）：白板上的 claude、codex、omp 启动时挂上它，工具经注册表调服务。起不来不影响应用，只是 agent 拿不到这些工具。
   let mcp: Awaited<ReturnType<typeof startAppMcp>> | null = null;
   // omp 用 --plugin-dir 加载的插件目录（内容固定，url、token 走环境变量）。写不了就不给，omp 不挂 MCP。
@@ -244,6 +261,9 @@ async function main(): Promise<void> {
     },
     env: () => loginEnv,
     mcp: () => mcp?.endpoint ?? null,
+    // CR15：每个终端一把钥匙（AGENTDECK_TERM_KEY，也是它的 MCP Bearer），PATH 前面加 agentdeck 命令的目录
+    terminalKey: (id) => terminalKey(mcpToken, id),
+    binDir,
     ...(mcpPluginDir ? { mcpPluginDir } : {}),
     terminals,
     notifyCommand,
@@ -259,10 +279,9 @@ async function main(): Promise<void> {
   startAppMcp({
     registry,
     emit,
-    // token 跟着数据目录走（默认数据目录下就是 ~/.agentdeck/run/mcp-token）：AGENTDECK_DATA_DIR 指向别处时（开发、测试打包版）不碰用户真实的 ~/.agentdeck
-    tokenPath: join(paths.dataDir, 'run', 'mcp-token'),
+    token: mcpToken,
     // CR14：命令行找服务的地址，和 token 一样跟着数据目录走（默认数据目录下就是 ~/.agentdeck/run/api.json）
-    apiFile: join(paths.dataDir, 'run', 'api.json'),
+    apiFile,
     workspaceOf: (id) => rt.status.get(id)?.workspaceId,
     onInput: (id) => rt.noteInput(id),
     // N1：open_terminals 超过 6 个先问；默认按钮是 Cancel（是 agent 发起的）

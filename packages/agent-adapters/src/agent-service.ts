@@ -1,6 +1,8 @@
 // AgentService 的真实实现：检测安装情况，用适配器算出启动命令，再调 TerminalHost.create。
 
-import { AgentDeckError } from '@agentdeck/contracts';
+import { randomBytes } from 'node:crypto';
+import { delimiter } from 'node:path';
+import { AgentDeckError, TERMINAL_KEY_ENV } from '@agentdeck/contracts';
 import type {
   AgentCapabilityReport,
   AbsPath,
@@ -61,6 +63,22 @@ export interface AgentServiceOptions {
    * X4：fork 前看原来的对话在不在（fork.ts）。返回 false 时不开终端，抛 not-found；null、出错、不给时照常启动。
    */
   conversationExists?: ConversationCheck;
+  /**
+   * CR15（IS-101）：这个终端的钥匙（组装时接 mcp-server 的 terminalKey）。给了就在启动前生成终端 id（CreateTerminalRequest.id），
+   * 钥匙放进环境的 AGENTDECK_TERM_KEY，挂 AgentDeck MCP 时也用它代替共用 token（MCP 配置里的 ${AGENTDECK_MCP_TOKEN} 展开成钥匙），
+   * 终端环境里就没有共用的密钥了。返回 null 时这个终端不带钥匙。
+   */
+  terminalKey?: (terminalId: TerminalId) => string | null;
+  /** CR15：agentdeck 命令所在的目录（<数据目录>/bin），放在每个 AgentDeck 终端 PATH 的最前面。系统自己的终端不受影响。 */
+  binDir?: AbsPath;
+}
+
+/** 改 PATH 时经它启动（见 start）。macOS 和 Linux 都在这里。 */
+const ENV_COMMAND = '/usr/bin/env';
+
+/** 和 tmux-host 生成的 id 同一个样子。 */
+function newTerminalId(): TerminalId {
+  return `t-${randomBytes(6).toString('hex')}` as TerminalId;
 }
 
 export class AgentServiceImpl implements AgentService {
@@ -113,9 +131,12 @@ export class AgentServiceImpl implements AgentService {
     }
 
     const skills = (await this.opts.skills?.(req).catch(() => null)) ?? null;
+    // CR15：要给终端钥匙时先定下终端 id（钥匙由它算）
+    const terminalId = this.opts.terminalKey ? newTerminalId() : null;
+    const key = terminalId ? this.opts.terminalKey!(terminalId) : null;
     const ctx: CommandLaunchContext & AdapterLaunchContext = {
       cwd: req.cwd,
-      terminalId: PENDING_TERMINAL_ID,
+      terminalId: terminalId ?? PENDING_TERMINAL_ID,
       mode: req.mode,
       notifyCommand: this.opts.notifyCommand,
       extraArgs: this.opts.extraArgs?.(req.agent) ?? [],
@@ -123,8 +144,8 @@ export class AgentServiceImpl implements AgentService {
       ...(req.prompt ? { prompt: req.prompt } : {}),
     };
     const mcp = this.opts.mcp?.();
-    // N9：这个终端没勾 built-in 的 agentdeck 时不挂
-    if (mcp && (skills?.agentdeckMcp ?? true)) ctx.mcp = mcp;
+    // N9：这个终端没勾 built-in 的 agentdeck 时不挂。CR15：有钥匙时 MCP 也按钥匙认（共用 token 不进终端环境）
+    if (mcp && (skills?.agentdeckMcp ?? true)) ctx.mcp = key ? { url: mcp.url, token: key } : mcp;
     if (skills) ctx.skills = skills;
     const prepared = info.capabilities.hooks ? await adapter.prepare?.(ctx) : undefined;
     const spec = adapter.launch(ctx);
@@ -132,11 +153,16 @@ export class AgentServiceImpl implements AgentService {
       throw new AgentDeckError({ code: 'command-not-found', message: `Command not found: ${spec.cmd}` });
     }
 
+    const env = this.terminalEnv(spec.env, key);
+    // tmux 3.6a 不认 new-session -e PATH=…（窗格的 PATH 取 tmux 客户端自己的，实测），所以 PATH 要改时经 /usr/bin/env 设好再 exec。
+    // 窗口里记的、返回的仍是原来的 cmd / args；env exec 之后窗格里的进程就是程序本身。
+    const launch = env?.PATH && env.PATH !== spec.env?.PATH ? { cmd: ENV_COMMAND, args: [`PATH=${env.PATH}`, spec.cmd, ...spec.args] } : spec;
     const { id } = await this.opts.terminals.create({
-      cmd: spec.cmd,
-      args: spec.args,
+      ...(terminalId ? { id: terminalId } : {}),
+      cmd: launch.cmd,
+      args: launch.args,
       cwd: req.cwd,
-      ...(spec.env ? { env: spec.env } : {}),
+      ...(env ? { env } : {}),
       ...(req.size ? { size: req.size } : {}),
       // X6：恢复 Shell 时把上次的命令填进输入行、不运行。只对交互的 shell 有意义（agent 的输入框、-c 跑的命令都不该收到）
       ...(req.agent === 'shell' && req.prefill && req.command === undefined ? { prefill: req.prefill } : {}),
@@ -150,6 +176,21 @@ export class AgentServiceImpl implements AgentService {
       skills,
     });
     return { terminalId: id, sessionId: spec.sessionId, cmd: spec.cmd, args: spec.args };
+  }
+
+  /**
+   * CR15：每个 AgentDeck 终端（agent、Shell、自定义命令都算，pi、kimi 也是）都加的环境：PATH 前面是 binDir（agentdeck 命令），
+   * AGENTDECK_TERM_KEY 是这个终端的钥匙。只放进这个终端的 LaunchSpec.env，不写任何配置文件。
+   */
+  private terminalEnv(env: Record<string, string> | undefined, key: string | null): Record<string, string> | undefined {
+    const binDir = this.opts.binDir;
+    if (!binDir && !key) return env;
+    const base = env?.PATH ?? this.opts.env().PATH ?? '';
+    return {
+      ...env,
+      ...(binDir ? { PATH: [binDir, ...base.split(delimiter).filter((d) => d && d !== binDir)].join(delimiter) } : {}),
+      ...(key ? { [TERMINAL_KEY_ENV]: key } : {}),
+    };
   }
 
   /** 状态机和 ApprovalService 需要按 agent 找适配器（parseHook、approveOnceKeys）。 */

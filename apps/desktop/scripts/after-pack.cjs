@@ -14,7 +14,7 @@ exports.default = async function afterPack(context) {
   const unpacked = join(res, 'app.asar.unpacked/node_modules');
   const problems = [];
 
-  for (const f of ['app.asar', 'tmux.conf', 'agentdeck-notify.mjs', 'agentdeck-pi-extension.mjs']) {
+  for (const f of ['app.asar', 'tmux.conf', 'agentdeck-notify.mjs', 'agentdeck-pi-extension.mjs', 'agentdeck.mjs']) {
     if (!existsSync(join(res, f))) problems.push(`missing Resources/${f}`);
   }
   const sqlite = join(unpacked, `better-sqlite3/prebuilds/darwin-${arch}.node`);

@@ -1,8 +1,8 @@
 import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { AgentDeckError } from '@agentdeck/contracts';
-import type { AgentSessionId, StartAgentRequest } from '@agentdeck/contracts';
+import { AgentDeckError, TERMINAL_KEY_ENV } from '@agentdeck/contracts';
+import type { AgentSessionId, CreateTerminalRequest, StartAgentRequest, TerminalId } from '@agentdeck/contracts';
 import { FakeTerminalHost } from '@agentdeck/fakes';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { createDefaultAdapters } from '../src/adapters/index.ts';
@@ -220,5 +220,73 @@ describe('AgentServiceImpl: restoring the last session (X6)', () => {
     expect(terminals.get(claude.terminalId).request.prefill).toBeUndefined();
     const run = await s.start(req({ agent: 'shell', command: 'pnpm dev', prefill: 'pnpm dev' }));
     expect(terminals.get(run.terminalId).request.prefill).toBeUndefined();
+  });
+});
+
+describe('AgentServiceImpl: per-terminal environment (CR15)', () => {
+  let bin2: string;
+  beforeAll(() => {
+    bin2 = mkdtempSync(join(tmpdir(), 'ads-cr15-'));
+    for (const [name, out] of [
+      ['claude', '2.1.291 (Claude Code)'],
+      ['pi', '0.83.0'],
+      ['kimi', 'kimi, version 2.3.2'],
+      ['pnpm', '10.0.0'],
+    ]) {
+      writeFileSync(join(bin2, name!), `#!/bin/sh\necho "${out}"\n`);
+      chmodSync(join(bin2, name!), 0o755);
+    }
+  });
+  afterAll(() => rmSync(bin2, { recursive: true, force: true }));
+
+  const BIN = '/data/agentdeck/bin';
+  const keyOf = (id: string) => `key-of-${id}`;
+
+  /** 记下 create 的请求；照 contracts 用请求里的 id（FakeTerminalHost 不看 req.id）。 */
+  function withStubHost(plain = false) {
+    const env = { PATH: `${bin2}:/usr/bin`, SHELL: '/bin/sh' };
+    const created: CreateTerminalRequest[] = [];
+    const s = new AgentServiceImpl({
+      adapters: createDefaultAdapters({ env: () => env }),
+      terminals: { create: async (r) => (created.push(r), { id: r.id ?? ('t-host' as TerminalId) }) },
+      env: () => env,
+      notifyCommand: '/opt/agentdeck/agentdeck-notify',
+      mcp: () => ({ url: 'http://127.0.0.1:1/mcp', token: 'shared-token' }),
+      ...(plain ? {} : { terminalKey: keyOf, binDir: BIN }),
+    });
+    return { s, created };
+  }
+
+  it('every terminal gets the agentdeck bin dir first on PATH and its own key; the id is chosen before the key', async () => {
+    const { s, created } = withStubHost();
+    for (const r of [req({}), req({ agent: 'shell' }), req({ agent: 'custom', command: 'pnpm dev' }), req({ agent: 'pi' }), req({ agent: 'kimi', prompt: 'hi' })]) {
+      const res = await s.start(r);
+      const c = created.at(-1)!;
+      expect(c.id).toBe(res.terminalId);
+      expect(res.terminalId).toMatch(/^t-[0-9a-f]{12}$/);
+      expect(c.env?.[TERMINAL_KEY_ENV]).toBe(keyOf(res.terminalId));
+      expect(c.env?.PATH).toBe(`${BIN}:${bin2}:/usr/bin`);
+      // tmux 不认 -e PATH=：经 /usr/bin/env 设好 PATH 再 exec 原来的命令；返回给窗口的仍是原来的
+      expect(c.cmd).toBe('/usr/bin/env');
+      expect(c.args).toEqual([`PATH=${BIN}:${bin2}:/usr/bin`, res.cmd, ...res.args]);
+      expect(res.cmd).not.toBe('/usr/bin/env');
+    }
+    expect(new Set(created.map((c) => c.id)).size).toBe(5);
+  });
+
+  it('the MCP config gets the terminal key instead of the shared token', async () => {
+    const { s, created } = withStubHost();
+    const res = await s.start(req({}));
+    expect(res.args).toContain('--mcp-config');
+    expect(created[0]!.env).toMatchObject({ AGENTDECK_MCP_TOKEN: keyOf(res.terminalId), AGENTDECK_TERM_KEY: keyOf(res.terminalId) });
+    expect(JSON.stringify(created[0])).not.toContain('shared-token');
+  });
+
+  it('without terminalKey and binDir nothing changes (the host picks the id)', async () => {
+    const { s, created } = withStubHost(true);
+    const res = await s.start(req({ agent: 'shell' }));
+    expect(res.terminalId).toBe('t-host');
+    expect(created[0]!.id).toBeUndefined();
+    expect(created[0]!.env).toBeUndefined();
   });
 });

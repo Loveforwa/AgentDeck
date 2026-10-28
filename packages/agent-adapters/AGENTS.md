@@ -31,6 +31,8 @@ const rt = createAgentRuntime({
   destructivePatterns: () => settings.approvals.destructivePatterns,
   extraArgs: (agent) => settings.agents[agent]?.extraArgs ?? [],
   mcp: () => mcpServer.endpoint,                  // M1：AgentDeck 的 MCP 服务（packages/mcp-server），没起来返回 null
+  terminalKey: (id) => terminalKey(token, id),    // CR15：每个终端的钥匙（AGENTDECK_TERM_KEY，也当 MCP 的 Bearer）
+  binDir: '<dataDir>/bin',                        // CR15：agentdeck 命令的目录，放在每个终端 PATH 最前面
   mcpPluginDir: '/…/mcp-plugin',                  // N1：写好 mcpPluginFiles() 的目录，omp 用 --plugin-dir 加载；不给时 omp 不挂
 });
 await rt.start();                                 // 监听 ~/.agentdeck/run/hooks.sock
@@ -225,6 +227,19 @@ token 本身只放进 `LaunchSpec.env`，不进命令行。和用户自己配的
 - omp 在 tmux 里有没有真的连上、工具名在 omp 里显示成什么，没有在真 TUI 里核对（只核对了配置解析）。
 
 `StartAgentRequest.prompt`（第一条消息）：claude、codex 都放在参数最后、`--` 之后（`--mcp-config` 和不少用户参数后面能跟多个值，不隔开会被吃掉）。只在新会话时带。
+
+### 每个终端一把钥匙、agentdeck 命令（CR15，IS-101）
+
+`createAgentRuntime({ terminalKey, binDir })`（组装时 `terminalKey: (id) => terminalKey(mcp-token, id)`，`binDir: <数据目录>/bin`）：
+
+- 给了 `terminalKey`：`AgentServiceImpl.start` 先生成终端 id（`t-` 加 12 位十六进制，和 tmux-host 一样，经 `CreateTerminalRequest.id` 交给它），
+  算出这个终端的钥匙，放进 `LaunchSpec.env` 的 `AGENTDECK_TERM_KEY`；挂 AgentDeck MCP 时 `LaunchContext.mcp.token` 也换成钥匙，
+  所以 `AGENTDECK_MCP_TOKEN` 展开出来的是钥匙，终端环境里不再有共用的密钥。mcp-server 按钥匙和终端 id 认调用者，冒充别的终端是 401。
+- 给了 `binDir`：每个 AgentDeck 终端（claude、codex、omp、pi、kimi、Shell、自定义命令都算）的 PATH 前面加它，`agentdeck` 命令（tools/agentdeck-cli）就在那里。
+  **tmux 3.6a 不认 `new-session -e PATH=…`**（窗格的 PATH 取 tmux 客户端自己的，2026-10-28 实测），所以 PATH 要改时 tmux 收到的命令是
+  `/usr/bin/env PATH=<…> <原命令> <原参数>`（env exec 之后窗格里就是程序本身）；返回给窗口记的 cmd / args 仍是原来的。PATH 也照样写进 env（tmux 以后认了不用改）。
+- 都只放进这个终端的启动参数和环境，不写任何配置文件。pi、kimi 没有 MCP，也照样有钥匙和 PATH（能用 agentdeck 命令）。
+- `tools/fakes` 的 `FakeTerminalHost.create` 不看 `req.id`（用自己的 id），所以假服务里钥匙对不上终端；单元测试用的是照 contracts 认 id 的小桩。
 
 ## Skills · MCP（N9，2026-10-25 核对）
 
