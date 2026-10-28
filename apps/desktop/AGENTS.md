@@ -26,6 +26,7 @@ src/main/
   browser/          网页窗口的主进程部分（线 5）：BrowserService、响应头改写、agentdeck-file://、iframe 小桥
   mcp.ts            AgentDeck 的 MCP 服务（M1，packages/mcp-server）：工具通过注册表调服务
   skills.ts         Skills · MCP（N9）：写自带 skill、记下刚 kill 的终端、启动时按白板找这个终端的选择
+  limits.ts         额度上限（PL5，插件 Auto-resume）：LimitServiceImpl 接上 sendKeys、用量、子 agent、白板、Resume prompt；不让 Mac 睡的几个来源合在一起
 src/utility/
   tmux-host.ts      utilityProcess 入口：startTmuxHost + port-watch，输出按 viewId 写进窗口端口
 src/preload/        window.agentdeck（contracts 的 AgentDeckApi）、window.agentdeckDesktop、window.agentdeckFiles
@@ -64,6 +65,16 @@ AH11：`startAppMcp` 给 `hiddenFromAgents`：每次调用读保存的白板，`
   否则 resume 时 sessionId 一样的窗口；都没有用默认。面板上的 Restart and resume 先 `controller.flush()` 存白板，再给窗口发 `restart-resume`。
 - 界面：`App.tsx` 的 `useSkillsTarget` 把聚焦的终端窗口交给 `ScmPanel` 的 `skills`；聚焦的不是终端时传 null。
 
+## 额度上限（PL5）
+
+`createLimits(...)`（`src/main/limits.ts`）建 agent-adapters 的 `LimitServiceImpl`，注册成 `limits`（只开放 contracts 的五个方法，`limitsApi`）。规则见 agent-adapters/AGENTS.md「额度上限」。
+
+- 输入：`tapHook` → `noteHook`（StopFailure error、quota_auto_resume_*、UserPromptSubmit、SubagentStart）；`emit` 里的 `usage.changed` → `noteUsage`、`status.changed` → `noteStatus`；
+  `terminal.input` → `noteInput`；`terminal.exit` → `noteTerminalGone`。退出时 `close()`。
+- 账号目录：登录 shell 环境的 CLAUDE_CONFIG_DIR / CODEX_HOME；claude 会不会自己续看 `agents.list()` 里 claude 的版本（启动时读一次，之后半小时一次）。
+- Auto-resume 开关和 Prompt queue 每次检查时从 `store.board.load()` 读（界面改了半秒后存进库）；Resume prompt 读 `settings.resumePrompt`。
+- 不让 Mac 睡：`createKeepAwake` 把 Prompt queue（界面调 `app.setKeepAwake`，来源 queue）和 LimitService（来源 limits）合在一起，都不要了才放开。
+
 ## 运行
 
 ```bash
@@ -82,6 +93,7 @@ pnpm --filter @agentdeck/desktop typecheck
 | `AGENTDECK_TMUX_SOCKET` | tmux `-L` 名字。默认：开发时 `agentdeck-desktop-dev`，打包后 `agentdeck` |
 | `AGENTDECK_DEMO=1` | 演示：见上 |
 | `AGENTDECK_SCREENSHOT=<png>` | 截图后退出；`AGENTDECK_SCREENSHOT_DELAY`（毫秒，默认 6000）是终端都有输出之后再等多久 |
+| `AGENTDECK_RESUME_STAGGER_MS` / `AGENTDECK_LIMIT_GRACE_MS` | 测试用（PL5）：同一账号几个终端续跑的间隔（默认 30000）、恢复时间后再等多久（默认 60000），毫秒 |
 | `AGENTDECK_DEBUG_PORT` | 只在开发时：界面开 Chrome DevTools 协议端口，脚本驱动界面用；控制台里 `__board` 是白板控制器 |
 
 端到端测试（R2）：根目录 `pnpm e2e`，用 Playwright 启动 `out/` 里的应用，每个测试单独的 `AGENTDECK_DATA_DIR`、`AGENTDECK_TMUX_SOCKET`、HOME 和 `--user-data-dir`，agent 是假 claude。见 `e2e/AGENTS.md`。
