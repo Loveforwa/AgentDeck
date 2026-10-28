@@ -1,6 +1,6 @@
 // 证明边界规则真的生效：cases/<规则名>/ 必须触发同名规则，cases/allowed/ 必须一条都不触发；
 // eslint/ 下的界面文件写死颜色必须被拦住，design-tokens 里的颜色和 token 变量不拦。
-import { readdirSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ESLint } from 'eslint';
@@ -25,6 +25,18 @@ describe('dependency-cruiser boundaries', () => {
   it.each(violatingCases)('cases/%s is rejected by its rule', async (rule) => {
     const violations = await findViolations(join(CASES, rule));
     expect(violations.map((v) => v.rule)).toContain(rule);
+  });
+
+  // 每个写着“违规”的样例文件自己都要被这条规则拦住（只看整个目录时，一个样例的 import 路径写错了也看不出来）
+  it.each(violatingCases)('cases/%s: every file marked 违规 is caught on its own', async (rule) => {
+    const base = join(CASES, rule);
+    const marked = (readdirSync(base, { recursive: true }) as string[])
+      .filter((f) => /\.(ts|tsx|js|mjs|cjs)$/.test(f))
+      .filter((f) => /^\s*\/\/ 违规/.test(readFileSync(join(base, f), 'utf8')))
+      .map((f) => f.split('\\').join('/'));
+    const caught = new Set((await findViolations(base)).filter((v) => v.rule === rule).map((v) => v.from));
+    expect(marked.length).toBeGreaterThan(0);
+    expect(marked.filter((f) => !caught.has(f))).toEqual([]);
   });
 
   it('cases/allowed passes every rule', async () => {
