@@ -55,7 +55,8 @@ N1（MVP v3）：
   `builtin/skills/agentdeck/`（自带 skill，每次启动用 `writeBuiltinSkills` 重写）、`skill-sets/<agent>-<哈希>/`（启动时写的那套目录，内容一样就复用）、
   `skills-state.json`（每个终端启动时带了什么，面板的 running）。都不碰用户自己的 ~/.claude*、~/.codex、~/.pi、~/.omp、~/.kimi-code 和仓库。
 - `SkillsServiceImpl` 注册成 `skills`；lookup 用状态机的 agent 和库里终端记录的 cwd；`mcpRunning` 是 MCP 服务起来了没有（agentdeck 那一行的状态点）。
-- `createAgentRuntime({ skills, onStarted })`：启动前 `skills.prepareLaunch({ agent, cwd, selection })`，起来后 `noteLaunched(终端, ids)`。
+- `createAgentRuntime({ skills, onStarted })`：启动前 `skills.prepareLaunch({ agent, cwd, selection })`，起来后 `noteLaunched(终端, ids, setDir)`。
+- 清理 `skill-sets/`（IS-112）：`liveTerminals` 用 `terminals.list()` 里 `alive` 的终端；启动时调一次 `skills.cleanupSkillSets()`，之后每天一次（`setInterval`，退出时清掉），失败只记日志。
 - 选择存在白板上（`TerminalWindowData.skills`，界面勾选时 `controller.updateData`）。主进程启动时读保存的白板找（`skillSelectionFor`）：
   15 秒内刚 `terminals.kill` 的、agent 和目录一样的终端所在的窗口（终端窗口重启都是先 kill 再 start；注册表里的 terminals 包了一层记 kill）；
   否则 resume 时 sessionId 一样的窗口；都没有用默认。面板上的 Restart and resume 先 `controller.flush()` 存白板，再给窗口发 `restart-resume`。

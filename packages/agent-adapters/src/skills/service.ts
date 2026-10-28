@@ -6,8 +6,8 @@
 
 import { createHash, randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { cp, mkdir, readdir, rename, rm, stat, writeFile } from 'node:fs/promises';
-import { basename, join, relative } from 'node:path';
+import { cp, lstat, mkdir, readdir, rename, rm, stat, utimes, writeFile } from 'node:fs/promises';
+import { basename, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { effectiveSkillSelection, MCP_SERVER_NAME } from '@agentdeck/contracts';
 import type {
   AbsPath,
@@ -33,6 +33,12 @@ export const AGENTDECK_MCP_ID = mcpItemId('built-in', MCP_SERVER_NAME);
 const MAX_REMEMBERED = 500;
 /** 不能开关的 agent（shell、自定义命令）。 */
 const NOT_AN_AGENT = new Set<AgentKind>(['shell', 'custom']);
+/** setsDir 里超过这么久没动的目录，没有终端在用就删（IS-112）。 */
+export const SKILL_SETS_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+/** 每天清理一次。 */
+export const SKILL_SETS_CLEANUP_INTERVAL_MS = 24 * 60 * 60 * 1000;
+/** AgentDeck 自己生成的目录名：<agent>-<16 位哈希>，写到一半留下的是 <名字>.tmp-<uuid>。别的名字一律不碰。 */
+const SET_DIR_NAME = /^[a-z][a-z0-9_-]*-[0-9a-f]{16}(\.tmp-[0-9a-f-]{36})?$/;
 
 export interface SkillsServiceOptions extends SkillLibraryDirs {
   /** 每次启动要的那套目录写在这里（例如 <dataDir>/skill-sets），按内容取名，内容一样就复用。 */
@@ -43,6 +49,11 @@ export interface SkillsServiceOptions extends SkillLibraryDirs {
   lookup: (terminalId: TerminalId) => { agent: AgentKind; cwd: AbsPath } | null;
   /** AgentDeck 的 MCP 服务起来了没有（built-in agentdeck 的状态点）。不给时不显示状态。 */
   mcpRunning?: () => boolean;
+  /**
+   * 现在在 tmux 里还活着的终端（清理 setsDir 用，IS-112）。抛错时这一轮不清理。
+   * 不给时，stateFile 里记过的每个终端都算在用（只会少删，不会误删）。
+   */
+  liveTerminals?: () => Promise<readonly TerminalId[]> | readonly TerminalId[];
   emit?: (event: SkillsEvent) => void;
   /** 用户主目录（kimi 的 ~/.agents/skills）。 */
   homeDir: AbsPath;
@@ -57,17 +68,35 @@ export interface PrepareLaunchRequest {
   selection: readonly SkillItemId[] | null;
 }
 
+/** 一次清理的结果（给日志和测试）。 */
+export interface SkillSetsCleanup {
+  /** 删掉的目录名。 */
+  removed: string[];
+  /** 留下的目录数（在用的、不到 7 天的、不是 AgentDeck 生成的）。 */
+  kept: number;
+  /** 这一轮没做的原因；做了为 null。 */
+  skipped: 'no-live-list' | 'unknown-terminal' | null;
+}
+
 export class SkillsServiceImpl implements SkillsService {
   readonly lib: SkillLibrary;
   private readonly running = new Map<TerminalId, SkillItemId[]>();
+  /** 终端启动时用的那套目录（null 是没用）。没有记录的终端（旧版本启动的）清理时当作不知道。 */
+  private readonly sets = new Map<TerminalId, AbsPath | null>();
+  private cleaning: Promise<SkillSetsCleanup> | null = null;
+  /** prepareLaunch 刚给出去、可能还没来得及 noteLaunched 的目录名，几分钟内清理不碰。 */
+  private readonly fresh = new Set<string>();
 
   constructor(private readonly opts: SkillsServiceOptions) {
     this.lib = new SkillLibrary(opts);
     if (opts.stateFile) {
       try {
-        const raw = JSON.parse(readFileSync(opts.stateFile, 'utf8')) as { running?: Record<string, unknown> };
+        const raw = JSON.parse(readFileSync(opts.stateFile, 'utf8')) as { running?: Record<string, unknown>; sets?: Record<string, unknown> };
         for (const [id, ids] of Object.entries(raw.running ?? {})) {
           if (Array.isArray(ids)) this.running.set(id as TerminalId, ids.filter((x): x is string => typeof x === 'string'));
+        }
+        for (const [id, dir] of Object.entries(raw.sets ?? {})) {
+          if (typeof dir === 'string' || dir === null) this.sets.set(id as TerminalId, dir);
         }
       } catch {
         // 第一次运行，或文件坏了：当作什么都不知道
@@ -164,16 +193,100 @@ export class SkillsServiceImpl implements SkillsService {
     return { ids, agentdeckMcp, skills, mcp, setDir, keepSkillRoots };
   }
 
-  /** 终端起来了：记下它带了什么（running）。 */
-  noteLaunched(terminalId: TerminalId, ids: readonly SkillItemId[]): void {
+  /** 终端起来了：记下它带了什么（running）和用的那套目录（setDir，清理时认）。 */
+  noteLaunched(terminalId: TerminalId, ids: readonly SkillItemId[], setDir: AbsPath | null = null): void {
     this.running.delete(terminalId);
+    this.sets.delete(terminalId);
     this.running.set(terminalId, [...ids]);
-    while (this.running.size > MAX_REMEMBERED) this.running.delete(this.running.keys().next().value!);
+    this.sets.set(terminalId, setDir);
+    while (this.running.size > MAX_REMEMBERED) {
+      const oldest = this.running.keys().next().value!;
+      this.running.delete(oldest);
+      this.sets.delete(oldest);
+    }
     this.save();
+  }
+
+  /**
+   * 清理 setsDir（IS-112）：列出里面 AgentDeck 生成的目录，正在被终端用的不动，别的超过 7 天的删掉。
+   * 在用 = 还活着的终端（liveTerminals）启动时记下的 setDir；没有 liveTerminals 时，记过的每个终端都算。
+   * 活着的终端里有 agent 会用到这类目录、却没有记录的（旧版本启动的），这一轮不删，免得删掉它正在读的目录。
+   * 每个要删的路径删之前都确认在 setsDir 里面，符号链接和不是目录的不碰。同时只跑一个。
+   */
+  cleanupSkillSets(now: number = Date.now(), maxAgeMs: number = SKILL_SETS_MAX_AGE_MS): Promise<SkillSetsCleanup> {
+    this.cleaning ??= this.doCleanup(now, maxAgeMs).finally(() => {
+      this.cleaning = null;
+    });
+    return this.cleaning;
+  }
+
+  private async doCleanup(now: number, maxAgeMs: number): Promise<SkillSetsCleanup> {
+    const setsDir = resolve(this.opts.setsDir);
+    let alive: readonly TerminalId[];
+    if (this.opts.liveTerminals) {
+      try {
+        alive = await this.opts.liveTerminals();
+      } catch {
+        return { removed: [], kept: 0, skipped: 'no-live-list' };
+      }
+    } else {
+      alive = [...new Set([...this.running.keys(), ...this.sets.keys()])];
+    }
+    const inUse = new Set<string>();
+    for (const id of alive) {
+      if (this.sets.has(id)) {
+        const dir = this.sets.get(id);
+        if (dir) {
+          const name = insideName(setsDir, dir);
+          if (name) inUse.add(name);
+        }
+        continue;
+      }
+      // 没有记录：不用这类目录的 agent（shell、codex、pi……）没关系，会用的就是不知道它用哪个
+      const agent = this.opts.lookup(id)?.agent;
+      if (agent && !NOT_AN_AGENT.has(agent) && ['plugin-dir', 'skills-dir'].includes(skillsSupport(agent).skills ?? '')) {
+        return { removed: [], kept: 0, skipped: 'unknown-terminal' };
+      }
+    }
+    // 刚算好、终端还没起来的目录（prepareLaunch 和 noteLaunched 之间）
+    for (const name of this.fresh) inUse.add(name);
+
+    let names: string[];
+    try {
+      names = await readdir(setsDir);
+    } catch {
+      return { removed: [], kept: 0, skipped: null };
+    }
+    const removed: string[] = [];
+    let kept = 0;
+    for (const name of names) {
+      const path = join(setsDir, name);
+      if (!SET_DIR_NAME.test(name) || insideName(setsDir, path) !== name || inUse.has(name.replace(/\.tmp-.*$/, ''))) {
+        kept++;
+        continue;
+      }
+      try {
+        const st = await lstat(path);
+        if (!st.isDirectory() || now - st.mtimeMs <= maxAgeMs) {
+          kept++;
+          continue;
+        }
+        await rm(path, { recursive: true, force: true });
+        removed.push(name);
+      } catch {
+        kept++;
+      }
+    }
+    return { removed, kept, skipped: null };
   }
 
   runningFor(terminalId: TerminalId): SkillItemId[] | null {
     return this.running.get(terminalId) ?? null;
+  }
+
+  private markFresh(name: string): void {
+    this.fresh.add(name);
+    setTimeout(() => this.fresh.delete(name), 10 * 60 * 1000).unref();
   }
 
   private async changed(): Promise<void> {
@@ -182,7 +295,7 @@ export class SkillsServiceImpl implements SkillsService {
 
   private save(): void {
     if (!this.opts.stateFile) return;
-    const body = JSON.stringify({ running: Object.fromEntries(this.running) }, null, 1);
+    const body = JSON.stringify({ running: Object.fromEntries(this.running), sets: Object.fromEntries(this.sets) }, null, 1);
     void writeFile(this.opts.stateFile, `${body}\n`).catch(() => undefined);
   }
 
@@ -195,7 +308,13 @@ export class SkillsServiceImpl implements SkillsService {
     const manifest = setManifest(mcp);
     const key = createHash('sha256').update(JSON.stringify({ v: 1, agent, prints, manifest })).digest('hex').slice(0, 16);
     const dir = join(this.opts.setsDir, `${agent}-${key}`);
-    if (await exists(join(dir, '.claude-plugin', 'plugin.json'))) return dir;
+    this.markFresh(basename(dir));
+    if (await exists(join(dir, '.claude-plugin', 'plugin.json'))) {
+      // 复用：把修改时间更新到现在，清理时不会因为“旧”而删掉刚被新终端选中的目录
+      const t = new Date();
+      await utimes(dir, t, t).catch(() => undefined);
+      return dir;
+    }
     const tmp = `${dir}.tmp-${randomUUID()}`;
     try {
       await mkdir(join(tmp, '.claude-plugin'), { recursive: true });
@@ -249,6 +368,14 @@ export function setManifest(mcp: readonly McpServerDef[]): Record<string, unknow
     );
   }
   return manifest;
+}
+
+/** p 在 root 里面（不是 root 自己）时返回它在 root 下的第一层名字，否则 null。 */
+function insideName(root: string, p: string): string | null {
+  const rel = relative(root, resolve(p));
+  if (!rel || rel.startsWith('..') || isAbsolute(rel)) return null;
+  const first = rel.split(sep)[0]!;
+  return first && first !== '..' ? first : null;
 }
 
 async function fingerprint(dir: AbsPath): Promise<string[]> {

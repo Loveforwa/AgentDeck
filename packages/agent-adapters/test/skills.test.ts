@@ -1,7 +1,7 @@
 // Skills · MCP（N9）：库（临时目录里加 skill、加 MCP）、仓库里的 skill、每种 agent 列出什么、
 // 启动前算出的那套目录、每种 agent 的启动参数、running 的记录、“Changes apply after restart” 的规则。
 
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { effectiveSkillSelection, skillsRestartNeeded } from '@agentdeck/contracts';
@@ -15,7 +15,7 @@ import type { AdapterLaunchContext, AgentAdapterExt } from '../src/adapters/type
 import { AgentServiceImpl } from '../src/agent-service.ts';
 import { builtinSkillFiles, parseMcpFile, parseSkillFrontmatter, SkillLibrary } from '../src/skills/library.ts';
 import { scanRepoSkills } from '../src/skills/repo.ts';
-import { AGENTDECK_MCP_ID, SkillsServiceImpl } from '../src/skills/service.ts';
+import { AGENTDECK_MCP_ID, SKILL_SETS_MAX_AGE_MS, SkillsServiceImpl } from '../src/skills/service.ts';
 import { skillsSupport } from '../src/skills/support.ts';
 import type { LaunchSkills } from '../src/skills/types.ts';
 
@@ -428,5 +428,162 @@ describe('selection rules (contracts)', () => {
     expect(skillsRestartNeeded(items, null, null)).toBe(false);
     expect(skillsRestartNeeded(items, ['skill:built-in:agentdeck', AGENTDECK_MCP_ID], null)).toBe(false);
     expect(skillsRestartNeeded(items, ['skill:library:xlsx'], null)).toBe(true);
+  });
+});
+
+describe('cleanupSkillSets (IS-112)', () => {
+  const DAY = 24 * 60 * 60 * 1000;
+  const h = (c: string) => c.repeat(16);
+
+  /** setsDir 里造一个目录，修改时间是 ageDays 天前。 */
+  function makeSet(setsDir: string, name: string, ageDays: number): string {
+    const dir = join(setsDir, name);
+    mkdirSync(join(dir, '.claude-plugin'), { recursive: true });
+    writeFileSync(join(dir, '.claude-plugin', 'plugin.json'), '{}');
+    const t = new Date(Date.now() - ageDays * DAY);
+    utimesSync(dir, t, t);
+    return dir;
+  }
+
+  function cleaner(live: string[] | (() => never) | undefined, lookup: Record<string, { agent: AgentKind; cwd: string }> = {}) {
+    const d = dirs();
+    mkdirSync(d.setsDir, { recursive: true });
+    const svc = new SkillsServiceImpl({
+      ...d,
+      homeDir: root,
+      lookup: (id) => lookup[id] ?? null,
+      ...(live === undefined ? {} : { liveTerminals: typeof live === 'function' ? live : () => live as TerminalId[] }),
+    });
+    return { d, svc };
+  }
+
+  it('deletes old folders nobody uses and keeps the young ones', async () => {
+    const { d, svc } = cleaner([]);
+    makeSet(d.setsDir, `claude-${h('a')}`, 8);
+    makeSet(d.setsDir, `omp-${h('b')}`, 30);
+    makeSet(d.setsDir, `kimi-${h('c')}`, 6);
+    const r = await svc.cleanupSkillSets();
+    expect(r.removed.sort()).toEqual([`claude-${h('a')}`, `omp-${h('b')}`]);
+    expect(r.skipped).toBeNull();
+    expect(existsSync(join(d.setsDir, `claude-${h('a')}`))).toBe(false);
+    expect(existsSync(join(d.setsDir, `kimi-${h('c')}`))).toBe(true);
+  });
+
+  it('a folder a live terminal took is not deleted, however old', async () => {
+    const { d, svc } = cleaner(['t1' as TerminalId]);
+    const used = makeSet(d.setsDir, `claude-${h('a')}`, 40);
+    const dead = makeSet(d.setsDir, `claude-${h('b')}`, 40);
+    svc.noteLaunched('t1' as TerminalId, ['skill:built-in:agentdeck'], used);
+    svc.noteLaunched('t2' as TerminalId, ['skill:built-in:agentdeck'], dead); // 记过，但 tmux 里已经没有了
+    const r = await svc.cleanupSkillSets();
+    expect(r.removed).toEqual([`claude-${h('b')}`]);
+    expect(existsSync(used)).toBe(true);
+    expect(existsSync(dead)).toBe(false);
+  });
+
+  it('without a live list every recorded terminal counts as using its folder', async () => {
+    const { d, svc } = cleaner(undefined);
+    const used = makeSet(d.setsDir, `claude-${h('a')}`, 40);
+    makeSet(d.setsDir, `claude-${h('b')}`, 40);
+    svc.noteLaunched('t1' as TerminalId, [], used);
+    expect((await svc.cleanupSkillSets()).removed).toEqual([`claude-${h('b')}`]);
+    expect(existsSync(used)).toBe(true);
+  });
+
+  it('the record survives a restart of AgentDeck (state file)', async () => {
+    const { d, svc } = cleaner(['t1' as TerminalId]);
+    const used = makeSet(d.setsDir, `omp-${h('a')}`, 40);
+    svc.noteLaunched('t1' as TerminalId, [], used);
+    await new Promise((r) => setTimeout(r, 30));
+    const again = new SkillsServiceImpl({ ...d, homeDir: root, lookup: () => null, liveTerminals: () => ['t1' as TerminalId] });
+    expect((await again.cleanupSkillSets()).removed).toEqual([]);
+    expect(existsSync(used)).toBe(true);
+  });
+
+  it('a live terminal that may use a folder but has no record: nothing is deleted this round', async () => {
+    const { d, svc } = cleaner(['old' as TerminalId, 'sh' as TerminalId], { old: { agent: 'claude', cwd: root }, sh: { agent: 'shell', cwd: root } });
+    const dir = makeSet(d.setsDir, `claude-${h('a')}`, 40);
+    expect(await svc.cleanupSkillSets()).toEqual({ removed: [], kept: 0, skipped: 'unknown-terminal' });
+    expect(existsSync(dir)).toBe(true);
+    // shell、codex 这类不用这种目录的，没有记录也不挡着
+    const { d: d2, svc: svc2 } = cleaner(['sh' as TerminalId, 'cx' as TerminalId], { sh: { agent: 'shell', cwd: root }, cx: { agent: 'codex', cwd: root } });
+    makeSet(d2.setsDir, `claude-${h('a')}`, 40);
+    expect((await svc2.cleanupSkillSets()).removed).toEqual([`claude-${h('a')}`]);
+  });
+
+  it('if the live list can’t be read, nothing is deleted', async () => {
+    const { d, svc } = cleaner(() => {
+      throw new Error('tmux is not running');
+    });
+    const dir = makeSet(d.setsDir, `claude-${h('a')}`, 40);
+    expect((await svc.cleanupSkillSets()).skipped).toBe('no-live-list');
+    expect(existsSync(dir)).toBe(true);
+  });
+
+  it('only folders AgentDeck generated are touched: other names, files and symlinks stay', async () => {
+    const { d, svc } = cleaner([]);
+    const mine = makeSet(d.setsDir, `claude-${h('a')}`, 40);
+    const stranger = makeSet(d.setsDir, 'my-own-notes', 40);
+    const shortHash = makeSet(d.setsDir, 'claude-abc123', 40);
+    const upper = makeSet(d.setsDir, `Claude-${h('d')}`, 40);
+    writeFileSync(join(d.setsDir, `claude-${h('b')}`), 'a plain file with a generated-looking name');
+    const old = new Date(Date.now() - 40 * DAY);
+    utimesSync(join(d.setsDir, `claude-${h('b')}`), old, old);
+    // 符号链接指向 setsDir 外面的一个目录，名字像生成的
+    const outside = join(root, 'outside-target');
+    mkdirSync(outside);
+    writeFileSync(join(outside, 'precious.txt'), 'keep me');
+    symlinkSync(outside, join(d.setsDir, `omp-${h('c')}`));
+    const r = await svc.cleanupSkillSets();
+    expect(r.removed).toEqual([`claude-${h('a')}`]);
+    expect(existsSync(mine)).toBe(false);
+    for (const p of [stranger, shortHash, upper, join(d.setsDir, `claude-${h('b')}`), join(d.setsDir, `omp-${h('c')}`), join(outside, 'precious.txt')]) {
+      expect(existsSync(p)).toBe(true);
+    }
+  });
+
+  it('paths outside setsDir are never touched, even when a record points at them or at the parent', async () => {
+    const { d, svc } = cleaner(['t1' as TerminalId, 't2' as TerminalId]);
+    const sibling = join(root, 'data', 'skill-sets-other');
+    mkdirSync(sibling, { recursive: true });
+    const old = new Date(Date.now() - 40 * DAY);
+    const victim = makeSet(sibling, `claude-${h('a')}`, 40);
+    // 记录里的路径指到 setsDir 外面（比如 .. 绕出去）：既不算 setsDir 里的在用，也不会因此删别的东西
+    svc.noteLaunched('t1' as TerminalId, [], join(d.setsDir, '..', 'skill-sets-other', `claude-${h('a')}`));
+    svc.noteLaunched('t2' as TerminalId, [], join(d.setsDir, '..'));
+    const inside = makeSet(d.setsDir, `claude-${h('b')}`, 40);
+    utimesSync(sibling, old, old);
+    const r = await svc.cleanupSkillSets();
+    expect(r.removed).toEqual([`claude-${h('b')}`]);
+    expect(existsSync(inside)).toBe(false);
+    expect(existsSync(victim)).toBe(true);
+    expect(existsSync(join(root, 'data', 'builtin'))).toBe(true);
+    expect(existsSync(d.setsDir)).toBe(true);
+  });
+
+  it('setsDir missing is fine; stale .tmp- leftovers go after 7 days', async () => {
+    const d = dirs();
+    const none = new SkillsServiceImpl({ ...d, homeDir: root, lookup: () => null, liveTerminals: () => [] });
+    expect(await none.cleanupSkillSets()).toEqual({ removed: [], kept: 0, skipped: null });
+    mkdirSync(d.setsDir, { recursive: true });
+    const tmp = `claude-${h('a')}.tmp-123e4567-e89b-12d3-a456-426614174000`;
+    makeSet(d.setsDir, tmp, 9);
+    expect((await none.cleanupSkillSets()).removed).toEqual([tmp]);
+  });
+
+  it('a folder prepareLaunch just handed out survives until the terminal is recorded, and reuse refreshes its age', async () => {
+    const { d, svc } = cleaner([]);
+    const l = (await svc.prepareLaunch({ agent: 'claude', cwd: root, selection: null }))!;
+    expect(l.setDir).not.toBeNull();
+    const old = new Date(Date.now() - 40 * DAY);
+    utimesSync(l.setDir!, old, old);
+    expect((await svc.cleanupSkillSets()).removed).toEqual([]); // 还没 noteLaunched
+    expect(existsSync(l.setDir!)).toBe(true);
+    // 另一个应用实例（重开）里复用同一套：修改时间更新到现在
+    const again = new SkillsServiceImpl({ ...d, homeDir: root, lookup: () => null, liveTerminals: () => [] });
+    utimesSync(l.setDir!, old, old);
+    await again.prepareLaunch({ agent: 'claude', cwd: root, selection: null });
+    expect(Date.now() - (await import('node:fs')).statSync(l.setDir!).mtimeMs).toBeLessThan(SKILL_SETS_MAX_AGE_MS);
+    expect((await again.cleanupSkillSets()).removed).toEqual([]);
   });
 });
