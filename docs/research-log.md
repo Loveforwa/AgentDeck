@@ -3,7 +3,7 @@
 实现过程中和一开始设想不一样的地方：原来以为什么、实际是什么、怎么决定的、好处和代价。
 由 `docs/research/build.py` 从 `docs/research/entries.py` 生成，不要直接改这个文件。更新于 2026-10-28。
 
-共 119 条：已解决 43，进行中 61，推迟 4，待验证 11。
+共 120 条：已解决 43，进行中 61，推迟 4，待验证 12。
 
 编号规则（全项目统一）：DR-xx 调研记录 · TC-xx 端到端用例 · IS-xx 问题 · F1、T2、X3 等是 MVP 任务表的任务编号。用例和问题在 MVP 验收报告（docs/status/index.html）里；每条调研下面列出相关的用例和问题。
 
@@ -29,6 +29,7 @@
   - [DR-111 issue / PR 放在白板哪里，PR 和它的 worktree、session、CI 怎么连](#dr-111)（进行中）
   - [DR-113 现有工具怎么处理 issue 和 PR：Copilot coding agent、@claude、Codex cloud、Sweep、OpenHands、Conductor](#dr-113)（进行中）
   - [DR-116 “牧羊人”面板是哪个产品，借什么；tmux 多 pane 复制不顺手在 AgentDeck 里是什么情况](#dr-116)（进行中）
+  - [DR-120 学一门有代码作业的课：学习环境怎么搭（6.5840、CS336 为例）](#dr-120)（待验证）
 - **技术方案**：定技术选型时推翻的设想
   - [DR-04 终端进程交给 tmux，AgentDeck 只负责显示](#dr-04)（进行中）
   - [DR-05 Git 不监听文件，只在三个时机刷新](#dr-05)（已解决）
@@ -403,6 +404,18 @@
 - **决策**：2026-10-28 主 agent 定（按推荐，待用户确认是 Shepherd Terminal 和 herdr）：借四样：BoardNav 加 Agents 视图（按状态分组，⌥⌘1–9）；Idle 加 Unseen（只改文字，不加颜色）；Agents 视图悬停看最后一条回复；终端内容区右键 Send selection to ▸（只粘贴不发，跳过等你的终端）。收件箱和 HISTORY 不动。网页窗口点元素写意见留第二期候选。不改底层：tmux 只托管进程，交互继续是 xterm.js 窗口。Send selection to ▸ 和第 12 点的合成一个任务 CO3；Agents 视图和 Unseen 是 CO4。2026-10-28 补（用户试用后定）：Unseen 去掉，用户觉得多余：状态（Idle）不用点进去就看得见。标题栏只写 “Idle · 5m”；Agents 视图分 ERROR、NEEDS YOU、RUNNING、IDLE 四组；悬停看最后一条回复、⌥⌘1–9 留着；contracts 的 TerminalWindowData.unseen 留着不用（只加不改），界面不再读写（4a22f5e，分支 integrate/W0-W1，未合进 main）。借的剩三样。
 - **好处**：都是在已有零件上加一点（BoardNav、StatusLamp 的文字、右键菜单），不用新面板；补上“人把一段输出交给另一个 agent”这条最常见的路。
 - **代价**：产品没确认，功能可能对不上用户看的那个视频；Unseen 要记界面状态并随白板保存（2026-10-28 Unseen 去掉，这一项没了）；程序要鼠标时右键菜单要换成 ⌃ 单击（待核对 xterm 的 contextmenu 在鼠标上报模式下能不能拿到）。2026-10-28 补（第 0、1 波实现）：右键在鼠标上报模式下照样拿得到 contextmenu，不用换成 ⌃ 单击（DR-119）。
+
+<a id="dr-120"></a>
+
+### DR-120 学一门有代码作业的课：学习环境怎么搭（6.5840、CS336 为例）
+
+状态：待验证 · 出处：M19 LA4–LA13 · 设计画布“学习和辅助”页 L1 · 旧编号 —
+
+相关：TC-149、TC-150、TC-151、TC-152、TC-153、TC-154
+
+- **原来以为**：（L0，DR-98）原来 L0 只写 /teach 和学习文件夹：学东西 = 一个普通项目当学习文件夹，在里面跑 /teach，课在白板浏览器里看，进度是文件夹里的文件。2026-10-28 用户说这太粗，重点是给真实的课（例如 MIT 6.5840、Stanford CS336，设计要通用）把学习环境搭起来。
+- **实际情况**：2026-10-28 读课程网站、仓库和平台文档，加本机 ~/2026/ok 下的只读文件（全文和逐条出处见 L1 的调研笔记 research-courses.md）。6.5840（Spring 2026）：Go ≥ 1.22（pdos.csail.mit.edu/6.824/labs/go.html）；代码 git clone git://g.csail.mit.edu/6.5840-golabs-2026（labs/lab-mr.html）；2026 版 tester 把每个服务器当独立进程从 src/main/*d 拉起，make 的 raft1、kvraft1 目标先编这些二进制再 go test，直接 go test 会测到旧二进制（本地 src/Makefile、tester1/daemonclnt.go；推论，未实测）；测试一律 -race，单测 120 s、Lab 3/4/5 全部 600 s 上限，官方只说“多跑几次”、不给次数（labs/lab-raft1.html）；race 让内存涨 5–10 倍、时间 2–20 倍（go.dev/doc/articles/race_detector）；KV 测试失败时写 porcupine-*.html，VIS_FILE 指路径、VIS_ENABLE=always 通过也写（本地 kvtest1/porcupine.go，github.com/anishathalye/porcupine）；不许公开代码、GitHub 要私有（labs/collab.html），校外没有评分通道（labs/submit.html）；AI 不禁止，但 “learn correspondingly less”，要能讲清交的每一行（6.824/general.html）；社区用 dstest.py 并行重复跑（-p -n -r -o，gist.githubusercontent.com/JJGO/0d73540ef7cc2f066cb535156b7cbdab）；每讲一篇论文，Raft extended 的 Figure 2 是官方调试核对表（6.824/schedule.html、labs/guidance.html），视频只有 2020 的 YouTube 播放列表。CS336（Spring 2026）：5 份作业 5 个仓库（github.com/stanford-cs336），uv、Python 3.12–3.13、torch 2.11，A2 以 path 依赖引用 A1；A5 只认 3.12、vllm 0.19.1、flash-attn 社区 wheel 只有 linux x86_64、要分两步 uv sync（assignment5-alignment README）；测试 uv run pytest，接口在 tests/adapters.py；讲义原文 “AI tools are not permitted for implementing any part of any assignment”，点名 Claude Code、Codex，并要求 agent 用仓库自带的 AGENTS.md（cs336.stanford.edu、A3 handout），那份 AGENTS.md 要求只当助教：不写代码、不改仓库、不跑命令（本地 hw01/AGENTS.md）；算力：A1 本机 MPS 能训小模型（Low-Resource Tip），A2 的 DDP/FSDP 单测用 gloo 在 CPU 上跑、基准要同机 2 卡（到 6 卡）、排行榜 2×B200（assignment2-systems-leaderboard README），A4 正式训练 8×B200 约 2 h（Modal 脚本），A5 至少 2 卡；预算按 B200 小时算；数据 TinyStories 训练集 2.23 GB、OWT 4.59 GB 压缩（Hugging Face 响应头），A4 约 2.5k 个 WET 文件。GPU（2026-10-28 快照）：vast.ai H100 SXM 中位约 2.40 美元/卡·时，停机仍收存储费、只有 destroy 才停计费，SSH 默认进 tmux（console.vast.ai/api/v0/bundles、docs.vast.ai 的 manage-instances 和 ssh 页）；RunPod H100 SXM 2.69–3.99、B200 5.98–7.99（runpod.io/pricing）；Lambda 8×H100 SXM 3.99、8×B200 6.69（lambda.ai/pricing）；Modal B200 6.25、H100 3.95，按秒计费、单容器最多 8 卡、Starter 每月 $30（modal.com/pricing、modal.com/docs/guide/gpu）。待核对：跑多少次才算不 flaky（社区说几百到上千次，没有一手来源）、强杀后 /tmp/6.5840-* 会不会残留、A5 能不能在 Mac 上 uv sync。归纳成 18 条结论：① 6.5840 测试带 -race、有 120 s / 600 s 上限，要记耗时、接近上限就提示；② 测试不确定，要“同一测试并行重复 N 次、只留失败日志、统计通过率和耗时”，N 可配；③ 跑测试的入口包 make，不直接 go test；④ race 放大 CPU 和内存，并行数按核数和内存自动限流，免得假超时；⑤ 设 VIS_FILE 到工作区，认出 porcupine 路径就在白板网页窗口打开；⑥ 6.5840 代码不许公开，不给“一键推到公开 GitHub”；⑦ CS336 禁止 AI 实现，agent 要读到课程的 AGENTS.md，要有“只提示、不改文件、不跑命令”的导师模式；⑧ CS336 测试统一 uv run pytest，可按题列出、NotImplementedError 当“未开始”；⑨ 本机能做的和要 GPU 的分得很清楚，要分成两类；⑩ A2、A5 要同机 2 卡，A4 要 8 卡，租机后第一步查卡数和 NVLink；⑪ 预算按 B200 小时，每个任务记卡型 × 卡数 × 时长和花费，按作业汇总；⑫ vast.ai 停机照收费，结束要提醒“拉回结果再 destroy”；⑬ vast.ai SSH 默认进 tmux，要处理嵌套；⑭ Modal 是函数、按秒计费，A3、A4 的官方脚本在本机终端就能跑，Jobs 要两种都支持；⑮ A5 环境很挑，远程初始化照 README 写死步骤，不让 agent 现场猜；⑯ 数据在远端下载，先查磁盘；⑰ 讲座和论文是固定清单，挂一个“本单元资料”窗口就够；⑱ 两门课校外都没有评分，“进度”只能拿本地测试、重复跑通过率、writeup 当证据，适合对接用户的学习手册 /check。
+- **怎么验证**：2026-10-28 主 agent 定（按推荐，待用户确认）：1）学一门课 = 白板上一个课程框 + 一份课程配方（纯数据：代码从哪来、工具、检查、单元、测试命令和时间上限、在哪跑、数据、资料、AI 规矩；存在 AgentDeck 的项目设置里，不进课程仓库，可导出分享）；内置 “6.5840 · Spring 2026”、“CS336 · Spring 2026” 两份示例，别的课第二期用 From a course website… 让只读 agent 起草、你看 diff 再存。2）Set up a course… 三步：选课和代码（可用已有文件夹）→ 选项（在哪跑、导师等级、并行数，每项写默认和为什么）→ 在框里看得见的 Shell 里逐条跑环境检查；Fix… 只把命令贴进去、不按回车。3）官方测试走配方里的命令（6.5840 包 make，不直接 go test），记每次结果和耗时；Repeat runs 只给配方写了 repeat 的单元，先 build 一次再并行跑，并行数按核数和内存自动算、-race 减半，只留失败日志，失败的 porcupine 自动打开、可以 Send to tutor。4）GPU：第一期只接 SSH 机器（~/.ssh/config 里的名字，密钥留在 ~/.ssh）和本机的 Modal 登录，不替你租、停、销毁，不存平台密钥；长任务用 Jobs（RS1），结果拉回（RS2）；每个 Job 记卡型 × 卡数 × 时长 × 你填的单价，按单元对照课程预算；机器 30 分钟没有 Job 时在框头提醒 destroy。5）导师模式（Tutor）= 只读启动（claude --permission-mode plan、codex -s read-only、pi/omp --tools 白名单，kimi 不列）+ 课程的 AGENTS.md（没有的用内置 course-tutor 说明）+ 当前单元的上下文 + 等级（Hints only / Hints + can run tests / Explain code）；CS336 锁定 Hints only；在课程框里开普通 agent 只弹一次提示、不拦；原 L0 的 /teach 改在 Tutor 里用。6）进度仍在你的学习手册和 Obsidian；AgentDeck 只记测试证据（最后一次测试、重复跑通过率、GPU 用量和花费、产物路径），存在自己的库里，用 agentdeck course status --json 给 /check 用，不读不写手册。
 
 ## 技术方案
 
@@ -1546,7 +1559,7 @@
 
 - **原来以为**：（第二版画板 2）工作区设置里 “Share with every agent · Instructions · AGENTS.md · Also links CLAUDE.md and GEMINI.md”：AgentDeck 负责把说明文件同步给框里的每个 agent。
 - **实际情况**：2026-10-27 查文档（code.claude.com/docs/en/memory、developers.openai.com/codex/memories，未在本机核对）：claude 有 CLAUDE.md 和 auto memory 两套，都在每次会话开头读；2.1.277 起没有 CLAUDE.md 时直接读 AGENTS.md；auto memory 默认开，存在 ~/.claude/projects/<仓库>/memory/，同一仓库的所有 worktree 共用，记 user / feedback / project / reference 四类，其中 project 类就包括“正在做的事”；可用 CLAUDE_CODE_DISABLE_AUTO_MEMORY=1 或 autoMemoryEnabled 关。codex 读 ~/.codex/AGENTS.md 和仓库里的 AGENTS.md；memories 默认关（[features] memories = true），存在 ~/.codex/memories/。pi、omp、kimi 读 AGENTS.md（待核对）。画板 2 的 Instructions 同步一直没做（代码里没有）。2026-10-28 补（第二轮）：补查：claude 的 auto memory 文档写明跳过 debugging fixes 这类能从代码推出来的东西；codex 的 memories 只有 ~/.codex/memories/ 一处、不分项目，闲置后后台提炼，文档让团队规则放 AGENTS.md（详见 DR-105）。
-- **决策**：2026-10-28 主 agent 定：长期记忆不由 AgentDeck 管，也不往每个终端注入偏好（每轮都要付 token），用各家自己的 AGENTS.md / CLAUDE.md / memory。集群里非 Lead 的 claude（Worker、Reviewer、QA）启动时关掉 auto memory（LaunchSpec.env 设 CLAUDE_CODE_DISABLE_AUTO_MEMORY=1，不改用户配置），Lead 照用户设置（CR4）。第二版画板 2 的 Instructions 同步降级成工作区设置里的“把不进 git 的说明（CLAUDE.local.md、AGENTS.override.md）带进新 worktree”，以后再做。短期变长期由你做：汇报里的 Decisions 和 notes 用 Copy as Markdown 抄进 AGENTS.md，AgentDeck 不自动写仓库。2026-10-28 补（第二轮）：主 agent 定（按推荐，待用户确认）：本条补一条例外，不推翻：Lessons（反复踩的坑）归 AgentDeck，按项目存在库里、所有 worktree 共用；只收你点过 Accept 的；每条一句话，项目上限 1,000 token；All projects 一组只收你手动加的，上限 400 token；开 session 时追加进系统提示，kimi 先灰掉；你点 Move to AGENTS.md 才改工作区，并且不提交，之后不再注入（DR-105、DR-106）。偏好和进度仍照本条：AGENTS.md / CLAUDE.md / 各家 memory。往用户文件写东西的例外都要你点了才写，AgentDeck 自己不提交：Save to repo（docs/flows/，DR-102）、Move to AGENTS.md、你选到别处的资料库文件夹（DR-88）。
+- **决策**：2026-10-28 主 agent 定：长期记忆不由 AgentDeck 管，也不往每个终端注入偏好（每轮都要付 token），用各家自己的 AGENTS.md / CLAUDE.md / memory。集群里非 Lead 的 claude（Worker、Reviewer、QA）启动时关掉 auto memory（LaunchSpec.env 设 CLAUDE_CODE_DISABLE_AUTO_MEMORY=1，不改用户配置），Lead 照用户设置（CR4）。第二版画板 2 的 Instructions 同步降级成工作区设置里的“把不进 git 的说明（CLAUDE.local.md、AGENTS.override.md）带进新 worktree”，以后再做。短期变长期由你做：汇报里的 Decisions 和 notes 用 Copy as Markdown 抄进 AGENTS.md，AgentDeck 不自动写仓库。2026-10-28 补（第二轮）：主 agent 定（按推荐，待用户确认）：本条补一条例外，不推翻：Lessons（反复踩的坑）归 AgentDeck，按项目存在库里、所有 worktree 共用；只收你点过 Accept 的；每条一句话，项目上限 1,000 token；All projects 一组只收你手动加的，上限 400 token；开 session 时追加进系统提示，kimi 先灰掉；你点 Move to AGENTS.md 才改工作区，并且不提交，之后不再注入（DR-105、DR-106）。偏好和进度仍照本条：AGENTS.md / CLAUDE.md / 各家 memory。往用户文件写东西的例外都要你点了才写，AgentDeck 自己不提交：Save to repo（docs/flows/，DR-102）、Move to AGENTS.md、你选到别处的资料库文件夹（DR-88）。2026-10-28 补（L1，DR-120）：学课程时进度也照本条，留在你的学习手册和 Obsidian，AgentDeck 不读不写；AgentDeck 只记测试证据（测试结果、重复跑通过率、GPU 花费、产物路径），存在自己的库里，用 agentdeck course status 给 /check。
 - **好处**：不和各家抢、不和它们的新功能冲突；不多付 token；集群不会污染你的长期记忆。
 - **代价**：跨家的偏好要你自己写进 AGENTS.md 才共享（claude 的 auto memory 别家读不到）；关掉 worker 的 auto memory 后它们学到的东西不留（集群的 notes 代替）；pi、omp、kimi 读哪些文件没核对。2026-10-28 补（第二轮）：反复踩的坑各家都不记（claude 跳过 debugging fixes），由 Lessons 补（DR-105）。
 
@@ -1656,13 +1669,13 @@
 
 ### DR-98 用户说的 “Matt Pike 的 teach skill” 是什么；在 AgentDeck 里怎么用来学东西
 
-状态：进行中 · 出处：设计画布 L0 第 1、2 节 · apps/desktop/src/main/browser（FileRoots）· docs（学习用法一页） · 旧编号 —
+状态：进行中 · 出处：设计画布 L0 第 1、2 节、L1 第 7 节 · apps/desktop/src/main/browser（FileRoots）· docs（学习用法一页） · 旧编号 —
 
 相关：TC-107、IS-128
 
 - **原来以为**：（用户 2026-10-28 的笔记）有一个 “Matt Pike” 写的 teach skill，能生成课程和学习计划；可能要在 AgentDeck 里加学习相关的功能（模板、进度）。
 - **实际情况**：2026-10-28 查（github.com/mattpocock/skills 的 README 和 skills/productivity/teach/ 下的文件、GitHub API）。是 Matt Pocock（不是 Pike）的 skills 仓库（“Skills for Real Engineers”，约 30.5 万星，MIT，2026-02 建，2026-10-27 还在推送）里的 teach，路径 skills/productivity/teach/：SKILL.md 加 MISSION-、RESOURCES-、LEARNING-RECORD-、GLOSSARY-FORMAT.md 和 agents/openai.yaml。frontmatter：disable-model-invocation: true，argument-hint “What would you like to learn about?”，codex 那边 allow_implicit_invocation: false，所以只能手动调、平时不占上下文。它把运行 /teach 的当前目录当教学工作区，状态全是文件：MISSION.md（为什么学）、RESOURCES.md（可信资料）、NOTES.md（偏好）、learning-records/0001-….md（像 ADR，只在你表现出真懂、说了已有基础、纠正了误解、目标变了时写）、lessons/0001-….html（一节短的、能打印的 HTML 课，带引用、主要资料、测验）、reference/（速查、术语表）、assets/（共用样式和组件）。它不先排整份大纲：每次读记录估“最近发展区”，现算下一节。2026-10-07 的 #1183 修了课被写进 ~/.claude/skills 的问题（#377），说明它强依赖 cwd。装法：claude plugin install mattpocock-skills@claude-plugins-official；codex plugin marketplace add mattpocock/skills 再 codex plugin add mattpocock-skills@mattpocock；其他 npx skills@latest add mattpocock/skills -a <agent>（只装一个用 --skill teach，第三方目录站的写法，待核对）。抖音、B 站的链接没传过来，待用户给链接；网上有一个视频 “I Tried /teach and 10x’d My Ability To Learn” 讲的就是它（作者待核对）。AgentDeck 这边：plain 项目已支持（contracts/src/project.ts），open_browser 能开本地 HTML（mcp-server/src/tools.ts），但本地文件只放行所在目录（apps/desktop/src/main/browser/local-files.ts），课引用的 ../assets 读不到（IS-128）。用户自己的学习手册（/next、/check 两个 skill，只看了名字和描述）：进度在一个 artifact 页面和 Obsidian 笔记里，/check 还会跑代码测试；和 /teach 一样，进度在 AgentDeck 之外。
-- **决策**：2026-10-28 主 agent 定（按推荐，待用户确认）：1）不内置 teach，用户用各家的插件或 Add skill… 自己装，文档写一页怎么在 AgentDeck 里用；2）一个学习文件夹 = 一个普通项目（plain 或 git init），只用主目录工作区、不开 worktree，课在白板浏览器里看；3）进度就是学习文件夹里的文件，AgentDeck 不存、不读、不汇总（和第 5 点“长期记忆不归 AgentDeck 管”一致）；4）不做学习类集群模板，也不写自由模式的学习用法，收集资料归第 10 点；5）修 IS-128。
+- **决策**：2026-10-28 主 agent 定（按推荐，待用户确认）：1）不内置 teach，用户用各家的插件或 Add skill… 自己装，文档写一页怎么在 AgentDeck 里用；2）一个学习文件夹 = 一个普通项目（plain 或 git init），只用主目录工作区、不开 worktree，课在白板浏览器里看；3）进度就是学习文件夹里的文件，AgentDeck 不存、不读、不汇总（和第 5 点“长期记忆不归 AgentDeck 管”一致）；4）不做学习类集群模板，也不写自由模式的学习用法，收集资料归第 10 点；5）修 IS-128。2026-10-28 补（L1，DR-120）：/teach 现在放在 L1 的导师模式（Tutor）里用：学概念时在 Tutor 终端里打 /teach，课照旧写进单元目录外的学习文件夹；学一门有代码作业的课改按 L1 的课程框和课程配方来。
 - **好处**：AgentDeck 不加新概念；跟着上游更新；进度可以 git、可以放进 Obsidian vault；手动调用的 skill 每轮 0 描述 token，不用做减法。
 - **代价**：用户要自己装、自己建文件夹；在代码仓库的框里误跑 /teach 会把课写进仓库（只能靠文档提醒）；codex 用不了 AgentDeck 库里的 skill（DR-59、DR-83），只能走 codex 自己的插件。
 

@@ -20,6 +20,16 @@
   - contracts 0.1.23 加可选的 `LimitService.setMessage`，PL3 的队列字段和 `app.setKeepAwake` 只在注释里标 deprecated。
   - 细节见 docs/plugins.md 的决定记录和 DR-84；PL3 的 IS-113 跟着关。
 
+同一天用户又说原来“学习和辅助”页的学习部分（L0：/teach 加一个学习文件夹）太粗，重点是给真实的课把学习环境搭起来（6.5840、CS336 只是例子，设计要通用）。主 agent 按推荐先定了下面这些，需求在设计画布“学习和辅助”页的 L1，任务 M19 LA4–LA13，用例 TC-149～TC-154，调研 DR-120。
+
+- **学习环境（L1，按推荐先定，待你确认）**：
+  1. 学一门课 = 白板上一个课程框 + 一份课程配方。配方是纯数据，存在 AgentDeck 的项目设置里，不进课程仓库；内置 6.5840、CS336 两份示例。
+  2. Set up a course… 三步：选课和代码 → 选项（在哪跑、导师等级、并行数）→ 在看得见的终端里跑环境检查。修环境的命令只贴不跑。
+  3. 官方测试走配方里的命令（6.5840 包 make，不直接 go test）。Repeat runs 只给配方写了 repeat 的单元，并行数按核数和内存自动限流。
+  4. GPU：第一期只接你自己的 SSH 机器和本机的 Modal 登录，不替你租、不存平台密钥。长任务用 Jobs（RS1），记花费，机器空闲时提醒你去 destroy。
+  5. 导师模式（Tutor）= 只读启动 + 课程的 AGENTS.md + 当前单元的上下文 + 等级。CS336 锁定 Hints only；在课程框里开普通 agent 只提示、不拦。原 L0 的 /teach 改在 Tutor 里用。
+  6. 进度仍在你的学习手册和 Obsidian（和 DR-74 一致）。AgentDeck 只记测试证据，用 `agentdeck course status` 给 /check。
+
 ## 2026-10-28（第 0、1 波实现）
 
 代码在分支 integrate/W0-W1，没合进 main。做完的任务：PL3、PL5、SE0、SE1、SE2、AH0、AH1、AH2、AH3、AH7、AH11、LA0、PL4（contracts）、CR0（contracts）、CR13、CR14、CR15、DC0、DC1、DC2、CO0、CO3、CO4、SK5；实测 AH6、RS14。contracts 0.1.14–0.1.22 共 9 个版本。用例、问题、调研的状态见 docs/status/tracking.py 和 docs/research/entries.py（新登记 IS-146～149、DR-118、DR-119）。
