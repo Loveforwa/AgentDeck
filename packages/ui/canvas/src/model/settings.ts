@@ -58,13 +58,27 @@ export function projectDraftError(d: ProjectDraft, kind: Project['kind']): 'name
   return null;
 }
 
-/** General 页的字段。agents、approvals 以后有自己的页面。 */
-export type GeneralSettings = Pick<Settings, 'closeWindow' | 'notifications' | 'editorCommand' | 'terminalApp' | 'defaultAgent'>;
+/**
+ * General 页的字段。agents、approvals 以后有自己的页面。
+ * resumePrompt（PL6）：Settings › Resume prompt，续跑时发的模板；空的用内置的那段（Settings 里不填）。等 Agents 页（AH4）有了再挪过去。
+ */
+export type GeneralSettings = Pick<Settings, 'closeWindow' | 'notifications' | 'editorCommand' | 'terminalApp' | 'defaultAgent'> & { resumePrompt: string };
+
+/** 内置的续跑模板（同 agent-adapters 的 DEFAULT_RESUME_PROMPT，界面不能 import 服务包，只当输入框的占位字）。 */
+export const BUILT_IN_RESUME_PROMPT =
+  "Your usage limit has reset. Continue the task you were working on when the limit stopped you, from where you left off. Don't redo work that is already done.";
 
 export const GENERAL_KEYS = ['closeWindow', 'notifications', 'editorCommand', 'terminalApp', 'defaultAgent'] as const satisfies readonly (keyof GeneralSettings)[];
 
 export function generalDraft(s: Settings): GeneralSettings {
-  return { closeWindow: s.closeWindow, notifications: s.notifications, editorCommand: s.editorCommand, terminalApp: s.terminalApp, defaultAgent: s.defaultAgent };
+  return {
+    closeWindow: s.closeWindow,
+    notifications: s.notifications,
+    editorCommand: s.editorCommand,
+    terminalApp: s.terminalApp,
+    defaultAgent: s.defaultAgent,
+    resumePrompt: s.resumePrompt ?? '',
+  };
 }
 
 export function generalPatch(s: Settings, d: GeneralSettings): Partial<Settings> {
@@ -73,5 +87,7 @@ export function generalPatch(s: Settings, d: GeneralSettings): Partial<Settings>
     const v = typeof d[key] === 'string' ? (d[key] as string).trim() : d[key];
     if (v !== s[key]) Object.assign(patch, { [key]: v });
   }
+  const resume = d.resumePrompt.trim();
+  if (resume !== (s.resumePrompt ?? '').trim()) patch.resumePrompt = resume;
   return patch;
 }

@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import type { BranchInfo, Project, Settings } from '@agentdeck/contracts';
 import { Button, Dialog, DialogText, RadioGroup } from '@agentdeck/ui-kit';
 import {
+  BUILT_IN_RESUME_PROMPT,
   generalDraft,
   generalPatch,
   projectDraft,
@@ -282,6 +283,10 @@ function GeneralPage({ value, onChange }: { value: GeneralSettings; onChange(cha
       <Field label="Terminal app">
         <TextInput aria-label="Terminal app" value={value.terminalApp} placeholder="Terminal" onChange={(terminalApp) => onChange({ terminalApp })} />
         <span className="ad-settings-hint">Used by Open in system terminal, for example Terminal, iTerm or Ghostty</span>
+      </Field>
+      <Field label="Resume prompt">
+        <TextArea aria-label="Resume prompt" value={value.resumePrompt} placeholder={BUILT_IN_RESUME_PROMPT} onChange={(resumePrompt) => onChange({ resumePrompt })} />
+        <span className="ad-settings-hint">Auto-resume sends this when a usage limit resets. Empty uses the built-in text; you can still change it for one limit from the bookmark</span>
       </Field>
     </>
   );
