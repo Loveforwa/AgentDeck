@@ -57,6 +57,22 @@ AGENTDECK_E2E_KEEP=1 pnpm e2e              # 不删沙盒（打印路径和 tmux
 | `crash` | 无，退出码 3 | error |
 
 bracketed paste（`ESC[200~ … ESC[201~`，LimitService 续跑时这样送）里的换行当空格，不提交。每个钩子、每次批准都写进 `$AGENTDECK_E2E_LOG_DIR/<启动时的会话 id>.jsonl`（clear 以后也写同一个文件）（`deck.agentLog(terminalId)` 读），测试用它核对后台真的发生了什么。
+假 claude 另有两条（g3 加的）：`ask-stuck [命令]` 同 ask 但确认框不认按键（日志 key-ignored，Approve all 的 Couldn’t approve）；
+`usage <输入> <输出> [缓存读] [模型]` 往会话记录写一行带 message.usage 的回答（Usage 插件读它）。
+
+别的假程序（g3，共用 `fake-agent/fake-common.mjs`：日志、跑钩子、按行读键盘），用 `support/g3.ts` 的 `installCodex / installPi / installOmp / installKimi / installTui`
+在 `deck.launch()` 之前装进沙盒的 fakebin（重写同一个名字 = 升级），日志同样按终端 id 用 `deck.agentLog` 读：
+
+| 程序 | 做什么 |
+| --- | --- |
+| `fake-codex.mjs`（codex 0.165.0） | `app-server` 报钩子的 key 和哈希，只跑 `-c hooks.state` 里信任了的钩子；`ask` / `y` / Esc、`done`、`limit <秒\|@epoch>`（rate_limits 100% + task_complete usage_limit_exceeded）、`sql`；会话记录写在 `$CODEX_HOME/sessions/…/rollout-…-<id>.jsonl`（token_count 带 5 小时、每周额度）；第一次输入才发 SessionStart |
+| `fake-pi.mjs --fake-as pi\|omp --fake-version x.y.z` | 照真 pi / omp 解析参数，记下第一条消息；真的 import `-e` 给的 agentdeck-pi-extension.mjs 并按扩展接口发事件；omp 的 `ask` 画 `Allow tool: bash` 确认框（↑ ↓ 回车） |
+| `fake-kimi.mjs`（kimi 2.3.3） | 没有钩子；输入框一个字一个字收，记下每一行（第一条消息是 AgentDeck 等终端安静后打进来的） |
+| `fake-tui.mjs <名字>` | 假的数据库 TUI（harlequin、lazysql、pgcli）：开着 bracketed paste，粘贴放进“查询编辑器”，记 paste / key / line |
+
+`support/g3.ts` 的 `mcpCall(sb, 终端 id, 工具, 参数)` 以那个终端的身份调 AgentDeck 的 MCP（Bearer 终端钥匙 + `x-agentdeck-terminal`，地址读 `<数据目录>/run/api.json`），
+和 agent 自己调工具发的请求一样。
+
 `fake-agent/dev-server.mjs` 是 TC-06 用的“dev server”：打印 `Local: http://localhost:<端口>/`，每个请求记一行，故意带 `X-Frame-Options: DENY`。
 
 ## 写测试
@@ -87,14 +103,27 @@ bracketed paste（`ESC[200~ … ESC[201~`，LimitService 续跑时这样送）�
 | TC-78（PL6） | tc78-auto-resume | 假 claude `limit 45 noauto`（像 codex，AgentDeck 来续）→ 右键标题栏开 Auto-resume → 书签 Paused · resumes … → 卡片里改话、⌘↩ → 到点打进终端的就是改过的那一句（只这一句），Resuming，做完书签收起。用 `AGENTDECK_LIMIT_GRACE_MS=0`、`AGENTDECK_RESUME_STAGGER_MS=0` |
 | TC-82（PL6，claude 部分） | 同上 | `limit 45`（claude 自己续）：灰书签 claude resumes …，卡片没有 Don’t resume → Give to claude 马上送进去（不算你接手），到点 claude 发改过的那一句、AgentDeck 不另发；claude resuming，做完收起。真 claude 是否这样待核对（DR-84） |
 | TC-12 | 同上 | 右键框 Delete workspace… → 连目录删 → 有未提交改动要勾选再确认 → 框消失、目录没了、分支还在、终端结束 |
+| TC-04、TC-13 | tc04-tc13-notify | 假 claude 等批准 → 2 秒内黄边框、Waiting · Needs approval、框和顶栏 1 waiting；后台时系统通知 “claude · <工作区> needs approval”、角标 1（Notification.show 换成记录，TC-04 固定 getFocusedWindow）；关窗口（BrowserWindow.close）后 claude 照跑、钩子照到、通知、单击通知窗口回来并聚焦那个终端 |
+| TC-34、TC-35 | tc34-tc35-subagent-group | 重启后 lead claude 调 open_terminals（3 个、带 labels、prompts）→ “3 subagents” 侧边栏、组随白板保存；open_browser localhost:3000 同框；关 lead（确认 Stop claude…）→ 变普通窗口。侧边栏状态灯、等你的行浅黄底、单击行、Show all、Collapse group、⌘J 调出收起的 |
+| TC-40 | tc40-auto-approve | 右键标题栏开 Auto-approve（第一次问一句）→ 红书签；PermissionRequest 钩子回 allow、闪一下、ApprovalRecord；rm -rf → Needs you（悬停写原因）；右键框开 → 框标签、codex 也挂书签并照样自动批准，shell 不挂 |
+| TC-41 | tc41-usage | claude、codex 的 Usage 条：数对上会话文件，每轮更新，拖到下边并保存，卡片（模型、窗口、请求数，codex 的 5h / Weekly limit），上下文 ≥ 85% 变黄 |
+| TC-42 | tc42-approve-all | 三个在等（claude、codex 的 rm -rf、不认按键的 claude）→ Approve all… 列表、rm -rf 不勾、Approve 2 → claude 继续、那一条 Couldn’t approve 留下、提示 “Approved 1 request · 2 still need you” |
+| TC-46 | tc46-first-message | open_terminals 开 pi、omp、kimi 带第一条消息，都原样收到（pi、omp 在参数里，kimi 安静后打进去）；@ 开头的照原文；shell 带 prompt 报错不开终端 |
+| TC-48 | tc48-untested-version | omp 18.0.4 开着 Auto-approve → 换成 18.12.6 重启：report 的 approve-keys Off · Untested on 18.12.6（verifiedUpTo 18.0.4），不发键、omp 停在确认框等你。`test.fail` 一条：重启后菜单没灰（界面的 support 是检测完之前取的）、书签没变 Needs you（恢复时开关被丢了） |
+| TC-68 | tc68-send-to-waiting | A 用 send_to_terminal 往等批准的 B 打 1 → “This terminal is waiting for the user. Use the inbox.”、B 没收到键；Approve all… 批准 B（ApprovalRecord）后再发一句正常送到 |
+| TC-80、TC-81 | tc80-tc81-codex-limits | 三个 codex 同一个 CODEX_HOME：一组（2 个 interrupted、1 个 idle）、书签、卡片 Don’t resume → Skipped、恢复 + 5 秒宽限后只续 T5、空闲的不发；再撞两个都续、间隔 ≥ 2 秒按先后；limits.cancel 后都不发。撞完自己打字 → took-over、到点不发。`test.fail` 一条：“Not resumed · you took over” 书签一帧都停不住 |
+| TC-109 | tc109-send-sql | codex 里拖选多行 SQL → 右键标题栏 Send selection to ▸（按框分组）› harlequin · shop dev → 原样贴进编辑器、没按回车、焦点过去；没选中时灰掉 |
+| TC-110 | tc110-hide-from-agents | 窗口数据 hideFromAgents（LA1 的勾还没做）→ list_terminals / list_windows 不列，read / send 报 “The user hid this terminal from agents”，一个键都没进；lazysql 照常；返回里没有密码 |
 
-`test.fail` 标着的两条是**已知缺口**（现在失败才算通过；修好后会报“意外通过”，那时去掉 `test.fail`）：
+`test.fail` 标着的是**已知缺口**（现在失败才算通过；修好后会报“意外通过”，那时去掉 `test.fail`）：
 
 - TC-01：选子文件夹时界面不提示“用了仓库根目录”（`ProjectProbe.usedRepoRoot` 有，`addProject` 没用）。
 - TC-06：第二次单击同一个地址只聚焦、不刷新（终端打开网页时没带 `reloadToken`）。
+- TC-48：agent 升级到没核对过的版本后重启，PLUGINS 里 Auto-approve 不灰（界面只在启动时取一次 autoApproveSupport，那时还没检测完），书签也不变 Needs you（启动时恢复开关被 unsupported 丢掉）。
+- TC-81：撞额度后你接手，“Not resumed · you took over” 书签一帧都停不住（LimitService 同一个 tick 里发最后状态和去掉它的列表，界面没有停留）。
 
-没写的：TC-03（两个 worktree 并行，要两个 agent 改文件，可以照 TC-30 写）、TC-04（主要看后台通知，系统通知点不到）、TC-08（分支占用跳框，可以写）、
-TC-11（会打开系统终端 App）、TC-13（系统通知）、TC-14（未实现）。
+没写的：TC-03（两个 worktree 并行，要两个 agent 改文件，可以照 TC-30 写）、TC-08（分支占用跳框，可以写）、
+TC-11（会打开系统终端 App）、TC-14（未实现）。
 
 ## 已知问题（测试里绕开的，见各处注释）
 
