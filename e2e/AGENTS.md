@@ -82,6 +82,7 @@ AGENTDECK_E2E_KEEP=1 pnpm e2e              # 不删沙盒（打印路径和 tmux
 | TC-10 | 同上 | ⌘Q 后 tmux 会话还在 → 再打开：框和窗口位置不变、终端接回、历史在、输入照常 |
 | TC-07 | tc07-tc12-git | 聚焦终端 → 面板树形列出改动 → 悬停 + 暂存两个 → ⌘↩ 提交；提交在测试分支上、只带暂存的文件 |
 | TC-147 | tc147-send-selection | 散放的 bash 打印多行 SQL（带 -- 注释）→ 100% 缩放下真的拖选（tmux 松手复制，IS-82 在别的缩放下会选偏）→ 右键 Copy · Paste · Send selection to ▸ › zsh（自定义命令）→ 焦点跳过去，SQL 原样在 zsh 输入行里、没执行。没有 /bin/zsh 时跳过 |
+| TC-61（CR15） | cr15-agentdeck-command | 散放的 Shell：窗格环境有自己的钥匙、PATH 最前面是 `<数据目录>/bin` → `agentdeck help`（真键盘）出 JSON → `agentdeck notify "…"`（tmux send-keys，像 agent 跑命令）白板弹提示 → `crew plan` 退出码 1（CR2 之前是 “crew is not available yet”）→ 改 AGENTDECK_TERM 冒充别的终端 “Unauthorized” → 同样 HOME、PATH 的系统登录 shell 里 `command -v agentdeck` 找不到。沙盒的 .bash_profile 在这个测试里改成往前加 PATH（见 tools/agentdeck-cli「已知限制」） |
 | TC-12 | 同上 | 右键框 Delete workspace… → 连目录删 → 有未提交改动要勾选再确认 → 框消失、目录没了、分支还在、终端结束 |
 
 `test.fail` 标着的两条是**已知缺口**（现在失败才算通过；修好后会报“意外通过”，那时去掉 `test.fail`）：

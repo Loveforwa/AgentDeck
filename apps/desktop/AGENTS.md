@@ -141,7 +141,7 @@ pnpm --filter @agentdeck/desktop dist:dir      # 只出 dist/mac-arm64/AgentDeck
 3. electron-builder（`electron-builder.config.cjs`，projectDir 是 `.stage/app`，所以配置里都是绝对路径）：
    - 原生模块：两个都是 N-API 预编译（DR-27），**不重新编译**（`npmRebuild: false`），整个模块 `asarUnpack`。node-pty 自己会把
      `app.asar` 换成 `app.asar.unpacked` 去找 spawn-helper；better-sqlite3 经 Electron 的 asar 支持读 unpacked 里的 .node。
-   - `extraResources`：`tmux.conf`、`agentdeck-notify.mjs`、`agentdeck-pi-extension.mjs` 放进 `Contents/Resources`（`process.resourcesPath`，
+   - `extraResources`：`tmux.conf`、`agentdeck-notify.mjs`、`agentdeck-pi-extension.mjs`、`agentdeck.mjs`（CR15 的命令）放进 `Contents/Resources`（`process.resourcesPath`，
      路径在 `src/main/paths.ts`）。MCP 插件目录、自带 skill 是代码里的字符串，启动时写进数据目录，不用随包带文件。
    - `scripts/after-pack.cjs`（签名前）：缺 Resources 里的文件、缺这个架构的 .node 或 spawn-helper 就让打包失败；spawn-helper 保证 0755；删掉另一个架构的预编译。
    - 签名：**ad-hoc**（`identity: '-'`），不开 hardened runtime，不公证。Apple 芯片上完全不签名的程序内核不让跑；ad-hoc 能跑，但 Gatekeeper 不认。
@@ -184,6 +184,10 @@ tmux -L agentdeck-pkgtest kill-server; hdiutil detach /tmp/ad-mnt
 - **状态机**：tmux-host 的 `terminal.*` 事件交给 agent runtime；`terminal.input` 时调 `noteInput`（claude 拒绝批准、Esc 打断没有钩子）。`agents.start` 之后把终端记进 store 的 terminals 表，重开应用时按记录 `track` 回来。
 - **钩子**：每次启动在 `<数据目录>/bin/agentdeck-notify` 写一个 sh 入口（带 `AGENTDECK_HOOK_SOCKET`；用登录 shell 里的 node，没有就用 Electron 当 node），把它的绝对路径交给适配器。pi、omp 的扩展 `tools/agentdeck-notify/bin/agentdeck-pi-extension.mjs`（打包后放 Resources）的路径作为 `agentExtension` 传给 agent runtime。
   重开应用接回终端时，“带不带钩子”按 `agents.list()` 里各 agent 的 `capabilities.hooks` 定。
+- **agentdeck 命令**（CR14、CR15）：每次启动在 `<数据目录>/bin/agentdeck` 写同样的 sh 入口（`writeNodeWrapper`，带 `AGENTDECK_API_FILE=<数据目录>/run/api.json`），
+  运行 `tools/agentdeck-cli/bin/agentdeck.mjs`（打包后在 Resources）。MCP 服务起来后把地址写进那个 api.json（数据目录就是 `~/.agentdeck` 时正好是 contracts 的默认位置）。
+  密钥（`<数据目录>/run/mcp-token`）在建 agent runtime 前就读好：`terminalKey` 给每个终端算钥匙，`binDir` 放在每个终端 PATH 最前面（agent-adapters）。
+  只在 AgentDeck 开的终端里有这个命令；不改用户的 shell 配置。crew、sessions 还没注册（CR2、SE2）时 /cli 的相应命令回 “… is not available yet”，被拒的命令记一行 `[agentdeck:cli]` 日志。
   `custom` 照常交给界面，白板自己不列它（IS-21，见 `packages/ui/canvas/src/model/agents.ts`）。
 - **git**：git-service 的 `git.status` 事件同时交给 workspace-service 的 `noteStatus`（分支变了更新框标题）。
 - **token 用量**（PL2）：`UsageServiceImpl`（agent-adapters）注册成 `usage` 服务；`lookup` 用状态机的 agent / 会话 id 和 store 的 cwd，启动时间只记本次运行里 `agents.start` 的（kimi 推断用；重开应用接回的终端没有，退回取同目录最近活动的会话）；钩子经 `tapHook` 先给它；`status.changed` 时 `noteSession`；退出时 `close`。

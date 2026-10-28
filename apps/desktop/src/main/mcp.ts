@@ -1,10 +1,12 @@
 // AgentDeck 的 MCP 服务（M1、N1）：packages/mcp-server 起在主进程，工具通过注册表调服务，和界面走同一套实现。
 // 还没注册的服务（组装前）调用时是 not-found，工具返回 “Service not available: …”。
+// 同一个端口上还有 agentdeck 命令行的 /cli（CR14）：起来后把地址写进 api.json；crew、sessions 还没注册（CR2、SE2）时
+// 相应的命令回 “… is not available yet”。
 
 import { mkdir, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { AgentDeckError } from '@agentdeck/contracts';
+import { AgentDeckError, API_ENDPOINT_FILE } from '@agentdeck/contracts';
 import type { AgentDeckEvent, ServiceName, Services, TerminalId, WorkspaceId } from '@agentdeck/contracts';
 import { mcpPluginFiles } from '@agentdeck/agent-adapters';
 import { hiddenTerminalIds, loadOrCreateToken, startMcpServer } from '@agentdeck/mcp-server';
@@ -44,14 +46,25 @@ export interface AppMcpOptions {
   confirm?: McpToolDeps['confirm'];
   /** N1：notify 工具发了通知（组装时在应用不在前台时发系统通知）。 */
   onNotify?: McpToolDeps['onNotify'];
+  /** CR14：命令行找服务的文件（ApiEndpointFile）。默认 <homeDir>/API_ENDPOINT_FILE。 */
+  apiFile?: string;
+  /** 已经读好的密钥（终端钥匙要在启动 agent 前就能算，组装时先读）。不给时按 tokenPath 读或生成。 */
+  token?: string;
 }
 
 export async function startAppMcp(opts: AppMcpOptions): Promise<McpHttpServer> {
   const home = opts.homeDir ?? homedir();
   const { registry } = opts;
   const board = viaRegistry(registry, 'board');
+  // crew、sessions 由别的线组装（CR2、SE2）：每次调用时看注册了没有，没注册时 /cli 回 “… is not available yet”
+  const optional = <S extends 'crew' | 'sessions'>(name: S) => (): Services[S] | null => (registry.has(name) ? viaRegistry(registry, name) : null);
   return startMcpServer({
-    token: await loadOrCreateToken(opts.tokenPath ?? join(home, '.agentdeck/run/mcp-token')),
+    token: opts.token ?? (await loadOrCreateToken(opts.tokenPath ?? join(home, '.agentdeck/run/mcp-token'))),
+    apiFile: opts.apiFile ?? join(home, API_ENDPOINT_FILE),
+    crew: optional('crew'),
+    sessions: optional('sessions'),
+    // TC-61：拒绝的调用记一条日志
+    onCliRefused: ({ terminalId, command, message }) => console.warn(`[agentdeck:cli] ${terminalId} ${command}: ${message}`),
     ...(opts.port !== undefined ? { port: opts.port } : {}),
     projects: viaRegistry(registry, 'projects'),
     workspaces: viaRegistry(registry, 'workspaces'),

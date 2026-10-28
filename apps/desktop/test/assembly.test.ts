@@ -25,6 +25,7 @@ describe('resolvePaths', () => {
     expect(p.tmuxConf).toBe('/r/packages/tmux-host/tmux.conf');
     expect(p.notifyScript).toBe('/r/tools/agentdeck-notify/bin/agentdeck-notify.mjs');
     expect(p.agentExtension).toBe('/r/tools/agentdeck-notify/bin/agentdeck-pi-extension.mjs');
+    expect(p.cliScript).toBe('/r/tools/agentdeck-cli/bin/agentdeck.mjs');
   });
   it('packaged uses ~/.agentdeck and the default worktree home', () => {
     const p = resolvePaths({ ...base, env: {}, isDev: false, repoRoot: null, resourcesPath: '/App/Resources' });
@@ -33,6 +34,7 @@ describe('resolvePaths', () => {
     expect(p.worktreeHome).toBe('/Users/me');
     expect(p.tmuxConf).toBe('/App/Resources/tmux.conf');
     expect(p.agentExtension).toBe('/App/Resources/agentdeck-pi-extension.mjs');
+    expect(p.cliScript).toBe('/App/Resources/agentdeck.mjs');
   });
   it('AGENTDECK_DATA_DIR and AGENTDECK_TMUX_SOCKET override', () => {
     const p = resolvePaths({ ...base, env: { AGENTDECK_DATA_DIR: '/d', AGENTDECK_TMUX_SOCKET: 'x' }, isDev: true, repoRoot: '/r' });

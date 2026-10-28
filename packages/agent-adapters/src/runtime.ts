@@ -38,6 +38,10 @@ export interface AgentRuntimeOptions {
   extraArgs?: (agent: AgentKind) => string[];
   /** AgentDeck 的 MCP 服务（M1），见 AgentServiceOptions.mcp。 */
   mcp?: () => McpEndpoint | null;
+  /** CR15：每个终端的钥匙，见 AgentServiceOptions.terminalKey。 */
+  terminalKey?: AgentServiceOptions['terminalKey'];
+  /** CR15：agentdeck 命令的目录，见 AgentServiceOptions.binDir。 */
+  binDir?: AbsPath;
   /** N9：这次启动带哪些 skill 和 MCP，见 AgentServiceOptions.skills。 */
   skills?: AgentServiceOptions['skills'];
   /** 一个 agent 终端起来之后（状态机 track 之后）再告诉组装方，例如记下它带了哪些 skill（N9）。 */
@@ -89,6 +93,8 @@ export function createAgentRuntime(opts: AgentRuntimeOptions) {
     notifyCommand: opts.notifyCommand,
     ...(opts.extraArgs ? { extraArgs: opts.extraArgs } : {}),
     ...(opts.mcp ? { mcp: opts.mcp } : {}),
+    ...(opts.terminalKey ? { terminalKey: opts.terminalKey } : {}),
+    ...(opts.binDir ? { binDir: opts.binDir } : {}),
     ...(opts.skills ? { skills: opts.skills } : {}),
     ...(opts.sessionRoots === null
       ? {}
