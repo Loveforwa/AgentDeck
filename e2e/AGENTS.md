@@ -172,7 +172,7 @@ app.test 像 github 带登录和第三方登录弹窗、auth.test 是授权页�
 - **Playwright 默认的单击（按下和抬起之间没有间隔）点没聚焦的终端**：按下时聚焦、窗口重排，click 落到白板空白处又把焦点清掉。`deck.focusWindow` 用 80ms 的按压绕开；真人点击没见到这个问题。
 - **IS-07**：500ms 内连开两个终端，第二个可能显示 “Previous session ended”。`openTerminal` 两次之间隔 600ms。
 - **登录 PATH 末尾补的常见目录**：AgentDeck 在读到的 PATH 后面补 /opt/homebrew/bin、/usr/local/bin 等（login-env.ts 的 withCommonPaths），
-  本机这些目录里装着真的 codex、pi、omp，检测时会跑它们的 `--version`。新写的测试先调 `shieldRealAgents(sb)`（fakebin 里放同名的假程序挡住）。
+  本机这些目录里装着真的 codex、pi、omp，检测时会跑它们的 `--version`。2026-10-28 起沙盒默认就挡住它们（`support/sandbox.ts` 的 `SHIELDED_AGENTS`，`shieldRealAgents(sb)` 留作兼容）（fakebin 里放同名的假程序挡住）。
 - **Playwright 的键盘进不了 webview**：CDP 的按键只到白板页面，网页里收不到、主进程的 before-input-event 也不触发。TC-28 的 ⌘[ ⌘] ⌘R
   从主进程对 webview 发 `webContents.sendInputEvent`。
 - IS-08：重开应用后状态显示 Idle，TC-10 只断言状态机登记了终端，不断言 Running。

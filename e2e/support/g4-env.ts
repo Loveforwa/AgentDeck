@@ -5,12 +5,7 @@ import { chmodSync, copyFileSync, existsSync, readFileSync, writeFileSync } from
 import { join } from 'node:path';
 import type { Sandbox } from './sandbox.ts';
 
-/**
- * 挡住真装着的 codex、pi、omp、kimi。
- * AgentDeck 读登录环境后会在 PATH 末尾补上常见安装目录（apps/desktop/src/main/login-env.ts 的 withCommonPaths：
- * /opt/homebrew/bin、/usr/local/bin……），本机这些目录里装着真的 agent，检测时会跑它们的 --version。
- * 在沙盒 PATH 最前面放同名的假程序（什么也不打印、退出码 127），检测找到的就是它们，真的不会被运行。
- */
+/** 沙盒默认已经挡住真 agent（sandbox.ts 的 SHIELDED_AGENTS）；留着这个函数给已有的测试调用，重复调用无害。 */
 export function shieldRealAgents(sb: Sandbox): void {
   const fakeBin = sb.path.split(':')[0]!;
   for (const name of ['codex', 'pi', 'omp', 'kimi']) {
