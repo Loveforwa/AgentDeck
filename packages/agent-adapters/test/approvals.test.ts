@@ -318,7 +318,24 @@ describe('omp (screen check, then Up Enter)', () => {
 
   it('screen matcher: positive, and the ask tool / scrolled-away negatives', () => {
     expect(matchOmpApproval(OMP_SCREEN)).toMatchObject({ tool: 'bash', command: 'pnpm test', summary: 'pnpm test' });
-    expect(matchOmpApproval(['Allow tool: edit', 'path: src/a.ts', '› Approve', '  Deny'])).toMatchObject({ tool: 'edit', command: null, summary: 'edit path: src/a.ts' });
+    expect(matchOmpApproval(['Allow tool: edit', 'path: src/a.ts', '', '› Approve', '  Deny'])).toMatchObject({ tool: 'edit', command: null, summary: 'edit path: src/a.ts' });
+    // 真终端（omp 18.0.4，AH2 的 L2 抓的）：标题在上边框里，命令前面有 Command:
+    const real = [
+      ' ⠹ Working… ⟦esc⟧',
+      '╭─ Allow tool: bash ──────────────────────────────────────╮',
+      '│                                                         │',
+      '│ Command: touch /tmp/agentdeck/probe                     │',
+      '│                                                         │',
+      '│  ❯ Approve                                              │',
+      '│    Deny                                                 │',
+      '│                                                         │',
+      '│ up/down navigate  enter select  esc cancel              │',
+      '│                                                         │',
+      '╰─────────────────────────────────────────────────────────╯',
+    ];
+    expect(matchOmpApproval(real)).toMatchObject({ tool: 'bash', command: 'touch /tmp/agentdeck/probe', summary: 'touch /tmp/agentdeck/probe' });
+    // Approve 不是第一项时不认（↑ ↵ 选中的是第一项，IS-77）
+    expect(matchOmpApproval(['Allow tool: bash', 'pnpm test', '', '  Always allow', '› Approve', '  Deny'])).toBeNull();
     // ask 工具的选项不是 Approve / Deny
     expect(matchOmpApproval(['Which one?', '→ Option A', '  Option B'])).toBeNull();
     // 只有 Approve / Deny 没有 Allow tool: 标题
@@ -432,7 +449,7 @@ describe('support table', () => {
     expect(s).toEqual({
       claude: ['hook', true, null],
       codex: ['hook', true, null],
-      omp: ['keys', false, 'Untested for Oh My Pi'],
+      omp: ['keys', true, null],
       pi: ['never-asks', true, 'pi never asks for approval'],
       kimi: ['unsupported', false, 'Not supported for kimi yet'],
       shell: ['unsupported', false, 'Not supported for shell'],

@@ -1,0 +1,104 @@
+{
+  "agent": "codex",
+  "version": "0.165.0",
+  "date": "2026-10-28",
+  "verifiedUpTo": "0.165.0",
+  "results": {
+    "K1": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "0.165.0"
+    },
+    "K2": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "0.165.0"
+    },
+    "K3": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "0.165.0"
+    },
+    "K4": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "0.165.0"
+    },
+    "K5": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "0.165.0"
+    },
+    "K6": {
+      "result": "pass",
+      "suite": "manual",
+      "reason": "Checked by hand on 0.159.2: the PermissionRequest hook answers allow (PL1); L2 does not approve because it would change files",
+      "verifiedUpTo": "0.159.2"
+    },
+    "K7": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "0.165.0"
+    },
+    "K8": {
+      "result": "skip",
+      "suite": "L2",
+      "reason": "Codex has no question tool yet",
+      "verifiedUpTo": null
+    },
+    "K9": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "0.165.0"
+    },
+    "K10": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "0.165.0"
+    },
+    "K11": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "0.165.0"
+    },
+    "K12": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "0.165.0"
+    },
+    "K13": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "0.165.0"
+    },
+    "K14": {
+      "result": "pass",
+      "suite": "manual",
+      "reason": "Checked on 0.164.0: packages/mcp-server real-codex lists the tools and calls list_workspaces through -c mcp_servers.agentdeck",
+      "verifiedUpTo": "0.164.0"
+    },
+    "K15": {
+      "result": "skip",
+      "suite": "L2",
+      "reason": "Checked with the agent's own loader (AGENTS.md, Skills · MCP), not in the TUI yet",
+      "verifiedUpTo": null
+    },
+    "K16": {
+      "result": "skip",
+      "suite": "L2",
+      "reason": "Comes with AH3 (fall back to terminal activity when hooks do not report)",
+      "verifiedUpTo": null
+    },
+    "K17": {
+      "result": "skip",
+      "suite": "L2",
+      "reason": "Can't make a real agent reject an option on purpose; L1 covers it with a fake program",
+      "verifiedUpTo": null
+    },
+    "K18": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "0.165.0"
+    }
+  }
+}

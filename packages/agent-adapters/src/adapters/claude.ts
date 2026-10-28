@@ -3,7 +3,8 @@
 
 import { randomUUID } from 'node:crypto';
 import { MCP_SERVER_NAME, MCP_TERMINAL_HEADER, MCP_TOKEN_ENV, TERMINAL_ID_ENV } from '@agentdeck/contracts';
-import type { AgentCapabilities, AgentHookEvent, AgentSessionId, LaunchSpec, McpEndpoint } from '@agentdeck/contracts';
+import type { AgentCapabilities, AgentHookEvent, AgentSessionId, CapabilityEntry, LaunchSpec, McpEndpoint } from '@agentdeck/contracts';
+import { no, statusFromActivity, yes } from '../capabilities/declare.ts';
 import { atLeast, shellQuote } from '../env.ts';
 import { parseClaudeNotification, parseCommonHook } from '../hook-payload.ts';
 import type { McpServerDef } from '../skills/types.ts';
@@ -49,6 +50,32 @@ export class ClaudeAdapter implements AgentAdapterExt {
   capabilities(version: string | null): AgentCapabilities {
     if (!atLeast(version, MIN_HOOKS_VERSION)) return { ...NO_CAPABILITIES, resume: true, fork: true };
     return { hooks: true, resume: true, fork: true, askTool: true };
+  }
+
+  /** AH0 / AH2：能力声明（画布 A0 第 2 节）。合格测试按它逐项跑（test/conformance）。 */
+  declareCapabilities(version: string | null): CapabilityEntry[] {
+    const hooks = this.capabilities(version).hooks;
+    const needHooks = `Needs Claude Code ${MIN_HOOKS_VERSION} or later`;
+    return [
+      yes('first-prompt', 'flag'),
+      hooks ? yes('status', 'hook') : statusFromActivity(`${needHooks}; status comes from terminal activity`),
+      hooks ? yes('approval-wait', 'hook') : no('approval-wait', needHooks),
+      hooks ? yes('question', 'hook') : no('question', needHooks),
+      yes('session-id', 'flag'),
+      yes('resume', 'flag'),
+      yes('fork', 'flag'),
+      yes('history', 'session-file'),
+      yes('usage', 'session-file'),
+      // 额度（PL3 的队列插件读 rate_limit 行）还没进这条分支；合进来后改成 partial · session-file
+      no('quota', 'Not read for Claude Code yet'),
+      hooks ? yes('approve-keys', 'hook') : no('approve-keys', needHooks),
+      yes('agentdeck-mcp', 'flag'),
+      yes('skills', 'extension'),
+      atLeast(version, MIN_SUBAGENT_HOOKS_VERSION) ? yes('subagents', 'hook') : no('subagents', `Needs Claude Code ${MIN_SUBAGENT_HOOKS_VERSION} or later`),
+      // --append-system-prompt（2.1.291 --help）
+      yes('append-instructions', 'flag'),
+      yes('shell-tool', null),
+    ];
   }
 
   launch(ctx: AdapterLaunchContext): LaunchSpec {

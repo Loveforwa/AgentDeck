@@ -14,7 +14,8 @@
 
 import { spawn } from 'node:child_process';
 import { MCP_SERVER_NAME, MCP_TERMINAL_HEADER, MCP_TOKEN_ENV, TERMINAL_ID_ENV } from '@agentdeck/contracts';
-import type { AgentCapabilities, AgentHookEvent, AgentSessionId, LaunchContext, LaunchSpec, McpEndpoint } from '@agentdeck/contracts';
+import type { AgentCapabilities, AgentHookEvent, AgentSessionId, CapabilityEntry, LaunchContext, LaunchSpec, McpEndpoint } from '@agentdeck/contracts';
+import { no, partial, yes } from '../capabilities/declare.ts';
 import { atLeast, findExecutable, shellQuote } from '../env.ts';
 import { parseCommonHook } from '../hook-payload.ts';
 import type { McpServerDef } from '../skills/types.ts';
@@ -91,6 +92,33 @@ export class CodexAdapter implements AgentAdapterExt {
     if (!atLeast(version, MIN_HOOKS_VERSION)) return { ...NO_CAPABILITIES, resume: true, fork };
     // codex 的 request_user_input 还在开发中（features list 里是 under development），先不认提问。
     return { hooks: true, resume: true, fork, askTool: false };
+  }
+
+  /** AH0 / AH2：能力声明（画布 A0 第 2 节）。合格测试按它逐项跑（test/conformance）。 */
+  declareCapabilities(version: string | null): CapabilityEntry[] {
+    const hooks = this.capabilities(version).hooks;
+    const needHooks = `Needs Codex ${MIN_HOOKS_VERSION} or later`;
+    return [
+      yes('first-prompt', 'flag'),
+      // 老版本只有 legacy notify：只知道一轮结束
+      hooks ? yes('status', 'hook') : partial('status', 'hook', `Only the end of a turn is reported before Codex ${MIN_HOOKS_VERSION}`),
+      hooks ? yes('approval-wait', 'hook') : no('approval-wait', needHooks),
+      // request_user_input 还在开发中（features list 里是 under development），没核对过它怎么报
+      no('question', 'Codex has no question tool yet'),
+      // SessionStart 要等第一次输入才来
+      hooks ? yes('session-id', 'hook') : no('session-id', needHooks),
+      yes('resume', 'flag'),
+      atLeast(version, MIN_FORK_VERSION) ? yes('fork', 'flag') : no('fork', `Needs Codex ${MIN_FORK_VERSION} or later`),
+      yes('history', 'session-file'),
+      yes('usage', 'session-file'),
+      yes('quota', 'session-file'),
+      hooks ? yes('approve-keys', 'hook') : no('approve-keys', needHooks),
+      atLeast(version, MIN_MCP_VERSION) ? yes('agentdeck-mcp', 'flag') : no('agentdeck-mcp', `Needs Codex ${MIN_MCP_VERSION} or later`),
+      no('skills', 'Not supported for codex'),
+      no('subagents', 'Not read for Codex yet'),
+      no('append-instructions', 'Not checked for Codex yet'),
+      yes('shell-tool', null),
+    ];
   }
 
   /** 问出钩子的信任哈希。返回这次启动是否带钩子。 */

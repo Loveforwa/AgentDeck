@@ -31,8 +31,14 @@ const BORDER = /^[\s│┃|]+|[\s│┃|]+$/g;
 /** 选中的那一行前面有一个光标符号（❯、›、→、▸、> 之类），可有可无。 */
 const CURSOR = String.raw`(?:[^\s\w.]\s+)?`;
 
+/** 标题写在上边框里的框（omp 18.0.4 真终端：`╭─ Allow tool: bash ────╮`），取出中间的字。 */
+const TITLED_BORDER = /^\s*[╭┌├]─+\s+(.*?)\s+─+[╮┐┤]\s*$/;
+
 function clean(line: string): string {
-  return line.replace(ANSI, '').replace(BORDER, '');
+  const l = line.replace(ANSI, '');
+  const titled = TITLED_BORDER.exec(l);
+  if (titled) return titled[1]!;
+  return l.replace(BORDER, '');
 }
 
 function exact(text: string): RegExp {
@@ -57,7 +63,14 @@ function oneLine(text: string, max = 200): string {
 // 源码（@oh-my-pi/pi-coding-agent 18.0.4）：src/extensibility/extensions/wrapper.ts 里
 //   uiContext.select(formatApprovalPrompt(...), ["Approve", "Deny"])；标题第一行是 "Allow tool: <name>"（src/tools/approval.ts）。
 // 选择列表（src/modes/components/hook-selector.ts）↑ 到顶就停（#moveSelection 夹在 0..max，不绕回），
-// 所以 ↑ 再 ↵ 一定选中第一项 Approve。没在真终端里核对过。
+// 所以 ↑ 再 ↵ 一定选中第一项 Approve。
+// 2026-10-28 真终端核对（AH2 的 L2，omp 18.0.4，tmux 160×45）：确认框长这样，↑ ↵ 选中 Approve、命令照常运行：
+//   ╭─ Allow tool: bash ─────────╮
+//   │ Command: touch /tmp/probe  │
+//   │  ❯ Approve                 │
+//   │    Deny                    │
+//   │ up/down navigate  enter select  esc cancel │
+// 标题在上边框里；命令前面有 "Command: "。只在 Approve 是第一项时才认（↑ 到顶选中的是第一项，IS-77）。
 
 const OMP_TITLE = /^Allow tool: (\S+)$/;
 const OMP_APPROVE = exact('Approve');
@@ -75,6 +88,9 @@ export function matchOmpApproval(raw: readonly string[]): ScreenPrompt | null {
   }
   if (approve < 0) return null;
   if (nonEmptyAfter(lines, approve + 1) > MAX_LINES_AFTER_OPTIONS) return null;
+  // Approve 必须是第一项：上面一行是空行、框线或标题，不是另一个选项（↑ ↵ 选中的是第一项）
+  const above = (lines[approve - 1] ?? '').trim();
+  if (above && !isRule(above) && !OMP_TITLE.test(above)) return null;
   for (let i = approve - 1; i >= Math.max(0, approve - MAX_BODY_LINES); i--) {
     const m = lines[i]!.match(OMP_TITLE);
     if (!m) continue;
@@ -83,7 +99,8 @@ export function matchOmpApproval(raw: readonly string[]): ScreenPrompt | null {
       .slice(i + 1, approve)
       .map((l) => l.trim())
       .filter((l) => l && !isRule(l));
-    const command = tool === 'bash' && body.length ? body.join('\n') : null;
+    // 真终端里命令前面有 "Command: "（18.0.4）
+    const command = tool === 'bash' && body.length ? body.join('\n').replace(/^Command:\s*/, '') : null;
     const head = body[0] ?? '';
     const summary = oneLine(command ? (command.split('\n')[0] ?? command) : head ? `${tool} ${head}` : tool);
     return { title: m[0], tool, body, summary, command, signature: [m[0], ...body].join('\n') };

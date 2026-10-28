@@ -11,7 +11,8 @@
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import { MCP_TOKEN_ENV } from '@agentdeck/contracts';
-import type { AbsPath, AgentCapabilities, AgentHookEvent, AgentSessionId, LaunchSpec } from '@agentdeck/contracts';
+import type { AbsPath, AgentCapabilities, AgentHookEvent, AgentSessionId, CapabilityEntry, LaunchSpec } from '@agentdeck/contracts';
+import { no, statusFromActivity } from '../capabilities/declare.ts';
 import { atLeast } from '../env.ts';
 import { parseCommonHook } from '../hook-payload.ts';
 import type { KnownAgent } from './known.ts';
@@ -72,6 +73,32 @@ export class KnownAgentAdapter implements AgentAdapterExt {
       fork: this.def.launch.fork !== null,
       askTool: hooks && this.def.askTool,
     };
+  }
+
+  /**
+   * AH0 / AH2：表里的声明（known.ts declared），扩展没给或版本太老时靠扩展的几项改掉；
+   * MCP、skill 的版本门槛没过时那一项写 no。
+   */
+  declareCapabilities(version: string | null): CapabilityEntry[] {
+    const hooks = this.hooksFor(version);
+    const ext = this.def.extension;
+    const why = !ext
+      ? null
+      : !this.deps.agentExtension
+        ? "AgentDeck's extension isn't available"
+        : `Needs ${this.label} ${ext.minVersion} or later`;
+    return this.def.declared.map((e) => {
+      if (e.key === 'agentdeck-mcp' && e.level !== 'no' && this.def.mcp && !atLeast(version, this.def.mcp.minVersion)) {
+        return no(e.key, `Needs ${this.label} ${this.def.mcp.minVersion} or later`);
+      }
+      const skillMin = this.def.skills?.minVersion;
+      if (e.key === 'skills' && e.level !== 'no' && skillMin && !atLeast(version, skillMin)) {
+        return no(e.key, `Needs ${this.label} ${skillMin} or later`);
+      }
+      if (hooks || e.via !== 'extension' || why === null) return e;
+      if (e.key === 'status') return statusFromActivity(`${why}; status comes from terminal activity`);
+      return no(e.key, why);
+    });
   }
 
   launch(ctx: AdapterLaunchContext): LaunchSpec {

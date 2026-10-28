@@ -1,7 +1,8 @@
 // Shell 和自定义命令：没有钩子，状态只靠 tmux 的输出活动和退出码。
 
 import { AgentDeckError } from '@agentdeck/contracts';
-import type { AgentCapabilities, AgentHookEvent, LaunchContext, LaunchSpec } from '@agentdeck/contracts';
+import type { AgentCapabilities, AgentHookEvent, CapabilityEntry, LaunchContext, LaunchSpec } from '@agentdeck/contracts';
+import { no, statusFromActivity } from '../capabilities/declare.ts';
 import { findExecutable, splitCommand } from '../env.ts';
 import type { AdapterDeps, AgentAdapterExt, DetectResult } from './types.ts';
 import { NO_CAPABILITIES, unsupported } from './types.ts';
@@ -37,6 +38,10 @@ export class ShellAdapter implements AgentAdapterExt {
     return NO_CAPABILITIES;
   }
 
+  declareCapabilities(): CapabilityEntry[] {
+    return commandCapabilities(this.label);
+  }
+
   launch(ctx: CommandLaunchContext): LaunchSpec {
     if (ctx.mode.kind !== 'new') unsupported(this.label, ctx.mode);
     const command = ctx.command?.trim();
@@ -67,6 +72,10 @@ export class CustomCommandAdapter implements AgentAdapterExt {
     return NO_CAPABILITIES;
   }
 
+  declareCapabilities(): CapabilityEntry[] {
+    return commandCapabilities(this.label);
+  }
+
   launch(ctx: CommandLaunchContext): LaunchSpec {
     if (ctx.mode.kind !== 'new') unsupported(this.label, ctx.mode);
     const [cmd, ...args] = splitCommand(ctx.command ?? '');
@@ -77,4 +86,14 @@ export class CustomCommandAdapter implements AgentAdapterExt {
   parseHook(): AgentHookEvent | null {
     return null;
   }
+}
+
+/** Shell、自定义命令不是 agent：只有按输出判断的状态，别的都没有。 */
+function commandCapabilities(label: string): CapabilityEntry[] {
+  return [
+    no('first-prompt', `${label} can't take a first message`),
+    statusFromActivity('Status from terminal activity'),
+    no('resume', `${label} can't resume a conversation`),
+    no('fork', `${label} can't fork a conversation`),
+  ];
 }

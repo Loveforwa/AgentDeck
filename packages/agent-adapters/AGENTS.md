@@ -74,7 +74,7 @@ tmuxHostEvents.on((e) => rt.onTerminalEvent(e));  // terminal.activity / silence
 | shell | `$SHELL -l`；带命令时 `$SHELL -l -c <命令>` | 不支持 | 不支持 | 无 | 无 |
 | custom | 按 shell 规则拆开的命令 | 不支持 | 不支持 | 无 | 无 |
 | pi | `pi --session-id <新 uuid>` | `--session <id>` | `--fork <id> --session-id <新 uuid>` | `-e agentdeck-pi-extension.mjs`（0.80.4 起） | 不用（pi 从不请求批准） |
-| omp | `omp`（会话 id 等扩展报） | `--resume <id>` | `--fork <id>`（新 id 等扩展报） | `-e agentdeck-pi-extension.mjs`（18.0 起，更早没验证） | `Up Enter`（读源码得出，**没在真终端核对**；发前先认屏） |
+| omp | `omp`（会话 id 等扩展报） | `--resume <id>` | `--fork <id>`（新 id 等扩展报） | `-e agentdeck-pi-extension.mjs`（18.0 起，更早没验证） | `Up Enter`（发前先认屏；2026-10-28 在真 TUI 里核对，AH2 L2 的 K6） |
 | kimi | `kimi` | `-S <id>` | 不支持（见「Fork 对话」） | 无 | 先不支持（2.3.1 是 `1`，见 known.ts） |
 
 - 用户在 Settings 里加的启动参数放在最后。claude 的 LaunchSpec.env 带 `CLAUDE_CODE_TMUX_TRUECOLOR=1`。
@@ -166,7 +166,7 @@ LaunchSpec.env 带 `AGENTDECK_NOTIFY`（notify 路径）、`AGENTDECK_AGENT`（i
 实测（2026-10-24，pi 0.83.0、omp 18.0.4）：临时 HOME、本地假的 OpenAI 兼容服务（不用账号、不花钱），`--mode rpc`（omp 的提问要 `--mode rpc-ui`）。
 pi：SessionStart（就是 `--session-id` 给的 id）→ UserPromptSubmit → Stop → SessionEnd；`--session <id>` 接回、`--fork <id> --session-id <新>` 都报对了 id。
 omp：`--approval-mode always-ask` 跑 bash，PermissionRequest 带上了 `command`，批准后 UserPromptSubmit、Stop；ask 工具 → Question（问题文字）→ 回答后 UserPromptSubmit → Stop；
-`--resume <id>` 报原 id，`--fork <id>` 报新 id。没在真 TUI 里核对：omp 确认框“允许一次”的按键（PL1 按源码定为 Up Enter，发前先认屏，见下面）。
+`--resume <id>` 报原 id，`--fork <id>` 报新 id。omp 确认框“允许一次”的按键（PL1 按源码定为 Up Enter）2026-10-28 在真 TUI 里核对过（AH2 L2 的 K6）：标题在上边框里（`╭─ Allow tool: bash ──╮`），命令前有 `Command: `，按完命令照常运行。
 真窗口（单独的 AgentDeck 实例、临时 HOME、同一个假模型）：菜单列出 Pi、Oh My Pi；pi 一轮 running → idle → turn-end；omp 的 bash 批准显示 needs-approval（summary 是命令），
 在确认框按 Enter 批准后 running → idle → turn-end；omp 新会话的 id 由 SessionStart 报上来存进库，`--resume <id>` 能接回（omp 只在第一条消息后才写会话文件，没说过话的会话接不回）。
 
@@ -317,7 +317,7 @@ pi 扩展 `agentdeck-pi-extension.mjs` 也要一起放进 Resources（它在 age
 | --- | --- | --- | --- |
 | claude | PermissionRequest 钩子回 allow（终端不进 needs-approval）；开关前就在等的、钩子回答没送到的发 `1` | 发 `1` | 钩子实测；按键见 DR-43 |
 | codex | 同上，发 `y`（永远不发 p / a） | 发 `y` | 同上 |
-| omp | 扩展报 PermissionRequest → needs-approval；屏幕上认出 `Allow tool:` 和 Approve / Deny 后发 `Up Enter` | 同左 | 18.0.4 源码，**没在真终端核对**（support 报 verified: false） |
+| omp | 扩展报 PermissionRequest → needs-approval；屏幕上认出 `Allow tool:` 和 Approve / Deny（Approve 要是第一项）后发 `Up Enter` | 同左 | 18.0.4 源码 + 2026-10-28 真 TUI（AH2 L2 的 K6，support 报 verified: true） |
 | pi | 不用按（从不请求批准）；support 报 never-asks | — | — |
 | kimi、shell、custom | 不支持（`setTerminalAutoApprove(id, true)` 抛 unsupported） | unsupported | — |
 
@@ -329,6 +329,41 @@ pi 扩展 `agentdeck-pi-extension.mjs` 也要一起放进 Resources（它在 age
 - `approve(ids, { by, includeDestructive })`：一条默认算 user（破坏性的也批），多条默认算 approve-all（破坏性的不批，返回 `destructive`，除非 includeDestructive）。同一条请求和 Auto-approve 撞上时只按一次。
 - 记录：每次批准一条 ApprovalRecord（user / approve-all / auto-approve），内存里留最近 1000 条；给了 `approvalRecords` 就写进库，`history()` 从库里读。
 - 开关状态本身只在内存里；随白板保存的是 `FrameNode.autoApprove`、`TerminalWindowData.autoApprove`，apps/desktop 启动、终端接回状态机之后按白板恢复一次。
+
+## 能力声明和合格测试（AH0、AH2，画布 A0、A1）
+
+- **能力声明**：每个适配器实现 `declareCapabilities(version)`（contracts 的 `CapabilityEntry[]`）：每项 yes / partial / no、via、不是 yes 的原因（英文，界面原样用）。
+  claude、codex 写在各自的文件里，pi、omp、kimi 是 known.ts 每行的 `declared`（扩展没给、版本太老时通用适配器把靠扩展的几项改掉），shell、custom 只有几项 no。
+  只写做了什么、靠什么做；没核对过的写 partial 并说明，没做的写 no 并说明。image-input、video-input、invoke-skill、clear-context 留给 RS14、LR2、LR7。
+- **合格测试**：一张表 K1–K18（`src/compat/scenarios.ts`，每项对应一个能力），按声明逐项跑：声明 no 的跳过（没写原因算失败），yes / partial 的必须过。
+  - L1（`test/conformance/l1.test.ts`，在 `pnpm check` 里）：假 PATH 里的假程序、实测抓到的钩子负载、样例会话文件。启动参数和按键对照
+    `test/conformance/verified.ts`（真程序上核对过的标准答案，和适配器代码分开写），改了参数对应的 K 会失败。另外核对旧的 AgentCapabilities、AutoApproveSupport 能由声明推出。
+  - L2（`test/conformance/l2.test.ts`）：真程序在 `tmux -L agentdeck-conformance -f /dev/null` 里，`AGENTDECK_REAL_AGENTS=1 pnpm --filter @agentdeck/agent-adapters conformance [--agent pi]`。
+    pi、omp、kimi 接本地假模型（`support/fake-model.ts`，临时 HOME，不用账号、不花钱）；claude、codex 用登录的账号，只问不改文件的问题（批准请求一律 Esc 拒绝），五轮以内的短对话。
+    目录在本包的 `.conformance/`（.gitignore 里），在信任过的仓库里不弹信任框。omp 的首次设置向导、pi / kimi 的信任框由测试脚手架代替用户处理。
+  - 跑完写 `compat/<agent>.json`（版本、日期、每项 pass / fail / skip 和原因、每项的 verifiedUpTo；pass 才前进，fail 不前进），再生成 `src/compat/records.ts`（运行时读它）。
+    L2 不跑、但以前手工在真程序上核对过的项记成 `suite: manual`（原因里写怎么核对的），L2 跳过时保留。手改记录后跑 `… conformance --records`。
+  - `.github/workflows/agents-conformance.yml`：手动触发，装 pi、omp 最新版跑 L1 + L2，记录作为 artifact 上传。
+- K18（IS-144）：AgentDeck 生成的参数里没有让 agent 自己另开 worktree 的（claude `--worktree`/`-w`/`--tmux`、codex `--worktree`、omp `--cwd`），终端的目录就是框的目录；
+  L2 里再看窗格的当前目录、claude 钩子负载里的 cwd、`git worktree list` 没多出来。用户在 Settings 里自己加的参数不管。
+
+### 新增或升级一家 agent（五步）
+
+1. **加一行或写适配器**：known.ts 加一行（命令名、启动参数模板、扩展、第一条消息怎么带、能力声明）；钩子、扩展、读文件不够时才写专门的适配器。参数先用真程序核对（`--help`、源码、真跑一次）。
+2. **写能力声明**：每项 yes / partial / no、via、原因（`declareCapabilities`）。
+3. **L1**：在 `verified.ts` 加这家的标准答案（版本、会话参数、第一条消息、按键……），`pnpm --filter @agentdeck/agent-adapters test` 全过。L1 的钩子负载、会话文件样例不够时补进 test/fixtures.ts、test/usage-fixtures/。
+4. **L2**：`AGENTDECK_REAL_AGENTS=1 pnpm --filter @agentdeck/agent-adapters conformance --agent <id>`（能接假模型的在 l2.test.ts 的 PROFILES 里加一份临时配置；要账号的只问不改文件的问题）。
+5. **提交记录**：`compat/<agent>.json` 和 `src/compat/records.ts` 一起提交。升级时同样跑 3–5，记录前进后，超过核对版本时关掉的功能（AH3）自动回来。
+
+### 合格测试结果（2026-10-28，本机）
+
+| agent | 版本 | pass | fail | skip | 说明 |
+| --- | --- | --- | --- | --- | --- |
+| claude | 2.1.291 | 15 | 0 | 3 | K13 不读额度；K16（AH3）；K17 L2 不跑。K6、K14、K15 是以前手工核对的（manual） |
+| codex | 0.165.0 | 14 | 0 | 4 | K8 没有提问工具；K15 不支持；K16；K17。K6（0.159.2）、K14（0.164.0）是 manual |
+| pi | 0.83.0 | 11 | 0 | 7 | K5、K6、K8 pi 不问；K13；K14 没有 MCP；K16；K17。K15 是 manual |
+| omp | 18.0.4 | 14 | 0 | 4 | K6 第一次在真 TUI 里核对（确认框标题在上边框里，见 screens.ts）；K13；K14 只核对了配置解析；K16；K17。K15 是 manual |
+| kimi | 2.3.3 | 9 | 0 | 9 | 本机 kimi 跑测试期间自己从 2.3.2 升到了 2.3.3。K5、K6、K8 不认等待；K10 不能 fork；K13；K14；K15 没在 kimi 里核对；K16 没有钩子；K17 |
 
 ## 测试
 

@@ -1,0 +1,106 @@
+{
+  "agent": "pi",
+  "version": "0.83.0",
+  "date": "2026-10-28",
+  "verifiedUpTo": "0.83.0",
+  "results": {
+    "K1": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "0.83.0"
+    },
+    "K2": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "0.83.0"
+    },
+    "K3": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "0.83.0"
+    },
+    "K4": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "0.83.0"
+    },
+    "K5": {
+      "result": "skip",
+      "suite": "L2",
+      "reason": "Pi never asks for approval",
+      "verifiedUpTo": null
+    },
+    "K6": {
+      "result": "skip",
+      "suite": "L2",
+      "reason": "Pi never asks for approval",
+      "verifiedUpTo": null
+    },
+    "K7": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "0.83.0"
+    },
+    "K8": {
+      "result": "skip",
+      "suite": "L2",
+      "reason": "Pi has no question tool",
+      "verifiedUpTo": null
+    },
+    "K9": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "0.83.0"
+    },
+    "K10": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "0.83.0"
+    },
+    "K11": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "0.83.0"
+    },
+    "K12": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "0.83.0"
+    },
+    "K13": {
+      "result": "skip",
+      "suite": "L2",
+      "reason": "Not read for Pi yet",
+      "verifiedUpTo": null
+    },
+    "K14": {
+      "result": "skip",
+      "suite": "L2",
+      "reason": "Needs AgentDeck's MCP server running; packages/mcp-server checks it with real agents",
+      "verifiedUpTo": null
+    },
+    "K15": {
+      "result": "pass",
+      "suite": "manual",
+      "reason": "Checked by hand on 0.83.0 (N9): pi --mode rpc --skill <folder> get_commands lists skill:<name>",
+      "verifiedUpTo": "0.83.0"
+    },
+    "K16": {
+      "result": "skip",
+      "suite": "L2",
+      "reason": "Comes with AH3 (fall back to terminal activity when hooks do not report)",
+      "verifiedUpTo": null
+    },
+    "K17": {
+      "result": "skip",
+      "suite": "L2",
+      "reason": "Can't make a real agent reject an option on purpose; L1 covers it with a fake program",
+      "verifiedUpTo": null
+    },
+    "K18": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "0.83.0"
+    }
+  }
+}

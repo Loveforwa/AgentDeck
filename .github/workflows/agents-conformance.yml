@@ -1,0 +1,49 @@
+# 适配器合格测试（AH2）：装各家 agent 的最新版，跑 L1（离线）和 L2（真程序在 tmux 里）。只手动触发，不在 pnpm check 里。
+# pi、omp 接本地假模型，不用账号；claude、codex 要登录，CI 上默认不跑（输入里点名且配了登录时才跑）。kimi 的安装脚本不在这里。
+# 跑完把 compat/*.json 的改动作为 artifact 传上来：新版本过了就把它提交进仓库（见 packages/agent-adapters/AGENTS.md「新增或升级一家 agent」）。
+name: agents-conformance
+
+on:
+  workflow_dispatch:
+    inputs:
+      agents:
+        description: 'Agents to run L2 for (comma separated)'
+        required: false
+        default: 'pi,omp'
+
+jobs:
+  conformance:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Install tmux and bun
+        run: brew install tmux oven-sh/bun/bun
+      - name: Install the latest agents
+        run: |
+          npm install -g @earendil-works/pi-coding-agent@latest @oh-my-pi/pi-coding-agent@latest
+          pi --version || true
+          omp --version || true
+      - run: pnpm install --frozen-lockfile
+      - name: L1 (offline)
+        run: pnpm --filter @agentdeck/agent-adapters exec vitest run test/conformance/l1.test.ts
+      - name: L2 (real agents)
+        env:
+          AGENTDECK_REAL_AGENTS: '1'
+        run: |
+          args=""
+          for a in $(echo "${{ inputs.agents }}" | tr ',' ' '); do args="$args --agent $a"; done
+          pnpm --filter @agentdeck/agent-adapters conformance $args
+      - name: Upload compat records
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: compat
+          path: |
+            packages/agent-adapters/compat/
+            packages/agent-adapters/src/compat/records.ts

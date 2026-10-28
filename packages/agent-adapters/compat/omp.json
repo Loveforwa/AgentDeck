@@ -1,0 +1,103 @@
+{
+  "agent": "omp",
+  "version": "18.0.4",
+  "date": "2026-10-28",
+  "verifiedUpTo": "18.0.4",
+  "results": {
+    "K1": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "18.0.4"
+    },
+    "K2": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "18.0.4"
+    },
+    "K3": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "18.0.4"
+    },
+    "K4": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "18.0.4"
+    },
+    "K5": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "18.0.4"
+    },
+    "K6": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "18.0.4"
+    },
+    "K7": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "18.0.4"
+    },
+    "K8": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "18.0.4"
+    },
+    "K9": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "18.0.4"
+    },
+    "K10": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "18.0.4"
+    },
+    "K11": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "18.0.4"
+    },
+    "K12": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "18.0.4"
+    },
+    "K13": {
+      "result": "skip",
+      "suite": "L2",
+      "reason": "Not read for Oh My Pi yet",
+      "verifiedUpTo": null
+    },
+    "K14": {
+      "result": "skip",
+      "suite": "L2",
+      "reason": "Only the config parsing was checked on 18.0.4 (N1), not in the terminal",
+      "verifiedUpTo": null
+    },
+    "K15": {
+      "result": "pass",
+      "suite": "manual",
+      "reason": "Checked on 18.0.4 (N9) with omp's own loader (injectPluginDirRoots + loadCapability('skills')), not in the TUI",
+      "verifiedUpTo": "18.0.4"
+    },
+    "K16": {
+      "result": "skip",
+      "suite": "L2",
+      "reason": "Comes with AH3 (fall back to terminal activity when hooks do not report)",
+      "verifiedUpTo": null
+    },
+    "K17": {
+      "result": "skip",
+      "suite": "L2",
+      "reason": "Can't make a real agent reject an option on purpose; L1 covers it with a fake program",
+      "verifiedUpTo": null
+    },
+    "K18": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "18.0.4"
+    }
+  }
+}

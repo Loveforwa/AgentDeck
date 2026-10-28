@@ -1,0 +1,104 @@
+{
+  "agent": "claude",
+  "version": "2.1.291",
+  "date": "2026-10-28",
+  "verifiedUpTo": "2.1.291",
+  "results": {
+    "K1": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "2.1.291"
+    },
+    "K2": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "2.1.291"
+    },
+    "K3": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "2.1.291"
+    },
+    "K4": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "2.1.291"
+    },
+    "K5": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "2.1.291"
+    },
+    "K6": {
+      "result": "pass",
+      "suite": "manual",
+      "reason": "Checked by hand on 2.1.291: the PermissionRequest hook answers allow (PL1); L2 does not approve because it would change files",
+      "verifiedUpTo": "2.1.291"
+    },
+    "K7": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "2.1.291"
+    },
+    "K8": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "2.1.291"
+    },
+    "K9": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "2.1.291"
+    },
+    "K10": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "2.1.291"
+    },
+    "K11": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "2.1.291"
+    },
+    "K12": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "2.1.291"
+    },
+    "K13": {
+      "result": "skip",
+      "suite": "L2",
+      "reason": "Not read for Claude Code yet",
+      "verifiedUpTo": null
+    },
+    "K14": {
+      "result": "pass",
+      "suite": "manual",
+      "reason": "Checked by hand on 2.1.291 (M1): --mcp-config with the agentdeck http server, tools listed and called",
+      "verifiedUpTo": "2.1.291"
+    },
+    "K15": {
+      "result": "pass",
+      "suite": "manual",
+      "reason": "Checked by hand on 2.1.291 (N9): claude --plugin-dir <set> plugin details agentdeck-skills lists the skills",
+      "verifiedUpTo": "2.1.291"
+    },
+    "K16": {
+      "result": "skip",
+      "suite": "L2",
+      "reason": "Comes with AH3 (fall back to terminal activity when hooks do not report)",
+      "verifiedUpTo": null
+    },
+    "K17": {
+      "result": "skip",
+      "suite": "L2",
+      "reason": "Can't make a real agent reject an option on purpose; L1 covers it with a fake program",
+      "verifiedUpTo": null
+    },
+    "K18": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "2.1.291"
+    }
+  }
+}
