@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path';
 import { AgentDeckError } from '@agentdeck/contracts';
 import type { AgentDeckEvent, ServiceName, Services, TerminalId, WorkspaceId } from '@agentdeck/contracts';
 import { mcpPluginFiles } from '@agentdeck/agent-adapters';
-import { loadOrCreateToken, startMcpServer } from '@agentdeck/mcp-server';
+import { hiddenTerminalIds, loadOrCreateToken, startMcpServer } from '@agentdeck/mcp-server';
 import type { McpHttpServer, McpToolDeps } from '@agentdeck/mcp-server';
 import { isErrorEnvelope } from '../shared/wire.ts';
 import type { ServiceRegistry } from './registry.ts';
@@ -49,6 +49,7 @@ export interface AppMcpOptions {
 export async function startAppMcp(opts: AppMcpOptions): Promise<McpHttpServer> {
   const home = opts.homeDir ?? homedir();
   const { registry } = opts;
+  const board = viaRegistry(registry, 'board');
   return startMcpServer({
     token: await loadOrCreateToken(opts.tokenPath ?? join(home, '.agentdeck/run/mcp-token')),
     ...(opts.port !== undefined ? { port: opts.port } : {}),
@@ -58,7 +59,10 @@ export async function startAppMcp(opts: AppMcpOptions): Promise<McpHttpServer> {
     terminals: viaRegistry(registry, 'terminals'),
     status: viaRegistry(registry, 'status'),
     // N1：list_windows、focus_window 读保存的白板（界面改动后半秒保存）
-    board: viaRegistry(registry, 'board'),
+    board,
+    // AH11：窗口勾了 Hide from agents（TerminalWindowData.hideFromAgents）的终端，agent 看不到、读不了、打不进。
+    // 每次调用读一次保存的白板（界面改动后半秒保存）；白板读不出来时工具报错，不当作没隐藏。
+    hiddenFromAgents: async () => hiddenTerminalIds(await board.load()),
     emit: opts.emit,
     homeDir: home,
     ...(opts.workspaceOf ? { workspaceOf: opts.workspaceOf } : {}),

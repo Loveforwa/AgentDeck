@@ -16,18 +16,19 @@ AgentDeck 自己的 MCP 服务（任务 M1）。白板里的 agent 通过它开�
 | 工具 | 做什么 | 默认 |
 | --- | --- | --- |
 | `list_workspaces` | 项目和工作区，调用者所在的工作区标 `current` | |
-| `list_terminals` | 终端和状态（含在等什么），调用者自己标 `self`；可按工作区过滤 | |
+| `list_terminals` | 终端和状态（含在等什么），调用者自己标 `self`；可按工作区过滤；不列隐藏的终端，`command` 里写明的密码换成 `***`（AH11） | |
 | `open_terminal` | `agents.start` 开 agent 或 Shell，再让白板把窗口放进框里；可带第一条消息 `prompt` | 调用者的工作区，agent 为 claude |
 | `create_workspace` | `workspaces.create` 新建 worktree 和分支 → 框放上白板 → 有初始化命令先开 Shell 跑 → 开 agent（带 `prompt`） | 调用者的项目，agent 为 claude，`none` 不开 |
 | `open_browser` | 白板开网页窗口，放在调用者终端旁边（`nearTerminal`）；同一个 origin 复用已开的窗口（跳过去刷新）。只收 http(s) 和本地文件，见下 | 调用者的工作区 |
-| `read_terminal` | 别的终端最后 n 行（最多 500） | 60 行 |
-| `send_to_terminal` | 往别的终端打字，再按回车；不能发给自己；目标在等你（needs-approval、needs-reply）时拒绝（AH7，见下） | `submit: true` |
+| `read_terminal` | 别的终端最后 n 行（最多 500）；隐藏的终端拒绝（AH11） | 60 行 |
+| `send_to_terminal` | 往别的终端打字，再按回车；不能发给自己；目标在等你（needs-approval、needs-reply）时拒绝（AH7）、隐藏的终端拒绝（AH11），见下 | `submit: true` |
 | `open_terminals`（N1） | 一次开 `count` 个 agent（每个子 agent 一个，`prompts[i]`、`labels[i]` 依次给），发一个 `board.open-group`：白板把它们挂在调用者旁边，组成窗口组。超过 6 个先 `confirm` 问用户，没有 `confirm` 或用户拒绝就一个都不开；最多 16。一个一个开，中途失败时已开的照样放上白板，返回里 `error` 写停在第几个 | 调用者的工作区，agent 为 claude |
 | `list_windows`（N1） | 白板上的窗口：类型、标题、工作区、终端 id、agent、状态、在等什么、对话主题（`TerminalInfo.title`）、网址、窗口组、`self`。读 `board.load()`，白板改动后半秒才保存，刚开的窗口可能还不在 | |
 | `focus_window`（N1） | `window_id` 或 `terminal_id`（二选一，先核对存在）→ `board.focus-window`。白板：跳过去聚焦；用户正在打字时只闪一下 | |
 | `notify`（N1） | 一句话（最多 300 字，空白压成一个空格）→ `board.notify`（调用者窗口闪一下 + 白板提示；正在打字时只闪）；再交给 `onNotify`（组装时：应用在后台发系统通知） | |
 
 N1 加的注入项都是可选的：`board`（list_windows 没有它就报错，focus_window 没有它就不核对 window_id）、`confirm`、`onNotify`。
+AH11 加 `hiddenFromAgents`（可选）：返回勾了 Hide from agents 的终端 id；组装时用 `hiddenTerminalIds(await board.load())` 从保存的白板算。没有时当作都没隐藏；它抛错时这几个工具报错，不当作没隐藏。list_windows 也不列隐藏的终端窗口。
 
 ### open_browser 收什么地址（`browserTarget`）
 
@@ -57,13 +58,14 @@ N1 加的注入项都是可选的：`board`（list_windows 没有它就报错，
 
 白板没开（窗口都关了）时事件没人收，终端照常在跑，但白板上没有它的窗口。
 
-## agent 能不能碰一个终端（`src/guard.ts`，AH7）
+## agent 能不能碰一个终端（`src/guard.ts`，AH7、AH11）
 
-所有“agent 往别的终端里看、打字”的入口用同一个判断 `agentTerminalRefusal(access, target)`（不调服务，只看传进来的状态，从包入口导出）：现在是 send_to_terminal，以后 agentdeck 命令行（CR14 的 /cli）和 Flow 窗口的 Ask <agent> about this step…（CU2）也用它。
+所有“agent 往别的终端里看、打字”的入口用同一个判断 `agentTerminalRefusal(access, { status, hidden })`（不调服务，只看传进来的状态，从包入口导出）：现在是 send_to_terminal，以后 agentdeck 命令行（CR14 的 /cli）和 Flow 窗口的 Ask <agent> about this step…（CU2）也用它。
 
 - `send`：目标的 `StatusSnapshot.status` 在 contracts 的 `WAITING_STATUSES`（needs-approval、needs-reply）里时拒绝，`invalid-argument`，“This terminal is waiting for the user. Use the inbox.”（2026-10-28 定：不加新错误码）。不然往停在批准提示上的终端打 “1” 加回车就等于替人批准，绕过收件箱、破坏性名单和 ApprovalRecord（IS-102）。
 - 文字打出去以后、按回车前再查一次：这 150ms 里目标停下来问你，就不按回车，返回同样的错。
-- 状态不知道（snapshot 里没有）时不挡。`read` 不挡。open_terminal(s) 的 `prompt(s)` 走 `agents.start`，不受影响。
+- 先看隐藏（AH11、IS-129）：`hidden` 时 `read`、`send` 都拒绝，“The user hid this terminal from agents”（又隐藏又在等你时也报这句，不透露在等什么）。
+- 状态不知道（snapshot 里没有）时不挡。`read` 只挡隐藏的。open_terminal(s) 的 `prompt(s)` 走 `agents.start`，不受影响。
 
 ## send_to_terminal 怎么保证原样打出来
 

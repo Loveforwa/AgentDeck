@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { AgentDeckError, type AgentDeckEvent, type BoardState, type Workspace } from '@agentdeck/contracts';
+import { AgentDeckError, type AgentDeckEvent, type BoardState, type TerminalInfo, type Workspace } from '@agentdeck/contracts';
 import { MCP_SENDER_ID, startAppMcp, viaRegistry, writeMcpPluginDir } from '../src/main/mcp.ts';
 import { createServiceRegistry } from '../src/main/registry.ts';
 
@@ -100,6 +100,70 @@ describe('startAppMcp', () => {
       expect(notes).toEqual([{ terminalId: null, message: 'Tests passed' }]);
       expect(await call('open_terminals', { count: 7, workspace_id: null })).toMatchObject({ isError: true });
       expect(asked).toHaveLength(1);
+    } finally {
+      await server.close();
+    }
+  });
+});
+
+describe('startAppMcp · AH11', () => {
+  it('terminals whose window has Hide from agents (saved board) are not listed, read or typed into; commands are redacted', async () => {
+    const home = mkdtempSync(join(tmpdir(), 'desk-mcp-'));
+    dirs.push(home);
+    const registry = createServiceRegistry();
+    const termWindow = (id: string, terminalId: string, hideFromAgents?: boolean) =>
+      ({
+        id,
+        type: 'terminal',
+        workspaceId: null,
+        position: { x: 0, y: 0 },
+        size: { width: 600, height: 400 },
+        data: { terminalId, agent: 'shell', cmd: 'zsh', args: [], cwd: '/repo', sessionId: null, startCommand: null, ...(hideFromAgents !== undefined ? { hideFromAgents } : {}) },
+      }) as unknown as BoardState['windows'][number];
+    const board: BoardState = {
+      version: 1,
+      viewport: { x: 0, y: 0, zoom: 1 },
+      frames: [],
+      windows: [termWindow('win-db', 'term-db', true), termWindow('win-pg', 'term-pg', false)],
+      panel: { open: true, width: 320 },
+      savedAt: '',
+    };
+    const info = (id: string, command: string) => ({ id, command, cwd: '/repo', alive: true, exitCode: null }) as unknown as TerminalInfo;
+    const reads: string[] = [];
+    const sent: string[] = [];
+    registry.register('board', { load: async () => board });
+    registry.register('terminals', {
+      list: async () => [info('term-db', 'harlequin'), info('term-pg', 'pgcli postgres://app:secret@db.internal/shop')],
+      lastLines: async (id: string) => {
+        reads.push(id);
+        return ['x'];
+      },
+      sendKeys: async (id: string) => {
+        sent.push(id);
+      },
+    });
+    registry.register('status', { snapshot: async () => [] });
+    registry.register('workspaces', { list: async () => [] });
+    const server = await startAppMcp({ registry, emit: () => {}, homeDir: home, port: 0 });
+    try {
+      const token = readFileSync(join(home, '.agentdeck/run/mcp-token'), 'utf8').trim();
+      const call = async (name: string, args: object = {}) => {
+        const res = await fetch(server.endpoint.url, {
+          method: 'POST',
+          headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json', accept: 'application/json, text/event-stream' },
+          body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name, arguments: args } }),
+        });
+        return ((await res.json()) as { result: { isError?: boolean; content: { text: string }[] } }).result;
+      };
+      const listed = JSON.parse((await call('list_terminals')).content[0]!.text) as { terminals: { id: string; command: string }[] };
+      expect(listed.terminals.map((t) => [t.id, t.command])).toEqual([['term-pg', 'pgcli postgres://app:***@db.internal/shop']]);
+      const hidden = { isError: true, content: [{ text: 'The user hid this terminal from agents' }] };
+      expect(await call('read_terminal', { terminal_id: 'term-db' })).toMatchObject(hidden);
+      expect(await call('send_to_terminal', { terminal_id: 'term-db', text: 'drop table users' })).toMatchObject(hidden);
+      expect(reads).toEqual([]);
+      expect(sent).toEqual([]);
+      expect((await call('read_terminal', { terminal_id: 'term-pg' })).isError).toBeUndefined();
+      expect(reads).toEqual(['term-pg']);
     } finally {
       await server.close();
     }

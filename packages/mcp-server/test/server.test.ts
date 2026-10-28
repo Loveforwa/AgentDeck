@@ -8,7 +8,17 @@ import type { FakeServices } from '@agentdeck/fakes';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { agentTerminalRefusal, browserTarget, literalKeys, WAITING_FOR_USER_MESSAGE,loadOrCreateToken, SERVER_INSTRUCTIONS, startMcpServer } from '../src/index.ts';
+import {
+  agentTerminalRefusal,
+  browserTarget,
+  HIDDEN_FROM_AGENTS_MESSAGE,
+  hiddenTerminalIds,
+  literalKeys,
+  loadOrCreateToken,
+  SERVER_INSTRUCTIONS,
+  startMcpServer,
+  WAITING_FOR_USER_MESSAGE,
+} from '../src/index.ts';
 import type { McpHttpServer, McpHttpServerOptions } from '../src/index.ts';
 
 const TOKEN = 'a'.repeat(64);
@@ -421,14 +431,143 @@ describe('AH7 · send_to_terminal never types into a terminal that waits for the
   });
 
   it('agentTerminalRefusal: one rule for every entry point (MCP now, /cli and Flow later)', () => {
-    const refused = (status: TerminalStatus) => agentTerminalRefusal('send', { status: { status } })?.message ?? null;
+    const refused = (status: TerminalStatus) => agentTerminalRefusal('send', { status: { status }, hidden: false })?.message ?? null;
     expect(refused('needs-approval')).toBe(WAITING_FOR_USER_MESSAGE);
     expect(refused('needs-reply')).toBe(WAITING_FOR_USER_MESSAGE);
     for (const s of ['starting', 'running', 'idle', 'exited', 'error'] as const) expect(refused(s)).toBeNull();
-    expect(agentTerminalRefusal('send', { status: { status: 'needs-approval' } })?.code).toBe('invalid-argument');
-    expect(agentTerminalRefusal('send', { status: undefined })).toBeNull();
+    expect(agentTerminalRefusal('send', { status: { status: 'needs-approval' }, hidden: false })?.code).toBe('invalid-argument');
+    expect(agentTerminalRefusal('send', { status: undefined, hidden: false })).toBeNull();
     // 读不挡
-    expect(agentTerminalRefusal('read', { status: { status: 'needs-approval' } })).toBeNull();
+    expect(agentTerminalRefusal('read', { status: { status: 'needs-approval' }, hidden: false })).toBeNull();
+  });
+});
+
+describe('AH11 · Hide from agents and passwords in commands', () => {
+  const HIDDEN = { error: true, value: 'The user hid this terminal from agents' };
+  let db: TerminalId;
+  let hiddenCalls = 0;
+
+  beforeEach(async () => {
+    // TC-110：shop 框里一个 harlequin（勾了 Hide from agents）
+    db = fakes.terminals.createWith({ cmd: 'harlequin', args: [], cwd: SAMPLE.paths.shopCart }, { id: 'term-db' as TerminalId, recording: null });
+    fakes.status.track(db, { agent: 'shell', workspaceId: W.shopCart }, 'idle');
+    hiddenCalls = 0;
+    await restart({
+      hiddenFromAgents: async () => {
+        hiddenCalls++;
+        return new Set([db]);
+      },
+    });
+  });
+
+  it('list: hidden terminals are not listed, the others are', async () => {
+    const { value } = await call(await connect(), 'list_terminals');
+    const ids = value.terminals.map((t: { id: string }) => t.id);
+    expect(ids).not.toContain(db);
+    expect(ids).toEqual(expect.arrayContaining([T.loginClaude, T.loginCodex, T.shopClaude, T.shopShell, T.devServer]));
+    expect(hiddenCalls).toBeGreaterThan(0);
+  });
+
+  it('read: hidden is refused without reading the screen; not hidden reads as before', async () => {
+    const read: TerminalId[] = [];
+    await restart({
+      hiddenFromAgents: async () => new Set([db]),
+      terminals: {
+        list: () => fakes.terminals.list(),
+        sendKeys: (id, keys) => fakes.terminals.sendKeys(id, keys),
+        lastLines: (id, n) => {
+          read.push(id);
+          return fakes.terminals.lastLines(id, n);
+        },
+      },
+    });
+    const client = await connect();
+    expect(await call(client, 'read_terminal', { terminal_id: db })).toEqual(HIDDEN);
+    expect(read).toEqual([]);
+    expect((await call(client, 'read_terminal', { terminal_id: T.shopClaude })).value.status).toBe('idle');
+    expect(read).toEqual([T.shopClaude]);
+  });
+
+  it('send: hidden is refused (before the waiting check), not hidden types as before', async () => {
+    const client = await connect();
+    expect(await call(client, 'send_to_terminal', { terminal_id: db, text: 'drop table users;' })).toEqual(HIDDEN);
+    expect(fakes.terminals.get(db).keys).toEqual([]);
+    // 又隐藏又在等你：报隐藏，不透露它在等什么
+    fakes.status.askQuestion(db, 'Password?');
+    expect(await call(client, 'send_to_terminal', { terminal_id: db, text: 'x' })).toEqual(HIDDEN);
+    expect(await call(client, 'send_to_terminal', { terminal_id: T.shopClaude, text: 'go on' })).toEqual({ error: false, value: { sent: true, terminalId: T.shopClaude } });
+    expect(fakes.terminals.get(T.shopClaude).keys).toEqual([['go on'], ['Enter']]);
+  });
+
+  it('without hiddenFromAgents nothing is hidden; if it fails, the tools fail instead of showing the terminal', async () => {
+    await restart({});
+    expect((await call(await connect(), 'list_terminals')).value.terminals.map((t: { id: string }) => t.id)).toContain(db);
+    await restart({ hiddenFromAgents: () => Promise.reject(new Error('Board not loaded')) });
+    const client = await connect();
+    expect(await call(client, 'list_terminals')).toEqual({ error: true, value: 'Board not loaded' });
+    expect(await call(client, 'read_terminal', { terminal_id: db })).toEqual({ error: true, value: 'Board not loaded' });
+    expect(await call(client, 'send_to_terminal', { terminal_id: db, text: 'x' })).toEqual({ error: true, value: 'Board not loaded' });
+  });
+
+  it('list_windows leaves out hidden terminal windows too', async () => {
+    const board = (await fakes.board.load())!;
+    const data = board.windows.find((w) => w.id === 'win-shop-shell')!.data as TerminalWindowData;
+    board.windows = board.windows.map((w) => (w.id === 'win-shop-shell' ? { ...w, data: { ...data, hideFromAgents: true } } : w));
+    await fakes.board.save(board);
+    await restart({ board: fakes.board, hiddenFromAgents: async () => hiddenTerminalIds((await fakes.board.load())!) });
+    const { value } = await call(await connect(), 'list_windows');
+    const ids = value.windows.map((w: { id: string }) => w.id);
+    expect(ids).not.toContain('win-shop-shell');
+    expect(ids).toContain('win-shop-claude');
+    // 同一份白板算出来的隐藏名单，list_terminals 也不列它
+    const terms = (await call(await connect(), 'list_terminals')).value.terminals.map((t: { id: string }) => t.id);
+    expect(terms).not.toContain(data.terminalId);
+  });
+
+  it('passwords in every listed command are shown as ***', async () => {
+    const pg = fakes.terminals.createWith(
+      { cmd: 'pgcli', args: [], cwd: SAMPLE.paths.shopCart },
+      { id: 'term-pg' as TerminalId, recording: null, command: 'pgcli postgres://app:secret@db.internal/shop' },
+    );
+    const env = fakes.terminals.createWith(
+      { cmd: 'pgcli', args: [], cwd: SAMPLE.paths.shopCart },
+      { id: 'term-env' as TerminalId, recording: null, command: 'PGPASSWORD=secret pgcli -h db.internal shop' },
+    );
+    const plain = fakes.terminals.createWith(
+      { cmd: 'pgcli', args: [], cwd: SAMPLE.paths.shopCart },
+      { id: 'term-plain' as TerminalId, recording: null, command: 'pgcli -h db.internal shop' },
+    );
+    const { value } = await call(await connect(), 'list_terminals');
+    const cmd = (id: TerminalId) => value.terminals.find((t: { id: string }) => t.id === id).command;
+    expect(cmd(pg)).toBe('pgcli postgres://app:***@db.internal/shop');
+    expect(cmd(env)).toBe('PGPASSWORD=*** pgcli -h db.internal shop');
+    expect(cmd(plain)).toBe('pgcli -h db.internal shop');
+    expect(JSON.stringify(value)).not.toContain('secret');
+  });
+
+  it('the tool descriptions say so', async () => {
+    const { tools } = await (await connect()).listTools();
+    const d = (name: string) => tools.find((t) => t.name === name)!.description;
+    expect(d('list_terminals')).toMatch(/hid from agents are not listed, and passwords in commands are shown as \*\*\*/);
+    expect(d('read_terminal')).toMatch(/hid from agents can’t be read/);
+    expect(d('send_to_terminal')).toMatch(/Refused for terminals the user hid from agents/);
+    expect(d('list_windows')).toMatch(/hid from agents are not listed/);
+  });
+
+  it('agentTerminalRefusal: hidden refuses read and send whatever the status', () => {
+    for (const access of ['read', 'send'] as const) {
+      for (const status of ['running', 'idle', 'needs-approval'] as const) {
+        expect(agentTerminalRefusal(access, { status: { status }, hidden: true })?.message).toBe(HIDDEN_FROM_AGENTS_MESSAGE);
+      }
+    }
+  });
+
+  it('hiddenTerminalIds reads hideFromAgents from the saved board', async () => {
+    const board = (await fakes.board.load())!;
+    expect(hiddenTerminalIds(board).size).toBe(0);
+    const w = board.windows.find((x) => x.type === 'terminal')!;
+    const marked = { ...board, windows: [...board.windows, { ...w, id: 'win-x' as never, data: { ...(w.data as TerminalWindowData), terminalId: db, hideFromAgents: true } }] };
+    expect([...hiddenTerminalIds(marked)]).toEqual([db]);
   });
 });
 

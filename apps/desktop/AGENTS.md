@@ -47,6 +47,8 @@ N1（MVP v3）：
 - `startAppMcp` 另给 `board`（`viaRegistry(registry, 'board')`，list_windows、focus_window 读保存的白板）、`confirm`（open_terminals 超过 6 个时系统对话框，默认按钮 Cancel）、`onNotify`（notify 工具：应用不在前台、通知开着时发系统通知，标题和状态提醒一样是 “claude · 工作区”，点了跳到那个终端）。
 - 新的白板事件 `board.open-group`、`board.focus-window`、`board.notify` 同样走 `emit` 广播，白板（ui/canvas）处理。
 
+AH11：`startAppMcp` 给 `hiddenFromAgents`：每次调用读保存的白板，`hiddenTerminalIds` 挑出 `TerminalWindowData.hideFromAgents` 为 true 的终端，agent 看不到、读不了、打不进（白板改动后半秒保存，刚勾上的有这点延迟）。
+
 ## Skills · MCP（N9）
 
 源代码管理面板里的 SKILLS · MCP 小节，跟着聚焦的终端。规则见 agent-adapters/AGENTS.md「Skills · MCP」。组装：
