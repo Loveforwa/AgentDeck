@@ -1,0 +1,946 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>学习和辅助 · 课程学习环境</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1300px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.tag{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:11.5px;background:#F2F2EF;color:#5F5F5A;white-space:nowrap}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#6B6B6B}
+.small{font-size:12px;color:#5F5F5A;line-height:1.6}
+.src{font-size:11px;color:#8A8A85;line-height:1.5}
+.warn{color:#B45309}
+.ok{color:#1A7F37}
+.bad{color:#CF222E}
+.am{display:inline-block;width:7px;height:7px;border-radius:1.5px;flex:none;margin-right:4px}
+.lamp{display:inline-block;width:7px;height:7px;border-radius:999px;flex:none}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.frame{position:absolute;box-sizing:border-box;border:1px solid #D6D6D2;border-radius:12px;background:rgba(255,255,255,0.35)}
+.fhead{display:flex;align-items:center;gap:8px;padding:8px 12px;font-size:13px}
+.win{position:absolute;box-sizing:border-box;border:1px solid #E3E3E0;border-radius:8px;background:#FFFFFF;overflow:hidden;display:flex;flex-direction:column}
+.win.focus{border-color:#1A1A1A}
+.wbar{display:flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-bottom:1px solid #EEEEEB;font-size:12px;flex:none;white-space:nowrap}
+.wname{font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:12px}
+.term{flex:1;padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.6;color:#1A1A1A;background:#FFFFFF;white-space:pre;overflow:hidden}
+.foot{flex:none;font-size:11px;color:#8A8A85;padding:4px 10px;border-top:1px solid #EEEEEB}
+.menu{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.08);padding:4px;font-size:13px;display:flex;flex-direction:column}
+.mi{display:flex;align-items:center;justify-content:space-between;height:24px;padding:0 8px;border-radius:4px;gap:16px;white-space:nowrap}
+.mi.on{background:#EDEDEA}
+.mi.off{color:#8A8A85}
+.mi .hint{font-size:11px;color:#6B6B6B}
+.msep{height:1px;background:#EEEEEB;margin:4px 0}
+.mhead{font-size:11px;font-weight:600;letter-spacing:0.04em;color:#6B6B6B;padding:4px 8px 2px}
+.dialog{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.08);padding:20px;display:flex;flex-direction:column;gap:12px;font-size:13px}
+.dtitle{font-size:15px;font-weight:600;margin:0}
+.stepper{display:flex;align-items:center;gap:8px;font-size:12px;color:#8A8A85}
+.stepper b{color:#1A1A1A;font-weight:600}
+.flabel{font-size:12px;color:#6B6B6B}
+.input{box-sizing:border-box;height:26px;border:1px solid #D6D6D2;border-radius:6px;padding:0 8px;display:flex;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:12px;background:#FFFFFF;white-space:nowrap;overflow:hidden}
+.sel{box-sizing:border-box;height:26px;border:1px solid #D6D6D2;border-radius:6px;padding:0 8px;display:inline-flex;align-items:center;justify-content:space-between;gap:12px;font-size:12.5px;background:#FFFFFF;white-space:nowrap}
+.sel.dis{background:#F2F2EF;color:#8A8A85}
+.radio{display:flex;align-items:center;gap:6px;font-size:13px}
+.rdot{width:12px;height:12px;border-radius:999px;border:1px solid #8A8A85;box-sizing:border-box;flex:none}
+.rdot.on{border:4px solid #1A1A1A}
+.check{width:12px;height:12px;border-radius:3px;border:1px solid #8A8A85;box-sizing:border-box;flex:none;display:inline-flex;align-items:center;justify-content:center;font-size:9px;line-height:1}
+.check.on{background:#1A1A1A;border-color:#1A1A1A;color:#FFFFFF}
+.btn{display:inline-flex;align-items:center;height:26px;padding:0 12px;border-radius:6px;border:1px solid #D6D6D2;font-size:13px;background:#FFFFFF;white-space:nowrap}
+.btn.sm{height:20px;padding:0 7px;font-size:11px}
+.btn.primary{background:#1A1A1A;border-color:#1A1A1A;color:#FFFFFF;font-weight:500}
+.note{position:absolute;font-size:12px;line-height:1.6;color:#5F5F5A}
+.num{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:999px;border:1px solid #1A1A1A;font-size:11px;font-weight:600;flex:none;box-sizing:border-box;background:#FFFFFF}
+.col{flex:1;box-sizing:border-box;border:1px solid #E3E3E0;border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;font-size:13.5px;line-height:1.6;background:#FFFFFF}
+.col b{font-size:15px}
+.node{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #D6D6D2;border-radius:8px;padding:10px 12px;font-size:12.5px;line-height:1.55;display:flex;flex-direction:column;gap:4px}
+.node b{font-size:13px}
+.box{box-sizing:border-box;border:1px solid #D6D6D2;border-radius:8px;background:#FFFFFF;padding:10px 12px;font-size:12.5px;line-height:1.55;display:flex;flex-direction:column;gap:3px}
+.box.ink{border:1.5px solid #1A1A1A}
+.box.dash{border-style:dashed}
+.box b{font-size:13px}
+.arr{font-size:18px;color:#8A8A85;align-self:center;flex:none}
+.card{box-sizing:border-box;flex:1;min-width:0;border:1px solid #D6D6D2;border-radius:10px;background:#FFFFFF;overflow:hidden;display:flex;flex-direction:column}
+.chead{display:flex;align-items:center;gap:8px;height:32px;padding:0 14px;border-bottom:1px solid #EEEEEB;font-size:12px;flex:none}
+.cbody{padding:12px 14px;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.75;white-space:pre;color:#1A1A1A}
+.cbody .k{color:#6B6B6B}
+.cl{display:grid;grid-template-columns:16px minmax(0,1fr) auto;gap:2px 8px;align-items:start;font-size:12.5px;line-height:1.5;padding:5px 0;border-top:1px solid #EEEEEB}
+.cl:first-child{border-top:none}
+.cl .sub{grid-column:2 / 4;font-size:11.5px;color:#6B6B6B}
+.rt{display:grid;font-size:12px;line-height:1.45}
+.rt>span{padding:6px 10px;border-top:1px solid #EEEEEB;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rt>.h{border-top:none;background:#F7F7F5;color:#6B6B6B;font-weight:600;font-size:11.5px}
+.pbar{height:6px;background:#EEEEEB;border-radius:999px;overflow:hidden;flex:1}
+.pbar>span{display:block;height:100%;background:#1A1A1A}
+.decide{display:grid;grid-template-columns:36px 1fr;gap:6px 10px;font-size:13.5px;line-height:1.65}
+.paper{flex:1;padding:12px 14px;display:flex;flex-direction:column;gap:8px;font-family:Georgia,'Noto Serif SC',serif;font-size:12px}
+.line{height:6px;border-radius:3px;background:#EEEEEB}
+.fbox{border:1px solid #D6D6D2;border-radius:4px;padding:6px 8px;display:flex;flex-direction:column;gap:5px}
+.tl{position:absolute;height:12px;border-radius:3px;background:#D6D6D2}
+</style>
+</helmet>
+<div style="width: 1760px; height: 11660px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <!-- 标题和定位 -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">L1 · 学一门有代码作业的课：学习环境怎么搭</h1>
+      <span class="concept">2026-10-28 按推荐先定，待你确认</span>
+    </div>
+    <p class="lead">学一门课 = 白板上一个<b>课程框</b>，加一份<b>课程配方</b>（纯数据的环境说明书）。AgentDeck 负责四件事：把环境搭对、把官方测试跑对、把算力接上、让 AI 守住课程规矩。进度和笔记仍在你自己的学习手册和 Obsidian 里，AgentDeck 只提供“证据”。用 MIT 6.5840 和 Stanford CS336 当例子想清楚要什么，设计本身是通用的。这一页替代 L0 里“/teach + 一个学习文件夹”的写法（用户 2026-10-28 的反馈：重点是学习环境的搭建）；/teach 并进第 7 节的 Tutor。</p>
+    <div style="display: flex; gap: 12px; align-items: stretch">
+      <div class="box ink" style="flex: 1"><b>① 环境搭对</b><span>代码从哪来、工具链、数据、一条条看得见的检查</span><span class="muted" style="font-size: 12px">第 2、3 节</span></div>
+      <div class="box ink" style="flex: 1"><b>② 官方测试跑对</b><span>校外没有评分通道，官方测试就是评分器；记耗时、反复跑、自动打开调试产物</span><span class="muted" style="font-size: 12px">第 4、5 节</span></div>
+      <div class="box ink" style="flex: 1"><b>③ 算力接上</b><span>This Mac / 你租的 GPU 机器（SSH）/ 本机的 Modal；记花费、空闲提醒</span><span class="muted" style="font-size: 12px">第 6 节</span></div>
+      <div class="box ink" style="flex: 1"><b>④ 守住课程规矩</b><span>Tutor：只读启动 + 课程的 AGENTS.md + 单元上下文 + 等级</span><span class="muted" style="font-size: 12px">第 7 节</span></div>
+      <div class="box dash" style="flex: 1"><b>不归 AgentDeck：进度和笔记</b><span>学习手册（/next、/check）和 Obsidian（KNote）照旧；AgentDeck 只记测试证据</span><span class="muted" style="font-size: 12px">第 8 节</span></div>
+    </div>
+    <p class="small" style="margin: 0">用户现状：<span class="mono">~/2026/ok</span> 下有 6.5840（2026 golabs，<span class="mono">git://g.csail.mit.edu</span>）和 <span class="mono">CS336/hw01–hw05</span>；以前用 zellij 布局（左编辑器、右上 Claude、右下跑测试、第二个标签读笔记）；计划和进度在学习手册（artifact），内容在 Obsidian；装环境、租机器这类杂事交给 Claude。调研全文 DR-120（research-courses.md，2026-10-28 读的网页和本地文件）。</p>
+  </div>
+
+  <!-- 1 -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 从两门课看出来的共同需求</span>
+    <div class="tbl" style="grid-template-columns: 130px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) 210px">
+      <span class="th">环节</span><span class="th">MIT 6.5840（Go，分布式）</span><span class="th">Stanford CS336（Python，GPU）</span><span class="th">AgentDeck 做什么</span><span class="th">来源（2026-10-28 读）</span>
+
+      <span class="td">代码从哪来</span>
+      <span class="td"><span class="mono">git clone git://g.csail.mit.edu/6.5840-golabs-2026</span>（git:// 协议）；不许公开代码，GitHub 要设私有</span>
+      <span class="td">5 份作业 5 个仓库（<span class="mono">stanford-cs336/assignment1-basics</span> …）；A2 以 path 依赖引用 A1 的 <span class="mono">cs336-basics</span></span>
+      <span class="td">课程框里每份作业（或整门课一个仓库）一个工作区；可以用已有文件夹；6.5840 的框头标 <span class="mono">private · don’t publish</span></span>
+      <span class="td src">pdos.csail.mit.edu/6.824/labs/lab-mr.html · labs/collab.html · github.com/stanford-cs336 · 本地 hw02/pyproject.toml</span>
+
+      <span class="td">工具链</span>
+      <span class="td">Go ≥ 1.22（本机 go1.26.2）；race 检测器支持 darwin/arm64</span>
+      <span class="td">uv；Python 3.12–3.13（A5 只 3.12）；torch 2.11；A5 要 vllm 0.19.1 和只有 Linux x86_64 的 flash-attn wheel，分两步 <span class="mono">uv sync</span></span>
+      <span class="td">环境检查清单：每项一条命令、要求、✓ / ✗ 和怎么修，都由配方给（第 3 节）</span>
+      <span class="td src">labs/go.html · go.dev/doc/articles/race_detector · 各作业 pyproject 和 README（A5 “flash-attn is weird”）</span>
+
+      <span class="td">官方测试就是评分器</span>
+      <span class="td"><span class="mono">make RUN="-run 3A" raft1</span>：2026 版每个服务器是独立进程，make 先编 <span class="mono">src/main/*d</span>，直接 <span class="mono">go test</span> 会测到旧二进制</span>
+      <span class="td"><span class="mono">uv run pytest -k …</span>；接口在 <span class="mono">tests/adapters.py</span>，没做的是 <span class="mono">NotImplementedError</span></span>
+      <span class="td">Tests 窗口按单元跑配方里的命令（6.5840 包 make，不直接 go test）；记下每次结果</span>
+      <span class="td src">labs/lab-raft1.html · 本地 src/Makefile、tester1/daemonclnt.go · hw01/tests/adapters.py</span>
+
+      <span class="td">不确定性</span>
+      <span class="td">带 -race 的测试偶发失败，官方只说“多跑几次”；社区说跑几百次（待核对）</span>
+      <span class="td">基本确定</span>
+      <span class="td">Repeat runs：同一测试并行重复 N 次（第 5 节）</span>
+      <span class="td src">lab-raft1.html · dstest.py（gist JJGO）</span>
+
+      <span class="td">时间上限</span>
+      <span class="td">单测 120 s、Lab 3/4/5 全部 600 s；样例 4B 176 s</span>
+      <span class="td">A1 排行榜 45 min / B200</span>
+      <span class="td">记每次耗时，接近上限标黄、超了标红</span>
+      <span class="td src">lab-raft1.html · tester1/config.go:181 · lab-kvraft1.html · A1 handout（提交 a158843）</span>
+
+      <span class="td">调试产物</span>
+      <span class="td">KV 测试失败时写 <span class="mono">porcupine-*.html</span> 线性一致性时间线；<span class="mono">VIS_FILE</span> 指定路径，<span class="mono">VIS_ENABLE=always</span> 通过也写</span>
+      <span class="td">torch profiler / nsys trace、显存快照</span>
+      <span class="td">配方给环境变量（VIS_FILE 指到工作区）；输出里认出产物路径就在白板网页窗口打开</span>
+      <span class="td src">本地 kvtest1/porcupine.go:86–138 · github.com/anishathalye/porcupine</span>
+
+      <span class="td">算力</span>
+      <span class="td">本机够（M5 32 GB）；-race 让 CPU 放大 2–20 倍、内存 5–10 倍，并行要限流</span>
+      <span class="td">A1 本机 MPS 可训小模型（Low-Resource Tip）；A2 单测本机 CPU（gloo 2 进程），基准要同机 2 卡（到 6 卡），排行榜 2×B200；A4 正式训练 8×B200 约 2 h（Modal 脚本）；A5 ≥ 2 卡、Linux x86_64</span>
+      <span class="td">每个单元写 Runs on：This Mac / GPU ×N；GPU 的走 SSH 机器或 Modal（第 6 节）</span>
+      <span class="td src">race_detector 文档 · A1、A2 handout · A4、A5 handout PDF · assignment2-systems-leaderboard README</span>
+
+      <span class="td">数据</span>
+      <span class="td">无</span>
+      <span class="td">TinyStories 训练集 2.23 GB、OWT 4.59 GB（压缩）；A4 约 2.5k 个 WET 文件；要在远端下载</span>
+      <span class="td">配方的数据步骤 + 磁盘空间检查</span>
+      <span class="td src">hw01/README.md · Hugging Face 响应头 x-linked-size · A4 README</span>
+
+      <span class="td">AI 规矩</span>
+      <span class="td">不禁止，但 “learn correspondingly less”；要能讲清交的每一行</span>
+      <span class="td">禁止用 AI 实现作业的任何部分，明确包括 Claude Code、Codex；仓库自带 AGENTS.md，要求 agent 只当助教（不写代码、不改仓库、不跑命令）</span>
+      <span class="td">导师模式（第 7 节）；CS336 锁定 Hints only</span>
+      <span class="td src">6.824/general.html · A3 handout 第 48–60 行 · cs336.stanford.edu · 本地 hw01/AGENTS.md</span>
+
+      <span class="td">资料</span>
+      <span class="td">每讲一篇论文（Raft extended，Figure 2 是官方调试核对表）；视频只有 2020 年 YouTube</span>
+      <span class="td">2026 YouTube 播放列表、lectures 仓库、每份作业的 handout PDF</span>
+      <span class="td">课程框里一个 Reading 窗口，切单元时跟着换</span>
+      <span class="td src">6.824/schedule.html · labs/guidance.html · YouTube 播放列表 · github.com/stanford-cs336/lectures</span>
+
+      <span class="td">进度证据</span>
+      <span class="td">校外没有评分</span>
+      <span class="td">同左</span>
+      <span class="td">记“证据”（第 8 节）；进度仍在你的手册</span>
+      <span class="td src">labs/submit.html · cs336.stanford.edu</span>
+    </div>
+  </div>
+
+  <!-- 2 -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 课程配方（Course recipe）：一门课的“环境说明书”，是数据不是脚本</span>
+    <div style="display: flex; gap: 12px">
+      <div class="box" style="flex: 1"><b>是什么</b><span>一份纯数据的描述：代码从哪来、要哪些工具、怎么检查、有哪些单元（lab / 作业）、每个单元的测试命令和时间上限、在哪跑、数据、资料、AI 规矩。AgentDeck 照着它搭环境、跑测试、开导师。</span></div>
+      <div class="box" style="flex: 1"><b>存在哪</b><span>AgentDeck 的项目设置里（和启动预设一样），<b>不写进课程仓库</b>，课程仓库保持和官方一样干净。可以导出成文件分享（From a file… 读回来）。</span></div>
+      <div class="box" style="flex: 1"><b>从哪来</b><span>内置两份示例：“6.5840 · Spring 2026”、“CS336 · Spring 2026”。别的课用 From a course website…（下面的流程）。配方里的命令永远显示出来、在看得见的终端里跑，不偷偷执行。</span></div>
+    </div>
+    <div style="display: flex; gap: 16px; align-items: stretch">
+      <div class="card">
+        <div class="chead"><b>6.5840 · Spring 2026</b><span class="tag">Built in</span><span class="muted" style="margin-left: auto">course recipe</span></div>
+        <div class="cbody"><span class="k">course</span>   "6.5840 · Spring 2026"
+<span class="k">code</span>     git://g.csail.mit.edu/6.5840-golabs-2026      private
+<span class="k">check</span>    go version          want ">= 1.22"
+<span class="k">check</span>    cc --version        why  "race detector needs cgo"
+<span class="k">env</span>      VIS_FILE=$UNIT_DIR/.vis/porcupine.html
+<span class="k">artifact</span> "wrote history visualization to (\S+\.html)"
+         open browser
+<span class="k">unit</span> 3A  "Raft · leader election"
+         build "make raft1-build"
+         test  'make RUN="-run 3A" raft1'
+         limit 120s/test 600s/lab   repeat 200
+<span class="k">unit</span> 4B  "Fault-tolerant KV"
+         build "make kvraft1-build"
+         test  'make RUN="-run 4B" kvraft1'
+<span class="k">read</span> 3A  "Raft (extended) §5 · Figure 2"
+         https://raft.github.io/raft.pdf
+<span class="k">tutor</span>    default hints   allow hints, run-tests, explain</div>
+      </div>
+      <div class="card">
+        <div class="chead"><b>CS336 · Spring 2026</b><span class="tag">Built in</span><span class="muted" style="margin-left: auto">course recipe</span></div>
+        <div class="cbody"><span class="k">course</span>   "CS336 · Spring 2026"
+<span class="k">unit</span> A1  repo github.com/stanford-cs336/assignment1-basics
+         setup "uv sync"   test "uv run pytest"
+         runs mac
+<span class="k">unit</span> A2  repo …/assignment2-systems
+         test "uv run pytest"
+         runs mac (unit tests) · gpu ×2 (benchmarks)
+<span class="k">unit</span> A5  repo …/assignment5-alignment   python 3.12
+         setup "uv sync --no-install-package flash-attn"
+               then "uv sync"
+         runs gpu ×2 linux-x86_64
+<span class="k">data</span> A1  TinyStoriesV2-GPT4-train.txt  2.23 GB
+         where remote
+<span class="k">budget</span>   A1 leaderboard 10 B200 h · A3 fit 12 B200 h
+         A5 ≈ 26 B200 h
+<span class="k">tutor</span>    locked hints   agents-md required</div>
+      </div>
+    </div>
+    <p class="src" style="margin: 0">卡片里的命令、时限、数据大小和预算来自：6.5840 lab-raft1.html、lab-kvraft1.html、本地 src/Makefile、kvtest1/porcupine.go；CS336 各作业 README 和 pyproject、A1 handout（排行榜 10 B200 h）、A3 handout（拟合预算 12 B200 h）、A5 handout（GRPO 主实验 2 + 学习率 4 + prompt 消融 4 + 变体 8 + off-policy 8 ≈ 26 B200 h）。长行折成缩进的续行只是为了排版；A3、A4 两个单元在卡片里省略。</p>
+    <div class="tbl" style="grid-template-columns: 130px minmax(0, 1fr) minmax(0, 1fr)">
+      <span class="th">字段</span><span class="th">意思</span><span class="th">AgentDeck 用在哪</span>
+      <span class="td mono">course</span><span class="td">课程名字和学期</span><span class="td">课程框标题、Course ▾ 列表</span>
+      <span class="td mono">code · repo</span><span class="td">整门课一个仓库（code），或每个单元一个仓库（unit 里的 repo）；<span class="mono">private</span> = 课程不许公开代码</span><span class="td">向导第 1 步（每份作业一行）；框头的 <span class="mono">private · don’t publish</span>，不提供推到公开仓库</span>
+      <span class="td mono">check</span><span class="td">一条命令 + 要求（<span class="mono">want</span>）或原因（<span class="mono">why</span>）</span><span class="td">向导第 3 步的环境检查清单，远程初始化清单同一个样子</span>
+      <span class="td mono">env · artifact</span><span class="td">跑测试时加的环境变量（<span class="mono">$UNIT_DIR</span> = 当前单元的工作区目录）；输出里认产物的正则和打开方式</span><span class="td">Tests、Repeat runs；认出 porcupine 路径就在白板网页窗口打开</span>
+      <span class="td mono">unit</span><span class="td">一个 lab / 作业：<span class="mono">build</span>、<span class="mono">setup</span>、<span class="mono">test</span>、<span class="mono">limit</span>、<span class="mono">repeat</span>、<span class="mono">runs</span>（mac / gpu ×N / modal / linux-x86_64）、<span class="mono">python</span></span><span class="td">框头单元选择；Tests 的命令和时限颜色；只有写了 <span class="mono">repeat</span> 的单元才有 Repeat runs；runs 决定向导第 2 步的默认</span>
+      <span class="td mono">data</span><span class="td">文件、大小、在哪下（<span class="mono">where remote</span> = 到 GPU 机器上再下）</span><span class="td">数据步骤 + 磁盘空间检查（本机和远程）</span>
+      <span class="td mono">read</span><span class="td">单元资料：论文小节、handout、视频</span><span class="td">Reading 窗口，切单元时跟着换</span>
+      <span class="td mono">budget</span><span class="td">课程标的算力预算（按 B200 小时）</span><span class="td">第 6 节按单元汇总的花费对照</span>
+      <span class="td mono">tutor</span><span class="td">默认等级、允许的等级（<span class="mono">allow</span>），或锁定（<span class="mono">locked</span>）；<span class="mono">agents-md required</span> = 必须带上仓库的 AGENTS.md</span><span class="td">第 7 节的 Tutor；锁定时下拉灰掉</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <span style="font-size: 14px; font-weight: 600">别的课：From a course website…</span>
+      <div style="display: flex; gap: 10px; align-items: stretch">
+        <div class="box" style="flex: 1"><b>Course ▾ › From a course website…</b><span>填课程网址和代码仓库地址</span></div>
+        <span class="arr">→</span>
+        <div class="box" style="flex: 1.3"><b>只读 agent 起草</b><span>开一个看得见的只读 agent 终端（claude plan 模式 / codex read-only），读课程网站和仓库 README，写出一份配方草稿</span></div>
+        <span class="arr">→</span>
+        <div class="box" style="flex: 1"><b>你看 diff</b><span>和空配方（或上一版）对比，逐行改</span></div>
+        <span class="arr">→</span>
+        <div class="box" style="flex: 1"><b>先跑一遍检查</b><span>在 Shell 终端里逐条跑 check，你看得见每条命令</span></div>
+        <span class="arr">→</span>
+        <div class="box ink" style="flex: 0.7"><b>Save</b><span>存进项目设置</span></div>
+      </div>
+      <span class="small">不自动探测“这是哪门课”；起草的 agent 不能改文件、不能跑命令，配方由你确认后才生效（第二期 LA13）。</span>
+    </div>
+  </div>
+
+  <!-- 3 -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · Set up a course…：三步向导</span>
+    <p class="small" style="margin: 0">第 1 步 Course：选课和代码。</p>
+    <div class="fig" style="width: 1632px; height: 470px">
+      <div class="menu" style="left: 24px; top: 24px; width: 220px">
+        <div class="mi">New terminal<span class="hint">▸</span></div>
+        <div class="mi">New browser<span class="hint">⌘⇧B</span></div>
+        <div class="mi">New workspace…</div>
+        <div class="mi">Add project…</div>
+        <div class="mi on">Set up a course…</div>
+      </div>
+      <div class="note" style="left: 24px; top: 172px; width: 220px">入口：项目菜单 Add project… 旁边加 Set up a course…；已有项目也可以在项目设置里选“这是一门课”，进同一个向导。</div>
+
+      <div class="dialog" style="left: 268px; top: 24px; width: 620px">
+        <div class="stepper"><b>1 Course</b><span>·</span><span>2 Choices</span><span>·</span><span>3 Environment check</span></div>
+        <p class="dtitle">Set up a course</p>
+        <div style="display: flex; flex-direction: column; gap: 4px"><span class="flabel">Course</span><span class="sel" style="width: 300px">6.5840 · Spring 2026<span>▾</span></span></div>
+        <div style="display: flex; flex-direction: column; gap: 6px"><span class="flabel">Code</span>
+          <span class="radio"><span class="rdot on"></span>Use an existing folder</span>
+          <div class="input" style="margin-left: 18px">~/2026/ok/6.5840</div>
+          <span class="muted" style="margin-left: 18px; font-size: 12px">found remote 6.5840-golabs-2026 · 3 lab folders with changes</span>
+          <span class="radio"><span class="rdot"></span>Clone into …</span>
+          <div class="input" style="margin-left: 18px; color: #8A8A85; background: #F7F7F5">~/courses/6.5840</div>
+        </div>
+        <span class="muted" style="font-size: 12px">This course asks you not to publish your code. The frame is marked private · don’t publish.</span>
+        <div style="display: flex; justify-content: flex-end; gap: 8px"><span class="btn">Cancel</span><span class="btn primary">Next</span></div>
+      </div>
+
+      <div class="menu" style="left: 912px; top: 66px; width: 300px">
+        <div class="mhead">BUILT IN</div>
+        <div class="mi on">6.5840 · Spring 2026<span class="hint">Go</span></div>
+        <div class="mi">CS336 · Spring 2026<span class="hint">Python · GPU</span></div>
+        <div class="msep"></div>
+        <div class="mi">From a course website…</div>
+        <div class="mi">From a file…</div>
+      </div>
+      <div class="note" style="left: 1236px; top: 66px; width: 372px">Course ▾ 打开时：内置两份示例；From a course website… 走第 2 节的起草流程；From a file… 读别人导出的配方。选了 Use an existing folder 时读它的 git remote 对一下配方的 code。</div>
+
+      <div class="dialog" style="left: 912px; top: 214px; width: 696px; gap: 8px">
+        <div class="stepper"><b>1 Course</b><span>·</span><span>2 Choices</span><span>·</span><span>3 Environment check</span><span style="margin-left: auto">CS336 · Spring 2026</span></div>
+        <span class="flabel">Code · one repo per assignment</span>
+        <div style="display: grid; grid-template-columns: 16px 130px minmax(0, 1fr) auto; gap: 7px 10px; align-items: center; font-size: 12.5px">
+          <span class="check on">✓</span><span>A1 basics</span><span class="mono" style="font-size: 12px">~/2026/ok/CS336/hw01</span><span class="muted" style="font-size: 12px">found</span>
+          <span class="check on">✓</span><span>A2 systems</span><span class="mono" style="font-size: 12px">~/2026/ok/CS336/hw02</span><span class="muted" style="font-size: 12px">found</span>
+          <span class="check"></span><span>A3 scaling</span><span class="muted">not fetched yet · Clone when you start it</span><span></span>
+          <span class="check"></span><span>A4 data</span><span class="muted">not fetched yet · Clone when you start it</span><span></span>
+          <span class="check"></span><span>A5 alignment</span><span class="muted">not fetched yet · Clone when you start it</span><span></span>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px"><span class="btn">Back</span><span class="btn primary">Next</span></div>
+      </div>
+    </div>
+
+    <p class="small" style="margin: 0">第 2 步 Choices：每一项写默认和为什么（图里是 6.5840 的值）。</p>
+    <div class="fig" style="width: 1632px; height: 540px">
+      <div class="dialog" style="left: 24px; top: 24px; width: 820px">
+        <div class="stepper"><span>1 Course</span><span>·</span><b>2 Choices</b><span>·</span><span>3 Environment check</span><span style="margin-left: auto">6.5840 · Spring 2026</span></div>
+        <div style="display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 10px 14px; align-items: start; font-size: 13px">
+          <span style="padding-top: 4px">Where code runs</span>
+          <span style="display: flex; flex-direction: column; gap: 3px"><span style="display: flex; gap: 16px"><span class="radio"><span class="rdot on"></span>This Mac</span><span class="radio"><span class="rdot"></span>This Mac + a GPU machine</span><span class="radio"><span class="rdot"></span>This Mac + Modal</span><span class="radio"><span class="rdot"></span>Decide later</span></span><span class="muted" style="font-size: 12px">Every unit in this recipe runs on a Mac.</span></span>
+          <span style="padding-top: 4px">GPU machine</span>
+          <span style="display: flex; flex-direction: column; gap: 3px"><span class="sel dis" style="width: 260px">Later<span>▾</span></span><span class="muted" style="font-size: 12px">AgentDeck doesn’t rent machines or keep platform keys.</span></span>
+          <span style="padding-top: 4px">Tutor</span>
+          <span style="display: flex; flex-direction: column; gap: 3px"><span class="sel" style="width: 260px">Hints only<span>▾</span></span><span class="muted" style="font-size: 12px">Hints only · Hints + can run tests · Explain code (read-only)</span></span>
+          <span style="padding-top: 4px">Tutor agent</span>
+          <span style="display: flex; flex-direction: column; gap: 3px"><span class="sel" style="width: 260px"><span><span class="am" style="background: #A8503A"></span>claude</span><span>▾</span></span><span class="muted" style="font-size: 12px">Only agents that can start read-only are listed.</span></span>
+          <span style="padding-top: 4px">Repeat runs</span>
+          <span style="display: flex; flex-direction: column; gap: 3px"><span style="display: flex; gap: 10px; align-items: center"><span class="flabel">Parallel</span><span class="sel" style="width: 250px">Auto (6 on this Mac with -race)<span>▾</span></span><span class="flabel">Count</span><span class="input" style="width: 70px">200</span></span><span class="muted" style="font-size: 12px">Auto uses cores and memory, halved with -race.</span></span>
+          <span style="padding-top: 4px">Notes / handbook</span>
+          <span style="display: flex; flex-direction: column; gap: 6px"><span class="input" style="color: #8A8A85">Obsidian folder (optional)  obsidian://open?vault=KNote…</span><span class="input" style="color: #8A8A85">Handbook link (optional)  https://claude.ai/artifact/…</span><span class="muted" style="font-size: 12px">Links only. AgentDeck doesn’t read or write them.</span></span>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px"><span class="btn">Back</span><span class="btn primary">Next</span></div>
+      </div>
+
+      <div class="menu" style="left: 868px; top: 24px; width: 330px">
+        <div class="mhead">SSH HOSTS · ~/.ssh/config</div>
+        <div class="mi">gpu-2xh100<span class="hint">vast</span></div>
+        <div class="mi">lambda-8xh100<span class="hint">lambda</span></div>
+        <div class="msep"></div>
+        <div class="mi">Modal<span class="hint">your modal login</span></div>
+        <div class="mi on">Later</div>
+      </div>
+      <div class="note" style="left: 1222px; top: 24px; width: 386px">GPU machine ▾（选了 This Mac + a GPU machine 时可用）：从 <span class="mono">~/.ssh/config</span> 列 Host，只存名字，密钥留在 ~/.ssh；Modal 用你本机 <span class="mono">modal</span> 的登录。默认 Later，到要 GPU 的单元再问（第 6 节）。</div>
+
+      <div class="menu" style="left: 868px; top: 220px; width: 330px">
+        <div class="mi on"><span><span class="am" style="background: #A8503A"></span>claude</span><span class="hint">--permission-mode plan</span></div>
+        <div class="mi"><span><span class="am" style="background: #2F5E9E"></span>codex</span><span class="hint">-s read-only</span></div>
+        <div class="mi"><span><span class="am" style="background: #0F6F7F"></span>omp</span><span class="hint">--tools read,grep,find,ls</span></div>
+        <div class="mi"><span><span class="am" style="background: #7347A8"></span>pi</span><span class="hint">--tools read,grep,find,ls</span></div>
+        <div class="msep"></div>
+        <div class="mhead" style="font-weight: 400; letter-spacing: 0">kimi isn’t listed: no read-only start</div>
+      </div>
+      <div class="note" style="left: 1222px; top: 220px; width: 386px">Tutor agent ▾：只列能只读启动的（DC11 实测：claude plan、codex -s read-only、pi / omp 的 --tools 白名单）；kimi 只有 TUI 里的 --plan，不算只读启动，不列。</div>
+
+      <div class="note" style="left: 868px; top: 410px; width: 740px">CS336 打开这一步时：Where code runs 默认 This Mac + a GPU machine（A2、A4、A5 要），Tutor 灰掉写 Locked by the course，没有 Repeat runs 这一行（配方里没写 repeat）。</div>
+    </div>
+    <div class="tbl" style="grid-template-columns: 160px minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr)">
+      <span class="th">选项</span><span class="th">选项值</span><span class="th">默认</span><span class="th">为什么</span>
+      <span class="td">Where code runs</span><span class="td">This Mac · This Mac + a GPU machine · This Mac + Modal</span><span class="td">6.5840：This Mac；CS336：This Mac + GPU machine（A2、A4、A5 要）</span><span class="td">按配方里每个单元的 runs 算；Decide later 也行，到那个单元再问</span>
+      <span class="td">GPU machine</span><span class="td">SSH host（从 ~/.ssh/config 列）· Modal（用你本机 modal 的登录）· Later</span><span class="td">Later</span><span class="td">AgentDeck 不替你租机器、不存平台密钥（第 6 节）</span>
+      <span class="td">Tutor</span><span class="td">Hints only · Hints + can run tests · Explain code (read-only)</span><span class="td">Hints only；CS336 锁定 Hints only（课程规定）</span><span class="td">第 7 节</span>
+      <span class="td">Tutor agent</span><span class="td">claude · codex（· omp · pi）</span><span class="td">claude</span><span class="td">只列能只读启动的（DC11）；kimi 只有 TUI 的 --plan</span>
+      <span class="td">Repeat runs</span><span class="td">Parallel: Auto（6 on this Mac with -race）· Count 200</span><span class="td">Auto · 200</span><span class="td">按核数和内存算，-race 时减半</span>
+      <span class="td">Notes / handbook</span><span class="td">Obsidian 文件夹链接 · 学习手册链接（可选）</span><span class="td">空</span><span class="td">只是链接，AgentDeck 不读不写</span>
+    </div>
+
+    <p class="small" style="margin: 0">第 3 步 Environment check：在框里一个看得见的 Shell 终端里逐条跑，右边列表每条 ✓ / ✗ / ⚠ 和 Fix…。</p>
+    <div class="fig" style="width: 1632px; height: 560px">
+      <div class="dialog" style="left: 24px; top: 24px; width: 1040px; height: 510px">
+        <div class="stepper"><span>1 Course</span><span>·</span><span>2 Choices</span><span>·</span><b>3 Environment check</b><span style="margin-left: auto">6.5840 · Spring 2026</span></div>
+        <div style="display: flex; gap: 16px; flex: 1; min-height: 0">
+          <div class="win focus" style="position: relative; width: 540px; flex: none">
+            <div class="wbar"><span class="wname">Shell</span><span class="muted">· course setup</span><span class="lamp" style="background: #1A7F37; margin-left: auto"></span><span class="muted">Running</span></div>
+            <div class="term">~/2026/ok/6.5840 $ go version
+go version go1.26.2 darwin/arm64
+~/2026/ok/6.5840 $ cc --version
+Apple clang version …
+~/2026/ok/6.5840 $ cd src &amp;&amp; make raft1-build
+go build -race -o main/raft1d …
+~/2026/ok/6.5840/src $ make kvraft1-build
+go build -race -o main/kvraft1d …
+~/2026/ok/6.5840/src $ git remote -v
+origin  git://g.csail.mit.edu/6.5840-golabs-2026 (fetch)
+origin  git://g.csail.mit.edu/6.5840-golabs-2026 (push)
+~/2026/ok/6.5840/src $ ▌</div>
+          </div>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 8px">
+            <span class="flabel">5 checks from the recipe · run in the Shell on the left</span>
+            <div>
+              <div class="cl"><span class="ok">✓</span><span>go1.26.2 <span class="muted">(needs ≥ 1.22)</span></span><span></span></div>
+              <div class="cl"><span class="ok">✓</span><span>cc: Apple clang <span class="muted">(race detector)</span></span><span></span></div>
+              <div class="cl"><span class="ok">✓</span><span class="mono" style="font-size: 12px">make raft1-build</span><span></span></div>
+              <div class="cl"><span class="ok">✓</span><span class="mono" style="font-size: 12px">make kvraft1-build</span><span></span></div>
+              <div class="cl"><span class="ok">✓</span><span>remote is not a public GitHub repo</span><span></span></div>
+            </div>
+            <span style="flex: 1"></span>
+            <span class="muted" style="font-size: 12px">All checks passed.</span>
+            <div style="display: flex; justify-content: flex-end; gap: 8px"><span class="btn">Back</span><span class="btn">Run again</span><span class="btn primary">Done</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dialog" style="left: 1088px; top: 24px; width: 520px; height: 510px; gap: 8px">
+        <div class="stepper"><b>3 Environment check</b><span style="margin-left: auto">CS336 · Spring 2026</span></div>
+        <div>
+          <div class="cl"><span class="ok">✓</span><span>uv 0.11.6</span><span></span></div>
+          <div class="cl"><span class="ok">✓</span><span>Python 3.13 <span class="muted">(uv managed)</span></span><span></span></div>
+          <div class="cl"><span class="ok">✓</span><span>A1 <span class="mono" style="font-size: 12px">uv sync</span></span><span></span></div>
+          <div class="cl"><span class="ok">✓</span><span>A2 <span class="mono" style="font-size: 12px">uv sync</span></span><span></span></div>
+          <div class="cl"><span class="ok">✓</span><span>torch sees MPS</span><span></span></div>
+          <div class="cl"><span class="warn">⚠</span><span>A5 can’t run on this Mac</span><span class="btn sm">Fix…</span><span class="sub">flash-attn has no macOS wheel → GPU machine</span></div>
+          <div class="cl"><span class="warn">⚠</span><span>Data for A1: 7 GB to download, 120 GB free</span><span class="btn sm" style="border-color: #1A1A1A">Fix…</span><span class="sub">TinyStories 2.23 GB + OWT 4.59 GB (compressed) + valid files</span></div>
+        </div>
+        <div class="menu" style="position: relative; width: 300px; align-self: flex-end">
+          <div class="mi on">Paste the fix into the Shell<span class="hint">no Enter</span></div>
+          <div class="mi">Ask the Tutor to explain</div>
+        </div>
+        <span style="flex: 1"></span>
+        <span class="muted" style="font-size: 12px">2 warnings are known limits, not errors.</span>
+        <div style="display: flex; justify-content: flex-end; gap: 8px"><span class="btn">Back</span><span class="btn primary">Done</span></div>
+      </div>
+    </div>
+    <p class="small" style="margin: 0">Fix… 只把修的命令贴进那个 Shell（不按回车），或交给 Tutor 解释，<b>不自动跑</b>。全部 ✓（或 ⚠ 是已知限制）才能 Done；有 ✗ 时 Done 灰掉。检查用的命令和修的命令都来自配方，向导不现场猜。</p>
+  </div>
+
+  <!-- 4 -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · 课程框：白板上的样子</span>
+    <div class="fig" style="width: 1632px; height: 1210px">
+      <!-- 框 A -->
+      <div class="frame" style="left: 24px; top: 24px; width: 1584px; height: 640px; border-color: #1A1A1A">
+        <div class="fhead"><b>6.5840 · Spring 2026 · main</b><span class="sel" style="height: 24px">Lab 4B · kvraft1<span>▾</span></span><span class="tag">private · don’t publish</span><span class="muted" style="margin-left: auto; font-size: 12px">~/2026/ok/6.5840</span><span class="btn sm">Open in editor</span></div>
+
+        <div class="win focus" style="left: 12px; top: 48px; width: 520px; height: 300px">
+          <div class="wbar"><span class="wname">Tests</span><span class="muted">· Shell</span><span class="lamp" style="background: #1A7F37; margin-left: auto"></span><span class="mono">4B · 176 s / 600 s</span></div>
+          <div class="term">$ make RUN="-run 4B" kvraft1
+go build -race -o main/kvraft1d …
+cd kvraft1 &amp;&amp; go test -v -race -run 4B
+=== RUN   TestBasic4B
+--- PASS: TestBasic4B (18.20s)
+=== RUN   TestSpeed4B
+--- PASS: TestSpeed4B (41.03s)
+=== RUN   TestPersistPartition4B
+--- PASS: TestPersistPartition4B (52.11s)
+…
+PASS
+ok      6.5840/kvraft1  176.3s</div>
+        </div>
+
+        <div class="win" style="left: 544px; top: 48px; width: 520px; height: 300px">
+          <div class="wbar"><span class="am" style="background: #A8503A"></span><span class="wname">Tutor</span><span class="muted">· claude · Hints only</span><span class="muted" style="margin-left: auto">read-only</span></div>
+          <div class="term">&gt; TestSpeed4B is slow, why?
+
+Look at how often your leader sends
+AppendEntries when the client waits…
+
+Which line in Figure 2 says when a
+leader may reply? (I won’t write the
+code.)
+
+&gt; ▌</div>
+        </div>
+
+        <div class="win" style="left: 1076px; top: 48px; width: 496px; height: 300px">
+          <div class="wbar"><span class="wname" style="font-weight: 400">Reading</span><span class="muted">· raft.pdf</span><span class="muted" style="margin-left: auto">Raft (extended) · Figure 2</span></div>
+          <div class="paper">
+            <b style="font-size: 13px">Figure 2</b>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; flex: 1">
+              <div class="fbox"><b style="font-size: 11px">State</b><div class="line"></div><div class="line" style="width: 80%"></div><div class="line" style="width: 60%"></div></div>
+              <div class="fbox"><b style="font-size: 11px">AppendEntries RPC</b><div class="line"></div><div class="line" style="width: 75%"></div><div class="line" style="width: 90%"></div></div>
+              <div class="fbox"><b style="font-size: 11px">RequestVote RPC</b><div class="line"></div><div class="line" style="width: 70%"></div></div>
+              <div class="fbox"><b style="font-size: 11px">Rules for Servers</b><div class="line"></div><div class="line" style="width: 85%"></div><div class="line" style="width: 65%"></div></div>
+            </div>
+            <span class="muted" style="font-family: 'IBM Plex Sans', sans-serif; font-size: 11px">read 4B · switches with the unit</span>
+          </div>
+        </div>
+
+        <div class="win" style="left: 12px; top: 360px; width: 520px; height: 266px">
+          <div class="wbar"><span class="wname">Repeat · 4B ×200</span><span class="lamp" style="background: #1A7F37; margin-left: auto"></span><span class="muted">143 / 200 · 5 failed</span></div>
+          <div style="padding: 8px 10px; display: flex; align-items: center; gap: 8px; font-size: 11.5px"><span class="pbar"><span style="width: 71.5%"></span></span><span class="muted">6 parallel (auto)</span></div>
+          <div class="rt" style="grid-template-columns: minmax(0, 1fr) 60px 56px 50px 64px">
+            <span class="h">Test</span><span class="h">Passed</span><span class="h">Failed</span><span class="h">p50</span><span class="h">Max</span>
+            <span class="mono">TestBasic4B</span><span>143</span><span>0</span><span>18 s</span><span>31 s</span>
+            <span class="mono">TestSpeed4B</span><span>140</span><span class="bad">3</span><span>41 s</span><span class="warn">118 s</span>
+            <span class="mono">TestPersistPartition4B</span><span>141</span><span class="bad">2</span><span>52 s</span><span>74 s</span>
+          </div>
+          <div class="foot" style="margin-top: auto">#57 TestSpeed4B failed · porcupine opened →</div>
+        </div>
+
+        <div class="win" style="left: 544px; top: 360px; width: 1028px; height: 266px">
+          <div class="wbar"><span class="wname" style="font-weight: 400">porcupine-4B-run57.html</span><span class="tag" style="height: 18px">opened by Repeat</span><span class="muted" style="margin-left: auto">.vis/ in the 4B workspace</span></div>
+          <div style="position: relative; flex: 1; font-size: 11px">
+            <span class="note" style="left: 12px; top: 12px; font-size: 11px">client 0</span>
+            <span class="note" style="left: 12px; top: 44px; font-size: 11px">client 1</span>
+            <span class="note" style="left: 12px; top: 76px; font-size: 11px">client 2</span>
+            <span class="note" style="left: 12px; top: 108px; font-size: 11px">client 3</span>
+            <span class="tl" style="left: 80px; top: 16px; width: 120px"></span><span class="tl" style="left: 230px; top: 16px; width: 90px"></span><span class="tl" style="left: 380px; top: 16px; width: 160px"></span><span class="tl" style="left: 610px; top: 16px; width: 110px"></span>
+            <span class="tl" style="left: 120px; top: 48px; width: 70px"></span><span class="tl" style="left: 300px; top: 48px; width: 200px"></span><span class="tl" style="left: 560px; top: 48px; width: 140px; background: #CF222E"></span><span class="tl" style="left: 760px; top: 48px; width: 90px"></span>
+            <span class="tl" style="left: 90px; top: 80px; width: 150px"></span><span class="tl" style="left: 280px; top: 80px; width: 60px"></span><span class="tl" style="left: 450px; top: 80px; width: 130px"></span><span class="tl" style="left: 700px; top: 80px; width: 160px"></span>
+            <span class="tl" style="left: 160px; top: 112px; width: 100px"></span><span class="tl" style="left: 340px; top: 112px; width: 120px"></span><span class="tl" style="left: 520px; top: 112px; width: 80px"></span><span class="tl" style="left: 640px; top: 112px; width: 130px"></span>
+            <span style="position: absolute; left: 556px; top: 6px; width: 1px; height: 126px; background: #1A1A1A"></span>
+            <span class="note" style="left: 80px; top: 150px; width: 900px; font-size: 11.5px">Partition 1 · <span class="bad">not linearizable</span> · hover an operation to see the state · longest partial linearization ends here ↑</span>
+            <span class="note" style="left: 80px; top: 180px; width: 900px; font-size: 11px; color: #8A8A85">示意：porcupine 的交互式时间线（每个客户端一行操作，标出最长的部分线性化）；内容由测试生成，AgentDeck 只负责在白板上打开</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 框 B -->
+      <div class="frame" style="left: 24px; top: 690px; width: 1584px; height: 496px">
+        <div class="fhead"><b>CS336 · A2 systems</b><span class="sel" style="height: 24px">A2 · systems<span>▾</span></span><span class="tag">Tutor locked by course</span><span class="muted" style="margin-left: auto; font-size: 12px">~/2026/ok/CS336/hw02</span><span class="btn sm">Open in editor</span></div>
+
+        <div class="win" style="left: 12px; top: 48px; width: 520px; height: 260px">
+          <div class="wbar"><span class="wname">Tests</span><span class="muted">· Shell · This Mac</span><span class="lamp" style="background: #6B6B6B; margin-left: auto"></span><span class="muted">Idle</span></div>
+          <div class="term">$ uv run pytest -k "ddp or sharded"
+tests/test_ddp.py ......            [ 33%]
+tests/test_sharded_optimizer.py …   [ 66%]
+tests/test_attention.py ssssss      [100%]
+
+12 passed, 6 skipped (no CUDA)</div>
+          <div class="foot">Triton tests skip on this Mac</div>
+        </div>
+
+        <div class="win" style="left: 544px; top: 48px; width: 520px; height: 260px">
+          <div class="wbar"><span class="wname">gpu-2xh100</span><span class="muted" style="margin-left: auto">vast · 2×H100 SXM · ssh</span></div>
+          <div class="term">root@gpu-2xh100:~/hw02$ nvidia-smi topo -m
+        GPU0    GPU1
+GPU0     X      NV18
+GPU1    NV18     X
+
+root@gpu-2xh100:~/hw02$ ▌</div>
+          <div class="foot">Runs on gpu ×2 (benchmarks) · first command after connect: nvidia-smi</div>
+        </div>
+
+        <div class="win" style="left: 1076px; top: 48px; width: 496px; height: 432px">
+          <div class="wbar"><span class="wname" style="font-weight: 400">Handout</span><span class="muted">· cs336_assignment2_systems.pdf</span><span class="muted" style="margin-left: auto">§2.3</span></div>
+          <div class="paper" style="gap: 7px">
+            <b style="font-size: 13px">2.3</b>
+            <div class="line"></div><div class="line" style="width: 92%"></div><div class="line" style="width: 85%"></div><div class="line" style="width: 70%"></div>
+            <div class="line" style="margin-top: 8px"></div><div class="line" style="width: 88%"></div><div class="line" style="width: 94%"></div><div class="line" style="width: 60%"></div>
+            <div class="fbox" style="margin-top: 8px"><b style="font-size: 11px; font-family: 'IBM Plex Sans', sans-serif">Problem</b><div class="line"></div><div class="line" style="width: 75%"></div></div>
+            <div class="line" style="margin-top: 8px"></div><div class="line" style="width: 80%"></div>
+            <span class="muted" style="font-family: 'IBM Plex Sans', sans-serif; font-size: 11px; margin-top: auto">PDF from the A2 repo · read A2 · switches with the unit</span>
+          </div>
+        </div>
+
+        <div class="win" style="left: 12px; top: 320px; width: 520px; height: 160px">
+          <div class="wbar"><span class="wname">Jobs</span><span class="muted">· RS1</span></div>
+          <div style="padding: 8px 10px; display: flex; flex-direction: column; gap: 8px; font-size: 12px">
+            <span style="display: flex; align-items: center; gap: 8px"><span class="lamp" style="background: #1A7F37"></span><span class="mono">benchmark_ddp · 2×H100 · 14m · ≈ $1.10</span><span class="muted" style="margin-left: auto">on gpu-2xh100</span></span>
+            <span style="display: flex; align-items: center; gap: 8px"><span class="lamp" style="background: #6B6B6B"></span><span class="mono muted">naive_ddp_sweep · 2×H100 · 9m · ≈ $0.71</span><span class="muted" style="margin-left: auto">done</span></span>
+            <span class="src">runs in tmux on the machine; agents don’t spend tokens while waiting</span>
+          </div>
+        </div>
+
+        <div class="win" style="left: 544px; top: 320px; width: 520px; height: 160px">
+          <div class="wbar"><span class="am" style="background: #2F5E9E"></span><span class="wname">Tutor</span><span class="muted">· codex · Hints only · locked by course</span><span class="muted" style="margin-left: auto">AGENTS.md ✓</span></div>
+          <div class="term">&gt; all_reduce hangs with 2 ranks
+Does every rank reach the same
+all_reduce? Print (rank, step) right
+before it and compare the two logs.</div>
+        </div>
+      </div>
+    </div>
+    <p class="small" style="margin: 0">和以前的 zellij 布局一样“左边代码、右边 agent、下边测试”（代码在你自己的编辑器里，框头 Open in editor），只是测试、资料、调试产物都在一个框里；框头切单元时，Tests 的命令、Reading / Handout、Tutor 的第一条消息跟着换。框 B 的 Job 计时和花费见第 6 节；Tutor 的样子见第 7 节。</p>
+  </div>
+
+  <!-- 5 -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">5 · Repeat runs：反复跑一个测试</span>
+    <div class="fig" style="width: 1632px; height: 600px">
+      <div class="win focus" style="left: 24px; top: 24px; width: 960px; height: 440px">
+        <div class="wbar"><span class="wname">Repeat · 4B · ×200 · -race</span><span class="lamp" style="background: #1A7F37; margin-left: auto"></span><span class="muted">Running</span></div>
+        <div style="padding: 10px 12px; display: flex; align-items: center; gap: 12px; font-size: 12.5px; border-bottom: 1px solid #EEEEEB">
+          <span class="pbar" style="max-width: 260px"><span style="width: 71.5%"></span></span>
+          <span class="mono">143 / 200 · <span class="bad">5 failed</span> · 6 parallel (auto)</span>
+          <span style="flex: 1"></span>
+          <span class="radio" style="font-size: 12px"><span class="check"></span>Keep all logs</span>
+          <span class="btn sm">Run again</span><span class="btn sm" style="border-color: #1A1A1A">Stop</span>
+        </div>
+        <div class="rt" style="grid-template-columns: minmax(0, 1fr) 110px 110px 110px 190px; font-size: 12.5px">
+          <span class="h">Test</span><span class="h">Passed</span><span class="h">Failed</span><span class="h">p50</span><span class="h">Max (limit 120 s)</span>
+          <span class="mono">TestBasic4B</span><span>143</span><span>0</span><span>18 s</span><span>31 s</span>
+          <span class="mono">TestSpeed4B</span><span>140</span><span class="bad">3</span><span>41 s</span><span class="warn">118 s · near limit</span>
+          <span class="mono">TestPersistPartition4B</span><span>141</span><span class="bad">2</span><span>52 s</span><span>74 s</span>
+        </div>
+        <div class="mhead" style="padding: 12px 12px 4px">FAILED RUNS</div>
+        <div class="rt" style="grid-template-columns: 60px minmax(0, 1fr) 90px 50px 120px 120px; font-size: 12.5px">
+          <span class="mono">#57</span><span class="mono">TestSpeed4B</span><span class="warn">118.4 s</span><span>log</span><span>porcupine.html</span><span><span class="btn sm">Send to tutor</span></span>
+          <span class="mono">#88</span><span class="mono">TestPersistPartition4B</span><span>63.1 s</span><span>log</span><span>porcupine.html</span><span><span class="btn sm">Send to tutor</span></span>
+          <span class="mono">#121</span><span class="mono">TestSpeed4B</span><span>102.7 s</span><span>log</span><span>porcupine.html</span><span><span class="btn sm">Send to tutor</span></span>
+          <span class="muted">+ 2 more</span><span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <div class="foot" style="margin-top: auto">Logs and visualizations: ~/2026/ok/6.5840/.repeat/4B/&lt;run&gt;/ · only failed runs are kept</div>
+      </div>
+
+      <div class="node" style="left: 1008px; top: 24px; width: 600px">
+        <b>规则</b>
+        <span>· 先按配方 build 一次（<span class="mono">make kvraft1-build</span>），再并行跑 N 次；每次一个独立临时目录和自己的 socket；只留失败的日志（Keep all logs 可全留）。</span>
+        <span>· 并行数 Auto：按核数 × 内存算，-race 时减半（-race 让 CPU 放大 2–20 倍、内存 5–10 倍）；机器忙的时候慢下来，避免假超时（我们自己 e2e 也遇到过）。</span>
+        <span>· 停止条件：跑满 / 第一次失败就停 / 手动 Stop；跑很久的交给 Jobs（RS1），应用重开不中断。</span>
+        <span>· 结果存成证据（第 8 节）。失败一行 Send to tutor：给 Tutor 发一句提示词（日志路径 + 测试名），Tutor 自己去读。</span>
+        <span>· 接近 120 s 标黄、超了标红（tester 自己也会在单测超 120 s 时 Fatal）。</span>
+        <span>· 只对配方里写了 <span class="mono">repeat</span> 的单元出现；CS336 这种确定的测试不显示这个窗口。</span>
+        <span class="src">来源：lab-raft1.html（120 s / 600 s、“run the tests multiple times”）· go.dev race_detector · 本地 tester1/config.go:181、tester1/sockrpc/rpcsrv.go（socket 名随机，并行不撞名；被强杀后是否残留待核对）· dstest.py 的 -p -n -r -o 做法</span>
+      </div>
+
+      <div style="position: absolute; left: 24px; top: 488px; width: 1584px; display: flex; gap: 10px; align-items: stretch">
+        <div class="box" style="flex: 1"><b>Build once</b><span class="mono" style="font-size: 12px">make kvraft1-build</span><span class="muted" style="font-size: 12px">否则测到旧的 main/kvraft1d</span></div>
+        <span class="arr">→</span>
+        <div class="box" style="flex: 1.2"><b>N runs, 6 at a time</b><span>每次独立临时目录 + 自己的 socket，带配方的 env（VIS_FILE）</span></div>
+        <span class="arr">→</span>
+        <div class="box" style="flex: 1"><b>Keep failures</b><span>日志 + porcupine，第一次失败自动在白板打开</span></div>
+        <span class="arr">→</span>
+        <div class="box" style="flex: 1"><b>Evidence</b><span>通过率、p50、最慢一次，存 AgentDeck 的库</span></div>
+        <span class="arr">→</span>
+        <div class="box" style="flex: 1"><b>Send to tutor</b><span>只发路径和测试名，不贴整份日志</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6 -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">6 · GPU：在哪租、怎么接、怎么不白花钱</span>
+    <div class="tbl" style="grid-template-columns: 110px 170px minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1.4fr) 220px">
+      <span class="th">平台</span><span class="th">形态</span><span class="th">参考价（美元 / 卡·时，2026-10-28 快照，会变）</span><span class="th">适合哪个单元</span><span class="th">要当心</span><span class="th">来源</span>
+      <span class="td"><b>vast.ai</b></span><span class="td">市场，容器实例，SSH</span><span class="td">H100 SXM 中位约 2.40，RTX 4090 约 0.46；8×H100 / 8×B200 整机有挂单</span><span class="td">A2 基准（同机 2 卡，筛 NVLink）、A5（2 卡）</span><span class="td">停机仍收存储费，重启时 GPU 可能被别人租走，<b>只有 destroy 才停计费</b>；SSH 默认进 tmux（和我们自己的 tmux 嵌套，<span class="mono">touch ~/.no_auto_tmux</span>）</span><span class="td src">console.vast.ai/api/v0/bundles（公共查询）· docs.vast.ai 的 ssh、storage、manage-instances 页</span>
+      <span class="td"><b>RunPod</b></span><span class="td">Pod + Serverless</span><span class="td">H100 SXM 2.69–3.99，B200 5.98–7.99（Community / Secure）</span><span class="td">同上</span><span class="td">停机的 Volume 盘照收费（0.20 / GB·月）</span><span class="td src">runpod.io/pricing</span>
+      <span class="td"><b>Lambda</b></span><span class="td">整机 VM</span><span class="td">8×H100 SXM 3.99，8×B200 6.69</span><span class="td">A4 正式训练（8 卡）</span><span class="td">贵但稳定</span><span class="td src">lambda.ai/pricing</span>
+      <span class="td"><b>Modal</b></span><span class="td">函数，按秒计费，单容器最多 8 卡</span><span class="td">B200 6.25，H100 3.95；Starter 每月 $30 免费</span><span class="td">A3、A4 的官方脚本本来就是 <span class="mono">uv run modal run …</span></span><span class="td">不是常驻机器，不能 SSH 调试</span><span class="td src">modal.com/pricing · modal.com/docs/guide/gpu · A3、A4 README</span>
+    </div>
+    <p class="src" style="margin: 0">另：CS336 主页给 “following along at home” 的人列了 2026-03-28 的单张 B200 价格（Modal 6.25、Lambda 6.69、RunPod 4.99、Nebius 5.50、Together 7.49，后者至少 8 卡），建议先在 CPU 调通再上 GPU（cs336.stanford.edu）。Lightning、Colab Pro 这次没查。</p>
+
+    <p class="small" style="margin: 0">AgentDeck 怎么接（第一期<b>不替你租、不存平台密钥</b>）。图里的数字对应下面 8 步。</p>
+    <div class="fig" style="width: 1632px; height: 900px">
+      <!-- 1 Settings › Machines -->
+      <div class="win" style="left: 24px; top: 24px; width: 520px; height: 260px">
+        <div class="wbar"><span class="num">1</span><span class="wname" style="font-weight: 600; font-family: 'IBM Plex Sans', sans-serif">Settings › Machines</span></div>
+        <div style="padding: 10px 12px; display: flex; flex-direction: column; gap: 0; font-size: 12.5px">
+          <span class="flabel" style="padding-bottom: 6px">Hosts from ~/.ssh/config</span>
+          <div class="cl"><span class="lamp" style="background: #1A7F37; margin-top: 6px"></span><span><span class="mono">gpu-2xh100</span> <span class="muted">· 2×H100 SXM · last seen now</span></span><span class="btn sm">Test</span></div>
+          <div class="cl"><span class="lamp" style="background: #6B6B6B; margin-top: 6px"></span><span><span class="mono">lambda-8xh100</span> <span class="muted">· not connected</span></span><span class="btn sm">Test</span></div>
+          <div class="cl"><span></span><span class="muted">Paste an ssh command…</span><span></span></div>
+          <span class="src" style="padding-top: 8px">Only the host name is stored. Keys stay in ~/.ssh.</span>
+        </div>
+      </div>
+      <div class="note" style="left: 24px; top: 296px; width: 520px">你在平台上租好机器，把它写进 <span class="mono">~/.ssh/config</span>（或粘贴 ssh 命令）。AgentDeck 只存名字；连上以后跑一次 <span class="mono">nvidia-smi</span>，把 GPU 概况写在标题栏。</div>
+
+      <!-- 2 New terminal ▸ On gpu-2xh100 -->
+      <div class="menu" style="left: 568px; top: 24px; width: 230px">
+        <div class="mhead" style="display: flex; gap: 6px; align-items: center"><span class="num">2</span>NEW TERMINAL</div>
+        <div class="mi"><span><span class="am" style="background: #A8503A"></span>Tutor · claude</span><span class="hint">Hints only</span></div>
+        <div class="mi">Shell</div>
+        <div class="msep"></div>
+        <div class="mi on">On gpu-2xh100<span class="hint">▸</span></div>
+        <div class="mi">On lambda-8xh100<span class="hint">▸</span></div>
+      </div>
+      <div class="menu" style="left: 802px; top: 112px; width: 150px">
+        <div class="mi on">Shell</div>
+        <div class="mi">Tutor</div>
+      </div>
+      <div class="note" style="left: 568px; top: 210px; width: 384px">课程框里 New terminal ▸ On gpu-2xh100：一个 SSH 终端。vast.ai 默认进 tmux，第一次连接提示 <span class="mono">touch ~/.no_auto_tmux</span>，免得和我们自己的 tmux 嵌套。</div>
+
+      <!-- 3 remote init -->
+      <div class="win focus" style="left: 976px; top: 24px; width: 632px; height: 410px">
+        <div class="wbar"><span class="num">3</span><span class="wname">gpu-2xh100</span><span class="muted">· remote setup · A5</span><span class="muted" style="margin-left: auto">vast · 2×H100 SXM · ssh</span></div>
+        <div style="display: flex; flex: 1; min-height: 0">
+          <div class="term" style="flex: none; width: 330px; border-right: 1px solid #EEEEEB; font-size: 10.5px">$ nvidia-smi topo -m
+        GPU0    GPU1
+GPU0     X      NV18
+GPU1    NV18     X
+$ curl -LsSf https://astral.sh/uv/
+  install.sh | sh
+$ git clone gpu-bare:hw05 &amp;&amp; cd hw05
+$ uv sync --no-install-package \
+    flash-attn
+$ uv sync
+$ df -h ~
+$ uv run pytest tests/test_grpo.py
+▌</div>
+          <div style="flex: 1; padding: 8px 12px; display: flex; flex-direction: column">
+            <div class="cl"><span class="ok">✓</span><span>2 GPUs, NVLink <span class="muted">(topo -m)</span></span><span></span></div>
+            <div class="cl"><span class="ok">✓</span><span>uv installed</span><span></span></div>
+            <div class="cl"><span class="ok">✓</span><span>code on the machine</span><span></span></div>
+            <div class="cl"><span class="ok">✓</span><span>uv sync, step 1 of 2</span><span></span><span class="sub">--no-install-package flash-attn</span></div>
+            <div class="cl"><span class="ok">✓</span><span>uv sync, step 2 of 2</span><span></span></div>
+            <div class="cl"><span class="ok">✓</span><span>disk: 180 GB free</span><span></span></div>
+            <div class="cl"><span class="muted">—</span><span class="muted">data: none in the recipe for A5</span><span></span></div>
+            <div class="cl"><span class="lamp" style="background: #1A7F37; margin-top: 6px"></span><span>smoke test running…</span><span></span></div>
+          </div>
+        </div>
+        <div class="foot">Same checklist as setup step 3, run in this SSH terminal one by one. Steps come from the recipe.</div>
+      </div>
+
+      <!-- 4 code sync -->
+      <div class="node" style="left: 24px; top: 470px; width: 520px">
+        <b style="display: flex; gap: 8px; align-items: center"><span class="num">4</span>代码同步</b>
+        <span>默认 git：推到你的私有远端或机器上的裸仓库，再在机器上 pull（可追溯，6.5840 也不会被推到公开仓库）。可选 rsync（排除 <span class="mono">.venv</span>、<span class="mono">data</span>）。</span>
+        <span class="mono" style="font-size: 11.5px; color: #5F5F5A">rsync -avz --exclude .venv --exclude data ./ gpu-2xh100:hw02/</span>
+      </div>
+      <div class="node" style="left: 24px; top: 610px; width: 520px">
+        <b style="display: flex; gap: 8px; align-items: center"><span class="num">5</span>长任务交给 Jobs（RS1）</b>
+        <span>在远端 tmux 里跑，agent 等的时候不花 token；结果拉回本地（RS2）。</span>
+      </div>
+
+      <!-- 6 spend -->
+      <div class="win" style="left: 568px; top: 470px; width: 640px; height: 300px">
+        <div class="wbar"><span class="num">6</span><span class="wname" style="font-weight: 600; font-family: 'IBM Plex Sans', sans-serif">GPU spend · CS336</span><span class="muted" style="margin-left: auto">your prices: H100 $2.36 · B200 $6.25 per GPU·h</span></div>
+        <div class="rt" style="grid-template-columns: 56px minmax(0, 1fr) 110px 100px 150px; font-size: 12px">
+          <span class="h">Unit</span><span class="h">Jobs</span><span class="h">GPU time</span><span class="h">Est. cost</span><span class="h">Course budget</span>
+          <span>A1</span><span>train_tinystories ×3</span><span>3.0 B200 h</span><span>≈ $18.75</span><span>leaderboard 10 B200 h</span>
+          <span>A2</span><span>benchmark_ddp, naive_ddp_sweep</span><span>0.77 H100 h</span><span>≈ $1.81</span><span class="muted">—</span>
+          <span>A3</span><span>modal run · isoflops</span><span>4.0 B200 h</span><span>≈ $25.00</span><span>fit 12 B200 h</span>
+          <span>A5</span><span class="muted">not started</span><span class="muted">—</span><span class="muted">—</span><span>≈ 26 B200 h</span>
+          <span><b>All</b></span><span></span><span></span><span><b>≈ $45.56</b></span><span></span>
+        </div>
+        <div class="foot" style="margin-top: auto">GPU model × count × time × the price you typed. 示意数据；预算来自配方的 budget（A1、A3、A5 handout）</div>
+      </div>
+
+      <!-- 8 Modal -->
+      <div class="node" style="left: 1232px; top: 470px; width: 376px">
+        <b style="display: flex; gap: 8px; align-items: center"><span class="num">8</span>Modal</b>
+        <span>单元写 <span class="mono">runs modal</span> 时，命令在本机 Shell 里跑（用你自己的 modal 登录），Jobs 同样记时间和花费。</span>
+        <span class="mono" style="font-size: 11.5px; color: #5F5F5A">uv run modal run scripts/train.py --train-bin …</span>
+        <span class="src">A4 正式训练 8×B200 约 2 h（A4 handout）；Modal 单容器最多 8 卡、函数结束就停计费</span>
+      </div>
+
+      <!-- 7 idle -->
+      <div style="position: absolute; left: 24px; top: 800px; width: 1584px; display: flex; flex-direction: column; gap: 6px">
+        <div style="box-sizing: border-box; border: 1px solid #D6D6D2; border-radius: 12px 12px 0 0; border-bottom: none; background: #FFFFFF; height: 40px; padding: 0 12px; display: flex; align-items: center; gap: 8px; font-size: 13px">
+          <span class="num">7</span><b>CS336 · A2 systems</b><span class="sel" style="height: 24px">A2 · systems<span>▾</span></span>
+          <span style="margin-left: 16px; display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; height: 26px; border-radius: 6px; background: #FFF7E6"><span class="lamp" style="background: #BF8700"></span><span class="warn">gpu-2xh100 is idle · Pull results, then destroy it on vast.ai</span></span>
+          <span class="btn sm">Pull results</span><span class="btn sm">Dismiss</span>
+        </div>
+        <span class="small">GPU 机器 30 分钟没有在跑的 Job 时框头出这条。<b>只提醒</b>，destroy 你自己去平台点（vast.ai 停机仍收存储费，只有 destroy 才停）。</span>
+      </div>
+    </div>
+    <div class="tbl" style="grid-template-columns: 60px minmax(0, 1fr) minmax(0, 1fr)">
+      <span class="th">步</span><span class="th">做什么</span><span class="th">AgentDeck 不做的</span>
+      <span class="td">1</span><span class="td">你在平台上租好机器，写进 ~/.ssh/config（或粘贴 ssh 命令）；Settings › Machines 列出 Host，只存名字</span><span class="td">不租机器、不存平台 API key、不碰 ~/.ssh 里的密钥</span>
+      <span class="td">2</span><span class="td">课程框里 New terminal ▸ On gpu-2xh100：一个 SSH 终端，标题栏写机器和 GPU 概况（连上后跑一次 nvidia-smi）</span><span class="td">—</span>
+      <span class="td">3</span><span class="td">远程初始化清单（和第 3 步一样的样子，在这个 SSH 终端里逐条跑）：<span class="mono">nvidia-smi topo -m</span>（卡数和 NVLink 对不对）→ 装 uv → 拿代码 → <span class="mono">uv sync</span>（A5 两步）→ 下载数据（先查磁盘）→ 跑一条冒烟测试</span><span class="td">步骤照配方写死，不让 agent 现场猜（A5 的 Python 3.12、vllm 0.19.1、flash-attn 只有 linux x86_64）</span>
+      <span class="td">4</span><span class="td">代码同步：默认 git（私有远端或机器上的裸仓库），可选 rsync（排除 .venv、data）</span><span class="td">不做持续双向同步</span>
+      <span class="td">5</span><span class="td">长任务交给 Jobs（RS1）：在远端 tmux 里跑，结果拉回本地（RS2）</span><span class="td">—</span>
+      <span class="td">6</span><span class="td">每个 Job 记 GPU 型号 × 卡数 × 时长 × 你填的单价；按单元汇总，对照配方里的课程预算</span><span class="td">不去平台查账单</span>
+      <span class="td">7</span><span class="td">GPU 机器 30 分钟没有在跑的 Job：框头提醒 Pull results, then destroy</span><span class="td">不替你停、不替你 destroy</span>
+      <span class="td">8</span><span class="td">Modal：命令在本机 Shell 里跑，用你自己的 modal 登录；Jobs 同样记时间和花费</span><span class="td">不存 Modal token</span>
+    </div>
+  </div>
+
+  <!-- 7 -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">7 · 导师模式（Tutor）：守住课程规矩的 agent 终端</span>
+    <p class="lead">Tutor 是一个按启动预设开的 agent 终端，四样东西一起：① <b>只读启动</b>；② 课程的 <b>AGENTS.md</b>（CS336 仓库自带，标题 “Teaching Assistant, Not Solution Generator”；没有的课用内置的 course-tutor 说明，按 N9 的方式带进去）；③ 当前<b>单元的上下文</b>（第一条消息：单元、handout 小节、最近一次失败的摘要和日志路径）；④ <b>等级</b>。</p>
+    <div class="fig" style="width: 1632px; height: 560px">
+      <div class="menu" style="left: 24px; top: 24px; width: 300px">
+        <div class="mhead">NEW TERMINAL · 6.5840</div>
+        <div class="mi on"><span><span class="am" style="background: #A8503A"></span>Tutor · claude</span><span class="hint">Hints only · read-only</span></div>
+        <div class="msep"></div>
+        <div class="mi"><span><span class="am" style="background: #A8503A"></span>Claude Code</span></div>
+        <div class="mi"><span><span class="am" style="background: #2F5E9E"></span>Codex</span></div>
+        <div class="mi">Shell</div>
+        <div class="mi">On gpu-2xh100<span class="hint">▸</span></div>
+      </div>
+      <div class="note" style="left: 24px; top: 220px; width: 300px"><b>诚实的边界</b>：真正挡住写入的是只读启动。你在别的终端里另开 agent 改代码，AgentDeck 不拦；规矩最终靠你自己。<br><br><b>/teach</b>（原 L0）留着：学概念时在 Tutor 里打 <span class="mono">/teach</span>，课写进单元目录<b>外</b>的学习文件夹（原来的做法不变），不写进课程仓库。</div>
+
+      <div class="win focus" style="left: 348px; top: 24px; width: 620px; height: 512px">
+        <div class="wbar"><span class="am" style="background: #A8503A"></span><span class="wname">Tutor</span><span class="muted">· claude · Hints only</span><span class="muted" style="margin-left: auto">read-only · plan mode</span></div>
+        <div class="term" style="font-size: 11px"><span style="color: #6B6B6B">first message (sent by AgentDeck)</span>
+&gt; You are the tutor for 6.5840 · Spring 2026.
+  Unit: 4B · Fault-tolerant KV (kvraft1)
+  Reading: Raft (extended) §5 · Figure 2
+  Last failure: TestSpeed4B, run #57, 118.4 s
+  Log: .repeat/4B/57/out.log
+  Visualization: .vis/porcupine-4B-run57.html
+  Level: Hints only. Don't write or edit code,
+  don't run commands. Ask questions, point at
+  the paper, suggest small checks.
+
+Read .repeat/4B/57/out.log
+The client waited 2.1 s for most Gets in this
+run. Before we look at code: when your leader
+gets a Get, what has to happen before it may
+answer? Which part of Figure 2 says so?
+
+&gt; /teach linearizability
+  (lesson goes to ~/learn/6.5840, not the repo)
+&gt; ▌</div>
+      </div>
+
+      <div class="dialog" style="left: 992px; top: 24px; width: 616px; gap: 10px">
+        <p class="dtitle">Tutor · CS336 · Spring 2026</p>
+        <div style="display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 8px 12px; align-items: center">
+          <span class="flabel">Level</span><span class="sel dis" style="width: 220px">Hints only<span>▾</span></span>
+          <span></span><span class="muted" style="font-size: 12px">Locked by the course: AI may not implement any part of an assignment</span>
+          <span class="flabel">Agent</span><span class="sel" style="width: 220px"><span><span class="am" style="background: #2F5E9E"></span>codex</span><span>▾</span></span>
+          <span class="flabel">Instructions</span><span style="font-size: 12.5px"><span class="ok">✓</span> AGENTS.md in the repo <span class="muted">· Teaching Assistant, Not Solution Generator</span></span>
+          <span class="flabel">Starts as</span><span class="mono" style="font-size: 12px">codex -s read-only</span>
+        </div>
+      </div>
+
+      <div class="dialog" style="left: 992px; top: 300px; width: 616px">
+        <p class="dtitle">This course doesn’t allow AI to write assignment code. Open a Tutor instead?</p>
+        <span class="muted" style="font-size: 12px">You chose Claude Code in CS336 · A2 systems. A Tutor starts read-only with the course’s AGENTS.md.</span>
+        <div style="display: flex; justify-content: flex-end; gap: 8px"><span class="btn">Open anyway</span><span class="btn primary">Open Tutor</span></div>
+      </div>
+      <div class="note" style="left: 992px; top: 456px; width: 616px">在 CS336 的框里开普通 agent（不是 Tutor）时弹一次；<b>不拦</b>，Open anyway 就照常开。6.5840 不弹（课程不禁止，只说会少学）。</div>
+    </div>
+    <div class="tbl" style="grid-template-columns: 210px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr)">
+      <span class="th">等级</span><span class="th">能做</span><span class="th">不能做</span><span class="th">怎么挡</span>
+      <span class="td"><b>Hints only</b><br><span class="muted">默认；CS336 锁定</span></span><span class="td">提问、指讲义和论文小节、建议形状断言 / 小输入 / profiler 检查</span><span class="td">写代码、改文件、跑命令</span><span class="td">只读启动（下表）</span>
+      <span class="td"><b>Hints + can run tests</b></span><span class="td">上面的 + 跑配方里的测试命令</span><span class="td">写代码、改文件、跑别的命令</span><span class="td">claude 用 <span class="mono">--settings</span> 只放行配方里的这几条命令；别的 agent 做不到细粒度放行时不提供这一档</span>
+      <span class="td"><b>Explain code (read-only)</b></span><span class="td">读你的代码、引用它来解释</span><span class="td">改代码</span><span class="td">只读启动</span>
+    </div>
+    <div class="tbl" style="grid-template-columns: 120px minmax(0, 1fr) minmax(0, 1fr)">
+      <span class="th">agent</span><span class="th">只读启动</span><span class="th">在 Tutor agent 列表里</span>
+      <span class="td"><span class="am" style="background: #A8503A"></span>claude</span><span class="td mono">claude --permission-mode plan</span><span class="td">列出（默认）</span>
+      <span class="td"><span class="am" style="background: #2F5E9E"></span>codex</span><span class="td mono">codex -s read-only</span><span class="td">列出</span>
+      <span class="td"><span class="am" style="background: #7347A8"></span>pi · <span class="am" style="background: #0F6F7F"></span>omp</span><span class="td mono">--tools read,grep,find,ls</span><span class="td">列出</span>
+      <span class="td"><span class="am" style="background: #4A4F7A"></span>kimi</span><span class="td">只有 TUI 里的 --plan，不能只读启动</span><span class="td">不列</span>
+    </div>
+    <p class="src" style="margin: 0">只读启动的写法来自 DC11 实测（DR-97）。CS336 的规定：A3 handout 第 48–60 行（明确包括 Cursor Agents、Codex、Claude Code；“make sure it uses the AGENTS.md file provided”）、cs336.stanford.edu；AGENTS.md 内容：本地 CS336/hw01/AGENTS.md（hw01、hw02 都有，CLAUDE.md 指向它）。6.5840：6.824/general.html。</p>
+  </div>
+
+  <!-- 8 -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">8 · 进度和证据：进度归手册，AgentDeck 只记证据</span>
+    <div class="fig" style="width: 1632px; height: 500px">
+      <div class="frame" style="left: 24px; top: 24px; width: 760px; height: 452px">
+        <div class="fhead"><b>6.5840 · Spring 2026 · main</b><span class="sel" style="height: 24px; border-color: #1A1A1A">Lab 4B · kvraft1<span>▾</span></span><span class="tag">private · don’t publish</span></div>
+      </div>
+      <div class="menu" style="left: 236px; top: 64px; width: 520px">
+        <div class="mhead">UNITS · TEST EVIDENCE</div>
+        <div class="mi"><span>Lab 1 · MapReduce</span><span class="hint"><span class="ok">✓</span></span></div>
+        <div class="mi"><span>Lab 2 · KV server</span><span class="hint"><span class="ok">✓</span></span></div>
+        <div class="mi"><span>3A · leader election</span><span class="hint"><span class="ok">✓</span> 200/200</span></div>
+        <div class="mi"><span>3B · log</span><span class="hint"><span class="ok">✓</span></span></div>
+        <div class="mi"><span>3C · persistence</span><span class="hint"><span class="bad">✗</span> 2/50 failed</span></div>
+        <div class="mi"><span>3D · snapshots</span><span class="hint">—</span></div>
+        <div class="mi"><span>4A · rsm</span><span class="hint"><span class="ok">✓</span></span></div>
+        <div class="mi on"><span>4B · Fault-tolerant KV</span><span class="hint"><span class="bad">✗</span> 5/143 failed · repeat running</span></div>
+        <div class="mi"><span>4C · with snapshots</span><span class="hint">—</span></div>
+        <div class="mi"><span>5A–5D · sharded KV</span><span class="hint">—</span></div>
+        <div class="msep"></div>
+        <div class="mhead" style="font-weight: 400; letter-spacing: 0">Test results only, not “done”. Your handbook decides that.</div>
+      </div>
+
+      <div class="win" style="left: 808px; top: 24px; width: 800px; height: 452px">
+        <div class="wbar"><span class="am" style="background: #A8503A"></span><span class="wname">claude</span><span class="muted">· ~/2026/ok · /check</span></div>
+        <div class="term" style="font-size: 11px">&gt; /check 6.5840
+
+$ agentdeck course status --json 4B
+{
+  "course": "6.5840 · Spring 2026",
+  "unit": "4B",
+  "lastRun": { "passed": true, "seconds": 176.3, "limit": 600,
+    "tests": [ { "name": "TestSpeed4B", "passed": true, "seconds": 41.0 }, … ] },
+  "repeat": { "runs": 143, "of": 200, "failedRuns": 5, "slowest": 118.4, "limit": 120 },
+  "gpu": null,
+  "artifacts": [ ".vis/porcupine-4B-run57.html" ]
+}
+
+Handbook: 4B is ticked done.
+Evidence: last full run passed, but 5 of 143 repeat runs failed
+(TestSpeed4B up to 118.4 s, near the 120 s limit). Not done yet.</div>
+      </div>
+    </div>
+    <div class="tbl" style="grid-template-columns: 220px minmax(0, 1fr) minmax(0, 1fr)">
+      <span class="th">每个单元记什么</span><span class="th">存在哪</span><span class="th">谁读</span>
+      <span class="td">最后一次测试：每个测试过没过、用时</span><span class="td" style="grid-row: span 4">AgentDeck 的库，<b>不写进课程仓库</b></span><span class="td" style="grid-row: span 4">框头单元下拉（<span class="mono">3A ✓ 200/200 · 3B ✓ · 3C ✗ 2/50 · 3D —</span>）；<span class="mono">agentdeck course status --json [unit]</span>（CR14 的命令行，所有 AgentDeck 终端都能调）；你的 /check 拿它核对“勾了完成的节，测试是不是真过了”</span>
+      <span class="td">Repeat runs 的通过率和最慢一次</span>
+      <span class="td">GPU 用量和花费</span>
+      <span class="td">产物（porcupine、trace）的路径</span>
+    </div>
+    <p class="small" style="margin: 0">手册和 Obsidian：框里可以放手册（网页窗口）和 Obsidian 笔记链接（<span class="mono">obsidian://</span> 用系统打开）；AgentDeck 不读不写它们，也不把进度同步回手册（和 DR-74 一致）。</p>
+  </div>
+
+  <!-- 9 -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">9 · 不做的</span>
+    <div style="display: flex; gap: 16px">
+      <div class="col"><b>机器和钱</b>
+        <span>不替你租、停、销毁 GPU 机器，不存平台 API key（第一期；以后可能接 vast / Modal 的 CLI）</span>
+        <span>不去平台查账单；花费只按你填的单价估</span>
+      </div>
+      <div class="col"><b>课程内容</b>
+        <span>不做课程市场，不内置任何课程的答案或参考实现</span>
+        <span>不自动探测“这是哪门课”；配方由你选，或起草后你确认</span>
+        <span>不做代码编辑器（用你自己的编辑器，框里 Open in editor 已有）</span>
+      </div>
+      <div class="col"><b>提交和进度</b>
+        <span>不替你提交 Gradescope，不替你开排行榜 PR</span>
+        <span>不同步进度到你的手册，只提供证据命令</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 10 -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">10 · 按推荐先定（2026-10-28），待你确认 + 分期</span>
+    <div class="decide" style="max-width: 1500px">
+      <b>1</b><span><b>学一门课 = 一个课程框 + 一份课程配方</b>（纯数据，存 AgentDeck 设置，不进课程仓库）；内置 6.5840、CS336 两份示例。</span>
+      <b>2</b><span><b>Set up a course… 三步</b>：选课和代码 → 选项（在哪跑、导师等级、并行数）→ 看得见的环境检查；修环境的命令只贴不跑。</span>
+      <b>3</b><span><b>官方测试走配方命令</b>（6.5840 包 make）；Repeat runs 只给写了 repeat 的单元，并行数自动限流。</span>
+      <b>4</b><span><b>GPU</b>：第一期只接 SSH 机器和本机 Modal，不租不存密钥；长任务用 Jobs；记花费、空闲提醒。</span>
+      <b>5</b><span><b>导师模式 = 只读启动 + 课程 AGENTS.md + 单元上下文 + 等级</b>；CS336 锁定 Hints only；普通 agent 在课程框里只提示不拦。</span>
+      <b>6</b><span><b>进度仍在手册</b>；AgentDeck 记测试证据，给 <span class="mono">agentdeck course status</span>。</span>
+    </div>
+    <div class="tbl" style="grid-template-columns: 90px 80px minmax(0, 1fr) 260px">
+      <span class="th">期</span><span class="th">任务</span><span class="th">内容</span><span class="th">依赖</span>
+      <span class="td" style="grid-row: span 7"><b>第一期</b><br><span class="muted">M19，接在 LA0–LA3 后面</span></span>
+      <span class="td mono">LA4</span><span class="td">contracts：CourseRecipe、CourseUnit、UnitEvidence（单独提交）</span><span class="td">—</span>
+      <span class="td mono">LA5</span><span class="td">两份内置配方 + 配方的读取和校验</span><span class="td">LA4</span>
+      <span class="td mono">LA6</span><span class="td">Set up a course… 向导 + 环境检查</span><span class="td">LA5</span>
+      <span class="td mono">LA7</span><span class="td">课程框（单元选择、Reading 窗口、Tests、产物自动打开）</span><span class="td">LA5</span>
+      <span class="td mono">LA8</span><span class="td">Repeat runs 窗口</span><span class="td">LA7</span>
+      <span class="td mono">LA9</span><span class="td">Tutor 启动预设（只读 + AGENTS.md + 等级 + 单元上下文）</span><span class="td">LA0、DC11 的结论、AH0</span>
+      <span class="td mono">LA10</span><span class="td">证据和 <span class="mono">agentdeck course status</span></span><span class="td">CR14</span>
+      <span class="td" style="grid-row: span 3"><b>第二期</b></span>
+      <span class="td mono">LA11</span><span class="td">Settings › Machines 和 SSH 终端、远程初始化清单</span><span class="td">和 RS2 共用</span>
+      <span class="td mono">LA12</span><span class="td">GPU 花费和空闲提醒</span><span class="td">RS1 Jobs</span>
+      <span class="td mono">LA13</span><span class="td">From a course website… 起草配方</span><span class="td">—</span>
+    </div>
+    <div class="tbl" style="grid-template-columns: 90px minmax(0, 1fr)">
+      <span class="th">用例</span><span class="th">内容</span>
+      <span class="td mono">TC-149</span><span class="td">用已有文件夹搭 6.5840：检查全过、跑 4B</span>
+      <span class="td mono">TC-150</span><span class="td">Repeat runs ×200 -race：自动并行、失败打开 porcupine、Send to tutor</span>
+      <span class="td mono">TC-151</span><span class="td">CS336：A1 / A2 本机测试，A5 标 GPU，数据磁盘检查</span>
+      <span class="td mono">TC-152</span><span class="td">Tutor：Hints only 改不了文件、跑不了命令；CS336 锁定；普通 agent 提示</span>
+      <span class="td mono">TC-153</span><span class="td">SSH GPU 机器：远程初始化清单（A5 两步 uv sync）、Job 记花费、空闲提醒</span>
+      <span class="td mono">TC-154</span><span class="td">/check 用 agentdeck course status 核对测试证据</span>
+    </div>
+    <p class="small" style="margin: 0">调研：DR-120（课程学习环境：6.5840、CS336 的要求和 GPU 选择，research-courses.md）。原 L0 的 /teach 部分并入第 7 节（Tutor 里用 /teach）；L0 的数据库终端部分（第 3、4 节）不变。</p>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":11660}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
