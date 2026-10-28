@@ -27,6 +27,8 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
+import { assertAgentTerminalAccess } from './guard.ts';
+import type { AgentTerminalTarget } from './guard.ts';
 
 /** 工具用到的服务，组装时从主进程的注册表拿。 */
 export interface McpToolDeps {
@@ -276,7 +278,7 @@ export function registerTools(server: McpServer, deps: McpToolDeps, caller: McpC
     {
       title: 'Send to terminal',
       description:
-        'Type text into another terminal, as if the user typed it: a message for another agent, or a command for a shell. Presses Enter afterwards unless "submit" is false. Line breaks are sent as spaces. Cannot send to your own terminal.',
+        'Type text into another terminal, as if the user typed it: a message for another agent, or a command for a shell. Presses Enter afterwards unless "submit" is false. Line breaks are sent as spaces. Cannot send to your own terminal. Refused while the terminal is waiting for the user (status needs-approval or needs-reply): approvals and answers go through the user’s inbox.',
       inputSchema: {
         terminal_id: z.string().describe('Terminal id from list_terminals.'),
         text: z.string().min(1),
@@ -287,9 +289,12 @@ export function registerTools(server: McpServer, deps: McpToolDeps, caller: McpC
       run(async () => {
         const id = terminal_id as TerminalId;
         if (id === caller.terminalId) throw new AgentDeckError({ code: 'invalid-argument', message: 'Can’t send to your own terminal' });
+        assertAgentTerminalAccess('send', await ctx.accessTarget(id));
         await deps.terminals.sendKeys(id, literalKeys(text));
         if (submit) {
           await sleep(deps.submitDelayMs ?? 150);
+          // 文字打出去后到回车之间，目标可能刚好停下来问你：这时不按回车，免得替人按了批准。
+          assertAgentTerminalAccess('send', await ctx.accessTarget(id));
           await deps.terminals.sendKeys(id, ['Enter']);
         }
         deps.onInput?.(id);
@@ -467,6 +472,11 @@ class ToolContext {
 
   async statusOf(id: TerminalId): Promise<StatusSnapshot | undefined> {
     return (await this.deps.status.snapshot()).find((s) => s.terminalId === id);
+  }
+
+  /** agentTerminalRefusal 要的目标情况（guard.ts）。 */
+  async accessTarget(id: TerminalId): Promise<AgentTerminalTarget> {
+    return { status: await this.statusOf(id) };
   }
 
   async callerWorkspaceId(): Promise<WorkspaceId | null> {

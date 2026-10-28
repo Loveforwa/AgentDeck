@@ -21,7 +21,7 @@ AgentDeck 自己的 MCP 服务（任务 M1）。白板里的 agent 通过它开�
 | `create_workspace` | `workspaces.create` 新建 worktree 和分支 → 框放上白板 → 有初始化命令先开 Shell 跑 → 开 agent（带 `prompt`） | 调用者的项目，agent 为 claude，`none` 不开 |
 | `open_browser` | 白板开网页窗口，放在调用者终端旁边（`nearTerminal`）；同一个 origin 复用已开的窗口（跳过去刷新）。只收 http(s) 和本地文件，见下 | 调用者的工作区 |
 | `read_terminal` | 别的终端最后 n 行（最多 500） | 60 行 |
-| `send_to_terminal` | 往别的终端打字，再按回车；不能发给自己 | `submit: true` |
+| `send_to_terminal` | 往别的终端打字，再按回车；不能发给自己；目标在等你（needs-approval、needs-reply）时拒绝（AH7，见下） | `submit: true` |
 | `open_terminals`（N1） | 一次开 `count` 个 agent（每个子 agent 一个，`prompts[i]`、`labels[i]` 依次给），发一个 `board.open-group`：白板把它们挂在调用者旁边，组成窗口组。超过 6 个先 `confirm` 问用户，没有 `confirm` 或用户拒绝就一个都不开；最多 16。一个一个开，中途失败时已开的照样放上白板，返回里 `error` 写停在第几个 | 调用者的工作区，agent 为 claude |
 | `list_windows`（N1） | 白板上的窗口：类型、标题、工作区、终端 id、agent、状态、在等什么、对话主题（`TerminalInfo.title`）、网址、窗口组、`self`。读 `board.load()`，白板改动后半秒才保存，刚开的窗口可能还不在 | |
 | `focus_window`（N1） | `window_id` 或 `terminal_id`（二选一，先核对存在）→ `board.focus-window`。白板：跳过去聚焦；用户正在打字时只闪一下 | |
@@ -56,6 +56,14 @@ N1 加的注入项都是可选的：`board`（list_windows 没有它就报错，
 - `board.focus-window`、`board.notify`（N1）：见上表。
 
 白板没开（窗口都关了）时事件没人收，终端照常在跑，但白板上没有它的窗口。
+
+## agent 能不能碰一个终端（`src/guard.ts`，AH7）
+
+所有“agent 往别的终端里看、打字”的入口用同一个判断 `agentTerminalRefusal(access, target)`（不调服务，只看传进来的状态，从包入口导出）：现在是 send_to_terminal，以后 agentdeck 命令行（CR14 的 /cli）和 Flow 窗口的 Ask <agent> about this step…（CU2）也用它。
+
+- `send`：目标的 `StatusSnapshot.status` 在 contracts 的 `WAITING_STATUSES`（needs-approval、needs-reply）里时拒绝，`invalid-argument`，“This terminal is waiting for the user. Use the inbox.”（2026-10-28 定：不加新错误码）。不然往停在批准提示上的终端打 “1” 加回车就等于替人批准，绕过收件箱、破坏性名单和 ApprovalRecord（IS-102）。
+- 文字打出去以后、按回车前再查一次：这 150ms 里目标停下来问你，就不按回车，返回同样的错。
+- 状态不知道（snapshot 里没有）时不挡。`read` 不挡。open_terminal(s) 的 `prompt(s)` 走 `agents.start`，不受影响。
 
 ## send_to_terminal 怎么保证原样打出来
 

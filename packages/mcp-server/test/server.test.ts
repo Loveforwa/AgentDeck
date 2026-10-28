@@ -2,13 +2,13 @@ import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import type { BoardEvent, TerminalId, TerminalWindowData } from '@agentdeck/contracts';
+import type { BoardEvent, TerminalId, TerminalStatus, TerminalWindowData } from '@agentdeck/contracts';
 import { createFakeServices, SAMPLE, seedSample } from '@agentdeck/fakes';
 import type { FakeServices } from '@agentdeck/fakes';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { browserTarget, literalKeys, loadOrCreateToken, SERVER_INSTRUCTIONS, startMcpServer } from '../src/index.ts';
+import { agentTerminalRefusal, browserTarget, literalKeys, WAITING_FOR_USER_MESSAGE,loadOrCreateToken, SERVER_INSTRUCTIONS, startMcpServer } from '../src/index.ts';
 import type { McpHttpServer, McpHttpServerOptions } from '../src/index.ts';
 
 const TOKEN = 'a'.repeat(64);
@@ -368,6 +368,67 @@ describe('N1 · open_terminals', () => {
     const { value } = await call(await connect(null), 'open_terminals', { count: 1, agent: 'shell' });
     expect(value).toMatchObject({ workspaceId: null, lead: null });
     expect(groupEvent().lead).toBeNull();
+  });
+});
+
+describe('AH7 · send_to_terminal never types into a terminal that waits for the user', () => {
+  const WAITING = { error: true, value: 'This terminal is waiting for the user. Use the inbox.' };
+
+  it('needs-approval: refused, no keys sent, no input noted', async () => {
+    // 样例里 login 的 codex 停在 “pnpm test” 的批准上
+    expect(await call(await connect(T.shopClaude), 'send_to_terminal', { terminal_id: T.loginCodex, text: '1' })).toEqual(WAITING);
+    expect(fakes.terminals.get(T.loginCodex).keys).toEqual([]);
+    expect(inputs).toEqual([]);
+  });
+
+  it('needs-reply: refused too', async () => {
+    fakes.status.askQuestion(T.shopClaude, 'Same frame or new terminal?');
+    expect(await call(await connect(), 'send_to_terminal', { terminal_id: T.shopClaude, text: 'same frame', submit: false })).toEqual(WAITING);
+    expect(fakes.terminals.get(T.shopClaude).keys).toEqual([]);
+  });
+
+  it('running and idle: sent as before', async () => {
+    const client = await connect();
+    // 样例里 dev server 是 running，shop 的 claude 是 idle
+    for (const id of [T.devServer, T.shopClaude]) {
+      expect(await call(client, 'send_to_terminal', { terminal_id: id, text: 'go on' })).toEqual({ error: false, value: { sent: true, terminalId: id } });
+      expect(fakes.terminals.get(id).keys).toEqual([['go on'], ['Enter']]);
+    }
+    expect(inputs).toEqual([T.devServer, T.shopClaude]);
+  });
+
+  it('the target starts waiting between the text and Enter: Enter is not pressed', async () => {
+    let calls = 0;
+    await restart({
+      status: {
+        snapshot: async () => {
+          if (++calls === 2) fakes.status.requestApproval(T.shopClaude, { summary: 'rm -rf dist', command: 'rm -rf dist' });
+          return fakes.status.snapshot();
+        },
+      },
+    });
+    expect(await call(await connect(), 'send_to_terminal', { terminal_id: T.shopClaude, text: 'go on' })).toEqual(WAITING);
+    expect(fakes.terminals.get(T.shopClaude).keys).toEqual([['go on']]);
+  });
+
+  it('the tool description says so; open_terminals prompts are not affected', async () => {
+    const client = await connect();
+    const { tools } = await client.listTools();
+    expect(tools.find((t) => t.name === 'send_to_terminal')!.description).toMatch(/waiting for the user \(status needs-approval or needs-reply\)/);
+    // 给新开的终端的第一条消息走 agents.start，不经过 send_to_terminal 的检查
+    expect((await call(client, 'open_terminals', { count: 1, prompts: ['review'] })).error).toBe(false);
+    expect(fakes.agents.started.at(-1)!.request.prompt).toBe('review');
+  });
+
+  it('agentTerminalRefusal: one rule for every entry point (MCP now, /cli and Flow later)', () => {
+    const refused = (status: TerminalStatus) => agentTerminalRefusal('send', { status: { status } })?.message ?? null;
+    expect(refused('needs-approval')).toBe(WAITING_FOR_USER_MESSAGE);
+    expect(refused('needs-reply')).toBe(WAITING_FOR_USER_MESSAGE);
+    for (const s of ['starting', 'running', 'idle', 'exited', 'error'] as const) expect(refused(s)).toBeNull();
+    expect(agentTerminalRefusal('send', { status: { status: 'needs-approval' } })?.code).toBe('invalid-argument');
+    expect(agentTerminalRefusal('send', { status: undefined })).toBeNull();
+    // 读不挡
+    expect(agentTerminalRefusal('read', { status: { status: 'needs-approval' } })).toBeNull();
   });
 });
 
