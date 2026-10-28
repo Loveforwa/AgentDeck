@@ -2,8 +2,9 @@
 import type {
   AgentDeckApi, ApproveResult, BoardState, FrameArrange, PromptQueueSettings, UsageLimit, SessionSummary, BackgroundAgent, TerminalBackgroundAgents, TranscriptLine, AutoApproveState, CommitInfo, EventOf, GitService, LogOptions, SkillItemId, TerminalHost, TerminalId,
   TerminalSkills, TerminalUsage, TerminalWindowData, UsageService, WindowGroupId, WindowId, WindowNode, WindowRestoreSupport, WorkspaceId,
+  LaunchPreset, ProjectPatch, Settings,
 } from './index.ts';
-import { effectiveSkillSelection, FIRE_AND_FORGET, isAutoApproveOn, skillsRestartNeeded } from './index.ts';
+import { effectiveSkillSelection, FIRE_AND_FORGET, isAutoApproveOn, skillsRestartNeeded, findInlineSecret, redactCommand } from './index.ts';
 
 declare const api: AgentDeckApi;
 api.on('status.changed', (e) => {
@@ -137,3 +138,14 @@ void api.app.setKeepAwake(true);
 const armedQueue: PromptQueueSettings = { ...queue, armed: { resetsAt: Date.parse('2026-10-27T07:30:00.000Z'), at: Date.now() } };
 const disarmed: PromptQueueSettings = { ...queue, armed: null };
 void armedQueue; void disarmed;
+// LA0（0.1.15）：启动预设、Hide from agents、命令里的密码
+const presets: LaunchPreset[] = [
+  { id: 'p1', name: 'harlequin · shop dev', target: { kind: 'command', command: 'harlequin -P dev' }, hideFromAgents: true },
+  { id: 'p2', name: 'Teach me', target: { kind: 'agent', agent: 'claude', prompt: '/teach' }, hideFromAgents: false },
+];
+const globalPresets: Settings['launchPresets'] = presets;
+const projectPresets: ProjectPatch = { launchPresets: presets };
+const hidden: TerminalWindowData = { ...termData, hideFromAgents: true };
+const blocked: boolean = findInlineSecret('pgcli postgres://a:b@h/db') !== null;
+const shown: string = redactCommand('pgcli postgres://a:b@h/db');
+void globalPresets; void projectPresets; void hidden; void blocked; void shown;

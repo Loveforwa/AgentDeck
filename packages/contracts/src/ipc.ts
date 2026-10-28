@@ -17,7 +17,7 @@ import type { SubagentEvent, SubagentService } from './subagents.ts';
 import type { UsageEvent, UsageService } from './usage.ts';
 import type { WorkspaceEvent, WorkspaceService } from './workspace.ts';
 
-export const CONTRACTS_VERSION = '0.1.14';
+export const CONTRACTS_VERSION = '0.1.15';
 
 /** 所有从服务推给界面的事件。新增事件只能往这里加，不能改已有事件的形状。 */
 export type AgentDeckEvent =
