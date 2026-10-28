@@ -316,7 +316,7 @@
       "y": 10860
     },
     "spec/PluginQueue.dc.html": {
-      "h": 2260,
+      "h": 2920,
       "page": "plugins",
       "title": "PL3 · Prompt queue：额度用完后到点接着发排好的提示词",
       "w": 1760,
@@ -324,7 +324,7 @@
       "y": 4630
     },
     "spec/CrewOverview.dc.html": {
-      "h": 1560,
+      "h": 1640,
       "page": "crew",
       "title": "C0 · Agent 集群：按模板组一队 agent 做复杂任务",
       "w": 1760,
@@ -332,12 +332,12 @@
       "y": 0
     },
     "spec/CrewNew.dc.html": {
-      "h": 1500,
+      "h": 2800,
       "page": "crew",
-      "title": "C1 · 新建集群：选模板、写目标、定分工",
+      "title": "C1 · 新建集群：选模板或 No template、写目标、定分工",
       "w": 1760,
       "x": 0,
-      "y": 1720
+      "y": 1800
     },
     "spec/CrewBoard.dc.html": {
       "h": 2100,
@@ -345,23 +345,23 @@
       "title": "C2 · 白板上的集群：集群框、任务看板、各任务的 worktree",
       "w": 1760,
       "x": 0,
-      "y": 3380
+      "y": 4760
     },
     "spec/CrewTask.dc.html": {
-      "h": 2400,
+      "h": 2560,
       "page": "crew",
-      "title": "C3 · 一个任务的一生：调度规则和 agent 用的工具",
+      "title": "C3 · 一个任务的一生：调度规则和 agent 用的命令",
       "w": 1760,
       "x": 0,
-      "y": 5640
+      "y": 7020
     },
     "spec/CrewInbox.dc.html": {
-      "h": 2440,
+      "h": 2720,
       "page": "crew",
       "title": "C4 · 关卡、收件箱、汇报：只在需要你时叫你",
       "w": 1760,
       "x": 0,
-      "y": 8200
+      "y": 9740
     },
     "spec/CrewTemplates.dc.html": {
       "h": 2580,
@@ -369,7 +369,111 @@
       "title": "C5 · 模板、分期、已定",
       "w": 1760,
       "x": 0,
-      "y": 10800
+      "y": 12620
+    },
+    "spec/PluginResume.dc.html": {
+      "h": 3640,
+      "page": "plugins",
+      "title": "PL4 · Auto-resume：被额度打断的任务，恢复后自己接着做",
+      "w": 1760,
+      "x": 0,
+      "y": 7710
+    },
+    "spec/CrewFree.dc.html": {
+      "h": 3560,
+      "page": "crew",
+      "title": "C6 · 自由模式（No template）：一个 Lead 按需开子 session",
+      "w": 1760,
+      "x": 0,
+      "y": 15360
+    },
+    "spec/CrewCli.dc.html": {
+      "h": 2960,
+      "page": "crew",
+      "title": "C7 · agentdeck 命令行：crew 命令不进 MCP，只在 Lead 里打开",
+      "w": 1760,
+      "x": 0,
+      "y": 19080
+    },
+    "spec/CrewLead.dc.html": {
+      "h": 3560,
+      "page": "crew",
+      "title": "C8 · Lead 和收件箱：谁记进度、谁叫你、谁跟你聊",
+      "w": 1760,
+      "x": 0,
+      "y": 22200
+    },
+    "spec/CrewPositioning.dc.html": {
+      "h": 2760,
+      "page": "crew",
+      "title": "C9 · 定位：做什么、不做什么（和竞品对照）",
+      "w": 1760,
+      "x": 0,
+      "y": 25920
+    },
+    "spec/SessionModel.dc.html": {
+      "h": 3200,
+      "page": "session",
+      "title": "S0 · 以 session 为核心：AgentDeck 自己的 Session，和窗口、tmux、agent 的会话记录分开",
+      "w": 1760,
+      "x": 0,
+      "y": 0
+    },
+    "spec/SessionBoard.dc.html": {
+      "h": 3200,
+      "page": "session",
+      "title": "S1 · 白板和左边栏：看得出谁开了谁，关掉以后还在，能换一家接着做",
+      "w": 1760,
+      "x": 0,
+      "y": 3360
+    },
+    "spec/AgentsSettings.dc.html": {
+      "h": 2240,
+      "page": "adapters",
+      "title": "A0 · Settings › Agents：每家 agent 能做什么、靠什么做、核对到哪个版本",
+      "w": 1760,
+      "x": 0,
+      "y": 0
+    },
+    "spec/AgentsOnboard.dc.html": {
+      "h": 2560,
+      "page": "adapters",
+      "title": "A1 · 接入和升级一家 agent：同一套合格测试、记录、照记录开关功能",
+      "w": 1760,
+      "x": 0,
+      "y": 2400
+    },
+    "spec/SkillsManage.dc.html": {
+      "h": 2740,
+      "page": "skills",
+      "title": "K0 · 大批量 skill：总览、按项目减掉、换一家不用重装",
+      "w": 1760,
+      "x": 0,
+      "y": 0
+    },
+    "spec/SkillsAgents.dc.html": {
+      "h": 2900,
+      "page": "skills",
+      "title": "K1 · 五家 agent 的 skill：放在哪、怎么加载、怎么加减",
+      "w": 1760,
+      "x": 0,
+      "y": 2900
+    },
+    "spec/RemoteOverview.dc.html": {
+      "h": 2480,
+      "page": "remote",
+      "title": "R0 · 手机和远程：方案对比、分三步、安全规矩",
+      "w": 1760,
+      "x": 0,
+      "y": 0
+    },
+    "spec/RemoteMobile.dc.html": {
+      "h": 2560,
+      "page": "remote",
+      "title": "R1 · 手机页、推送和 Settings › Remote",
+      "w": 1760,
+      "x": 0,
+      "y": 2640
     }
   },
   "createdOnFiles": {
@@ -428,7 +532,7 @@
       "kind": "title1",
       "maxW": 1760,
       "page": "plugins",
-      "text": "MVP 插件 · Auto-approve、Usage、Prompt queue",
+      "text": "MVP 插件 · Auto-approve、Usage、Prompt queue、Auto-resume",
       "x": 0,
       "y": -300
     },
@@ -437,6 +541,38 @@
       "maxW": 1760,
       "page": "crew",
       "text": "Agent 集群 · 复杂任务的多 agent 模板",
+      "x": 0,
+      "y": -300
+    },
+    "head10": {
+      "kind": "title1",
+      "maxW": 1760,
+      "page": "skills",
+      "text": "Skill 管理 · 总览、按项目减掉、换一家不用重装",
+      "x": 0,
+      "y": -300
+    },
+    "head11": {
+      "kind": "title1",
+      "maxW": 1760,
+      "page": "remote",
+      "text": "手机 · 远程 · 推送、只读手机页、手机上处理",
+      "x": 0,
+      "y": -300
+    },
+    "head8": {
+      "kind": "title1",
+      "maxW": 1760,
+      "page": "session",
+      "text": "Session · AgentDeck 自己的会话：父子、关掉以后还在、换一家接着做",
+      "x": 0,
+      "y": -300
+    },
+    "head9": {
+      "kind": "title1",
+      "maxW": 1760,
+      "page": "adapters",
+      "text": "Agent 接入 · 能力报告、合格测试、Settings › Agents",
       "x": 0,
       "y": -300
     }
@@ -481,12 +617,25 @@
     "spec/PluginApprove.dc.html",
     "spec/PluginUsage.dc.html",
     "spec/PluginQueue.dc.html",
+    "spec/PluginResume.dc.html",
     "spec/CrewOverview.dc.html",
     "spec/CrewNew.dc.html",
     "spec/CrewBoard.dc.html",
     "spec/CrewTask.dc.html",
     "spec/CrewInbox.dc.html",
-    "spec/CrewTemplates.dc.html"
+    "spec/CrewTemplates.dc.html",
+    "spec/CrewFree.dc.html",
+    "spec/CrewCli.dc.html",
+    "spec/CrewLead.dc.html",
+    "spec/CrewPositioning.dc.html",
+    "spec/SessionModel.dc.html",
+    "spec/SessionBoard.dc.html",
+    "spec/AgentsSettings.dc.html",
+    "spec/AgentsOnboard.dc.html",
+    "spec/SkillsManage.dc.html",
+    "spec/SkillsAgents.dc.html",
+    "spec/RemoteOverview.dc.html",
+    "spec/RemoteMobile.dc.html"
   ],
   "pages": [
     {
@@ -504,6 +653,22 @@
     {
       "id": "crew",
       "name": "Agent 集群"
+    },
+    {
+      "id": "session",
+      "name": "Session"
+    },
+    {
+      "id": "adapters",
+      "name": "Agent 接入"
+    },
+    {
+      "id": "skills",
+      "name": "Skill 管理"
+    },
+    {
+      "id": "remote",
+      "name": "手机 · 远程"
     },
     {
       "id": "v2",

@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>定位 · 做什么、不做什么</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1240px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:12.5px;line-height:1.5}
+.th{padding:8px 10px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:7px 10px;border-top:1px solid #E3E3E0}
+.grp{padding:6px 10px;border-top:1px solid #E3E3E0;background:#FBFBFA;font-size:11.5px;color:#6B6B6B;font-weight:600;grid-column:1 / -1}
+.us{background:#F7F7F5}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.tag{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;background:#F2F2EF;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#8A8A85}
+.col{flex:1;box-sizing:border-box;border:1px solid #E3E3E0;border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;font-size:13.5px;line-height:1.6;background:#FFFFFF}
+.col b{font-size:15px}
+.item{display:flex;flex-direction:column;gap:2px;padding-top:8px;border-top:1px solid #EFEFEC}
+.item i{font-style:normal;color:#6B6B6B;font-size:12.5px}
+.node{box-sizing:border-box;background:#FFFFFF;border:1px solid #D6D6D2;border-radius:8px;padding:12px 14px;font-size:12.5px;line-height:1.55;display:flex;flex-direction:column;gap:4px;flex:1}
+.node b{font-size:13.5px}
+.gate{box-sizing:border-box;background:#FFF8E5;border:1px dashed #BF8700;border-radius:8px;padding:12px 14px;font-size:12.5px;line-height:1.55;color:#5C4400;display:flex;flex-direction:column;gap:4px;flex:1}
+.gate b{font-size:13.5px}
+.arr{flex:none;align-self:center;font-size:18px;color:#8A8A85}
+</style>
+</helmet>
+<div style="width: 1760px; height: 2760px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 48px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">C9 · 定位：小作坊打不过大公司，AgentDeck 站在哪</h1>
+      <span class="concept">2026-10-27 草案 · 待你定</span>
+    </div>
+    <p class="lead">单家的体验（聊天界面、工具调用的样子、云端、手机）我们追不上 Claude 和 Codex 自己的 app，也不去追。原来说能站住的三样是“跨家协作、白板看全局、原生 TUI”。2026-10-27 核对了 14 家：白板和原生 TUI 已经有人做得和我们很像（Nodeterm 也是 React Flow + tmux），跨家并排跑几乎人人都有。还没人做完整的，是让几家 agent 按一套确定的流程把大任务做完：有人守规矩、换家审、额度用完换家、你只在关卡上出现。这就是 M8 集群。</p>
+    <p class="lead" style="color: #1A1A1A">所以三样从“卖点”降成“底座”，卖点收成一件事：几家 agent 一起把大任务可靠地做完，每个 agent 都是原生终端，你随时能接手。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 一句话怎么说</span>
+    <div style="display: flex; gap: 20px">
+      <div class="col"><span class="tag" style="align-self: flex-start">现在（README 首句）</span>
+        <b class="mono" style="font-size: 14px; font-weight: 500">Run several coding agents side by side on one whiteboard, one git worktree per branch.</b>
+        <span class="muted">说的是“并排跑、一个分支一个 worktree”。Conductor、Claude Squad、Nodeterm、TermCanvas、Claude Desktop 都能这么说，读者分不出我们。</span></div>
+      <div class="col"><span class="tag" style="align-self: flex-start">建议（CR 第一期合进 main 以后再上 README）</span>
+        <b class="mono" style="font-size: 14px; font-weight: 500">Hand a big task to Claude Code, Codex and other agents together. AgentDeck splits it, keeps every agent in its own real terminal and worktree on one board, and only stops when it needs you.</b>
+        <span class="muted">说的是“跨家一起做完大任务、只在关卡叫你”，原生终端和白板是让你放心的理由。集群做出来之前，README 先不改，只改内部文档。</span></div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 竞品现在做到哪（2026-10-27 核对，出处见调研 DR-79；“待核对”是公开资料里没写清的）</span>
+    <div class="tbl" style="grid-template-columns: 190px 110px 150px minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr)">
+      <span class="th">产品</span><span class="th">跨家</span><span class="th">原生 TUI</span><span class="th">接入方式</span><span class="th">session · 多 agent</span><span class="th">白板 · 总览</span><span class="th">远程 · 手机</span>
+      <span class="grp">官方：单家做到最深</span>
+      <span class="td"><b>Claude Code</b> · Desktop</span><span class="td">否</span><span class="td">CLI 是；Desktop 是自己的界面</span><span class="td">自家引擎</span><span class="td">Desktop 每个会话自动开 worktree；agent view（<span class="mono">claude agents</span>，后台会话，预览）；agent teams（实验，Lead + 队友 + 共享任务表）；Projects（公测，一个协调对话开云端 thread）</span><span class="td">列表：agent view 按 Needs input / Working 分组；Projects 的 Overview 有 Waiting on you</span><span class="td">有：Remote Control（2026-02 起，手机和网页接本机会话）、云端会话</span>
+      <span class="td"><b>Codex App</b></span><span class="td">否</span><span class="td">否（CLI 另有 TUI）</span><span class="td">自家 app-server</span><span class="td">按项目的 threads 并行、worktree、subagents、Automations 定时任务</span><span class="td">列表</span><span class="td">有：ChatGPT 手机 app 控 Mac 上的 Codex App（2026-05 预览）、SSH 主机</span>
+      <span class="td"><b>Cursor</b> cloud agents</span><span class="td">多模型</span><span class="td">否</span><span class="td">自己的一套工具和提示词</span><span class="td">每个 agent 一台云端 VM、一个分支，做完开 PR</span><span class="td">列表</span><span class="td">本来就在云上</span>
+      <span class="grp">第三方：协议接入，自己画聊天界面</span>
+      <span class="td"><b>T3 Code</b></span><span class="td">是 · 6 家</span><span class="td">否</span><span class="td">codex app-server JSON-RPC、Claude Agent SDK，统一成自己的事件</span><span class="td">threads，中途换模型；外部 agent 可经 MCP 操作它</span><span class="td">无</span><span class="td">有：web、iOS、Android</span>
+      <span class="td"><b>Synara</b></span><span class="td">是 · 10 家</span><span class="td">否</span><span class="td">provider-native 接入（待核对细节）</span><span class="td">project → thread → provider session；换家接着做（handoff）；managed worktree；定时任务</span><span class="td">无（项目导航和搜索）</span><span class="td">待核对</span>
+      <span class="td"><b>MonoCode</b></span><span class="td">是 · 7 家（含 pi、omp）</span><span class="td">待核对（有内嵌终端）</span><span class="td">“架在各家 CLI 上”，细节待核对</span><span class="td">标签页即 session，统一输入框；文章说有 Mono 主 agent（待核对）</span><span class="td">无</span><span class="td">无</span>
+      <span class="td"><b>Conductor</b></span><span class="td">部分 · 3 家</span><span class="td">待核对</span><span class="td">包一层 Claude Code、Codex</span><span class="td">每个 workspace 一个 worktree，diff、检查、PR</span><span class="td">侧栏列表</span><span class="td">第三方说有 Cloud 和手机 app（待核对）</span>
+      <span class="td"><b>Nimbalyst</b>（Crystal 已停更）</span><span class="td">部分 · 2 家</span><span class="td">待核对</span><span class="td">—</span><span class="td">并行 session + worktree，任务追踪</span><span class="td">session 看板（kanban）</span><span class="td">有：iOS app</span>
+      <span class="grp">第三方：tmux 里跑真终端</span>
+      <span class="td"><b>Claude Squad</b></span><span class="td">是 · 6 家</span><span class="td">是</span><span class="td">tmux</span><span class="td">每个 session 一个 tmux 会话 + worktree</span><span class="td">终端里的列表</span><span class="td">无</span>
+      <span class="td"><b>Agent Deck</b>（asheshgoplani，和我们同名）</span><span class="td">是 · 十几家（含 pi、omp）</span><span class="td">是</span><span class="td">tmux（可独立 socket）、钩子判状态</span><span class="td">worktree；按会话开关 MCP；conductor：一个常驻会话盯别的会话、往上报</span><span class="td">终端里的列表 + 本地网页</span><span class="td">有：SSH 远程、Telegram / Slack 遥控</span>
+      <span class="grp">第三方：白板上放真终端（和我们最像）</span>
+      <span class="td"><b>Nodeterm</b></span><span class="td">是 · 5 家</span><span class="td">是</span><span class="td">React Flow 白板 + 自带 tmux + 钩子</span><span class="td">组节点绑 worktree；agent 用白板 CLI 开节点、组队、互相验；连线后能读对方的记录</span><span class="td">无限白板，RUNNING / NEEDS YOU</span><span class="td">有：iOS app 接同一个 tmux、SSH 远程</span>
+      <span class="td"><b>TermCanvas</b></span><span class="td">是 · 5 家（含 kimi）</span><span class="td">是</span><span class="td">Electron 白板；agent 用 CLI + skill，不用 MCP</span><span class="td">项目 → worktree → 终端；Hydra：Lead 驱动，角色文件定用哪家，<span class="mono">result.json</span> 当关卡，approve / reset / merge</span><span class="td">无限白板，状态点</span><span class="td">只有用量同步（远程在路线图）</span>
+      <span class="td"><b>Collaborator</b> · <b>AgentGrid</b></span><span class="td">2 家</span><span class="td">Collaborator 是；AgentGrid 待核对</span><span class="td">持久 PTY</span><span class="td">AgentGrid：主 agent 拆任务派给看得见的 worker，额度快满时换一个 agent 接着做</span><span class="td">无限白板</span><span class="td">AgentGrid 有手机 beta</span>
+      <span class="td us"><b>AgentDeck</b></span><span class="td us">是 · 5 家</span><span class="td us">是</span><span class="td us">React Flow 白板 + 自己的 tmux + 钩子 + AgentDeck MCP</span><span class="td us">工作区框 = worktree；子 agent 窗口组（N2）、后台 agent（N10）、5 家的历史会话（N11）；集群 M8 还在纸上</span><span class="td us">白板 + 状态灯 + BOARD 列表（V5）</span><span class="td us">无（终端里的 claude 可以自己 <span class="mono">/remote-control</span>）</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · 原来说的三样，现在还是只有我们有吗</span>
+    <div style="display: flex; gap: 20px">
+      <div class="col"><span class="tag" style="align-self: flex-start">已经不独有</span><b>原生 TUI</b>
+        <span>tmux 系（Claude Squad、Agent Deck）和白板系（Nodeterm、TermCanvas、Collaborator）都跑真终端。官方桌面 app 和 T3、Synara、Conductor 不是。</span>
+        <span class="muted">还是要做，它让新功能第一天就能用（claude 的 agent view、/remote-control 在我们的终端里直接能用）。但它是底座，不是卖点。</span></div>
+      <div class="col"><span class="tag" style="align-self: flex-start">已经不独有</span><b>白板看全局</b>
+        <span>Nodeterm 几乎和我们一样：React Flow + tmux + 钩子状态 + 组绑 worktree + 源代码管理 + agent 开节点的 CLI + iOS。TermCanvas、Collaborator、AgentGrid 也是无限白板。官方给的是列表（agent view、Projects 的 Overview）。</span>
+        <span class="muted">我们能比的是细节：框、排版（N12）、左边栏历史（N11）、网页窗口、⌘J。是做得好不好，不是有没有。</span></div>
+      <div class="col"><span class="tag" style="align-self: flex-start; background: #FFF8E5; color: #5C4400">还没人做完整</span><b>跨家协作</b>
+        <span>几家并排跑人人都有。按流程协作已经有人在做：TermCanvas 的 Hydra（Lead + 角色 + 关卡文件）、AgentGrid（主 agent + 额度交接）、Nodeterm（组队、互相验）、Synara（换家接着做）。</span>
+        <span style="color: #1A1A1A">还没看到的：调度器是一段确定的代码，不靠 Lead agent 自觉。它守 owns 目录、锁接口、换家审、额度用完换家、重启后对账，所有关卡进一个收件箱。这就是 M8，窗口期大概几个月。</span></div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · 做什么，不做什么（文章里提到的方向逐条过）</span>
+    <div style="display: flex; gap: 20px">
+      <div class="col"><b>做</b>
+        <div class="item"><span>集群（M8）当头号新方向</span><i>唯一还没人做完整的。CR1 收件箱先做，它对应 Claude Projects 的 Waiting on you。</i></div>
+        <div class="item"><span>原生 TUI 继续当底座</span><i>不画自己的聊天界面。我们只画 agent 之外的东西：框、收件箱、任务卡、摘要卡、Usage 条。</i></div>
+        <div class="item"><span>审美：投在我们自己画的那部分</span><i>白板、框、收件箱、集群看板照组件库做，暖灰墨黑，颜色只表示状态。不做工具调用和 thinking 的折叠卡片，那是 agent 自己的画面。</i></div>
+        <div class="item"><span>卡片：用已有的窗口</span><i>Session 卡片就是终端窗口和摘要卡，HTML / Artifact 卡片就是网页窗口，任务卡片在 CR5。不另起一套。</i></div>
+        <div class="item"><span>和官方的新功能兼容，不重做</span><i>agent view、agent teams、/remote-control 在我们的终端里能正常用（AH6 实测）。N10 读 claude 子 agent 就是这个思路。</i></div>
+        <div class="item"><span>远程：先借各家的，集群整夜跑以后再做“看收件箱、批关卡”</span><i>见“手机 · 远程”页 R0、R1（M12）。</i></div>
+      </div>
+      <div class="col"><b>不做</b>
+        <div class="item"><span>自己的聊天界面，或把 agent 接成协议再自己画</span><i>T3、Synara 走的路。代价是模型表现不一定等于原生，各家一改版就要跟。</i></div>
+        <div class="item"><span>统一工具集、自己的 harness</span><i>不替换 agent 自己的读写文件、执行命令这些工具。我们只给 session 级的操作（开终端、派活、交付），形式是 <span class="mono">agentdeck</span> 命令行（C7）。</i></div>
+        <div class="item"><span>自己的记忆系统</span><i>长期记忆交给各家（CLAUDE.md、AGENTS.md、auto-memory）。短期记忆就是集群任务表。Agent as Memory 见 C8。</i></div>
+        <div class="item"><span>搜索</span><i>是 agent 自己的能力，最多做成插件；AgentDeck 不做，写一页说明（RM4，R0）。</i></div>
+        <div class="item"><span>云端跑 agent</span><i>Cursor、Claude Projects、Codex 云端都有。我们是本机工具，代码不离开你的电脑。</i></div>
+        <div class="item"><span>追单家的深度功能</span><i>Codex Automations、Claude Projects、computer use 这些，用户直接用官方的。</i></div>
+        <div class="item"><span>每家都深做适配</span><i>深做 claude、codex（omp 修好 IS-76）。pi、kimi 走 generic 适配器加命令行进集群（C7），新 agent 靠社区贡献。</i></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">5 · 里程碑先后（建议）</span>
+    <div style="display: flex; gap: 10px; align-items: stretch">
+      <div class="node"><b>M5 · MVP v2</b><span>已合进 main。只剩你验收 TC-29～TC-33。</span><span class="muted">不再加需求。</span></div>
+      <span class="arr">→</span>
+      <div class="node"><b>M6 · MVP v3</b><span>N1、N2、N5–N7、N9–N12 已合。验收 TC-34～TC-42，修出来的问题。</span><span class="muted">范围冻结，不为单家功能加新画板。</span></div>
+      <span class="arr">→</span>
+      <div class="node" style="flex: 1.6; border-color: #1A1A1A"><b>M8 · 集群第一期（排第一的新工作）</b><span>CR1 收件箱 → CR0 → CR2–CR6。第一期分 1a 自由模式（No template，C6）和 1b 模板模式；改成 agentdeck 命令行后 pi 也能进，kimi 先灰掉（C7）。</span><span class="muted">拿 AgentDeck 自己的下一批任务验。</span></div>
+      <span class="arr">→</span>
+      <div class="node"><b>M7 · PL3 并进 CR8</b><span>读额度恢复时间、到点空闲时发送，做成 agent-adapters 的公共能力，CR8 换家和等恢复用它。Queue 书签界面放后面。</span></div>
+      <span class="arr">→</span>
+      <div class="node"><b>M8 第二期 · 远程</b><span>CR7、CR8 整夜跑，然后在手机上看收件箱、批关卡（M12 远程，R0；推送 RM1 可以和 CR8 一起做）。</span><span class="muted">CR9 模板文件放最后。</span></div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">6 · 待你定</span>
+    <div style="display: flex; gap: 14px">
+      <div class="gate"><b>1 · 定位改成“几家一起把大任务做完”</b><span>三样降成底座。内部文档（实施方案、画布）现在改，README 首句等 CR 第一期合进以后再改。</span></div>
+      <div class="gate"><b>2 · 集群排在所有新方向前面</b><span>远程手机、PL3 的界面、新 agent 适配都往后排。M5、M6 只验收、修问题。</span></div>
+      <div class="gate"><b>3 · 深做的 agent 只有 claude、codex</b><span>omp 修好 IS-76 后跟上。pi、kimi 走 generic 适配器和 CLI，新 agent 靠社区贡献。</span></div>
+      <div class="gate"><b>4 · 和 Agent Deck 同名</b><span>那个项目也是 tmux 里管多个 coding agent。先在 README 里写一句区分；公开推广前定要不要改名（IS-109）。</span></div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":2760}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

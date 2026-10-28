@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Agent 集群 · agentdeck 命令行</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.at{position:absolute}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1240px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#6B6B6B}
+.cap{margin:0;font-size:13px;line-height:1.55;color:#5F5F5A}
+.row{display:grid;grid-template-columns:360px 940px 120px 140px;align-items:center;gap:0 16px;font-size:13px;height:34px}
+.bar{height:16px;background:#1A1A1A;border-radius:3px}
+.bar.lt{background:#8A8A85}
+.bar.xl{background:#CFCFCA}
+.col{flex:1;box-sizing:border-box;border:1px solid #E3E3E0;border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;font-size:13.5px;line-height:1.6;background:#FFFFFF}
+.col b{font-size:15px}
+.node{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #D6D6D2;border-radius:8px;padding:10px 12px;font-size:12.5px;line-height:1.5;display:flex;flex-direction:column;gap:3px}
+.node b{font-size:13px}
+.arr{position:absolute;font-size:18px;color:#8A8A85}
+.win{background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;overflow:hidden;font-size:11.5px}
+.wt{display:flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-bottom:1px solid #EEEEEB}
+.wb{padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.7;color:#3D3D3A}
+.am{width:6px;height:6px;border-radius:1.5px;flex:none}
+.dot{width:7px;height:7px;border-radius:999px;flex:none}
+.sk{display:flex;align-items:center;gap:8px;padding:3px 12px}
+.ex{display:flex;flex-direction:column;gap:10px;font-size:13.5px;line-height:1.65}
+</style>
+</helmet>
+<div style="width: 1760px; height: 2960px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">C7 · agentdeck 命令行：crew 命令不进 MCP，只在 Lead 里打开</h1>
+      <span class="concept">草案</span>
+    </div>
+    <p class="lead">CR3 原计划把 12 个 crew 工具加进 AgentDeck MCP。改成一个 <span class="mono">agentdeck</span> 命令行，agent 在自己的终端里跑：没打开的终端一个 token 也不多付；Worker 拿不到开新 session 的命令，不会一层套一层；pi 这类没有 MCP、但能跑 shell 的 agent 也能进集群。MCP 和命令行背后是主进程里同一份工具实现，现有 11 个 MCP 工具保留，只把常驻的说明缩短。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 每个终端每轮多带多少 token（2026-10-27 量的，估算）</span>
+    <p class="cap">用真的 McpServer 跑一次 tools/list，按模型看到的形状（name、description、input_schema）序列化，字符数 / 4 估算；全是英文，UTF-8 字节数 / 4 结果一样。每轮都要缓存读取一遍，右边是 1000 次请求的缓存读取量。</p>
+    <div style="display: flex; flex-direction: column; gap: 2px; padding: 16px 20px; border: 1px solid #E3E3E0; border-radius: 10px">
+      <div class="row" style="height: 26px; color: #6B6B6B; font-size: 12px; font-weight: 600"><span>情况</span><span></span><span>每轮</span><span>1000 次请求</span></div>
+      <div class="row"><span>现在 · claude 默认（MCP 工具延迟加载）</span><div class="bar" style="width: 89px"></div><span class="mono">~360</span><span class="mono">0.36M</span></div>
+      <div class="row"><span>现在 · 工具全部预先加载</span><div class="bar lt" style="width: 545px"></div><span class="mono">~2,190</span><span class="mono">2.19M</span></div>
+      <div class="row"><span>CR3 原计划 · 预先加载（+12 个 crew 工具）</span><div class="bar xl" style="width: 940px"></div><span class="mono">~3,780</span><span class="mono">3.78M</span></div>
+      <div class="row"><span>CR3 原计划 · 延迟加载</span><div class="bar xl" style="width: 124px"></div><span class="mono">~500</span><span class="mono">0.50M</span></div>
+      <div class="row" style="border-top: 1px solid #EEEEEB"><span>本方案 · 普通终端</span><div class="bar" style="width: 50px"></div><span class="mono">~200</span><span class="mono">0.20M</span></div>
+      <div class="row"><span>本方案 · Worker（提示词里 4 行命令）</span><div class="bar" style="width: 67px"></div><span class="mono">~270</span><span class="mono">0.27M</span></div>
+      <div class="row"><span>本方案 · Lead（打了 /crew 之后）</span><div class="bar" style="width: 164px"></div><span class="mono">~660</span><span class="mono">0.66M</span></div>
+    </div>
+    <div class="tbl" style="grid-template-columns: 300px minmax(0, 1fr)">
+      <span class="th">组成</span><span class="th">多少</span>
+      <span class="td">11 个工具的完整定义</span><span class="td">~1,910（最大 open_terminals ~340、create_workspace ~270，最小 list_workspaces ~95）</span>
+      <span class="td">MCP 的 server instructions</span><span class="td">~210，claude 在延迟加载时也常驻；和自带的 agentdeck skill 说的是同一件事</span>
+      <span class="td">延迟加载时的工具名列表</span><span class="td">claude ~80（11 个 mcp__agentdeck__…）；omp 的 xd:// 路由列表 ~160</span>
+      <span class="td">自带 agentdeck skill 的描述</span><span class="td">~65（skill 列表里一行）</span>
+      <span class="td">12 个 crew 工具（照现有写法起草）</span><span class="td">~1,590，最大 crew_add_task ~300</span>
+      <span class="td">/crew 的说明（Lead 用）</span><span class="td">~460，打开后进对话，之后每轮缓存读取</span>
+    </div>
+    <p class="cap">什么时候是“全部预先加载”：claude 关了 tool search（<span class="mono">ENABLE_TOOL_SEARCH=false</span>、<span class="mono">CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS</span>、部分网关和云上的旧模型）；codex 0.164.0 是否延迟加载待实测（源码 main 2026-10-26 写的是 tool_search 可用时 MCP 工具总是延迟）；omp 18.0.4 默认 <span class="mono">tools.xdev</span> 开，MCP 的说明按需取。结论：我们的 MCP 不到文章说的 30K，省 token 不是主要理由，主要理由是后面两条（谁能用、谁能开 session）。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 谁看得到什么</span>
+    <div style="display: flex; gap: 20px">
+      <div class="col">
+        <b>普通终端</b>
+        <span>白板上自己开的 claude、codex、omp：照旧带 AgentDeck MCP 的 11 个工具（open_browser、notify、open_terminals…）。</span>
+        <span>看不到任何 crew 命令；跑 <span class="mono">agentdeck crew plan</span> 只会得到 <span class="mono">Not in a crew.</span></span>
+        <span class="muted">每轮 ~200 token（instructions 缩短之后）</span>
+      </div>
+      <div class="col">
+        <b>Worker · Reviewer · QA</b>
+        <span>调度器发的第一条提示词里写了它要用的那几条命令（done、note、ask、contract 或 review）。</span>
+        <span>服务按角色拒绝 Lead 的命令和 <span class="mono">agentdeck session …</span>；MCP 里的 open_terminals、create_workspace、send_to_terminal 对它不列出。</span>
+        <span class="muted">每轮 ~270 token</span>
+      </div>
+      <div class="col">
+        <b>Lead</b>
+        <span>模板模式：调度器开的总设计，第一条提示词里带着命令说明。</span>
+        <span>自由模式（No template，C6）：你在 Skills · MCP 里勾上 <span class="mono">crew</span>，或在 claude、omp、pi、kimi 里打 <span class="mono">/crew</span>，才把说明装进对话。</span>
+        <span>只有 Lead 多一套开子 session、管子 session 的 <span class="mono">agentdeck session spawn · list · read · send · wait · result · close</span>（spawn 就是 open）；集群本身的是 <span class="mono">agentdeck crew status · diff · check · merge · ask · note · done</span>，模板模式的角色命令见 C3 第 4 节。</span>
+        <span class="muted">打开前 0，打开后每轮 ~460</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · 命令怎么连回 AgentDeck、怎么认身份</span>
+    <div class="fig" style="width: 1632px; height: 300px">
+      <div class="node" style="left: 24px; top: 40px; width: 270px"><b>agent 的 shell 工具</b><span class="mono" style="font-size: 11.5px">agentdeck crew done "Sidebar list done"</span><span class="muted">PATH 前面加了 &lt;dataDir&gt;/bin，只对 AgentDeck 的终端</span></div>
+      <span class="arr" style="left: 304px; top: 70px">→</span>
+      <div class="node" style="left: 330px; top: 40px; width: 300px"><b>agentdeck（tools/agentdeck-cli）</b><span>每次现读 <span class="mono">~/.agentdeck/run/api.json</span> 找地址，AgentDeck 换了端口也能连上</span><span class="muted">带 AGENTDECK_TERM 和 AGENTDECK_TERM_KEY</span></div>
+      <span class="arr" style="left: 640px; top: 70px">→</span>
+      <div class="node" style="left: 666px; top: 40px; width: 300px"><b>主进程 · 127.0.0.1 /cli</b><span>和 MCP 同一个服务、同一份工具实现；Origin、Host 检查照旧</span><span class="muted">钥匙对不上终端 id：401</span></div>
+      <span class="arr" style="left: 976px; top: 70px">→</span>
+      <div class="node" style="left: 1002px; top: 40px; width: 280px"><b>按角色放行</b><span>CrewService 记着每个终端属于哪个集群、什么角色</span><span class="muted">Worker 调 crew add：Only the Lead can change the plan.</span></div>
+      <span class="arr" style="left: 1292px; top: 70px">→</span>
+      <div class="node" style="left: 1318px; top: 40px; width: 290px"><b>JSON 打回终端</b><span class="mono" style="font-size: 11.5px">{"ok":true,"task":"T4","status":"Check"}</span><span class="muted">出错时退出码非 0，第一行英文原因</span></div>
+      <div class="at" style="left: 24px; top: 170px; width: 1584px; display: flex; gap: 20px; font-size: 12.5px; line-height: 1.6; color: #5F5F5A">
+        <span style="flex: 1"><b style="color: #1A1A1A">钥匙</b>：AGENTDECK_TERM_KEY = HMAC(AgentDeck 的密钥, 终端 id)，开终端时放进它的环境（不进命令行）。Worker 只知道自己的钥匙，把 AGENTDECK_TERM 改成 Lead 的 id 也过不了。</span>
+        <span style="flex: 1"><b style="color: #1A1A1A">只能申请、不能批准</b>：命令行和 MCP 都没有“批准关卡”“合回 main”；Approve plan、Interface change、Merge into main 只在界面上点。</span>
+        <span style="flex: 1"><b style="color: #1A1A1A">挡不住的</b>：同一个 macOS 用户下故意去读别的终端环境（tmux show-environment）的进程。这和现在任何进程都能 tmux send-keys 进 Lead 是同一级，边界是你的用户账号。</span>
+        <span style="flex: 1"><b style="color: #1A1A1A">沙箱</b>：codex 默认沙箱不让连本机端口和 socket，要么启动时放行 AgentDeck 的地址，要么每次走一次批准（Auto-approve 可以按）；先做实测任务再定。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · 每家 agent 怎么带说明（2026-10-27 核对）</span>
+    <div class="tbl" style="grid-template-columns: 110px 150px minmax(0, 1fr) minmax(0, 1fr) 150px">
+      <span class="th">agent</span><span class="th">能跑 shell</span><span class="th">只给 Lead 的说明怎么带</span><span class="th">进集群还缺什么</span><span class="th">来源</span>
+      <span class="td"><span style="display: inline-flex; align-items: center; gap: 6px"><span class="am" style="background: #A8503A"></span>claude</span></span><span class="td">Bash，要批准：给集群终端预先放行 <span class="mono">Bash(agentdeck:*)</span></span><span class="td">skill 加 <span class="mono">disable-model-invocation: true</span>：描述不进上下文，只能 <span class="mono">/crew</span> 打开；用 N9 的 <span class="mono">--plugin-dir</span> 只带给这一个终端</span><span class="td">—</span><span class="td">Claude Code 文档 Skills、MCP（tool search）</span>
+      <span class="td"><span style="display: inline-flex; align-items: center; gap: 6px"><span class="am" style="background: #2F5E9E"></span>codex</span></span><span class="td">有，默认在沙箱里</span><span class="td">0.164.0 启动时加不进 skill（N9 实测）；用第一条提示词带，或 <span class="mono">-c developer_instructions=…</span> 只给 Lead（待实测）</span><span class="td">沙箱放行 AgentDeck 的地址（待实测）</span><span class="td">openai/codex 源码 main（2026-10-26）</span>
+      <span class="td"><span style="display: inline-flex; align-items: center; gap: 6px"><span class="am" style="background: #0F6F7F"></span>omp</span></span><span class="td">有</span><span class="td">同 claude：skill 的 <span class="mono">disable-model-invocation</span> 认（读成 hide），<span class="mono">--plugin-dir</span></span><span class="td">IS-76 不再挡（第一条由调度器发送）；批准认屏没在真终端核对</span><span class="td">omp 18.0.4 本机源码</span>
+      <span class="td"><span style="display: inline-flex; align-items: center; gap: 6px"><span class="am" style="background: #7347A8"></span>pi</span></span><span class="td">有，从不请求批准</span><span class="td"><span class="mono">--skill</span> 加 <span class="mono">disable-model-invocation</span>（不进系统提示，<span class="mono">/skill:crew</span> 打开），或 <span class="mono">--prompt-template</span> 给一个 <span class="mono">/crew</span></span><span class="td">没有 MCP 也行；有扩展报回合结束</span><span class="td">pi 0.83.0 docs/skills.md、prompt-templates.md</span>
+      <span class="td"><span style="display: inline-flex; align-items: center; gap: 6px"><span class="am" style="background: #4A4F7A"></span>kimi</span></span><span class="td">有，要批准</span><span class="td"><span class="mono">--skills-dir</span>，<span class="mono">/skill:crew</span> 打开；能不能不进上下文待核对</span><span class="td">没有钩子（状态只看输出）、不支持 Auto-approve：每条命令都要你批，整夜跑会停</span><span class="td">kimi.com 文档 Slash Commands、Skills</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">5 · 界面：Skills · MCP 里看得到每项占多少</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start">
+      <div class="fig" style="width: 640px; height: 290px">
+        <div class="at win" style="left: 20px; top: 16px; width: 400px; height: 258px; border-radius: 10px">
+          <div style="padding: 8px 12px; font-weight: 600; border-bottom: 1px solid #EEEEEB">Source control<span style="float: right; color: #6B6B6B; font-weight: 400">crew/history-sidebar</span></div>
+          <div style="padding: 6px 12px; color: #6B6B6B; font-size: 10px; font-weight: 600">▸ CHANGES  3</div>
+          <div style="padding: 6px 12px; color: #1A1A1A; font-size: 10px; font-weight: 600">▾ SKILLS · MCP <span style="color: #6B6B6B; font-weight: 400">for claude · Lead</span></div>
+          <div class="sk mono"><span>☑</span>agentdeck <span class="muted">MCP</span><span class="dot" style="background: #1A7F37"></span><span style="margin-left: auto; color: #6B6B6B">~130/turn · built in</span></div>
+          <div class="sk mono"><span>☑</span>agentdeck<span style="margin-left: auto; color: #6B6B6B">~65/turn · built in</span></div>
+          <div class="sk mono"><span>☑</span>crew<span style="margin-left: auto; color: #6B6B6B">0 until /crew · built in</span></div>
+          <div class="sk mono"><span>☐</span>github <span class="muted">MCP</span><span style="margin-left: auto; color: #6B6B6B">? · library</span></div>
+          <div class="sk" style="border-top: 1px solid #EEEEEB"><span>Your other skills · 93</span><span style="margin-left: auto; color: #1A1A1A">Names only ▾</span></div>
+          <div style="padding: 6px 12px; color: #6B6B6B">About 1.4k tokens per turn in all, 200 from AgentDeck.</div>
+          <div style="padding: 4px 12px; color: #5F5F5A">Add skill…  Add MCP…<span style="float: right; color: #1A1A1A; font-weight: 600">Restart and resume</span></div>
+        </div>
+      </div>
+      <div class="ex" style="flex: 1">
+        <span>每行右边加一个估算：AgentDeck 自己的几项按它们的文字算（字符数 / 4），按这家 agent 是不是延迟加载 MCP 分开算；库里别人的 MCP 不知道有多少，写 “?”。下面一行是合计，连同 Your other skills 那一行（你自己目录里的 skill，Names only 时 claude 约 1.2k，见 K0 第 3 节）。</span>
+        <span><span class="mono">crew</span> 是新的 built in 项，默认不勾；调度器开的 Lead 自动勾上，Worker 不勾。自由模式里你给哪个终端勾上，它就是 Lead（C6 的 No template 也是开一个勾了它的终端）。</span>
+        <span>勾了以后照 N9 的规则要 Restart and resume 才生效；不支持的 agent 灰掉写原因（例如 kimi：“Needs approval for every command”）。</span>
+        <span>不另开设置页：每家注入多少本来就跟着终端走，放在 Skills · MCP 里最近。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">6 · 要你定的</span>
+    <div class="tbl" style="grid-template-columns: 420px minmax(0, 1fr)">
+      <span class="th">问题</span><span class="th">建议</span>
+      <span class="td">crew 工具做成 MCP 还是命令行</span><span class="td">命令行（混合：现有 MCP 工具留着，crew 和 session 只走命令行）。代价：要打包一个命令、处理 claude 的 Bash 批准和 codex 的沙箱、两种入口要一起维护。</span>
+      <span class="td">“第一期只给 claude、codex、omp” 要不要放宽</span><span class="td">放宽到 claude、codex、omp、pi；kimi 在下拉里灰掉写 “Needs approval for every command”，等它有钩子和自动批准再开。</span>
+      <span class="td">现有 MCP 工具动不动</span><span class="td">只动两处：server instructions 缩到两句（每个 claude 终端每轮少 ~150）；集群里的非 Lead 终端不列 open_terminals、create_workspace、send_to_terminal。工具本身不改名、不删，N1 和 TC-34 照旧。</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":2960}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

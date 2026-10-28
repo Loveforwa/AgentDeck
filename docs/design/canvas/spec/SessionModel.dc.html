@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Session · 模型</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.at{position:absolute}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1240px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#6B6B6B}
+.node{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #D6D6D2;border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.5;display:flex;flex-direction:column;gap:3px}
+.node b{font-size:13px}
+.node .f{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#3D3D3A}
+.key{position:absolute;box-sizing:border-box;background:#FFFFFF;border:2px solid #1A1A1A;border-radius:8px;padding:12px 14px;font-size:12px;line-height:1.55;display:flex;flex-direction:column;gap:3px}
+.key b{font-size:14px}
+.key .f{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#3D3D3A}
+.lost{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px dashed #8A8A85;border-radius:8px;padding:8px 10px;font-size:11.5px;line-height:1.45;color:#5F5F5A}
+.gate{position:absolute;box-sizing:border-box;background:#FFF8E5;border:1px dashed #BF8700;border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.45;color:#5C4400;display:flex;flex-direction:column;gap:2px}
+.lbl{position:absolute;font-size:11px;color:#5F5F5A;line-height:1.4}
+.st{position:absolute;box-sizing:border-box;height:58px;background:#FFFFFF;border:1px solid #D6D6D2;border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:2px;font-size:11.5px;line-height:1.4}
+.st b{font-size:13px}
+.am{display:inline-block;width:7px;height:7px;border-radius:2px;flex:none}
+.col{flex:1;box-sizing:border-box;border:1px solid #E3E3E0;border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;font-size:13.5px;line-height:1.6;background:#FFFFFF}
+.col b{font-size:15px}
+</style>
+</helmet>
+<div style="width: 1760px; height: 3200px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">S0 · 以 session 为核心：AgentDeck 自己的 Session，和窗口、tmux、agent 的会话记录分开</h1>
+      <span class="concept">2026-10-27 草案 · 待你定</span>
+    </div>
+    <p class="lead">现在白板上“一个终端窗口就是一个 session”只是看起来如此：数据上是窗口、tmux 会话、agent 的会话 id 三样东西靠窗口临时串着，窗口一关就散了。谁开了谁、名字、选的 skill、/clear 之前的对话，都跟着丢。这一页提议加一个 AgentDeck 自己的 Session：它比窗口活得长，比 agent 的会话 id 稳，父子关系、关掉以后再打开、集群任务的几轮、换一家接着做，都记在它上面。</p>
+    <p class="lead" style="color: #1A1A1A">不做对话格式转换：每家仍然跑自己的原生 CLI，session 之间传的是结论（交接说明），不是对话记录。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 现在：6 样东西都叫“会话”，靠窗口串着</span>
+    <div class="fig" style="width: 1632px; height: 420px">
+      <div class="node" style="left: 24px; top: 40px; width: 300px"><b>白板窗口 · WindowNode</b><span class="f">id: WindowId</span><span class="f">group?: { id, role: lead | member }</span><span class="muted">存在 BoardState（整份 JSON）</span></div>
+      <div class="node" style="left: 24px; top: 190px; width: 300px"><b>TerminalWindowData</b><span class="f">terminalId · agent · cwd</span><span class="f">sessionId（只记最后一个）</span><span class="f">skills · autoApprove · usage</span></div>
+      <div class="node" style="left: 420px; top: 40px; width: 280px"><b>终端进程 · tmux 会话</b><span class="f">TerminalId（恢复后换新的）</span><span class="muted">store 的 terminals 表：window_id 永远是 null，记录从来不删</span></div>
+      <div class="node" style="left: 420px; top: 190px; width: 280px"><b>agent 的会话记录</b><span class="f">AgentSessionId</span><span class="muted">~/.claude/projects/…jsonl、~/.codex/sessions/…rollout；/clear 以后换一个新的</span></div>
+      <div class="node" style="left: 800px; top: 40px; width: 270px"><b>历史栏 · SessionSummary（N11）</b><span class="muted">每次读 agent 的文件，不存；按 (agent, id) 对上开着的窗口</span></div>
+      <div class="node" style="left: 800px; top: 190px; width: 270px"><b>后台 agent · BackgroundAgent（N10）</b><span class="f">(terminalId, agentId)</span><span class="muted">只在内存里，重开应用就没了</span></div>
+      <div class="node" style="left: 1170px; top: 40px; width: 270px"><b>集群任务 · CrewTask（CR0 计划）</b><span class="muted">字段写的是“worktree、终端”：指向终端，不是 session</span></div>
+      <div class="node" style="left: 1170px; top: 190px; width: 270px"><b>MCP 的调用者</b><span class="f">x-agentdeck-terminal = TerminalId</span><span class="muted">open_terminal、create_workspace 不记是谁开的</span></div>
+      <span class="at" style="left: 330px; top: 70px; font-size: 18px; color: #8A8A85">→</span>
+      <span class="at" style="left: 330px; top: 220px; font-size: 18px; color: #8A8A85">→</span>
+      <span class="lbl" style="left: 334px; top: 98px; width: 80px">terminalId</span>
+      <span class="lbl" style="left: 334px; top: 248px; width: 80px">sessionId</span>
+      <span class="at" style="left: 712px; top: 220px; font-size: 18px; color: #8A8A85">→</span>
+      <span class="lbl" style="left: 716px; top: 248px; width: 80px">读文件</span>
+      <div class="lost" style="left: 24px; top: 320px; width: 300px">关掉窗口：进程被杀，窗口删掉；名字、label、skill、父子关系都没了</div>
+      <div class="lost" style="left: 420px; top: 320px; width: 280px">/clear 以后前一段对话和窗口断开，在历史栏里成了一条无关的记录</div>
+      <div class="lost" style="left: 800px; top: 320px; width: 270px">fork、交接开出来的新会话不记从哪来</div>
+      <div class="lost" style="left: 1170px; top: 320px; width: 270px">父子关系只有 open_terminals 开的才记，记在白板上，关掉 Lead 就被抹掉</div>
+      <span class="at" style="left: 1470px; top: 40px; width: 140px; font-size: 12px; line-height: 1.55; color: #5F5F5A">虚线框是现在会丢东西的地方。<br><br>代码依据见调研 DR-68。</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 加上 Session 以后</span>
+    <div class="fig" style="width: 1632px; height: 470px">
+      <div class="key" style="left: 560px; top: 40px; width: 420px"><b>Session（AgentDeck 自己的，存在 SQLite）</b>
+        <span class="f">id: SessionId · agent · workspaceId · cwd</span>
+        <span class="f">parentId: SessionId | null</span>
+        <span class="f">origin: user | spawn(tool) | fork | handoff | crew | adopted</span>
+        <span class="f">agentSessions: [{ id, startedAt, reason }]</span>
+        <span class="f">terminalId: TerminalId | null（停了为 null）</span>
+        <span class="f">state: running | stopped | handed-off</span>
+        <span class="f">label · title · 设置（skill、Auto-approve、Usage）</span>
+      </div>
+      <div class="node" style="left: 24px; top: 40px; width: 300px"><b>白板窗口</b><span class="f">TerminalWindowData.session</span><span class="muted">窗口只引用 Session；窗口组（WindowGroupRef）只管停靠和收起，谁算一组看 parentId</span></div>
+      <div class="node" style="left: 24px; top: 200px; width: 300px"><b>终端进程（tmux）</b><span class="f">TerminalId</span><span class="muted">恢复、Reopen 时换新的，Session 不变</span></div>
+      <div class="node" style="left: 24px; top: 330px; width: 300px"><b>agent 的会话记录</b><span class="muted">一条 Session 下面按先后挂几段：start、/clear、compact、resume、fork</span></div>
+      <div class="node" style="left: 1220px; top: 40px; width: 380px"><b>父 Session</b><span class="muted">Lead、fork 的来源、交接的上一家、集群的总设计</span></div>
+      <div class="node" style="left: 1220px; top: 170px; width: 380px"><b>集群任务 · CrewTask</b><span class="f">sessions: SessionId[]</span><span class="muted">一串 session：实现者、每轮审查者、交接后的接班者</span></div>
+      <div class="node" style="left: 1220px; top: 320px; width: 380px"><b>历史栏 · 后台 agent · MCP</b><span class="muted">历史栏把 agent 文件和 Session 表合起来（对不上以文件为准）；后台 agent 挂在父 session 的终端上，不算 Session；MCP 按调用者的终端找到它的 Session</span></div>
+      <span class="at" style="left: 336px; top: 80px; font-size: 18px; color: #8A8A85">→</span>
+      <span class="at" style="left: 336px; top: 230px; font-size: 18px; color: #8A8A85">←</span>
+      <span class="at" style="left: 336px; top: 360px; font-size: 18px; color: #8A8A85">←</span>
+      <span class="lbl" style="left: 366px; top: 84px; width: 180px">引用</span>
+      <span class="lbl" style="left: 366px; top: 234px; width: 180px">现在跑在哪个进程（可以没有）</span>
+      <span class="lbl" style="left: 366px; top: 364px; width: 180px">按先后排的几段对话</span>
+      <span class="at" style="left: 996px; top: 80px; font-size: 18px; color: #8A8A85">→</span>
+      <span class="lbl" style="left: 1026px; top: 84px; width: 180px">parentId</span>
+      <span class="at" style="left: 996px; top: 210px; font-size: 18px; color: #8A8A85">←</span>
+      <span class="lbl" style="left: 1026px; top: 214px; width: 180px">存一串 SessionId</span>
+      <span class="at" style="left: 996px; top: 360px; font-size: 18px; color: #8A8A85">←</span>
+      <span class="lbl" style="left: 1026px; top: 364px; width: 180px">读</span>
+      <span class="at" style="left: 560px; top: 290px; width: 420px; font-size: 12.5px; line-height: 1.6; color: #5F5F5A">服务放在 apps/desktop 的主进程里（它本来就包着 agents.start 写 store、也认得 MCP 的调用者），不新开服务包。服务不知道窗口：窗口和 Session 的对应只由白板保存，模块边界不变。所有开终端的入口（菜单、历史栏、MCP、X6 恢复、集群）都经过 agents.start，漏带 session 时服务兜底新建一条。</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · 名词</span>
+    <div class="tbl" style="grid-template-columns: 200px 220px minmax(0, 1fr)">
+      <span class="th">界面上叫</span><span class="th">类型</span><span class="th">是什么</span>
+      <span class="td mono">session</span><span class="td mono">Session / SessionId</span><span class="td">在 AgentDeck 里开过的一条做事的线：一家 agent、一个目录，有父 session 和来历。白板上的终端窗口显示它，左边栏列出它。</span>
+      <span class="td">（不出现）</span><span class="td mono">TerminalId</span><span class="td">终端进程，也就是 tmux 会话。一条 session 停了就没有进程，恢复、Reopen 时换一个新的。</span>
+      <span class="td mono">conversation</span><span class="td mono">AgentSessionId</span><span class="td">agent 自己的会话记录（claude 的 jsonl、codex 的 rollout……）。一条 session 下面可以有几段：/clear 一次多一段。</span>
+      <span class="td mono">background agent</span><span class="td mono">BackgroundAgent</span><span class="td">agent 用自带工具开的子 agent，跑在父 session 的进程里，只读，不算 session。</span>
+      <span class="td mono">Hand off</span><span class="td">origin: handoff</span><span class="td">换一家 agent 接着做：开一个子 session，第一条消息是交接说明。不转换对话格式。</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · 一条 session 的一生</span>
+    <div class="fig" style="width: 1632px; height: 330px">
+      <div class="st" style="left: 24px; top: 40px; width: 170px"><b>Running</b><span>有终端进程在跑</span></div>
+      <span class="at" style="left: 202px; top: 56px; font-size: 18px; color: #8A8A85">→</span>
+      <div class="st" style="left: 226px; top: 40px; width: 210px"><b>/clear · compact</b><span>同一条 session，多一段对话</span></div>
+      <span class="at" style="left: 444px; top: 56px; font-size: 18px; color: #8A8A85">→</span>
+      <div class="st" style="left: 468px; top: 40px; width: 230px"><b>Stopped</b><span>关掉窗口、进程退出、电脑重启</span></div>
+      <span class="at" style="left: 706px; top: 56px; font-size: 18px; color: #8A8A85">→</span>
+      <div class="st" style="left: 730px; top: 40px; width: 260px"><b>Reopen</b><span>开回同一条：名字、label、skill、设置、父子都在</span></div>
+      <span class="at" style="left: 998px; top: 56px; font-size: 18px; color: #8A8A85">→</span>
+      <div class="st" style="left: 1022px; top: 40px; width: 170px"><b>Running</b><span>agent 用 resume 接上</span></div>
+      <div class="st" style="left: 226px; top: 160px; width: 330px"><b>Fork into…</b><span>开一条新的 session，origin 是 fork，指向原来的</span></div>
+      <div class="st" style="left: 600px; top: 160px; width: 390px"><b>Hand off to ▸ codex</b><span>开一条子 session（另一家），原来的标成 Handed off</span></div>
+      <div class="st" style="left: 1034px; top: 160px; width: 300px"><b>Lead 开子 session</b><span>MCP / CLI / 集群派活：origin spawn 或 crew</span></div>
+      <div class="at" style="left: 24px; top: 132px; width: 1310px; height: 0; border-top: 1px dashed #8A8A85"></div>
+      <span class="at" style="left: 24px; top: 140px; width: 200px; font-size: 11px; color: #5F5F5A">下面三种都会开出新的 session</span>
+      <span class="at" style="left: 24px; top: 250px; width: 1580px; font-size: 12.5px; line-height: 1.6; color: #5F5F5A">关窗口时照样问 “Stop and close”，进程照样停；变化只是 AgentDeck 不再忘掉这条 session。关窗口只收起、进程接着在后台跑（像 Claude 的 agent view）这期不做，以后可以加一个 “Send to background”。</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">5 · 父子关系从哪来</span>
+    <div class="tbl" style="grid-template-columns: 220px 260px minmax(0, 1fr)">
+      <span class="th">怎么开的</span><span class="th">origin</span><span class="th">谁写进去</span>
+      <span class="td">你从菜单、⌘T 开的</span><span class="td mono">user</span><span class="td">白板。没有父 session。</span>
+      <span class="td">agent 开的</span><span class="td mono">spawn · open_terminal / open_terminals / create_workspace / cli</span><span class="td">MCP 和 <span class="mono">agentdeck</span> 命令行（C7）按调用者的终端找到它的 Session，当作父。</span>
+      <span class="td">Fork into…</span><span class="td mono">fork</span><span class="td">左边栏、标题栏菜单。父是被 fork 的那条（AgentDeck 没记过的就只记 agent 会话 id）。</span>
+      <span class="td">Hand off to ▸</span><span class="td mono">handoff</span><span class="td">标题栏菜单、集群 CR8 换家。父是上一家。</span>
+      <span class="td">集群派活</span><span class="td mono">crew · 集群 · 任务 · 角色</span><span class="td">调度器（CR2）。父是集群的总设计。</span>
+      <span class="td">历史栏 Resume 一条 AgentDeck 没记过的</span><span class="td mono">adopted</span><span class="td">左边栏。普通终端里开过的、Claude 桌面版里开的，第一次在白板上 Resume 时收进来。</span>
+    </div>
+    <span style="font-size: 13px; line-height: 1.6; color: #5F5F5A">后台 agent（claude 的 Task / Agent、codex 的子 thread）跑在父 session 的进程里，不是 Session；界面上画在同一棵树里，只读。层数不限，界面只画两层。Worker 能不能再开子 session 由第 3、4 点定。</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">6 · 两家官方 App 怎么分（2026-10-27 核对）</span>
+    <div class="tbl" style="grid-template-columns: 200px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr)">
+      <span class="th"></span><span class="th">Claude Desktop（Code 页签）</span><span class="th">Codex App / CLI</span><span class="th">AgentDeck（提议）</span>
+      <span class="td">列表</span><span class="td">左边栏列 session，默认按文件夹分组，能归档</span><span class="td">Project → thread，thread 选 Local / Worktree / Cloud</span><span class="td">左边栏：项目 → 工作路径 → agent，子 session 挂在父下面</span>
+      <span class="td">子 session</span><span class="td">建议的任务点 Start 后开成另一个 session，挂在当前 session 下面；nested sessions 把结果报回父（二手报道）</span><span class="td">subagent 是单独的 agent thread，主 thread 开、派活、等结果、关掉；/subagents 切过去看</span><span class="td">Lead 开的、fork 的、交接的、集群派的都是子 session，可以是另一家</span>
+      <span class="td">session 之间传什么</span><span class="td">一段文字，不带对方的历史和文件；搬到云端时“as a summary”</span><span class="td">子 thread 交回摘要</span><span class="td">交接说明（上一家写或 AgentDeck 拼），附上一家会话记录的路径</span>
+      <span class="td">跨家</span><span class="td">不支持</span><span class="td">不支持</span><span class="td">支持：每家仍是原生 CLI</span>
+    </div>
+    <span style="font-size: 12px; color: #6B6B6B">来源：code.claude.com/docs/en/desktop、/cross-session-messaging、/agent-view；developers.openai.com/codex/subagents、/codex/app/worktrees；nested sessions 见 alphasignal.ai（2026-10-14）。</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">7 · 待你定</span>
+    <div class="tbl" style="grid-template-columns: 260px minmax(0, 1fr) 300px">
+      <span class="th">事</span><span class="th">选项</span><span class="th">推荐</span>
+      <span class="td">contracts 里加不加 Session</span><span class="td">A 往窗口上加字段 / B 加 Session，窗口只引用 / C 自己存对话、各家格式互相转换</span><span class="td">B</span>
+      <span class="td">关掉窗口</span><span class="td">A 停进程，Session 留下，Reopen 开回同一条 / B 只收起，进程在后台接着跑</span><span class="td">A（B 以后加 Send to background）</span>
+      <span class="td">换一家接着做</span><span class="td">A 转换对话格式 / B 开子 session，第一条消息是交接说明</span><span class="td">B</span>
+      <span class="td">/clear 之后</span><span class="td">A 同一条 Session 的新一段 / B 一条新的 Session</span><span class="td">A（和窗口一致）</span>
+      <span class="td">集群任务</span><span class="td">存 TerminalId / 存一串 SessionId</span><span class="td">存 SessionId（改 CR0）</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":3200}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

@@ -41,12 +41,13 @@ body{margin:0}
 .tl{display:flex;flex-direction:column;gap:2px;font-size:12px;line-height:1.5}
 </style>
 </helmet>
-<div style="width: 1760px; height: 2260px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+<div style="width: 1760px; height: 2920px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
 
   <div style="display: flex; flex-direction: column; gap: 10px">
     <div style="display: flex; align-items: center; gap: 10px">
       <h1 style="margin: 0; font-size: 28px; font-weight: 600">PL3 · Prompt queue：额度用完后，到点接着发你排好的提示词</h1>
       <span class="tag">2026-10-27 定</span>
+      <span class="concept">2026-10-28 补：第 6 节和规则表里标 10-28 的行，草案</span>
       <span class="mono" style="font-size: 12px; color: #6B6B6B">PL3 · IS-88 · DR-63</span>
     </div>
     <p class="lead">5 小时额度用完了，你还有很多想法要它做。在 agent 终端上开 Prompt queue，先把提示词一条条排进去；这个终端的 agent 碰到额度上限时，插件按 agent 自己记下的恢复时间到点（多等 1 分钟）把第一条发进去，它做完一轮回到空闲再发下一条；又碰到上限就等下一次恢复，发完为止。你不在电脑前也能接着跑。</p>
@@ -140,7 +141,8 @@ body{margin:0}
     <span class="h2">5 · 规则</span>
     <div class="tbl" style="grid-template-columns: 280px minmax(0, 1fr)">
       <span class="th">情况</span><span class="th">怎么做</span>
-      <span class="td">什么时候发第一条</span><span class="td">这个终端的 agent 碰到额度上限（5 小时或每周），并且到了记录里的恢复时间 + 1 分钟，并且 agent 空闲。</span>
+      <span class="td">什么时候发第一条</span><span class="td">这个终端的 agent 碰到额度上限（5 小时或每周），并且到了记录里的恢复时间 + 1 分钟，并且 agent 空闲。<br><span style="color: #9A6700">10-28 改（IS-113，PL3 提交前修）：“碰到上限”记下来就不忘（armed），之后哪怕上限被一次成功的请求清掉也照发；按账号算，同一账号别的终端撞了也算（待你确认）；这个终端被打断时先续跑（PL4），续跑那一轮做完再发第一条。</span></span>
+      <span class="td">claude 自己续跑（10-28 补，IS-113）</span><span class="td">claude 2.1.234 起默认在恢复后自己接着做（autoContinueAtUsageLimit）。它在等的时候不往里粘贴：粘进去的话 claude 会发你的提示词、不再续原来的事。等它续的那一轮做完回到空闲再发；它说 stale（Mac 睡过头，要按回车）或 disabled 时交给 PL4。</span>
       <span class="td">什么时候发下一条</span><span class="td">上一条那一轮做完、agent 回到空闲（状态机的 turn-end）。中间你自己打了字，就等你这一轮也做完。</span>
       <span class="td">怎么发</span><span class="td">和批准一样走终端的按键（tmux send-keys）：先把文字送进输入框，再按回车。多行的按 agent 自己的多行写法送。</span>
       <span class="td">不发的时候</span><span class="td">在跑、等你批准、等你回答、终端退出了、你点了 Pause、应用关着、电脑睡着。应用重开后按保存的队列接着等。</span>
@@ -149,14 +151,36 @@ body{margin:0}
     </div>
   </div>
 
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">6 · 被打断的任务先续上（2026-10-28 补，接 PL4 Auto-resume）</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start">
+      <div class="fig" style="width: 760px; height: 400px">
+        <div class="at card" style="left: 30px; top: 24px; width: 560px">
+          <div style="display: flex; align-items: center; gap: 8px; padding: 10px 12px"><b>Prompt queue</b><span class="muted">· 2 prompts</span><span style="flex: 1"></span><span class="muted" style="font-size: 11px">codex · T5 Index codex sessions</span></div>
+          <div style="display: flex; align-items: center; gap: 6px; padding: 0 12px 8px; font-size: 11.5px; color: #8A6700"><span class="dot" style="background: #BF8700"></span>5-hour limit reached · resets 9:00pm · continues the stopped task at 9:01pm, then sends prompt 1</div>
+          <div class="row" style="background: #FBFBFA"><span class="muted mono" style="font-size: 11px">↻</span><span style="flex: 1">Continue the task that the limit stopped<span class="muted"> · from Auto-resume · 2 background agents to pick up</span></span><span class="muted">×</span></div>
+          <div class="row"><span class="muted mono" style="font-size: 11px">⋮⋮ 1</span><span style="flex: 1">Add a search box to the history sidebar.</span><span class="muted">×</span></div>
+          <div class="row"><span class="muted mono" style="font-size: 11px">⋮⋮ 2</span><span style="flex: 1">Run pnpm check and fix what fails.</span><span class="muted">×</span></div>
+          <div style="display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-top: 1px solid #F0F0ED"><span class="btn">Send next now</span><span class="btn">Pause</span><span style="flex: 1"></span><span style="font-size: 11px; color: #5F5F5A">☑ Keep Mac awake while waiting</span></div>
+        </div>
+      </div>
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 10px; font-size: 13.5px; line-height: 1.65">
+        <span>用户说的缺口：任务干到一半被额度打断、队列又是空的，现在什么都不发。补法：被打断的终端在队首多一行 <b>↻ Continue the task that the limit stopped</b>（Auto-resume 加的，不是你写的），恢复后先发它，这一轮做完再发你排的第 1 条。</span>
+        <span>× 掉这一行 = 这个终端这次不续跑，只发排着的。队列关着时这一行也照样有（在 Auto-resume 的书签里），见 PL4 画板。</span>
+        <span>续跑的文字和“同一账号几个终端错开 30 秒”的规则在 PL4 画板（Auto-resume）；这里只管顺序：续跑 → 排着的提示词。</span>
+        <span style="color: #5F5F5A">书签合成一个：Paused · ↻ + 2 queued · 9:01pm。</span>
+      </div>
+    </div>
+  </div>
+
   <div style="display: flex; gap: 40px; align-items: flex-start">
     <div style="flex: 1; display: flex; flex-direction: column; gap: 14px">
       <span class="h2">支持哪些 agent（DR-63）</span>
       <div class="tbl" style="grid-template-columns: 120px minmax(0, 1fr)">
         <span class="th">agent</span><span class="th">额度上限从哪看</span>
-        <span class="td mono">claude</span><span class="td">先做：会话记录里 error "rate_limit" 那一行带 quotaLimits.resetsAt</span>
+        <span class="td mono">claude</span><span class="td">先做：会话记录里 error "rate_limit" 那一行带 quotaLimits.resetsAt；2.1.234 起它自己会续（IS-113）</span>
         <span class="td mono">codex</span><span class="td">先做：task_complete 的 usage_limit_exceeded，rate_limits.primary.resets_at</span>
-        <span class="td mono">omp</span><span class="td">它自己会等恢复再重试，待调研要不要接</span>
+        <span class="td mono">omp</span><span class="td">它自己会换账号、等恢复再重试（18.0.4 源码），待实测要不要接</span>
         <span class="td mono">pi、kimi</span><span class="td">待调研；读不到的灰掉写 “Not supported for kimi yet”</span>
       </div>
     </div>
@@ -171,7 +195,7 @@ body{margin:0}
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":2260}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":2920}}'>
 class Component extends DCLogic {
   renderVals() {
     return {};

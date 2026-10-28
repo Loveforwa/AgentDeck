@@ -2,17 +2,65 @@
 
 按时间倒序。改动其中任何一条，先在这里写清楚再动代码。
 
+## 2026-10-28（下一代 harness 九点：Session、接入加固、Skill 管理、远程、集群补充、Auto-resume）
+
+起因是用户贴来的一篇讲“下一代 Harness”的文章。这次调研了 9 点（第 8、9 点是用户加的），由主 agent 定下面这些，带“待用户确认”的先照推荐登记。
+
+- 需求：设计画布
+  - “Agent 集群”页 C6–C9；
+  - 新页“Session”（S0、S1）、“Agent 接入”（A0、A1）、“Skill 管理”（K0、K1）、“手机 · 远程”（R0、R1）；
+  - “MVP 插件”页 PluginResume。
+- 任务：M9 SE0–SE6、M10 AH0–AH7、M11 SK0–SK7、M12 RM0–RM4、M8 CR10–CR21、M7 PL4–PL9。
+- 用例 TC-46～84，问题 IS-91～115，调研 DR-66～84。
+
+决定：
+
+- **继续跑原生 TUI，协议只当旁路**（DR-66）。各家 agent 的复杂度用三样管住：统一的能力报告（AH0）、每家都过的合格测试和 compat 记录（AH2）、版本超过核对版本时自动关掉认屏和按键类功能（AH3）。codex `--remote` 先调研（AH5）。
+- **AgentDeck 有自己的 Session**（M9，DR-68）：存在 SQLite，窗口只引用它，父子关系存在 Session 上。关窗口时进程停掉，session 留下，Reopen 恢复名字和设置。`/clear`、compact 算同一个 Session 的新一段。
+- **换一家接着做**：开一个子 session，第一条消息是交接说明，不转换各家的对话格式（SE6，CR8 用它）。
+- **集群有两种模式**（DR-71）：
+  - 自由模式（No template）：流程交给 Lead。只有 Lead 能开子 session、同时几个的上限、只开勾选的几家、worktree、子 session 表、收件箱、合回 main 永远你点，这些由 AgentDeck 守。
+  - 模板模式：照 2026-10-27 的设计。
+  - 第一期顺序：CR1 → 1a 自由模式 → 1b 模板模式。
+  - 两种模式互转放第二期（CR11）。
+- **crew 和 session 命令做成 `agentdeck` 命令行，只给 Lead**（DR-72）：现有 11 个 MCP 工具不动。实测 AgentDeck MCP 每轮约 2.1k token，延迟加载时约 360，所以省 token 不是主要理由。真正的理由有两个：Worker 拿不到开 session 的命令；能跑 shell 的 agent 都能进集群。另外，每个终端一把自己的钥匙（`AGENTDECK_TERM_KEY`），不再共用 token（IS-101）。
+- **进度以任务表加 Decisions 为准，Lead 的上下文只当缓存**（DR-73）：`crew status` 由代码生成摘要，压缩或重开后用 SessionStart 钩子塞回去。收件箱按集群分组，可以 Ask lead。Lead 只能写建议；第二期你授权后，可以替你回答 worker 的问题；批准和关卡永远你点。
+- **长期记忆不由 AgentDeck 管**（DR-74）：集群里非 Lead 的 claude 关掉 auto memory，只通过启动环境，不改用户配置。
+- **`send_to_terminal` 不许往正在等你的终端里打字**（IS-102，P1）：用 AH7 修，不等集群。
+- **搜索 AgentDeck 不做**（DR-76）。
+- **远程分三步**（M12，DR-77）：
+  1. 推送；
+  2. 只读手机页（只听 127.0.0.1，经 `tailscale serve`，扫码配对，再对上 Tailscale 账号）；
+  3. 手机上处理，但不能 Merge into main、不能批破坏性命令（待用户确认）。
+- **定位**（DR-79，待用户确认）：几家 agent 一起把大任务可靠地做完，你只在关卡出现。跨家协作、白板看全局、原生 TUI 是底座。集群排在所有新方向前面，M5、M6 只做验收、修问题。和开源项目 Agent Deck 同名（IS-109）：先在 README 加一句区分，公开推广前要不要改名由用户定。
+- **Skill 管理**（M11，DR-81）：
+  - 只读扫描五家的目录做总览；
+  - 一处存放 = AgentDeck 的库，加上各家目录（只读，当作来源）；
+  - 按“全局 → 项目 → 终端”三层启用；
+  - 用各家的启动参数把用户目录里的 skill 设成 Names only 或 Off；
+  - 按需加载放第二期。
+  - AgentDeck 永远不写、不删、不搬用户的 skill 目录。
+- **额度恢复后自动续跑另开插件 Auto-resume**（PL4–PL9，DR-84）：
+  - 只看这一轮是不是被额度结束的。先续跑，做完再发 Prompt queue。
+  - 按“agent + 配置目录”算账号，同一账号的一起停，恢复后每 30 秒续一个。
+  - claude 自己会续的，AgentDeck 不重复发，只补发“接回 failed 的子 agent”那一段。
+  - 集群终端归 CR8。
+  - 识别、归组、错开发送只在主进程的 LimitService 里写一份。
+  - 待用户确认：默认开，名字叫 Auto-resume，Mac 睡过头时先问你。
+- **PL3 提交前先修 IS-113**：claude 自己续跑成功后，PL3 记下的上限被清掉，排着的提示词再也不发。修法：加 armed 标记，等 claude 续完那一轮再发，stale 时不粘贴。
+
 ## 2026-10-27（M8 · Agent 集群）
 
 需求见设计画布“Agent 集群”页（C0–C5），任务 CR0–CR9，调研 DR-64、DR-65。
 
 - **模板定结构，agent 填内容；调度器是 AgentDeck 里的代码，不是 agent。** 派活、开 worktree 和终端、跑检查、比对 owns 目录、锁 contracts、换家审、合并、等额度、重启后对账都由调度器做；拆任务、写代码、审代码、解冲突交给 agent。
 - **界面上叫 Crew。**
-- **任务表只存在 AgentDeck 里（SQLite），不往仓库写**；agent 用 crew 工具（AgentDeck MCP）读写。
+- **任务表只存在 AgentDeck 里（SQLite），不往仓库写**；agent 用 crew 工具读写（2026-10-28 改成 `agentdeck` 命令行，见上）。
 - **默认分工**：总设计 claude、实现 codex（用完换 claude）、审查 claude、验收 codex；审查永远换一家，最多两轮。
 - **同时最多 3 个 agent**（New crew 里可改）。
 - **收件箱（CR1）先单独做**：所有终端等你的事集中在顶栏 “Needs you · N”，⌘J 打开；原来 ⌘J 依次跳到等你的窗口，改成在列表里选、回车跳过去。
 - **第一期只给 claude、codex、omp**：pi、kimi 没有 AgentDeck MCP；omp 进集群前先修 IS-76。
+  - 2026-10-28 放宽（待用户确认）：crew 命令改成命令行后，第一期能当 Lead 和 Worker 的是 claude、codex、omp、pi，kimi 灰掉（“Needs approval for every command”）；自由模式的子 session 不带工具，五家都行。第一条消息由调度器在启动后发，IS-76 不再挡集群，但照常修（AH1）。
 - **合回 main 永远由你点**，不能在 New crew 里取消这个关卡。
 
 ## 2026-10-25（X6 · 恢复上次会话）

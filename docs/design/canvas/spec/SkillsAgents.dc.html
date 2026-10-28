@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Skill 管理 · 各家怎么放、怎么减</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.at{position:absolute}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1240px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#6B6B6B}
+.am{display:inline-block;width:7px;height:7px;border-radius:1.5px;flex:none;margin-right:4px}
+.node{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #D6D6D2;border-radius:8px;padding:10px 12px;font-size:12.5px;line-height:1.5;display:flex;flex-direction:column;gap:3px}
+.node b{font-size:13px}
+.arr{position:absolute;font-size:18px;color:#8A8A85}
+.small{font-size:12px;color:#5F5F5A}
+.col{flex:1;box-sizing:border-box;border:1px solid #E3E3E0;border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;font-size:13.5px;line-height:1.6;background:#FFFFFF}
+.col b{font-size:15px}
+.warn{color:#B45309}
+</style>
+</helmet>
+<div style="width: 1760px; height: 2900px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">K1 · 五家 agent 的 skill 放在哪、怎么加载，AgentDeck 怎么加、怎么减</h1>
+      <span class="concept">2026-10-27 核对 · 待核对的标了</span>
+    </div>
+    <p class="lead">格式基本统一（agentskills.io 规范：<span class="mono">&lt;name&gt;/SKILL.md</span>，开头 name 和 description，先给描述、用到再读全文），放在哪没有统一：<span class="mono">.agents/skills</span> 是 codex、pi、omp、kimi 都认的约定，claude 不认。每家都把用户目录里的全部 skill 的描述放进上下文，claude 和 codex 有预算上限，超了就删描述；pi、omp 没有上限。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 每家读哪里、描述怎么进上下文</span>
+    <div class="tbl" style="grid-template-columns: 130px minmax(0, 1.25fr) minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1.2fr) 200px">
+      <span class="th">agent · 本机版本</span><span class="th">用户级</span><span class="th">项目级（从 cwd 往上到仓库根）</span><span class="th">描述常驻吗、有没有上限</span><span class="th">它自己的开关</span><span class="th">来源</span>
+      <span class="td"><span class="am" style="background: #A8503A"></span><span class="mono">claude</span> 2.1.291</span><span class="td mono">~/.claude/skills · ~/.claude/commands（旧）· 插件的 skills/ · 企业托管</span><span class="td mono">.claude/skills（子目录里的碰到才加载）</span><span class="td">常驻；列表预算 = 上下文窗口的 1%（单位待核对），超了从最少用的开始删描述；每项最多 1,536 字符</span><span class="td"><span class="mono">disable-model-invocation</span>；settings <span class="mono">skillOverrides</span>（on / name-only / user-invocable-only / off，不管插件里的）；<span class="mono">Skill(name)</span> 权限；<span class="mono">--disable-slash-commands</span></span><span class="td small">code.claude.com/docs/en/skills（2026-10-27）· claude --help</span>
+      <span class="td"><span class="am" style="background: #2F5E9E"></span><span class="mono">codex</span> 0.164.0</span><span class="td mono">~/.agents/skills · ~/.codex/skills（旧位置，还读不读待核对）· /etc/codex/skills · 自带 · 插件</span><span class="td mono">.agents/skills（N9 实测 .codex/skills 也算）</span><span class="td">常驻名字、描述、路径；预算窗口的 2%（不知道窗口时 8,000 字符），可调到 1 万 token；超了先缩短再丢</span><span class="td"><span class="mono">[[skills.config]] enabled=false</span>；<span class="mono">agents/openai.yaml</span> 的 allow_implicit_invocation；启动时加不进新的（DR-59）</span><span class="td small">learn.chatgpt.com/docs/build-skills（2026-10-27）· codex features list</span>
+      <span class="td"><span class="am" style="background: #7347A8"></span><span class="mono">pi</span> 0.83.0</span><span class="td mono">~/.pi/agent/skills · ~/.agents/skills · settings 的 skills 数组</span><span class="td mono">.pi/skills · .agents/skills</span><span class="td">常驻，写进系统提示，<b>没有上限</b></span><span class="td"><span class="mono">--no-skills</span>、<span class="mono">--skill &lt;路径&gt;</span>（关了发现也能加）；<span class="mono">disable-model-invocation</span>；重名先到先得</span><span class="td small">pi-mono docs/skills.md（2026-10-27）· pi --help</span>
+      <span class="td"><span class="am" style="background: #0F6F7F"></span><span class="mono">omp</span> 18.0.4</span><span class="td mono">~/.omp/agent/skills · ~/.claude/skills · ~/.codex/skills · ~/.agents/skills · ~/.agent/skills · auto-learn</span><span class="td mono">.omp · .claude · .codex · .agents · .agent 下的 skills/</span><span class="td">常驻，系统提示里一行一个，<b>没有上限</b></span><span class="td"><span class="mono">--no-skills</span>、<span class="mono">--skills=&lt;glob,…&gt;</span>；settings 按来源开关、ignoredSkills、includeSkills；重名先到先得</span><span class="td small">本机安装包源码 extensibility/skills.ts · omp --help</span>
+      <span class="td"><span class="am" style="background: #4A4F7A"></span><span class="mono">kimi</span> 2.3.2</span><span class="td mono">$KIMI_CODE_HOME/skills（默认 ~/.kimi-code/skills）· ~/.agents/skills · extra_skill_dirs</span><span class="td mono">仓库根的 .kimi-code/skills · .agents/skills</span><span class="td">文档没写描述进不进系统提示（待核对）</span><span class="td"><span class="mono">disableModelInvocation</span>；<span class="mono">type: flow</span> 只能手动；<span class="mono">--skills-dir</span> 会顶掉自动发现</span><span class="td small">kimi.com/code/docs … /customization/skills.html（2026-10-27）· kimi --help</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 本机实测（2026-10-27，只读统计，不含 skill 正文）</span>
+    <div style="display: flex; gap: 16px">
+      <div class="tbl" style="flex: 1.2; grid-template-columns: 1.3fr 0.6fr 1.5fr">
+        <span class="th">目录</span><span class="th">skill</span><span class="th">说明</span>
+        <span class="td mono">~/.claude/skills</span><span class="td">97</span><span class="td">13 个是指向 ~/.agents/skills 的软链；另有 5 个文件夹没有 SKILL.md</span>
+        <span class="td mono">~/.codex/skills</span><span class="td">44 + 6</span><span class="td">11 个是指向 ~/.claude/skills 的软链；.system 里自带 6 个</span>
+        <span class="td mono">~/.agents/skills</span><span class="td">12</span><span class="td">都是真目录</span>
+        <span class="td mono">~/.pi/agent/skills</span><span class="td">10</span><span class="td">全是软链（9 个指向 claude 的目录）</span>
+        <span class="td mono">~/.omp/agent/skills · ~/.kimi-code/skills</span><span class="td">0</span><span class="td">没有</span>
+        <span class="td mono">~/.claude/plugins</span><span class="td">3 个插件</span><span class="td">缓存里 40 份 SKILL.md（含旧版本）</span>
+        <span class="td">同名出现在 2～4 处</span><span class="td">12</span><span class="td">1 个是同一个文件；<b>11 个是独立副本</b>，现在内容一样，以后会各改各的</span>
+      </div>
+      <div class="tbl" style="flex: 1; grid-template-columns: 1.1fr 0.7fr 0.8fr 1.2fr">
+        <span class="th">这家在用户级看到</span><span class="th">skill</span><span class="th">能自己调</span><span class="th">描述每轮约</span>
+        <span class="td"><span class="am" style="background: #A8503A"></span><span class="mono">claude</span></span><span class="td">97</span><span class="td">97</span><span class="td warn">~9.1k，超预算被删描述</span>
+        <span class="td"><span class="am" style="background: #2F5E9E"></span><span class="mono">codex</span></span><span class="td">45</span><span class="td">30</span><span class="td">~3.3k</span>
+        <span class="td"><span class="am" style="background: #7347A8"></span><span class="mono">pi</span></span><span class="td">12</span><span class="td">12</span><span class="td">~1.9k</span>
+        <span class="td"><span class="am" style="background: #0F6F7F"></span><span class="mono">omp</span></span><span class="td">130</span><span class="td">115</span><span class="td warn">~10.5k，没有上限</span>
+        <span class="td"><span class="am" style="background: #4A4F7A"></span><span class="mono">kimi</span></span><span class="td">12</span><span class="td">12</span><span class="td">~1.9k</span>
+        <span class="td small" style="grid-column: 1 / 5">token = 名字和描述的字符数 / 3.5，粗估；不含插件、仓库、自带的 skill。omp 1000 轮的对话光这一项就缓存读取一千多万 token，和文章算 MCP 的账一样。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · AgentDeck 怎么加、怎么减（只用启动参数，只影响 AgentDeck 开的终端）</span>
+    <div class="tbl" style="grid-template-columns: 130px minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 0.9fr)">
+      <span class="th">agent</span><span class="th">加：库里的 skill（N9，已做）</span><span class="th">减：Names only</span><span class="th">减：Turn off，Keep these 照带</span><span class="th">还要核对的</span>
+      <span class="td"><span class="am" style="background: #A8503A"></span><span class="mono">claude</span></span><span class="td"><span class="mono">--plugin-dir &lt;setDir&gt;</span>，显示成 agentdeck-skills:&lt;name&gt;</span><span class="td">现有的 <span class="mono">--settings</span> JSON（已带钩子）里加 <span class="mono">skillOverrides: {name: "name-only"}</span></span><span class="td">同上，取值 <span class="mono">"off"</span></span><span class="td">和你自己 settings 里的 skillOverrides 怎么合并；插件里的 skill 不受它管</span>
+      <span class="td"><span class="am" style="background: #2F5E9E"></span><span class="mono">codex</span></span><span class="td warn">加不进（Not supported for codex）；试本地插件 marketplace（DR-83）</span><span class="td muted">没有这一档，按 Turn off 处理并写明</span><span class="td"><span class="mono">-c skills.config=[{path=…,enabled=false},…]</span></span><span class="td">几十项时命令行长度和转义</span>
+      <span class="td"><span class="am" style="background: #7347A8"></span><span class="mono">pi</span></span><span class="td">每个一个 <span class="mono">--skill &lt;文件夹&gt;</span></span><span class="td muted">没有，可用第二期的索引代替</span><span class="td"><span class="mono">--no-skills</span>，再把 Keep these 和库里选中的用 <span class="mono">--skill</span> 加回来</span><span class="td">--no-skills 会不会连仓库里的也关掉（应当关，再按 repo 加回）</span>
+      <span class="td"><span class="am" style="background: #0F6F7F"></span><span class="mono">omp</span></span><span class="td"><span class="mono">--plugin-dir &lt;setDir&gt;</span></span><span class="td muted">没有</span><span class="td"><span class="mono">--skills=&lt;keep…,库里的…&gt;</span>；或 <span class="mono">--no-skills</span> + <span class="mono">--plugin-dir</span></span><span class="td">--skills 会不会把 setDir 里的也筛掉</span>
+      <span class="td"><span class="am" style="background: #4A4F7A"></span><span class="mono">kimi</span></span><span class="td"><span class="mono">--skills-dir &lt;setDir&gt;/skills</span>，加上它自己的目录</span><span class="td muted">没有</span><span class="td">只传 <span class="mono">--skills-dir &lt;setDir&gt;/skills</span>（setDir 里只放要留的），不再传它自己的目录</span><span class="td">没在真 kimi 里核对过（N9 同）</span>
+    </div>
+    <span class="small">setDir 按内容生成在 AgentDeck 的数据目录里（复制，是一份快照，正在跑的会话不受库里改动影响）；旧的 setDir 要清理（现在不清）。被 agent 拒绝的参数按 IS-73 的启动保底处理：退回不带减法重开，标“降级”。</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · 一个终端最后带什么：三层，集群角色是一套预设</span>
+    <div class="fig" style="width: 1632px; height: 300px">
+      <div class="node" style="left: 24px; top: 40px; width: 250px"><b>Settings › Skills</b><span>全局默认：库里哪些默认开；你目录里的默认 Leave as is</span></div>
+      <span class="arr" style="left: 284px; top: 62px">→</span>
+      <div class="node" style="left: 310px; top: 40px; width: 250px"><b>Project settings › Skills</b><span>这个项目：库里带哪些；其余的 Leave as is / Names only / Turn off；Keep these</span></div>
+      <span class="arr" style="left: 570px; top: 62px">→</span>
+      <div class="node" style="left: 596px; top: 40px; width: 260px"><b>这个终端（N9 的面板）</b><span>勾选、Your other skills 换一档；存在 TerminalWindowData.skills</span></div>
+      <span class="arr" style="left: 866px; top: 62px">→</span>
+      <div class="node" style="left: 892px; top: 40px; width: 300px"><b>启动参数</b><span>prepareLaunch 合并三层 → setDir（加）+ 每家的减法参数 → 适配器</span></div>
+      <div class="node" style="left: 596px; top: 170px; width: 596px; border-style: dashed"><b>集群开终端时（CR2）</b><span>按角色套一套终端选择：Lead 带 crew（C7）和模板里的；Worker、Reviewer 带模板里的，其余默认 Names only；Worker 永远不带 crew</span></div>
+      <span class="arr" style="left: 886px; top: 132px">↑</span>
+      <span class="at small" style="left: 1220px; top: 40px; width: 390px; line-height: 1.6">不做的两层：按工作区框（同一项目的几个框就是几个 worktree，要的几乎一样）；按 agent 种类（由第 3 节的支持表决定，界面上写原因）。<br><br>后面的覆盖前面的；没改过的跟着上一层走，上一层改了这里跟着变。</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">5 · 要你定的</span>
+    <div class="tbl" style="grid-template-columns: 300px minmax(0, 1fr) minmax(0, 1fr)">
+      <span class="th">问题</span><span class="th">建议</span><span class="th">代价</span>
+      <span class="td">AgentDeck 管到哪一步</span><span class="td">总览 + 一处存放 + 三层启用 + 能做减法（选项 C）；按需加载（D）放第二期，先做实验</span><span class="td">每家的减法参数要逐家核对、跟着升级（并入 DR-60）；codex 只能减不能加</span>
+      <span class="td">一处存放放在哪</span><span class="td">AgentDeck 的库放自带的和你加进来的；各家目录列成只读的“来源”，不复制、不搬</span><span class="td">磁盘上还是好几份；整理要你自己动手（以后可以给一段建议命令，你看过自己跑）</span>
+      <span class="td">改不改用户的配置目录</span><span class="td">不改。只读扫描，和 N11 读会话文件同一级</span><span class="td">在 AgentDeck 外面开的 agent 还是全量加载</span>
+      <span class="td">分几层</span><span class="td">全局 → 项目 → 终端；集群角色是预设</span><span class="td">比只有终端一层多两处设置；不做按框</span>
+      <span class="td">放进哪个里程碑</span><span class="td">新开 M11 Skill 管理（SK0–SK7）；SK0–SK2、SK5 和集群第一期并行；SK6 等 CR4</span><span class="td">和 M8 抢人手</span>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":2900}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

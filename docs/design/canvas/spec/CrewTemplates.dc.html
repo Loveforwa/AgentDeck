@@ -71,7 +71,7 @@ rules:
         <span><b>放在哪</b>：自带的在 AgentDeck 里；你自己的在库里（<span class="mono">&lt;数据目录&gt;/crews/</span>）；仓库里的 <span class="mono">.agentdeck/crews/</span> 只读出来列在 New crew 里，不往仓库写。</span>
         <span><b>角色提示词</b>：模板旁边的 <span class="mono">roles/*.md</span>，说这个角色怎么想、怎么交付。任务的具体内容由调度器每次填进去（C3 的第 3 节）。</span>
         <span><b>agents</b>：按顺序写几家，前一家额度用完或失败两次就交给下一家。New crew 对话框里能改。</span>
-        <span><b>skills</b>：按名字引用 N9 库里的 skill，按角色带进去。</span>
+        <span><b>skills</b>：按名字引用 N9 库里的 skill，按角色带进去。你自己目录里的其余 skill 按角色选 Leave as is / Names only / Turn off，Worker 默认 Names only（K0 第 3 节）。</span>
         <span><b>不是编程语言</b>：只有固定的几种阶段和规矩，调度器认得的才能写。要新形状就加一种阶段，不在模板里写脚本。</span>
         <span style="color: #5F5F5A">第一期不开放模板文件，Contract-first build 写死在代码里；跑顺了再抽成文件（第三期）。</span>
       </div>
@@ -123,28 +123,30 @@ rules:
     <span class="h2">3 · 分期</span>
     <div class="tbl" style="grid-template-columns: 120px minmax(0, 1fr) minmax(0, 1fr)">
       <span class="th">期</span><span class="th">做什么</span><span class="th">做完能怎样</span>
-      <span class="td"><b>第一期</b><br><span class="mono" style="font-size:12px">CR0–CR6</span></span><span class="td">收件箱（可以先单独做，集群外的终端也用）；New crew（只有 Contract-first build）；集群框和任务看板；调度器：派任务、开 worktree 和终端、发任务提示词、自己跑检查、看目录、换家审、合进集群分支（冲突时叫你）；crew 工具；关卡：确认任务表、改接口、卡住、合回 main。</span><span class="td">拿 AgentDeck 自己的一批任务跑一遍：你确认任务表以后不用再手动开窗口、发提示词、合分支。</span>
-      <span class="td"><b>第二期</b><br><span class="mono" style="font-size:12px">CR7–CR8</span></span><span class="td">Integrator 自动解决冲突；QA 验收阶段；汇报；额度用完换下一家接着做；失败两次换模型重试；整夜跑（Keep Mac awake）；手机提醒。</span><span class="td">晚上开一个集群，早上看汇报、点合并。</span>
+      <span class="td"><b>第一期 · 1a</b><br>自由模式<br><span class="mono" style="font-size:12px">CR1 · CR0–CR5 · CR10</span></span><span class="td">先做收件箱（CR1，可以先单独做，集群外的终端也用）；New crew 里的 No template；集群核心：开 worktree 和终端、上限、子 session 表、跑检查、合进集群分支、重启对账；Lead 的 crew 命令（<span class="mono">agentdeck</span> 命令行，C7）；自由模式的集群框（C6）；关卡：Lead 的 ask、碰到 Locked paths、Ready to merge；进度摘要、Decisions 记录、Lead 建议、Ask lead（C8）。</span><span class="td">你跟一个 Lead 说话，它按需开子 session 把一件事做完；你只在收件箱和 Merge into main 出现。</span>
+      <span class="td"><b>第一期 · 1b</b><br>模板模式<br><span class="mono" style="font-size:12px">CR2–CR6</span></span><span class="td">New crew（只有 Contract-first build）；集群框和任务看板；调度器：派任务、开 worktree 和终端、发任务提示词、自己跑检查、看目录、换家审、合进集群分支（冲突时叫你）；角色的 crew 命令（C3）；关卡：确认任务表、改接口、卡住、合回 main。</span><span class="td">拿 AgentDeck 自己的一批任务跑一遍：你确认任务表以后不用再手动开窗口、发提示词、合分支。</span>
+      <span class="td"><b>第二期</b><br><span class="mono" style="font-size:12px">CR7–CR8 · CR11 · CR20</span></span><span class="td">Integrator 自动解决冲突；QA 验收阶段；汇报；额度用完换下一家接着做；失败两次换模型重试；整夜跑（Keep Mac awake）；手机提醒（推送 RM1 和 CR8 一起做，见“手机 · 远程”页）；自由和模板互转（CR11）；授权 Lead 回答 worker 的问题（CR20）。</span><span class="td">晚上开一个集群，早上看汇报、点合并。</span>
       <span class="td"><b>第三期</b><br><span class="mono" style="font-size:12px">CR9</span></span><span class="td">模板文件和角色提示词开放；其余四种模板；库和仓库里的模板；总设计建议模板。</span><span class="td">不同的复杂任务用不同的形状，能分享。</span>
     </div>
   </div>
 
   <div style="display: flex; flex-direction: column; gap: 14px">
-    <span class="h2">4 · 已定（2026-10-27）</span>
+    <span class="h2">4 · 已定（2026-10-27；2026-10-28 放宽第 6 件、加第 7 件）</span>
     <div style="display: flex; flex-direction: column; gap: 12px">
       <div class="q"><span class="qn">1</span><span><b>名字</b>：界面上叫 <span class="mono">Crew</span>（集群）。</span></div>
-      <div class="q"><span class="qn">2</span><span><b>任务表存在哪</b>：只存在 AgentDeck 里，不往你的仓库写东西，agent 用 crew 工具读写。</span></div>
+      <div class="q"><span class="qn">2</span><span><b>任务表存在哪</b>：只存在 AgentDeck 里，不往你的仓库写东西，agent 用 crew 工具读写。<span class="muted">2026-10-28 补：读写走 <span class="mono">agentdeck crew</span> 命令，不进 AgentDeck MCP（C7）。</span></span></div>
       <div class="q"><span class="qn">3</span><span><b>默认分工</b>：总设计 claude、实现 codex（用完换 claude）、审查 claude、验收 codex。</span></div>
       <div class="q"><span class="qn">4</span><span><b>同时最多几个 agent</b>：默认 3，New crew 里可改。</span></div>
       <div class="q"><span class="qn">5</span><span><b>收件箱先单独做</b>（CR1），不开集群时也用；⌘J 改成打开收件箱，在列表里选、回车跳过去。</span></div>
-      <div class="q"><span class="qn">6</span><span><b>第一期只给 claude、codex、omp</b>：pi、kimi 灰掉写 No AgentDeck MCP yet；omp 进集群前先修 IS-76。</span></div>
+      <div class="q"><span class="qn">6</span><span><b>第一期给 claude、codex、omp、pi</b>（2026-10-28 放宽，待你确认）：能当 Lead 和 Worker 的是这四家；kimi 灰掉写 Needs approval for every command；自由模式的子 session 五家都行。第一条消息由调度器在启动后发，IS-76 不再挡集群，但照常修（AH1）。<span class="muted">原来是：第一期只给 claude、codex、omp，pi、kimi 灰掉写 No AgentDeck MCP yet；omp 进集群前先修 IS-76。</span></span></div>
+      <div class="q"><span class="qn">7</span><span><b>两种模式</b>（2026-10-28）：模板之外加自由模式（No template，C6），只开一个 Lead，安全和记账由 AgentDeck 守，流程交给 Lead。第一期先做收件箱（CR1），再分 1a 自由模式、1b 模板模式；两种模式互转放第二期（CR11）。crew 命令只走 <span class="mono">agentdeck</span> 命令行（C7）；进度以任务表和 Decisions 为准，Lead 跟你聊（C8）；定位见 C9。</span></div>
     </div>
-    <span style="font-size: 13px; color: #5F5F5A">登记：任务 M8 · CR0–CR9（MVP 任务表）· 问题 IS-89、IS-90 · 调研 DR-64、DR-65 · 用例 TC-43–TC-45 · 决策写进 docs/decisions.md。</span>
+    <span style="font-size: 13px; color: #5F5F5A">登记：任务 M8 · CR0–CR9（MVP 任务表）· 问题 IS-89、IS-90 · 调研 DR-64、DR-65 · 用例 TC-43–TC-45 · 决策写进 docs/decisions.md。<br>2026-10-28 加：任务 CR10–CR21 · 问题 IS-98–IS-105、IS-109、IS-110 · 调研 DR-71–DR-75、DR-79 · 用例 TC-56–TC-69。</span>
   </div>
 
   <div style="display: flex; flex-direction: column; gap: 10px; font-size: 13.5px; line-height: 1.65">
     <span class="h2">用到的已有能力</span>
-    <span>N1 AgentDeck MCP（加 crew 工具）· MVP v1 的 worktree 和工作区框 · N12 项目框排版 · PL1 Auto-approve · PL2 Usage 的额度上限 · PL3 Prompt queue 的发送方式和“等恢复再发” · N9 Skills · MCP 按角色带进去 · N11 左边栏历史（找回集群和汇报）。</span>
+    <span><span class="mono">agentdeck</span> 命令行（C7；N1 的 AgentDeck MCP 不加 crew 工具）· MVP v1 的 worktree 和工作区框 · N12 项目框排版 · PL1 Auto-approve · PL2 Usage 的额度上限 · PL3 Prompt queue 的发送方式和“等恢复再发” · N9 Skills · MCP 按角色带进去 · N11 左边栏历史（找回集群和汇报）。</span>
     <span style="color: #5F5F5A">接口上要加的（CR0，单独提交 contracts）：集群和任务的数据、CrewService（建、暂停、停、读任务表、关卡）、收件箱的条目、集群框这种新的白板节点。</span>
   </div>
 </div>

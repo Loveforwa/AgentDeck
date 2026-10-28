@@ -42,20 +42,20 @@ body{margin:0}
 .ex{display:flex;flex-direction:column;gap:10px;font-size:13.5px;line-height:1.65}
 </style>
 </helmet>
-<div style="width: 1760px; height: 1500px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+<div style="width: 1760px; height: 2800px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
 
   <div style="display: flex; flex-direction: column; gap: 10px">
     <div style="display: flex; align-items: center; gap: 10px">
-      <h1 style="margin: 0; font-size: 28px; font-weight: 600">C1 · 新建集群：选模板、写目标、定分工和上限</h1>
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">C1 · 新建集群：选模板或 No template、写目标、定分工和上限</h1>
       <span class="concept">草案</span>
     </div>
-    <p class="lead">入口：项目框标题栏的菜单 › <b>New crew…</b>，或者在白板空白处右键 › <b>New crew…</b>（这时先选项目）。一个对话框写完就开始，总设计先出任务表，你确认了才真正开 worktree 派活。</p>
+    <p class="lead">入口：项目框标题栏的菜单 › <b>New crew…</b>，或者在白板空白处右键 › <b>New crew…</b>（这时先选项目）。一个对话框写完就开始。选模板时，总设计先出任务表，你确认了才真正开 worktree 派活；选 <b>No template</b>（自由模式，第 2 节）时只开一个 Lead，你跟它说话，它按需要开子 session，AgentDeck 只守安全的规矩（C6）。</p>
   </div>
 
   <div style="display: flex; flex-direction: column; gap: 14px">
     <span class="h2">1 · New crew 对话框</span>
     <div style="display: flex; gap: 40px; align-items: flex-start">
-      <div class="fig" style="width: 1060px; height: 820px">
+      <div class="fig" style="width: 1060px; height: 860px">
         <div class="at menu" style="left: 24px; top: 24px; width: 190px">
           <span class="mi">Arrange</span><span class="mi">Auto-arrange new windows</span>
           <span class="sep"></span>
@@ -71,6 +71,7 @@ body{margin:0}
           <div style="display: flex">
             <div style="width: 250px; box-sizing: border-box; padding: 12px; border-right: 1px solid #EEEEEB; display: flex; flex-direction: column; gap: 8px">
               <span class="lbl">TEMPLATE</span>
+              <div class="tpl"><b>No template</b><span class="muted">One lead. It opens sessions when it needs them.</span></div>
               <div class="tpl on"><b>Contract-first build</b><span class="muted">Plan, lock interfaces, build in parallel, review, merge, accept.</span></div>
               <div class="tpl"><b>Migration</b><span class="muted">Do one by hand, then fan out over files.</span></div>
               <div class="tpl"><b>Bug hunt</b><span class="muted">Several hypotheses at once, then fix and test.</span></div>
@@ -112,6 +113,9 @@ body{margin:0}
                   <span class="ck"><span class="box"></span>Before each merge into the crew branch</span>
                   <span class="ck muted"><span class="box on" style="opacity: 0.5">✓</span>When a task fails twice (always)</span>
                   <span class="ck muted"><span class="box on" style="opacity: 0.5">✓</span>Merging into main (always you)</span>
+                  <span class="lbl" style="margin-top: 4px">THE LEAD</span>
+                  <span class="ck"><span class="box on">✓</span>Suggest answers to workers’ questions</span>
+                  <span class="ck"><span class="box"></span>Answer workers’ questions for me</span>
                   <span class="lbl" style="margin-top: 4px">PLUGINS FOR EVERY AGENT</span>
                   <span class="ck"><span class="box on">✓</span>Auto-approve</span>
                 </div>
@@ -122,30 +126,118 @@ body{margin:0}
         </div>
       </div>
       <div class="ex" style="flex: 1">
-        <span><b>Template</b>：左边选形状。第一期只有 Contract-first build，其余灰着写 “Coming later”。下面能切到库里和仓库里的模板（C5）。</span>
+        <span><b>Template</b>：左边选形状。最上面是 No template（自由模式，见第 2 节）；模板第一期只有 Contract-first build，其余灰着写 “Coming later”。下面能切到库里和仓库里的模板（C5）。</span>
         <span><b>Goal</b>：一段话说清要做成什么。总设计拿它和仓库里的 AGENTS.md、文档去拆任务。</span>
-        <span><b>Roles</b>：每个角色选 agent，按模板给默认值。实现者可以写两家，按顺序：前一家额度用完时交给后一家接着做。审查者默认不能和实现者同一家。</span>
+        <span><b>Roles</b>：每个角色选 agent，按模板给默认值。实现者可以写两家，按顺序：前一家额度用完时交给后一家接着做。审查者默认不能和实现者同一家。第一期能选 claude、codex、omp、pi；kimi 灰掉写 “Needs approval for every command”（C7）。</span>
         <span><b>Check</b>：每个任务交付后调度器自己在它的 worktree 里跑的命令；默认从仓库里猜（package.json 的 check / test）。</span>
         <span><b>Limits</b>：同时最多开几个 agent、最长跑多久；额度用完时等恢复（和 PL3 一样），等的时候不让电脑睡着。</span>
         <span><b>Ask me</b>：哪些关卡停下来等你。“失败两次”和“合回 main”总是问你，不能关。</span>
+        <span><b>The lead</b>：Suggest answers 默认开，Lead 给 worker 的问题先写建议，点不点由你（CR19）；Answer workers’ questions for me 默认关，第二期才有，勾了以后 Lead 能直接答 worker 的问题（CR20）。批准和关卡永远你点，见 C8 第 4 节。</span>
         <span><b>Start crew</b>：白板上出现集群框，里面先只有总设计的终端，它开始写任务表（C2）。</span>
       </div>
     </div>
   </div>
 
+
   <div style="display: flex; flex-direction: column; gap: 14px">
-    <span class="h2">2 · 按下 Start crew 以后</span>
+    <div style="display: flex; align-items: center; gap: 10px"><span class="h2">2 · 选 No template：自由模式</span><span class="concept">2026-10-27 提 · 待你定</span></div>
+    <div style="display: flex; gap: 40px; align-items: flex-start">
+      <div class="fig" style="width: 1060px; height: 800px">
+        <div class="at dlg" style="left: 24px; top: 24px; width: 1010px">
+          <div class="dh"><b>New crew</b><span class="muted">in agenduck</span><span style="flex: 1"></span><span class="muted">×</span></div>
+          <div style="display: flex">
+            <div style="width: 250px; box-sizing: border-box; padding: 12px; border-right: 1px solid #EEEEEB; display: flex; flex-direction: column; gap: 8px">
+              <span class="lbl">TEMPLATE</span>
+              <div class="tpl on"><b>No template</b><span class="muted">One lead. It opens sessions when it needs them.</span></div>
+              <div class="tpl"><b>Contract-first build</b><span class="muted">Plan, lock interfaces, build in parallel, review, merge, accept.</span></div>
+              <div class="tpl muted"><b>Migration</b><span>Coming later</span></div>
+              <div class="tpl muted"><b>Bug hunt</b><span>Coming later</span></div>
+              <span class="muted" style="font-size: 11px; line-height: 1.5">For long or overnight runs, pick a template. The lead can hand off to one later.</span>
+            </div>
+            <div style="flex: 1; box-sizing: border-box; padding: 12px 16px; display: flex; flex-direction: column; gap: 10px">
+              <span class="lbl">GOAL</span>
+              <div class="field" style="height: 58px">Login sometimes fails right after a token refresh. Find out why and fix it. Try a couple of ideas in parallel if that helps.</div>
+              <div style="display: flex; gap: 12px">
+                <div style="flex: 1; display: flex; flex-direction: column; gap: 4px"><span class="lbl">NAME</span><div class="field">login-fix</div></div>
+                <div style="flex: 1; display: flex; flex-direction: column; gap: 4px"><span class="lbl">START FROM</span><div class="field mono" style="font-size: 11.5px">main</div></div>
+              </div>
+              <span class="muted" style="font-size: 11px">Branch: <span class="mono">crew/login-fix</span> · each subagent gets <span class="mono">crew/login-fix/&lt;label&gt;</span> unless the lead shares its own folder</span>
+
+              <span class="lbl" style="margin-top: 4px">LEAD</span>
+              <div class="rr" style="border-top: none"><span>Lead</span><span><span class="sel"><span class="am" style="background: #A8503A"></span>claude ▾</span> <span class="muted" style="font-size: 11px">you talk to it in its terminal</span></span><span class="muted">1</span></div>
+
+              <span class="lbl" style="margin-top: 4px">SUBAGENTS THE LEAD MAY OPEN</span>
+              <div style="display: flex; flex-wrap: wrap; gap: 14px; align-items: center">
+                <span class="ck"><span class="box on">✓</span><span class="am" style="background: #A8503A"></span>claude</span>
+                <span class="ck"><span class="box on">✓</span><span class="am" style="background: #2F5E9E"></span>codex</span>
+                <span class="ck"><span class="box on">✓</span><span class="am" style="background: #0F6F7F"></span>omp</span>
+                <span class="ck"><span class="box"></span><span class="am" style="background: #7347A8"></span>pi</span>
+                <span class="ck"><span class="box"></span><span class="am" style="background: #4A4F7A"></span>kimi</span>
+              </div>
+              <div style="display: flex; gap: 24px">
+                <span class="ck">At most <span class="sel">3 ▾</span> subagents at once</span>
+                <span class="ck"><span class="box on">✓</span>Each in its own worktree</span>
+              </div>
+
+              <div style="display: flex; gap: 24px">
+                <div style="flex: 1; display: flex; flex-direction: column; gap: 6px">
+                  <span class="lbl">CHECK · OPTIONAL</span>
+                  <div class="field mono" style="font-size: 11.5px">pnpm check</div>
+                  <span class="muted" style="font-size: 11px">Runs when the lead asks, and once before Merge into main.</span>
+                  <span class="lbl" style="margin-top: 4px">LOCKED PATHS · OPTIONAL</span>
+                  <div class="field mono muted" style="font-size: 11.5px">e.g. packages/contracts/**</div>
+                  <span class="lbl" style="margin-top: 4px">LIMITS</span>
+                  <span class="ck">Stop after <span class="sel">4 h ▾</span></span>
+                  <span class="ck"><span class="box on">✓</span>Keep Mac awake</span>
+                </div>
+                <div style="flex: 1; display: flex; flex-direction: column; gap: 6px">
+                  <span class="lbl">ASK ME</span>
+                  <span class="ck muted"><span class="box on" style="opacity: 0.5">✓</span>When the lead asks (always)</span>
+                  <span class="ck muted"><span class="box on" style="opacity: 0.5">✓</span>When a change touches a locked path (always)</span>
+                  <span class="ck muted"><span class="box on" style="opacity: 0.5">✓</span>Merging into main (always you)</span>
+                  <span class="muted" style="font-size: 11px">No plan to approve: the lead decides how to split the work.</span>
+                  <span class="lbl" style="margin-top: 4px">PLUGINS FOR EVERY AGENT</span>
+                  <span class="ck"><span class="box on">✓</span>Auto-approve</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-top: 1px solid #EEEEEB"><span class="muted" style="font-size: 11px">claude has 5-hour quota left · codex ok</span><span style="flex: 1"></span><span class="btn">Cancel</span><span class="btn pri">Start crew</span></div>
+        </div>
+      </div>
+      <div class="ex" style="flex: 1">
+        <span><b>No template</b>：没有角色表、阶段和任务表。只开一个 Lead，你在它的终端里跟它说话；它想开几个子 session、开哪家、怎么写交接提示词都由它定（C6）。</span>
+        <span><b>Lead</b>：能跑 <span class="mono">agentdeck crew</span> 命令的 agent：claude、codex、omp、pi；kimi 灰掉写 “Needs approval for every command”（C7）。</span>
+        <span><b>Subagents the lead may open</b>：Lead 只能开勾上的几家。子 session 不需要 crew 命令，五家都能勾；pi、kimi 默认不勾，等空闲识别和读回复核对过再默认勾上。</span>
+        <span><b>At most · own worktree</b>：同时最多几个子 session（默认 3，Lead 不算），超了 AgentDeck 直接拒绝并告诉 Lead；默认每个子 session 一个 worktree，Lead 可以让只读的子 session 共用它的目录。</span>
+        <span><b>Check</b>：可选。不自动跑；Lead 叫 AgentDeck 跑，Ready to merge 时 AgentDeck 在集群分支跑一次给你看，不拦。</span>
+        <span><b>Locked paths</b>：可选，默认空。填了的话，合进集群分支时碰到这些路径就进收件箱等你。</span>
+        <span><b>Ask me</b>：只剩三条，都不能关。没有 owns 打回、换家审、失败两次这些流程规矩。</span>
+      </div>
+    </div>
+    <div class="tbl" style="grid-template-columns: 60px 300px minmax(0, 1fr)">
+      <span class="th">步</span><span class="th">白板上</span><span class="th">背后</span>
+      <span class="td">1</span><span class="td">项目框里多出一个集群框，标题 Crew · login-fix，标签 No template，没有阶段条</span><span class="td">从 main 切出 <span class="mono">crew/login-fix</span> 和它的 worktree；集群设置和子 session 表存进 AgentDeck 的数据</span>
+      <span class="td">2</span><span class="td">集群框里只开 Lead 的 claude 终端</span><span class="td">带上自由模式的 Lead 提示词、目标、crew 命令的说明（<span class="mono">agentdeck</span> 命令行，只在 Lead 里打开，C7）</span>
+      <span class="td">3</span><span class="td">Lead 开子 session 时，旁边的侧边栏（N2）多一行，右边多一个 worktree 小框</span><span class="td">AgentDeck 核对：调用者是 Lead、没超上限、这家允许；开 <span class="mono">crew/login-fix/&lt;label&gt;</span>，Lead 的提示词前加几行固定说明后发进去</span>
+      <span class="td">4</span><span class="td">子 session 等批准、提问时收件箱亮</span><span class="td">和普通终端一样（CR1）；Lead 的 wait 也会返回“它在等你”，但 Lead 不能替你批</span>
+      <span class="td">5</span><span class="td">Lead 说做完了：收件箱出 Ready to merge</span><span class="td">Lead 调 done；AgentDeck 在集群分支跑 Check、出汇报；Merge into main 永远你点</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · 选模板时，按下 Start crew 以后</span>
     <div class="tbl" style="grid-template-columns: 60px 260px minmax(0, 1fr)">
       <span class="th">步</span><span class="th">白板上</span><span class="th">背后</span>
       <span class="td">1</span><span class="td">项目框里多出一个集群框，标题写 Crew · history-sidebar，阶段停在 Plan</span><span class="td">从 main 切出 <span class="mono">crew/history-sidebar</span> 和它的 worktree；集群的设置和状态存进 AgentDeck 的数据（不写进你的仓库和 agent 配置）</span>
-      <span class="td">2</span><span class="td">集群框里开总设计的 claude 终端</span><span class="td">带上模板里 Lead 的角色提示词、目标和 crew 工具（AgentDeck MCP），提示词用 PL3 那套发送方式送进去</span>
-      <span class="td">3</span><span class="td">任务看板（C2）一条条长出来</span><span class="td">总设计用 <span class="mono">crew_add_task</span> 写任务表，写完调 <span class="mono">crew_plan_ready</span></span>
+      <span class="td">2</span><span class="td">集群框里开总设计的 claude 终端</span><span class="td">带上模板里 Lead 的角色提示词、目标和 crew 命令的说明（<span class="mono">agentdeck</span> 命令行，C7），提示词用 PL3 那套发送方式送进去</span>
+      <span class="td">3</span><span class="td">任务看板（C2）一条条长出来</span><span class="td">总设计用 <span class="mono">agentdeck crew add</span> 写任务表，写完跑 <span class="mono">agentdeck crew ready</span></span>
       <span class="td">4</span><span class="td">收件箱亮起 “Approve plan”（C4）</span><span class="td">你确认之前不开任何实现者；你可以直接改任务表，或者写一句意见让总设计重拆</span>
     </div>
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":1500}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":2800}}'>
 class Component extends DCLogic {
   renderVals() {
     return {};

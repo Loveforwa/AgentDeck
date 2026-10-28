@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>手机和远程 · 总览</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1240px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.tag{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;background:#F2F2EF;color:#5F5F5A}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#8A8A85}
+.col{flex:1;box-sizing:border-box;border:1px solid #E3E3E0;border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;font-size:13.5px;line-height:1.6;background:#FFFFFF}
+.col b{font-size:15px}
+.node{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #D6D6D2;border-radius:8px;padding:10px 12px;font-size:12.5px;line-height:1.5;display:flex;flex-direction:column;gap:3px}
+.node b{font-size:13px}
+.zone{position:absolute;box-sizing:border-box;border:1px dashed #8A8A85;border-radius:12px}
+.zl{position:absolute;font-size:11.5px;color:#6B6B6B;font-weight:600}
+.arr{position:absolute;font-size:12px;color:#6B6B6B;white-space:nowrap}
+.line{position:absolute;background:#8A8A85}
+.yes{color:#1A7F37;font-weight:600}
+.no{color:#CF222E;font-weight:600}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;vertical-align:1px}
+</style>
+</helmet>
+<div style="width: 1760px; height: 2480px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">R0 · 手机和远程：人不在电脑前，也知道谁在等你、能批该批的</h1>
+      <span class="concept">2026-10-27 草案 · 待你定</span>
+    </div>
+    <p class="lead">终端都在 AgentDeck 自己的 tmux 里，应用关了窗口也在后台跑，所以“远程”不用搬走任何东西：只要让手机看到收件箱（CR1）、集群进度和汇报，必要时批一下关卡（CR6）。不在手机上重做一个聊天界面：单家 agent 的远程（Claude Remote Control、Codex 的手机端）大公司已经做了，我们只做跨家的那一层。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 三个用途</span>
+    <div style="display: flex; gap: 20px">
+      <div class="col"><b>整夜跑的集群（TC-45）</b><span>晚上开一个集群走人。凌晨总设计写完任务表停在 Approve plan，没人批就一直停到早上。要：手机响一下，打开看任务表，点 Approve and start。</span><span class="muted">要处理的东西：集群关卡。</span></div>
+      <div class="col"><b>出门时看谁在等你</b><span>开着 5 个 agent 出去吃饭。想知道有没有人卡在批准上、谁出错了，非破坏性的批准顺手点掉。</span><span class="muted">要处理的东西：终端批准、agent 的提问。</span></div>
+      <div class="col"><b>早上看汇报</b><span>通勤路上看 Crew report：几个任务合进去了、谁卡住了、各家用了多少额度。Merge into main 回到电脑前再点。</span><span class="muted">只看，不操作。</span></div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 几条路对比（2026-10-27 核对，出处见调研 DR-77）</span>
+    <div class="tbl" style="grid-template-columns: 210px 1fr 1fr 1fr 150px">
+      <span class="th">做法</span><span class="th">能做什么</span><span class="th">代价和风险</span><span class="th">和 AgentDeck 的关系</span><span class="th">结论</span>
+      <span class="td"><b>ssh + tmux attach</b><br><span class="muted">Termius、Blink 这类手机 ssh</span></span><span class="td">什么都能做：<span class="mono">tmux -L agentdeck attach -t =t-…</span> 直接进真终端。</span><span class="td">要开 Mac 的远程登录、配 Tailscale 或端口；手机上看 TUI 很挤；我们的 tmux 是 <span class="mono">window-size latest</span>，手机一打字，桌面上那个窗口也跟着变窄；会话名是 <span class="mono">t-</span> 加随机数，认不出谁是谁；看不到收件箱和集群。</span><span class="td">今天就能用，不用写代码。</span><span class="td">写进文档，<b>不做功能</b></span>
+      <span class="td"><b>推送通知</b><br><span class="muted">ntfy、Bark、邮件</span></span><span class="td">有事时手机响一下：“2 need you · Approve plan”。</span><span class="td">内容会经过推送服务（ntfy.sh、Bark 的公共服务器能看到明文），所以默认只写数量和种类，不写命令；ntfy 在 iOS 上靠 ntfy.sh 转一次唤醒；邮件要存 SMTP 密码，不做。</span><span class="td">主进程现有的后台通知（alerts.ts）加一个出口。</span><span class="td"><b>RM1，先做</b></span>
+      <span class="td"><b>本机开一个手机网页</b><br><span class="muted">走 Tailscale</span></span><span class="td">手机浏览器里看收件箱、集群进度、汇报、终端最后几行；开了“可操作”后批关卡。</span><span class="td">要写一个服务和一个手机页；只听 127.0.0.1，靠 <span class="mono">tailscale serve</span> 只给自己的 tailnet（有 HTTPS 证书）；要配对、吊销、审计。</span><span class="td">和 MCP 一样跑在主进程，用同一套服务接口；数据就是 CR1 的收件箱和 CR0 的集群。</span><span class="td"><b>RM2 只读、RM3 可操作</b></span>
+      <span class="td"><b>同上，但开在局域网</b></span><span class="td">不装 Tailscale 也能用。</span><span class="td">要听 0.0.0.0，咖啡店的 Wi‑Fi 上谁都能扫到端口；没有正规 HTTPS 证书，手机浏览器的安全功能（推送、剪贴板）用不了。</span><span class="td">同一个服务，换监听地址。</span><span class="td">第一版<b>不做</b></span>
+      <span class="td"><b>借 Claude Remote Control</b></span><span class="td">在 claude 终端里打 <span class="mono">/remote-control</span>，Claude 手机 App 里接着聊、批权限，还有推送。</span><span class="td">只管 claude 一家；要 claude.ai 订阅和直连 Anthropic API，走代理（<span class="mono">ANTHROPIC_BASE_URL</span>）或 API key 不行；国内要能上 claude.ai；看不到别的 agent 和集群。</span><span class="td">我们跑的是真 TUI，用户自己打这个命令今天就能用；和状态机会不会打架待实测（DR-78）。</span><span class="td">写进文档，<b>不包装</b></span>
+      <span class="td"><b>借 Codex 的手机端</b></span><span class="td">ChatGPT App 里看 Codex 的任务、批命令、看 diff。</span><span class="td">按官方文档只能从 Codex 桌面 App 配对，CLI 和 IDE 插件配不了；我们白板上跑的是 codex CLI。</span><span class="td">接不上。</span><span class="td"><b>不用</b></span>
+      <span class="td"><b>第三方客户端</b><br><span class="muted">Happy 之类</span></span><span class="td">手机上远程开 claude、codex。</span><span class="td">要用它的命令替换 claude / codex 启动，和我们的适配器、钩子冲突；又多一个中转服务器。</span><span class="td">和“AgentDeck 启动原生 TUI”冲突。</span><span class="td"><b>不用</b></span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · 推荐的结构（RM2、RM3）</span>
+    <div class="fig" style="width: 1632px; height: 420px">
+      <div class="zone" style="left: 24px; top: 30px; width: 300px; height: 360px"></div>
+      <span class="zl" style="left: 40px; top: 40px">PHONE</span>
+      <div class="node" style="left: 44px; top: 76px; width: 260px"><b>Browser · AgentDeck page</b><span>Inbox, crews, report, last lines</span><span class="muted">Added to Home Screen</span></div>
+      <div class="node" style="left: 44px; top: 210px; width: 260px"><b>ntfy / Bark app</b><span>“2 need you · Approve plan”</span><span class="muted">Tap opens the page</span></div>
+
+      <div class="zone" style="left: 420px; top: 30px; width: 260px; height: 360px"></div>
+      <span class="zl" style="left: 436px; top: 40px">TAILNET（只有你自己的设备）</span>
+      <div class="node" style="left: 440px; top: 76px; width: 220px"><b>tailscale serve</b><span class="mono" style="font-size: 11px">https://mac.tail…ts.net</span><span class="muted">HTTPS 证书、只给 tailnet；不开 Funnel</span></div>
+      <div class="node" style="left: 440px; top: 210px; width: 220px"><b>ntfy.sh / Bark server</b><span class="muted">或你自己架的；只收数量和种类</span></div>
+
+      <div class="zone" style="left: 776px; top: 30px; width: 832px; height: 360px"></div>
+      <span class="zl" style="left: 792px; top: 40px">MAC · AGENTDECK 主进程</span>
+      <div class="node" style="left: 800px; top: 76px; width: 250px"><b>remote-server（新）</b><span class="mono" style="font-size: 11px">127.0.0.1:47622</span><span class="muted">设备令牌、只读 / 可操作、审计</span></div>
+      <div class="node" style="left: 800px; top: 210px; width: 250px"><b>push（apps/desktop 新模块）</b><span class="muted">接 alerts.ts，收件箱新来一条时发</span></div>
+      <div class="node" style="left: 1110px; top: 76px; width: 220px"><b>Inbox（CR1）</b><span class="muted">InboxItem：批准、提问、出错、关卡</span></div>
+      <div class="node" style="left: 1110px; top: 176px; width: 220px"><b>CrewService（CR2、CR6）</b><span class="muted">进度、关卡、汇报</span></div>
+      <div class="node" style="left: 1110px; top: 276px; width: 220px"><b>approvals · status</b><span class="muted">批准走现有 approve()</span></div>
+      <div class="node" style="left: 1380px; top: 76px; width: 210px"><b>MCP 47621</b><span class="muted">不对外，不复用它的令牌</span></div>
+      <div class="node" style="left: 1380px; top: 210px; width: 210px"><b>tmux -L agentdeck</b><span class="muted">终端照常跑；手机只读最后几行（capture-pane），不 attach</span></div>
+
+      <div class="line" style="left: 304px; top: 110px; width: 136px; height: 1px"></div><span class="arr" style="left: 330px; top: 90px">HTTPS</span>
+      <div class="line" style="left: 660px; top: 110px; width: 140px; height: 1px"></div><span class="arr" style="left: 680px; top: 90px">只转到本机</span>
+      <div class="line" style="left: 660px; top: 244px; width: 140px; height: 1px"></div><span class="arr" style="left: 676px; top: 224px">推一条</span>
+      <div class="line" style="left: 304px; top: 244px; width: 136px; height: 1px"></div><span class="arr" style="left: 330px; top: 224px">APNs / FCM</span>
+      <div class="line" style="left: 1050px; top: 110px; width: 60px; height: 1px"></div>
+      <div class="line" style="left: 1050px; top: 244px; width: 60px; height: 1px"></div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · 分三步做</span>
+    <div class="tbl" style="grid-template-columns: 110px 1fr 1fr 260px 200px">
+      <span class="th">步</span><span class="th">做什么</span><span class="th">不做什么</span><span class="th">依赖</span><span class="th">放在哪</span>
+      <span class="td"><b>RM1</b> 推送</span><span class="td">Settings › Remote 里填 ntfy 主题或 Bark 地址，Send test；收件箱新来一条、集群跑完、集群停住时推一条（应用在前台时不推）；内容默认只写 “2 need you · Approve plan · history-sidebar”。</span><span class="td">不写命令和代码；不做邮件（要存密码）。</span><span class="td">CR1 的 InboxItem；CR8 本来就写了“发手机提醒（方式待定）”</span><span class="td">M12，可以和 CR8 一起提前做</span>
+      <span class="td"><b>RM2</b> 手机只读页</span><span class="td">本机开 remote-server，经 Tailscale 给手机；扫码配对；看收件箱、集群进度、汇报、终端最后 40 行；推送点开直接到这一条。</span><span class="td">不 attach tmux（不改桌面上窗口的大小）；不开局域网。</span><span class="td">CR1；集群部分要 CR0、CR5；汇报要 CR7</span><span class="td">新开 M12 远程，CR1 做完就能开工</span>
+      <span class="td"><b>RM3</b> 手机上处理</span><span class="td">打开 “View and act” 后：批集群关卡（Approve plan、Interface change、Stuck 里的 Skip / Reassign）、终端的非破坏性批准、回答 agent 的提问；每次都记进 Approval history，桌面弹一条 Toast。</span><span class="td">Merge into main、破坏性命令、往终端随便打字：手机上都不行，写 “Do this at your Mac”。</span><span class="td">RM2；CR6 的关卡</span><span class="td">M12，CR6 做完之后</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">5 · 安全规矩（远程能批命令 = 远程能执行命令）</span>
+    <div style="display: flex; gap: 20px">
+      <div class="col">
+        <b>谁能连上</b>
+        <span>· 只听 <span class="mono">127.0.0.1</span>，从外面只能经 <span class="mono">tailscale serve</span> 进来；发现这个端口开了 Funnel（公网）就拒绝启动并说明。</span>
+        <span>· 第一次要在 Mac 上扫码配对：二维码里是一次性配对码，5 分钟过期，用一次作废；换来一个设备令牌（只存哈希），手机上存成 <span class="mono">HttpOnly; Secure; SameSite=Strict</span> 的 cookie。</span>
+        <span>· 还要对上 Tailscale 带来的 <span class="mono">Tailscale-User-Login</span>，必须是这台 Mac 自己的登录账号（两道都过才行）。</span>
+        <span>· 和 MCP 分开：另一个端口、另一个令牌；MCP 的令牌在这里没用，这里的令牌在 MCP 那边也没用。</span>
+      </div>
+      <div class="col">
+        <b>能做什么</b>
+        <span>· 三档：<b>Off</b>（默认）/ <b>View only</b> / <b>View and act</b>，每台设备单独定。</span>
+        <span>· <span class="yes">可以</span>：集群关卡（不含合回 main）、非破坏性批准、点 agent 给的选项、回一句话给问你问题的那个 agent。</span>
+        <span>· <span class="no">不行</span>：Merge into main、命中破坏性名单的命令、开 / 关 Auto-approve、开新终端、往没在问你的终端里打字。</span>
+        <span>· 改状态的请求用 POST，带自定义请求头，别的网站的页面发不出来；每台设备每分钟最多 30 次操作。</span>
+      </div>
+      <div class="col">
+        <b>看得见、关得掉</b>
+        <span>· 开着时顶栏有一个 <b>Remote</b> 标记，点开看连着几台设备、最后一次操作，一键 Turn off。</span>
+        <span>· 每次手机上的操作都记进 Approval history（by remote · iPhone），桌面弹 Toast “Approved from iPhone: pnpm test”。</span>
+        <span>· Settings › Remote 里能吊销单台设备；吊销后手机页立刻变成 “This device was removed”。</span>
+        <span>· 推送内容默认不带命令和代码（命令里可能有密钥）；要带得自己打开 Include details。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <span class="h2">6 · 待你定</span>
+    <div class="tbl" style="grid-template-columns: 1fr 1fr">
+      <span class="th">问题</span><span class="th">建议</span>
+      <span class="td">手机上能不能点 Merge into main？</span><span class="td">第一版不能。合回 main 是最后一道、最不能错的关卡，早上回到电脑前再点；Create PR 可以考虑放开（PR 还要再审）。</span>
+      <span class="td">要不要支持不装 Tailscale 的局域网？</span><span class="td">第一版不做。以后要做也是单独的开关，默认关，开的时候提醒“同一网络里的人都能看到这个端口”。</span>
+      <span class="td">推送先接哪几家？</span><span class="td">ntfy（开源、能自己架、安卓 iOS 都有）和 Bark（iOS，国内常用）。邮件不做。</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":2480}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

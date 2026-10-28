@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Settings › Agents</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.at{position:absolute}
+.cap{margin:0;font-size:13px;line-height:1.55}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1240px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.tag{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;background:#F2F2EF;color:#5F5F5A}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#6B6B6B}
+.dlg{box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,0.10);display:flex;flex-direction:column;overflow:hidden;font-size:12px}
+.dlg-h{display:flex;align-items:center;height:40px;padding:0 16px;border-bottom:1px solid #EEEEEB;font-size:13px;font-weight:600}
+.nav{width:168px;flex:none;border-right:1px solid #EEEEEB;padding:8px;display:flex;flex-direction:column;gap:1px;box-sizing:border-box}
+.ni{display:flex;align-items:center;gap:7px;height:26px;padding:0 8px;border-radius:5px;font-size:12px}
+.nh{padding:8px 8px 3px;font-size:10.5px;font-weight:600;letter-spacing:0.04em;color:#6B6B6B}
+.sq{width:8px;height:8px;border-radius:2px;flex:none}
+.page{flex:1;padding:16px 20px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box}
+.btn{display:inline-flex;align-items:center;height:24px;padding:0 10px;border:1px solid #D6D6D2;border-radius:6px;background:#FFFFFF;font-size:11.5px}
+.btn-p{display:inline-flex;align-items:center;height:26px;padding:0 12px;border-radius:6px;background:#1A1A1A;color:#FFFFFF;font-size:11.5px}
+.cg{display:grid;grid-template-columns:150px 70px 170px minmax(0,1fr);font-size:11.5px;line-height:1.4;border:1px solid #EEEEEB;border-radius:6px;overflow:hidden}
+.cg span{padding:5px 9px;border-top:1px solid #EEEEEB}
+.cg .ch{border-top:none;background:#F7F7F5;font-size:10.5px;font-weight:600;color:#6B6B6B}
+.menu{background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;box-shadow:0 8px 20px rgba(0,0,0,0.08);padding:4px;font-size:11.5px;display:flex;flex-direction:column}
+.mi{display:flex;align-items:center;gap:8px;padding:4px 9px;border-radius:5px;white-space:nowrap}
+.mi-off{color:#8A8A85}
+.hint{font-size:10.5px;color:#6B6B6B}
+.sep{height:1px;background:#EEEEEB;margin:3px 4px}
+.mh{padding:4px 9px 2px;font-size:10px;font-weight:600;color:#6B6B6B;letter-spacing:0.04em}
+.num{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:#1A1A1A;color:#FFFFFF;font-size:11px;font-weight:600;flex:none}
+</style>
+</helmet>
+<div style="width: 1760px; height: 2240px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">A0 · Settings › Agents：每家 agent 能做什么、靠什么做、核对到哪个版本</h1>
+      <span class="concept">2026-10-27 草案 · 待你定</span>
+    </div>
+    <p class="lead">AgentDeck 在真终端里跑各家 agent，“谁在等你”“会话 id”“用了多少”“替你按允许”都是每家单独接的：有的靠钩子，有的靠扩展、会话文件，有的只能看屏幕。现在这些信息散在代码里，界面上只有点到某个灰掉的菜单项时才看到一句原因。这一页把它们摆在一处：每家一张能力表，写明靠什么做、稳不稳、核对到哪个版本；agent 升级到没核对过的版本时，哪些功能自动关掉、为什么，也在这里说。</p>
+    <p class="lead" style="color: #1A1A1A">菜单、SKILLS 小节、New crew 的下拉里灰掉的原因，和这一页用同一份数据（能力报告），说法一字不差。</p>
+  </div>
+
+  <!-- 1 · 页面 -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 页面：Settings 左边多一组 AGENTS</span>
+    <div style="display: flex; gap: 28px; align-items: flex-start">
+      <div class="fig" style="width: 1000px; height: 720px">
+        <div class="at dlg" style="left: 40px; top: 36px; width: 920px; height: 648px">
+          <div class="dlg-h">Settings</div>
+          <div style="display: flex; flex: 1; min-height: 0">
+            <div class="nav">
+              <span class="nh">PROJECTS</span>
+              <span class="ni">agenduck</span>
+              <span class="ni">shop</span>
+              <span class="nh">APP</span>
+              <span class="ni">General</span>
+              <span class="nh">AGENTS</span>
+              <span class="ni"><span class="sq" style="background: #A8503A"></span>Claude Code</span>
+              <span class="ni"><span class="sq" style="background: #2F5E9E"></span>Codex</span>
+              <span class="ni"><span class="sq" style="background: #7347A8"></span>Pi</span>
+              <span class="ni" style="background: #EDEDEA; font-weight: 500"><span class="sq" style="background: #0F6F7F"></span>Oh My Pi</span>
+              <span class="ni"><span class="sq" style="background: #4A4F7A"></span>Kimi</span>
+              <span class="ni" style="color: #8A8A85">Gemini<span style="flex: 1"></span><span class="hint">Not installed</span></span>
+            </div>
+            <div class="page">
+              <div style="display: flex; align-items: center; gap: 10px">
+                <span style="font-size: 15px; font-weight: 600">Oh My Pi</span>
+                <span class="mono muted" style="font-size: 11px">omp 18.12.6</span>
+                <span style="flex: 1"></span>
+                <span class="muted" style="font-size: 11px">Checked 2h ago</span>
+                <span class="btn">Check again</span>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 2px; font-size: 11.5px">
+                <span class="muted">Newer than checked: AgentDeck was tested up to 18.0.4. Features that press keys for you are off until it is checked again.</span>
+                <span class="mono muted" style="font-size: 10.5px">/Users/liu/.bun/bin/omp</span>
+              </div>
+              <div class="cg">
+                <span class="ch">Capability</span><span class="ch">Support</span><span class="ch">How</span><span class="ch">Note</span>
+                <span>First message</span><span>Yes</span><span class="muted">Launch argument</span><span class="muted"></span>
+                <span>Status</span><span>Yes</span><span class="muted">Extension (-e)</span><span class="muted"></span>
+                <span>Approval wait</span><span>Yes</span><span class="muted">Extension</span><span class="muted"></span>
+                <span>Questions</span><span>Yes</span><span class="muted">Extension (ask tool)</span><span class="muted"></span>
+                <span>Session id</span><span>Yes</span><span class="muted">Extension</span><span class="muted">Known after the session starts</span>
+                <span>Resume · Fork</span><span>Yes</span><span class="muted">Launch argument</span><span class="muted"></span>
+                <span>History</span><span>Yes</span><span class="muted">Session files</span><span class="muted"></span>
+                <span>Usage</span><span>Yes</span><span class="muted">Session files</span><span class="muted"></span>
+                <span>Usage limits</span><span class="muted">No</span><span class="muted"></span><span class="muted">Not read for Oh My Pi yet</span>
+                <span>Approve keys</span><span class="muted">Off</span><span class="muted">Screen + keys</span><span class="muted">Untested on 18.12.6</span>
+                <span>AgentDeck MCP</span><span class="muted">Partial</span><span class="muted">Plugin folder</span><span class="muted">Not checked in the terminal yet</span>
+                <span>Skills</span><span>Yes</span><span class="muted">Plugin folder</span><span class="muted"></span>
+                <span>Background agents</span><span class="muted">No</span><span class="muted"></span><span class="muted">Not read for Oh My Pi yet</span>
+              </div>
+              <div style="display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 8px; align-items: center; font-size: 11.5px">
+                <span class="muted">Extra launch arguments</span>
+                <span class="mono" style="height: 26px; display: flex; align-items: center; padding: 0 8px; border: 1px solid #D6D6D2; border-radius: 6px; font-size: 11px">--model sonnet</span>
+              </div>
+              <span style="flex: 1"></span>
+              <div style="display: flex; justify-content: flex-end; gap: 8px"><span class="btn">Cancel</span><span class="btn-p">Save</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="at" style="left: 590px; top: 92px"><span class="num">1</span></div>
+        <div class="at" style="left: 180px; top: 410px"><span class="num">2</span></div>
+        <div class="at" style="left: 394px; top: 158px"><span class="num">3</span></div>
+        <div class="at" style="left: 394px; top: 488px"><span class="num">4</span></div>
+      </div>
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 14px; font-size: 13.5px; line-height: 1.65">
+        <div style="display: flex; gap: 10px"><span class="num">1</span><span><b>顶上一行</b>：名字、装的版本、上次检查时间、Check again。Check again 只做不花钱的探测：<span class="mono">--version</span>、在 <span class="mono">--help</span> 里找我们要带的参数、带钩子空启动一次等 SessionStart 再关掉；不发提示词。codex 的 SessionStart 要等第一次输入，这一项写 “Checked at last launch”。检查时按钮写 Checking…。</span></div>
+        <div style="display: flex; gap: 10px"><span class="num">2</span><span><b>左边一组 AGENTS</b>：装了的 agent 按菜单里的顺序列出，名字前面是 agent 身份色的小方块（组件库：身份色只用在区分 agent 的小标记上）。没装的已知 agent 列在最后，灰掉，hint 写 Not installed，点进去只有一句怎么装。</span></div>
+        <div style="display: flex; gap: 10px"><span class="num">3</span><span><b>版本比核对过的新</b>：一行 muted 文字说明，不用黄色（黄色只给“等你”），也不弹框。只有按键、认屏这类“替你按”的功能自动关掉（Off），钩子、扩展、会话文件照常用。Check again 跑过、合格测试的记录更新后，这行消失。</span></div>
+        <div style="display: flex; gap: 10px"><span class="num">4</span><span><b>能力表</b>：一行一项。Support 只有 Yes / Partial / No / Off 四个词，Yes 用 ink，其余用 muted；Check again 失败的那一项写 Failed，用 error 红（这是真的出错）。How 写靠什么做，Note 写原因，原因就是菜单 hint 用的那句。</span></div>
+        <div style="display: flex; gap: 10px"><span class="num" style="background: #6B6B6B">·</span><span><b>Extra launch arguments</b>：原来只能在 settings.json 里改的 <span class="mono">agents.&lt;id&gt;.extraArgs</span> 挪到这里，Save 和别的页一起存。</span></div>
+        <p class="cap muted">没画的状态：没装（只有一句 “Install Oh My Pi, then reopen this page.”）；检查中；检查失败（失败的行写 Failed 和输出的第一行，例如 “unknown option --plugin-dir”）。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2 · 每家写什么 -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 每家页上写什么（按 2026-10-27 的代码和本机版本）</span>
+    <p class="lead">格子里是 Support · How；不是 Yes 的，括号里是 Note（界面原文）。这张表就是能力报告的内容，由 agent-adapters 从适配器声明和合格测试记录算出来，不在界面里写死。</p>
+    <div class="tbl" style="grid-template-columns: 150px repeat(5, minmax(0, 1fr)); font-size: 12px">
+      <span class="th">Capability</span><span class="th">Claude Code 2.1.291</span><span class="th">Codex 0.164.0</span><span class="th">Pi 0.83.0</span><span class="th">Oh My Pi 18.0.4</span><span class="th">Kimi 2.3.2</span>
+      <span class="td">First message</span><span class="td">Yes · Launch argument</span><span class="td">Yes · Launch argument</span><span class="td">Yes · Launch argument</span><span class="td">Yes · Launch argument</span><span class="td">Partial · Typed after start</span>
+      <span class="td">Status</span><span class="td">Yes · Hooks</span><span class="td">Yes · Hooks</span><span class="td">Yes · Extension</span><span class="td">Yes · Extension</span><span class="td">Partial · Terminal activity (Kimi has no hooks; Running and Idle come from screen activity)</span>
+      <span class="td">Approval wait</span><span class="td">Yes · Hooks</span><span class="td">Yes · Hooks</span><span class="td muted">No (Pi never asks for approval)</span><span class="td">Yes · Extension</span><span class="td muted">No (Waiting is not detected for Kimi)</span>
+      <span class="td">Questions</span><span class="td">Yes · Hooks</span><span class="td">Yes · Hooks</span><span class="td muted">No (Pi has no question tool)</span><span class="td">Yes · Extension</span><span class="td muted">No (Waiting is not detected for Kimi)</span>
+      <span class="td">Session id</span><span class="td">Yes · Launch argument</span><span class="td">Yes · Hooks (after the first message)</span><span class="td">Yes · Launch argument</span><span class="td">Yes · Extension</span><span class="td muted">Partial · Guessed from session files</span>
+      <span class="td">Resume · Fork</span><span class="td">Yes · Launch argument</span><span class="td">Yes · Launch argument</span><span class="td">Yes · Launch argument</span><span class="td">Yes · Launch argument</span><span class="td muted">Partial (Kimi can't fork conversations)</span>
+      <span class="td">History</span><span class="td">Yes · Session files</span><span class="td">Yes · Session files</span><span class="td">Yes · Session files</span><span class="td">Yes · Session files</span><span class="td">Yes · Session files</span>
+      <span class="td">Usage</span><span class="td">Yes · Session files</span><span class="td">Yes · Session files</span><span class="td">Yes · Session files</span><span class="td">Yes · Session files</span><span class="td">Yes · Session files</span>
+      <span class="td">Usage limits</span><span class="td muted">Partial · Session files (Not checked in the terminal yet)</span><span class="td">Yes · Session files</span><span class="td muted">No (Not read for Pi yet)</span><span class="td muted">No (Not read for Oh My Pi yet)</span><span class="td muted">No (Not read for Kimi yet)</span>
+      <span class="td">Approve keys</span><span class="td">Yes · Hooks</span><span class="td">Yes · Hooks</span><span class="td muted">No (Pi never asks for approval)</span><span class="td muted">Partial · Screen + keys (Untested for Oh My Pi)</span><span class="td muted">No (Not supported for kimi yet)</span>
+      <span class="td">AgentDeck MCP</span><span class="td">Yes · Launch argument</span><span class="td">Yes · Launch argument</span><span class="td muted">No (Pi has no MCP)</span><span class="td muted">Partial · Plugin folder (Not checked in the terminal yet)</span><span class="td muted">No (No AgentDeck MCP yet)</span>
+      <span class="td">Skills</span><span class="td">Yes · Plugin folder</span><span class="td muted">No (Not supported for codex)</span><span class="td">Yes · Launch argument</span><span class="td">Yes · Plugin folder</span><span class="td muted">Partial · Skills folder (Not checked yet)</span>
+      <span class="td">Background agents</span><span class="td">Yes · Hooks</span><span class="td muted">No (Not read for Codex yet)</span><span class="td muted">No (Not read for Pi yet)</span><span class="td muted">No (Not read for Oh My Pi yet)</span><span class="td muted">No (Not read for Kimi yet)</span>
+    </div>
+    <p class="cap muted">First message 一行是 IS-76 修好以后（A1、AH1）的样子；现在 pi、omp、kimi 都是 No。Kimi 的版本是本机现在的 2.3.2，合格测试记录还停在 2.3.1，所以 Kimi 页顶上会写 “Newer than checked”。</p>
+  </div>
+
+  <!-- 3 · 其他地方的原因 -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · 别处灰掉的原因都从同一份报告来</span>
+    <div class="fig" style="width: 1632px; height: 330px">
+      <div class="at" style="left: 24px; top: 18px; font-size: 12px; color: #5F5F5A">kimi 终端的标题栏右键（ContextMenus）</div>
+      <div class="at menu" style="left: 24px; top: 42px; width: 300px">
+        <span class="mi">Rename…</span>
+        <span class="mi">Open in another workspace ▸</span>
+        <span class="mi mi-off">Fork conversation into… ▸<span style="flex: 1"></span><span class="hint">Kimi can't fork conversations</span></span>
+        <span class="mi">Copy folder path</span>
+        <span class="sep"></span>
+        <span class="mh">PLUGINS</span>
+        <span class="mi mi-off"><span style="width: 12px"></span>Auto-approve<span style="flex: 1"></span><span class="hint">Not supported for kimi yet</span></span>
+        <span class="mi"><span style="width: 12px"></span>Usage</span>
+        <span class="sep"></span>
+        <span class="mi">Close<span style="flex: 1"></span><span class="hint">⌘W</span></span>
+      </div>
+      <div class="at" style="left: 380px; top: 18px; font-size: 12px; color: #5F5F5A">版本超过核对版本的 omp 终端</div>
+      <div class="at menu" style="left: 380px; top: 42px; width: 290px">
+        <span class="mh">PLUGINS</span>
+        <span class="mi mi-off"><span style="width: 12px"></span>Auto-approve<span style="flex: 1"></span><span class="hint">Untested on 18.12.6</span></span>
+        <span class="mi"><span style="width: 12px"></span>Usage</span>
+        <span class="sep"></span>
+        <span class="mi">Agent capabilities…</span>
+      </div>
+      <div class="at" style="left: 730px; top: 18px; font-size: 12px; color: #5F5F5A">New crew 的角色下拉（CR4）</div>
+      <div class="at menu" style="left: 730px; top: 42px; width: 290px">
+        <span class="mi" style="background: #EDEDEA"><span class="sq" style="background: #A8503A"></span>Claude Code</span>
+        <span class="mi"><span class="sq" style="background: #2F5E9E"></span>Codex</span>
+        <span class="mi"><span class="sq" style="background: #0F6F7F"></span>Oh My Pi</span>
+        <span class="mi"><span class="sq" style="background: #7347A8"></span>Pi</span>
+        <span class="mi mi-off"><span class="sq" style="background: #4A4F7A"></span>Kimi<span style="flex: 1"></span><span class="hint">Needs approval for every command</span></span>
+      </div>
+      <div class="at" style="left: 1080px; top: 18px; width: 520px; display: flex; flex-direction: column; gap: 10px; font-size: 13px; line-height: 1.6">
+        <span><b>规矩不变</b>：灰掉的项照组件库 Menu 的规则，把原因写在 hint 里（也是悬停提示）。变的是原因从哪来：以前每处各写各的，以后都用能力报告里的 reason。</span>
+        <span><b>Agent capabilities…</b>：agent 终端标题栏菜单最后加这一项，打开 Settings › Agents，并选中这家 agent。只在 agent 终端上有，shell、自定义命令没有。</span>
+        <span><b>New crew 的下拉</b>按条件算：crew 命令走 <span class="mono">agentdeck</span> 命令行（C7），能跑 shell 命令、有回合结束信号、并且核对过的才能选：claude、codex、omp、pi；kimi 每条命令都要批准，灰掉写 “Needs approval for every command”。第一条消息由调度器在启动后发，不看 First message 这一行。不用改名单。</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4 · 规则 -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · 规则</span>
+    <div class="tbl" style="grid-template-columns: 240px minmax(0, 1fr)">
+      <span class="th">什么时候</span><span class="th">怎么做</span>
+      <span class="td">打开这一页</span><span class="td">读 <span class="mono">agents.report</span>，不跑任何东西；报告在应用启动、检测到 agent 版本变了（二进制的修改时间变了）时由主进程重算。</span>
+      <span class="td">点 Check again</span><span class="td">跑 <span class="mono">agents.check(agent)</span>：版本、<span class="mono">--help</span> 里找参数、带钩子空启动等 SessionStart（10 秒），然后关掉。不发提示词，不花额度，不写 agent 自己的配置。</span>
+      <span class="td">版本超过合格测试核对到的版本</span><span class="td">顶上一行 “Newer than checked”；只把 Screen + keys 这类能力改成 Off（Note：Untested on &lt;版本&gt;）；钩子、扩展、会话文件照常。合格测试（A1）跑过并提交记录后恢复。</span>
+      <span class="td">版本号读不出</span><span class="td">按没核对处理（同上），不再当作“够新”（DR-60）。</span>
+      <span class="td">钩子没来（disableAllHooks、信任哈希对不上、扩展加载失败）</span><span class="td">Status 一行写 Partial · Terminal activity，Note 写原因，例如 “Hooks didn't report at the last launch”；对应终端的状态灯悬停也写这一句（A1）。</span>
+      <span class="td">颜色</span><span class="td">这一页只有一个地方用状态色：检查失败的那项写 Failed，用 error 红。其余都是 ink 和 muted；“Newer than checked” 不用黄色，因为它不是在等你。</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":2240}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

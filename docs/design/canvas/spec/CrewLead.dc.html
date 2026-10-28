@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Agent 集群 · Lead 和收件箱</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1240px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.tag{display:inline-flex;align-items:center;height:18px;padding:0 7px;border-radius:999px;font-size:10.5px;background:#F2F2EF;color:#5F5F5A}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#8A8A85}
+.dot{width:7px;height:7px;border-radius:50%;flex:none;box-sizing:border-box}
+.am{width:6px;height:6px;border-radius:1.5px;flex:none}
+.btn{display:inline-flex;align-items:center;height:22px;padding:0 8px;border:1px solid #D6D6D2;border-radius:6px;font-size:11px;background:#FFFFFF;color:#1A1A1A;white-space:nowrap}
+.btn.pri{background:#1A1A1A;border-color:#1A1A1A;color:#FFFFFF}
+.panel{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,0.08);font-size:12px;overflow:hidden}
+.top{position:absolute;left:0;right:0;top:0;height:30px;box-sizing:border-box;padding:0 12px;display:flex;align-items:center;gap:10px;background:#FFFFFF;border-bottom:1px solid #E3E3E0;font-size:11.5px}
+.cf{position:absolute;box-sizing:border-box;border:1.5px solid #1A1A1A;border-radius:12px;background:rgba(255,255,255,0.55)}
+.cfh{position:absolute;left:0;top:0;right:0;height:38px;box-sizing:border-box;padding:0 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #E3E3E0;background:#FFFFFF;border-radius:11px 11px 0 0;font-size:12px}
+.win{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;overflow:hidden;font-size:11px}
+.wt{display:flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-bottom:1px solid #EEEEEB;white-space:nowrap}
+.wb{padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.7;color:#3D3D3A;white-space:pre-wrap}
+.ex{display:flex;flex-direction:column;gap:10px;font-size:13.5px;line-height:1.65}
+.box{box-sizing:border-box;border:1px solid #D6D6D2;border-radius:8px;background:#FFFFFF;padding:10px 12px;font-size:12.5px;line-height:1.5;display:flex;flex-direction:column;gap:3px}
+.box.ink{border:1.5px solid #1A1A1A}
+.arrow{font-size:18px;color:#8A8A85;align-self:center}
+.ir{display:flex;flex-direction:column;gap:4px;padding:9px 12px;border-top:1px solid #F0F0ED;line-height:1.45}
+.ih{display:flex;align-items:center;gap:6px}
+.gh{display:flex;align-items:center;gap:6px;padding:7px 12px;border-top:1px solid #E3E3E0;background:#FBFBFA;font-size:10.5px;font-weight:600;color:#8A8A85;letter-spacing:0.04em}
+.rh{font-size:10.5px;color:#8A8A85;font-weight:600}
+.ck{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:12px}
+.cb{width:12px;height:12px;border:1px solid #8A8A85;border-radius:3px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;font-size:9px;line-height:1}
+.cb.on{background:#1A1A1A;border-color:#1A1A1A;color:#FFFFFF}
+.cb.off{opacity:0.4}
+.new{outline:1.5px dashed #8A8A85;outline-offset:3px;border-radius:6px}
+.decide{display:grid;grid-template-columns:36px 1fr;gap:6px 10px;font-size:13px;line-height:1.6}
+</style>
+</helmet>
+<div style="width: 1760px; height: 3560px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">C8 · Lead 和收件箱：谁记进度、谁叫你、谁跟你聊</h1>
+      <span class="concept">草案 · 待你定</span>
+    </div>
+    <p class="lead">有人主张“Agent as Memory”：人只跟一个主 agent 说话，主 agent 记着进度、开子 session、再回来跟你汇报，因为人的精力有限，来回切 session 很累。我们的出发点一样，但分成三份：<b>进度记在 AgentDeck 的数据里</b>（任务表、你做过的决定），<b>要你拍板的事进收件箱</b>（C4），<b>Lead 负责跟你聊</b>：到哪了、为什么、要不要改方向。Lead 的上下文只是缓存，压缩了、重开了、换一家当 Lead，都能从 AgentDeck 生成的进度摘要接上。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 四个入口，各管一件事</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start">
+      <div class="fig" style="width: 960px; height: 640px">
+        <div class="top"><b>AgentDeck</b><span class="muted">agenduck</span><span style="flex: 1"></span><span class="btn" style="border-color: #BF8700"><span class="dot" style="background: #BF8700; margin-right: 5px"></span>Needs you · 2</span></div>
+        <div class="cf" style="left: 20px; top: 50px; width: 920px; height: 570px">
+          <div class="cfh"><b>Crew · history-sidebar</b><span class="muted">Build · wave 3 of 3</span><span style="flex: 1"></span><span style="display: inline-flex; align-items: center; gap: 5px"><span class="dot" style="background: #1A7F37"></span>1 running</span><span style="display: inline-flex; align-items: center; gap: 5px"><span class="dot" style="background: #BF8700"></span>2 need you</span><span class="muted">· 5 of 8 merged</span></div>
+          <div class="win" style="left: 16px; top: 54px; width: 600px; height: 500px; border-color: #1A1A1A">
+            <div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="am" style="background: #A8503A"></span><span class="mono" style="font-weight: 500">Lead · claude</span><span style="flex: 1"></span><span class="muted">Running · now</span></div>
+            <div class="wb"><span style="color: #1A1A1A">› Morning. Where are we? Anything I need to look at?</span>
+
+● Bash(agentdeck crew status --since 23:40)
+  ⎿ 5 of 8 merged · wave 3 of 3 · 2 need you
+
+Since last night T4, T5 and T6 were merged. T6 took two
+review rounds (the kimi mark was too faint in dark mode).
+
+Two things are waiting for you in the inbox (⌘J):
+• T7 wants to add width and collapsed to
+  HistoryPanelState. I think it’s fine: only T7 uses it.
+• QA asked whether Resume opens in the same frame.
+  I suggested Same frame; you haven’t answered.
+
+claude hit its 5-hour limit at 03:10, so T8 started
+1h 15m late. Nothing else needs you.
+
+<span style="color: #1A1A1A">› Open the T7 one for me.</span>
+
+● Bash(agentdeck crew show 14)
+  ⎿ Opened “Interface change · T7” in the inbox</div>
+          </div>
+          <div class="panel" style="left: 636px; top: 54px; width: 268px">
+            <div style="display: flex; align-items: center; gap: 6px; padding: 9px 12px"><b>Needs you</b><span class="muted">· 2</span></div>
+            <div class="gh"><span>CREW · HISTORY-SIDEBAR</span></div>
+            <div class="ir" style="background: #F2F2EF">
+              <div class="ih"><span class="dot" style="background: #BF8700"></span><b>Interface change</b><span style="flex: 1"></span><span class="muted">9m</span></div>
+              <span class="muted" style="font-size: 11px">T7 · HistoryPanelState</span>
+              <div style="display: flex; gap: 6px"><span class="btn">View change</span><span class="btn pri">Approve</span></div>
+            </div>
+            <div class="ir">
+              <div class="ih"><span class="dot" style="background: #BF8700"></span><b>Question</b><span style="flex: 1"></span><span class="muted">6h</span></div>
+              <span class="muted" style="font-size: 11px">QA · Same frame or new terminal?</span>
+            </div>
+          </div>
+          <div style="position: absolute; left: 636px; top: 300px; width: 268px; font-size: 11.5px; line-height: 1.55; color: #5F5F5A">Lead 能把一条在收件箱里打开、能写建议，<b>按钮还是你按</b>。你在 Lead 终端里说“批了吧”，它会回 “Approve it in the inbox, I’ve opened it.”，不会替你批。<br><br>命令走 <span class="mono">agentdeck crew …</span> 命令行（C7），只有 Lead 有。</div>
+        </div>
+      </div>
+      <div class="ex" style="flex: 1">
+        <div class="tbl" style="grid-template-columns: 110px 1fr 1fr">
+          <span class="th">入口</span><span class="th">管什么</span><span class="th">不管什么</span>
+          <span class="td"><b>收件箱</b><br><span class="muted">顶栏 · ⌘J</span></span><span class="td">要你拍板的事：关卡、批准、问题、出错。每条都能直接处理，处理完记进 Decisions。</span><span class="td">不聊天，不讲进度。</span>
+          <span class="td"><b>Lead 终端</b><br><span class="muted">集群框里</span></span><span class="td">跟你聊：到哪了、为什么卡住、改目标、改计划（“把 T5 拆开”）。说进度前先读摘要。</span><span class="td">不替你过关卡、不替你批准命令；它记得的进度不算数，以任务表为准。</span>
+          <span class="td"><b>集群框</b><br><span class="muted">白板上</span></span><span class="td">看：在哪一步、谁在跑、任务看板。动手：暂停、换人、改任务表、看汇报。</span><span class="td">不问你问题（等你的数字点了跳到收件箱）。</span>
+          <span class="td"><b>各个终端</b></span><span class="td">细节：直接跟某个 worker 说话、看它的输出。</span><span class="td">不用常去：从收件箱的 Go to terminal 进来。</span>
+        </div>
+        <span><b>不乱的规矩</b>：一件等你的事只有一个处理的地方（收件箱，或者它跳过去的那个终端）；别的入口只显示数字或链接。处理掉以后所有地方一起消失，因为它们指的是同一个条目。</span>
+        <span><b>和文章的差别</b>：文章里主 agent 既记进度又转发所有问题，它一停整队都停，每一步都要它醒着读一遍（token 都花在这里）。这里 Lead 只在你找它、或者要它判断（拆新任务、改接口）时才醒，状态流水不进它的上下文。</span>
+        <span style="color: #5F5F5A">左边栏的历史会话、汇报是第五、第六个地方，但都是“回头看”，不和上面四个抢“现在”。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 记忆分两种，AgentDeck 只管短期的</span>
+    <div class="tbl" style="grid-template-columns: 150px 1fr 1fr; max-width: 1632px">
+      <span class="th"></span><span class="th">长期：偏好、注意事项</span><span class="th">短期：进度</span>
+      <span class="td"><b>例子</b></span><span class="td">“组件里不写颜色值”“提交前跑 pnpm check”“我喜欢小提交”</span><span class="td">T6 审了两轮、T7 在等你批接口、你答过 QA “Same frame”</span>
+      <span class="td"><b>存在哪</b></span><span class="td">各家 agent 自己的：仓库里的 <span class="mono">AGENTS.md</span> / <span class="mono">CLAUDE.md</span>；claude 的 auto memory（<span class="mono">~/.claude/projects/&lt;仓库&gt;/memory/</span>，同一仓库的所有 worktree 共用）；codex 的 memories（默认关）。</span><span class="td">AgentDeck 的数据（SQLite）：任务表、<b>Decisions</b>（你在收件箱和关卡上做过的决定）、crew notes、还开着的关卡。不往仓库写。</span>
+      <span class="td"><b>谁写</b></span><span class="td">你；auto memory 由 agent 自己写。</span><span class="td">调度器写状态，你的每个决定自动记下，agent 用 crew note 写发现。</span>
+      <span class="td"><b>AgentDeck 做什么</b></span><span class="td">不另做一套记忆，也不往每个终端注入（那是每轮都要付的 token）。只做两件小事：集群不改仓库里的说明文件；集群里的 Worker、Reviewer、QA 启动时关掉 claude 的 auto memory，免得三个并行的任务把“T4 做到一半”写进你的长期记忆（待你定）。</span><span class="td">存下来，生成进度摘要（第 3 节）给 Lead；Worker 只拿到自己的任务卡和相关的 Decisions，不拿整张表。</span>
+      <span class="td"><b>短期变长期</b></span><span class="td" style="grid-column: span 2">汇报里的 Decisions 和 notes，值得一直留的（比如“恢复会话一律在原来的框里”）由你自己抄进 AGENTS.md（Copy as Markdown）。AgentDeck 不自动写你的仓库和 agent 配置。</span>
+    </div>
+    <span style="font-size: 13px; line-height: 1.65; color: #5F5F5A; max-width: 1632px">第二版画板 2（工作区设置）里 “Share with every agent · Instructions · AGENTS.md · Also links CLAUDE.md and GEMINI.md” 一直没做。现在 claude（2.1.277 起）在没有 CLAUDE.md 时自己读 AGENTS.md，codex、pi、omp、kimi 本来就读，“链接”这件事基本不用做了。剩下有用的是把不进 git 的个人说明（<span class="mono">CLAUDE.local.md</span>、<span class="mono">AGENTS.override.md</span>）带进新开的 worktree，和那一行的 <span class="mono">.env.local</span> 一样，算工作区设置，不算记忆功能，以后再做。</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · Lead 被压缩、重开、换一家以后从哪接上</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start">
+      <div class="fig" style="width: 960px; height: 760px; background-image: none; background-color: #FBFBFA">
+        <div style="position: absolute; left: 24px; top: 24px; width: 912px; display: flex; gap: 14px; align-items: stretch">
+          <div style="display: flex; flex-direction: column; gap: 8px; width: 210px">
+            <div class="box"><b>Plan · Task</b><span class="muted">状态、轮次、谁在做（调度器写）</span></div>
+            <div class="box"><b>Decisions</b><span class="muted">你在收件箱、关卡上的每个决定</span></div>
+            <div class="box"><b>Notes</b><span class="muted">agent 用 crew note 记的发现</span></div>
+            <div class="box"><b>Open in inbox</b><span class="muted">还在等你的条目</span></div>
+          </div>
+          <span class="arrow">→</span>
+          <div class="box ink" style="width: 220px; justify-content: center"><b>Crew digest</b><span>进度摘要，AgentDeck 的代码按固定格式生成，不是模型写的。</span><span class="muted">最多约 1.5K token；带 --since 只给这之后变了什么。</span></div>
+          <span class="arrow">→</span>
+          <div style="display: flex; flex-direction: column; gap: 8px; flex: 1">
+            <div class="box"><b>① 每次说进度前</b><span>Lead 的角色提示词写死：先跑 <span class="mono">crew status</span>，不凭记忆回答状态。</span></div>
+            <div class="box"><b>② 压缩以后、接回以后</b><span>SessionStart 钩子（claude、codex 的 source 是 compact / resume）把摘要塞回它的上下文。</span><span class="muted">钩子 AgentDeck 已经在注入（claude --settings、codex -c hooks），加一种事件。</span></div>
+            <div class="box"><b>③ 接不回、换一家</b><span>会话没了，或 claude 用完额度要 codex 来当 Lead：新开一个 Lead，第一条提示词 = 角色提示词 + 摘要。</span></div>
+          </div>
+        </div>
+        <div class="panel" style="left: 24px; top: 330px; width: 912px; box-shadow: none">
+          <div style="display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-bottom: 1px solid #F0F0ED"><span class="mono" style="font-weight: 500">agentdeck crew status</span><span class="muted">· what the Lead reads</span></div>
+          <div class="wb" style="font-size: 11px">Crew history-sidebar · Contract-first build · started 23:40
+Goal: Add a history sidebar: list past sessions per folder and per agent…
+Stage: Build · wave 3 of 3 · 5 of 8 merged · 1 running · 2 need you
+
+Tasks
+  T1 T2 T3 T4 T6   Merged
+  T5   Merged · 2 review rounds
+  T7   Needs you · interface change: HistoryPanelState.width, collapsed (inbox #14)
+  T8   Working · codex · 12m
+
+Decisions (newest last)
+  00:12  Approve plan · you · “Split T5, it touches two packages.”
+  01:40  QA: same frame or new terminal? · you: Same frame (lead suggested)
+
+Notes
+  T2: claude sidechain sessions are skipped on purpose.
+
+Since 02:05: T6 merged · T8 started · claude hit the 5-hour limit at 03:10</div>
+        </div>
+      </div>
+      <div class="ex" style="flex: 1">
+        <span><b>进度以谁为准</b>：任务表。Lead 记得的只是缓存；它和任务表说的不一样时，以任务表为准，也是为什么第 ① 条要它先读再说。</span>
+        <span><b>为什么是代码生成</b>：摘要是从数据里拼出来的，不花 token、不会编；格式固定，Lead 换成哪一家都看得懂。</span>
+        <span><b>Lead 什么时候被叫醒</b>：你在 Lead 终端里说话、点 Ask lead…；要它判断的事（QA 不过要拆新任务、接口改动批准后由它来改，C3 已有）。每个任务合进去、检查过了<b>不发给它</b>，只进任务表。</span>
+        <span><b>重开应用</b>：调度器先对账（C3），再给 Lead 发一条 “While AgentDeck was closed: …”，只在真有变化时发。</span>
+        <span><b>Worker 不拿整张表</b>：它的第一条提示词（C3 第 3 节）只带自己的任务卡，外加和它有关的 Decisions（比如 QA 问的那条答案会进 T8 的任务卡）。</span>
+        <span style="color: #5F5F5A">这也让 Lead 可以换人：claude 额度用完时，CR8 的“换下一家”对 Lead 同样适用。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · Lead 替你回答：第一期只建议，第二期要你授权</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start">
+      <div class="fig" style="width: 960px; height: 560px">
+        <div class="panel" style="left: 24px; top: 24px; width: 420px; padding: 12px 14px">
+          <div class="rh" style="margin-bottom: 6px">ASK ME</div>
+          <div class="ck"><span class="cb on">✓</span>Before work starts (approve the plan)</div>
+          <div class="ck"><span class="cb on">✓</span>When an interface needs to change</div>
+          <div class="ck"><span class="cb"></span>Before each merge into the crew branch</div>
+          <div class="ck"><span class="cb on off">✓</span><span>When a task fails twice <span class="muted">(always)</span></span></div>
+          <div class="ck"><span class="cb on off">✓</span><span>Merging into main <span class="muted">(always you)</span></span></div>
+          <div class="rh new" style="margin: 12px 0 4px; padding: 2px 0">THE LEAD</div>
+          <div class="new" style="padding: 2px 0">
+            <div class="ck"><span class="cb on">✓</span>Suggest answers to workers’ questions</div>
+            <div class="ck"><span class="cb"></span><span>Answer workers’ questions for me</span></div>
+            <div class="muted" style="font-size: 11px; padding-left: 20px; line-height: 1.5">Approvals and the steps above always come to you.</div>
+          </div>
+        </div>
+        <div class="panel" style="left: 470px; top: 24px; width: 466px">
+          <div style="display: flex; align-items: center; gap: 8px; padding: 10px 12px"><b>Needs you</b><span class="muted">· 1</span></div>
+          <div class="gh"><span>CREW · HISTORY-SIDEBAR</span><span class="muted" style="font-weight: 400; letter-spacing: 0">· 1</span></div>
+          <div class="ir">
+            <div class="ih"><span class="dot" style="background: #BF8700"></span><b>Interface change</b><span class="tag"><span class="am" style="background: #2F5E9E; margin-right: 4px"></span>T7 · codex</span><span style="flex: 1"></span><span class="muted">3m</span></div>
+            <div style="display: flex; gap: 6px"><span class="btn">View change</span><span class="btn">Reject</span><span class="btn pri">Approve</span></div>
+          </div>
+          <div class="gh new" style="font-weight: 400; letter-spacing: 0"><span style="font-weight: 600; letter-spacing: 0.04em">HANDLED BY LEAD</span><span>· 2 today</span><span style="flex: 1"></span><span>▾</span></div>
+          <div class="ir">
+            <div class="ih"><span class="am" style="background: #A8503A"></span><b>Answered</b><span class="tag"><span class="am" style="background: #2F5E9E; margin-right: 4px"></span>QA · codex</span><span style="flex: 1"></span><span class="muted">01:40</span></div>
+            <span class="muted">Same frame or new terminal? → <span style="color: #1A1A1A">Same frame</span> · “Resume in N11 already opens in the session’s frame.”</span>
+          </div>
+          <div class="ir">
+            <div class="ih"><span class="am" style="background: #A8503A"></span><b>Answered</b><span class="tag"><span class="am" style="background: #2F5E9E; margin-right: 4px"></span>T8 · codex</span><span style="flex: 1"></span><span class="muted">03:22</span></div>
+            <span class="muted">Use Playwright or the fake agent for the e2e? → <span style="color: #1A1A1A">the fake agent</span> · “e2e/AGENTS.md says so.”</span>
+          </div>
+        </div>
+        <div style="position: absolute; left: 24px; top: 380px; width: 912px; font-size: 12px; line-height: 1.6; color: #5F5F5A">New crew 的 ASK ME 下面多一段 THE LEAD（C1 的对话框）。第一项默认开，第二项默认关，第二期才有。Lead 答过的不算“等你”，不计入 Needs you 的数字，收在 HANDLED BY LEAD 里（默认收起）、记进 Decisions、写进汇报。答案发出去就收不回，所以只给“问题”，不给批准和关卡。</div>
+      </div>
+      <div class="ex" style="flex: 1">
+        <div class="tbl" style="grid-template-columns: 1fr 1.3fr">
+          <span class="th">收件箱里的</span><span class="th">Lead 能做什么</span>
+          <span class="td">Question：worker 调 <span class="mono">crew ask</span>、选择题、等你回答</span><span class="td">第一期：写建议（Lead suggests）。第二期勾了 “Answer workers’ questions for me”：直接答，答案发回那个终端，记 by lead。</span>
+          <span class="td">Approval：终端等你批准命令</span><span class="td">不能。批准只走你和 Auto-approve（PL1）的规则。</span>
+          <span class="td">Approve plan · Interface change · Stuck · Merge into main</span><span class="td">不能，永远你点。Lead 可以写建议、把那一条打开给你。</span>
+          <span class="td">不在这个集群里的终端</span><span class="td">看不到。Lead 只读得到自己集群的条目。</span>
+        </div>
+        <span><b>堵上旁门</b>：AgentDeck MCP 的 <span class="mono">send_to_terminal</span> 现在能往正在等批准的终端里打字，等于替人按了批准，绕过收件箱、破坏性名单和记录。改成对 needs-approval / needs-reply 的终端拒绝，返回 “This terminal is waiting for the user. Use the inbox.”；Lead 回答问题只走 <span class="mono">crew answer</span>，有记录。这一条不用等集群，现在就该修。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">5 · 待你定</span>
+    <div class="decide" style="max-width: 1500px">
+      <b>1</b><span><b>进度放哪</b>：推荐<b>两处，任务表为准</b>，Lead 的上下文当缓存，丢了从摘要恢复。只放 Lead 的上下文（文章的做法）会被压缩冲掉、跟着额度一起停；只放任务表就没人跟你聊。</span>
+      <b>2</b><span><b>Lead 能不能替你答</b>：推荐第一期只建议，第二期按集群授权、只答 worker 的问题。批准和关卡永远不交给它。</span>
+      <b>3</b><span><b>长期记忆</b>：推荐 AgentDeck <b>不做自己的记忆</b>，用各家的 AGENTS.md / CLAUDE.md / memory；第二版画板 2 的 Instructions 同步降成“把不进 git 的说明带进新 worktree”，以后再做。</span>
+      <b>4</b><span><b>集群里 Worker、Reviewer、QA 的 claude 关不关 auto memory</b>：推荐关（启动时设 <span class="mono">CLAUDE_CODE_DISABLE_AUTO_MEMORY=1</span>）；Lead 照你自己的设置。</span>
+      <b>5</b><span><b>send_to_terminal 不许往等你的终端里打字</b>：推荐现在就修，不依赖集群。</span>
+    </div>
+    <span style="font-size: 13px; color: #5F5F5A">相关：命令名和“只有 Lead 有这些命令”见 C7；自由模式（No template，只开一个 Lead，C6）里子 session 记在 Session 上（S0）：没有任务表时，摘要退成“子 session 列表 + 各自状态 + Decisions”。</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":3560}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Session · 白板和左边栏</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D6D6D2 1px,transparent 1px);background-size:20px 20px}
+.at{position:absolute}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1240px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#6B6B6B}
+.frame{position:absolute;box-sizing:border-box;border:1px solid #D6D6D2;border-radius:12px;background:rgba(255,255,255,0.35)}
+.fh{height:36px;display:flex;align-items:center;gap:8px;padding:0 14px;font-size:12px;border-bottom:1px solid #E3E3E0}
+.win{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;overflow:hidden;font-size:12px}
+.win.focus{border-color:#1A1A1A;box-shadow:0 6px 20px rgba(26,26,26,0.12)}
+.win.wait{border-color:#BF8700}
+.tb{height:28px;display:flex;align-items:center;gap:6px;padding:0 10px;border-bottom:1px solid #EEEEEB;font-size:12px;white-space:nowrap}
+.tb .n{font-family:'IBM Plex Mono',monospace;font-weight:500}
+.tb .s{color:#6B6B6B}
+.tb .tag{color:#6B6B6B;font-size:11px}
+.tb .tag.link{text-decoration:underline;text-decoration-color:#D6D6D2;text-underline-offset:2px}
+.body{padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.7;color:#3D3D3A}
+.lr{display:inline-block;width:7px;height:7px;border-radius:50%;flex:none;background:#1A7F37}
+.lw{display:inline-block;width:7px;height:7px;border-radius:50%;flex:none;background:#BF8700}
+.li{display:inline-block;width:7px;height:7px;border-radius:50%;flex:none;box-sizing:border-box;border:1.5px solid #6B6B6B}
+.lx{display:inline-block;width:7px;height:2px;flex:none;background:#6B6B6B}
+.lb{display:inline-block;width:7px;height:7px;flex:none}
+.am{display:inline-block;width:7px;height:7px;border-radius:2px;flex:none}
+.gs{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;font-size:12px;display:flex;flex-direction:column}
+.gr{display:flex;align-items:center;gap:6px;height:24px;padding:0 10px}
+.callout{position:absolute;display:flex;gap:6px;font-size:12px;line-height:1.5;color:#3D3D3A}
+.num{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:#1A1A1A;color:#FFFFFF;font-size:11px;font-weight:600;flex:none}
+.panel{box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:10px;font-size:12px;overflow:hidden;flex:none}
+.eb{font-size:10px;font-weight:600;letter-spacing:0.04em;color:#6B6B6B}
+.hr{display:flex;align-items:center;gap:6px;height:24px;padding:0 12px;white-space:nowrap}
+.hr .t{flex:1;overflow:hidden;text-overflow:ellipsis}
+.hr .tm{color:#6B6B6B;font-size:11px}
+.card{box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;box-shadow:0 6px 20px rgba(26,26,26,0.12);padding:10px 12px;font-size:12px;line-height:1.6;display:flex;flex-direction:column;gap:2px;flex:none}
+.menu{box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;box-shadow:0 6px 20px rgba(26,26,26,0.12);padding:4px;font-size:12px;display:flex;flex-direction:column;flex:none}
+.mi{display:flex;align-items:center;gap:8px;height:24px;padding:0 10px;border-radius:6px}
+.mi .k{margin-left:auto;color:#6B6B6B;font-size:11px}
+.sep{height:1px;background:#E3E3E0;margin:4px 2px}
+.dlg{box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;box-shadow:0 6px 20px rgba(26,26,26,0.12);padding:18px 20px;display:flex;flex-direction:column;gap:12px;font-size:13px;line-height:1.5;flex:none}
+.radio{display:flex;align-items:flex-start;gap:8px}
+.rd{width:12px;height:12px;border-radius:50%;box-sizing:border-box;border:1px solid #D6D6D2;margin-top:3px;flex:none}
+.rd.on{border:4px solid #1A1A1A}
+.ta{box-sizing:border-box;border:1px solid #D6D6D2;border-radius:6px;padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.65;color:#1A1A1A;background:#FFFFFF}
+.btn{display:inline-flex;align-items:center;height:26px;padding:0 12px;border-radius:6px;font-size:12px;border:1px solid #D6D6D2;background:#FFFFFF;color:#1A1A1A;font-family:inherit}
+.btn.pri{background:#1A1A1A;border-color:#1A1A1A;color:#FFFFFF}
+.ex{display:flex;flex-direction:column;gap:10px;font-size:13.5px;line-height:1.65}
+</style>
+</helmet>
+<div style="width: 1760px; height: 3200px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">S1 · 白板和左边栏：看得出谁开了谁，关掉以后还在，能换一家接着做</h1>
+      <span class="concept">2026-10-27 草案 · 待你定</span>
+    </div>
+    <p class="lead">数据模型见 S0。这一页画界面上的三处变化：白板上子 session 的标签和关系线；左边栏里子 session 挂在父 session 下面；标题栏菜单里的 Hand off to ▸。都用组件库里已有的零件：标题栏的状态标签（WindowStatusBadge.tag）、N2 的侧边栏、HistoryPanel 的行、菜单和对话框。颜色仍然只表达状态，agent 身份色只在小方块上。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 白板：子 session 标题栏挂 “↳ 父”，聚焦时连线</span>
+    <div class="fig" style="width: 1632px; height: 720px">
+      <svg class="at" style="left: 0; top: 0" width="1632" height="720" aria-hidden="true">
+        <path d="M 214 306 C 214 380, 778 380, 778 306" fill="none" stroke="#1A1A1A" stroke-width="1" stroke-dasharray="4 4"></path>
+        <path d="M 384 150 C 700 150, 860 186, 1080 186" fill="none" stroke="#1A1A1A" stroke-width="1" stroke-dasharray="4 4"></path>
+      </svg>
+      <div class="frame" style="left: 24px; top: 30px; width: 1000px; height: 600px">
+        <div class="fh"><b>agenduck</b><span class="mono muted">feat/search-api</span><span style="flex: 1"></span><span class="muted">3 running · 1 waiting</span></div>
+      </div>
+      <div class="win focus" style="left: 44px; top: 86px; width: 340px; height: 220px">
+        <div class="tb"><span class="n">claude</span><span class="tag">lead</span><span style="flex: 1"></span><span class="lr"></span><span class="s">Running · 4m</span><span class="tag link">3 sessions</span></div>
+        <div class="body">› Split search into api and ui, and<br>  start the ui on its own branch<br>⏺ agentdeck.open_terminals(2, codex)<br>  ⎿ opened api, ui<br>⏺ agentdeck.create_workspace(<br>    "feat/search-ui", claude)<br>  ⎿ opened in feat/search-ui</div>
+      </div>
+      <div class="gs" style="left: 392px; top: 86px; width: 168px; height: 220px">
+        <div class="gr" style="font-weight: 600">2 subagents</div>
+        <div class="gr" style="background: #EDEDEA; font-weight: 600"><span class="lr"></span><span class="mono">sub-1 · api</span></div>
+        <div class="gr" style="background: #FFF7E6"><span class="lw"></span><span class="mono">sub-2 · ui</span></div>
+        <span style="flex: 1"></span>
+        <div class="gr muted" style="font-size: 11px">Show all · Collapse group</div>
+      </div>
+      <div class="win" style="left: 568px; top: 86px; width: 420px; height: 220px">
+        <div class="tb"><span class="n">codex</span><span class="tag">sub-1 · api</span><span style="flex: 1"></span><span class="lr"></span><span class="s">Running · 2m</span><span class="tag link">↳ claude · lead</span></div>
+        <div class="body">• Adding GET /search to routes/search.ts<br>• Running pnpm test search</div>
+      </div>
+      <div class="win" style="left: 44px; top: 420px; width: 400px; height: 180px">
+        <div class="tb"><span class="n">claude</span><span style="flex: 1"></span><span class="li"></span><span class="s">Idle · 20m</span></div>
+        <div class="body">› Review yesterday’s migration<br>  Done. 2 notes left in the PR.</div>
+      </div>
+      <div class="frame" style="left: 1060px; top: 30px; width: 548px; height: 320px">
+        <div class="fh"><b>agenduck</b><span class="mono muted">feat/search-ui</span><span style="flex: 1"></span><span class="muted">1 waiting</span></div>
+      </div>
+      <div class="win wait" style="left: 1080px; top: 86px; width: 508px; height: 200px">
+        <div class="tb"><span class="n">claude</span><span style="flex: 1"></span><span class="lw"></span><span class="s" style="color: #B45309">Waiting · 1m</span><span class="tag link">↳ claude · lead</span></div>
+        <div class="body">⏺ Edit src/ui/SearchBox.tsx<br>  Do you want to make this edit?<br>  › 1. Yes  2. No</div>
+      </div>
+      <div class="callout" style="left: 1060px; top: 380px; width: 548px"><span class="num">1</span><span><b>子 session 的标签</b>：标题栏状态后面一个淡色标签 “↳ claude · lead”（父的 agent · 父的名字），和 “outside workspace” 同一种样子。单击跳到父窗口并闪一下。</span></div>
+      <div class="callout" style="left: 1060px; top: 450px; width: 548px"><span class="num">2</span><span><b>父 session 的标签</b>：“3 sessions”，数的是还在 Running 的子 session。单击打开左边栏，定位到它。</span></div>
+      <div class="callout" style="left: 1060px; top: 520px; width: 548px"><span class="num">3</span><span><b>关系线</b>：只在聚焦或悬停一个窗口时出现，1px 墨色虚线，连到它的父和子，跨框也画；移开就消失。不用蓝色（蓝色是拖动对齐用的）。没有关系的窗口（左下这个）不连。</span></div>
+      <div class="callout" style="left: 1060px; top: 590px; width: 548px"><span class="num">4</span><span><b>N2 侧边栏不变</b>：同一个框里 open_terminals 开的那组仍然停靠在侧边栏里；别的子 session（另一个框、单个 open_terminal、fork、交接）只有标签和线。</span></div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 标题栏标签的几种写法</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start">
+      <div style="display: flex; flex-direction: column; gap: 12px; width: 620px; flex: none">
+        <div class="win" style="position: relative; width: 620px; height: 28px"><div class="tb"><span class="n">codex</span><span class="tag">sub-1 · api</span><span style="flex: 1"></span><span class="lr"></span><span class="s">Running · 2m</span><span class="tag link">↳ claude · lead</span></div></div>
+        <div class="win" style="position: relative; width: 620px; height: 28px"><div class="tb"><span class="n">codex</span><span class="tag">sub-1 · api</span><span style="flex: 1"></span><span class="lr"></span><span class="s">Running · 9m</span><span class="tag link">↳ claude · lead (stopped)</span></div></div>
+        <div class="win" style="position: relative; width: 620px; height: 28px"><div class="tb"><span class="n">claude</span><span class="tag">lead</span><span style="flex: 1"></span><span class="li"></span><span class="s">Idle · now</span><span class="tag link">3 sessions</span></div></div>
+        <div class="win" style="position: relative; width: 620px; height: 28px"><div class="tb"><span class="n">claude</span><span style="flex: 1"></span><span class="li"></span><span class="s">Idle · 1m</span><span class="tag link">handed off → codex</span></div></div>
+        <div class="win" style="position: relative; width: 620px; height: 28px"><div class="tb"><span class="n">codex</span><span style="flex: 1"></span><span class="lr"></span><span class="s">Running · now</span><span class="tag link">↳ claude · handoff</span></div></div>
+        <div class="win" style="position: relative; width: 620px; height: 28px"><div class="tb"><span class="n">claude</span><span style="flex: 1"></span><span class="li"></span><span class="s">Idle · 3m</span><span class="tag link">↳ forked from “Fix login”</span></div></div>
+      </div>
+      <div class="ex" style="flex: 1">
+        <span><b>Lead 关掉以后</b>：子 session 的标签加 “(stopped)”，单击打开左边栏、定位到 Lead 那一行（可以 Reopen）。N2 的停靠解除，子终端平铺开，这和现在一样；变化是关系还在。</span>
+        <span><b>交接</b>：上一家写 “handed off → codex”，窗口不自动关；接班的写 “↳ claude · handoff”。</span>
+        <span><b>fork</b>：写 “↳ forked from …”，引号里是原来那条的标题。</span>
+        <span><b>集群</b>：集群里的任务终端由 C2 的集群框管，标签写角色（例如 “Worker · T4”），这里不另画。</span>
+        <span class="muted">都是同一个零件：WindowStatusBadge.tag，小写、淡色，悬停有说明（父的名字、哪个框、开了多久）。不新加颜色。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · 左边栏：子 session 缩进挂在父下面</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start">
+      <div class="panel" style="width: 340px">
+        <div class="hr" style="height: 34px"><span class="eb">HISTORY</span></div>
+        <div style="padding: 0 12px 8px"><div style="box-sizing: border-box; height: 26px; border: 1px solid #D6D6D2; border-radius: 6px; padding: 0 8px; display: flex; align-items: center; color: #6B6B6B">Search sessions</div></div>
+        <div class="hr" style="font-weight: 600">agenduck</div>
+        <div class="hr"><span class="muted">▾</span><span class="mono">feat/search-api</span><span class="tm">· 5</span></div>
+        <div class="hr" style="padding-left: 24px"><span class="am" style="background: #A8503A"></span><span class="eb" style="color: #A8503A">CLAUDE · 2</span></div>
+        <div class="hr" style="padding-left: 24px; background: #EDEDEA"><span class="lr"></span><span class="t">Plan search feature</span><span class="tm">now</span></div>
+        <div class="hr" style="padding-left: 40px"><span class="lr"></span><span class="am" style="background: #2F5E9E"></span><span class="t mono">api · Add search endpoint</span><span class="tm">2m</span></div>
+        <div class="hr" style="padding-left: 40px"><span class="lw"></span><span class="am" style="background: #2F5E9E"></span><span class="t mono">ui · Search box</span><span class="tm">1m</span></div>
+        <div class="hr" style="padding-left: 40px"><span class="lw"></span><span class="am" style="background: #A8503A"></span><span class="t">Search UI <span class="mono muted">feat/search-ui</span></span><span class="tm">1m</span></div>
+        <div class="hr" style="padding-left: 40px; color: #6B6B6B"><span class="lb"></span><span class="t">2 background agents · done</span></div>
+        <div class="hr" style="padding-left: 24px"><span class="lb"></span><span class="t">Fix flaky search test</span><span class="btn" style="height: 20px; padding: 0 8px; font-size: 11px">Reopen</span><span class="tm">⋯</span></div>
+        <div class="hr" style="padding-left: 40px; color: #6B6B6B"><span class="lb"></span><span class="t">Earlier conversation · 1</span></div>
+        <div class="hr" style="padding-left: 24px"><span class="am" style="background: #2F5E9E"></span><span class="eb" style="color: #2F5E9E">CODEX · 1</span></div>
+        <div class="hr" style="padding-left: 24px"><span class="lb"></span><span class="t">Refactor search index</span><span class="tm">1d</span></div>
+        <div class="hr"><span class="muted">▸</span><span class="mono">feat/search-ui</span><span class="tm">· 1 under its lead</span></div>
+        <div class="hr"><span class="muted">▸</span><span class="mono">main</span><span class="tm">· 14</span></div>
+        <div style="height: 8px"></div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 16px; width: 360px; flex: none">
+        <div class="card" style="width: 360px">
+          <b style="font-size: 12.5px">Finish login form</b>
+          <span class="muted"><span class="mono">codex</span> · gpt-5.5 · Terminal</span>
+          <span>Handed off from <span class="mono">claude</span> · “Login form” · 12m ago</span>
+          <span>On board · Running</span>
+          <span class="muted mono" style="font-size: 11px">~/agenduck/.worktrees/feat-login · feat/login</span>
+        </div>
+        <div class="card" style="width: 360px">
+          <b style="font-size: 12.5px">Fix flaky search test</b>
+          <span class="muted"><span class="mono">claude</span> · Terminal · stopped 3h ago</span>
+          <span>2 conversations · cleared once</span>
+          <span>Reopen restores its name, skills and plugins</span>
+        </div>
+      </div>
+      <div class="ex" style="flex: 1">
+        <span><b>分组不变</b>：项目 → 工作路径 → agent。有父 session 的那几条缩进挂在父下面，前面加自己的 agent 小方块（身份标记，不是状态），不在自己的路径、agent 下面再列一遍。目录不一样时行里写分支（“Search UI feat/search-ui”）；只剩子 session 的路径写 “1 under its lead”。</span>
+        <span><b>只画两层</b>：更深的写 “+2 more”，单击展开。后台 agent 收成一行灰字，单击打开 N10 的只读记录。</span>
+        <span><b>Stopped 的 session</b>：没有状态灯，悬停出现 Reopen（就是现在的 Resume，但开回同一条 session，恢复名字、label、skill、Auto-approve、Usage、父子关系）。⋯ 里照旧有 Fork into… ▸、Copy session id、Reveal file in Finder，多一个 Hand off to ▸。</span>
+        <span><b>/clear 以前的对话</b>：收进 “Earlier conversation · N”，展开后每段都能单独 Resume 或 Fork。</span>
+        <span><b>悬停卡片</b>多两种行：“Handed off from …”“Forked from …”。不写消息数（DR-62）。</span>
+        <span class="muted">组件库要改一条规则：agent 颜色现在只在 agent 小标题上，要放宽到子 session 行前的小方块。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · 换一家接着做：Hand off to ▸</span>
+    <div style="display: flex; gap: 32px; align-items: flex-start">
+      <div class="menu" style="width: 240px">
+        <div class="mi">Clear <span class="k">⌘K</span></div>
+        <div class="mi">Restart</div>
+        <div class="mi">Restart and resume conversation</div>
+        <div class="mi">Open in system terminal</div>
+        <div class="sep"></div>
+        <div class="mi" style="background: #EDEDEA">Hand off to <span class="k">▸</span></div>
+        <span class="muted" style="font-size: 11px; padding: 4px 10px">现有菜单项不变，只加最后一项</span>
+      </div>
+      <div class="menu" style="width: 200px; margin-top: 122px">
+        <div class="mi" style="background: #EDEDEA"><span class="am" style="background: #2F5E9E"></span><span class="mono">codex…</span></div>
+        <div class="mi"><span class="am" style="background: #A8503A"></span><span class="mono">claude…</span><span class="k">fresh context</span></div>
+        <div class="mi"><span class="am" style="background: #0F6F7F"></span><span class="mono">omp…</span></div>
+        <div class="mi" style="opacity: 0.4"><span class="am" style="background: #4A4F7A"></span><span class="mono">kimi…</span><span class="k">Not installed</span></div>
+      </div>
+      <div class="dlg" style="width: 560px">
+        <b style="font-size: 15px">Hand off to codex</b>
+        <span class="muted" style="font-size: 12px">codex starts in the same worktree (<span class="mono">feat/login</span>) with this note as its first message. claude stays open.</span>
+        <div class="radio"><span class="rd on"></span><span>Ask claude to write a note<br><span class="muted" style="font-size: 12px">claude spends one turn on it</span></span></div>
+        <div class="radio"><span class="rd"></span><span>Use AgentDeck’s summary<br><span class="muted" style="font-size: 12px">Branch, changed files, last output, and the path to claude’s conversation</span></span></div>
+        <div class="ta">Goal: finish the login form (validation + error states).<br>Done: LoginForm.tsx fields, zod schema in auth/schema.ts.<br>Decided: keep errors inline, no toast.<br>Open: the “remember me” checkbox has no backend yet.<br>Next: wire submit to POST /session, add the two tests<br>in LoginForm.test.tsx.</div>
+        <span class="muted" style="font-size: 12px">Also sent: <span class="mono">feat/login</span> · 4 files changed · <span class="mono">~/.claude/projects/…/7f3c….jsonl</span></span>
+        <div style="display: flex; gap: 8px; justify-content: flex-end"><span class="btn">Cancel</span><span class="btn pri">Start codex</span></div>
+      </div>
+      <div class="ex" style="flex: 1">
+        <span><b>说明从哪来</b>：上一家空闲、能回复时默认让它写（AgentDeck 发一条固定的提示词，它用 <span class="mono">agentdeck</span> 命令交回（C7），或者 AgentDeck 读它记录里的最后一条回复）。上一家停了、额度用完时第一项是灰的，后面写原因（“codex can’t reply: usage limit”），只能用 AgentDeck 拼的。</span>
+        <span><b>说明可以改</b>，改完点 Start。新窗口开在旧窗口右边，第一条消息就是说明；按 PL3 的方式整段送进去。</span>
+        <span><b>不转换对话</b>：只附上一家会话记录的路径，需要时接班的自己去读。</span>
+        <span><b>也能交给同一家</b>：claude 交给一个新的 claude，等于带着说明清空上下文。</span>
+        <span class="muted">集群 CR8 的换家走同一条路：调度器在额度用完时自动选 AgentDeck 拼的说明，不弹对话框。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">5 · 规则</span>
+    <div class="tbl" style="grid-template-columns: 240px minmax(0, 1fr)">
+      <span class="th">情况</span><span class="th">怎么做</span>
+      <span class="td">关掉父 session 的窗口</span><span class="td">照样问 “Stop and close”。子 session 不受影响，标签变 “(stopped)”；N2 停靠解除，子终端平铺。</span>
+      <span class="td">关掉子 session 的窗口</span><span class="td">父的 “N sessions” 减一；左边栏里这一行留着（Stopped），能 Reopen。</span>
+      <span class="td">Reopen 一个子 session</span><span class="td">开回原来的框；父还开着时停靠回 N2 侧边栏（只限同一个框、open_terminals 开的）。</span>
+      <span class="td">父 session 在别的框、别的项目</span><span class="td">标签照样显示；关系线跨框画；父的框不在白板上时单击标签打开左边栏定位。</span>
+      <span class="td">很多子 session</span><span class="td">标签只写个数；关系线最多画 8 条，更多的看左边栏。</span>
+      <span class="td">“在等你”</span><span class="td">父子关系不改变计数和 ⌘J；收件箱（CR1）里的一条可以写 “from claude · lead”。</span>
+      <span class="td">撤销（X10）</span><span class="td">撤销关闭照旧放回窗口；Session 不进撤销，关系本来就还在。</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":3200}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
