@@ -2,6 +2,15 @@
 
 按时间倒序。改动其中任何一条，先在这里写清楚再动代码。
 
+## 2026-10-28（第 0、1 波实现）
+
+代码在分支 integrate/W0-W1，没合进 main。做完的任务：PL3、PL5、SE0、SE1、SE2、AH0、AH1、AH2、AH3、AH7、AH11、LA0、PL4（contracts）、CR0（contracts）、CR13、CR14、CR15、DC0、DC1、DC2、CO0、CO3、CO4、SK5；实测 AH6、RS14。contracts 0.1.14–0.1.22 共 9 个版本。用例、问题、调研的状态见 docs/status/tracking.py 和 docs/research/entries.py（新登记 IS-146～149、DR-118、DR-119）。
+
+- **AH7 / AH11 的 MCP 收紧**：AgentDeck MCP 的工具名和参数不变，默认行为收紧三处：① send_to_terminal 在目标终端等你（needs-approval、needs-reply）时拒绝，返回 invalid-argument “This terminal is waiting for the user. Use the inbox.”；文字打出去后、按回车前再查一次，那时在等你就不按回车。原因：往停在批准提示上的终端打 “1” 加回车，等于替人按了批准，绕过收件箱、破坏性名单和 ApprovalRecord；集群里 Lead 也能借它代人批准。批准和回答只走收件箱。② 勾了 Hide from agents 的终端，list_terminals、list_windows 不列，read_terminal、send_to_terminal 返回 invalid-argument “The user hid this terminal from agents”。原因：数据库 TUI 屏幕上的业务数据不该进 agent 上下文，agent 也不该替人往 pgcli 里敲语句。list_windows 也不列是超出原需求的一处（待你确认）。③ list_terminals 返回的 command 一律用 redactCommand 把写明的密码换成 ***。错误码沿用 invalid-argument。两条判断放在 mcp-server 的同一个函数 agentTerminalRefusal 里，/cli 和以后的 Flow 窗口共用。隐藏名单从保存的白板读（有半秒延迟）；读不出白板时工具报错，不当作没隐藏。
+- **接口的做法**：contracts 提交只改 packages/contracts，紧跟一个 “Follow contracts” 提交补 fakes 和占位实现（因为 apps/desktop 的 SERVICE_METHODS 穷尽检查，contracts 单独提交一定编不过）。
+- **命令行的分工（CR13、CR14）**：按下面第二轮那一节的“命令行分工”（修订 DR-72）落地：crew 全部给 Lead，模板模式的 Worker 等只给 done、note 等几条；session 只给 Lead；doc / flow / lesson / run / job / out / open / notify / help 所有 AgentDeck 终端都有；forge 只给 origin 为 forge 的终端。
+- **传输**：先走 HTTP POST /cli（和 MCP 同一个 127.0.0.1 端口）。CR12 的实测还没出结论；如果结论是改用 unix socket，命令行已经能按 api.json 里的 socket 切换。
+
 ## 2026-10-28（第二轮：研究和竞赛、文档、学习、代码理解、长期运行、Issue · PR、同仓协作）
 
 来自用户的笔记和 13 点清单。主 agent 补了第 14–16 点，加上原来的第 10–13 点，共 7 点。
