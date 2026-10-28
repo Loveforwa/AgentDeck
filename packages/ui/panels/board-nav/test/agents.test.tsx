@@ -1,4 +1,4 @@
-// CO4（TC-148 的界面部分）：Agents 视图、Unseen、悬停看最后一条回复。
+// CO4（TC-148 的界面部分）：Agents 视图、悬停看最后一条回复。（Unseen 2026-10-28 按用户决定去掉）
 import type { StatusSnapshot, TerminalId, TerminalWindowData, WindowId, WindowNode } from '@agentdeck/contracts';
 import { SAMPLE, createFakeApi, type FakeApi } from '@agentdeck/fakes';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
@@ -57,31 +57,36 @@ afterEach(() => {
 describe('Agents view model', () => {
   it('lists agent terminals only, grouped in a fixed order, board order inside a group', async () => {
     const fake = createFakeApi();
-    let input = await boardFrom(fake);
-    input = setData(input, 'win-shop-claude', { unseen: true });
+    const input = await boardFrom(fake);
     const view = buildAgents(input);
     // 两个 shell 和网页不列
     expect(view.rows.map((r) => r.id)).toEqual(['win-login-codex', 'win-login-claude', 'win-shop-claude']);
     expect(view.groups.map((g) => [g.label, g.rows.length])).toEqual([
       ['NEEDS YOU', 1],
       ['RUNNING', 1],
-      ['DONE · UNSEEN', 1],
+      ['IDLE', 1],
     ]);
     expect(view.rows[0]!.where).toBe('agentdeck · feat/login');
     expect(view.rows[2]!.where).toBe('shop · fix/cart-total');
     expect(agentOrder(input)).toEqual(['win-login-codex', 'win-login-claude', 'win-shop-claude']);
   });
 
-  it('puts errors first and idle last; Unseen only while idle', async () => {
+  it('puts errors first and idle last', async () => {
     const fake = createFakeApi();
     let input = await boardFrom(fake);
     input = setStatus(input, T.loginClaude, { status: 'error', exitCode: 1 });
     expect(buildAgents(input).groups.map((g) => g.id)).toEqual(['error', 'needs-you', 'idle']);
-    // unseen 记着，但终端又在跑：算 RUNNING，不算没看
-    input = setData(setStatus(input, T.shopClaude, { status: 'running' }), 'win-shop-claude', { unseen: true });
+    input = setStatus(input, T.shopClaude, { status: 'running' });
+    expect(buildAgents(input).groups.map((g) => g.id)).toEqual(['error', 'needs-you', 'running']);
+  });
+
+  it('ignores the unseen flag old boards may still carry', async () => {
+    const fake = createFakeApi();
+    let input = await boardFrom(fake);
+    input = setData(input, 'win-shop-claude', { unseen: true });
     const view = buildAgents(input);
-    expect(view.groups.map((g) => g.id)).toEqual(['error', 'needs-you', 'running']);
-    expect(view.rows.find((r) => r.id === 'win-shop-claude')!.unseen).toBe(false);
+    expect(view.groups.map((g) => g.id)).toEqual(['needs-you', 'running', 'idle']);
+    expect(view.rows.find((r) => r.id === 'win-shop-claude')!.agentGroup).toBe('idle');
   });
 
   it('keeps two agents of the same kind apart in board order and lists exited agents under IDLE', async () => {
@@ -97,11 +102,11 @@ describe('Agents view model', () => {
     const base = { since: ago(4 * 60_000), exitCode: null };
     expect(rowStatusText({ ...base, agentGroup: 'needs-you', status: 'needs-approval' }, NOW)).toBe('Waiting · 4m');
     expect(rowStatusText({ ...base, agentGroup: 'running', status: 'running' }, NOW)).toBe('4m');
-    expect(rowStatusText({ ...base, agentGroup: 'unseen', status: 'idle', since: ago(5_000) }, NOW)).toBe('Unseen · now');
+    expect(rowStatusText({ ...base, agentGroup: 'idle', status: 'idle', since: ago(5_000) }, NOW)).toBe('now');
     expect(rowStatusText({ ...base, agentGroup: 'idle', status: 'idle', since: ago(3 * 3600_000) }, NOW)).toBe('3h');
     expect(rowStatusText({ ...base, agentGroup: 'error', status: 'error', exitCode: 1 }, NOW)).toBe('exit 1 · 4m');
     expect(rowStatusText({ ...base, agentGroup: 'idle', status: 'exited' }, NOW)).toBe('Exited');
-    expect(titleStatusText({ ...base, agentGroup: 'unseen', status: 'idle', since: ago(5_000) }, NOW)).toBe('Idle · Unseen · now');
+    expect(titleStatusText({ ...base, agentGroup: 'idle', status: 'idle', since: ago(5_000) }, NOW)).toBe('Idle · now');
     expect(titleStatusText({ ...base, agentGroup: 'running', status: 'running' }, NOW)).toBe('Running · 4m');
     expect(agentShortcut(0)).toBe('⌥⌘1');
     expect(agentShortcut(8)).toBe('⌥⌘9');
@@ -172,17 +177,17 @@ describe('BoardNav · Agents', () => {
     expect(screen.getByRole('heading', { name: 'AGENTS · 3' })).toBeTruthy();
   });
 
-  it('shows the groups with counts, lamps, Unseen in bold, and jumps on click', async () => {
+  it('shows the groups with counts and lamps, and jumps on click', async () => {
     const fake = createFakeApi();
     let input = await boardFrom(fake);
-    input = setData(setStatus(input, T.shopClaude, { since: ago(10_000) }), 'win-shop-claude', { unseen: true });
+    input = setStatus(input, T.shopClaude, { since: ago(10_000) });
     input = setStatus(input, T.loginCodex, { since: ago(2 * 60_000) });
     localStorage.setItem(VIEW_STORAGE_KEY, 'agents');
     const onJump = vi.fn();
     render(<BoardNav {...input} api={fake} onJump={onJump} now={NOW} />);
 
     const headings = screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent);
-    expect(headings).toEqual(['NEEDS YOU · 1', 'RUNNING · 1', 'DONE · UNSEEN · 1']);
+    expect(headings).toEqual(['NEEDS YOU · 1', 'RUNNING · 1', 'IDLE · 1']);
 
     const waiting = screen.getByRole('region', { name: 'NEEDS YOU' });
     const codex = within(waiting).getByRole('button');
@@ -191,16 +196,15 @@ describe('BoardNav · Agents', () => {
     expect(within(codex).getByText('Waiting · 2m')).toBeTruthy();
     expect(within(codex).getByText('agentdeck · feat/login')).toBeTruthy();
 
-    const unseen = within(screen.getByRole('region', { name: 'DONE · UNSEEN' })).getByRole('button');
-    expect(unseen.className).toContain('bnav-row--unseen');
-    expect(unseen.getAttribute('aria-label')).toBe('claude, Idle · Unseen, shop · fix/cart-total');
-    // 灯还是空心灰（颜色只在灯上，Unseen 不加颜色）
-    expect(unseen.querySelector('.bnav-lamp')!.className).toContain('bnav-lamp--idle');
-    const status = within(unseen).getByText('Unseen · now');
-    expect(status.className).toContain('bnav-agent-status--unseen');
-    expect(unseen.getAttribute('data-agent-index')).toBe('3');
+    const idle = within(screen.getByRole('region', { name: 'IDLE' })).getByRole('button');
+    expect(idle.getAttribute('aria-label')).toBe('claude, Idle, shop · fix/cart-total');
+    // 灯是空心灰，右边只写时间
+    expect(idle.querySelector('.bnav-lamp')!.className).toContain('bnav-lamp--idle');
+    const status = within(idle).getByText('now');
+    expect(status.className).toContain('bnav-agent-status--idle');
+    expect(idle.getAttribute('data-agent-index')).toBe('3');
 
-    await userEvent.setup().click(unseen);
+    await userEvent.setup().click(idle);
     expect(onJump).toHaveBeenCalledWith('win-shop-claude' as WindowId);
   });
 
@@ -217,12 +221,12 @@ describe('BoardNav · Agents', () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     const fake = createFakeApi();
     let input = await boardFrom(fake);
-    input = setData(setStatus(input, T.shopClaude, { since: ago(10_000) }), 'win-shop-claude', { unseen: true });
+    input = setStatus(input, T.shopClaude, { since: ago(10_000) });
     localStorage.setItem(VIEW_STORAGE_KEY, 'agents');
     const lastLines = vi.spyOn(fake.terminals, 'lastLines');
     render(<BoardNav {...input} api={fake} onJump={() => {}} now={NOW} />);
 
-    const row = within(screen.getByRole('region', { name: 'DONE · UNSEEN' })).getByRole('button');
+    const row = within(screen.getByRole('region', { name: 'IDLE' })).getByRole('button');
     fireEvent.mouseEnter(row);
     expect(screen.queryByRole('tooltip')).toBeNull();
     await act(async () => {
@@ -238,7 +242,7 @@ describe('BoardNav · Agents', () => {
     });
     expect(lastLines).toHaveBeenCalledWith(T.shopClaude, 60);
     expect(row.getAttribute('aria-describedby')).toBe(tip.id);
-    expect(within(tip).getByText('claude · shop · fix/cart-total · Idle · Unseen · now')).toBeTruthy();
+    expect(within(tip).getByText('claude · shop · fix/cart-total · Idle · now')).toBeTruthy();
     expect(within(tip).getByText('Last reply')).toBeTruthy();
     expect(within(tip).getByText('The total was rounding before the discount. Fixed in web/src/cart.ts:14 and added a test.')).toBeTruthy();
     expect(within(tip).getByText('Click to jump · ⌥⌘3')).toBeTruthy();

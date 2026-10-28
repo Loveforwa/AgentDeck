@@ -55,7 +55,6 @@ import { restoreResultMessage, type RestoreOutcome, type RestoreSessionItem } fr
 import { trimForSend } from './model/send.ts';
 import { boxFrom, boxSelection, byWorkspace, toggleSelection, translate, windowsInBox } from './model/selection.ts';
 import { jumpAgentRow, type ShortcutId } from './model/shortcuts.ts';
-import { clearUnseen, markUnseen } from './model/unseen.ts';
 import { NEAR_FRAME_PX, SNAP_PX, snapMove, snapResize, type Guide } from './model/snap.ts';
 import {
   BROWSER_TYPE,
@@ -251,15 +250,6 @@ export class BoardController {
     const { api } = this;
     this.unsubs.push(
       api.on('status.changed', (e) => this.set((s) => ({ statuses: { ...s.statuses, [e.snapshot.terminalId]: e.snapshot } }))),
-      // CO4：一轮结束时没在看这个终端，记 Unseen（随白板保存，聚焦时清）。用 agent.turn-end 不用 running → idle：
-      // 启动画面画完、dev server 停下这类 running → idle 不算一轮（状态机不发 turn-end）
-      api.on('agent.turn-end', (e) =>
-        this.set((s) => {
-          if (!s.loaded) return {};
-          const windows = markUnseen(s.windows, e.terminalId, s.focusedId);
-          return windows === s.windows ? {} : { windows };
-        }),
-      ),
       api.on('workspace.changed', (e) => this.set((s) => ({ workspaces: { ...s.workspaces, [e.workspace.id]: e.workspace } }))),
       api.on('workspace.removed', (e) => this.dropWorkspace(e.id)),
       api.on('workspace.progress', (e) =>
@@ -672,11 +662,11 @@ export class BoardController {
     const w = this.windowById(id);
     if (!w) return;
     const top = this.maxWindowZ();
-    this.set((st) => {
-      const raised = w.z === top && st.windows.filter((n) => n.z === top).length === 1 ? st.windows : st.windows.map((n) => (n.id === id ? { ...n, z: top + 1 } : n));
-      // CO4：看过了，清掉 Unseen
-      return { focusedId: id, selectedFrame: null, windows: clearUnseen(raised, id) };
-    });
+    this.set((st) => ({
+      focusedId: id,
+      selectedFrame: null,
+      windows: w.z === top && st.windows.filter((n) => n.z === top).length === 1 ? st.windows : st.windows.map((n) => (n.id === id ? { ...n, z: top + 1 } : n)),
+    }));
   }
 
   /** 单击框的标题栏：选中框（提到最上层），不改变聚焦的窗口以外的东西。 */

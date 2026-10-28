@@ -1,19 +1,18 @@
 // Agents 视图（CO4，画板 O0 第 4 节，照 Shepherd Terminal 的 Agent Monitor、herdr 的侧边栏）：只列 agent 终端，按状态分组。
-// 分组顺序固定：ERROR（有的话）、NEEDS YOU、RUNNING、DONE · UNSEEN、IDLE；组里按白板上的位置（和 Board 视图一样）。
+// 分组顺序固定：ERROR（有的话）、NEEDS YOU、RUNNING、IDLE；组里按白板上的位置（和 Board 视图一样）。
 // ⌥⌘1–9 跳到这里的前 9 行：白板的快捷键用 agentOrder() 算同一个顺序（apps/desktop 把它交给 BoardController）。纯函数，不碰 React。
 
 import type { StatusSnapshot, TerminalWindowData, WindowId, WindowNode, Workspace } from '@agentdeck/contracts';
 import { buildTree, type BoardNavInput, type NavWindow } from './model.ts';
 
-export type AgentGroupId = 'error' | 'needs-you' | 'running' | 'unseen' | 'idle';
+export type AgentGroupId = 'error' | 'needs-you' | 'running' | 'idle';
 
-export const AGENT_GROUP_ORDER: readonly AgentGroupId[] = ['error', 'needs-you', 'running', 'unseen', 'idle'];
+export const AGENT_GROUP_ORDER: readonly AgentGroupId[] = ['error', 'needs-you', 'running', 'idle'];
 
 export const AGENT_GROUP_LABEL: Record<AgentGroupId, string> = {
   error: 'ERROR',
   'needs-you': 'NEEDS YOU',
   running: 'RUNNING',
-  unseen: 'DONE · UNSEEN',
   idle: 'IDLE',
 };
 
@@ -21,8 +20,6 @@ export interface AgentRow extends NavWindow {
   /** 在哪：“agentdeck · feat/login”（项目 · 分支；plain 项目没有分支时写工作区名）。散放的为 null。 */
   where: string | null;
   agentGroup: AgentGroupId;
-  /** 一轮结束后还没看过（TerminalWindowData.unseen，且现在是 idle）。 */
-  unseen: boolean;
   /** 状态从什么时候开始（StatusSnapshot.since），没有状态时为 null。 */
   since: string | null;
   status: StatusSnapshot['status'] | null;
@@ -49,7 +46,7 @@ export function isAgentWindow(node: WindowNode): boolean {
   return !!agent && agent !== 'shell' && agent !== 'custom';
 }
 
-function groupOf(row: Pick<AgentRow, 'lamp' | 'unseen'>): AgentGroupId {
+function groupOf(row: Pick<AgentRow, 'lamp'>): AgentGroupId {
   switch (row.lamp) {
     case 'error':
       return 'error';
@@ -58,7 +55,7 @@ function groupOf(row: Pick<AgentRow, 'lamp' | 'unseen'>): AgentGroupId {
     case 'running':
       return 'running';
     default:
-      return row.unseen ? 'unseen' : 'idle';
+      return 'idle';
   }
 }
 
@@ -78,15 +75,13 @@ export function buildAgents(input: BoardNavInput): AgentsView {
   for (const nav of ordered) {
     const node = byId.get(nav.id);
     if (!node || !isAgentWindow(node)) continue;
-    const data = node.data as Partial<TerminalWindowData> | null;
     const snap = nav.terminalId ? input.statuses[nav.terminalId] : undefined;
     const ws = node.workspaceId ? input.workspaces[node.workspaceId] : undefined;
-    const unseen = data?.unseen === true && snap?.status === 'idle';
-    const partial = { ...nav, unseen };
+    // 旧白板里可能还带着 TerminalWindowData.unseen（CO4 早先写的），不读，照常按状态分组
     const row: AgentRow = {
-      ...partial,
+      ...nav,
       where: whereOf(ws, ws ? projectName.get(ws.projectId) : undefined),
-      agentGroup: groupOf(partial),
+      agentGroup: groupOf(nav),
       since: snap?.since ?? null,
       status: snap?.status ?? null,
       exitCode: snap?.exitCode ?? null,
@@ -126,7 +121,7 @@ export function formatSince(since: string, now: number): string {
 
 /**
  * 行右边的文字。分组的小标题已经写了状态，这里只补时间：
- * 等你 “Waiting · 2m”、运行 “4m”、没看 “Unseen · now”、空闲 “1h”、出错 “exit 1 · 2m”、退出 “Exited”、启动中 “Starting”。
+ * 等你 “Waiting · 2m”、运行 “4m”、空闲 “1h”、出错 “exit 1 · 2m”、退出 “Exited”、启动中 “Starting”。
  */
 export function rowStatusText(row: Pick<AgentRow, 'agentGroup' | 'since' | 'status' | 'exitCode'>, now: number): string {
   const t = row.since ? formatSince(row.since, now) : '';
@@ -134,8 +129,6 @@ export function rowStatusText(row: Pick<AgentRow, 'agentGroup' | 'since' | 'stat
   switch (row.agentGroup) {
     case 'needs-you':
       return join('Waiting', t);
-    case 'unseen':
-      return join('Unseen', t);
     case 'error':
       return join(row.exitCode !== null ? `exit ${row.exitCode}` : '', t);
     case 'running':
@@ -147,7 +140,7 @@ export function rowStatusText(row: Pick<AgentRow, 'agentGroup' | 'since' | 'stat
   }
 }
 
-/** 悬停提示第一行里的状态，和标题栏同一个写法：“Idle · Unseen · now”“Running · 4m”“Waiting · 2m”。 */
+/** 悬停提示第一行里的状态，和标题栏同一个写法：“Idle · now”“Running · 4m”“Waiting · 2m”。 */
 export function titleStatusText(row: Pick<AgentRow, 'agentGroup' | 'since' | 'status' | 'exitCode'>, now: number): string {
   const t = row.since ? formatSince(row.since, now) : '';
   const join = (...parts: string[]) => parts.filter(Boolean).join(' · ');
@@ -162,7 +155,7 @@ export function titleStatusText(row: Pick<AgentRow, 'agentGroup' | 'since' | 'st
     case 'needs-reply':
       return join('Waiting', t);
     case 'idle':
-      return row.agentGroup === 'unseen' ? join('Idle', 'Unseen', t) : join('Idle', t);
+      return join('Idle', t);
     case 'exited':
       return 'Exited';
     case 'error':

@@ -277,13 +277,6 @@
   color: var(--status-error);
 }
 
-/* Unseen：只用粗体，不加颜色 */
-.bnav-row--unseen .bnav-name,
-.bnav-agent-status--unseen {
-  color: var(--ink);
-  font-weight: var(--weight-strong);
-}
-
 .bnav-agents-hint {
   margin-top: var(--space-sm);
   font-size: var(--text-xs);

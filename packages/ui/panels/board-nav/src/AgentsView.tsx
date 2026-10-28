@@ -1,6 +1,6 @@
-// Agents 视图（CO4）：只列 agent 终端，按状态分组（ERROR、NEEDS YOU、RUNNING、DONE · UNSEEN、IDLE，每组写个数）。
-// 行和 Board 视图同一个零件（.bnav-row：灯 + 等宽名字 + 灰字），右边补状态和时间；Unseen 用粗体，不加颜色。
-// 悬停一行（或键盘聚焦）出墨色提示：第一行 “claude · agentdeck · feat/login · Idle · Unseen · now”，然后最后一条回复，最后 “Click to jump · ⌥⌘3”。
+// Agents 视图（CO4）：只列 agent 终端，按状态分组（ERROR、NEEDS YOU、RUNNING、IDLE，每组写个数）。
+// 行和 Board 视图同一个零件（.bnav-row：灯 + 等宽名字 + 灰字），右边补状态和时间。
+// 悬停一行（或键盘聚焦）出墨色提示：第一行 “claude · agentdeck · feat/login · Idle · now”，然后最后一条回复，最后 “Click to jump · ⌥⌘3”。
 
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { WindowId } from '@agentdeck/contracts';
@@ -108,13 +108,13 @@ export function AgentsView({ view, onJump, readReply, now: fixedNow }: AgentsVie
               const i = index;
               const status = rowStatusText(row, now);
               const name = row.group ? `${row.name} ${row.group}` : row.name;
-              const label = [name, row.unseen ? 'Idle · Unseen' : row.detail ?? (row.lamp ? LAMP_LABEL[row.lamp] : null), row.where].filter(Boolean).join(', ');
+              const label = [name, row.detail ?? (row.lamp ? LAMP_LABEL[row.lamp] : null), row.where].filter(Boolean).join(', ');
               const shown = tip?.row.id === row.id;
               return (
                 <li key={row.id}>
                   <button
                     type="button"
-                    className={`bnav-row bnav-agent-row${row.waiting ? ' bnav-row--waiting' : ''}${row.unseen ? ' bnav-row--unseen' : ''}`}
+                    className={`bnav-row bnav-agent-row${row.waiting ? ' bnav-row--waiting' : ''}`}
                     data-window-id={row.id}
                     data-agent-index={i + 1}
                     aria-label={label}

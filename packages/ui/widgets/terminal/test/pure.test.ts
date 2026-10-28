@@ -70,9 +70,6 @@ describe('status badge', () => {
     expect(b('needs-approval')).toEqual({ text: 'Waiting · 5m', tone: 'attention', dot: 'filled', detail: 'Needs approval' });
     expect(b('needs-reply')).toEqual({ text: 'Waiting · 5m', tone: 'attention', dot: 'filled', detail: 'Needs reply' });
     expect(b('idle')).toEqual({ text: 'Idle · 5m', tone: 'muted', dot: 'hollow' });
-    // CO4：没看过的只改文字，不改颜色；不是 idle 时不写
-    expect(badgeFor({ status: 'idle', since: ago(300), exitCode: null }, now, { unseen: true })).toEqual({ text: 'Idle · Unseen · 5m', tone: 'muted', dot: 'hollow' });
-    expect(badgeFor({ status: 'running', since: ago(300), exitCode: null }, now, { unseen: true }).text).toBe('Running · 5m');
     expect(b('exited', 0)).toEqual({ text: 'Exited', tone: 'muted', dot: 'none' });
     expect(b('error', 1)).toEqual({ text: 'Error · exit 1', tone: 'error', dot: 'filled' });
   });
