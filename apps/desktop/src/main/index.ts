@@ -552,8 +552,11 @@ async function main(): Promise<void> {
 
   // ---- 应用壳自己的 IPC（src/shared/desktop-bridge.ts）----
   const fromTop = (e: Electron.IpcMainInvokeEvent | Electron.IpcMainEvent) => e.senderFrame?.parent === null;
-  ipcMain.handle(DESKTOP_IPC.startup, (e): StartupInfo | null => {
+  ipcMain.handle(DESKTOP_IPC.startup, async (e): Promise<StartupInfo | null> => {
     if (!fromTop(e)) return null;
+    // tmux 起没起来要等第一次启动有了结果再答（TC-19）：界面只在启动时问一次，先问到 null 就一直是白板，说明页出不来。
+    // 正常情况下 tmux 几百毫秒就起来；最多等 5 秒，免得终端进程卡住时窗口一直空白。
+    await Promise.race([terminals.list().catch(() => undefined), new Promise((r) => setTimeout(r, 5000))]);
     return {
       warnings,
       tmuxError: terminals.startError,
