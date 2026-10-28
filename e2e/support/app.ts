@@ -13,11 +13,19 @@ export interface RunningApp {
   logs: string[];
 }
 
-export async function launchApp(sb: Sandbox): Promise<RunningApp> {
+/** 启动选项（都可以不给，默认和以前一样）。 */
+export interface LaunchOptions {
+  /** 额外的 Chromium / Electron 命令行参数（例如 TC-27 的 --host-resolver-rules）。 */
+  args?: string[];
+  /** false：不等白板画出来（TC-19 的 tmux 说明页没有白板）。默认 true。 */
+  waitForBoard?: boolean;
+}
+
+export async function launchApp(sb: Sandbox, opts: LaunchOptions = {}): Promise<RunningApp> {
   const app = await _electron.launch({
     executablePath: electronPath,
     // --user-data-dir：Electron 的 userData 和单实例锁都放进沙盒，用户自己开着 AgentDeck 时也能起来
-    args: [DESKTOP_DIR, `--user-data-dir=${sb.userDataDir}`],
+    args: [DESKTOP_DIR, `--user-data-dir=${sb.userDataDir}`, ...(opts.args ?? [])],
     cwd: DESKTOP_DIR,
     env: sb.env,
     timeout: 60_000,
@@ -34,7 +42,7 @@ export async function launchApp(sb: Sandbox): Promise<RunningApp> {
   await page.reload();
   // 白板控制器挂上（dev 构建才有）、白板从库里读完
   await page.waitForFunction(() => Boolean((window as unknown as { __board?: unknown }).__board), null, { timeout: 60_000 });
-  await page.locator('.react-flow').first().waitFor({ timeout: 60_000 });
+  if (opts.waitForBoard !== false) await page.locator('.react-flow').first().waitFor({ timeout: 60_000 });
   return { app, page, logs };
 }
 
