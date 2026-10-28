@@ -58,6 +58,11 @@ AGENTDECK_E2E_KEEP=1 pnpm e2e              # 不删沙盒（打印路径和 tmux
 
 bracketed paste（`ESC[200~ … ESC[201~`，LimitService 续跑时这样送）里的换行当空格，不提交。每个钩子、每次批准都写进 `$AGENTDECK_E2E_LOG_DIR/<启动时的会话 id>.jsonl`（clear 以后也写同一个文件）（`deck.agentLog(terminalId)` 读），测试用它核对后台真的发生了什么。
 `fake-agent/dev-server.mjs` 是 TC-06 用的“dev server”：打印 `Local: http://localhost:<端口>/`，每个请求记一行，故意带 `X-Frame-Options: DENY`。
+`fake-agent/fake-codex.mjs`（TC-17）：`--version` 报 `codex-cli 0.1.0`（老版本，不起 app-server），运行时只画 “Fake Codex”、回显输入；测试用 `support/g1.ts` 的 `installFake(sb, 'codex', …)` 在启动前放进沙盒的 fakebin。
+`fake-agent/emoji-stream.mjs`（TC-25）一行行打带 ✅ ❌ 🚀 🧪 的列表，最后 `END`；`fake-agent/theme-probe.mjs`（TC-26）像 claude 的 auto 主题：打开 ?2031，收到 `CSI ? 997 ; 1|2 n` 就记下并重新问 OSC 11 背景色。
+`support/g1.ts` 是 g1 这几条（白板、窗口、面板）用的小工具：从 React fiber 读 xterm 的选项和屏幕（`xtermOf`）、数主进程 IPC 调用、触发应用菜单的 accelerator、记 `status.changed`。
+
+注意：AgentDeck 读登录环境后会在 PATH 末尾补 `/opt/homebrew/bin` 等常见目录（`login-env.ts` 的 `withCommonPaths`），所以本机真装的 codex、pi、omp 也会被检测到、出现在 New terminal ▸ 里。测试里不要点它们；要 codex 就像 TC-17 那样放一个假的进 fakebin（排在前面）。
 
 ## 写测试
 
@@ -87,6 +92,18 @@ bracketed paste（`ESC[200~ … ESC[201~`，LimitService 续跑时这样送）�
 | TC-78（PL6） | tc78-auto-resume | 假 claude `limit 45 noauto`（像 codex，AgentDeck 来续）→ 右键标题栏开 Auto-resume → 书签 Paused · resumes … → 卡片里改话、⌘↩ → 到点打进终端的就是改过的那一句（只这一句），Resuming，做完书签收起。用 `AGENTDECK_LIMIT_GRACE_MS=0`、`AGENTDECK_RESUME_STAGGER_MS=0` |
 | TC-82（PL6，claude 部分） | 同上 | `limit 45`（claude 自己续）：灰书签 claude resumes …，卡片没有 Don’t resume → Give to claude 马上送进去（不算你接手），到点 claude 发改过的那一句、AgentDeck 不另发；claude resuming，做完收起。真 claude 是否这样待核对（DR-84） |
 | TC-12 | 同上 | 右键框 Delete workspace… → 连目录删 → 有未提交改动要勾选再确认 → 框消失、目录没了、分支还在、终端结束 |
+| TC-16 | tc16-tc33-board-nav | 重开应用、没聚焦：右侧是 BoardNav（不是 “isn’t in a workspace”）→ 单击框里的终端：Source Control 显示分支；git.status 只调一次，同框换终端不再调 |
+| TC-33 | 同上 | 两个项目三个工作区、终端 + 网页、一个在等批准：单击空白处 → BOARD 项目 → 分支 → 窗口（灯、名字、OSC 2 设的主题、网页图标、等你的行 `--attention-soft`）→ 单击那行：视口移过去、闪、聚焦、回到 Source Control |
+| TC-17 | tc17-tc21-tc22-new-terminal | 假 codex：New terminal ▸ 按名字列出 `agents.list()` 装了的 + Shell，没装的不出现 → 选 Codex 开在右键处 |
+| TC-21 | 同上 | 右键 › New terminal › Shell：开在右键处、散放、cwd 是 ~、窗格有 AGENTDECK_TERM → 打 `git status`：tmux 和 xterm 里都有输出，状态 running → idle |
+| TC-22 | 同上 | `sleep 300` → 标题栏 × → 窗口里的 “Stop bash?” → Stop and close → 窗口没了、tmux 会话没了 |
+| TC-18 | tc18-shortcuts-in-browser | 焦点在网页（跨源 iframe）里：连到这个 frame 的 CDP 按 ⌘B，白板页面收不到 keydown → 触发菜单 accelerator：⌘B ⌘0 ⌘1 ⌘J ⌘W 都生效、主进程发了 shortcut；⌘R 只刷新网页（dev server 多一个请求、应用没重载）。真键盘到菜单这一段要人试 |
+| TC-25 | tc25-resize-emoji | emoji-stream 出字时拖角改大小（拖动中 tmux 行列数不变、松手后变）、双击标题栏放大还原 → xterm 屏幕和 tmux 一行对一行相同、emoji 宽 2、回滚 1000、Unicode 11、没有 loadCell / isWrapped 报错 |
+| TC-26 | tc26-dark-theme | 去掉 Playwright 的配色模拟，nativeTheme 切深浅色：假 claude 启动参数有 `"theme":"auto"`；theme-probe 收到 997;2 / 997;1、重新问到的背景色跟着变；`--ground` 和 xterm 主题跟着变。真 claude 的字色要人看 |
+| TC-29 | tc29-topbar | 顶栏 34px 一行、按钮都在里面；macOS 上 `getWindowButtonPosition()` = (14, 9)、左边留 76px；项目菜单（各项目 › New workspace… / Project settings…、Add project…）、“feat/cart · 2 windows”、灯、齿轮 → Settings 停在当前项目；圆角 12 / 10 / 8 / 8 / 8 来自 tokens |
+| TC-31 | tc31-snap-avoid | 真鼠标拖标题栏：顶边差 4 吸住、画 `--guide` 线、拖动中不推别人 → 拖到别的终端上松手滑开、不重叠、不弹换框 → 拖框到别的框上停在相隔 20 → 拖角改宽吸到同宽、标出尺寸 |
+| TC-32 | tc32-panel-collapse | ⇥ 收起成 28px 竖条（Expand panel、分支图标、`--status-waiting` 改动点）、白板露出来的更宽、BoardState.panel 存 open:false → ⇤ 展开 → ⌘B 切换 → 收起后 ⌘Q 再开仍收起 |
+| TC-37 | tc37-gestures | 没聚焦的终端上滚轮：tmux 进回滚、视口不动；网页上滚轮视口不动；空白处滚轮平移；ctrl+滚轮缩放（指针处不动）；按住空格从标题栏拖：平移、窗口不动；终端里 Shift+空格打出空格。触控板手感要人试 |
 
 `test.fail` 标着的两条是**已知缺口**（现在失败才算通过；修好后会报“意外通过”，那时去掉 `test.fail`）：
 
