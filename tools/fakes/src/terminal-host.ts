@@ -266,9 +266,9 @@ export class FakeTerminalHost implements TerminalHost {
 
   // ---- 假实现专用的控制方法 ----
 
-  /** 和 create 一样，但可以指定 id、录制、已有输出。返回终端 id。 */
+  /** 和 create 一样，但可以指定 id、录制、已有输出。返回终端 id。id 先看 o.id，再看 req.id（contracts：调用方生成的 id），都没有才自己生成。 */
   createWith(req: CreateTerminalRequest, o: CreateWithOptions = {}): TerminalId {
-    const id = o.id ?? this.nextId<TerminalId>('term');
+    const id = o.id ?? req.id ?? this.nextId<TerminalId>('term');
     if (this.terms.has(id)) fail('invalid-argument', `Terminal ${id} already exists`);
     const recording = o.recording !== undefined ? o.recording : (this.opts.recordingFor?.(req) ?? null);
     const t: Term = {

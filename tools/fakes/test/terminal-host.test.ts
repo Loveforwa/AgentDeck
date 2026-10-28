@@ -37,6 +37,17 @@ describe('FakeTerminalHost basics', () => {
     expect(bus.eventsOf('terminal.exit')).toEqual([{ type: 'terminal.exit', id, code: 129 }]);
   });
 
+  it('uses the id the caller passes (CreateTerminalRequest.id), and refuses one that exists (CR15 per-terminal keys)', async () => {
+    const { host } = setup();
+    const id = 't-0123456789ab' as TerminalId;
+    expect(await host.create({ ...req, id })).toEqual({ id });
+    expect(host.get(id).env[TERMINAL_ID_ENV]).toBe(id);
+    await expect(host.create({ ...req, id })).rejects.toMatchObject({ code: 'invalid-argument' });
+    // 不给 id 时照样自己生成
+    const { id: other } = await host.create(req);
+    expect(other).not.toBe(id);
+  });
+
   it('throws not-found for unknown terminals', async () => {
     const { host } = setup();
     const missing = 'nope' as TerminalId;
