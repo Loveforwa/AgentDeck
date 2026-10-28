@@ -133,3 +133,7 @@ const limit: UsageLimit = { kind: 'five_hour', resetsAt: '2026-10-27T07:30:00.00
 void limit;
 void api.usage.watch('t1' as TerminalId, 'prompt-queue');
 void api.app.setKeepAwake(true);
+// PL3 / IS-113（0.1.14）：armed 记下碰到上限的时间，limit 被清掉也不忘
+const armedQueue: PromptQueueSettings = { ...queue, armed: { resetsAt: Date.parse('2026-10-27T07:30:00.000Z'), at: Date.now() } };
+const disarmed: PromptQueueSettings = { ...queue, armed: null };
+void armedQueue; void disarmed;
