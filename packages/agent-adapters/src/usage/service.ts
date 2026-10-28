@@ -75,6 +75,8 @@ interface Entry {
   tail: JsonlTail | null;
   fsw: FSWatcher | null;
   watching: boolean;
+  /** 谁在看（UsageService.watch 的 owner）：最后一个 unwatch 了才停。 */
+  owners: Set<string>;
   transcriptPath: string | null;
   ext: ExtReport | null;
   lastJson: string | null;
@@ -109,17 +111,20 @@ export class UsageServiceImpl implements UsageService {
     return usage;
   }
 
-  async watch(terminalId: TerminalId): Promise<TerminalUsage> {
+  async watch(terminalId: TerminalId, owner = 'default'): Promise<TerminalUsage> {
     const e = this.entry(terminalId);
+    e.owners.add(owner);
     e.watching = true;
     this.ensurePoller();
     await this.refresh(e);
     return e.last ?? this.empty(terminalId, null, 'no-data', 'Unknown terminal');
   }
 
-  async unwatch(terminalId: TerminalId): Promise<void> {
+  async unwatch(terminalId: TerminalId, owner = 'default'): Promise<void> {
     const e = this.entries.get(terminalId);
     if (!e) return;
+    e.owners.delete(owner);
+    if (e.owners.size > 0) return;
     e.watching = false;
     this.drop(e);
   }
@@ -185,6 +190,7 @@ export class UsageServiceImpl implements UsageService {
         tail: null,
         fsw: null,
         watching: false,
+        owners: new Set(),
         transcriptPath: null,
         ext: null,
         lastJson: null,
@@ -382,7 +388,7 @@ export class UsageServiceImpl implements UsageService {
       file: located.file,
     };
     if (p.requests === 0) {
-      return { ...this.empty(e.terminalId, agent, 'no-data', 'No usage recorded yet', base.sessionId), ...base, model };
+      return { ...this.empty(e.terminalId, agent, 'no-data', 'No usage recorded yet', base.sessionId), ...base, model, limit: p.limit ?? null };
     }
     return {
       ...base,
@@ -395,6 +401,7 @@ export class UsageServiceImpl implements UsageService {
       context,
       rateLimits: p.rateLimits,
       updatedAt: p.updatedAt,
+      limit: p.limit ?? null,
     };
   }
 
@@ -420,6 +427,7 @@ export class UsageServiceImpl implements UsageService {
       context: null,
       rateLimits: null,
       updatedAt: null,
+      limit: null,
     };
   }
 }

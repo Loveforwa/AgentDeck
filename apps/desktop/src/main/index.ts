@@ -21,6 +21,7 @@ import {
   Menu,
   MessageChannelMain,
   Notification,
+  powerSaveBlocker,
   shell,
   utilityProcess,
   type MessagePortMain,
@@ -103,6 +104,16 @@ async function main(): Promise<void> {
   await app.whenReady();
   // 开发时（pnpm dev）程序坞里默认是 Electron 的图标：换成和打包版、README 一样的 AgentDeck 图标。打包版用 build-resources/icon.icns
   if (isDev && process.platform === 'darwin') app.dock?.setIcon(join(app.getAppPath(), 'build-resources', 'icon.png'));
+
+  // PL3：Prompt queue 在等额度恢复、或正在接着发时不让 Mac 睡（prevent-app-suspension：系统不睡，屏幕照常关）
+  let awakeId: number | null = null;
+  const keepAwake = (on: boolean): void => {
+    if (on && awakeId === null) awakeId = powerSaveBlocker.start('prevent-app-suspension');
+    else if (!on && awakeId !== null) {
+      powerSaveBlocker.stop(awakeId);
+      awakeId = null;
+    }
+  };
 
   const repoRoot = isDev ? resolve(app.getAppPath(), '../..') : null;
   const paths = resolvePaths({
@@ -443,6 +454,7 @@ async function main(): Promise<void> {
       trashItem: (p) => shell.trashItem(p),
       quit,
       setBadge: (count) => alerts.setBoardBadge(count),
+      setKeepAwake: (on) => keepAwake(on),
     }),
   );
   registry.register('projects', projects);
