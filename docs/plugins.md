@@ -39,7 +39,7 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | Auto-approve | ✓ 只给 agent 终端：claude、codex 走钩子；omp 看屏幕发键；pi 从不问。kimi 暂不支持，灰掉 “Not supported for kimi yet”（DR-56）；shell、自定义命令的菜单里没有这一项，也从不挂书签（IS-68） | ✗ | ✓ 框里能自动批准的 agent 终端（shell、自定义命令、kimi 不算，不打钩、不挂书签） | ✗ | 终端底边左侧的红色小书签 “Auto-approve”；需要你处理时临时变橙 “Needs you”；框上开着时框标题里红色小标签 | 后端和界面都做完（PL1），等真应用里验收 |
 | Usage 用量记录 | ✓ claude、codex、pi、omp、kimi（自己读各 agent 的会话文件，见 DR-55；kimi 新建会话靠推断，悬停写明）；shell、自定义命令灰掉 “Not supported for shell” | ✗ | 以后（项目用量） | 以后（整台电脑） | 终端上方（默认）或下方一条 24px 圆角条，和终端一样宽、隔 6px：in、out、cache 读 / 写、ctx + 进度条 + 百分比，85% 起变黄；拖左边的点阵只能换到上 / 下边；点开小卡片 | 后端和界面都做完（PL2），等真应用里验收 |
-| Prompt queue（PL3） | ✓ claude、codex 先做（恢复时间读得到，DR-63）；omp、pi、kimi 待调研，灰掉写原因；shell、自定义命令不列 | ✗ | 以后 | ✗ | 终端底边的书签，排在 Auto-approve 后面：Queue · 3 / Queue · 3 · sends 3:31pm（黄点）/ Sending 2 of 3（绿点）/ ✓ Queue done；点开卡片写、排、删提示词 | 2026-10-27 定，在做 |
+| Prompt queue（PL3） | ✓ claude、codex 先做（恢复时间读得到，DR-63）；claude 2.1.234 起自己会在额度恢复后续跑：碰到上限时记成 armed（limit 被续跑的请求清掉也不忘），等 claude 自己续的那一轮结束再发，恢复 3 分钟后还没动静才自己发，claude 在 stale 状态（等你按回车）时不粘贴（IS-113）；omp、pi、kimi 待调研，灰掉写原因；shell、自定义命令不列 | ✗ | 以后 | ✗ | 终端底边的书签，排在 Auto-approve 后面：Queue · 3 / Queue · 3 · sends 3:31pm（黄点）/ Sending · 2 left（绿点）/ ✓ Queue done；claude 自己续时 Queue · 3 · claude resumes 3:30pm（灰）、续跑中 Queue · 3 · claude resuming（绿点）、stale 时 Queue · 3 · claude waits for Enter（黄点）；点开卡片写、排、删提示词 | 后端和界面都做完（PL3，含 IS-113 的修法），等真应用里验收 |
 
 ## 代码在哪里（PL0）
 
@@ -76,3 +76,4 @@
 - 2026-10-26：标记和 Usage 条算进项目框：框要装下窗口连同底边的书签（N10 的后台 agent 小提示也挂在底边右侧）和上 / 下边的 Usage 条，出现时框只变大（controller 的 `markOutset`、`keepMarksInFrames`）。新插件的标记挂在外框外面时，要在 `markOutset` 里算上它占的高度。
 - 2026-10-26：提了 PL3 Prompt queue（额度用完后到点接着发排好的提示词），画在插件页，三个问题待用户定：只在上限后发还是空闲就发、Keep Mac awake 默认开关、名字。
 - 2026-10-27：PL3 定了：只在碰到额度上限、到点恢复后才发（额度没用完时不自动发，要发就点 Send next now）；Keep Mac awake 默认开；名字就叫 Prompt queue。
+- 2026-10-28：PL3 提交前修了 IS-113：PromptQueueSettings.armed（contracts 0.1.14）在碰到上限时记下恢复时间，limit 被成功的请求清掉也不忘，发完第一条才清；claude ≥ 2.1.234（版本读不出也当它会）恢复后先等它自己续的那一轮（看到它离开空闲再回到空闲，或者 limit 已被那次请求清掉）做完再发，恢复 3 分钟后还空闲、没开始过才按原规则发。stale 的判断：AgentDeck 自己的检查（平时 5 秒一次）在恢复前后断了 150 秒以上（电脑睡了、应用关着），醒来时已过恢复时间 30 分钟、claude 也没开始——这时不粘贴，等你按回车后它那一轮做完再发，或者点 Send next now。claude 的 Notification quota_auto_resume_stale 现在界面拿不到（钩子事件里没有），等 PL4 的 LimitService 接上后改看它。

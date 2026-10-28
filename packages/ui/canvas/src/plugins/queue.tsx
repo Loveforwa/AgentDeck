@@ -7,6 +7,8 @@
 // - QueueRunner（每块白板一个，PluginDefinition.start 起）：对开着队列的终端 usage.watch(owner 'prompt-queue') 拿
 //   TerminalUsage.limit，按 decide 发；发的时候 bracketed paste 送文字、再发回车。在等恢复或正在接着发、开着 Keep Mac awake
 //   时让 app.setKeepAwake(true)。
+// - IS-113：碰到上限记成 armed 存进队列（limit 被成功的请求清掉也不忘，发完第一条才清）；claude ≥ 2.1.234 自己会续跑，
+//   恢复后先等它续的那一轮做完再发，3 分钟没动静才按原规则发，它在等回车（stale）时不粘贴（见 queue-model 的 decide）。
 // - 书签挂在终端底边左侧，排在 Auto-approve 书签后面；点开卡片写、排、删提示词，Send next now、Pause、Keep Mac awake。
 
 import { useLayoutEffect, useRef, useState } from 'react';
@@ -19,6 +21,7 @@ import {
   QUEUE_AGENTS,
   START_TIMEOUT_MS,
   addPrompt,
+  armedFrom,
   clock,
   decide,
   movePrompt,
@@ -26,7 +29,10 @@ import {
   queueLabel,
   queueSettings,
   removePrompt,
+  selfResumes,
   takeFirst,
+  trackSelfResume,
+  type SelfResume,
 } from './queue-model.ts';
 import type { PluginDefinition } from './types.ts';
 
@@ -48,6 +54,10 @@ export class QueueRunner {
   private readonly ready = new Set<TerminalId>();
   /** 刚发出去、还没看到 agent 开始干活的：发出的时间，以及有没有看到过它离开 idle。 */
   private readonly inFlight = new Map<TerminalId, { at: number; started: boolean }>();
+  /** agent 自己会续跑的终端：这一次恢复前后看到的情况（IS-113）。 */
+  private readonly resumes = new Map<TerminalId, SelfResume>();
+  /** 上一次检查的时间：隔太久说明中间没看着（电脑睡了、应用关着），见 trackSelfResume。 */
+  private lastTick: number | null = null;
   private readonly unsubs: (() => void)[] = [];
   private timer: ReturnType<typeof setInterval> | null = null;
   private awake = false;
@@ -83,12 +93,25 @@ export class QueueRunner {
     for (const tid of this.watched) void this.c.api.usage.unwatch(tid, OWNER).catch(() => undefined);
     this.watched.clear();
     this.ready.clear();
+    this.resumes.clear();
+    this.lastTick = null;
     if (this.awake) void this.c.api.app.setKeepAwake(false).catch(() => undefined);
     this.awake = false;
   }
 
   limitOf(terminalId: TerminalId | null): UsageLimit | null {
     return terminalId ? (this.limits.get(terminalId) ?? null) : null;
+  }
+
+  /** agent 自己续跑时看到的情况（书签用）；没有为 null。 */
+  selfResumeOf(terminalId: TerminalId | null): SelfResume | null {
+    return terminalId ? (this.resumes.get(terminalId) ?? null) : null;
+  }
+
+  /** 这个终端的 agent 会不会在额度恢复后自己续跑（claude ≥ 2.1.234）。 */
+  selfResumes(w: WindowNode): boolean {
+    const agent = agentOf(w);
+    return selfResumes(agent, this.c.state.agents.find((a) => a.id === agent)?.version ?? null);
   }
 
   /** 开着队列的 agent 终端。 */
@@ -128,6 +151,7 @@ export class QueueRunner {
       this.ready.delete(tid);
       this.limits.delete(tid);
       this.inFlight.delete(tid);
+      this.resumes.delete(tid);
       void this.c.api.usage.unwatch(tid, OWNER).catch(() => undefined);
     }
     for (const { tid } of list) {
@@ -144,8 +168,10 @@ export class QueueRunner {
       );
     }
     const now = this.now();
+    const prevTick = this.lastTick;
+    this.lastTick = now;
     let wantAwake = false;
-    for (const { w, tid, q } of list) {
+    for (const { w, tid, q: saved } of list) {
       const status = this.c.state.statuses[tid]?.status ?? null;
       const limit = this.limits.get(tid) ?? null;
       const f = this.inFlight.get(tid);
@@ -154,11 +180,22 @@ export class QueueRunner {
         // 它开始干活又回到空闲了，或者一直没开始（超时）：这一条算完
         if ((f.started && status === 'idle') || now - f.at > START_TIMEOUT_MS) this.inFlight.delete(tid);
       }
-      if (!this.ready.has(tid)) continue;
-      const d = decide({ q, limit, status, now, inFlight: this.inFlight.has(tid) });
+      const ready = this.ready.has(tid);
+      // 碰到上限就记下（armed，IS-113）：之后 limit 被成功的请求清掉也不忘
+      const armed = ready ? armedFrom(saved, limit) : (saved.armed ?? null);
+      const sr = this.selfResumes(w) ? trackSelfResume(this.resumes.get(tid) ?? null, armed, status, now, prevTick) : null;
+      if (sr) this.resumes.set(tid, sr);
+      else this.resumes.delete(tid);
+      if (!ready) continue;
+      let q = saved;
+      if (armed !== (saved.armed ?? null)) {
+        q = { ...saved, armed };
+        setQueue(this.c, w.id, q);
+      }
+      const d = decide({ q, limit, status, now, inFlight: this.inFlight.has(tid), selfResume: sr });
       if (d.kind === 'stop-running') setQueue(this.c, w.id, { ...q, running: false });
       else if (d.kind === 'send') void this.send(w.id, tid, d.running);
-      if (q.keepAwake && !q.paused && q.prompts.length > 0 && (limit !== null || q.running)) wantAwake = true;
+      if (q.keepAwake && !q.paused && q.prompts.length > 0 && (armed !== null || q.running)) wantAwake = true;
     }
     if (wantAwake !== this.awake) {
       this.awake = wantAwake;
@@ -170,7 +207,8 @@ export class QueueRunner {
   async send(windowId: WindowId, tid: TerminalId, running: boolean): Promise<boolean> {
     const w = this.c.windowById(windowId);
     if (!w || this.inFlight.has(tid)) return false;
-    const { q, prompt } = takeFirst(queueSettings(w), new Date(this.now()).toISOString(), running);
+    const before = queueSettings(w);
+    const { q, prompt } = takeFirst(before, new Date(this.now()).toISOString(), running);
     if (!prompt) return false;
     this.inFlight.set(tid, { at: this.now(), started: false });
     this.busy = true;
@@ -188,8 +226,8 @@ export class QueueRunner {
       await this.c.api.terminals.sendKeys(tid, ['Enter']);
       return true;
     } catch {
-      // 没发出去：放回队首，别丢
-      setQueue(this.c, windowId, (cur) => ({ ...cur, prompts: [prompt, ...cur.prompts], sent: cur.sent.slice(0, -1) }));
+      // 没发出去：放回队首，别丢；记下的上限也放回去
+      setQueue(this.c, windowId, (cur) => ({ ...cur, prompts: [prompt, ...cur.prompts], sent: cur.sent.slice(0, -1), armed: cur.armed ?? before.armed ?? null }));
       this.inFlight.delete(tid);
       return false;
     }
@@ -261,8 +299,12 @@ export function QueueMark({ windowId }: { windowId: WindowId }) {
   const q = queueSettings(node);
   if (!q.on) return null;
   const agent = agentOf(node) ?? 'the agent';
-  const limit = queueRunner(c)?.limitOf(tid) ?? null;
-  const label = queueLabel(q, limit, status, agent, Date.now());
+  const runner = queueRunner(c);
+  const limit = runner?.limitOf(tid) ?? null;
+  const label = queueLabel(q, limit, status, agent, Date.now(), {
+    selfResumes: runner?.selfResumes(node) ?? false,
+    selfResume: runner?.selfResumeOf(tid) ?? null,
+  });
   return (
     <>
       <button

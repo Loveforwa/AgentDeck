@@ -3,6 +3,12 @@
 //
 // 2026-10-27 用户定：只在碰到额度上限、到点恢复后才发（额度没用完时不自动发，要发就点 Send next now）；
 // Keep Mac awake 默认开。
+//
+// IS-113（2026-10-28，提交前修）：claude 2.1.234 起默认在额度恢复后自己续跑（autoContinueAtUsageLimit），续跑那次请求一成功，
+// TerminalUsage.limit 就被清掉。所以碰到上限时记成 armed（PromptQueueSettings.armed：恢复时间和碰到的时间），limit 清掉也不忘，
+// 发完第一条才清；发第一条看 armed，不看当下的 limit。claude 自己会续时（SelfResume）：恢复后先等它续的那一轮（离开空闲再回到空闲）
+// 做完再发；恢复 3 分钟后还空闲、没开始过才按原规则发；恢复时 AgentDeck 没看着（电脑睡了、应用关着）、醒来已过恢复时间 30 分钟，
+// claude 多半在等你按回车（stale），这时不粘贴（粘进去它会发这一条、不再续原来的事），等它自己那一轮跑完。
 
 import type { PromptQueueSettings, QueuedPrompt, TerminalStatus, TerminalWindowData, UsageLimit, WindowNode } from '@agentdeck/contracts';
 
@@ -15,6 +21,14 @@ export const RESUME_GRACE_MS = 60_000;
 export const START_TIMEOUT_MS = 60_000;
 /** 已发的最多留这么多条。 */
 export const SENT_KEEP = 50;
+/** claude 从这个版本起默认在额度恢复后自己续跑（DR-84）。 */
+export const SELF_RESUME_SINCE = '2.1.234';
+/** claude 自己会续时：恢复后这么久还空闲、没开始过，就按原规则发。 */
+export const SELF_RESUME_FALLBACK_MS = 3 * 60_000;
+/** 恢复时没看着、醒来时已经过了恢复时间这么久：claude 改成等你按回车（stale）。 */
+export const STALE_AFTER_MS = 30 * 60_000;
+/** 两次检查隔了这么久算“中间没看着”（平时 5 秒一次；窗口在后台时浏览器最慢一分钟一次）。 */
+export const WATCH_GAP_MS = 150_000;
 
 export const DEFAULT_QUEUE: PromptQueueSettings = { on: false, prompts: [], sent: [], paused: false, keepAwake: true, running: false };
 
@@ -25,6 +39,62 @@ export function queueSettings(node: WindowNode | undefined): PromptQueueSettings
 
 export function queueOn(node: WindowNode | undefined): boolean {
   return queueSettings(node).on;
+}
+
+export type Armed = NonNullable<PromptQueueSettings['armed']>;
+
+/**
+ * 这次要等的上限（IS-113）：已经记下的 armed；当下的 limit 带恢复时间和碰到的时间、比记下的新、也比最后发出去的那条晚，就换成它。
+ * limit 变成 null（agent 续跑成功了）不影响已经记下的。发完第一条由 takeFirst 清掉。
+ */
+export function armedFrom(q: PromptQueueSettings, limit: UsageLimit | null): Armed | null {
+  const cur = q.armed ?? null;
+  const at = limit?.at ? Date.parse(limit.at) : NaN;
+  const resetsAt = limit?.resetsAt ? Date.parse(limit.resetsAt) : NaN;
+  if (Number.isNaN(at) || Number.isNaN(resetsAt)) return cur;
+  if (cur && at <= cur.at) return cur;
+  const lastSent = q.sent.at(-1);
+  if (lastSent && at <= Date.parse(lastSent.sentAt)) return cur;
+  return { resetsAt, at };
+}
+
+/** 这个 agent 会不会在额度恢复后自己续跑：claude 2.1.234 起默认会。版本读不出时当它会（最多晚 3 分钟发，不会盖掉它的续跑）。 */
+export function selfResumes(agent: string | null, version: string | null): boolean {
+  if (agent !== 'claude') return false;
+  const v = version ? /(\d+)\.(\d+)\.(\d+)/.exec(version) : null;
+  if (!v) return true;
+  const min = SELF_RESUME_SINCE.split('.').map(Number);
+  const have = [Number(v[1]), Number(v[2]), Number(v[3])];
+  for (let i = 0; i < 3; i += 1) if (have[i] !== min[i]) return have[i]! > min[i]!;
+  return true;
+}
+
+/** agent 自己续跑时，这一次恢复前后看到的情况（QueueRunner 每次检查时更新，不保存）。 */
+export interface SelfResume {
+  /** 这一次的恢复时间（armed.resetsAt）。换了 armed 就重新算。 */
+  resetsAt: number;
+  /** 恢复后看到过 agent 离开空闲：它续的那一轮开始了（或者你自己打了字）。 */
+  started: boolean;
+  /** 从什么时候起一直看着：恢复时就在看是恢复时间，否则是恢复后第一次看到的时间。过 3 分钟还没动静才按原规则发。恢复前为 null。 */
+  watchedFrom: number | null;
+  /** 恢复时没看着、醒来已过恢复时间 30 分钟、它也没开始：claude 多半在等回车，不粘贴。 */
+  stale: boolean;
+}
+
+/** 更新 SelfResume。prevTick 是上一次检查的时间（应用刚起来为 null）。 */
+export function trackSelfResume(prev: SelfResume | null, armed: Armed | null, status: TerminalStatus | null, now: number, prevTick: number | null): SelfResume | null {
+  if (!armed) return null;
+  const s: SelfResume = prev && prev.resetsAt === armed.resetsAt ? { ...prev } : { resetsAt: armed.resetsAt, started: false, watchedFrom: null, stale: false };
+  if (now < armed.resetsAt) return s;
+  const watching = prevTick !== null && now - prevTick <= WATCH_GAP_MS;
+  if (s.watchedFrom === null || !watching) {
+    // 恢复后第一次看，或者中间断过（电脑睡了、应用关着）
+    const sawReset = watching && s.watchedFrom === null && prevTick! < armed.resetsAt;
+    s.watchedFrom = sawReset ? armed.resetsAt : now;
+    if (!sawReset && !s.started && now - armed.resetsAt >= STALE_AFTER_MS) s.stale = true;
+  }
+  if (status === 'running' || status === 'needs-approval' || status === 'needs-reply') s.started = true;
+  return s;
 }
 
 /** 碰到上限后什么时候可以发（恢复时间 + 1 分钟）。读不到恢复时间为 null。 */
@@ -48,26 +118,39 @@ export interface QueueInput {
   now: number;
   /** 刚发出去、agent 还没开始干活（等它离开 idle）。 */
   inFlight: boolean;
+  /** agent 自己会续跑（claude ≥ 2.1.234）且记下了上限时有值，见 trackSelfResume。 */
+  selfResume?: SelfResume | null;
 }
 
 /**
- * 现在要不要发：
+ * 现在要不要发（看 armed，不看当下的 limit，IS-113）：
  * - 关着、暂停、空队列、终端没状态：不发。
- * - 正在接着发（running）：又碰到上限（上限的时间比上一条发出去的晚）就停；agent 空闲、上一条已经开始过就发下一条。
- * - 没在接着发：碰到上限、到了恢复时间 + 1 分钟、agent 空闲才发第一条，并开始接着发。
+ * - 正在接着发（running）：又碰到上限（记下的上限比上一条发出去的晚）就停；agent 空闲、上一条已经开始过就发下一条。
+ * - 没在接着发、记下了上限：
+ *   - agent 自己会续（selfResume）：恢复后它续的那一轮做完（看到它开始过、或者 limit 已被成功的请求清掉）、回到空闲就发；
+ *     恢复 3 分钟后还空闲、没开始过，按原规则发；stale（它在等回车）时不发。
+ *   - 别的：到了恢复时间 + 1 分钟、agent 空闲就发第一条，并开始接着发。
  */
-export function decide({ q, limit, status, now, inFlight }: QueueInput): QueueDecision {
+export function decide({ q, limit, status, now, inFlight, selfResume }: QueueInput): QueueDecision {
   if (!q.on || q.paused || q.prompts.length === 0 || status === null) return { kind: 'wait' };
+  const armed = armedFrom(q, limit);
   if (q.running) {
     const lastSent = q.sent.at(-1);
-    const limitAt = limit?.at ? Date.parse(limit.at) : NaN;
-    if (limit && lastSent && !Number.isNaN(limitAt) && limitAt > Date.parse(lastSent.sentAt)) return { kind: 'stop-running' };
+    if (armed && lastSent && armed.at > Date.parse(lastSent.sentAt)) return { kind: 'stop-running' };
     if (status === 'idle' && !inFlight) return { kind: 'send', running: true };
     return { kind: 'wait' };
   }
-  const due = dueAt(limit);
-  if (due !== null && now >= due && status === 'idle' && !inFlight) return { kind: 'send', running: true };
-  return { kind: 'wait' };
+  if (!armed || status !== 'idle' || inFlight) return { kind: 'wait' };
+  const due = armed.resetsAt + RESUME_GRACE_MS;
+  if (selfResume) {
+    if (now < armed.resetsAt) return { kind: 'wait' };
+    // 它续的那一轮跑过了（limit 被那次成功的请求清掉也算），现在回到空闲
+    if (selfResume.started || limit === null) return { kind: 'send', running: true };
+    if (selfResume.stale) return { kind: 'wait' };
+    const fallback = (selfResume.watchedFrom ?? armed.resetsAt) + SELF_RESUME_FALLBACK_MS;
+    return now >= fallback && now >= due ? { kind: 'send', running: true } : { kind: 'wait' };
+  }
+  return now >= due ? { kind: 'send', running: true } : { kind: 'wait' };
 }
 
 /** 书签和卡片状态行的样子。tone 只表达状态：running 绿、waiting 黄，别的灰。 */
@@ -91,7 +174,14 @@ export function clock(t: number, now: number): string {
 
 const LIMIT_NAME: Record<UsageLimit['kind'], string> = { five_hour: '5-hour limit', weekly: 'Weekly limit', other: 'Usage limit' };
 
-export function queueLabel(q: PromptQueueSettings, limit: UsageLimit | null, status: TerminalStatus | null, agent: string, now: number): QueueLabel {
+export interface QueueLabelOptions {
+  /** agent 自己会续跑（selfResumes）。 */
+  selfResumes?: boolean;
+  /** QueueRunner 看到的续跑情况（还没看过为 null）。 */
+  selfResume?: SelfResume | null;
+}
+
+export function queueLabel(q: PromptQueueSettings, limit: UsageLimit | null, status: TerminalStatus | null, agent: string, now: number, opts: QueueLabelOptions = {}): QueueLabel {
   const n = q.prompts.length;
   const count = `Queue · ${n}`;
   if (n === 0) {
@@ -105,11 +195,37 @@ export function queueLabel(q: PromptQueueSettings, limit: UsageLimit | null, sta
     if (waitingForYou) return { tone: 'waiting', mark: `${count} · needs you`, line: `${agent} is waiting for you. The next prompt goes out once it’s done.` };
     return { tone: 'running', mark: `Sending · ${n} left`, line: `Sending one by one: the next goes out when ${agent} finishes this round.` };
   }
-  if (!limit) return { tone: 'muted', mark: count, line: `Waiting for ${agent} to hit its usage limit. The first prompt goes out after it resets.` };
-  const name = LIMIT_NAME[limit.kind];
-  const due = dueAt(limit);
-  if (due === null) return { tone: 'waiting', mark: `${count} · reset time unknown`, line: `${name} reached, but ${agent} didn’t say when it resets. Use Send next now when it’s back.` };
-  const resets = Date.parse(limit.resetsAt!);
+  const armed = armedFrom(q, limit);
+  if (!armed) {
+    if (limit && dueAt(limit) === null)
+      return { tone: 'waiting', mark: `${count} · reset time unknown`, line: `${LIMIT_NAME[limit.kind]} reached, but ${agent} didn’t say when it resets. Use Send next now when it’s back.` };
+    return { tone: 'muted', mark: count, line: `Waiting for ${agent} to hit its usage limit. The first prompt goes out after it resets.` };
+  }
+  // limit 被成功的请求清掉以后不知道是哪种上限了
+  const name = limit ? LIMIT_NAME[limit.kind] : 'Usage limit';
+  const resets = armed.resetsAt;
+  const due = resets + RESUME_GRACE_MS;
+  if (opts.selfResumes) {
+    // claude 自己会续：等它续完那一轮再发（IS-113）
+    const s = opts.selfResume ?? null;
+    if (waitingForYou && now >= resets) return { tone: 'waiting', mark: `${count} · needs you`, line: `${name} has reset, but ${agent} is waiting for you.` };
+    if (now >= resets && status === 'running')
+      return { tone: 'running', mark: `${count} · ${agent} resuming`, line: `${agent} is continuing the task the limit stopped. The first prompt goes out when it finishes this round.` };
+    if (s?.stale && !s.started && limit !== null)
+      return {
+        tone: 'waiting',
+        mark: `${count} · ${agent} waits for Enter`,
+        line: `${name} reset while AgentDeck wasn’t watching, so ${agent} is waiting for you to press Enter. The first prompt goes out after that round, or use Send next now.`,
+      };
+    const fallback = Math.max((s?.watchedFrom ?? resets) + SELF_RESUME_FALLBACK_MS, due);
+    if (now < fallback && !s?.started && limit !== null)
+      return {
+        tone: 'muted',
+        mark: `${count} · ${agent} resumes ${clock(resets, now)}`,
+        line: `${name} reached · resets ${clock(resets, now)} · ${agent} continues on its own then; the first prompt goes out after that round (or at ${clock(fallback, now)} if it doesn’t start).`,
+      };
+    return { tone: 'waiting', mark: `${count} · waiting for ${agent}`, line: `${name} has reset. The first prompt goes out as soon as ${agent} is idle.` };
+  }
   if (now < due) return { tone: 'waiting', mark: `${count} · sends ${clock(due, now)}`, line: `${name} reached · resets ${clock(resets, now)} · sends the first prompt at ${clock(due, now)}` };
   if (waitingForYou) return { tone: 'waiting', mark: `${count} · needs you`, line: `${name} has reset, but ${agent} is waiting for you.` };
   return { tone: 'waiting', mark: `${count} · waiting for ${agent}`, line: `${name} has reset. The first prompt goes out as soon as ${agent} is idle.` };
@@ -142,12 +258,12 @@ export function movePrompt(q: PromptQueueSettings, id: string, by: -1 | 1): Prom
   return { ...q, prompts };
 }
 
-/** 发出去第一条：从队列里拿走，记进已发。running 是发完以后要不要接着发。 */
+/** 发出去第一条：从队列里拿走，记进已发，清掉 armed（IS-113：发完第一条才清）。running 是发完以后要不要接着发。 */
 export function takeFirst(q: PromptQueueSettings, sentAt: string, running: boolean): { q: PromptQueueSettings; prompt: QueuedPrompt | null } {
   const [first, ...rest] = q.prompts;
   if (!first) return { q: { ...q, running: false }, prompt: null };
   const sent = [...q.sent, { text: first.text, sentAt }].slice(-SENT_KEEP);
-  return { q: { ...q, prompts: rest, sent, running: running && rest.length > 0 }, prompt: first };
+  return { q: { ...q, prompts: rest, sent, running: running && rest.length > 0, armed: null }, prompt: first };
 }
 
 /**
