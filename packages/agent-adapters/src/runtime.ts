@@ -5,7 +5,8 @@
 //   TerminalHost 的事件 → onTerminalEvent；IPC 层的 terminals.write / sendKeys → noteInput
 // 组装时把 agents / status / approvals 挂到 IPC 上，emit 接到事件通道。
 
-import type { AbsPath, AgentKind, McpEndpoint, StatusEvent, TerminalEvent, TerminalHost, TerminalId } from '@agentdeck/contracts';
+import { capabilityEntry } from '@agentdeck/contracts';
+import type { AbsPath, AgentCapabilityReport, AgentKind, McpEndpoint, StatusEvent, TerminalEvent, TerminalHost, TerminalId } from '@agentdeck/contracts';
 import { createDefaultAdapters } from './adapters/index.ts';
 import type { AgentAdapterExt } from './adapters/types.ts';
 import { AgentServiceImpl } from './agent-service.ts';
@@ -19,12 +20,16 @@ import { HookServer } from './hook-server.ts';
 import { ApprovalServiceImpl } from './status/approval.ts';
 import type { ApprovalRecordStore, ApprovalTiming } from './status/approval.ts';
 import { StatusMachine } from './status/machine.ts';
+import { approvalStrategy } from './status/support.ts';
+import type { ApprovalStrategy } from './status/support.ts';
 
 export interface AgentRuntimeOptions {
   /** 登录 shell 的环境。 */
   env: EnvSource;
   /** create 给 AgentService；sendKeys、lastLines 给 ApprovalService（批准按键、看屏幕），不给时批准一律失败（测试里常不给）。 */
-  terminals: Pick<TerminalHost, 'create'> & Partial<Pick<TerminalHost, 'sendKeys' | 'lastLines'>>;
+  terminals: Pick<TerminalHost, 'create'> & Partial<Pick<TerminalHost, 'sendKeys' | 'lastLines' | 'kill'>>;
+  /** AH1：启动后打第一条消息的等待时间（测试用），见 AgentServiceOptions.firstMessageTiming。 */
+  firstMessageTiming?: AgentServiceOptions['firstMessageTiming'];
   /** agentdeck-notify 的绝对路径。 */
   notifyCommand: AbsPath;
   /** agentdeck-pi-extension.mjs 的绝对路径（pi、omp 用 -e 加载它拿状态）。不给时它们没有钩子。 */
@@ -46,6 +51,12 @@ export interface AgentRuntimeOptions {
   skills?: AgentServiceOptions['skills'];
   /** 一个 agent 终端起来之后（状态机 track 之后）再告诉组装方，例如记下它带了哪些 skill（N9）。 */
   onStarted?: (started: StartedAgent) => void;
+  /** AH3：钩子最多等多久（毫秒，默认 10000），见 StatusMachineOptions.hookTimeoutMs。 */
+  hookTimeoutMs?: number;
+  /** AH3：启动后看参数有没有被拒等多久、Check again 等钩子多久，见 AgentServiceOptions.launchTiming。 */
+  launchTiming?: AgentServiceOptions['launchTiming'];
+  /** AH3：合格测试记录（测试里换），见 AgentServiceOptions.compat。 */
+  compat?: AgentServiceOptions['compat'];
   /** 默认 ~/.agentdeck/run/hooks.sock。 */
   socketPath?: string;
   /** 默认 createDefaultAdapters。 */
@@ -78,14 +89,22 @@ export function createAgentRuntime(opts: AgentRuntimeOptions) {
     });
   // 状态机的事件先交给界面，再给 ApprovalService（按键批准要看状态有没有离开 needs-approval）
   let approvals: ApprovalServiceImpl | null = null;
+  // AgentService 在下面建；状态机的回调晚一点才会用到它
+  let agentsRef: AgentServiceImpl | null = null;
   const status = new StatusMachine({
     emit: (e) => {
       opts.emit(e);
       approvals?.onStatusEvent(e);
     },
     destructivePatterns: opts.destructivePatterns,
+    // AH3（IS-74）：钩子该来没来 → 报告里 status 写 “Hooks didn't report at the last launch”；钩子来了就清掉
+    onDegraded: (d) => agentsRef?.noteLaunch(d.agent, "Hooks didn't report at the last launch"),
+    onHooksAlive: (d) => agentsRef?.noteLaunch(d.agent, null),
+    ...(opts.hookTimeoutMs ? { hookTimeoutMs: opts.hookTimeoutMs } : {}),
     ...(opts.now ? { now: opts.now } : {}),
   });
+  // AH3：Check again 空启动的终端在等钩子（不交给状态机）
+  const probes = new Map<TerminalId, () => void>();
   const agents = new AgentServiceImpl({
     adapters,
     terminals: opts.terminals,
@@ -96,14 +115,38 @@ export function createAgentRuntime(opts: AgentRuntimeOptions) {
     ...(opts.terminalKey ? { terminalKey: opts.terminalKey } : {}),
     ...(opts.binDir ? { binDir: opts.binDir } : {}),
     ...(opts.skills ? { skills: opts.skills } : {}),
+    ...(opts.firstMessageTiming ? { firstMessageTiming: opts.firstMessageTiming } : {}),
     ...(opts.sessionRoots === null
       ? {}
       : { conversationExists: opts.sessionRoots ? conversationExists(opts.sessionRoots) : conversationCheckFromEnv(opts.env) }),
     onStarted: (s) => {
-      status.track(s.terminalId, { agent: s.agent, workspaceId: s.workspaceId, hooks: s.hooks, sessionId: s.sessionId });
+      status.track(s.terminalId, {
+        agent: s.agent,
+        workspaceId: s.workspaceId,
+        hooks: s.hooks,
+        sessionId: s.sessionId,
+        watchHooks: s.watchHooks,
+        degraded: s.degraded,
+      });
       opts.onStarted?.(s);
     },
+    waitForHook: (terminalId, timeoutMs) =>
+      new Promise<boolean>((resolve) => {
+        const timer = setTimeout(() => {
+          probes.delete(terminalId);
+          resolve(false);
+        }, timeoutMs);
+        probes.set(terminalId, () => {
+          clearTimeout(timer);
+          probes.delete(terminalId);
+          resolve(true);
+        });
+      }),
+    ...(opts.launchTiming ? { launchTiming: opts.launchTiming } : {}),
+    ...(opts.compat ? { compat: opts.compat } : {}),
+    ...(opts.now ? { now: opts.now } : {}),
   });
+  agentsRef = agents;
   const approvalService = new ApprovalServiceImpl({
     status,
     terminals: {
@@ -111,6 +154,8 @@ export function createAgentRuntime(opts: AgentRuntimeOptions) {
       lastLines: (id, n) => (opts.terminals.lastLines ? opts.terminals.lastLines(id, n) : Promise.resolve([])),
     },
     approveKeys: (agent) => agents.adapter(agent)?.approveOnceKeys ?? null,
+    // AH3（TC-48）：版本超过核对版本时，靠认屏、按键的不再替你按
+    strategy: (agent) => strategyFromReport(approvalStrategy(agent), agents.cachedReport(agent)),
     destructivePatterns: opts.destructivePatterns,
     emit: opts.emit,
     ...(opts.approvalRecords ? { records: opts.approvalRecords } : {}),
@@ -122,6 +167,11 @@ export function createAgentRuntime(opts: AgentRuntimeOptions) {
     ...(opts.socketPath ? { socketPath: opts.socketPath } : {}),
     adapterFor: (agent) => agents.adapter(agent),
     onHook: (h) => {
+      const probe = probes.get(h.terminalId);
+      if (probe) {
+        probe();
+        return;
+      }
       try {
         if (opts.tapHook?.(h) === true) return;
       } catch {
@@ -142,11 +192,28 @@ export function createAgentRuntime(opts: AgentRuntimeOptions) {
     status,
     approvals: approvalService,
     hookServer,
-    onTerminalEvent: (event: TerminalEvent) => status.onTerminalEvent(event),
+    onTerminalEvent: (event: TerminalEvent) => {
+      status.onTerminalEvent(event);
+      agents.onTerminalEvent(event); // AH1：启动后打第一条消息（kimi）等终端安静
+    },
     noteInput: (terminalId: TerminalId) => status.noteInput(terminalId),
     start: () => hookServer.start(),
-    close: () => hookServer.close(),
+    close: () => {
+      agents.dispose();
+      return hookServer.close();
+    },
   };
 }
 
 export type AgentRuntime = ReturnType<typeof createAgentRuntime>;
+
+/**
+ * AH3：能力报告里 approve-keys 被关掉（版本没核对过，downgrade off）或 Check again 失败时，ApprovalService 不再替你按键：
+ * 做法改成 unsupported，note 用报告里的原因（菜单 hint 也是这句）。钩子回答的（claude、codex）不受影响，报告里也不会关掉它们。
+ */
+export function strategyFromReport(base: ApprovalStrategy, report: AgentCapabilityReport | null): ApprovalStrategy {
+  if (!report || (base.method !== 'keys' && base.method !== 'hook')) return base;
+  const e = capabilityEntry(report, 'approve-keys');
+  if (!e || e.level !== 'no' || !e.downgrade) return base;
+  return { ...base, method: 'unsupported', verified: false, note: e.reason, screen: null };
+}

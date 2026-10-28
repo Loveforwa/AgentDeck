@@ -1,0 +1,107 @@
+{
+  "agent": "kimi",
+  "version": "2.3.3",
+  "date": "2026-10-28",
+  "verifiedUpTo": "2.3.3",
+  "results": {
+    "K1": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "2.3.3"
+    },
+    "K2": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "2.3.3"
+    },
+    "K3": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "2.3.3"
+    },
+    "K4": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "2.3.3"
+    },
+    "K5": {
+      "result": "skip",
+      "suite": "L2",
+      "reason": "Waiting is not detected for Kimi",
+      "verifiedUpTo": null
+    },
+    "K6": {
+      "result": "skip",
+      "suite": "L2",
+      "reason": "Not supported for kimi yet",
+      "verifiedUpTo": null
+    },
+    "K7": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "2.3.3"
+    },
+    "K8": {
+      "result": "skip",
+      "suite": "L2",
+      "reason": "Waiting is not detected for Kimi",
+      "verifiedUpTo": null
+    },
+    "K9": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "2.3.3"
+    },
+    "K10": {
+      "result": "skip",
+      "suite": "L2",
+      "reason": "Kimi can't fork conversations",
+      "verifiedUpTo": null
+    },
+    "K11": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "2.3.3"
+    },
+    "K12": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "2.3.3"
+    },
+    "K13": {
+      "result": "skip",
+      "suite": "L2",
+      "reason": "Not read for Kimi yet",
+      "verifiedUpTo": null
+    },
+    "K14": {
+      "result": "skip",
+      "suite": "L2",
+      "reason": "No AgentDeck MCP yet",
+      "verifiedUpTo": null
+    },
+    "K15": {
+      "result": "skip",
+      "suite": "L2",
+      "reason": "Not checked in Kimi yet (only --help and the bundled source)",
+      "verifiedUpTo": null
+    },
+    "K16": {
+      "result": "skip",
+      "suite": "L2",
+      "reason": "No hooks to lose: status already comes from terminal activity",
+      "verifiedUpTo": null
+    },
+    "K17": {
+      "result": "skip",
+      "suite": "L2",
+      "reason": "Can't make a real agent reject an option on purpose; L1 covers it with a fake program",
+      "verifiedUpTo": null
+    },
+    "K18": {
+      "result": "pass",
+      "suite": "L2",
+      "verifiedUpTo": "2.3.3"
+    }
+  }
+}

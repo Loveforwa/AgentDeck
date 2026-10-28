@@ -14,12 +14,13 @@
 
 import { spawn } from 'node:child_process';
 import { MCP_SERVER_NAME, MCP_TERMINAL_HEADER, MCP_TOKEN_ENV, TERMINAL_ID_ENV } from '@agentdeck/contracts';
-import type { AgentCapabilities, AgentHookEvent, AgentSessionId, LaunchContext, LaunchSpec, McpEndpoint } from '@agentdeck/contracts';
-import { atLeast, findExecutable, shellQuote } from '../env.ts';
+import type { AgentCapabilities, AgentHookEvent, AgentSessionId, CapabilityEntry, LaunchContext, LaunchSpec, McpEndpoint } from '@agentdeck/contracts';
+import { no, partial, yes } from '../capabilities/declare.ts';
+import { atLeast, fileStamp, findExecutable, shellQuote } from '../env.ts';
 import { parseCommonHook } from '../hook-payload.ts';
 import type { McpServerDef } from '../skills/types.ts';
-import type { AdapterDeps, AdapterLaunchContext, AgentAdapterExt, DetectResult } from './types.ts';
-import { detectCommand, NO_CAPABILITIES } from './types.ts';
+import type { AdapterDeps, AdapterLaunchContext, AgentAdapterExt, DetectResult, LaunchFlag } from './types.ts';
+import { detectWithHelp, NO_CAPABILITIES } from './types.ts';
 
 /** 本机实测有 hooks 和 hooks/list 的版本。更早的版本可能也有，没验证过就按没有处理。 */
 const MIN_HOOKS_VERSION = '0.159.0';
@@ -69,10 +70,18 @@ export class CodexAdapter implements AgentAdapterExt {
   readonly command = 'codex';
   /** 确认框写着 “1. Yes, proceed (y)”，按 y 即“允许一次”（0.159.2 实测）。待线 1 用真终端核对 send-keys 的效果。 */
   readonly approveOnceKeys = ['y'];
+  /** SessionStart 要等第一次输入才来（0.159 实测），状态机从第一次输入开始等钩子（AH3）。 */
+  readonly sessionStartOnFirstInput = true;
   private lastVersion: string | null = null;
   private lastPath: string | null = null;
-  /** notifyCommand → 每条钩子命令的信任记录。哈希只和钩子配置有关，同一个 notify 路径算一次就够。 */
+  private lastHelp: string | null = null;
+  /**
+   * notify 路径 + codex 的路径 + 可执行文件的修改时间 → 每条钩子命令的信任记录。哈希只和钩子配置有关，
+   * 同一个 notify 路径算一次就够；codex 升级（文件变了）后哈希算法可能变，所以按修改时间作废（IS-77）。
+   */
   private readonly trustCache = new Map<string, CodexHookTrust[]>();
+  /** 最近一次 prepare 用的缓存键（launch 是同步的，读它）。 */
+  private trustKey: string | null = null;
   private readonly queryTrust: CodexTrustQuery;
 
   constructor(private readonly deps: CodexAdapterOptions) {
@@ -80,34 +89,78 @@ export class CodexAdapter implements AgentAdapterExt {
   }
 
   async detect(): Promise<DetectResult> {
-    const r = await detectCommand(this.command, this.deps);
-    this.lastVersion = r.version;
-    this.lastPath = r.path;
-    return r;
+    const { result, help } = await detectWithHelp(this.command, this.deps);
+    this.lastVersion = result.version;
+    this.lastPath = result.path;
+    this.lastHelp = help;
+    return result;
+  }
+
+  /** AH3：Check again 在 --help 里找的子命令和参数。 */
+  launchFlags(): LaunchFlag[] {
+    return [
+      { flag: 'command:resume', keys: ['resume'] },
+      { flag: 'command:fork', keys: ['fork'] },
+      { flag: '-c', keys: ['status', 'approval-wait', 'approve-keys', 'session-id', 'agentdeck-mcp'] },
+    ];
   }
 
   capabilities(version: string | null): AgentCapabilities {
-    const fork = atLeast(version, MIN_FORK_VERSION);
+    // 读不出版本时：fork 看 --help 里有没有 fork 子命令；钩子没法从 help 看出来，按没有（AH3）
+    const fork = atLeast(version, MIN_FORK_VERSION, version === null ? { text: this.lastHelp, flag: 'command:fork' } : null);
     if (!atLeast(version, MIN_HOOKS_VERSION)) return { ...NO_CAPABILITIES, resume: true, fork };
     // codex 的 request_user_input 还在开发中（features list 里是 under development），先不认提问。
     return { hooks: true, resume: true, fork, askTool: false };
   }
 
+  /** AH0 / AH2：能力声明（画布 A0 第 2 节）。合格测试按它逐项跑（test/conformance）。 */
+  declareCapabilities(version: string | null): CapabilityEntry[] {
+    const hooks = this.capabilities(version).hooks;
+    const needHooks = version === null ? "Couldn't read the Codex version" : `Needs Codex ${MIN_HOOKS_VERSION} or later`;
+    return [
+      yes('first-prompt', 'flag'),
+      // 老版本只有 legacy notify：只知道一轮结束
+      hooks
+        ? yes('status', 'hook')
+        : version === null
+          ? partial('status', 'output', `${needHooks}; status comes from terminal activity`)
+          : partial('status', 'hook', `Only the end of a turn is reported before Codex ${MIN_HOOKS_VERSION}`),
+      hooks ? yes('approval-wait', 'hook') : no('approval-wait', needHooks),
+      // request_user_input 还在开发中（features list 里是 under development），没核对过它怎么报
+      no('question', 'Codex has no question tool yet'),
+      // SessionStart 要等第一次输入才来
+      hooks ? yes('session-id', 'hook') : no('session-id', needHooks),
+      yes('resume', 'flag'),
+      this.capabilities(version).fork ? yes('fork', 'flag') : no('fork', `Needs Codex ${MIN_FORK_VERSION} or later`),
+      yes('history', 'session-file'),
+      yes('usage', 'session-file'),
+      yes('quota', 'session-file'),
+      hooks ? yes('approve-keys', 'hook') : no('approve-keys', needHooks),
+      atLeast(version, MIN_MCP_VERSION) ? yes('agentdeck-mcp', 'flag') : no('agentdeck-mcp', `Needs Codex ${MIN_MCP_VERSION} or later`),
+      no('skills', 'Not supported for codex'),
+      no('subagents', 'Not read for Codex yet'),
+      no('append-instructions', 'Not checked for Codex yet'),
+      yes('shell-tool', null),
+    ];
+  }
+
   /** 问出钩子的信任哈希。返回这次启动是否带钩子。 */
   async prepare(ctx: LaunchContext): Promise<{ hooks: boolean }> {
     if (!this.capabilities(this.lastVersion).hooks) return { hooks: false };
-    if (this.trustCache.has(ctx.notifyCommand)) return { hooks: true };
     try {
       const env = this.deps.env();
       const codexPath = this.lastPath ?? (await findExecutable(this.command, env));
       if (!codexPath) return { hooks: false };
+      const key = `${ctx.notifyCommand}\0${codexPath}\0${(await fileStamp(codexPath)) ?? ''}`;
+      this.trustKey = key;
+      if (this.trustCache.has(key)) return { hooks: true };
       const overrides = codexHookOverrides(ctx.notifyCommand);
       const listed = await this.queryTrust({ codexPath, env, cwd: ctx.cwd, overrides });
       const commands = new Set(CODEX_HOOK_EVENTS.map((e) => hookCommand(ctx.notifyCommand, e)));
       const ours = listed.filter((h) => h.source === 'sessionFlags' && commands.has(h.command));
       if (ours.length !== CODEX_HOOK_EVENTS.length) return { hooks: false };
       this.trustCache.set(
-        ctx.notifyCommand,
+        key,
         ours.map((h) => ({ key: h.key, hash: h.hash })),
       );
       return { hooks: true };
@@ -128,17 +181,21 @@ export class CodexAdapter implements AgentAdapterExt {
       // 让人选，默认选中的是原会话的目录（0.164.0 实测）；写了就直接用 -C 的目录，不弹。
       head.push('fork', '-C', ctx.cwd, ctx.mode.sessionId);
     }
-    const trust = this.trustCache.get(ctx.notifyCommand);
+    // AH3：只带会话参数重开时（IS-73）钩子、MCP、用户参数都不带
+    const full = !ctx.sessionOnly;
+    const trust = full && this.trustKey?.startsWith(`${ctx.notifyCommand}\0`) ? this.trustCache.get(this.trustKey) : undefined;
     let hookArgs: string[] = [];
     if (trust) {
       hookArgs = [...codexHookOverrides(ctx.notifyCommand), '-c', `hooks.state=${trustTable(trust)}`];
-    } else if (!this.capabilities(this.lastVersion).hooks) {
+    } else if (full && this.lastVersion !== null && !this.capabilities(this.lastVersion).hooks) {
+      // 确知是老版本才用 legacy notify（它会顶掉用户自己的 notify）；读不出版本时什么都不加
       hookArgs = ['-c', `notify=[${toml(ctx.notifyCommand)},"codex","notify"]`];
     }
-    const mcpOk = atLeast(this.lastVersion, MIN_MCP_VERSION);
+    const mcpOk = full && atLeast(this.lastVersion, MIN_MCP_VERSION);
     const mcp = ctx.mcp && mcpOk ? ctx.mcp : null;
     // N9：库里选中的 MCP 服务同样用 -c 加（skill 带不了，见 skills/support.ts）
     const library = mcpOk ? (ctx.skills?.mcp ?? []) : [];
+    const prompt = ctx.prompt && ctx.mode.kind === 'new' ? ctx.prompt : null;
     return {
       cmd: this.command,
       // codex [PROMPT]：位置参数是第一条消息。
@@ -147,11 +204,12 @@ export class CodexAdapter implements AgentAdapterExt {
         ...hookArgs,
         ...(mcp ? codexMcpOverrides(mcp) : []),
         ...library.flatMap(codexLibraryMcpOverrides),
-        ...ctx.extraArgs,
-        ...(ctx.prompt && ctx.mode.kind === 'new' ? ['--', ctx.prompt] : []),
+        ...(full ? ctx.extraArgs : []),
+        ...(prompt ? ['--', prompt] : []),
       ],
       ...(mcp ? { env: { [MCP_TOKEN_ENV]: mcp.token } } : {}),
       sessionId: sessionId as AgentSessionId | null,
+      consumed: { prompt: prompt !== null },
     };
   }
 
