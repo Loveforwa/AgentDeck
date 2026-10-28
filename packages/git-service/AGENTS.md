@@ -20,7 +20,9 @@ const git = createGitService({
 });
 ```
 
-另外导出 `SystemGitService`（类）、`GitCommandError`、`samePath`，以及解析函数 `parseStatusV2` `parseWorktrees` `parseBranches` `parseLog` `parseDecorations` `parseNameStatus` `parseStashes` `reachableWithin`（纯函数）。
+`createGitService` 返回 `SystemGitService`：比 contracts 的 `GitService` 多两个只读方法 `renamedPath`、`listFiles`，apps/desktop 把它们注入给 doc-service（DC2，contracts 里没有，见 CONTRACT_NOTES.md）。
+
+另外导出 `SystemGitService`（类）、`GitCommandError`、`samePath`，以及解析函数 `parseStatusV2` `parseWorktrees` `parseBranches` `parseLog` `parseDecorations` `parseNameStatus` `parseStashes` `reachableWithin` `parseBlamePorcelain` `parseHunks` `parseRenames` `parseGitVersion` `parseMergeTreeNames`（纯函数）。
 
 ## 每个方法跑什么
 
@@ -44,6 +46,11 @@ const git = createGitService({
 | removeWorktree | `worktree remove [--force]`；目录已经没了时 `worktree prune` | |
 | repoRoot | `rev-parse --show-toplevel` | 不在仓库里、目录不存在都返回 null |
 | defaultBranch | origin/HEAD → main → master → 当前分支 | 本地或 origin 上有就算 |
+| blameLines（DC1） | `-c blame.ignoreRevsFile= blame --porcelain [rev] -- <path>` | 只取每行的提交。工作区（不给 rev）里 git 不认识的文件（未跟踪、仓库还没有提交）每行都是 40 个 0；文件或版本不存在抛 not-found |
+| showFile（DC1） | `cat-file blob <rev>:<path>` | 原样内容，不走 textconv；那个版本里没有这个文件（或是目录）返回 null；版本不存在抛 not-found |
+| lineMap（DC1） | `diff -U0 --no-color --no-ext-diff --no-textconv -M --histogram <from> [<to>] -- <path>`，解析 @@ 头 | to 为 'worktree' 时对工作区。只看一个路径时认不出改名（只看到删除）：先 `renamedPath` 找到新路径，再把两个路径一起给 git，hunk 按改名后的文件算。histogram 不跟用户的 diff.algorithm 走 |
+| renamedPath（不在 contracts） | `diff --name-status -z -M --diff-filter=R <from> [<to>]` | 改名后的路径，没改名返回 null。给 doc-service 提示“改名到了哪” |
+| listFiles（不在 contracts） | `ls-files -z --cached --others --exclude-standard` | 跟踪的 + 没被忽略的未跟踪文件，去重排序。给 doc-service 的 `list` 和短路径候选 |
 | overlaps（CO0） | 每个 worktree 拍快照：没改动用 HEAD；有改动时复制它的 index 到临时 `GIT_INDEX_FILE`，`add -A`、`write-tree`、`commit-tree --no-gpg-sign -p HEAD`（作者、时间固定，同样的改动得到同一个提交）。两两：`merge-base`（是其中一边就跳过）、`diff --name-only -z --no-renames` 两边求交集、`merge-tree --write-tree --name-only --no-messages -z`（退出码 0 clean，1 conflict） | 见 `src/overlaps.ts`。不碰工作区、index、stash 列表，不写 ref；只往对象库里写临时对象。git < 2.38 只给交集、verdict 为 unknown（`gitVersion` 选项可以模拟老版本）。最多 12 个 worktree；目录不在了的跳过；结果按两边快照的提交 id 缓存（最多 512 对） |
 
 discard 的规则（VS Code 的做法）：有没暂存的改动 → 工作区还原成暂存区的样子（`restore --worktree`）；只有暂存的改动 → 暂存区和工作区都还原成 HEAD；新加进暂存区的文件 → 拿出暂存区、文件进废纸篓；冲突文件 → 还原成 HEAD；未跟踪 → 废纸篓。
@@ -77,6 +84,7 @@ pnpm --filter @agentdeck/git-service typecheck
 
 - `test/parse.test.ts`：各种输出的解析（重命名、冲突、子模块、带空格的路径、分离 HEAD、bare 仓库）、parents 和 refs（%D 全名、远端、标签、分离 HEAD）、name-status、窗内可达。
 - `test/git-service.test.ts`：新增、修改、删除、重命名、冲突、合并中、变基中、子模块显示为一条、stash 往返、带改动切换和冲突时拒绝、被占用的分支、worktree 增删、删分支、目录被手动删掉、钩子失败、超时、找不到 git、并发写排队；提交图（分叉、合并、上限、只看几个分支、分离 HEAD）、单个提交的文件（重命名、根提交、合并提交）、已合并的分支。
+- `test/anchors.test.ts`（DC1）：插行、改行（没提交）、删文件、改名（只暂存、已提交）、未跟踪文件；blame 跟着改名回到原来的提交；showFile 对目录、删掉的文件、不存在的版本；listFiles 不列忽略的文件；porcelain、@@ 头、name-status 的解析。
 - `test/overlaps.test.ts`（CO0）：同文件不同段 → clean、同一段 → conflict（含没提交的改动）、两边都新建同名文件、没改动的 worktree 和已经合进另一边的不比、主目录和 worktree 比、git 2.37 的退化（unknown）、同样的改动快照相同；跑完后工作区、index（内容和修改时间）、stash 列表、所有 ref 都不变。
 - 测试里的 git 不读用户的全局配置（`GIT_CONFIG_GLOBAL=/dev/null`，见 `test/helpers.ts`）。
 

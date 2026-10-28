@@ -63,3 +63,10 @@
 - 假的 stash 信息格式不同（见第 4 条）。
 - 假的写操作每次都发 `git.status`（见第 11 条）。
 - N5（提交图）加的 `log` 选项 `graph` / `commit`、`branches({ mergedInto })`，假实现（tools/fakes，不归线 3 改）还不认：`log` 照旧返回 HEAD 往前的一条直线、没有 parents / refs / files，`branches` 不填 merged。面板对此有兜底（没有 parents 时当成直线、没有 files 时写 “Files aren’t available”），但 dev 页面上看不到分叉和合并。建议 F6 的负责人跟进：假仓库已经有分支，按 parents 走出提交图不难。
+
+# DC1 / DC2（2026-10-28）对 contracts 0.1.21 的意见
+
+doc-service（DC2）只拿到 contracts 的 `GitService`，下面两件事接口里没有，git-service 先作为 `SystemGitService` 的额外方法实现，apps/desktop 注入给 doc-service。没有改 `packages/contracts`。
+
+1. **改名到了哪**：`lineMap` 的注释说“文件被改名时按改名后的路径给，调用方用 status / log 的改名找”，但从基准提交到工作区之间可能隔了很多提交，靠 status / log 一条条找很麻烦。实现里 `lineMap` 自己跟着改名算 hunk，另外有 `renamedPath(repo, path, from, to = 'worktree'): Promise<string | null>`。建议加进 `GitService`。
+2. **列仓库里的文件**：`DocService.list` 要“git ls-files 的 .md + 未跟踪的”，短路径（ambiguous）要按路径后缀找候选，`GitService` 没有列文件的方法。实现是 `listFiles(repo): Promise<string[]>`（`ls-files --cached --others --exclude-standard`）。建议加进 `GitService`。

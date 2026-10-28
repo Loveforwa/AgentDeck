@@ -2,6 +2,7 @@
 // 不监听文件；只在调用方要的时候跑 status。写操作按仓库排队，避免两条命令抢 index.lock。
 
 import { existsSync, realpathSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import type {
   LineMapHunk,
@@ -29,7 +30,10 @@ import {
   STASH_FORMAT,
   parseBranches,
   parseLog,
+  parseBlamePorcelain,
+  parseHunks,
   parseNameStatus,
+  parseRenames,
   parseStashes,
   reachableWithin,
   parseStatusV2,
@@ -62,11 +66,14 @@ export interface GitServiceOptions {
 
 const STASH_ID = /^stash@\{\d+\}$/;
 
-function notYet(method: string): AgentDeckError {
-  return new AgentDeckError({ code: 'unsupported', message: `git ${method} isn’t available yet` });
-}
+/** blame 里没提交的行。 */
+const UNCOMMITTED = '0'.repeat(40);
 
-export function createGitService(opts: GitServiceOptions): GitService {
+/** blame 找不到文件或版本时 git 的说法。 */
+const NOT_FOUND = /no such path|does not exist|no such ref|bad revision|not a valid object name|unknown revision|cannot stat path|cannot lstat/i;
+
+/** 返回的对象比 contracts 的 GitService 多 renamedPath、listFiles（给 doc-service 注入用）。 */
+export function createGitService(opts: GitServiceOptions): SystemGitService {
   return new SystemGitService(opts);
 }
 
@@ -408,17 +415,68 @@ export class SystemGitService implements GitService {
     await this.git(dir, ['init', '-q']);
   }
 
-  // DC1 还没做：代码锚点用的三个只读方法先占位
-  async blameLines(_repo: AbsPath, _path: string, _opts?: { rev?: string }): Promise<{ line: number; commit: string }[]> {
-    throw notYet('blameLines');
+  // ---- 代码锚点用的三个只读方法（DC1）----
+
+  async blameLines(repo: AbsPath, path: string, opts?: { rev?: string }): Promise<{ line: number; commit: string }[]> {
+    const rev = opts?.rev;
+    if (rev !== undefined) checkRev(rev);
+    // blame.ignoreRevsFile 置空：用户配置里指向不存在的文件时 blame 会直接失败
+    const args = ['-c', 'blame.ignoreRevsFile=', 'blame', '--porcelain', ...(rev !== undefined ? [rev] : []), '--', path];
+    try {
+      return parseBlamePorcelain((await this.git(repo, args)).stdout);
+    } catch (e) {
+      if (!(e instanceof GitCommandError)) throw e;
+      // 工作区里有、git 不认识（未跟踪、仓库还没有提交）：每一行都是没提交的
+      if (rev === undefined) {
+        const lines = await readLines(join(repo, path));
+        if (lines !== null) return Array.from({ length: lines }, (_, i) => ({ line: i + 1, commit: UNCOMMITTED }));
+      }
+      if (NOT_FOUND.test(e.stderr))
+        throw new AgentDeckError({ code: 'not-found', message: `${path} not found${rev ? ` in ${rev}` : ''}`, detail: e.stderr.trim() });
+      throw e;
+    }
   }
 
-  async showFile(_repo: AbsPath, _rev: string, _path: string): Promise<string | null> {
-    throw notYet('showFile');
+  async showFile(repo: AbsPath, rev: string, path: string): Promise<string | null> {
+    checkRev(rev);
+    // cat-file：原样的内容（不走 textconv）；路径相对仓库根
+    const out = await this.git(repo, ['cat-file', 'blob', `${rev}:${path.replace(/^\.\//, '')}`], { okCodes: [128] });
+    if (out.code === 0) return out.stdout;
+    if (await this.revExists(repo, rev)) return null;
+    throw new AgentDeckError({ code: 'not-found', message: `Commit ${rev} not found`, detail: out.stderr.trim() });
   }
 
-  async lineMap(_repo: AbsPath, _path: string, _from: string, _to: string): Promise<LineMapHunk[]> {
-    throw notYet('lineMap');
+  async lineMap(repo: AbsPath, path: string, from: string, to: 'worktree' | string): Promise<LineMapHunk[]> {
+    checkRev(from);
+    if (to !== 'worktree') checkRev(to);
+    const range = to === 'worktree' ? [from] : [from, to];
+    // histogram：代码里成段挪动时对齐得比默认的 myers 好；不跟着用户的 diff.algorithm 走
+    const diff = (paths: string[]) =>
+      this.git(repo, ['diff', '-U0', '--no-color', '--no-ext-diff', '--no-textconv', '-M', '--histogram', ...range, '--', ...paths], LITERAL);
+    let out = (await diff([path])).stdout;
+    // 只看这一个路径时 git 认不出改名，只看到删除：找到新路径后两个一起给 git，hunk 按改名后的文件算
+    if (/^deleted file mode /m.test(out)) {
+      const renamed = await this.renamedPath(repo, path, from, to);
+      if (renamed) out = (await diff([path, renamed])).stdout;
+    }
+    return parseHunks(out);
+  }
+
+  // ---- 不在 contracts 里的只读方法（给 doc-service 用，由 apps/desktop 注入，见 AGENTS.md）----
+
+  /** from → to（'worktree' 是工作区）之间 path 被改名成了什么；没改名返回 null。 */
+  async renamedPath(repo: AbsPath, path: string, from: string, to: 'worktree' | string = 'worktree'): Promise<string | null> {
+    checkRev(from);
+    if (to !== 'worktree') checkRev(to);
+    const range = to === 'worktree' ? [from] : [from, to];
+    const out = await this.git(repo, ['diff', '--name-status', '-z', '-M', '--diff-filter=R', '--no-ext-diff', ...range]);
+    return parseRenames(out.stdout).get(path) ?? null;
+  }
+
+  /** 仓库里的文件（跟踪的 + 没被忽略的未跟踪文件），相对仓库根，去重排序。 */
+  async listFiles(repo: AbsPath): Promise<string[]> {
+    const out = await this.git(repo, ['ls-files', '-z', '--cached', '--others', '--exclude-standard']);
+    return [...new Set(out.stdout.split('\0').filter(Boolean))].sort();
   }
 
   /** CO0：见 overlaps.ts。 */
@@ -491,6 +549,10 @@ export class SystemGitService implements GitService {
   private async currentBranch(repo: AbsPath): Promise<string | null> {
     const out = await this.git(repo, ['symbolic-ref', '--quiet', '--short', 'HEAD'], { okCodes: [1] });
     return out.code === 0 ? out.stdout.trim() : null;
+  }
+
+  private async revExists(repo: AbsPath, rev: string): Promise<boolean> {
+    return (await this.git(repo, ['rev-parse', '--verify', '-q', `${rev}^{commit}`], { okCodes: [1] })).code === 0;
   }
 
   private async refExists(repo: AbsPath, ref: string): Promise<boolean> {
@@ -581,6 +643,23 @@ export class SystemGitService implements GitService {
 
 /** 涉及路径的命令按字面匹配：文件名里的 * [ ] 不当通配符。 */
 const LITERAL: RunOptions & { env: NodeJS.ProcessEnv } = { env: { GIT_LITERAL_PATHSPECS: '1' } };
+
+/** 版本参数不能被 git 当成选项。 */
+function checkRev(rev: string): void {
+  if (rev.trim() === '' || rev.startsWith('-'))
+    throw new AgentDeckError({ code: 'invalid-argument', message: `Invalid revision: ${rev}` });
+}
+
+/** 文件有几行（git 的算法：最后一行没有换行也算一行）；不存在或不是文件返回 null。 */
+async function readLines(path: string): Promise<number | null> {
+  try {
+    const text = await readFile(path, 'utf8');
+    if (text === '') return 0;
+    return text.split('\n').length - (text.endsWith('\n') ? 1 : 0);
+  } catch {
+    return null;
+  }
+}
 
 function checkName(name: string): void {
   if (name.trim() === '' || name.startsWith('-'))
