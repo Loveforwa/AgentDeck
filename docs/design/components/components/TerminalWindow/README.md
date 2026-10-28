@@ -17,4 +17,7 @@ TerminalWindow is the content of a terminal window: an xterm.js screen in tmux, 
 - Keys go to the shell while the terminal is focused. ⌘-combinations go to the board (⌘K clear, ⌘W close, ⌘Z undo layout).
 - The wheel scrolls the scrollback even when the window is not focused.
 - localhost links open a browser window on the board.
+- **Selecting and copying (IS-143).** When the program doesn't take the mouse (claude, a shell), dragging, double-clicking a word or triple-clicking a line is done by tmux and **copies on release**: the text is on the clipboard and the highlight goes away, no ⌘C needed. When the program takes the mouse (codex), the drag goes to the program; **hold Option and drag** for the terminal's own selection, then ⌘C. The first drag in such a program that selects nothing shows a Toast once per user: "Hold Option to select text".
+- ⌘V pastes once, bracketed when the program asked for it.
+- **Right-click** (or ⌃-click) the screen: Copy ⌘C · Paste ⌘V · Send selection to ▸ (see ContextMenus). "The selection" is the terminal's own selection, or else the text just copied on release; typing in that terminal or a plain click clears it.
 - A running terminal cannot move to another frame: it snaps back and offers "Open new" (W5).
