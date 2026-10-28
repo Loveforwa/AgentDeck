@@ -62,7 +62,7 @@ export const SERVICE_METHODS = {
   subagents: ['list', 'watchTranscript', 'unwatchTranscript'],
   history: ['list'],
   sessions: ['list', 'get', 'children', 'rename', 'handoff', 'handoffSummary'],
-  limits: ['list', 'resumeNow', 'skip', 'cancel', 'setOwner'],
+  limits: ['list', 'resumeNow', 'skip', 'cancel', 'setOwner', 'setMessage'],
   crew: [
     'create',
     'list',

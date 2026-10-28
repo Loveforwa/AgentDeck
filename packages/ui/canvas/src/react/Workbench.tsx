@@ -66,7 +66,7 @@ function WorkbenchInner(props: WorkbenchProps) {
   useEffect(() => {
     if (given) given.setNotify((message) => toastRef.current.show({ message }));
     void controller.start();
-    // 要在后台一直跑的插件（PL3 Prompt queue）
+    // 要在后台一直跑的插件（PluginDefinition.start；PL3 Prompt queue 退役后现在没有）
     const stops = PLUGINS.flatMap((p) => (p.start ? [p.start(controller)] : []));
     const flush = () => void controller.flush();
     window.addEventListener('pagehide', flush);

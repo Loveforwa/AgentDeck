@@ -11,6 +11,12 @@
 //   ask [命令]       → UserPromptSubmit + PermissionRequest（Bash，默认命令 ls -la），屏幕上画确认框；
 //                     等批准时按 1 或回车 = 允许一次 → PostToolUse，回到 running；按 2 或 Esc = 拒绝（和真 claude 一样不发钩子）
 //   done [回复]      → Stop（一轮结束，idle）；带回复时像真 claude 一样画一行 “● 回复”（CO4 的最后一条回复从屏幕上认它）
+//   limit <秒> [noauto] → 像真 claude 撞上 5 小时额度（PL6）：会话记录里写一行 error "rate_limit"（quotaLimits.resetsAt = 现在 + 秒），
+//                     发 StopFailure（error: rate_limit，带 transcript_path），回到 idle，画 “Usage limit reached”。
+//                     默认像 claude 2.1.234 起那样自己续：到了恢复时间发 Notification quota_auto_resume_fired，再发 UserPromptSubmit
+//                     接着干活（running）；等的时候你发来的一行（AgentDeck 送进来的改过的话）先记着，到点改发这一行、不发自己的 continue
+//                     （DR-84 说真 claude 这样，待核对）。noauto：像用户关了 autoContinueAtUsageLimit，马上发 quota_auto_resume_disabled，
+//                     之后收到的一行当成普通的提示词（UserPromptSubmit，running）。
 //   clear           → SessionStart（source: clear），换一个新的会话 id（和真 claude 的 /clear 一样）
 //   compact         → SessionStart（source: compact），会话 id 不变
 //   quit / exit     → SessionEnd，退出码 0
@@ -22,6 +28,7 @@
 import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { appendFileSync, mkdirSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { join } from 'node:path';
 
 const VERSION = '2.1.291';
@@ -113,6 +120,11 @@ const PROMPT = '> ';
 
 /** @type {'idle' | 'working' | 'approval'} */
 let state = 'idle';
+/**
+ * 撞上额度以后在等（limit 命令）：self 为 true 时到点自己续；pending 是等的时候收到的一行（到点改发它）。
+ * @type {{ self: boolean, resetsAt: number, pending: string | null, timer: ReturnType<typeof setTimeout> | null } | null}
+ */
+let limited = null;
 let line = '';
 /** @type {{ tool_name: string, tool_input: { command: string } } | null} */
 let pendingTool = null;
@@ -163,8 +175,81 @@ function deny() {
   prompt();
 }
 
+/** 会话记录（真 claude 的位置：$CLAUDE_CONFIG_DIR 或 ~/.claude 下 projects/<cwd 里非字母数字换成 -> /<会话 id>.jsonl）。 */
+function transcriptPath() {
+  const root = process.env['CLAUDE_CONFIG_DIR'] || join(homedir(), '.claude');
+  return join(root, 'projects', process.cwd().replace(/[^a-zA-Z0-9]/g, '-'), `${sessionId}.jsonl`);
+}
+
+/** 像真 claude 那样撞上额度（PL6 的 e2e 用）。 */
+async function hitLimit(/** @type {string[]} */ rest) {
+  const secs = Math.max(1, Number(rest[0]) || 60);
+  const self = !rest.includes('noauto');
+  const resetsAt = Date.now() + secs * 1000;
+  const file = transcriptPath();
+  const reset = new Date(resetsAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  try {
+    mkdirSync(join(file, '..'), { recursive: true });
+    const line = {
+      type: 'assistant',
+      timestamp: new Date().toISOString(),
+      sessionId,
+      error: 'rate_limit',
+      isApiErrorMessage: true,
+      apiErrorStatus: 429,
+      quotaLimits: { status: 'rejected', rateLimitType: 'five_hour', resetsAt: Math.floor(resetsAt / 1000) },
+      message: { model: '<synthetic>', role: 'assistant', content: [{ type: 'text', text: `You've hit your limit · resets ${reset}` }] },
+    };
+    appendFileSync(file, `${JSON.stringify(line)}\n`);
+  } catch {
+    // 写不了会话记录：AgentDeck 读不到恢复时间（reset-unknown）
+  }
+  if (limited?.timer) clearTimeout(limited.timer);
+  limited = { self, resetsAt, pending: null, timer: null };
+  state = 'idle';
+  log({ kind: 'limit', resetsAt: new Date(resetsAt).toISOString(), self });
+  await emitHook('StopFailure', { error: 'rate_limit', error_details: '429', transcript_path: file });
+  write(`  ⎿ Usage limit reached · limit resets ${reset}\n`);
+  if (self) {
+    write(`    Continuing automatically at ${reset} · esc to cancel\n`);
+    limited.timer = setTimeout(() => void selfResume(), resetsAt - Date.now());
+  } else {
+    await emitHook('Notification', { notification_type: 'quota_auto_resume_disabled', message: 'Auto-continue is off' });
+  }
+  prompt();
+}
+
+/** 到了恢复时间，claude 自己续：先 fired，再发等的时候收到的那一行（没有就发自己的 continue）。 */
+async function selfResume() {
+  if (!limited?.self) return;
+  const sent = limited.pending;
+  limited = null;
+  state = 'working';
+  await emitHook('Notification', { notification_type: 'quota_auto_resume_fired', message: 'Continuing after the usage limit reset' });
+  log({ kind: 'self-resume', sent });
+  await emitHook('UserPromptSubmit', { prompt: sent ?? 'Continue from where you left off.' });
+  write(sent ? `\n> ${sent}\n  Working… (type done to finish)\n` : '\n  Continuing from where you left off… (type done to finish)\n');
+}
+
 /** @param {string} input */
 async function runLine(input) {
+  if (limited && input.trim() !== '' && !/^(quit|exit|crash)$/.test(input.trim())) {
+    if (limited.self) {
+      // 等着自己续的时候收到消息：到点改发它
+      limited.pending = input;
+      log({ kind: 'queued-while-limited', line: input });
+      write('  Will send this when the limit resets.\n');
+      prompt();
+      return;
+    }
+    // 关了自己续：当成普通的提示词
+    limited = null;
+    state = 'working';
+    log({ kind: 'prompt', line: input });
+    await emitHook('UserPromptSubmit', { prompt: input });
+    write('  Working… (type done to finish)\n');
+    return;
+  }
   const [cmd = '', ...rest] = input.trim().split(/\s+/);
   switch (cmd) {
     case '':
@@ -177,6 +262,9 @@ async function runLine(input) {
       return;
     case 'ask':
       await ask(rest.join(' ') || 'ls -la');
+      return;
+    case 'limit':
+      await hitLimit(rest);
       return;
     case 'done':
       state = 'idle';
@@ -212,9 +300,27 @@ async function runLine(input) {
   }
 }
 
+/** 在 bracketed paste（ESC[200~ … ESC[201~）里面：换行当空格，不提交。 */
+let pasting = false;
+
 /** @param {string} chunk */
 function onInput(chunk) {
+  // AgentDeck 的续跑（LimitService）用 bracketed paste 送一整段，回车另外发
+  for (const part of chunk.split(/(\x1b\[20[01]~)/)) {
+    if (part === '\x1b[200~') pasting = true;
+    else if (part === '\x1b[201~') pasting = false;
+    else onChars(part);
+  }
+}
+
+/** @param {string} chunk */
+function onChars(chunk) {
   for (const ch of chunk) {
+    if (pasting && (ch === '\r' || ch === '\n')) {
+      line += ' ';
+      write(' ');
+      continue;
+    }
     if (state === 'approval') {
       if (ch === '1' || ch === '\r' || ch === 'y') approve('key');
       else if (ch === '2' || ch === '\x1b' || ch === 'n') deny();

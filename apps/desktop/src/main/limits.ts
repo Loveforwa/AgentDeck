@@ -1,9 +1,10 @@
 // 额度上限（插件 Auto-resume · PL5）的组装：把 agent-adapters 的 LimitServiceImpl 接到终端（sendKeys）、用量、后台子 agent、
-// 白板（Auto-resume 开关、Prompt queue）、设置（Resume prompt）和“不让 Mac 睡”上。规则都在 agent-adapters/src/limits，这里只接线。
+// 白板（Auto-resume 开关）、设置（Resume prompt）和“不让 Mac 睡”上。规则都在 agent-adapters/src/limits，这里只接线。
 //
 // 环境变量（测试用）：AGENTDECK_RESUME_STAGGER_MS（同一账号几个终端续跑的间隔，默认 30 秒）、
 //                    AGENTDECK_LIMIT_GRACE_MS（恢复时间后再等多久，默认 1 分钟）。
 
+import { AgentDeckError } from '@agentdeck/contracts';
 import type { AgentInfo, AgentKind, BoardState, LimitEvent, LimitService, TerminalId } from '@agentdeck/contracts';
 import { claudeSelfResumes, limitConfigDir, LimitServiceImpl, type LimitServiceOptions, type LimitTarget } from '@agentdeck/agent-adapters';
 
@@ -99,7 +100,7 @@ export function createLimits(deps: LimitsDeps): LimitServiceImpl {
   return limits;
 }
 
-/** 注册给界面的只有 contracts 里的五个方法（note*、tick、close 不经 IPC 开放）。 */
+/** 注册给界面的只有 contracts 里的方法（note*、tick、close 不经 IPC 开放）。setMessage 是 0.1.23 加的可选方法。 */
 export function limitsApi(impl: LimitService): LimitService {
   return {
     list: () => impl.list(),
@@ -107,5 +108,7 @@ export function limitsApi(impl: LimitService): LimitService {
     skip: (terminalId) => impl.skip(terminalId),
     cancel: (account) => impl.cancel(account),
     setOwner: (terminalId, owner, prompt) => impl.setOwner(terminalId, owner, prompt),
+    setMessage: (terminalId, text) =>
+      impl.setMessage ? impl.setMessage(terminalId, text) : Promise.reject(new AgentDeckError({ code: 'unsupported', message: 'Editing the resume message is not supported' })),
   };
 }

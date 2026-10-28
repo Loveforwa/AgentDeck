@@ -79,6 +79,8 @@ export interface MenuState {
 export type SavedBoard = Pick<BoardState, 'viewport' | 'frames' | 'windows' | 'panel'> & {
   /** 左边栏（N11 历史会话），contracts 里是可选的，这里总有。 */
   leftPanel: { open: boolean; width: number };
+  /** PL6：白板上的 Auto-resume（BoardState.autoResume，默认关）。contracts 里是可选的，这里总有。 */
+  autoResume: boolean;
 };
 
 /** 左边栏默认收着、宽 280。 */
@@ -130,6 +132,7 @@ export function initialState(): BoardStoreState {
     windows: [],
     panel: { open: true, width: 320 },
     leftPanel: { ...DEFAULT_LEFT_PANEL },
+    autoResume: false,
     loaded: false,
     focusedId: null,
     selectedFrame: null,
@@ -162,9 +165,9 @@ export function createBoardStore(init: Partial<BoardStoreState> = {}): BoardStor
 
 /** 要保存的那部分。引用没变就是没改。 */
 export function savedPart(s: BoardStoreState): SavedBoard {
-  return { viewport: s.viewport, frames: s.frames, windows: s.windows, panel: s.panel, leftPanel: s.leftPanel };
+  return { viewport: s.viewport, frames: s.frames, windows: s.windows, panel: s.panel, leftPanel: s.leftPanel, autoResume: s.autoResume };
 }
 
 export function savedPartChanged(a: BoardStoreState, b: BoardStoreState): boolean {
-  return a.viewport !== b.viewport || a.frames !== b.frames || a.windows !== b.windows || a.panel !== b.panel || a.leftPanel !== b.leftPanel;
+  return a.viewport !== b.viewport || a.frames !== b.frames || a.windows !== b.windows || a.panel !== b.panel || a.leftPanel !== b.leftPanel || a.autoResume !== b.autoResume;
 }

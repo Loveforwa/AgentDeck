@@ -299,7 +299,7 @@ MCP 的 open_terminals / create_workspace 把这句原样返回给调用的 agen
 
 ## 额度上限（PL5 · 插件 Auto-resume，DR-63、DR-84）
 
-`src/limits/`：主进程里只有这一份，Auto-resume、Prompt queue（PL3）和集群（CR8）共用。规则（纯函数、各种时长）在 `rules.ts`，服务在 `service.ts`。
+`src/limits/`：主进程里只有这一份，Auto-resume（PL6）和集群（CR8）共用（Prompt queue PL3 2026-10-28 退役）。规则（纯函数、各种时长）在 `rules.ts`，服务在 `service.ts`。
 
 ```ts
 const limits = new LimitServiceImpl({
@@ -309,7 +309,7 @@ const limits = new LimitServiceImpl({
   sendKeys: (id, keys) => tmux.sendKeys(id, keys), // bracketed paste 一段 + Enter（同 PL3）
   setKeepAwake: (on) => …,                         // 离恢复 12 小时以内有终端在等时 true
   usage, subagents,                                // UsageServiceImpl（get / watch / unwatch）、SubagentServiceImpl（list）
-  board: () => store.board.load(),                 // Auto-resume 开关、Prompt queue 排着的
+  board: () => store.board.load(),                 // Auto-resume 开关
   resumePrompt: () => settings.resumePrompt,
   staggerMs, graceMs,                              // AGENTDECK_RESUME_STAGGER_MS、AGENTDECK_LIMIT_GRACE_MS（组装方读环境）
 });
@@ -323,7 +323,7 @@ limits.start();
 - **账号**：`<agent>:<配置目录>:<范围>`，配置目录是登录环境的 CLAUDE_CONFIG_DIR / CODEX_HOME（没设是 ~/.claude、~/.codex）。同一账号别的活着的终端标 idle；
   Opus / Sonnet 的只标最近用同一家族模型的。钩子先到时按 all 建，读到 Opus 再挪过去。
 - **状态**：interrupted（这一轮是被额度结束的）→ resuming（发了续跑 / claude 自己开始续）→ resumed（这一轮做完、没再撞）；
-  idle（同账号、自己没撞）：到点直接 resumed，开着 Prompt queue、有排着的给一个错开的位置（PL3 发第一条）；
+  idle（同账号、自己没撞）：到点直接 resumed（PL3 退役后不再给排着提示词的终端留位置，老白板里的 queue 不看）；
   took-over：撞完后你打过字（`noteInput`，自己发的按键 3 秒内不算）或发了新消息（UserPromptSubmit，claude 的 task-notification 不算）；
   gave-up：连续两次续了又撞（codex 的 Stop 可能比会话记录先到，续完 2 分钟内又撞也算），或发不出按键 3 次；skipped：skip / cancel / 开关关着。
   了结了的账号先带着最后的状态发一次 limits.changed，再去掉（书签能写 “you took over”）。
@@ -336,8 +336,14 @@ limits.start();
 - **睡过头**：恢复前最近一次检查离现在超过 150 秒（Mac 睡着、应用没开），醒来已过恢复时间 30 分钟以上：needsYou 'slept'，不续，等 Resume now。
   读不到恢复时间 1 分钟后：needsYou 'reset-unknown'。
 - **owner**：crew 等集群调 `resumeNow`；run（Day run 选了 Hand off）不管；`setOwner` 可以在撞上之前先登记。
+- **改过的续跑文字**（PL6，contracts 0.1.23）：`setMessage(终端, 文字 | null)` 只管这一次（null、空白、和默认一样都算回到默认；
+  已经发出去、到了发送时间、已经送进 claude 的抛 invalid-argument）。列表里每个终端带 `defaultMessage`（没改时发的，卡片预填）和 `message`。
+  发的时候用改过的文字代替模板；claude 断掉的子 agent 文字里没出现它的 id 的照样补在后面（删掉了也补），codex 那一句不补；集群给的提示词（setOwner）仍然优先。
+  发出去就清掉（没发出去留着重试），续了又撞、这一次了结也清。claude 自己续（owner agent、interrupted）时改过的文字马上 bracketed paste + 回车送进去
+  （`messageDelivered`：claude 在等恢复时收到消息，恢复时改发这一条，DR-84，**待用真 claude 核对**），之后不能再改、它续完不再补发子 agent 那一段，
+  Resume now 对它只按回车；没改就什么都不发。
 - contracts 0.1.22：每个 `LimitedTerminal` 带 `autoResume`（这次算下来开关开没开）和 `selfResume`（owner 是 agent 时：waiting → fired / stale；收到 disabled 后 owner 变 auto-resume、报 disabled；AgentDeck 自己续的不报）。PL3 的 Prompt queue 按这些发，不再自己猜。
-- 状态只在内存里；和 PL3 那边共用的几个数（宽限、2.1.234、3 分钟、30 分钟、150 秒）各写一份，改的时候两边一起改（PL3 现在只在 LimitService 没列出这个终端时才用它们兜底）。
+- 状态只在内存里（改过的续跑文字也是，重开应用后从默认开始）。原来和 PL3 各写一份的几个数（宽限、2.1.234、3 分钟、30 分钟、150 秒）现在只在 `rules.ts`。
 - 测试：`test/limits.test.ts`（注入的时钟、按键、用量、子 agent、白板，不起定时器）。
 
 ## 历史会话（N11，DR-62，2026-10-26 本机核对）

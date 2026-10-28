@@ -102,6 +102,11 @@ describe('settings file', () => {
     expect(s.notifications).toBe(false);
     expect(s.approvals.destructivePatterns).toEqual(['x']);
   });
+  it('keeps the Resume prompt (PL6), drops a non-string one', () => {
+    const d = defaultSettings([]);
+    expect(mergeSettings(d, { resumePrompt: 'Limit reset. Continue.' }).resumePrompt).toBe('Limit reset. Continue.');
+    expect(mergeSettings(d, { resumePrompt: 3 })).not.toHaveProperty('resumePrompt');
+  });
   it('writes the merged settings and reads them back', async () => {
     dir = await mkdtemp(join(tmpdir(), 'agentdeck-settings-'));
     const path = join(dir, 'sub', 'settings.json');

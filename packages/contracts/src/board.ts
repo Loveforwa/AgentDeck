@@ -142,6 +142,7 @@ export interface TerminalWindowData {
   /**
    * PL3：Prompt queue 插件在这个终端上的队列（额度用完、到点恢复后接着发的提示词）。随白板保存。
    * 不填或 null 是没开过。
+   * @deprecated 0.1.23：Prompt queue 2026-10-28 退役（并进 Auto-resume，PL6）。老白板里还有它，读得进来，界面不再读写。
    */
   queue?: PromptQueueSettings | null;
   /**
@@ -178,7 +179,7 @@ export interface SentPrompt {
   sentAt: IsoTime;
 }
 
-/** PL3：Prompt queue 的设置和进度。 */
+/** PL3：Prompt queue 的设置和进度。@deprecated 0.1.23：Prompt queue 已退役，只为读老白板留着。 */
 export interface PromptQueueSettings {
   on: boolean;
   /** 还没发的，按顺序。 */

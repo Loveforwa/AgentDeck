@@ -50,12 +50,13 @@ AGENTDECK_E2E_KEEP=1 pnpm e2e              # 不删沙盒（打印路径和 tmux
 | 等批准时按 `1` / 回车 / `y` | PostToolUse | running |
 | 等批准时按 `2` / Esc / `n` | 无（真 claude 拒绝后也没有钩子） | 3 秒后兜底回 idle |
 | `done [回复]` | Stop（带回复时画一行 “● 回复”，像真 claude 的最后一条回复） | idle |
+| `limit <秒> [noauto]` | 会话记录（`$HOME/.claude/projects/<cwd>/<会话 id>.jsonl`）写一行 error `rate_limit`（resetsAt = 现在 + 秒），StopFailure（`error: rate_limit`、带 transcript_path）；默认像 claude 2.1.234 起自己续：到点 Notification `quota_auto_resume_fired` + UserPromptSubmit，等的时候收到的一行到点改发它（日志 `queued-while-limited`、`self-resume`）；`noauto` 马上发 `quota_auto_resume_disabled`，之后收到的一行当提示词（日志 `prompt`） | idle，到点 running |
 | `clear` | SessionStart（`source: clear`，新的会话 id，像真 claude 的 /clear） | 不变（Session 多一段，SE2） |
 | `compact` | SessionStart（`source: compact`，会话 id 不变） | 不变 |
 | `quit` / `exit` | SessionEnd，退出码 0 | exited |
 | `crash` | 无，退出码 3 | error |
 
-每个钩子、每次批准都写进 `$AGENTDECK_E2E_LOG_DIR/<启动时的会话 id>.jsonl`（clear 以后也写同一个文件）（`deck.agentLog(terminalId)` 读），测试用它核对后台真的发生了什么。
+bracketed paste（`ESC[200~ … ESC[201~`，LimitService 续跑时这样送）里的换行当空格，不提交。每个钩子、每次批准都写进 `$AGENTDECK_E2E_LOG_DIR/<启动时的会话 id>.jsonl`（clear 以后也写同一个文件）（`deck.agentLog(terminalId)` 读），测试用它核对后台真的发生了什么。
 `fake-agent/dev-server.mjs` 是 TC-06 用的“dev server”：打印 `Local: http://localhost:<端口>/`，每个请求记一行，故意带 `X-Frame-Options: DENY`。
 
 ## 写测试
@@ -83,6 +84,8 @@ AGENTDECK_E2E_KEEP=1 pnpm e2e              # 不删沙盒（打印路径和 tmux
 | TC-07 | tc07-tc12-git | 聚焦终端 → 面板树形列出改动 → 悬停 + 暂存两个 → ⌘↩ 提交；提交在测试分支上、只带暂存的文件 |
 | TC-147 | tc147-send-selection | 散放的 bash 打印多行 SQL（带 -- 注释）→ 100% 缩放下真的拖选（tmux 松手复制，IS-82 在别的缩放下会选偏）→ 右键 Copy · Paste · Send selection to ▸ › zsh（自定义命令）→ 焦点跳过去，SQL 原样在 zsh 输入行里、没执行。没有 /bin/zsh 时跳过 |
 | TC-61（CR15） | cr15-agentdeck-command | 散放的 Shell：窗格环境有自己的钥匙、PATH 最前面是 `<数据目录>/bin` → `agentdeck help`（真键盘）出 JSON → `agentdeck notify "…"`（tmux send-keys，像 agent 跑命令）白板弹提示 → `crew plan` 退出码 1（CR2 之前是 “crew is not available yet”）→ 改 AGENTDECK_TERM 冒充别的终端 “Unauthorized” → 同样 HOME、PATH 的系统登录 shell 里 `command -v agentdeck` 找不到。沙盒的 .bash_profile 在这个测试里改成往前加 PATH（见 tools/agentdeck-cli「已知限制」） |
+| TC-78（PL6） | tc78-auto-resume | 假 claude `limit 45 noauto`（像 codex，AgentDeck 来续）→ 右键标题栏开 Auto-resume → 书签 Paused · resumes … → 卡片里改话、⌘↩ → 到点打进终端的就是改过的那一句（只这一句），Resuming，做完书签收起。用 `AGENTDECK_LIMIT_GRACE_MS=0`、`AGENTDECK_RESUME_STAGGER_MS=0` |
+| TC-82（PL6，claude 部分） | 同上 | `limit 45`（claude 自己续）：灰书签 claude resumes …，卡片没有 Don’t resume → Give to claude 马上送进去（不算你接手），到点 claude 发改过的那一句、AgentDeck 不另发；claude resuming，做完收起。真 claude 是否这样待核对（DR-84） |
 | TC-12 | 同上 | 右键框 Delete workspace… → 连目录删 → 有未提交改动要勾选再确认 → 框消失、目录没了、分支还在、终端结束 |
 
 `test.fail` 标着的两条是**已知缺口**（现在失败才算通过；修好后会报“意外通过”，那时去掉 `test.fail`）：

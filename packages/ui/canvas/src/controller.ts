@@ -6,6 +6,7 @@ import { TITLE_BAR_HEIGHT, resizeRect, type ResizeEdge } from '@agentdeck/ui-win
 import { isSummarySize, windowContents, windowRegistry, type WindowContentRegistry, type WindowDefinition, type WindowRegistry } from './registry.ts';
 import { ApprovalsModel } from './approvals/model.ts';
 import { usageOutset } from './plugins/usage-model.ts';
+import { LimitsModel } from './plugins/auto-resume-model.ts';
 import { PLUGIN_MARK_HEIGHT } from './plugins/types.ts';
 import { hintOf, transcriptRect } from './model/background.ts';
 import { LAYOUT_LABEL, arrangeBlocks, type ArrangeBlock } from './model/arrange.ts';
@@ -62,7 +63,6 @@ import {
   agentNoun,
   defaultName,
   estimateTermSize,
-  isAgentTerminal,
   isTerminal,
   terminalIdOf,
   workspaceLabel,
@@ -194,6 +194,8 @@ export class BoardController {
   private pendingSeq = 0;
   /** 批准（PL1 Auto-approve、Approval history、X3 Approve all），见 approvals/model.ts。 */
   readonly approvals: ApprovalsModel;
+  /** PL6：LimitService 的受限账号（Auto-resume 书签、卡片），见 plugins/auto-resume-model.ts。 */
+  readonly limits: LimitsModel;
   /** X10：撤销 / 重做（只在这次运行里）。 */
   readonly history = new BoardHistory();
   /** 正在拖动（移动、改大小）时，按下那一刻的白板；松手时和现在比，算成一步。 */
@@ -211,6 +213,7 @@ export class BoardController {
     this.contents = opts.contents ?? windowContents;
     this.store = createBoardStore();
     this.approvals = new ApprovalsModel(this, (message) => this.notify(message));
+    this.limits = new LimitsModel(this.api, (message) => this.notify(message));
     this.autosave = createAutosave<BoardState>({
       save: (state) => this.api.board.save(state),
       delayMs: opts.autosaveMs ?? 500,
@@ -284,6 +287,7 @@ export class BoardController {
       this.unsubs.push(() => window.removeEventListener('keydown', onKey, true));
     }
     void this.approvals.start();
+    void this.limits.start();
     // 标记（书签、后台 agent 的小提示）、Usage 条出现了：框长到装得下（N10，只变大）。两个 store 都可能让它变，合并到下一个微任务里查一次
     let marksQueued = false;
     const checkMarks = () => {
@@ -294,7 +298,7 @@ export class BoardController {
         if (this.started) this.keepMarksInFrames();
       });
     };
-    this.unsubs.push(this.store.subscribe(checkMarks), this.approvals.store.subscribe(checkMarks));
+    this.unsubs.push(this.store.subscribe(checkMarks), this.approvals.store.subscribe(checkMarks), this.limits.store.subscribe(checkMarks));
     // N12：开着 Auto-arrange 的框里多了、少了窗口：下一个微任务里重排
     this.unsubs.push(this.store.subscribe(() => this.noteFrameMembers()));
     // 存档：保存的那部分一变就排进防抖
@@ -318,6 +322,7 @@ export class BoardController {
       windows: board.windows,
       panel: board.panel,
       leftPanel: board.leftPanel ?? { ...DEFAULT_LEFT_PANEL },
+      autoResume: board.autoResume === true,
       workspaces: Object.fromEntries(workspaces.map((w) => [w.id, w])),
       projects,
       agents,
@@ -422,6 +427,7 @@ export class BoardController {
     this.started = false;
     for (const u of this.unsubs.splice(0)) u();
     this.approvals.dispose();
+    this.limits.dispose();
     void this.autosave.flush();
     this.autosave.dispose();
   }
@@ -568,8 +574,8 @@ export class BoardController {
     const marks =
       this.approvals.windowOn(w) ||
       (tid !== null && hintOf(this.state.backgroundAgents[tid] ?? []) !== null) ||
-      // PL3：Prompt queue 的书签也挂在底边
-      (isAgentTerminal(w) && (w.data as Partial<TerminalWindowData> | null)?.queue?.on === true);
+      // PL6：Auto-resume 的书签（这个终端在受限账号里时）也挂在底边
+      this.limits.marked(w);
     return { top: u.top, bottom: u.bottom + (marks ? PLUGIN_MARK_HEIGHT : 0) };
   }
 

@@ -1,6 +1,6 @@
 // 只用于类型检查：确认接口能被实现、事件能按 type 收窄。不会被打包。
 import type {
-  AgentDeckApi, ApproveResult, BoardState, FrameArrange, PromptQueueSettings, UsageLimit, SessionSummary, BackgroundAgent, TerminalBackgroundAgents, TranscriptLine, AutoApproveState, CommitInfo, EventOf, GitService, LogOptions, SkillItemId, TerminalHost, TerminalId,
+  AgentDeckApi, LimitService, ApproveResult, BoardState, FrameArrange, PromptQueueSettings, UsageLimit, SessionSummary, BackgroundAgent, TerminalBackgroundAgents, TranscriptLine, AutoApproveState, CommitInfo, EventOf, GitService, LogOptions, SkillItemId, TerminalHost, TerminalId,
   TerminalSkills, TerminalUsage, TerminalWindowData, UsageService, WindowGroupId, WindowId, WindowNode, WindowRestoreSupport, WorkspaceId,
   LaunchPreset, ProjectPatch, Settings,
   Session, SessionId, SessionOrigin, AgentSessionSegment, HandoffResult,
@@ -239,3 +239,12 @@ const asHost: TerminalHost = oldHost;
 const oldGit: Omit<GitService, 'renamedPath' | 'listFiles'> = {} as GitService;
 const asGit: GitService = oldGit;
 void asHost; void asGit;
+// 0.1.23（PL6）：Auto-resume 卡片改这一次续跑的文字（可选方法，老实现照样能用）；PL3 的队列字段留着读老白板
+const edited: LimitedTerminal = { ...selfLimited, message: 'Finish the tests first', defaultMessage: 'Your usage limit has reset.', messageDelivered: true };
+const notEdited: LimitedTerminal = { ...oldLimited, message: null };
+void edited; void notEdited;
+void api.limits.setMessage?.('t1' as TerminalId, 'Also update the docs');
+void api.limits.setMessage?.('t1' as TerminalId, null);
+const oldLimits: Omit<LimitService, 'setMessage'> = {} as LimitService;
+const asLimits: LimitService = oldLimits;
+void asLimits;

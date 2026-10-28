@@ -333,7 +333,7 @@ describe('LimitService: who was interrupted', () => {
 });
 
 describe('LimitService: resuming', () => {
-  it('resumes in the order they were interrupted, 30 seconds apart; idle with a queue gets the next slot (TC-78, TC-80)', async () => {
+  it('resumes in the order they were interrupted, 30 seconds apart; the idle one is not resumed — a retired PL3 queue on it is ignored (TC-78, TC-80)', async () => {
     const r = rig([codex('t5'), codex('t6'), codex('docs')], board([on('t5'), on('t6'), win('docs', { queue: queue(1) })]));
     for (const t of ['t5', 't6', 'docs']) r.status(t, 'idle');
     r.now.t = T0;
@@ -344,7 +344,7 @@ describe('LimitService: resuming', () => {
     expect(r.only().terminals.map((t) => [t.terminalId, t.state, t.resumeAt])).toEqual([
       ['t6', 'interrupted', iso(T0 + 61 * MIN)],
       ['t5', 'interrupted', iso(T0 + 61 * MIN + 30_000)],
-      ['docs', 'idle', iso(T0 + 62 * MIN)],
+      ['docs', 'idle', null],
     ]);
     expect(r.awake.at(-1)).toBe(true);
 
@@ -352,6 +352,8 @@ describe('LimitService: resuming', () => {
     expect(r.sent).toEqual([]);
     await r.tickAt(T0 + 61 * MIN);
     expect(r.sent.map((s) => s.id)).toEqual(['t6', 't6']);
+    // 当时空闲的不发续跑提示，到点就算续完了（PL3 的队列已退役，不再给它留位置）
+    expect(r.term('docs')?.state).toBe('resumed');
     expect(r.sent[0]!.keys[0]).toBe(`\u001b[200~${DEFAULT_RESUME_PROMPT}\n\n${CODEX_SUBAGENT_LINE}\u001b[201~`);
     expect(r.sent[1]!.keys).toEqual(['Enter']);
     expect(r.term('t6')?.state).toBe('resuming');
@@ -364,9 +366,7 @@ describe('LimitService: resuming', () => {
     await r.tickAt(T0 + 61 * MIN + 30_000);
     expect(r.sent.map((s) => s.id)).toEqual(['t6', 't6', 't5', 't5']);
     await r.tickAt(T0 + 62 * MIN);
-    // 当时空闲的不发续跑提示，只放开排着的（PL3 发）
     expect(r.sent).toHaveLength(4);
-    expect(r.term('docs')?.state).toBe('resumed');
 
     // 续跑这一轮做完
     for (const t of ['t6', 't5']) {
@@ -546,27 +546,29 @@ describe('LimitService: resuming', () => {
   });
 });
 
-describe('LimitService: claude resumes by itself (2.1.234+)', () => {
-  const failed = (agentId: string, description: string, endedAt: number): BackgroundAgent => ({
-    id: agentId,
-    terminalId: id('c1'),
-    agentType: 'general-purpose',
-    description,
-    background: true,
-    state: 'failed',
-    reason: 'Failed',
-    startedAt: iso(T0 - 10 * MIN),
-    endedAt: iso(endedAt),
-    durationMs: null,
-    tokens: null,
-    lastStep: null,
-    current: true,
-  });
-  const stopFailure = (r: Rig) =>
-    r.svc.noteHook({ terminalId: id('c1'), agent: 'claude', hookName: 'StopFailure', payload: { error: 'rate_limit' }, event: { type: 'turn-end', error: 'rate_limit' } });
-  const quota = (r: Rig, what: 'fired' | 'stale' | 'disabled') =>
-    r.svc.noteHook({ terminalId: id('c1'), agent: 'claude', hookName: 'Notification', payload: {}, event: { type: 'quota-resume', what } });
+// claude 的后台子 agent、钩子（下面两组共用）
+const failed = (agentId: string, description: string, endedAt: number): BackgroundAgent => ({
+  id: agentId,
+  terminalId: id('c1'),
+  agentType: 'general-purpose',
+  description,
+  background: true,
+  state: 'failed',
+  reason: 'Failed',
+  startedAt: iso(T0 - 10 * MIN),
+  endedAt: iso(endedAt),
+  durationMs: null,
+  tokens: null,
+  lastStep: null,
+  current: true,
+});
+const stopFailure = (r: Rig) =>
+  r.svc.noteHook({ terminalId: id('c1'), agent: 'claude', hookName: 'StopFailure', payload: { error: 'rate_limit' }, event: { type: 'turn-end', error: 'rate_limit' } });
+const quota = (r: Rig, what: 'fired' | 'stale' | 'disabled') =>
+  r.svc.noteHook({ terminalId: id('c1'), agent: 'claude', hookName: 'Notification', payload: {}, event: { type: 'quota-resume', what } });
 
+
+describe('LimitService: claude resumes by itself (2.1.234+)', () => {
   function hitClaude(): Rig {
     const r = rig([claude('c1', true)], board([on('c1')]));
     r.status('c1', 'idle');
@@ -683,3 +685,94 @@ describe('LimitService: claude resumes by itself (2.1.234+)', () => {
     expect(r.term('c1')?.owner).toBe('auto-resume');
   });
 });
+
+describe('LimitService: the edited resume message (PL6)', () => {
+  it('lists the default text; sends the edited text instead at the resume time, then forgets it (TC-78)', async () => {
+    const r = rig([codex('t1')], board([on('t1')]));
+    r.status('t1', 'idle');
+    r.limit('t1', { resetsAt: iso(T0 + 60 * MIN) });
+    await r.svc.tick();
+    expect(r.term('t1')).toMatchObject({ message: null, defaultMessage: `${DEFAULT_RESUME_PROMPT}\n\n${CODEX_SUBAGENT_LINE}` });
+    await r.svc.setMessage(id('t1'), 'Finish the migration first.\nThen run the tests. ');
+    expect(r.term('t1')?.message).toBe('Finish the migration first.\nThen run the tests.');
+    // 回到默认：null、空白、和默认一样的都算
+    await r.svc.setMessage(id('t1'), '  ');
+    expect(r.term('t1')?.message).toBeNull();
+    await r.svc.setMessage(id('t1'), r.term('t1')!.defaultMessage!);
+    expect(r.term('t1')?.message).toBeNull();
+    await r.svc.setMessage(id('t1'), 'Finish the migration first.');
+    expect(r.sent).toEqual([]);
+    await r.tickAt(T0 + 61 * MIN);
+    // 改过的文字代替模板，codex 那一句不补
+    expect(r.texts('t1')).toEqual(['Finish the migration first.']);
+    expect(r.term('t1')).toMatchObject({ state: 'resuming', message: null });
+    await expect(r.svc.setMessage(id('t1'), 'Too late')).rejects.toMatchObject({ code: 'invalid-argument' });
+    await expect(r.svc.setMessage(id('nope'), 'x')).rejects.toMatchObject({ code: 'not-found' });
+
+    // 下一次上限从默认开始
+    r.clearLimit('t1');
+    r.status('t1', 'running');
+    r.status('t1', 'idle');
+    await flush();
+    await flush();
+    expect(r.events.at(-1)).toEqual([]);
+    r.now.t = T0 + 3 * 60 * MIN;
+    r.limit('t1', { resetsAt: iso(T0 + 4 * 60 * MIN) });
+    await r.svc.tick();
+    expect(r.term('t1')).toMatchObject({ state: 'interrupted', message: null });
+  });
+
+  it('Resume now (no reset time) sends the edited text right away', async () => {
+    const r = rig([codex('t1')], board([win('t1')]));
+    r.status('t1', 'idle');
+    r.limit('t1', { resetsAt: null });
+    await r.svc.tick();
+    await r.svc.setMessage(id('t1'), 'Pick up from step 3.');
+    await r.svc.resumeNow(r.only().key, [id('t1')]);
+    expect(r.texts('t1')).toEqual(['Pick up from step 3.']);
+  });
+
+  it('claude names the lost background agents even in an edited text, unless the text already names them (TC-82)', async () => {
+    const r = rig([claude('c1')], board([on('c1')]));
+    r.subs.set(id('c1'), [failed('a1', 'Index claude sessions', T0), failed('a2', 'Weather', T0)]);
+    r.status('c1', 'idle');
+    r.limit('c1', { resetsAt: iso(T0 + 60 * MIN) });
+    await r.svc.tick();
+    expect(r.term('c1')?.defaultMessage).toContain('(agent id a1)');
+    await r.svc.setMessage(id('c1'), 'Only resume a1 (agent id a1); skip the rest of the plan.');
+    await r.tickAt(T0 + 61 * MIN);
+    const [text] = r.texts('c1');
+    expect(text!.startsWith('Only resume a1 (agent id a1); skip the rest of the plan.\n\n')).toBe(true);
+    expect(text).toContain('• Weather (agent id a2)');
+    expect(text).not.toContain('• Index claude sessions');
+  });
+
+  it('claude continues by itself: not edited → nothing is sent; edited → typed in while it waits, and only once (DR-84)', async () => {
+    const r = rig([claude('c1', true)], board([on('c1')]));
+    r.status('c1', 'idle');
+    r.limit('c1', { resetsAt: iso(T0 + 60 * MIN) });
+    await r.svc.tick();
+    expect(r.term('c1')).toMatchObject({ owner: 'agent', selfResume: 'waiting' });
+    await r.tickAt(T0 + 30 * MIN);
+    expect(r.sent).toEqual([]);
+    await r.svc.setMessage(id('c1'), 'Use the new API instead.');
+    expect(r.texts('c1')).toEqual(['Use the new API instead.']);
+    expect(r.sent.at(-1)?.keys).toEqual(['Enter']);
+    expect(r.term('c1')).toMatchObject({ messageDelivered: true, message: 'Use the new API instead.', state: 'interrupted' });
+    // 自己送进去的：UserPromptSubmit、terminal.input 不算你接手
+    r.svc.noteInput(id('c1'));
+    r.svc.noteHook({ terminalId: id('c1'), agent: 'claude', hookName: 'UserPromptSubmit', payload: { prompt: 'Use the new API instead.' }, event: { type: 'prompt-submitted' } });
+    expect(r.term('c1')?.state).toBe('interrupted');
+    await expect(r.svc.setMessage(id('c1'), 'Again')).rejects.toMatchObject({ code: 'invalid-argument' });
+    // 恢复时 claude 自己发出去（fired），AgentDeck 不再发
+    await r.tickAt(T0 + 60 * MIN);
+    quota(r, 'fired');
+    r.status('c1', 'running');
+    r.status('c1', 'idle');
+    await flush();
+    await flush();
+    expect(r.texts('c1')).toHaveLength(1);
+    expect(r.events.at(-1)).toEqual([]);
+  });
+});
+
