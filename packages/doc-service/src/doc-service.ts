@@ -4,17 +4,16 @@
 import { readdir, readFile, realpath, rename, stat, unlink, writeFile, access } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
-import type { AbsPath, DocAuthor, DocEvent, DocFile, DocService, DocSnapshot, DocWriteResult } from '@agentdeck/contracts';
+import type { AbsPath, DocAuthor, DocEvent, DocFile, DocService, DocSnapshot, DocWriteResult, GitService } from '@agentdeck/contracts';
 import { AgentDeckError } from '@agentdeck/contracts';
 import { sha1 } from './hash.ts';
 import { DirWatcher } from './watch.ts';
 
-/** doc-service 用到的 git：contracts 的 GitService 的一部分，加上 git-service 多给的 listFiles（可选）。 */
-export interface DocGit {
-  repoRoot(dir: AbsPath): Promise<AbsPath | null>;
-  /** 仓库里的文件（跟踪的 + 没被忽略的未跟踪文件），相对仓库根。没有时 list 自己走目录。 */
-  listFiles?(repo: AbsPath): Promise<string[]>;
-}
+/**
+ * doc-service 用到的 git：contracts 的 GitService 的一部分。listFiles（contracts 0.1.22，可选）是仓库里的文件
+ * （跟踪的 + 没被忽略的未跟踪文件），相对仓库根；没有时 list 自己走目录。
+ */
+export type DocGit = Pick<GitService, 'repoRoot' | 'listFiles'>;
 
 export interface DocServiceOptions {
   git: DocGit;

@@ -162,6 +162,19 @@ export class UsageServiceImpl implements UsageService {
     return false;
   }
 
+  /**
+   * 这个终端的会话文件在哪（不读内容）：watch 着、已经找到的直接给，否则按会话 id 找一次（不留状态）。
+   * 最后一条回复（replies/）、CrewService.result 用。认不出的 agent、还没有文件时为 null。
+   */
+  async sessionFile(terminalId: TerminalId): Promise<{ agent: AgentKind; file: string } | null> {
+    const t = this.opts.lookup(terminalId);
+    if (!t || !isUsageAgent(t.agent)) return null;
+    const e = this.entries.get(terminalId);
+    if (e?.located && e.key === this.keyOf(t, e)) return { agent: t.agent, file: e.located.file };
+    const found = await this.locate(t.agent, t, e ?? this.newEntry(terminalId), this.now());
+    return found ? { agent: t.agent, file: found.file } : null;
+  }
+
   /** 会话 id 可能变了（status.changed 带了新 id）：watch 着的马上重读。 */
   noteSession(terminalId: TerminalId): void {
     const e = this.entries.get(terminalId);
@@ -177,30 +190,38 @@ export class UsageServiceImpl implements UsageService {
 
   // ---- 内部 ----
 
+  private keyOf(t: UsageTarget, e: Entry): string {
+    return `${t.agent}|${t.sessionId ?? ''}|${e.transcriptPath ?? ''}`;
+  }
+
   private entry(terminalId: TerminalId): Entry {
     let e = this.entries.get(terminalId);
     if (!e) {
-      e = {
-        terminalId,
-        key: null,
-        located: null,
-        locatedAt: -Infinity,
-        scannedAt: -Infinity,
-        parser: null,
-        tail: null,
-        fsw: null,
-        watching: false,
-        owners: new Set(),
-        transcriptPath: null,
-        ext: null,
-        lastJson: null,
-        last: null,
-        busy: Promise.resolve(),
-        timer: null,
-      };
+      e = this.newEntry(terminalId);
       this.entries.set(terminalId, e);
     }
     return e;
+  }
+
+  private newEntry(terminalId: TerminalId): Entry {
+    return {
+      terminalId,
+      key: null,
+      located: null,
+      locatedAt: -Infinity,
+      scannedAt: -Infinity,
+      parser: null,
+      tail: null,
+      fsw: null,
+      watching: false,
+      owners: new Set(),
+      transcriptPath: null,
+      ext: null,
+      lastJson: null,
+      last: null,
+      busy: Promise.resolve(),
+      timer: null,
+    };
   }
 
   private drop(e: Entry): void {
@@ -261,7 +282,7 @@ export class UsageServiceImpl implements UsageService {
     if (!t) return this.empty(e.terminalId, null, 'no-data', 'Unknown terminal');
     if (!isUsageAgent(t.agent)) return this.empty(e.terminalId, t.agent, 'unsupported', `Usage is not available for ${t.agent}`);
     const agent = t.agent;
-    const key = `${agent}|${t.sessionId ?? ''}|${e.transcriptPath ?? ''}`;
+    const key = this.keyOf(t, e);
     if (key !== e.key) {
       e.key = key;
       this.reset(e);

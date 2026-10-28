@@ -158,7 +158,9 @@ const L1: Record<ScenarioId, Check> = {
       expect(terminals.get(id).keys).toEqual([]);
       terminals.feed(id, '> \n');
       s.onTerminalEvent({ type: 'terminal.silence', id, at: now() });
-      await vi.waitFor(() => expect(terminals.get(id).keys).toEqual([[PROMPT], ['Enter']]));
+      // contracts 0.1.22：按原文打（sendText），再按回车
+      await vi.waitFor(() => expect(terminals.get(id).keys).toEqual([['Enter']]));
+      expect(terminals.get(id).texts).toEqual([PROMPT]);
       s.dispose();
       terminals.dispose();
     }

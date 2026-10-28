@@ -20,7 +20,7 @@ const git = createGitService({
 });
 ```
 
-`createGitService` 返回 `SystemGitService`：比 contracts 的 `GitService` 多两个只读方法 `renamedPath`、`listFiles`，apps/desktop 把它们注入给 doc-service（DC2，contracts 里没有，见 CONTRACT_NOTES.md）。
+`createGitService` 返回 `SystemGitService`，实现了 contracts 0.1.22 里 `GitService` 的两个可选只读方法 `renamedPath`、`listFiles`（DC1，原来是包里多给的，见 CONTRACT_NOTES.md）；doc-service 经接口用，界面也能经 IPC 调。
 
 另外导出 `SystemGitService`（类）、`GitCommandError`、`samePath`，以及解析函数 `parseStatusV2` `parseWorktrees` `parseBranches` `parseLog` `parseDecorations` `parseNameStatus` `parseStashes` `reachableWithin` `parseBlamePorcelain` `parseHunks` `parseRenames` `parseGitVersion` `parseMergeTreeNames`（纯函数）。
 

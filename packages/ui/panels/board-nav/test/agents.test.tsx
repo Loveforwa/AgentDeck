@@ -6,6 +6,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   agentOrder,
+  agentReplyReader,
   agentShortcut,
   BoardNav,
   buildAgents,
@@ -268,5 +269,26 @@ describe('BoardNav · Agents', () => {
     expect(within(tip).getByText('On screen')).toBeTruthy();
     expect(reader).toHaveBeenCalledWith(T.loginClaude);
     expect(within(tip).getByText('Click to jump · ⌥⌘2')).toBeTruthy();
+  });
+});
+
+describe('agentReplyReader (contracts 0.1.22)', () => {
+  const screenLines = ['⏺ From the screen.', '', '╭──────────╮', '│ >        │', '╰──────────╯'];
+  const api = (lastReply?: (id: TerminalId) => Promise<{ text: string | null; source: 'transcript' | 'screen'; at: string | null }>) => ({
+    terminals: { lastLines: vi.fn(async () => screenLines) } as never,
+    agents: (lastReply ? { lastReply } : {}) as never,
+  });
+
+  it('uses the transcript when agents.lastReply reads one (blank lines merged)', async () => {
+    const a = api(async () => ({ text: 'Fixed it.\n\n\n\nAll tests pass.', source: 'transcript', at: null }));
+    expect(await agentReplyReader(a)('t1' as TerminalId)).toEqual({ text: 'Fixed it.\n\nAll tests pass.', source: 'transcript', kind: 'reply' });
+  });
+
+  it('falls back to reading the screen: no lastReply (fakes, old builds), a screen-only answer, or an error', async () => {
+    const fromScreen = { text: 'From the screen.', source: 'screen', kind: 'reply' };
+    expect(await agentReplyReader(api())('t1' as TerminalId)).toEqual(fromScreen);
+    expect(await agentReplyReader(api(async () => ({ text: 'x', source: 'screen', at: null })))('t1' as TerminalId)).toEqual(fromScreen);
+    expect(await agentReplyReader(api(async () => Promise.reject(new Error('boom'))))('t1' as TerminalId)).toEqual(fromScreen);
+    expect(await agentReplyReader(api(async () => ({ text: '  ', source: 'transcript', at: null })))('t1' as TerminalId)).toEqual(fromScreen);
   });
 });

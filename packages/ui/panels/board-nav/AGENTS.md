@@ -21,7 +21,7 @@ import { BoardNav } from '@agentdeck/board-nav-panel';
   onJump={(id) => controller.jumpAndFlash(id)} // 和 ⌘J 一样：平移、闪一下、聚焦
   // api={...}                 // 默认 window.agentdeck（只用 terminals.list 和 on）；测试传假实现
   // refreshMs={3000}          // 对话主题多久刷新一次
-  // lastReply={(terminalId) => …} // Agents 视图悬停提示的最后一条回复，默认读屏幕（见下面）
+  // lastReply={agentReplyReader(api)} // Agents 视图悬停提示的最后一条回复：应用里先读会话记录，默认只读屏幕（见下面）
 />
 
 // 白板的 ⌥⌘1–9 用同一个顺序（apps/desktop 的 main.tsx）：
@@ -46,7 +46,7 @@ new BoardController({ api, homeDir, agentOrder });   // agentOrder(state) → Ag
 - 分组固定顺序，空组不画：ERROR（红灯）→ NEEDS YOU（等批准、等回答）→ RUNNING → DONE · UNSEEN（idle 且 `TerminalWindowData.unseen`）→ IDLE（idle、starting、exited、没有状态的）。小标题 “NEEDS YOU · 2”。组里按白板上的位置（和 Board 视图一样：项目 → 框 → 窗口，散放的最后）。`unseen` 记着但又在跑、在等你时，按现在的状态分组。
 - 行和 Board 视图同一个零件（`.bnav-row`）：灯、等宽名字、灰字 “项目 · 分支”（散放的没有）、窗口组身份 lead / sub-1 · api，右边状态：等你 “Waiting · 2m”（`--attention`，悬停 Needs approval / Needs reply，整行 `--attention-soft`）、运行 “4m”（灰）、没看 “Unseen · now”（粗体墨色，名字也粗体，**不加颜色**）、空闲 “1h”、出错 “exit 1 · 2m”（`--status-error`）、退出 “Exited”。读屏名 “claude, Idle · Unseen, shop · fix/cart-total”。单击 = `onJump`（和 ⌘J 一样，聚焦后白板清掉 Unseen）。
 - 悬停 350ms（键盘 Tab 到这一行马上）出墨色提示（`--ink` 底、`--on-ink` 字，`role="tooltip"`，行的 `aria-describedby` 指向它），放在行的左边，放不下翻到右边：第一行粗体 “claude · shop · fix/cart-total · Idle · Unseen · now”（状态写法同标题栏），然后淡色 “Last reply” 和回复，最后淡色 “Click to jump · ⌥⌘3”（第 10 行起只写 “Click to jump”）。读的时候 “Reading…”，没有 “Nothing to show yet.”，会话没了 “The session has ended.”。离开、单击、滚动时关。同一个终端状态没变（`since` 一样）时不再读第二次。
-- 最后一条回复（`src/lastReply.ts`）：需求是和 `agentdeck session result`（CrewService.result，C7）用同一段读会话记录的代码，但 2026-10-28 这段还没有（contracts 里 CrewService.result 要 caller、只给命令行，也没实现；HistoryService 只有 list），所以现在只走退回的路：`terminals.lastLines(id, 60)`，去掉最下面的输入框（横线框、› ❯ > 开头的输入行）和底栏，从最后一个 ⏺ / ●（claude）或 •（codex）开始算回复，最多 8 行 600 字；认不出就给最后 4 行，提示里写 “On screen” 不写 “Last reply”。有了读会话记录的方法后，组装方传 `lastReply` 换掉（形状 `LastReply { text; source: 'transcript' | 'screen'; kind: 'reply' | 'lines' }`）。
+- 最后一条回复（`src/lastReply.ts`）：和 `agentdeck session result`（CrewService.result，C7）用同一段读会话记录的代码。contracts 0.1.22 起 `agents.lastReply(id)` 在主进程读 claude、codex、pi、omp 的会话记录（agent-adapters 的 `createLastReply`），应用（apps/desktop 的 App.tsx）传 `lastReply={agentReplyReader(api)}`：读到会话记录用它（空行合成一个，最多 8 行 600 字，`kind: 'reply'`）；没有这个方法（假实现、老版本）、出错、只读到屏幕时退回认屏幕：`terminals.lastLines(id, 60)`，去掉最下面的输入框（横线框、› ❯ > 开头的输入行）和底栏，从最后一个 ⏺ / ●（claude）或 •（codex）开始算回复，最多 8 行 600 字；认不出就给最后 4 行，提示里写 “On screen” 不写 “Last reply”。不传 `lastReply` 时只认屏幕。形状 `LastReply { text; source: 'transcript' | 'screen'; kind: 'reply' | 'lines' }`。
 - 纯函数在 `src/agents.ts`：`buildAgents`、`agentOrder`、`agentShortcut`、`rowStatusText`、`titleStatusText`、`formatSince`（照抄 widgets/terminal 的，那边不能 import）。
 
 ## 对话主题

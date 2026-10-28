@@ -2,6 +2,7 @@
 // 等终端第一次安静下来（tmux monitor-silence，默认 3 秒没输出）：先看屏幕，没有“还没到输入框”的字（notReadyScreens）就
 // 把消息打进去，停一下再按回车（紧跟在一段输入后面的回车有的 TUI 会当成粘贴里的换行）。屏幕上有那些字时等下一次安静。
 // 一直等不到安静（启动画面一直在动）时，readyMaxMs 之后照样看一次屏幕再打。终端退出了就不打。
+// 打字用 TerminalHost.sendText（contracts 0.1.22，send-keys -l 按原文）；没有时退回 sendKeys + literalKeys。控制字符都先换成空格。
 
 import type { TerminalEvent, TerminalHost, TerminalId } from '@agentdeck/contracts';
 
@@ -25,7 +26,7 @@ export class FirstMessageTyper {
   private readonly readyMaxMs: number;
 
   constructor(
-    private readonly terminals: Pick<TerminalHost, 'sendKeys'> & Partial<Pick<TerminalHost, 'lastLines'>>,
+    private readonly terminals: Pick<TerminalHost, 'sendKeys'> & Partial<Pick<TerminalHost, 'lastLines' | 'sendText'>>,
     timing: FirstMessageTiming = {},
     /** 打出去之后（测试、日志用）。 */
     private readonly onTyped?: (terminalId: TerminalId) => void,
@@ -83,7 +84,12 @@ export class FirstMessageTyper {
       }
       if (this.pending.get(id) !== p) return;
       this.drop(id);
-      await this.terminals.sendKeys(id, literalKeys(p.text));
+      if (this.terminals.sendText) {
+        const text = plainText(p.text);
+        if (text) await this.terminals.sendText(id, text);
+      } else {
+        await this.terminals.sendKeys(id, literalKeys(p.text));
+      }
       await new Promise((r) => setTimeout(r, this.typeDelayMs));
       await this.terminals.sendKeys(id, ['Enter']);
       this.onTyped?.(id);
@@ -95,15 +101,20 @@ export class FirstMessageTyper {
   }
 }
 
+/** 控制字符（换行、制表符……）换成空格：不会被执行，也不会提前提交。 */
+export function plainText(text: string): string {
+  return text.replace(/[\u0000-\u001f\u007f]+/g, ' ');
+}
+
 /**
- * 把一段文字变成 TerminalHost.sendKeys 的参数，让 tmux 当成普通字符打出去（tmux-host 的 sendKeys 不带 -l）：
+ * 没有 sendText 时（老的 TerminalHost）：把一段文字变成 TerminalHost.sendKeys 的参数，让 tmux 当成普通字符打出去（tmux-host 的 sendKeys 不带 -l）：
  * - 控制字符（换行、制表符……）换成空格，不会被执行，也不会提前提交；
  * - tmux 把以 ; 结尾的参数当成命令分隔符，结尾的 ; 写成 \;（tmux 会还原成 ;）；
  * - 没有空格的一段可能正好是按键名（Enter、Up、C-c、F1……），这种拆成一个字一个参数（单个字符就是它自己）。
  * 有空格的整段不会是按键名，tmux 认不出就按字符原样发送。
  */
 export function literalKeys(text: string): string[] {
-  const clean = text.replace(/[\u0000-\u001f\u007f]+/g, ' ');
+  const clean = plainText(text);
   if (clean.length === 0) return [];
   const parts = /\s/.test(clean) ? [clean] : [...clean];
   return parts.map((s) => (s.endsWith(';') ? `${s.slice(0, -1)}\\;` : s));

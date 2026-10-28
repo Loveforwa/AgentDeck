@@ -36,6 +36,7 @@ import {
 } from '@agentdeck/contracts';
 import {
   createAgentRuntime,
+  createLastReply,
   DEFAULT_DESTRUCTIVE_PATTERNS,
   defaultUsageRoots,
   findExecutable,
@@ -374,9 +375,12 @@ async function main(): Promise<void> {
     env: process.env,
   });
 
+  // contracts 0.1.22（CO4）：最后一条回复，先读会话记录（用量模块找到的文件），读不到看屏幕
+  const lastReply = createLastReply({ sessionFile: (id) => usage?.sessionFile(id) ?? Promise.resolve(null), terminals });
   const agents = {
     list: () => rt.agents.list(),
     refresh: () => rt.agents.refresh(),
+    lastReply,
     async start(req: StartAgentRequest): Promise<StartAgentResult> {
       const t0 = Date.now();
       const res = await sessions.start(req, (r) => rt.agents.start(r));

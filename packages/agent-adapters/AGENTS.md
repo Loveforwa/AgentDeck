@@ -64,12 +64,13 @@ tmuxHostEvents.on((e) => rt.onTerminalEvent(e));  // terminal.activity / silence
 | `autoApproveSupport` / `approvalStrategy` | 每种 agent 的做法（`src/status/support.ts`） |
 | `matchOmpApproval` | omp 的 Approve / Deny 确认框认屏规则（`src/status/screens.ts`） |
 | `backgroundAlerts` / `badgeCount` | S4 规则 |
-| `UsageServiceImpl` / `defaultUsageRoots` / `USAGE_HOOK` | token 用量（见「token 用量」）；各 agent 的读取器 `ClaudeUsageParser` 等也导出 |
+| `UsageServiceImpl` / `defaultUsageRoots` / `USAGE_HOOK` | token 用量（见「token 用量」）；各 agent 的读取器 `ClaudeUsageParser` 等也导出；`sessionFile(id)` 只找会话文件不读（最后一条回复用） |
 | `SkillsServiceImpl` / `SkillLibrary` / `skillsSupport` / `builtinSkillFiles` / `scanRepoSkills` | N9，见「Skills · MCP」；`codexLibraryMcpOverrides`、`claudeMcpConfig(mcp, library)` 是库里 MCP 的启动参数 |
 | `LimitServiceImpl` / `limitConfigDir` / `effectiveAutoResume` / `resumePromptText` / `claudeSelfResumes` | PL5，见「额度上限」 |
 | `parseClaudeStopFailure` / `parseClaudeNotification` | claude 的 StopFailure（带 error）、Notification（elicitation、quota_auto_resume_*） |
 | `COMPAT_RECORDS` / `SCENARIOS` / `buildReport` / `strategyFromReport` / `HOOKS_DIDNT_REPORT` | AH2、AH3：合格测试记录（src/compat/records.ts，由 compat/*.json 生成）、K1–K18、能力报告的算法、按报告改 Auto-approve 做法、钩子没来时快照里的那句话 |
-| `literalKeys` / `FirstMessageTyper` | AH1：启动后打第一条消息 |
+| `literalKeys` / `plainText` / `FirstMessageTyper` | AH1：启动后打第一条消息（有 `TerminalHost.sendText` 就用它按原文打，控制字符换空格；没有时退回 sendKeys + literalKeys） |
+| `createLastReply` / `readLastReply` / `lastReplyFromLines` / `replyFromScreenLines` | contracts 0.1.22 的 `AgentService.lastReply`（CO4 悬停提示；CrewService.result 也用它）：`UsageServiceImpl.sessionFile(id)` 找到会话文件，只读结尾 256KB（找不到再读多些，最多 4MB），claude 取最后一条有字的 assistant（同一 message.id 的 text 块拼起来，子 agent、`<synthetic>` 不算），codex 取最后的 task_complete.last_agent_message / assistant message / AgentMessage，pi、omp 取最后的 assistant message；读不到退回屏幕最后 20 行（source screen）。apps/desktop 把它挂在 `agents.lastReply` 上 |
 | `DEFAULT_DESTRUCTIVE_PATTERNS` | 建议的 Settings 默认值，在整段命令里找：rm -r/-f、sudo rm、find -delete、git push -f/--force/+refspec、reset --hard、clean -f、checkout -- / .、restore、stash drop/clear、DROP/TRUNCATE/DELETE FROM 无 WHERE、FLUSHDB/ALL、mkfs、dd of=、写 /dev/sd*、chmod -R 777、kubectl delete、terraform destroy、.env |
 
 ## 各 agent 怎么启动
@@ -335,7 +336,8 @@ limits.start();
 - **睡过头**：恢复前最近一次检查离现在超过 150 秒（Mac 睡着、应用没开），醒来已过恢复时间 30 分钟以上：needsYou 'slept'，不续，等 Resume now。
   读不到恢复时间 1 分钟后：needsYou 'reset-unknown'。
 - **owner**：crew 等集群调 `resumeNow`；run（Day run 选了 Hand off）不管；`setOwner` 可以在撞上之前先登记。
-- 状态只在内存里；和 PL3 那边共用的几个数（宽限、2.1.234、3 分钟、30 分钟、150 秒）各写一份，改的时候两边一起改。
+- contracts 0.1.22：每个 `LimitedTerminal` 带 `autoResume`（这次算下来开关开没开）和 `selfResume`（owner 是 agent 时：waiting → fired / stale；收到 disabled 后 owner 变 auto-resume、报 disabled；AgentDeck 自己续的不报）。PL3 的 Prompt queue 按这些发，不再自己猜。
+- 状态只在内存里；和 PL3 那边共用的几个数（宽限、2.1.234、3 分钟、30 分钟、150 秒）各写一份，改的时候两边一起改（PL3 现在只在 LimitService 没列出这个终端时才用它们兜底）。
 - 测试：`test/limits.test.ts`（注入的时钟、按键、用量、子 agent、白板，不起定时器）。
 
 ## 历史会话（N11，DR-62，2026-10-26 本机核对）

@@ -256,6 +256,25 @@ describe.skipIf(!tmuxOk)('TmuxHost with real tmux', () => {
     expect(eventsOf('terminal.input', t).length).toBeGreaterThanOrEqual(1);
   });
 
+  it('sendText types the text literally: key names and a trailing ; stay text (contracts 0.1.22)', async () => {
+    const t = id();
+    await host.create({ id: t, cmd: 'sh', args: ['-c', 'exec cat'], cwd: cwd() });
+    await sleep(100);
+    const before = eventsOf('terminal.input', t).length;
+    await host.sendText(t, 'Enter');
+    await host.sendKeys(t, ['Enter']);
+    await host.sendText(t, 'C-c a;b;');
+    await host.sendKeys(t, ['Enter']);
+    await host.sendText(t, 'back\\;');
+    await host.sendKeys(t, ['Enter']);
+    await waitFor(async () => {
+      const lines = await host.lastLines(t, 10);
+      return lines.includes('Enter') && lines.includes('C-c a;b;') && lines.includes('back\\;');
+    });
+    expect(eventsOf('terminal.input', t).length).toBeGreaterThan(before);
+    await expect(host.sendText('nope' as TerminalId, 'x')).rejects.toMatchObject({ code: 'not-found' });
+  });
+
   it('lastLines returns the last n non-empty lines of the screen', async () => {
     const t = id();
     await host.create({ id: t, cmd: 'sh', args: ['-c', 'printf "a\\nb\\nc\\nd\\n"; sleep 30'], cwd: cwd(), size: { cols: 80, rows: 20 } });

@@ -78,6 +78,8 @@ export interface TmuxHostOptions {
 }
 
 export interface TmuxHost extends TerminalHost {
+  /** contracts 0.1.22 里是可选的，这里一定有。 */
+  sendText(id: TerminalId, text: string): Promise<void>;
   readonly tmuxVersion: string;
   readonly socketName: string;
   /** 停掉 socket、断开所有显示连接、停计时器。tmux 里的会话不受影响（应用退出后 agent 继续跑）。 */
@@ -398,6 +400,23 @@ class TmuxHostImpl implements TmuxHost {
     } catch (e) {
       if (e instanceof TmuxError && (e.sessionMissing || e.noServer)) throw new AgentDeckError({ code: 'not-found', message: `Terminal ${id} not found` });
       throw toAgentDeckError(e, 'Could not send keys');
+    }
+    this.noteInput(id);
+  }
+
+  /**
+   * contracts 0.1.22：按原文打字（send-keys -l），不认按键名。tmux 从命令行参数里把以 ; 结尾的参数当命令分隔符，
+   * 所以结尾的 ; 前面加一个反斜杠，tmux 收到后去掉它（a; 送成 a\;，a\; 送成 a\\;）。
+   */
+  async sendText(id: TerminalId, text: string): Promise<void> {
+    if (text === '') return;
+    const t = `=${id}:`;
+    const arg = text.endsWith(';') ? `${text.slice(0, -1)}\\;` : text;
+    try {
+      await this.tmux.run(['if-shell', '-F', '-t', t, '#{pane_in_mode}', `send-keys -t ${t} -X cancel`, ';', 'send-keys', '-t', t, '-l', '--', arg]);
+    } catch (e) {
+      if (e instanceof TmuxError && (e.sessionMissing || e.noServer)) throw new AgentDeckError({ code: 'not-found', message: `Terminal ${id} not found` });
+      throw toAgentDeckError(e, 'Could not send text');
     }
     this.noteInput(id);
   }

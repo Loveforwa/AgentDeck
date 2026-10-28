@@ -73,7 +73,7 @@ export interface AgentServiceOptions {
    * lastLines、kill 给启动参数被拒时重开（AH3）、Check again 的空启动用。
    * 要让这些工作，组装方还要把 TerminalHost 的事件交给 onTerminalEvent（createAgentRuntime 已经接好）。
    */
-  terminals: Pick<TerminalHost, 'create'> & Partial<Pick<TerminalHost, 'sendKeys' | 'lastLines' | 'kill'>>;
+  terminals: Pick<TerminalHost, 'create'> & Partial<Pick<TerminalHost, 'sendKeys' | 'sendText' | 'lastLines' | 'kill'>>;
   /** 登录 shell 的环境，检测自定义命令用。 */
   env: EnvSource;
   /** agentdeck-notify 的绝对路径。 */
@@ -155,10 +155,14 @@ export class AgentServiceImpl implements AgentService {
     this.adapters = new Map(opts.adapters.map((a) => [a.id, a]));
     this.compat = opts.compat ?? COMPAT_RECORDS;
     this.now = opts.now ?? (() => new Date());
-    const { sendKeys, lastLines } = opts.terminals;
+    const { sendKeys, sendText, lastLines } = opts.terminals;
     this.typer = sendKeys
       ? new FirstMessageTyper(
-          { sendKeys: sendKeys.bind(opts.terminals), ...(lastLines ? { lastLines: lastLines.bind(opts.terminals) } : {}) },
+          {
+            sendKeys: sendKeys.bind(opts.terminals),
+            ...(sendText ? { sendText: sendText.bind(opts.terminals) } : {}),
+            ...(lastLines ? { lastLines: lastLines.bind(opts.terminals) } : {}),
+          },
           opts.firstMessageTiming,
         )
       : null;

@@ -13,5 +13,5 @@ export {
   type AgentRow,
   type AgentsView,
 } from './agents.ts';
-export { replyFromScreen, screenReplyReader, type LastReply, type LastReplyReader } from './lastReply.ts';
+export { agentReplyReader, replyFromScreen, replyFromTranscript, screenReplyReader, type LastReply, type LastReplyReader } from './lastReply.ts';
 export { TOPIC_REFRESH_MS, type BoardNavApi } from './useTopics.ts';

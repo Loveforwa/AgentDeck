@@ -66,6 +66,8 @@
 
 # DC1 / DC2（2026-10-28）对 contracts 0.1.21 的意见
 
+> **已处理（2026-10-28，contracts 0.1.22）**：两个都加进了 `GitService`（可选方法），doc-service 的 `DocGit`、`AnchorGit` 改成 `GitService` 的 Pick，IPC 方法表也加上了。
+
 doc-service（DC2）只拿到 contracts 的 `GitService`，下面两件事接口里没有，git-service 先作为 `SystemGitService` 的额外方法实现，apps/desktop 注入给 doc-service。没有改 `packages/contracts`。
 
 1. **改名到了哪**：`lineMap` 的注释说“文件被改名时按改名后的路径给，调用方用 status / log 的改名找”，但从基准提交到工作区之间可能隔了很多提交，靠 status / log 一条条找很麻烦。实现里 `lineMap` 自己跟着改名算 hunk，另外有 `renamedPath(repo, path, from, to = 'worktree'): Promise<string | null>`。建议加进 `GitService`。

@@ -52,4 +52,24 @@ describe('FakeLimitService', () => {
     limits.hitAgain(T('c2'));
     expect((await limits.list())[0]?.terminals.find((t) => t.terminalId === 'c2')?.state).toBe('gave-up');
   });
+
+  it('carries autoResume / selfResume (contracts 0.1.22) and replays claude resuming on its own', async () => {
+    const limits = new FakeLimitService();
+    const key = limits.hit({
+      agent: 'claude', configDir: '/Users/you/.claude', resetsAt: '2026-10-28T13:00:00.000Z',
+      terminals: [{ terminalId: T('c1'), owner: 'agent', autoResume: true }, { terminalId: T('c2'), autoResume: false }],
+    });
+    const terms = async () => (await limits.list())[0]?.terminals ?? [];
+    expect((await terms()).map((t) => [t.owner, t.autoResume, t.selfResume ?? null, t.resumeAt])).toEqual([
+      ['agent', true, 'waiting', null],
+      ['auto-resume', false, null, '2026-10-28T13:01:00.000Z'],
+    ]);
+    limits.selfResume(T('c1'), 'stale');
+    expect((await limits.list())[0]?.needsYou).toBe('stale');
+    limits.selfResume(T('c1'), 'fired');
+    expect((await terms())[0]).toMatchObject({ state: 'resuming', selfResume: 'fired' });
+    limits.finish(T('c1'));
+    expect((await terms())[0]?.state).toBe('resumed');
+    void key;
+  });
 });

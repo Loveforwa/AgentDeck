@@ -67,9 +67,9 @@ export function limitConfigDir(agent: AgentKind, env: Readonly<Record<string, st
   return null;
 }
 
-/** 额度的范围：claude 的 Opus / Sonnet 单独额度由用量模块带在 limit.scope 上（ScopedUsageLimit），别的都是 all。 */
+/** 额度的范围（UsageLimit.scope，contracts 0.1.22）：claude 的 Opus / Sonnet 单独额度由用量模块带上，别的都是 all。 */
 export function limitScopeOf(limit: UsageLimit | null | undefined): LimitScope {
-  const s = (limit as { scope?: unknown } | null | undefined)?.scope;
+  const s = limit?.scope;
   return s === 'opus' || s === 'sonnet' ? s : 'all';
 }
 

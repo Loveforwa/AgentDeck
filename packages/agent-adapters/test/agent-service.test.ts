@@ -351,19 +351,39 @@ describe('AgentServiceImpl: the first message reaches every agent (AH1, IS-76)',
     expect((await s.start(req({ agent: 'omp', prompt: '@README.md fix it' }))).args.slice(-2)).toEqual(['--', '@README.md fix it']);
   });
 
-  it('kimi: not in the arguments; typed in when the terminal first goes quiet, then Enter', async () => {
+  it('kimi: not in the arguments; typed in (sendText, as written) when the terminal first goes quiet, then Enter', async () => {
     const s = withExtra([]);
-    const res = await s.start(req({ agent: 'kimi', prompt: '@README.md reply with the word PELICAN' }));
+    const res = await s.start(req({ agent: 'kimi', prompt: '@README.md reply with the word PELICAN;\nthen stop' }));
     expect(res.args).toEqual([]);
     const id = res.terminalId;
     expect(terminals.get(id).keys).toEqual([]);
     terminals.feed(id, '╭──╮\n│ > │\n╰──╯\n');
     s.onTerminalEvent({ type: 'terminal.silence', id, at: new Date().toISOString() });
-    await vi.waitFor(() => expect(terminals.get(id).keys).toEqual([['@README.md reply with the word PELICAN'], ['Enter']]));
+    await vi.waitFor(() => expect(terminals.get(id).keys).toEqual([['Enter']]));
+    // 换行换成空格（不会提前提交），别的照原文
+    expect(terminals.get(id).texts).toEqual(['@README.md reply with the word PELICAN; then stop']);
     // 只打一次
     s.onTerminalEvent({ type: 'terminal.silence', id, at: new Date().toISOString() });
     await new Promise((r) => setTimeout(r, 10));
-    expect(terminals.get(id).keys).toHaveLength(2);
+    expect(terminals.get(id).keys).toHaveLength(1);
+    expect(terminals.get(id).texts).toHaveLength(1);
+  });
+
+  it('kimi: a TerminalHost without sendText gets the text through sendKeys (literalKeys)', async () => {
+    const host = new FakeTerminalHost({ silenceMs: 0 });
+    const env = { PATH: agentsBin, SHELL: '/bin/sh' };
+    const s = new AgentServiceImpl({
+      adapters: createDefaultAdapters({ env: () => env }),
+      terminals: { create: (r) => host.create(r), sendKeys: (id, k) => host.sendKeys(id, k), lastLines: (id, n) => host.lastLines(id, n) },
+      env: () => env,
+      notifyCommand: '/opt/agentdeck/agentdeck-notify',
+      firstMessageTiming: { typeDelayMs: 0, readyMaxMs: 60_000 },
+    });
+    const { terminalId: id } = await s.start(req({ agent: 'kimi', prompt: 'Enter' }));
+    s.onTerminalEvent({ type: 'terminal.silence', id, at: new Date().toISOString() });
+    await vi.waitFor(() => expect(host.get(id).keys).toEqual([['E', 'n', 't', 'e', 'r'], ['Enter']]));
+    expect(host.get(id).texts).toEqual([]);
+    host.dispose();
   });
 
   it('kimi: waits while "Trust this folder?" is on screen (Enter would pick an option for you)', async () => {
@@ -373,10 +393,12 @@ describe('AgentServiceImpl: the first message reaches every agent (AH1, IS-76)',
     s.onTerminalEvent({ type: 'terminal.silence', id, at: new Date().toISOString() });
     await new Promise((r) => setTimeout(r, 20));
     expect(terminals.get(id).keys).toEqual([]);
+    expect(terminals.get(id).texts).toEqual([]);
     // 用户选了之后屏幕刷新（假终端里直接换掉输出），再次安静时打进去
     terminals.feed(id, `${'\n'.repeat(70)}╭──╮\n│ > │\n╰──╯\n`);
     s.onTerminalEvent({ type: 'terminal.silence', id, at: new Date().toISOString() });
-    await vi.waitFor(() => expect(terminals.get(id).keys).toEqual([[PROMPT], ['Enter']]));
+    await vi.waitFor(() => expect(terminals.get(id).keys).toEqual([['Enter']]));
+    expect(terminals.get(id).texts).toEqual([PROMPT]);
   });
 
   it('kimi: nothing is typed once the terminal has exited', async () => {
@@ -386,6 +408,7 @@ describe('AgentServiceImpl: the first message reaches every agent (AH1, IS-76)',
     s.onTerminalEvent({ type: 'terminal.silence', id, at: new Date().toISOString() });
     await new Promise((r) => setTimeout(r, 10));
     expect(terminals.get(id).keys).toEqual([]);
+    expect(terminals.get(id).texts).toEqual([]);
   });
 
   it.each(['shell', 'custom'] as const)('%s cannot take one: unsupported, and no terminal is opened', async (agent) => {

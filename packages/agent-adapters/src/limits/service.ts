@@ -29,6 +29,7 @@ import type {
   LimitOwner,
   LimitScope,
   LimitService,
+  SelfResumeState,
   StatusSnapshot,
   SubagentService,
   TerminalId,
@@ -141,6 +142,8 @@ interface Term {
   /** claude 的 quota_auto_resume_*。 */
   fired: boolean;
   stale: boolean;
+  /** 收到过 quota_auto_resume_disabled（用户关了 claude 自己的续跑），LimitedTerminal.selfResume 报 disabled。 */
+  selfDisabled: boolean;
   /** 续跑以后见到的 SubagentStart 次数。 */
   subagentStarts: number;
   /** claude 自己续完后补发过子 agent 那一段。 */
@@ -181,6 +184,17 @@ interface Hit {
   kind: UsageLimit['kind'] | null;
   detail: string | null;
   scope: LimitScope;
+}
+
+/**
+ * contracts 0.1.22 的 LimitedTerminal.selfResume：claude 自己续跑走到哪一步。只在 owner 是 agent（或用户关了它自己的续跑）时有；
+ * AgentDeck 自己续的（3 分钟兜底、Resume now 改发续跑提示）不报。
+ */
+function selfResumeOf(t: Term): SelfResumeState | null {
+  if (t.owner !== 'agent') return t.selfDisabled ? 'disabled' : null;
+  if (t.state === 'resuming' || t.state === 'resumed') return 'fired';
+  if (t.stale) return 'stale';
+  return t.fired ? 'fired' : 'waiting';
 }
 
 export class LimitServiceImpl implements LimitService {
@@ -624,6 +638,7 @@ export class LimitServiceImpl implements LimitService {
       sendEnter: false,
       fired: false,
       stale: false,
+      selfDisabled: false,
       subagentStarts: 0,
       followUpSent: false,
       lost: [],
@@ -648,6 +663,7 @@ export class LimitServiceImpl implements LimitService {
       if (t.state === 'interrupted') a.needsYou = 'stale';
     } else if (t.owner === 'agent') {
       // 用户关了 claude 自己的续跑：AgentDeck 来发（开关开着时）
+      t.selfDisabled = true;
       t.owner = 'auto-resume';
       t.ownerFixed = true;
       if (a.runStarted && t.state === 'interrupted' && this.autoOn(t.id)) t.slot = this.nextSlot(a, this.now());
@@ -957,12 +973,15 @@ export class LimitServiceImpl implements LimitService {
             (t.state === 'interrupted' && t.owner === 'auto-resume' && this.autoOn(t.id)) || (t.state === 'idle' && hasQueuedPrompts(this.board, t.id));
           if (eligible) resumeAt = base + k++ * this.staggerMs;
         }
+        const self = selfResumeOf(t);
         return {
           terminalId: t.id,
           state: t.state,
           owner: t.owner,
           resumeAt: resumeAt === null ? null : new Date(resumeAt).toISOString(),
           lostSubagents: t.lost.length,
+          autoResume: this.autoOn(t.id),
+          ...(self ? { selfResume: self } : {}),
         };
       });
       out.push({

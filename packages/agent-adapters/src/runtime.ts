@@ -27,7 +27,7 @@ export interface AgentRuntimeOptions {
   /** 登录 shell 的环境。 */
   env: EnvSource;
   /** create 给 AgentService；sendKeys、lastLines 给 ApprovalService（批准按键、看屏幕），不给时批准一律失败（测试里常不给）。 */
-  terminals: Pick<TerminalHost, 'create'> & Partial<Pick<TerminalHost, 'sendKeys' | 'lastLines' | 'kill'>>;
+  terminals: Pick<TerminalHost, 'create'> & Partial<Pick<TerminalHost, 'sendKeys' | 'sendText' | 'lastLines' | 'kill'>>;
   /** AH1：启动后打第一条消息的等待时间（测试用），见 AgentServiceOptions.firstMessageTiming。 */
   firstMessageTiming?: AgentServiceOptions['firstMessageTiming'];
   /** agentdeck-notify 的绝对路径。 */

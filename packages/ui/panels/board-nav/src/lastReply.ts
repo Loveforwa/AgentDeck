@@ -1,9 +1,9 @@
 // Agents 视图悬停提示里的“最后一条回复”（CO4）。
 //
 // 需求是和 `agentdeck session result`（CrewService.result，C7）用同一段读会话记录的代码，读不到再退回屏幕最后几行。
-// 2026-10-28 这段代码还没有：contracts 里 CrewService.result 只给命令行用（要 caller），也没有实现；HistoryService 只有 list()。
-// 所以现在只走退回的那条路：terminals.lastLines 取屏幕最后几十行，认出 agent 最后一段回复（claude 的 ⏺ / ●、codex 的 •），
-// 去掉输入框和底栏；认不出就给最后几行。以后 contracts 有了按终端读回复的方法，组装方传 `lastReply` 换掉它（见 AGENTS.md）。
+// contracts 0.1.22 有了 agents.lastReply（agent-adapters 读 claude、codex、pi、omp 的会话记录）：组装方传 agentReplyReader(api)，
+// 读到会话记录就用它；没有这个方法（假实现、老版本）或只读到屏幕时，走下面认屏幕的那条路：terminals.lastLines 取屏幕最后几十行，
+// 认出 agent 最后一段回复（claude 的 ⏺ / ●、codex 的 •），去掉输入框和底栏；认不出就给最后几行。默认（不传 lastReply）只认屏幕。
 
 import type { AgentDeckApi, TerminalId } from '@agentdeck/contracts';
 
@@ -90,6 +90,31 @@ export function replyFromScreen(raw: readonly string[]): LastReply | null {
   }
   const tail = body.filter((l) => l.trim() !== '').slice(-TAIL_LINES).map((l) => l.trim());
   return tail.length > 0 ? { text: clip(tail), source: 'screen', kind: 'lines' } : null;
+}
+
+/** 会话记录里的一段回复 → 提示里的样子（空行合成一个，最多 8 行 600 字）。 */
+export function replyFromTranscript(text: string): LastReply | null {
+  const lines = text.split('\n').map((l) => l.replace(/\s+$/, ''));
+  const compact = lines.filter((l, i) => l !== '' || (i > 0 && lines[i - 1] !== ''));
+  while (compact.length > 0 && compact[0] === '') compact.shift();
+  while (compact.length > 0 && compact[compact.length - 1] === '') compact.pop();
+  return compact.length > 0 ? { text: clip(compact), source: 'transcript', kind: 'reply' } : null;
+}
+
+/**
+ * contracts 0.1.22：先问 agents.lastReply（读会话记录）；没有这个方法、出错、只读到屏幕时，用 screenReplyReader 认屏幕。
+ * 终端不存在时屏幕那一步会失败，交给调用方（提示里不写回复）。
+ */
+export function agentReplyReader(api: Pick<AgentDeckApi, 'terminals' | 'agents'>): LastReplyReader {
+  const screen = screenReplyReader(api);
+  return async (terminalId) => {
+    const r = api.agents.lastReply ? await api.agents.lastReply(terminalId).catch(() => null) : null;
+    if (r?.source === 'transcript' && r.text) {
+      const reply = replyFromTranscript(r.text);
+      if (reply) return reply;
+    }
+    return screen(terminalId);
+  };
 }
 
 /** 默认的读法：屏幕最后几行（terminals.lastLines）。 */

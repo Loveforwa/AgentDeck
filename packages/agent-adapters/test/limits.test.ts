@@ -452,7 +452,9 @@ describe('LimitService: resuming', () => {
     r.status('t5', 'idle');
     r.limit('t5', { resetsAt: iso(T0 + 60 * MIN) });
     await r.svc.tick();
-    expect(r.term('t5')).toMatchObject({ state: 'interrupted', resumeAt: null });
+    // contracts 0.1.22：开关关着看 autoResume，不用再读白板；codex 不会自己续，没有 selfResume
+    expect(r.term('t5')).toMatchObject({ state: 'interrupted', resumeAt: null, autoResume: false });
+    expect(r.term('t5')).not.toHaveProperty('selfResume');
     await r.tickAt(T0 + 59 * MIN);
     await r.tickAt(T0 + 62 * MIN);
     expect(r.sent).toEqual([]);
@@ -466,7 +468,7 @@ describe('LimitService: resuming', () => {
     r.limit('t5', { resetsAt: iso(T0 + 60 * MIN) });
     r.board.b = board([on('t5')]);
     await r.tickAt(T0 + 30 * MIN);
-    expect(r.term('t5')?.resumeAt).toBe(iso(T0 + 61 * MIN));
+    expect(r.term('t5')).toMatchObject({ resumeAt: iso(T0 + 61 * MIN), autoResume: true });
     await r.tickAt(T0 + 61 * MIN);
     expect(r.texts('t5')).toHaveLength(1);
   });
@@ -581,11 +583,11 @@ describe('LimitService: claude resumes by itself (2.1.234+)', () => {
     const r = hitClaude();
     await flush();
     await r.svc.tick();
-    expect(r.term('c1')).toMatchObject({ state: 'interrupted', owner: 'agent', resumeAt: null });
+    expect(r.term('c1')).toMatchObject({ state: 'interrupted', owner: 'agent', resumeAt: null, selfResume: 'waiting', autoResume: true });
     expect(r.only().resetsAt).toBe(iso(T0 + 60 * MIN));
     await r.tickAt(T0 + 60 * MIN);
     quota(r, 'fired');
-    expect(r.term('c1')?.state).toBe('resuming');
+    expect(r.term('c1')).toMatchObject({ state: 'resuming', selfResume: 'fired' });
     r.svc.noteHook({ terminalId: id('c1'), agent: 'claude', hookName: 'UserPromptSubmit', payload: { prompt: 'Continue from where you left off.' }, event: { type: 'prompt-submitted' } });
     expect(r.term('c1')?.state).toBe('resuming');
     r.clearLimit('c1');
@@ -639,7 +641,7 @@ describe('LimitService: claude resumes by itself (2.1.234+)', () => {
     await flush();
     await r.tickAt(T0 + 60 * MIN);
     quota(r, 'disabled');
-    expect(r.term('c1')?.owner).toBe('auto-resume');
+    expect(r.term('c1')).toMatchObject({ owner: 'auto-resume', selfResume: 'disabled' });
     await r.tickAt(T0 + 61 * MIN);
     expect(r.texts('c1')).toHaveLength(1);
     expect(r.texts('c1')[0]!.startsWith(DEFAULT_RESUME_PROMPT)).toBe(true);
@@ -654,6 +656,9 @@ describe('LimitService: claude resumes by itself (2.1.234+)', () => {
     expect(r.sent).toEqual([]);
     await r.tickAt(T0 + 63 * MIN);
     expect(r.texts('c1')).toEqual([DEFAULT_RESUME_PROMPT]);
+    // AgentDeck 自己发的：不再报 claude 的续跑
+    expect(r.term('c1')).toMatchObject({ owner: 'auto-resume', state: 'resuming' });
+    expect(r.term('c1')).not.toHaveProperty('selfResume');
   });
 
   it('stale: waits for you; Continue (resumeNow on it) presses Enter only', async () => {
@@ -662,6 +667,7 @@ describe('LimitService: claude resumes by itself (2.1.234+)', () => {
     await r.tickAt(T0 + 60 * MIN);
     quota(r, 'stale');
     expect(r.only().needsYou).toBe('stale');
+    expect(r.term('c1')?.selfResume).toBe('stale');
     await r.tickAt(T0 + 70 * MIN);
     expect(r.sent).toEqual([]);
     await r.svc.resumeNow(r.only().key, [id('c1')]);

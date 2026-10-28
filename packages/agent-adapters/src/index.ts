@@ -40,7 +40,10 @@ export { COMPAT_RECORDS } from './compat/records.ts';
 export { CONFORMANCE_AGENTS, SCENARIOS, scenariosFor } from './compat/scenarios.ts';
 export type { Scenario, ScenarioId } from './compat/scenarios.ts';
 export type { CompatItem, CompatRecord, CompatResult } from './compat/types.ts';
-export { FirstMessageTyper, literalKeys } from './first-message.ts';
+export { FirstMessageTyper, literalKeys, plainText } from './first-message.ts';
+// contracts 0.1.22：最后一条回复（AgentService.lastReply、CrewService.result）
+export { createLastReply, lastReplyFromLines, readLastReply, REPLY_AGENTS, replyFromScreenLines } from './replies/index.ts';
+export type { LastReplyOptions, TranscriptReply } from './replies/index.ts';
 export type { HookHint, StatusMachineOptions, TrackedTerminal, TrackOptions } from './status/machine.ts';
 export { ApprovalServiceImpl } from './status/approval.ts';
 export type { ApprovalRecordStore, ApprovalServiceOptions, ApprovalStatusSource, ApprovalTiming } from './status/approval.ts';

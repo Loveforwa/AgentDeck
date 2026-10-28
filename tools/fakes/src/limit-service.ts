@@ -13,6 +13,7 @@ import type {
   LimitOwner,
   LimitScope,
   LimitService,
+  SelfResumeState,
   TerminalId,
   UsageLimit,
 } from '@agentdeck/contracts';
@@ -26,8 +27,18 @@ export interface FakeLimitHit {
   kind?: UsageLimit['kind'];
   resetsAt: IsoTime | null;
   detail?: string | null;
-  /** 按被打断的先后。state 默认 interrupted，owner 默认 auto-resume。 */
-  terminals: { terminalId: TerminalId; state?: LimitedTerminalState; owner?: LimitOwner; lostSubagents?: number }[];
+  /**
+   * 按被打断的先后。state 默认 interrupted，owner 默认 auto-resume。autoResume、selfResume 见 contracts 0.1.22：
+   * 不给时 autoResume 不填（不知道），owner 为 agent 的 selfResume 是 waiting。
+   */
+  terminals: {
+    terminalId: TerminalId;
+    state?: LimitedTerminalState;
+    owner?: LimitOwner;
+    lostSubagents?: number;
+    autoResume?: boolean;
+    selfResume?: SelfResumeState;
+  }[];
 }
 
 /** 续跑间隔（毫秒），同主进程的默认 30 秒。只用来算 resumeAt。 */
@@ -110,12 +121,16 @@ export class FakeLimitService implements LimitService {
     };
     for (const t of init.terminals) {
       a.terminals = a.terminals.filter((x) => x.terminalId !== t.terminalId);
+      const owner = t.owner ?? 'auto-resume';
+      const selfResume = t.selfResume ?? (owner === 'agent' ? 'waiting' : undefined);
       a.terminals.push({
         terminalId: t.terminalId,
         state: t.state ?? 'interrupted',
-        owner: t.owner ?? 'auto-resume',
+        owner,
         resumeAt: null,
         lostSubagents: t.lostSubagents ?? 0,
+        ...(t.autoResume !== undefined ? { autoResume: t.autoResume } : {}),
+        ...(selfResume ? { selfResume } : {}),
       });
     }
     this.schedule(a);
@@ -128,6 +143,20 @@ export class FakeLimitService implements LimitService {
   reset(account: AccountKey): void {
     const a = this.require(account);
     this.start(a, a.terminals.filter((t) => t.owner === 'auto-resume').map((t) => t.terminalId));
+  }
+
+  /**
+   * agent 自己续跑的进展（claude 的 quota_auto_resume_*）：fired → resuming；stale → 账号 needsYou stale；
+   * disabled → owner 改成 auto-resume。
+   */
+  selfResume(terminalId: TerminalId, what: Exclude<SelfResumeState, 'waiting'>): void {
+    const { account, terminal } = this.find(terminalId);
+    terminal.selfResume = what;
+    if (what === 'fired' && WAITING.includes(terminal.state)) terminal.state = 'resuming';
+    if (what === 'stale') account.needsYou = 'stale';
+    if (what === 'disabled') terminal.owner = 'auto-resume';
+    this.schedule(account);
+    this.changed(account);
   }
 
   /** 续跑这一轮做完（agent 回到空闲）。 */

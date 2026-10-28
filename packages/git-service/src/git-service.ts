@@ -72,7 +72,7 @@ const UNCOMMITTED = '0'.repeat(40);
 /** blame 找不到文件或版本时 git 的说法。 */
 const NOT_FOUND = /no such path|does not exist|no such ref|bad revision|not a valid object name|unknown revision|cannot stat path|cannot lstat/i;
 
-/** 返回的对象比 contracts 的 GitService 多 renamedPath、listFiles（给 doc-service 注入用）。 */
+/** renamedPath、listFiles 是 contracts 0.1.22 里 GitService 的可选方法，这里都实现了（doc-service 经接口用）。 */
 export function createGitService(opts: GitServiceOptions): SystemGitService {
   return new SystemGitService(opts);
 }
@@ -462,7 +462,7 @@ export class SystemGitService implements GitService {
     return parseHunks(out);
   }
 
-  // ---- 不在 contracts 里的只读方法（给 doc-service 用，由 apps/desktop 注入，见 AGENTS.md）----
+  // ---- contracts 0.1.22 的两个可选只读方法（DC1，doc-service 用）----
 
   /** from → to（'worktree' 是工作区）之间 path 被改名成了什么；没改名返回 null。 */
   async renamedPath(repo: AbsPath, path: string, from: string, to: 'worktree' | string = 'worktree'): Promise<string | null> {

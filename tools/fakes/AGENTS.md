@@ -10,11 +10,11 @@ contracts 里每个服务的内存假实现（任务 F6）。第 2 波各条线�
 
 | 导出 | 实现的接口 | 能控制的东西（假实现专用方法） |
 | --- | --- | --- |
-| `FakeTerminalHost` | TerminalHost | `createWith(req, { id, recording, history, exited })`、`feed(id, data)`、`exit(id, code)`、`play(id, recording?)`、`hostLost()`、`get(id)`（看输入、按键、输出）、`views()`、`dispose()` |
+| `FakeTerminalHost` | TerminalHost（含 0.1.22 的 `sendText`） | `createWith(req, { id, recording, history, exited })`、`feed(id, data)`、`exit(id, code)`、`play(id, recording?)`、`hostLost()`、`get(id)`（看输入、按键、`texts`、输出）、`views()`、`dispose()` |
 | `FakeGitService` | GitService | `setFileAt(rev, path, text)`、`setBlame(path, commits, rev?)`、`setLineMap(path, from, to, hunks)`（DC0 的三个只读方法按预置回）、`setOverlapVerdict(path, verdict)`（CO0 的 overlaps 按各 worktree 的改动两两求交集，结论默认 clean）、`addRepo({...})`、`setChanges` / `addChanges`、`setOperation`、`setTracking`、`setBaseBranch`、`failNext(method, error)`、`stashes()`、`deleteBranch()`、`refresh()`、`trashed` |
 | `FakeProjectService` | ProjectService | `seed(project)`、`setMissing(id, bool)`、`get(id)`、`touch(id)` |
 | `FakeWorkspaceService` | WorkspaceService | `seed(ws)`、`setMissing(id, bool)`、`get(id)` |
-| `FakeAgentService` | AgentService | `setAgent(id, patch)`（改安装情况、能力）、`approveOnceKeys(agent)`、`started` |
+| `FakeAgentService` | AgentService（含 0.1.22 的 `lastReply`：预置的当会话记录，否则读屏幕） | `setAgent(id, patch)`（改安装情况、能力）、`setLastReply(id, text, at?)`、`approveOnceKeys(agent)`、`started` |
 | `FakeStatusService` | StatusService | `track(id, { agent, workspaceId }, status)`、`set`、`running`、`turnEnd`、`exited`、`requestApproval`、`askQuestion`、`pending()` |
 | `FakeApprovalService` | ApprovalService | `simulateStuck(terminalId)`、`isAutoApprove(ws)` |
 | `FakeBoardStore` | BoardStore | `saves`、`current()` |
@@ -22,7 +22,7 @@ contracts 里每个服务的内存假实现（任务 F6）。第 2 波各条线�
 | `FakeUsageService` | UsageService | `set(id, patch)`（预置用量，watch 着时发 usage.changed）、`watching`；没预置的终端是 no-data |
 | `FakeSkillsService` | SkillsService（N9） | `addLibrary(item)`（发 skills.library-changed）、`setRepoSkills(cwd, names)`、`setRunning(id, ids)`、`mcpStatus`、`addedFolders`；支持情况同 agent-adapters 的 skills/support.ts |
 | `FakeSessionService` | SessionService（SE0） | `open(init)`、`stop(id)`、`reopen(id, terminalId?)`、`addSegment(id, agentSessionId, reason)`、`playLeadScenario()`（Lead 开 3 个子 session → 关掉 Lead → Reopen → 交接）；给了 `agents` 时 handoff 经过 `agents.start` |
-| `FakeLimitService` | LimitService（PL4） | `hit(init)`（撞上，返回账号键）、`reset(key)`（到点按先后续）、`finish(id)`、`hitAgain(id)`（两次后 gave-up）、`playHitWaitResume(ids)`、`playCancel(ids)`、`resumed`、`prompts`；`FakeLimitService.keyOf(agent, dir, scope)` |
+| `FakeLimitService` | LimitService（PL4） | `hit(init)`（撞上，返回账号键）、`reset(key)`（到点按先后续）、`finish(id)`、`hitAgain(id)`（两次后 gave-up）、`selfResume(id, 'fired' | 'stale' | 'disabled')`（0.1.22，claude 自己续跑；hit 的终端可带 `autoResume`、`selfResume`）、`playHitWaitResume(ids)`、`playCancel(ids)`、`resumed`、`prompts`；`FakeLimitService.keyOf(agent, dir, scope)` |
 | `FakeCrewService` | CrewService（CR0、CR13） | `cli(caller, req)`（按 cliCommandAllowed 放行，回 CliResponse）、`leadTerminal(crewId)`、`addTask`、`setTaskStatus`、`setSessionStatus`、`setCheck`、`setConflict`、`inbox`、`sent`、`playTemplateRun()`、`playFreeRun()`；给了 `sessions` 时 Lead 和子 session 建在 FakeSessionService 上 |
 | `FakeDocService` | DocService（DC0） | `setFile(path, text, { repo, readOnly })`、`externalEdit(path, text, by)`（之后旧 baseHash 写会冲突）、`textOf`、`watching`；哈希是 `fakeHash`（FNV） |
 | `FakeCodeAnchorService` | CodeAnchorService（DC0） | `setState(docPath, raw, { state, now, candidates, detail })`（固定表，没预置的算 ok，new / external 算 outside）、`verified`；fixLines 经 FakeDocService.write |

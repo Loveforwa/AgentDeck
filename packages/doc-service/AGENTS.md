@@ -77,7 +77,7 @@ AGENTDECK_DRIFT=1 pnpm --filter @agentdeck/desktop exec vitest run test/doc-anch
 - 符号只按名字在 ±20 行里找（第一期），不认语法；第二期和“代码理解”页一起用 tree-sitter。
 - 文档被整段重排（换行、改格式）后 blame 的基准会变新，没核对过的引用可能被当成 ok（DR-94 的代价）。
 - `ResolvedRef.baseline.rev` 在 verified 时是 null（基准是核对时的全文，不是一个提交）。
-- contracts 的 `GitService` 没有“改名到了哪”和“列文件”：用的是 git-service 多给的 `renamedPath`、`listFiles`（见 packages/git-service/CONTRACT_NOTES.md）；没有它们时改名只报 gone 不提示新路径、短路径没有候选、list 自己走目录。
+- “改名到了哪”和“列文件”用 contracts 0.1.22 里 `GitService` 的可选方法 `renamedPath`、`listFiles`（`DocGit`、`AnchorGit` 就是 `GitService` 的 Pick）；注入的 git 没有它们时改名只报 gone 不提示新路径、短路径没有候选、list 自己走目录。
 
 ## 不许碰
 

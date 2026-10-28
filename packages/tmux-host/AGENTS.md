@@ -58,6 +58,7 @@ const host = await startTmuxHost({
 - `attach`：不存在抛 `not-found`。返回后第一段 `onData` 是 tmux 重画的整屏。**收到第一段输出之前写入的输入先排队**（F7 问题 2，界面那边也扣了一道）。
 - `write`：用户输入时发 `terminal.input`（同一终端 250ms 内只发一次）；xterm 的查询回答、焦点事件、滚轮和鼠标移动不算。发过鼠标事件之后的第一个按键会先让 tmux 退出回滚再写（F7 问题 9）；PageUp / PageDown 留在回滚里。
 - `sendKeys`：先退出回滚再 `send-keys`；发 `terminal.input`。
+- `sendText`（contracts 0.1.22）：`send-keys -l` 按原文打字，按键名（Enter、C-c）照字面打出来；结尾的 `;` 前面补一个反斜杠（tmux 会把以 `;` 结尾的参数当命令分隔符，收到后去掉这个反斜杠）。不按回车、不换控制字符；同样先退出回滚、发 `terminal.input`。
 - `lastLines(id, n)`：`capture-pane -p -J`，去掉末尾空行后取最后 n 行。
 - `list()` 的 `foregroundCommand`（X6）：`list-sessions` 多取一列 `#{pane_pid}`，再用两次 `ps -ww`：先看每个窗格进程的 `tpgid`（终端的前台进程组），不是它自己时 shell 正在跑命令，再取那个进程组组长的 `args`。`node /opt/homebrew/bin/pnpm dev` 这种（shebang 脚本经解释器跑）在 PATH 里找得到同一个文件时还原成 `pnpm dev`。shell 在提示符下、窗格进程本身就是程序（agent、`-c` 跑的命令、`/usr/bin/env` exec 的命令）、进程已退出时为 null。ps 失败当作 null。代价：引号丢了、管道只看第一段、比轮询间隔（终端窗口 3 秒）短的命令记不到。为什么不用别的办法：`pane_current_command` 只有进程名；shell 的历史文件分不清是哪个终端敲的；往用户的 shell 配置里加 preexec 钩子违反“不改用户配置”。
 - `create` 的 `prefill`（X6）：先去掉控制字符（换行会直接运行、Tab 会补全），等这个终端的第一段输出之后安静 `prefillQuietMs`（400ms，每段输出重新计时），最多等 `prefillMaxMs`（5 秒），然后 `send-keys -l -- <字>`，不按回车，也不算用户输入（不发 `terminal.input`）。进程先退出、被 kill、服务没了就不填。shell 初始化时清掉了预先输入（少见的 rc 写法）会填不上；p10k instant prompt 实测没问题（本机 zsh）。

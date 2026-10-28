@@ -16,7 +16,7 @@ export { toolUsePaths } from './hook.ts';
 export { DirWatcher } from './watch.ts';
 
 export interface DocServicesOptions {
-  /** 应用里是 git-service 的 SystemGitService（多出的 renamedPath、listFiles 一起用上）。 */
+  /** 应用里是 git-service 的 SystemGitService（contracts 0.1.22 的 renamedPath、listFiles 一起用上）。 */
   git: AnchorGit;
   store?: AnchorStore;
   emit?: (event: DocEvent) => void;

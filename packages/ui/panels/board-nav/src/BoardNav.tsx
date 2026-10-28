@@ -44,7 +44,7 @@ export interface BoardNavProps extends BoardNavInput {
   headerActions?: ReactNode;
   /**
    * Agents 视图悬停提示里的最后一条回复。默认读屏幕最后几行（terminals.lastLines）认出回复；
-   * contracts 以后有了读会话记录的方法（和 agentdeck session result 同一段），组装方传它。
+   * 应用里传 agentReplyReader(api)：先读会话记录（contracts 0.1.22 的 agents.lastReply），读不到再认屏幕。
    */
   lastReply?: LastReplyReader;
   /** 测试用：固定 “现在”。 */

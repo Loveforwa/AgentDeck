@@ -76,6 +76,7 @@ export function createTerminalProxy(deps: {
     write: (viewId, data) => fire('write', [viewId, data]),
     resize: (viewId, size) => fire('resize', [viewId, size]),
     sendKeys: (id, keys) => call('sendKeys', [id, keys]),
+    sendText: (id, text) => call('sendText', [id, text]),
     lastLines: (id, n) => call('lastLines', [id, n]),
     attachCommand: (id) => call('attachCommand', [id]),
     recentLinks: (id) => call('recentLinks', [id]),

@@ -17,6 +17,7 @@ import type {
   CodeRef,
   DocEvent,
   GitEvent,
+  GitService,
   LineMapHunk,
   ResolvedRef,
 } from '@agentdeck/contracts';
@@ -27,14 +28,11 @@ import type { AnchorStore, AnchorVerified } from './store.ts';
 import { memoryAnchorStore } from './store.ts';
 import { DirWatcher } from './watch.ts';
 
-/** 核对要用的 git：contracts 的 GitService 的一部分，加上 git-service 多给的 renamedPath、listFiles（可选）。 */
-export interface AnchorGit extends DocGit {
-  blameLines(repo: AbsPath, path: string, opts?: { rev?: string }): Promise<{ line: number; commit: string }[]>;
-  showFile(repo: AbsPath, rev: string, path: string): Promise<string | null>;
-  lineMap(repo: AbsPath, path: string, from: string, to: 'worktree' | string): Promise<LineMapHunk[]>;
-  /** from → to 之间 path 被改名成了什么。没有时改名的文件只能报 gone、不提示新路径。 */
-  renamedPath?(repo: AbsPath, path: string, from: string, to?: 'worktree' | string): Promise<string | null>;
-}
+/**
+ * 核对要用的 git：contracts 的 GitService 的一部分。renamedPath（contracts 0.1.22，可选）是 from → to 之间 path 被改名成了什么，
+ * 没有时改名的文件只能报 gone、不提示新路径。
+ */
+export type AnchorGit = DocGit & Pick<GitService, 'blameLines' | 'showFile' | 'lineMap' | 'renamedPath'>;
 
 export interface CodeAnchorServiceOptions {
   git: AnchorGit;
