@@ -126,6 +126,11 @@ export interface TerminalWindowData {
    * 不填或 null 是没开过。
    */
   queue?: PromptQueueSettings | null;
+  /**
+   * LA0：Hide from agents。true 时 AgentDeck 的 MCP 和 agentdeck 命令行都看不到这个终端：list_terminals 不列，
+   * read_terminal、send_to_terminal 拒绝（AH11）。不填当 false。随白板保存。
+   */
+  hideFromAgents?: boolean;
 }
 
 /** PL3：一条排着的提示词。 */
@@ -157,6 +162,12 @@ export interface PromptQueueSettings {
    * 存下来是为了重开应用后能接着发。
    */
   running: boolean;
+  /**
+   * PL3 / IS-113（0.1.14 加）：碰到上限时记下的恢复时间和碰到的时间（都是毫秒时间戳，Date.now() 的值）。
+   * 记下后就不忘：哪怕 agent 自己续跑成功、TerminalUsage.limit 被清成 null 也留着，发完第一条才清成 null。
+   * 发第一条的判断看它，不看当下的 limit。不填或 null 是没在等。老数据没有它。
+   */
+  armed?: { resetsAt: number; at: number } | null;
 }
 
 /** PL2：用量条开没开、贴在终端哪一边。 */

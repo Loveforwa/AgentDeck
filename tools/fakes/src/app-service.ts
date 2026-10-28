@@ -47,6 +47,8 @@ export class FakeAppService implements AppService {
   readonly calls: FakeAppCall[] = [];
   readonly trashed: AbsPath[] = [];
   badge = 0;
+  /** setKeepAwake 最后一次设的值（PL3）。 */
+  keepAwake = false;
   quitRequest: QuitRequest | null = null;
   defaultPick: AbsPath | null;
   readonly home: AbsPath;
@@ -106,6 +108,10 @@ export class FakeAppService implements AppService {
 
   setBadge(count: number): void {
     this.badge = count;
+  }
+
+  async setKeepAwake(on: boolean): Promise<void> {
+    this.keepAwake = on;
   }
 
   /** 同步读当前设置（不拷贝，别改）。给其他假服务用。 */

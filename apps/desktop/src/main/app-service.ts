@@ -159,5 +159,9 @@ export function createAppService(deps: AppServiceDeps): AppService {
     },
     quit: (req) => deps.quit(req.stopTerminals),
     setBadge: (count) => deps.setBadge(count),
+    // PL3 的实现还没合进来，先占位：调用方收到 unsupported
+    setKeepAwake: async () => {
+      throw new AgentDeckError({ code: 'unsupported', message: 'Keep Mac awake isn’t available yet' });
+    },
   };
 }

@@ -19,6 +19,7 @@ export const SERVICE_METHODS = {
     'updateSettings',
     'quit',
     'setBadge',
+    'setKeepAwake',
   ],
   projects: ['probe', 'add', 'list', 'update', 'remove', 'locate', 'initGit'],
   workspaces: ['create', 'list', 'rename', 'remove'],
