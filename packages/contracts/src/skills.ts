@@ -58,6 +58,19 @@ export interface TerminalSkills {
    * 不知道（不是这个版本的 AgentDeck 启动的）为 null。和白板上的选择不同时界面提示 “Changes apply after restart”。
    */
   running: SkillItemId[] | null;
+  /** CR13：每一项每轮大概占多少 token（行右边的 ~130/turn）。老实现不填。 */
+  injection?: InjectionEstimate[];
+}
+
+/**
+ * CR13：一项 skill 或 MCP 每轮多带多少 token，按文字的字符数 / 4 估。
+ * mode：upfront 每轮都带（MCP 工具预先加载）；deferred 只带名字（延迟加载）；on-demand 打开前是 0（例如 /crew）。
+ * tokensPerTurn 不知道（库里别人的 MCP）为 null，界面写 “?”。
+ */
+export interface InjectionEstimate {
+  itemId: SkillItemId;
+  tokensPerTurn: number | null;
+  mode: 'upfront' | 'deferred' | 'on-demand';
 }
 
 export interface AddMcpRequest {

@@ -23,6 +23,9 @@
 | session.ts | SessionService（AgentDeck 自己的 Session、父子、交接，M9 · SE0） | apps/desktop 主进程（SE2）、packages/store（SE1） | 白板标题栏标签、左边栏、Hand off to ▸ |
 | capabilities.ts | agent 能力报告（AH0）和由它推出旧的 AgentCapabilities、AutoApproveSupport 的纯函数 | 线 4 · agent-adapters 算报告 | Settings › Agents、菜单 hint、New crew 下拉 |
 | limits.ts | LimitService（按账号的额度上限、被打断的终端、续跑，插件 Auto-resume · PL4） | 线 4 · agent-adapters 的 limits 模块（PL5） | 收件箱、终端书签、集群调度器（CR8） |
+| crew.ts | CrewService（Agent 集群，模板和自由模式、任务表、关卡、子 session 表、Decisions，CR0） | packages/crew-service（调度器） | 集群框、收件箱、mcp-server 的 /cli |
+| inbox.ts | 收件箱的一条 InboxItem（CR0 定形状，服务见 CR1） | 收件箱服务（CR1） | 顶栏 Needs you、⌘J |
+| cli.ts | agentdeck 命令行的线路（CliRequest / CliResponse、TERMINAL_KEY_ENV、API_ENDPOINT_FILE）和谁能用哪组命令（cliCommandAllowed，CR13） | mcp-server 的 /cli（CR14） | tools/agentdeck-cli（CR15） |
 | app.ts | AppService、Settings | 组装（apps/desktop） | 所有界面 |
 | ipc.ts | AgentDeckApi、事件总表、线路约定 | M0 · F3 IPC 层 | 所有界面 |
 

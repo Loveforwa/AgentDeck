@@ -6,8 +6,9 @@ import type {
   Session, SessionId, SessionOrigin, AgentSessionSegment, HandoffResult,
   AgentCapabilityReport, LaunchSpec,
   AccountLimit, LimitedTerminal, AgentHookEvent,
+  CrewId, CrewMembership, CrewSession, InboxItem, InboxItemId, CliRequest, CliResponse, InjectionEstimate,
 } from './index.ts';
-import { effectiveSkillSelection, FIRE_AND_FORGET, isAutoApproveOn, skillsRestartNeeded, findInlineSecret, redactCommand, capabilitiesFromReport } from './index.ts';
+import { effectiveSkillSelection, FIRE_AND_FORGET, isAutoApproveOn, skillsRestartNeeded, findInlineSecret, redactCommand, capabilitiesFromReport, cliCommandAllowed, TERMINAL_KEY_ENV, API_ENDPOINT_FILE } from './index.ts';
 
 declare const api: AgentDeckApi;
 api.on('status.changed', (e) => {
@@ -184,3 +185,20 @@ const turnEnd: AgentHookEvent = { type: 'turn-end', error: 'rate_limit' };
 const fired: AgentHookEvent = { type: 'quota-resume', what: 'stale' };
 const resumeData: TerminalWindowData = { ...termData, autoResume: null };
 void turnEnd; void fired; void resumeData;
+// CR0 / CR13（0.1.19）：集群、收件箱的一条、命令行
+api.on('crew.session-spawned', (e: EventOf<'crew.session-spawned'>) => void [e.session.label, e.session.worktree]);
+api.on('crew.changed', (e) => void (e.crew.mode === 'free' ? e.crew.free?.allowedAgents : e.crew.roles));
+void api.crew.membership('t1' as TerminalId).then((m: CrewMembership | null) => m?.role === 'lead');
+void api.crew.digest('c1' as CrewId);
+void api.crew.spawn('t1' as TerminalId, { agent: 'codex', label: 'race', prompt: 'Find the race' }).then((s: CrewSession) => s.branch);
+void api.crew.merge('t1' as TerminalId, 'race').then((r) => (r.state === 'conflict' ? r.files : []));
+const item: InboxItem = {
+  id: 'i1' as InboxItemId, source: 'ready-to-merge', crewId: 'c1' as CrewId, terminalId: null, title: 'Ready to merge', from: 'Lead · claude',
+  summary: 'login-fix is done', options: [], at: '', suggestion: null, resolved: { by: 'user', answer: 'merged', at: '' },
+};
+const req: CliRequest = { v: 1, command: 'session spawn', args: ['--agent', 'codex'], stdin: 'Find the race' };
+const res: CliResponse = { ok: false, error: { code: 'invalid-argument', message: 'Only the lead can open sessions.' } };
+const crewFrame: NonNullable<BoardState['crews']>[number] = { crewId: 'c1' as CrewId, rect: { x: 0, y: 0, w: 1, h: 1 }, z: 0, collapsed: false, planView: 'board' };
+const est: InjectionEstimate = { itemId: 'skill:built-in:crew', tokensPerTurn: null, mode: 'on-demand' };
+const key: string = TERMINAL_KEY_ENV + API_ENDPOINT_FILE;
+void item; void req; void res; void crewFrame; void est; void key; void cliCommandAllowed('crew status', { crew: null, origin: null });

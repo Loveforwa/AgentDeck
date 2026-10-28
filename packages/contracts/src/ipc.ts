@@ -10,6 +10,7 @@ import type { Unsubscribe } from './common.ts';
 import type { GitEvent, GitService } from './git.ts';
 import type { HistoryService } from './history.ts';
 import type { LimitEvent, LimitService } from './limits.ts';
+import type { CrewEvent, CrewService } from './crew.ts';
 import type { SessionEvent, SessionService } from './session.ts';
 import type { ProjectEvent, ProjectService } from './project.ts';
 import type { ApprovalService, StatusEvent, StatusService } from './status.ts';
@@ -19,7 +20,7 @@ import type { SubagentEvent, SubagentService } from './subagents.ts';
 import type { UsageEvent, UsageService } from './usage.ts';
 import type { WorkspaceEvent, WorkspaceService } from './workspace.ts';
 
-export const CONTRACTS_VERSION = '0.1.18';
+export const CONTRACTS_VERSION = '0.1.19';
 
 /** 所有从服务推给界面的事件。新增事件只能往这里加，不能改已有事件的形状。 */
 export type AgentDeckEvent =
@@ -34,7 +35,8 @@ export type AgentDeckEvent =
   | SkillsEvent
   | SubagentEvent
   | SessionEvent
-  | LimitEvent;
+  | LimitEvent
+  | CrewEvent;
 export type AgentDeckEventType = AgentDeckEvent['type'];
 export type EventOf<T extends AgentDeckEventType> = Extract<AgentDeckEvent, { type: T }>;
 
@@ -62,6 +64,8 @@ export interface Services {
   sessions: SessionService;
   /** 按账号的额度上限、被打断的终端、续跑（插件 Auto-resume，PL4）。 */
   limits: LimitService;
+  /** Agent 集群（M8 · CR0）。带 caller 的方法是命令行替终端调的，界面不调。 */
+  crew: CrewService;
 }
 
 export type ServiceName = keyof Services;

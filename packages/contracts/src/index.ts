@@ -17,4 +17,7 @@ export * from './launch.ts';
 export * from './session.ts';
 export * from './capabilities.ts';
 export * from './limits.ts';
+export * from './crew.ts';
+export * from './inbox.ts';
+export * from './cli.ts';
 export * from './ipc.ts';

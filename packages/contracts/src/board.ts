@@ -4,6 +4,7 @@
 import type {
   AgentKind,
   AgentSessionId,
+  CrewId,
   IsoTime,
   Rect,
   SessionId,
@@ -36,6 +37,17 @@ export interface FrameNode {
   arrange?: FrameArrange;
   /** PL4：框上的 Auto-resume。true / false 单独设过；不填或 null 跟着白板（BoardState.autoResume）。规格只写了终端一级，框和白板两级照设计画布第 7 节加。 */
   autoResume?: boolean | null;
+}
+
+/** CR0：白板上的一个集群框。框里的任务框就是普通的工作区框（FrameNode），终端是普通的终端窗口。 */
+export interface CrewFrameNode {
+  crewId: CrewId;
+  rect: Rect;
+  z: number;
+  /** 折叠成只剩标题条。 */
+  collapsed: boolean;
+  /** 任务表看成表格还是看板（模板模式）。 */
+  planView: 'table' | 'board';
 }
 
 /** 框里窗口的排法：tidy 紧凑网格（窗口大小不变）、columns 并排一样高、rows 上下叠一样宽。 */
@@ -212,6 +224,8 @@ export interface BoardState {
   leftPanel?: { open: boolean; width: number };
   /** PL4：白板右键 PLUGINS 里的 Auto-resume all terminals。默认关（2026-10-28 用户定）；老数据没有它，按 false。 */
   autoResume?: boolean;
+  /** CR0：集群框（在项目框里，和工作区框并列）。老数据没有它，按空数组。 */
+  crews?: CrewFrameNode[];
   savedAt: IsoTime;
 }
 
