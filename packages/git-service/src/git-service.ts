@@ -4,6 +4,7 @@
 import { existsSync, realpathSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import type {
+  LineMapHunk,
   AbsPath,
   BranchInfo,
   CommitInfo,
@@ -55,6 +56,10 @@ export interface GitServiceOptions {
 }
 
 const STASH_ID = /^stash@\{\d+\}$/;
+
+function notYet(method: string): AgentDeckError {
+  return new AgentDeckError({ code: 'unsupported', message: `git ${method} isn’t available yet` });
+}
 
 export function createGitService(opts: GitServiceOptions): GitService {
   return new SystemGitService(opts);
@@ -389,6 +394,19 @@ export class SystemGitService implements GitService {
 
   async init(dir: AbsPath): Promise<void> {
     await this.git(dir, ['init', '-q']);
+  }
+
+  // DC1 还没做：代码锚点用的三个只读方法先占位
+  async blameLines(_repo: AbsPath, _path: string, _opts?: { rev?: string }): Promise<{ line: number; commit: string }[]> {
+    throw notYet('blameLines');
+  }
+
+  async showFile(_repo: AbsPath, _rev: string, _path: string): Promise<string | null> {
+    throw notYet('showFile');
+  }
+
+  async lineMap(_repo: AbsPath, _path: string, _from: string, _to: string): Promise<LineMapHunk[]> {
+    throw notYet('lineMap');
   }
 
   // ---- 内部 ----

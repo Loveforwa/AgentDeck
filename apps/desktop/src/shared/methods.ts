@@ -44,6 +44,9 @@ export const SERVICE_METHODS = {
     'repairWorktrees',
     'defaultBranch',
     'init',
+    'blameLines',
+    'showFile',
+    'lineMap',
   ],
   terminals: ['create', 'kill', 'list', 'attach', 'detach', 'write', 'resize', 'sendKeys', 'lastLines', 'attachCommand', 'recentLinks'],
   agents: ['list', 'refresh', 'start', 'check'],
@@ -85,6 +88,8 @@ export const SERVICE_METHODS = {
     'note',
     'done',
   ],
+  docs: ['read', 'write', 'watch', 'unwatch', 'list', 'snapshots', 'snapshot'],
+  anchors: ['resolve', 'peek', 'fixLines', 'markVerified'],
 } as const satisfies { readonly [S in ServiceName]: readonly MethodsOf<S>[] };
 
 // 穷尽检查：漏掉的方法名会出现在报错信息里。
