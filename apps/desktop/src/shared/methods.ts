@@ -19,6 +19,7 @@ export const SERVICE_METHODS = {
     'updateSettings',
     'quit',
     'setBadge',
+    'setKeepAwake',
   ],
   projects: ['probe', 'add', 'list', 'update', 'remove', 'locate', 'initGit'],
   workspaces: ['create', 'list', 'rename', 'remove'],
@@ -45,7 +46,7 @@ export const SERVICE_METHODS = {
     'init',
   ],
   terminals: ['create', 'kill', 'list', 'attach', 'detach', 'write', 'resize', 'sendKeys', 'lastLines', 'attachCommand', 'recentLinks'],
-  agents: ['list', 'refresh', 'start'],
+  agents: ['list', 'refresh', 'start', 'check'],
   status: ['snapshot'],
   approvals: ['approve', 'setAutoApprove', 'history', 'setTerminalAutoApprove', 'autoApproveState', 'autoApproveSupport', 'autoApproveNeedsYou'],
   board: ['load', 'save'],
@@ -54,6 +55,7 @@ export const SERVICE_METHODS = {
   skills: ['forTerminal', 'library', 'addSkill', 'addMcp'],
   subagents: ['list', 'watchTranscript', 'unwatchTranscript'],
   history: ['list'],
+  sessions: ['list', 'get', 'children', 'rename', 'handoff', 'handoffSummary'],
 } as const satisfies { readonly [S in ServiceName]: readonly MethodsOf<S>[] };
 
 // 穷尽检查：漏掉的方法名会出现在报错信息里。

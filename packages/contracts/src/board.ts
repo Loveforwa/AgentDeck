@@ -6,6 +6,7 @@ import type {
   AgentSessionId,
   IsoTime,
   Rect,
+  SessionId,
   Size,
   TermSize,
   TerminalId,
@@ -33,6 +34,8 @@ export interface FrameNode {
   autoApprove: boolean;
   /** 一键排版（MVP v3 · N12，画板 15）。老数据没有它，按 { auto: false, layout: null }。 */
   arrange?: FrameArrange;
+  /** PL4：框上的 Auto-resume。true / false 单独设过；不填或 null 跟着白板（BoardState.autoResume）。规格只写了终端一级，框和白板两级照设计画布第 7 节加。 */
+  autoResume?: boolean | null;
 }
 
 /** 框里窗口的排法：tidy 紧凑网格（窗口大小不变）、columns 并排一样高、rows 上下叠一样宽。 */
@@ -68,7 +71,10 @@ export interface WindowNode<TData = unknown> {
   data: TData;
 }
 
-/** 窗口在组里的身份。同一组的窗口 id 相同，一组只有一个 lead。N1 加。 */
+/**
+ * 窗口在组里的身份。同一组的窗口 id 相同，一组只有一个 lead。N1 加。
+ * SE0 起只管显示（N2 侧边栏的停靠和收起）：谁开了谁、算不算一组看 Session.parentId（session.ts），关掉 lead 时关系不丢。
+ */
 export interface WindowGroupRef {
   id: WindowGroupId;
   /** lead：开出这一组的主 agent；member：子终端（按在 BoardState.windows 里的先后排）。 */
@@ -126,6 +132,20 @@ export interface TerminalWindowData {
    * 不填或 null 是没开过。
    */
   queue?: PromptQueueSettings | null;
+  /**
+   * LA0：Hide from agents。true 时 AgentDeck 的 MCP 和 agentdeck 命令行都看不到这个终端：list_terminals 不列，
+   * read_terminal、send_to_terminal 拒绝（AH11）。不填当 false。随白板保存。
+   */
+  hideFromAgents?: boolean;
+  /**
+   * SE0：这个窗口显示的 Session。窗口只引用它，名字、父子、来历都在 Session 上。
+   * 老数据没有它，升级时由 store 补一条（SE1）；不填或 null 时 agents.start 兜底新建。
+   */
+  session?: SessionId | null;
+  /**
+   * PL4：这个终端单独的 Auto-resume 设置。true 单独开，false 单独关；不填或 null 跟着框（FrameNode.autoResume），再跟着白板（BoardState.autoResume）。
+   */
+  autoResume?: boolean | null;
 }
 
 /** PL3：一条排着的提示词。 */
@@ -157,6 +177,12 @@ export interface PromptQueueSettings {
    * 存下来是为了重开应用后能接着发。
    */
   running: boolean;
+  /**
+   * PL3 / IS-113（0.1.14 加）：碰到上限时记下的恢复时间和碰到的时间（都是毫秒时间戳，Date.now() 的值）。
+   * 记下后就不忘：哪怕 agent 自己续跑成功、TerminalUsage.limit 被清成 null 也留着，发完第一条才清成 null。
+   * 发第一条的判断看它，不看当下的 limit。不填或 null 是没在等。老数据没有它。
+   */
+  armed?: { resetsAt: number; at: number } | null;
 }
 
 /** PL2：用量条开没开、贴在终端哪一边。 */
@@ -184,6 +210,8 @@ export interface BoardState {
   panel: { open: boolean; width: number };
   /** 左边栏（MVP v3 · N11 历史会话）。老数据没有它，按收着、宽 280。 */
   leftPanel?: { open: boolean; width: number };
+  /** PL4：白板右键 PLUGINS 里的 Auto-resume all terminals。默认关（2026-10-28 用户定）；老数据没有它，按 false。 */
+  autoResume?: boolean;
   savedAt: IsoTime;
 }
 

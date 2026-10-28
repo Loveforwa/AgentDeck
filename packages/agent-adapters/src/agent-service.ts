@@ -2,6 +2,7 @@
 
 import { AgentDeckError } from '@agentdeck/contracts';
 import type {
+  AgentCapabilityReport,
   AbsPath,
   AgentInfo,
   AgentKind,
@@ -78,6 +79,12 @@ export class AgentServiceImpl implements AgentService {
   refresh(): Promise<AgentInfo[]> {
     this.detection = this.detectAll();
     return this.detection;
+  }
+
+  /** AH0 的 Check again 还没做（能力报告由 AH0、AH2、AH3 填），先占位。 */
+  async check(agent: AgentKind): Promise<AgentCapabilityReport> {
+    if (!this.adapters.has(agent)) throw new AgentDeckError({ code: 'not-found', message: `Unknown agent: ${agent}` });
+    throw new AgentDeckError({ code: 'unsupported', message: 'Check again isn’t available yet' });
   }
 
   async start(req: StartAgentRequest): Promise<StartAgentResult> {

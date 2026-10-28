@@ -2,6 +2,7 @@
 // 实现：apps/desktop 主进程（组装时完成）。
 
 import type { AbsPath, AgentKind, TerminalId } from './common.ts';
+import type { LaunchPreset } from './launch.ts';
 
 export interface Settings {
   /** 关闭窗口时：后台继续（默认）或直接退出。 */
@@ -18,6 +19,10 @@ export interface Settings {
     /** 破坏性命令名单（正则字符串），Approve all 里默认不勾，Auto-approve 不会自动批准。 */
     destructivePatterns: string[];
   };
+  /** LA0：New terminal ▸ 里所有项目都有的启动预设（COMMANDS 一组的 All projects）。老设置没有它，按空数组。 */
+  launchPresets?: LaunchPreset[];
+  /** PL4 / PL5：Settings › Agents › Resume prompt，续跑时发的英文模板。不填用内置的那段。 */
+  resumePrompt?: string;
 }
 
 export interface AgentSettings {

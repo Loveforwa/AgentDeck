@@ -2,8 +2,12 @@
 import type {
   AgentDeckApi, ApproveResult, BoardState, FrameArrange, PromptQueueSettings, UsageLimit, SessionSummary, BackgroundAgent, TerminalBackgroundAgents, TranscriptLine, AutoApproveState, CommitInfo, EventOf, GitService, LogOptions, SkillItemId, TerminalHost, TerminalId,
   TerminalSkills, TerminalUsage, TerminalWindowData, UsageService, WindowGroupId, WindowId, WindowNode, WindowRestoreSupport, WorkspaceId,
+  LaunchPreset, ProjectPatch, Settings,
+  Session, SessionId, SessionOrigin, AgentSessionSegment, HandoffResult,
+  AgentCapabilityReport, LaunchSpec,
+  AccountLimit, LimitedTerminal, AgentHookEvent,
 } from './index.ts';
-import { effectiveSkillSelection, FIRE_AND_FORGET, isAutoApproveOn, skillsRestartNeeded } from './index.ts';
+import { effectiveSkillSelection, FIRE_AND_FORGET, isAutoApproveOn, skillsRestartNeeded, findInlineSecret, redactCommand, capabilitiesFromReport } from './index.ts';
 
 declare const api: AgentDeckApi;
 api.on('status.changed', (e) => {
@@ -133,3 +137,50 @@ const limit: UsageLimit = { kind: 'five_hour', resetsAt: '2026-10-27T07:30:00.00
 void limit;
 void api.usage.watch('t1' as TerminalId, 'prompt-queue');
 void api.app.setKeepAwake(true);
+// PL3 / IS-113（0.1.14）：armed 记下碰到上限的时间，limit 被清掉也不忘
+const armedQueue: PromptQueueSettings = { ...queue, armed: { resetsAt: Date.parse('2026-10-27T07:30:00.000Z'), at: Date.now() } };
+const disarmed: PromptQueueSettings = { ...queue, armed: null };
+void armedQueue; void disarmed;
+// LA0（0.1.15）：启动预设、Hide from agents、命令里的密码
+const presets: LaunchPreset[] = [
+  { id: 'p1', name: 'harlequin · shop dev', target: { kind: 'command', command: 'harlequin -P dev' }, hideFromAgents: true },
+  { id: 'p2', name: 'Teach me', target: { kind: 'agent', agent: 'claude', prompt: '/teach' }, hideFromAgents: false },
+];
+const globalPresets: Settings['launchPresets'] = presets;
+const projectPresets: ProjectPatch = { launchPresets: presets };
+const hidden: TerminalWindowData = { ...termData, hideFromAgents: true };
+const blocked: boolean = findInlineSecret('pgcli postgres://a:b@h/db') !== null;
+const shown: string = redactCommand('pgcli postgres://a:b@h/db');
+void globalPresets; void projectPresets; void hidden; void blocked; void shown;
+// SE0（0.1.16）：Session
+api.on('session.changed', (e: EventOf<'session.changed'>) => {
+  const s: Session = e.session;
+  if (s.origin.kind === 'crew') void [s.origin.crewId, s.origin.taskId, s.origin.role];
+  if (s.origin.kind === 'forge') void s.origin.number;
+  void s.agentSessions.map((seg: AgentSessionSegment) => seg.reason);
+});
+void api.sessions.children('s1' as SessionId).then((xs) => xs.length);
+void api.sessions.handoff({ from: 's1' as SessionId, agent: 'codex', note: 'Goal: …' }).then((r: HandoffResult) => r.session.handoffNote);
+void api.agents.start({ agent: 'codex', cwd: '/r', workspaceId: null, mode: { kind: 'new' }, parent: 's1' as SessionId, origin: { kind: 'spawn', tool: 'open_terminals' } })
+  .then((r) => r.session);
+const withSession: TerminalWindowData = { ...termData, session: 's1' as SessionId };
+const origin: SessionOrigin = { kind: 'fork', agentSessionId: null };
+void withSession; void origin;
+// AH0 / AH1（0.1.17）：能力报告、Check again、降级原因、第一条消息
+void api.agents.check('omp').then((r: AgentCapabilityReport) => r.entries.filter((e) => e.level !== 'yes').map((e) => [e.key, e.reason]));
+void api.agents.list().then((xs) => xs.map((x) => (x.report ? capabilitiesFromReport(x.report).hooks : x.capabilities.hooks)));
+api.on('status.changed', (e) => void e.snapshot.degraded);
+const kimiLaunch: LaunchSpec = { cmd: 'kimi', args: [], sessionId: null, consumed: { prompt: false }, sendAfterReady: 'reply with PELICAN' };
+void kimiLaunch;
+// PL4（0.1.18）：Auto-resume 的 LimitService
+api.on('limits.changed', (e: EventOf<'limits.changed'>) => {
+  const a: AccountLimit | undefined = e.limits[0];
+  void a?.terminals.filter((t: LimitedTerminal) => t.state === 'interrupted' && t.owner !== 'run').map((t) => t.resumeAt);
+  void a?.needsYou;
+});
+void api.limits.resumeNow('codex:/Users/you/.codex:all', ['t1' as TerminalId]);
+void api.limits.setOwner('t1' as TerminalId, 'crew', 'Your usage limit has reset. Continue T4.');
+const turnEnd: AgentHookEvent = { type: 'turn-end', error: 'rate_limit' };
+const fired: AgentHookEvent = { type: 'quota-resume', what: 'stale' };
+const resumeData: TerminalWindowData = { ...termData, autoResume: null };
+void turnEnd; void fired; void resumeData;

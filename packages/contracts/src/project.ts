@@ -2,6 +2,7 @@
 // 实现：packages/workspace-service（线 3），运行在主进程。
 
 import type { AbsPath, IsoTime, ProjectId } from './common.ts';
+import type { LaunchPreset } from './launch.ts';
 
 /**
  * git：一个仓库。
@@ -35,6 +36,11 @@ export interface Project {
   /** 文件夹被移动或删除。界面显示“Folder not found”。 */
   missing: boolean;
   lastUsedAt: IsoTime;
+  /**
+   * LA0：只在这个项目里有的启动预设（New terminal ▸ 的 COMMANDS 一组里的 This project），在项目设置页改名、删除。
+   * 和项目的其他设置存在一起（AgentDeck 自己的数据），不写进仓库。老数据没有它，按空数组。
+   */
+  launchPresets?: LaunchPreset[];
 }
 
 /** 选完文件夹后先探测，界面据此决定直接添加还是先问一句。 */
@@ -53,6 +59,8 @@ export interface AddProjectRequest {
 export type ProjectPatch = Partial<Pick<Project, 'name' | 'worktreeRoot' | 'copyIntoWorktrees' | 'setupCommand'>> & {
   /** 按仓库名改基础分支。 */
   baseBranch?: Record<string, string>;
+  /** LA0：整份替换这个项目的启动预设。 */
+  launchPresets?: LaunchPreset[];
 };
 
 export interface ProjectService {
