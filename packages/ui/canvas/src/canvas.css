@@ -1434,3 +1434,214 @@
 .ad-settings-file {
   margin-right: auto;
 }
+
+/*
+  Prompt queue 的书签（PL3）：终端底边左侧，排在 Auto-approve 书签后面（left 由组件量出来）；白底，颜色只给状态点
+  （在发绿、在等额度黄）。点开小卡片写、排、删提示词。
+*/
+.ad-queue-mark {
+  position: absolute;
+  top: 100%;
+  left: var(--space-lg);
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  box-sizing: border-box;
+  height: var(--plugin-mark-height);
+  padding: 0 7px;
+  border: 1px solid var(--line-strong);
+  border-top: 0;
+  border-radius: 0 0 var(--plugin-mark-radius) var(--plugin-mark-radius);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--plugin-mark-text);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  pointer-events: all;
+}
+
+.ad-queue-mark[data-tone='muted'] {
+  color: var(--muted);
+}
+
+.ad-queue-mark:hover,
+.ad-queue-mark[aria-expanded='true'] {
+  background: var(--hover);
+}
+
+.ad-queue-mark:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.ad-queue-lamp {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.ad-queue-lamp--running {
+  background: var(--status-running);
+}
+
+.ad-queue-lamp--waiting {
+  background: var(--status-waiting);
+}
+
+.ad-popover.ad-queue-card {
+  width: 380px;
+  padding: 0;
+}
+
+.ad-queue-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  font-size: var(--text-sm);
+  line-height: var(--leading);
+}
+
+.ad-queue-card-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-xs);
+}
+
+.ad-queue-muted {
+  color: var(--muted);
+}
+
+.ad-queue-line {
+  margin: 0;
+  color: var(--muted);
+}
+
+.ad-queue-line[data-tone='waiting'] {
+  color: var(--attention);
+}
+
+.ad-queue-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line-subtle);
+  list-style: none;
+}
+
+.ad-queue-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  padding: var(--space-xs) 0;
+  border-bottom: 1px solid var(--line-subtle);
+}
+
+.ad-queue-n {
+  flex: none;
+  width: 16px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: 1.8;
+}
+
+.ad-queue-text {
+  flex: 1;
+  min-width: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.ad-queue-actions {
+  display: inline-flex;
+  flex: none;
+  gap: 2px;
+  opacity: 0;
+}
+
+.ad-queue-item:hover .ad-queue-actions,
+.ad-queue-item:focus-within .ad-queue-actions {
+  opacity: 1;
+}
+
+.ad-queue-actions button {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.ad-queue-actions button:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--ink);
+}
+
+.ad-queue-actions button:disabled {
+  opacity: var(--opacity-disabled);
+  cursor: default;
+}
+
+.ad-queue-add {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-xs);
+}
+
+.ad-queue-add textarea {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  resize: vertical;
+}
+
+.ad-queue-add textarea:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -1px;
+}
+
+.ad-queue-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.ad-queue-awake {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.ad-queue-sent summary {
+  color: var(--muted);
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+
+.ad-queue-sent ol {
+  margin: var(--space-xs) 0 0;
+  padding-left: var(--space-md);
+  color: var(--muted);
+  font-size: var(--text-xs);
+}

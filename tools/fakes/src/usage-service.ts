@@ -24,14 +24,17 @@ export function emptyUsage(terminalId: TerminalId, reason = 'No session file yet
     context: null,
     rateLimits: null,
     updatedAt: null,
+    limit: null,
   };
 }
 
 export class FakeUsageService implements UsageService {
   private readonly bus: FakeEventBus;
   private readonly usage = new Map<TerminalId, TerminalUsage>();
-  /** 正在 watch 的终端。 */
+  /** 正在 watch 的终端（有任何一个 owner 在看）。 */
   readonly watching = new Set<TerminalId>();
+  /** 每个终端谁在看（PL3 起 watch 可以带 owner）。 */
+  private readonly owners = new Map<TerminalId, Set<string>>();
 
   constructor(opts: FakeUsageServiceOptions = {}) {
     this.bus = opts.bus ?? new FakeEventBus();
@@ -41,12 +44,19 @@ export class FakeUsageService implements UsageService {
     return structuredClone(this.usage.get(terminalId) ?? emptyUsage(terminalId));
   }
 
-  async watch(terminalId: TerminalId): Promise<TerminalUsage> {
+  async watch(terminalId: TerminalId, owner = 'default'): Promise<TerminalUsage> {
+    const set = this.owners.get(terminalId) ?? new Set<string>();
+    set.add(owner);
+    this.owners.set(terminalId, set);
     this.watching.add(terminalId);
     return this.get(terminalId);
   }
 
-  async unwatch(terminalId: TerminalId): Promise<void> {
+  async unwatch(terminalId: TerminalId, owner = 'default'): Promise<void> {
+    const set = this.owners.get(terminalId);
+    set?.delete(owner);
+    if (set && set.size > 0) return;
+    this.owners.delete(terminalId);
     this.watching.delete(terminalId);
   }
 

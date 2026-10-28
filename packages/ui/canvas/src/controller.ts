@@ -61,6 +61,7 @@ import {
   agentNoun,
   defaultName,
   estimateTermSize,
+  isAgentTerminal,
   isTerminal,
   terminalIdOf,
   workspaceLabel,
@@ -553,7 +554,11 @@ export class BoardController {
   markOutset(w: WindowNode): { top: number; bottom: number } {
     const u = usageOutset(w);
     const tid = terminalIdOf(w);
-    const marks = this.approvals.windowOn(w) || (tid !== null && hintOf(this.state.backgroundAgents[tid] ?? []) !== null);
+    const marks =
+      this.approvals.windowOn(w) ||
+      (tid !== null && hintOf(this.state.backgroundAgents[tid] ?? []) !== null) ||
+      // PL3：Prompt queue 的书签也挂在底边
+      (isAgentTerminal(w) && (w.data as Partial<TerminalWindowData> | null)?.queue?.on === true);
     return { top: u.top, bottom: u.bottom + (marks ? PLUGIN_MARK_HEIGHT : 0) };
   }
 

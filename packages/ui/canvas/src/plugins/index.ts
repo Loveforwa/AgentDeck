@@ -2,12 +2,14 @@
 // 右键菜单的 PLUGINS 一组、窗口和框上的标记都从这里来。docs/plugins.md 的登记表同步更新。
 
 import { autoApprovePlugin } from './auto-approve.tsx';
+import { queuePlugin } from './queue.tsx';
 import type { PluginDefinition } from './types.ts';
 import { usagePlugin } from './usage.tsx';
 
 export const PLUGINS: readonly PluginDefinition[] = [
   autoApprovePlugin,
   usagePlugin,
+  queuePlugin,
 ];
 
 export { pluginMenuSection, pluginsFor, thingOf, type PluginDefinition, type PluginTarget, type PluginThing } from './types.ts';

@@ -1,7 +1,7 @@
 // 用量读取器的公共部分：每种 agent 一个 UsageParser，一行一行喂会话文件，随时能取当前的统计。
 // 原则：认不出的行一律跳过；某一项 agent 不报就是 null，不估。
 
-import type { ContextUsage, IsoTime, RateLimitWindow, TokenCounts } from '@agentdeck/contracts';
+import type { ContextUsage, IsoTime, RateLimitWindow, TokenCounts, UsageLimit } from '@agentdeck/contracts';
 
 /** 读取器从会话文件里得到的东西。服务再加上终端、会话 id、文件路径拼成 TerminalUsage。 */
 export interface ParsedUsage {
@@ -14,6 +14,8 @@ export interface ParsedUsage {
   updatedAt: IsoTime | null;
   /** 文件里写的会话 id（codex 的 session_meta、pi 的 session 行），对不上时服务据此报错。 */
   sessionId: string | null;
+  /** PL3：最近碰到的额度上限、之后还没有成功的请求。读取器不支持时不填。 */
+  limit?: UsageLimit | null;
 }
 
 export interface UsageParser {

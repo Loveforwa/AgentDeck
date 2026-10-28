@@ -44,6 +44,10 @@ export interface PluginDefinition {
   WindowMark?: ComponentType<{ windowId: WindowId }>;
   /** 开着时画在框标题里的标记。 */
   FrameMark?: ComponentType<{ workspaceId: WorkspaceId }>;
+  /**
+   * 白板起来时调一次（Workbench 挂上时），返回停下的函数。给要在后台一直跑的插件用（例如 PL3 Prompt queue 到点发提示词）。
+   */
+  start?(c: BoardController): () => void;
 }
 
 /** 右键的东西是哪一种。 */
