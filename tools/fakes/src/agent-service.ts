@@ -2,10 +2,14 @@
 
 import type {
   AgentCapabilities,
+  AgentCapabilityReport,
   AgentInfo,
   AgentKind,
   AgentService,
   AgentSessionId,
+  CapabilityEntry,
+  CapabilityKey,
+  CapabilityVia,
   LaunchMode,
   StartAgentRequest,
   StartAgentResult,
@@ -68,6 +72,33 @@ export class FakeAgentService implements AgentService {
 
   async refresh(): Promise<AgentInfo[]> {
     return this.list();
+  }
+
+  /** 有预置的 info.report 就返回它（checkedAt 换成现在），没有就按 capabilities 粗推一份。 */
+  async check(agent: AgentKind): Promise<AgentCapabilityReport> {
+    const a = this.agents.find((x) => x.info.id === agent);
+    if (!a) fail('not-found', `Unknown agent: ${agent}`);
+    const checkedAt = new Date().toISOString();
+    if (a.info.report) return { ...clone(a.info.report), checkedAt };
+    const c = a.info.capabilities;
+    const entry = (key: CapabilityKey, ok: boolean, via: CapabilityVia): CapabilityEntry =>
+      ok
+        ? { key, level: 'yes', via, verifiedUpTo: a.info.version, reason: null }
+        : { key, level: 'no', via: null, verifiedUpTo: a.info.version, reason: `Not supported for ${agent}` };
+    return {
+      agent,
+      version: a.info.version,
+      checkedAt,
+      entries: [
+        c.hooks
+          ? entry('status', true, 'hook')
+          : { key: 'status', level: 'partial', via: 'output', verifiedUpTo: a.info.version, reason: 'Status from terminal activity' },
+        entry('question', c.askTool, 'hook'),
+        entry('resume', c.resume, 'flag'),
+        entry('fork', c.fork, 'flag'),
+        entry('approve-keys', a.approveOnceKeys !== null, 'hook'),
+      ],
+    };
   }
 
   async start(req: StartAgentRequest): Promise<StartAgentResult> {

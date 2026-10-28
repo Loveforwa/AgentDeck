@@ -46,7 +46,7 @@ export const SERVICE_METHODS = {
     'init',
   ],
   terminals: ['create', 'kill', 'list', 'attach', 'detach', 'write', 'resize', 'sendKeys', 'lastLines', 'attachCommand', 'recentLinks'],
-  agents: ['list', 'refresh', 'start'],
+  agents: ['list', 'refresh', 'start', 'check'],
   status: ['snapshot'],
   approvals: ['approve', 'setAutoApprove', 'history', 'setTerminalAutoApprove', 'autoApproveState', 'autoApproveSupport', 'autoApproveNeedsYou'],
   board: ['load', 'save'],
