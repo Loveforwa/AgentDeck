@@ -14,8 +14,8 @@ export type PluginThing = 'terminal' | 'browser' | 'frame' | 'board';
 /** 底边标记（书签、小提示）的高度，和 design-tokens 的 --plugin-mark-height 一致。框要给它留地方。 */
 export const PLUGIN_MARK_HEIGHT = 16;
 
-/** 右键的是什么。board 以后再加（整块白板的插件，例如整台电脑的用量）。 */
-export type PluginTarget = { kind: 'window'; windowId: WindowId } | { kind: 'frame'; workspaceId: WorkspaceId };
+/** 右键的是什么。board 是右键白板空白处（PL6 起：Auto-resume 整块白板的开关）。 */
+export type PluginTarget = { kind: 'window'; windowId: WindowId } | { kind: 'frame'; workspaceId: WorkspaceId } | { kind: 'board' };
 
 export type PluginAvailability = { ok: true } | { ok: false; reason: string };
 
@@ -44,11 +44,16 @@ export interface PluginDefinition {
   WindowMark?: ComponentType<{ windowId: WindowId }>;
   /** 开着时画在框标题里的标记。 */
   FrameMark?: ComponentType<{ workspaceId: WorkspaceId }>;
+  /**
+   * 白板起来时调一次（Workbench 挂上时），返回停下的函数。给要在后台一直跑的插件用（PL3 Prompt queue 用过，2026-10-28 退役；现在没有插件用它）。
+   */
+  start?(c: BoardController): () => void;
 }
 
 /** 右键的东西是哪一种。 */
 export function thingOf(node: WindowNode | undefined, target: PluginTarget): PluginThing | null {
   if (target.kind === 'frame') return 'frame';
+  if (target.kind === 'board') return 'board';
   if (!node) return null;
   if (isTerminal(node)) return 'terminal';
   if (node.type === BROWSER_TYPE) return 'browser';

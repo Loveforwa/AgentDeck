@@ -219,6 +219,19 @@ describe('FakeAgentService', () => {
       agents.start({ agent: 'codex', cwd: '/w', workspaceId: null, mode: { kind: 'fork', sessionId: 'x' as AgentSessionId } }),
     ).rejects.toMatchObject({ code: 'unsupported' });
   });
+
+  it('lastReply (contracts 0.1.22): the preset transcript reply, else the screen; sendText types literally', async () => {
+    const { agents, terminals } = setup();
+    const { terminalId } = await agents.start({ agent: 'claude', cwd: '/w', workspaceId: null, mode: { kind: 'new' } });
+    terminals.feed(terminalId, '⏺ Done.\r\n');
+    expect(await agents.lastReply(terminalId)).toEqual({ text: '⏺ Done.', source: 'screen', at: null });
+    agents.setLastReply(terminalId, 'Done. All tests pass.', '2026-10-28T08:00:00.000Z');
+    expect(await agents.lastReply(terminalId)).toEqual({ text: 'Done. All tests pass.', source: 'transcript', at: '2026-10-28T08:00:00.000Z' });
+    await expect(agents.lastReply('nope' as never)).rejects.toMatchObject({ code: 'not-found' });
+    await terminals.sendText(terminalId, 'Enter;');
+    expect(terminals.get(terminalId).texts).toEqual(['Enter;']);
+    expect(terminals.get(terminalId).keys).toEqual([]);
+  });
 });
 
 describe('FakeStatusService and FakeApprovalService', () => {

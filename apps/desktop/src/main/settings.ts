@@ -27,6 +27,8 @@ export function mergeSettings(base: Settings, raw: unknown): Settings {
   if (typeof r['editorCommand'] === 'string') out.editorCommand = r['editorCommand'];
   if (typeof r['terminalApp'] === 'string') out.terminalApp = r['terminalApp'];
   if (typeof r['defaultAgent'] === 'string') out.defaultAgent = r['defaultAgent'];
+  // PL5 / PL6：Settings › Resume prompt（续跑的模板，空的用内置的那段）。之前没在这里认，存进去也读不出来
+  if (typeof r['resumePrompt'] === 'string') out.resumePrompt = r['resumePrompt'];
   if (typeof r['agents'] === 'object' && r['agents'] !== null) out.agents = r['agents'] as Settings['agents'];
   const approvals = r['approvals'] as { destructivePatterns?: unknown } | undefined;
   if (approvals && Array.isArray(approvals.destructivePatterns)) {

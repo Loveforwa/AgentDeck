@@ -6,6 +6,7 @@ import {
   useState,
   type KeyboardEvent,
   type MouseEvent,
+  type ReactNode,
 } from 'react';
 import './menu.css';
 
@@ -20,6 +21,13 @@ export interface MenuItem {
   disabled?: boolean;
   /** 标签后面的一句灰字，例如灰掉的原因（“Not supported for kimi yet”）。也是悬停提示。 */
   hint?: string;
+  /**
+   * 标签前面的小标记，例如终端的状态灯（Send selection to ▸ 的目标列表）。由调用方画，菜单只留一格 8px 宽的位置；
+   * 同一层里有一项带标记，其余项也留出这一格，标签对齐。
+   */
+  icon?: ReactNode;
+  /** 标签用等宽字（终端名、命令名，和标题栏一样）。 */
+  mono?: boolean;
   /** 子菜单。有子菜单的项右边显示 ▸，选中时打开子菜单而不是触发 onSelect。 */
   items?: readonly MenuEntry[];
   onSelect?: () => void;
@@ -221,6 +229,7 @@ function MenuList(props: MenuListProps) {
 
   const hasChecks = items.some((e) => isItem(e) && e.checked !== undefined);
   const hasSubmenus = items.some((e) => isItem(e) && e.items);
+  const hasIcons = items.some((e) => isItem(e) && e.icon !== undefined);
 
   return (
     <div
@@ -285,7 +294,12 @@ function MenuList(props: MenuListProps) {
               onClick={onClick}
             >
               {hasChecks && <span className="ad-menu-check">{entry.checked && <CheckIcon />}</span>}
-              <span className="ad-menu-label">{entry.label}</span>
+              {hasIcons && (
+                <span className="ad-menu-icon" aria-hidden="true">
+                  {entry.icon}
+                </span>
+              )}
+              <span className={entry.mono ? 'ad-menu-label ad-menu-label--mono' : 'ad-menu-label'}>{entry.label}</span>
               {entry.hint && <span className="ad-menu-hint">{entry.hint}</span>}
               {entry.shortcut && <span className="ad-menu-shortcut">{entry.shortcut}</span>}
               {hasSubmenus && <span className="ad-menu-arrow">{entry.items && <ArrowIcon />}</span>}

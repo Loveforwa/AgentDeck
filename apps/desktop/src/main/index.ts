@@ -21,6 +21,7 @@ import {
   Menu,
   MessageChannelMain,
   Notification,
+  powerSaveBlocker,
   shell,
   utilityProcess,
   type MessagePortMain,
@@ -28,28 +29,34 @@ import {
 import {
   type AgentDeckEvent,
   type StartAgentRequest,
+  type StartAgentResult,
   type StatusSnapshot,
   type TerminalId,
   type TerminalWindowData,
 } from '@agentdeck/contracts';
 import {
   createAgentRuntime,
+  createLastReply,
   DEFAULT_DESTRUCTIVE_PATTERNS,
   defaultUsageRoots,
   findExecutable,
+  SKILL_SETS_CLEANUP_INTERVAL_MS,
   SkillsServiceImpl,
   SubagentServiceImpl,
   HistoryServiceImpl,
   UsageServiceImpl,
   type UsageTarget,
 } from '@agentdeck/agent-adapters';
+import { createDocServices } from '@agentdeck/doc-service';
 import { createGitService } from '@agentdeck/git-service';
 import { openStore } from '@agentdeck/store';
 import { createWorkspaceServices } from '@agentdeck/workspace-service';
+import { loadOrCreateToken, terminalKey } from '@agentdeck/mcp-server';
 import tmuxHostPath from '../utility/tmux-host.ts?modulePath';
 import { DESKTOP_IPC, type BoardReadyInfo, type StartupInfo } from '../shared/desktop-bridge.ts';
 import { createAlerts } from './alerts.ts';
 import { createAppService, openFileInEditor } from './app-service.ts';
+import { createKeepAwake, createLimits, limitsApi } from './limits.ts';
 import { registerBrowserService } from './browser/index.ts';
 import { startHostProcess } from './host-process.ts';
 import { installIpc, type IpcMainLike } from './ipc.ts';
@@ -59,6 +66,7 @@ import { startAppMcp, writeMcpPluginDir } from './mcp.ts';
 import { createRecentKills, skillSelectionFor, writeBuiltinSkills } from './skills.ts';
 import { resolvePaths } from './paths.ts';
 import { createScreenshotter } from './screenshot.ts';
+import { SessionServiceImpl } from './sessions.ts';
 import { guardGitService, guardWorkspaceService } from './self-repo-guard.ts';
 import { emit as broadcast, registry } from './services.ts';
 import { defaultSettings, openSettingsFile } from './settings.ts';
@@ -74,24 +82,25 @@ app.setName('AgentDeck');
 // 开发时可以开 Chrome DevTools 协议，脚本驱动界面做端到端检查（AGENTDECK_DEBUG_PORT=9333）
 if (isDev && process.env['AGENTDECK_DEBUG_PORT']) app.commandLine.appendSwitch('remote-debugging-port', process.env['AGENTDECK_DEBUG_PORT']);
 
-async function writeNotifyWrapper(opts: { dir: string; script: string; hookSocket: string; env: Env }): Promise<string> {
-  // 钩子在 tmux 窗格里跑，PATH 里不一定有 node：先用登录 shell 里的 node，没有就用应用自带的 Electron 当 node 跑。
+/**
+ * <数据目录>/bin 下的 sh 入口（每次启动重写）：带上几个环境变量，运行一个 .mjs。
+ * 它在 tmux 窗格里跑，PATH 里不一定有 node：先用登录 shell 里的 node，没有就用应用自带的 Electron 当 node 跑。
+ */
+async function writeNodeWrapper(opts: { file: string; script: string; about: string; vars: Record<string, string>; env: Env }): Promise<string> {
   const node = await findExecutable('node', opts.env);
   const q = (s: string) => `'${s.replace(/'/g, `'\\''`)}'`;
   const run = node ? `exec ${q(node)} ${q(opts.script)} "$@"` : `ELECTRON_RUN_AS_NODE=1 exec ${q(process.execPath)} ${q(opts.script)} "$@"`;
   const body = [
     '#!/bin/sh',
-    '# AgentDeck 生成的钩子入口（每次启动重写）。agent 的钩子运行它，它把事件发到 AgentDeck 的钩子 socket。',
-    `AGENTDECK_HOOK_SOCKET=${q(opts.hookSocket)}`,
-    'export AGENTDECK_HOOK_SOCKET',
+    `# ${opts.about}`,
+    ...Object.entries(opts.vars).flatMap(([k, v]) => [`${k}=${q(v)}`, `export ${k}`]),
     ...(node ? [] : ['export ELECTRON_RUN_AS_NODE']),
     run,
     '',
   ].join('\n');
-  const file = join(opts.dir, 'agentdeck-notify');
-  await writeFile(file, body);
-  await chmod(file, 0o755);
-  return file;
+  await writeFile(opts.file, body);
+  await chmod(opts.file, 0o755);
+  return opts.file;
 }
 
 async function main(): Promise<void> {
@@ -102,6 +111,10 @@ async function main(): Promise<void> {
   await app.whenReady();
   // 开发时（pnpm dev）程序坞里默认是 Electron 的图标：换成和打包版、README 一样的 AgentDeck 图标。打包版用 build-resources/icon.icns
   if (isDev && process.platform === 'darwin') app.dock?.setIcon(join(app.getAppPath(), 'build-resources', 'icon.png'));
+
+  // PL3：Prompt queue 在等额度恢复、或正在接着发时不让 Mac 睡（prevent-app-suspension：系统不睡，屏幕照常关）；
+  // PL5：LimitService 有终端在等恢复时也要。两边各报各的，都不要了才放开
+  const keepAwake = createKeepAwake({ start: () => powerSaveBlocker.start('prevent-app-suspension'), stop: (id) => powerSaveBlocker.stop(id) });
 
   const repoRoot = isDev ? resolve(app.getAppPath(), '../..') : null;
   const paths = resolvePaths({
@@ -133,18 +146,28 @@ async function main(): Promise<void> {
   const statusOf = new Map<TerminalId, StatusSnapshot>();
   // 终端的 token 用量（插件 PL2），建好 agent runtime 后创建；钩子里 pi / omp 扩展报的上下文、claude 的 transcript_path 先给它
   let usage: UsageServiceImpl | null = null;
+  // 额度上限（PL5），建好 usage 后创建；用量、状态、钩子、输入都交给它
+  let limits: ReturnType<typeof createLimits> | null = null;
   let onStatus: (s: StatusSnapshot) => void = () => {};
   const emit = (event: AgentDeckEvent) => {
     broadcast(event);
-    if (event.type === 'git.status') workspaces.noteStatus(event.status);
+    if (event.type === 'git.status') {
+      workspaces.noteStatus(event.status);
+      documents.noteGitEvent(event);
+    }
     if (event.type === 'status.changed') {
       statusOf.set(event.snapshot.terminalId, event.snapshot);
       store.terminals.updateStatus(event.snapshot.terminalId, event.snapshot.status, event.snapshot.exitCode);
       if (event.snapshot.sessionId) store.terminals.updateSession(event.snapshot.terminalId, event.snapshot.sessionId);
       usage?.noteSession(event.snapshot.terminalId);
       onStatus(event.snapshot);
+      limits?.noteStatus(event.snapshot);
     }
+    if (event.type === 'usage.changed') limits?.noteUsage(event.usage);
   };
+
+  // AgentDeck 自己的 Session（M9 · SE2）：agents.start 建或接回，钩子加分段，进程退出改 stopped。见 sessions.ts
+  const sessions: SessionServiceImpl = new SessionServiceImpl({ repo: store.sessions, emit, startAgent: (req) => agents.start(req) });
 
   // agent 自带的后台子 agent（N10）：只靠钩子和 agent 自己的记录，不保存
   const subagents = new SubagentServiceImpl({ emit });
@@ -179,14 +202,31 @@ async function main(): Promise<void> {
     emit,
     homeDir: paths.worktreeHome,
   });
+  // 文档窗口和代码锚点（M15 · DC2）：核对缓存在库里；数据目录里的文件（集群汇报）只读
+  const documents = createDocServices({ git, store: store.docAnchors, emit, readOnlyRoots: [paths.dataDir] });
 
   // ---- agent、状态机、钩子 socket ----
-  const notifyCommand = await writeNotifyWrapper({
-    dir: join(paths.dataDir, 'bin'),
+  const binDir = join(paths.dataDir, 'bin');
+  const notifyCommand = await writeNodeWrapper({
+    file: join(binDir, 'agentdeck-notify'),
     script: paths.notifyScript,
-    hookSocket: paths.hookSocket,
+    about: 'AgentDeck 生成的钩子入口（每次启动重写）。agent 的钩子运行它，它把事件发到 AgentDeck 的钩子 socket。',
+    vars: { AGENTDECK_HOOK_SOCKET: paths.hookSocket },
     env: loginEnv,
   });
+  // CR15：agentdeck 命令。只在 AgentDeck 开的终端里有（agent-adapters 把 binDir 放在它们 PATH 的最前面），系统自己的终端里没有。
+  // AGENTDECK_API_FILE 指向这个 AgentDeck 写的 api.json（数据目录不是 ~/.agentdeck 时，开发、测试不去读用户真的那份）。
+  const apiFile = join(paths.dataDir, 'run', 'api.json');
+  await writeNodeWrapper({
+    file: join(binDir, 'agentdeck'),
+    script: paths.cliScript,
+    about: 'AgentDeck 生成的 agentdeck 命令入口（每次启动重写），只在 AgentDeck 开的终端的 PATH 里。',
+    vars: { AGENTDECK_API_FILE: apiFile },
+    env: loginEnv,
+  }).catch((e: unknown) => console.warn('[agentdeck] agentdeck command not written', e));
+  // 终端钥匙（IS-101）由密钥算，要在开第一个终端前就能算，所以先读密钥（MCP 起不来也照样给钥匙，命令行连不上时自己报错）。
+  // token 跟着数据目录走（默认数据目录下就是 ~/.agentdeck/run/mcp-token）：AGENTDECK_DATA_DIR 指向别处时（开发、测试打包版）不碰用户真实的 ~/.agentdeck
+  const mcpToken = await loadOrCreateToken(join(paths.dataDir, 'run', 'mcp-token'));
   // AgentDeck 的 MCP（M1、N1）：白板上的 claude、codex、omp 启动时挂上它，工具经注册表调服务。起不来不影响应用，只是 agent 拿不到这些工具。
   let mcp: Awaited<ReturnType<typeof startAppMcp>> | null = null;
   // omp 用 --plugin-dir 加载的插件目录（内容固定，url、token 走环境变量）。写不了就不给，omp 不挂 MCP。
@@ -213,6 +253,8 @@ async function main(): Promise<void> {
       return agent && rec ? { agent, cwd: rec.cwd } : null;
     },
     mcpRunning: () => mcp !== null,
+    // IS-112：清理 skill-sets/ 时哪些终端还活着（tmux 里的会话）；tmux 不可用时 list 抛错，这一轮不清理
+    liveTerminals: async () => (await terminals.list()).filter((t) => t.alive).map((t) => t.id),
     emit,
     homeDir: homedir(),
     env: () => loginEnv,
@@ -221,15 +263,22 @@ async function main(): Promise<void> {
     skills: async (req) =>
       skills.prepareLaunch({ agent: req.agent, cwd: req.cwd, selection: await skillSelectionFor(req, { board: store.board, recentKills }) }),
     onStarted: (s) => {
-      if (s.skills) skills.noteLaunched(s.terminalId, s.skills.ids);
+      if (s.skills) skills.noteLaunched(s.terminalId, s.skills.ids, s.skills.setDir);
     },
     tapHook: (h) => {
       const hook = { terminalId: h.terminalId, agent: h.agent, hookName: h.hookName, payload: h.envelope.payload };
+      sessions.noteHook(h);
       subagents.noteHook(hook);
+      limits?.noteHook({ ...hook, event: h.event });
+      // “谁改的”：PostToolUse 带着它写的文件路径（DocSnapshot.by）
+      documents.noteToolUse({ ...hook, cwd: store.terminals.get(h.terminalId)?.cwd ?? null });
       return usage?.noteHook(hook) ?? false;
     },
     env: () => loginEnv,
     mcp: () => mcp?.endpoint ?? null,
+    // CR15：每个终端一把钥匙（AGENTDECK_TERM_KEY，也是它的 MCP Bearer），PATH 前面加 agentdeck 命令的目录
+    terminalKey: (id) => terminalKey(mcpToken, id),
+    binDir,
     ...(mcpPluginDir ? { mcpPluginDir } : {}),
     terminals,
     notifyCommand,
@@ -245,8 +294,9 @@ async function main(): Promise<void> {
   startAppMcp({
     registry,
     emit,
-    // token 跟着数据目录走（默认数据目录下就是 ~/.agentdeck/run/mcp-token）：AGENTDECK_DATA_DIR 指向别处时（开发、测试打包版）不碰用户真实的 ~/.agentdeck
-    tokenPath: join(paths.dataDir, 'run', 'mcp-token'),
+    token: mcpToken,
+    // CR14：命令行找服务的地址，和 token 一样跟着数据目录走（默认数据目录下就是 ~/.agentdeck/run/api.json）
+    apiFile,
     workspaceOf: (id) => rt.status.get(id)?.workspaceId,
     onInput: (id) => rt.noteInput(id),
     // N1：open_terminals 超过 6 个先问；默认按钮是 Cancel（是 agent 发起的）
@@ -277,9 +327,16 @@ async function main(): Promise<void> {
     emit(event);
     rt.onTerminalEvent(event);
     // 状态机的兜底规则（claude 拒绝批准、Esc 打断都没有钩子）要知道用户输入过，tmux-host 在 write / sendKeys 时发 terminal.input
-    if (event.type === 'terminal.input') rt.noteInput(event.id);
+    if (event.type === 'terminal.input') {
+      rt.noteInput(event.id);
+      limits?.noteInput(event.id);
+    }
     // agent 进程没了，它的后台子 agent 也没了
-    if (event.type === 'terminal.exit') subagents.noteTerminalGone(event.id);
+    if (event.type === 'terminal.exit') {
+      subagents.noteTerminalGone(event.id);
+      limits?.noteTerminalGone(event.id);
+    }
+    sessions.noteTerminalEvent(event);
   });
 
   // 本次运行里启动的终端的启动时间：kimi 新建会话没有 id，用量模块按目录和启动时间推断是哪个会话
@@ -291,19 +348,42 @@ async function main(): Promise<void> {
     if (!agent) return null;
     return { terminalId: id, agent, sessionId: st?.sessionId ?? rec?.sessionId ?? null, cwd: rec?.cwd ?? null, startedAt: startedAt.get(id) ?? null };
   };
+  // IS-95：kimi 推断会话时只和还活着的终端比（状态机在跟、进程没退出），不再遍历整张表
+  const alive = (id: TerminalId) => {
+    const s = rt.status.get(id)?.status;
+    return s !== undefined && s !== 'exited' && s !== 'error';
+  };
   usage = new UsageServiceImpl({
     lookup: usageTarget,
-    targets: () => store.terminals.list().flatMap((r) => usageTarget(r.terminalId) ?? []),
+    targets: () => store.terminals.list().flatMap((r) => (alive(r.terminalId) ? (usageTarget(r.terminalId) ?? []) : [])),
     emit,
     roots: defaultUsageRoots(homedir(), loginEnv),
   });
+  limits = createLimits({
+    emit,
+    agentOf: (id) => rt.status.get(id)?.agent ?? store.terminals.get(id)?.agent ?? null,
+    terminalIds: () => store.terminals.list().map((r) => r.terminalId),
+    agents: () => rt.agents.list(),
+    loginEnv: () => loginEnv,
+    homeDir: homedir(),
+    sendKeys: (id, keys) => terminals.sendKeys(id, keys),
+    setKeepAwake: (on) => keepAwake('limits', on),
+    usage,
+    subagents,
+    board: () => store.board.load(),
+    resumePrompt: () => settings.get().resumePrompt,
+    env: process.env,
+  });
 
+  // contracts 0.1.22（CO4）：最后一条回复，先读会话记录（用量模块找到的文件），读不到看屏幕
+  const lastReply = createLastReply({ sessionFile: (id) => usage?.sessionFile(id) ?? Promise.resolve(null), terminals });
   const agents = {
     list: () => rt.agents.list(),
     refresh: () => rt.agents.refresh(),
-    async start(req: StartAgentRequest) {
+    lastReply,
+    async start(req: StartAgentRequest): Promise<StartAgentResult> {
       const t0 = Date.now();
-      const res = await rt.agents.start(req);
+      const res = await sessions.start(req, (r) => rt.agents.start(r));
       startedAt.set(res.terminalId, t0);
       store.terminals.put({
         terminalId: res.terminalId,
@@ -314,6 +394,7 @@ async function main(): Promise<void> {
         args: res.args,
         cwd: req.cwd,
         sessionId: res.sessionId,
+        session: res.session ?? null,
         startCommand: req.command ?? null,
         lastStatus: 'starting',
         exitCode: null,
@@ -333,12 +414,15 @@ async function main(): Promise<void> {
     for (const w of board.windows) {
       const data = w.type === 'terminal' ? (w.data as Partial<TerminalWindowData> | null) : null;
       if (!data?.terminalId || typeof data.autoApprove !== 'boolean') continue;
-      // 不支持的 agent（例如 kimi）会抛 unsupported，跳过它，不影响别的终端
-      await rt.approvals.setTerminalAutoApprove(data.terminalId, data.autoApprove).catch(() => undefined);
+      // IS-154：现在不支持的 agent（升到没核对过的版本）也保留开关，不按键、要批准时报 Needs you
+      rt.approvals.restoreTerminalAutoApprove(data.terminalId, data.autoApprove);
     }
   };
   void Promise.all([terminals.list(), rt.agents.list()]).then(
     ([live, infos]) => {
+      // IS-95：tmux 里已经没有的终端，记录清掉（拿不到列表时走不到这里，不会误删）
+      store.terminals.prune(live.map((t) => t.id));
+      sessions.reconcile(live);
       const hooked = new Set(infos.filter((a) => a.capabilities.hooks).map((a) => a.id));
       for (const t of live) {
         const rec = store.terminals.get(t.id);
@@ -354,6 +438,18 @@ async function main(): Promise<void> {
     },
     (e: unknown) => console.warn(`[agentdeck] terminals unavailable: ${e instanceof Error ? e.message : String(e)}`),
   ).then(restoreAutoApprove).catch((e: unknown) => console.warn(`[agentdeck] could not restore Auto-approve: ${e instanceof Error ? e.message : String(e)}`));
+
+  // IS-112：启动时和之后每天清理一次 skill-sets/（终端用着的不动，其余超过 7 天的删）。失败只记日志，不影响应用。
+  const cleanSkillSets = () =>
+    skills.cleanupSkillSets().then(
+      (r) => {
+        if (r.removed.length > 0) console.log(`[agentdeck] removed ${r.removed.length} old skill-sets folder(s)`);
+      },
+      (e: unknown) => console.warn(`[agentdeck] skill-sets cleanup failed: ${e instanceof Error ? e.message : String(e)}`),
+    );
+  void cleanSkillSets();
+  const skillSetsTimer = setInterval(() => void cleanSkillSets(), SKILL_SETS_CLEANUP_INTERVAL_MS);
+  skillSetsTimer.unref();
 
   // ---- 窗口、通知、角标 ----
   let mainWindow: BrowserWindow | null = null;
@@ -393,8 +489,11 @@ async function main(): Promise<void> {
     }
     for (const win of BrowserWindow.getAllWindows()) win.destroy();
     await rt.close().catch(() => undefined);
+    clearInterval(skillSetsTimer);
     usage?.close();
+    limits?.close();
     subagents.close();
+    documents.close();
     // ⌘Q 只断开（会话留在 tmux 里继续跑）；Stop all and quit 才结束 tmux 服务
     await terminals.stop(stopTerminals);
     host.stop();
@@ -427,6 +526,7 @@ async function main(): Promise<void> {
       trashItem: (p) => shell.trashItem(p),
       quit,
       setBadge: (count) => alerts.setBoardBadge(count),
+      setKeepAwake: (on) => keepAwake('queue', on),
     }),
   );
   registry.register('projects', projects);
@@ -441,14 +541,22 @@ async function main(): Promise<void> {
   registry.register('usage', usage);
   registry.register('skills', skills);
   registry.register('subagents', subagents);
+  registry.register('sessions', sessions);
+  // PL5：按账号的额度上限、被打断的终端、续跑（Auto-resume、Prompt queue、集群共用）
+  registry.register('limits', limitsApi(limits));
   // N11：各 agent 的历史会话（左边栏），只读它们自己的会话文件
   registry.register('history', new HistoryServiceImpl({ roots: defaultUsageRoots(homedir(), loginEnv) }));
+  registry.register('docs', documents.api.docs);
+  registry.register('anchors', documents.api.anchors);
   registerBrowserService(registry);
 
   // ---- 应用壳自己的 IPC（src/shared/desktop-bridge.ts）----
   const fromTop = (e: Electron.IpcMainInvokeEvent | Electron.IpcMainEvent) => e.senderFrame?.parent === null;
-  ipcMain.handle(DESKTOP_IPC.startup, (e): StartupInfo | null => {
+  ipcMain.handle(DESKTOP_IPC.startup, async (e): Promise<StartupInfo | null> => {
     if (!fromTop(e)) return null;
+    // tmux 起没起来要等第一次启动有了结果再答（TC-19）：界面只在启动时问一次，先问到 null 就一直是白板，说明页出不来。
+    // 正常情况下 tmux 几百毫秒就起来；最多等 5 秒，免得终端进程卡住时窗口一直空白。
+    await Promise.race([terminals.list().catch(() => undefined), new Promise((r) => setTimeout(r, 5000))]);
     return {
       warnings,
       tmuxError: terminals.startError,

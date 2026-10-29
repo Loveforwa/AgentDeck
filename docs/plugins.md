@@ -39,8 +39,8 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | Auto-approve | ✓ 只给 agent 终端：claude、codex 走钩子；omp 看屏幕发键；pi 从不问。kimi 暂不支持，灰掉 “Not supported for kimi yet”（DR-56）；shell、自定义命令的菜单里没有这一项，也从不挂书签（IS-68） | ✗ | ✓ 框里能自动批准的 agent 终端（shell、自定义命令、kimi 不算，不打钩、不挂书签） | ✗ | 终端底边左侧的红色小书签 “Auto-approve”；需要你处理时临时变橙 “Needs you”；框上开着时框标题里红色小标签 | 后端和界面都做完（PL1），等真应用里验收 |
 | Usage 用量记录 | ✓ claude、codex、pi、omp、kimi（自己读各 agent 的会话文件，见 DR-55；kimi 新建会话靠推断，悬停写明）；shell、自定义命令灰掉 “Not supported for shell” | ✗ | 以后（项目用量） | 以后（整台电脑） | 终端上方（默认）或下方一条 24px 圆角条，和终端一样宽、隔 6px：in、out、cache 读 / 写、ctx + 进度条 + 百分比，85% 起变黄；拖左边的点阵只能换到上 / 下边；点开小卡片 | 后端和界面都做完（PL2），等真应用里验收 |
-| Prompt queue（PL3，概念待确认） | ✓ claude、codex 先做（恢复时间读得到，DR-63）；claude 2.1.234 起自己会在额度恢复后续跑：碰到上限时记成 armed（limit 被续跑的请求清掉也不忘），等 claude 自己续的那一轮结束再发，claude 在 stale 状态（等你按回车）时不粘贴（IS-113）；omp、pi、kimi 待调研，灰掉写原因；shell、自定义命令不列 | ✗ | 以后 | ✗ | 终端底边的书签，排在 Auto-approve 后面：Queue · 3 / Queue · 3 · sends 3:31pm（黄点）/ Sending 2 of 3（绿点）/ ✓ Queue done；claude 自己续时写 claude resumes 3:30pm（灰）；点开卡片写、排、删提示词 | 画在“MVP 插件”页 PL3，等确认；提交前先修 IS-113（P1）。第一版照原样提交；之后打开 Run all day 就是一个 agent 的全天工作队列（When、Skill、Done when），执行搬进主进程的 QueueService（M13 LR6、LR7，设计画布 W0，DR-107） |
-| Auto-resume（PL4–PL9，2026-10-28 用户定：默认关） | ✓ claude（它自己会续，AgentDeck 只盯着、补子 agent 那一段）、codex；omp 先只显示 “handled by omp”；pi、kimi 读不到恢复时间，只给 Resume now（PL9 核对后再定）；shell、自定义命令不列；集群里的终端归 CR8 调度器 | ✗ | ✓ 框上能单独关 | ✓ 默认关 | 终端底边书签 Paused · resumes 9:01pm（黄点）/ Resuming（绿点），开着 Prompt queue 时和它合成一个；收件箱 Usage limit 一组（一个账号一条） | 画在“MVP 插件”页 PluginResume（DR-84），2026-10-28 已定 |
+| Auto-resume（PL6，2026-10-28 起也收进了 PL3 剩下的部分） | ✓ 只给 agent 终端：claude、codex 恢复时间读得到，到点续（claude 2.1.234 起自己续，AgentDeck 只盯着）；pi、kimi 读不到恢复时间，只有 Resume now；omp 自己处理额度，书签只写 handled by omp（pi、kimi、omp 撞额度现在还认不出来，等 PL9）；shell、自定义命令不列 | ✗ | ✓ 框里的 agent 终端 | ✓ 右键白板空白处，默认关 | 终端底边的书签，排在 Auto-approve 后面，**只在这个终端被额度停下时挂**：Paused · resumes 3:31pm（黄点）/ Resuming（绿点）/ claude resumes 3:30pm（灰）/ claude resuming（绿点）/ claude waits for Enter（黄点）/ Hit the limit again（红点）/ Reset time unknown、Waiting for you（黄点）/ you took over、Skipped、handled by omp、Limit · resets（关着时，灰）；点开卡片改这一次续跑的话、Resume now、Don’t resume | 界面和主进程都做完（PL5 + PL6），等真应用里验收；claude 改过的话送进去后由 claude 发，待用真 claude 核对（DR-84） |
+| ~~Prompt queue（PL3）~~ | **2026-10-28 退役**：各家 agent 大多自己会排提示词，要紧的是撞上限那一刻的续跑和改续跑的话，这部分并进 Auto-resume。代码、样式、测试都删了；contracts 的 `TerminalWindowData.queue`、`PromptQueueSettings`、`app.setKeepAwake` 只加了 deprecated 注释（只加不删），老白板里的 queue 读得进来、不起作用 | | | | | 退役 |
 
 ## 代码在哪里（PL0）
 
@@ -49,6 +49,7 @@
 - 标记的颜色和尺寸：design-tokens 的 `--plugin-auto-approve` / `--plugin-auto-approve-fg`、`--plugin-mark-height` / `--plugin-mark-text` / `--plugin-mark-radius`。新插件要新颜色时在 design-tokens 加专用 token。
 - Auto-approve 的界面：`plugins/auto-approve.tsx`（书签、小卡片、框标签）、`approvals/model.ts`（状态、开关、写进白板）、`react/approvals.tsx`（第一次开的确认、Approval history、Approve all）。
 - Usage 的界面：`plugins/usage.tsx`（用量条、拖动换边、小卡片、watch / unwatch）、`plugins/usage-model.ts`（开关和位置、k / M 缩写、悬停和卡片文字、放大时给条留的位置）。
+- Auto-resume 的界面（PL6）：`plugins/auto-resume.tsx`（书签、卡片）、`plugins/auto-resume-model.ts`（开关的三级、书签文字和卡片能做什么、`LimitsModel` = `controller.limits`：LimitService 的列表）。插件能贴在白板上（`PluginTarget` 的 `{ kind: 'board' }`，右键空白处）。主进程那边是 agent-adapters 的 `limits` 模块（PL5）。
 
 ## 不是插件的东西
 
@@ -79,7 +80,18 @@
 - 2026-10-25（IS-69 调研结论）：各家写法照源码（出处写在 `usage-model.ts` 的 `AGENT_FORMATS`）。codex 0.164：额度写 “x% left”，会话文件的 used_percent 先由 app-server 四舍五入成整数再 100 − used（0.6 → 99% left，0.4 → 100% left），我们照写 “99% left (resets 14:05)”，标签 5h limit / Weekly limit，重置时间同一天只写时间、否则加 “on 27 Oct”，12 / 24 小时制看系统；上下文先扣 12000 基线、round 出 left，写 “97% left”（codex 底栏和 /status 都这么写），进度条按 100 − left；token 数大写 K、<10 两位小数 <100 一位（Rust 的一半取偶）：27.8K / 475K。claude：/context 的百分比 Math.round(tokens / window × 100)，token 数 Intl compact 小写去 .0：52.5k / 1m、5%。pi：底栏 tokens / window × 100 一位小数，52k / 1.0M、5.2%。omp：状态栏一位小数，52K / 1M、5.2%。kimi 不变（68.8k / 977k、8%）。claude（/usage）、omp（状态栏的 usage 段，5h / 7d 用 Math.round）、kimi（/usage 的 Plan usage，“x% used” 用 Math.round）自己也显示额度，但我们读的会话文件里只有 codex 带额度，别家现在不显示额度，以后接上时照各自的写法。
 - 2026-10-26：标记和 Usage 条算进项目框：框要装下窗口连同底边的书签（N10 的后台 agent 小提示也挂在底边右侧）和上 / 下边的 Usage 条，出现时框只变大（controller 的 `markOutset`、`keepMarksInFrames`）。新插件的标记挂在外框外面时，要在 `markOutset` 里算上它占的高度。
 - 2026-10-26：提了 PL3 Prompt queue（额度用完后到点接着发排好的提示词），画在插件页，三个问题待用户定：只在上限后发还是空闲就发、Keep Mac awake 默认开关、名字。
-- 2026-10-28：PL3 提交前先修 IS-113（P1）：claude 2.1.234 起默认在额度恢复后自己续跑，续跑那次请求一成功，PL3 记下的上限就被清掉，排着的提示词再也不发。修法：加 armed 标记（碰到上限时记下，发完第一条才清）；claude 自己续跑的那一轮结束后再发；claude 在 stale 状态时不粘贴。并进 PL3 的内容和完成标准（TC-79）。
+- 2026-10-27：PL3 定了：只在碰到额度上限、到点恢复后才发（额度没用完时不自动发，要发就点 Send next now）；Keep Mac awake 默认开；名字就叫 Prompt queue。
 - 2026-10-28：续跑另开插件 Auto-resume（PL4–PL9，DR-84，设计画布“MVP 插件”页 PluginResume）：只看这一轮是不是被额度结束的；先续跑（续跑提示词是一段可改的英文模板，因额度 failed 的子 agent 逐个点名），这一轮做完再发 PL3 排着的；按“agent + 配置目录”算账号，同一账号的一起停，恢复后按被打断的先后、每 30 秒续一个。一个终端只有一个续跑的人：集群里的归 CR8 调度器，claude 自己会续时归 claude（AgentDeck 只盯着、补子 agent 那一段，不重复发），其余归 Auto-resume；识别、归组、错开发送只在主进程的 LimitService（agent-adapters limits）里写一份，插件和 CR8 共用。2026-10-28 用户定：默认关（要用时右键白板打开）；名字叫 Auto-resume；PL3 发第一条改成按账号；Mac 睡过恢复时间 30 分钟以上先问你。
-- 2026-10-28（第二轮，第 14 点，DR-107，按推荐，待用户确认）：一个 agent 跑一整天扩展 PL3 的队列，不另做插件：卡片底部加 Run all day，打开后每条多 When、Skill、Done when 等，队列的执行搬进主进程的 QueueService（LR6、LR7），白板 JSON 里的队列升级时搬进 SQLite（LR1）；卡住了默认跳过，额度用完默认等恢复、可以选交给另一家，Day report 由代码生成。PL3 第一版照原样提交（含 IS-113 的修法）。
+- 2026-10-28：PL3 提交前修了 IS-113：PromptQueueSettings.armed（contracts 0.1.14）在碰到上限时记下恢复时间，limit 被成功的请求清掉也不忘，发完第一条才清；claude ≥ 2.1.234（版本读不出也当它会）恢复后先等它自己续的那一轮（看到它离开空闲再回到空闲，或者 limit 已被那次请求清掉）做完再发，恢复 3 分钟后还空闲、没开始过才按原规则发。stale 的判断：AgentDeck 自己的检查（平时 5 秒一次）在恢复前后断了 150 秒以上（电脑睡了、应用关着），醒来时已过恢复时间 30 分钟、claude 也没开始——这时不粘贴，等你按回车后它那一轮做完再发，或者点 Send next now。claude 的 Notification quota_auto_resume_stale 现在界面拿不到（钩子事件里没有），等 PL4 的 LimitService 接上后改看它。
+- 2026-10-28：PL3 改成按 PL5 的 LimitService 发（contracts 0.1.22 的 LimitedTerminal.autoResume、selfResume）：终端出现在受限账号里就算碰到上限（同一账号当时空闲的终端也算，到 LimitService 给的 resumeAt 发）；claude 自己续时（owner agent）不发、书签 claude resumes <时间>，resuming 等，resumed 或账号从列表里消失就发；stale、slept 从不粘贴；**这个终端开着 Auto-resume 时先等续跑那一轮做完（resumed）再发第一条**（不然续跑提示和第一条会撞在一起，codex 也一样）；Auto-resume 关着、claude 恢复 3 分钟后还没开始时照原规则发；skipped 是你点的（开关开着、原来是空闲的、或者还没到恢复 + 1 分钟）时队列暂停，开关关着到点被标的照常发。同一次上限（账号 + 恢复时间）只按它发一次第一条。IS-113 的 armed + 猜测只在 LimitService 没列出这个终端时兜底（假实现、老版本、重开应用后它还没认出来）。
+- 2026-10-28（用户试用后定）：**Prompt queue（PL3）退役，剩下的并进 Auto-resume（PL6）**。理由：各家 code agent 大多自己会排提示词；要紧的是撞上额度上限那一刻——恢复时 AgentDeck 把续跑的话发出去，而且你能改这句话、往里加新要求。不再有“队首的 ↻ 一行”，也没有队列。
+  - Auto-resume 贴在白板（默认关）、框、agent 终端上，规矩同 Auto-approve：终端单独的设置优先，框上关掉框里的都关；在上一级点开关会清掉下一级单独的设置。pi、kimi 也能开，但只有 Resume now（读不到恢复时间）；omp 能开，书签只写 handled by omp。
+  - 书签只在终端出现在 LimitService 的受限账号里时挂，开着但没撞上不挂；Auto-resume 关着时也挂（灰的 Limit · resets，卡片里能 Resume now）。
+  - 卡片的 Message：改的是这一次续跑发的话（`LimitService.setMessage`，contracts 0.1.23），存在主进程内存里，发出去、这一次了结、续了又撞都清，下一次从默认（Settings › Resume prompt 或内置模板）开始。改过的话里没点到 id 的断掉的子 agent 照样补在后面；codex 那一句不补。集群（CR8，setOwner 给的提示词）优先于你改的话。
+  - Don’t resume 在终端的卡片里只管这个终端（`skip`）；整个账号的 Don’t resume（`cancel`）留给收件箱的 Usage limit 一条（CR1）。claude 自己续时不给 Don’t resume（AgentDeck 拦不住它），写一句 press Esc in the terminal。
+  - claude 自己续（2.1.234 起，owner agent）：没改话什么都不发；改过就马上用 bracketed paste + 回车送进去（claude 在等恢复时收到消息，恢复时改发这一条，DR-84 的说法，**待用真 claude 核对**），之后不能再改，claude 续完也不再补发子 agent 那一段，Resume now 对它只按回车。
+  - Keep Mac awake 由 LimitService 在主进程管，卡片里不再有勾选框；界面不再调 `app.setKeepAwake`。
+  - 和 CR8 的分工：集群里的终端 owner 是 crew，书签写 Crew resumes、卡片不给改话和按钮，由调度器 `resumeNow`。
+- 2026-10-28（第二轮，第 14 点，DR-107；PL3 退役后这部分改由设计画布 S2 / W0「Session 的计划」承接）：一个 agent 跑一整天扩展 PL3 的队列，不另做插件：卡片底部加 Run all day，打开后每条多 When、Skill、Done when 等，队列的执行搬进主进程的 QueueService（LR6、LR7），白板 JSON 里的队列升级时搬进 SQLite（LR1）；卡住了默认跳过，额度用完默认等恢复、可以选交给另一家，Day report 由代码生成。PL3 第一版照原样提交（含 IS-113 的修法）。
 - 2026-10-28（第二轮）：Auto-approve 永远不碰对外动作：收件箱 “Ready to post” 里的 issue / PR 评论、推送、提交 review、合并（M17），以及 `kaggle competitions submit`（M14 的 Submit 关卡），这些都只能你点。
+

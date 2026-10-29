@@ -75,6 +75,8 @@ interface Entry {
   tail: JsonlTail | null;
   fsw: FSWatcher | null;
   watching: boolean;
+  /** 谁在看（UsageService.watch 的 owner）：最后一个 unwatch 了才停。 */
+  owners: Set<string>;
   transcriptPath: string | null;
   ext: ExtReport | null;
   lastJson: string | null;
@@ -109,17 +111,20 @@ export class UsageServiceImpl implements UsageService {
     return usage;
   }
 
-  async watch(terminalId: TerminalId): Promise<TerminalUsage> {
+  async watch(terminalId: TerminalId, owner = 'default'): Promise<TerminalUsage> {
     const e = this.entry(terminalId);
+    e.owners.add(owner);
     e.watching = true;
     this.ensurePoller();
     await this.refresh(e);
     return e.last ?? this.empty(terminalId, null, 'no-data', 'Unknown terminal');
   }
 
-  async unwatch(terminalId: TerminalId): Promise<void> {
+  async unwatch(terminalId: TerminalId, owner = 'default'): Promise<void> {
     const e = this.entries.get(terminalId);
     if (!e) return;
+    e.owners.delete(owner);
+    if (e.owners.size > 0) return;
     e.watching = false;
     this.drop(e);
   }
@@ -157,6 +162,19 @@ export class UsageServiceImpl implements UsageService {
     return false;
   }
 
+  /**
+   * 这个终端的会话文件在哪（不读内容）：watch 着、已经找到的直接给，否则按会话 id 找一次（不留状态）。
+   * 最后一条回复（replies/）、CrewService.result 用。认不出的 agent、还没有文件时为 null。
+   */
+  async sessionFile(terminalId: TerminalId): Promise<{ agent: AgentKind; file: string } | null> {
+    const t = this.opts.lookup(terminalId);
+    if (!t || !isUsageAgent(t.agent)) return null;
+    const e = this.entries.get(terminalId);
+    if (e?.located && e.key === this.keyOf(t, e)) return { agent: t.agent, file: e.located.file };
+    const found = await this.locate(t.agent, t, e ?? this.newEntry(terminalId), this.now());
+    return found ? { agent: t.agent, file: found.file } : null;
+  }
+
   /** 会话 id 可能变了（status.changed 带了新 id）：watch 着的马上重读。 */
   noteSession(terminalId: TerminalId): void {
     const e = this.entries.get(terminalId);
@@ -172,29 +190,38 @@ export class UsageServiceImpl implements UsageService {
 
   // ---- 内部 ----
 
+  private keyOf(t: UsageTarget, e: Entry): string {
+    return `${t.agent}|${t.sessionId ?? ''}|${e.transcriptPath ?? ''}`;
+  }
+
   private entry(terminalId: TerminalId): Entry {
     let e = this.entries.get(terminalId);
     if (!e) {
-      e = {
-        terminalId,
-        key: null,
-        located: null,
-        locatedAt: -Infinity,
-        scannedAt: -Infinity,
-        parser: null,
-        tail: null,
-        fsw: null,
-        watching: false,
-        transcriptPath: null,
-        ext: null,
-        lastJson: null,
-        last: null,
-        busy: Promise.resolve(),
-        timer: null,
-      };
+      e = this.newEntry(terminalId);
       this.entries.set(terminalId, e);
     }
     return e;
+  }
+
+  private newEntry(terminalId: TerminalId): Entry {
+    return {
+      terminalId,
+      key: null,
+      located: null,
+      locatedAt: -Infinity,
+      scannedAt: -Infinity,
+      parser: null,
+      tail: null,
+      fsw: null,
+      watching: false,
+      owners: new Set(),
+      transcriptPath: null,
+      ext: null,
+      lastJson: null,
+      last: null,
+      busy: Promise.resolve(),
+      timer: null,
+    };
   }
 
   private drop(e: Entry): void {
@@ -255,7 +282,7 @@ export class UsageServiceImpl implements UsageService {
     if (!t) return this.empty(e.terminalId, null, 'no-data', 'Unknown terminal');
     if (!isUsageAgent(t.agent)) return this.empty(e.terminalId, t.agent, 'unsupported', `Usage is not available for ${t.agent}`);
     const agent = t.agent;
-    const key = `${agent}|${t.sessionId ?? ''}|${e.transcriptPath ?? ''}`;
+    const key = this.keyOf(t, e);
     if (key !== e.key) {
       e.key = key;
       this.reset(e);
@@ -382,7 +409,7 @@ export class UsageServiceImpl implements UsageService {
       file: located.file,
     };
     if (p.requests === 0) {
-      return { ...this.empty(e.terminalId, agent, 'no-data', 'No usage recorded yet', base.sessionId), ...base, model };
+      return { ...this.empty(e.terminalId, agent, 'no-data', 'No usage recorded yet', base.sessionId), ...base, model, limit: p.limit ?? null };
     }
     return {
       ...base,
@@ -395,6 +422,7 @@ export class UsageServiceImpl implements UsageService {
       context,
       rateLimits: p.rateLimits,
       updatedAt: p.updatedAt,
+      limit: p.limit ?? null,
     };
   }
 
@@ -420,6 +448,7 @@ export class UsageServiceImpl implements UsageService {
       context: null,
       rateLimits: null,
       updatedAt: null,
+      limit: null,
     };
   }
 }

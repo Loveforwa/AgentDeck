@@ -24,7 +24,12 @@ export class FakeBrowserService implements BrowserService {
 
   /** 和真实现一样：本地地址用 iframe，外部网站用 webview；opts.mode 为 webview 时本地地址也用 webview。 */
   async prepare(url: string, opts?: { mode?: 'frame' | 'webview' }): Promise<PreparedPage> {
-    if (url.startsWith('/')) return { src: await this.fileUrl(url), mode: 'frame' };
+    if (url.startsWith('/')) {
+      // 和真实现一样：第一个 ? 或 # 起算后缀（地址栏把 file://…pdf#page=4 转成 …pdf#page=4）
+      const cut = url.search(/[?#]/);
+      if (cut < 0) return { src: await this.fileUrl(url), mode: 'frame' };
+      return { src: (await this.fileUrl(url.slice(0, cut))) + url.slice(cut), mode: 'frame' };
+    }
     if (url.startsWith('file://')) return { src: await this.fileUrl(decodeURI(new URL(url).pathname)), mode: 'frame' };
     let parsed: URL;
     try {

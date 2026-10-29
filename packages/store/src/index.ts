@@ -9,4 +9,9 @@ export type {
   TerminalRecord,
   TerminalRepository,
   ApprovalRepository,
+  SessionRepository,
+  SessionStateChange,
+  DocAnchorCacheRow,
+  DocAnchorRepository,
+  DocAnchorVerified,
 } from './types.ts';

@@ -36,6 +36,8 @@ export interface AppPaths {
   notifyScript: string;
   /** agentdeck-pi-extension.mjs 的绝对路径：pi、omp 启动时用 -e 加载，把扩展事件转成钩子。 */
   agentExtension: string;
+  /** CR15：agentdeck 命令（tools/agentdeck-cli 的 agentdeck.mjs）的绝对路径，<数据目录>/bin/agentdeck 包装脚本运行它。 */
+  cliScript: string;
 }
 
 /** macOS 的 sockaddr_un.sun_path 是 104 字节（含结尾 0）。 */
@@ -77,5 +79,6 @@ export function resolvePaths(input: PathsInput): AppPaths {
     agentExtension: repoRoot
       ? join(root, 'tools/agentdeck-notify/bin/agentdeck-pi-extension.mjs')
       : join(res, 'agentdeck-pi-extension.mjs'),
+    cliScript: repoRoot ? join(root, 'tools/agentdeck-cli/bin/agentdeck.mjs') : join(res, 'agentdeck.mjs'),
   };
 }

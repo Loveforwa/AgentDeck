@@ -4,7 +4,7 @@
 // 改规则时同步改样例和根目录 AGENTS.md 的「模块边界」一节。
 
 /** 服务包：实现 contracts 里的服务，跑在主进程。 */
-const SERVICES = ['tmux-host', 'git-service', 'workspace-service', 'agent-adapters', 'port-watch', 'store', 'mcp-server'];
+const SERVICES = ['tmux-host', 'git-service', 'workspace-service', 'agent-adapters', 'port-watch', 'store', 'mcp-server', 'doc-service'];
 const SERVICE = `^packages/(${SERVICES.join('|')})/`;
 
 /** 内部代码（相对仓库根目录或样例根目录）。第三方包和 node 内置模块不匹配。 */
@@ -41,9 +41,11 @@ module.exports = {
     // ---- contracts ----
     {
       name: 'contracts-standalone',
-      comment: 'packages/contracts 只放类型和纯函数：不依赖任何其他内部包、第三方包或 node 内置模块。',
+      comment:
+        'packages/contracts 只放类型和纯函数：不依赖任何其他内部包、第三方包或 node 内置模块。' +
+        'packages/contracts/test/ 下是纯函数的单元测试，可以用 vitest。',
       severity: 'error',
-      from: { path: '^packages/contracts/' },
+      from: { path: '^packages/contracts/', pathNot: '^packages/contracts/test/' },
       to: { pathNot: '^packages/contracts/' },
     },
 

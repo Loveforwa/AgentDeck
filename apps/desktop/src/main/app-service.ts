@@ -102,6 +102,8 @@ export interface AppServiceDeps {
   trashItem(path: string): Promise<void>;
   quit(stopTerminals: boolean): Promise<void>;
   setBadge(count: number): void;
+  /** PL3：不让系统睡（Electron 的 powerSaveBlocker）。 */
+  setKeepAwake(on: boolean): void;
 }
 
 export function run(cmd: string, args: string[], env: Env, cwd?: string): Promise<void> {
@@ -159,5 +161,6 @@ export function createAppService(deps: AppServiceDeps): AppService {
     },
     quit: (req) => deps.quit(req.stopTerminals),
     setBadge: (count) => deps.setBadge(count),
+    setKeepAwake: async (on) => deps.setKeepAwake(on),
   };
 }

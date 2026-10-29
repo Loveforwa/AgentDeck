@@ -5,7 +5,7 @@
 // | claude | PermissionRequest 钩子回 allow；开关前就在等的发按键   | 1           | 钩子实测；按键见 DR-43                 |
 // | codex  | 同 claude                                              | y（不发 p/a）| 钩子实测；按键见 DR-43                 |
 // | kimi   | 先不支持（2026-10-25 定）。DR-56 的做法是看屏幕发 1，调研记录在 known.ts | — | —                       |
-// | omp    | 扩展报 PermissionRequest，屏幕出现 Allow tool: 后发按键 | Up Enter    | 18.0.4 的源码，没在真终端里核对        |
+// | omp    | 扩展报 PermissionRequest，屏幕出现 Allow tool: 后发按键 | Up Enter    | 18.0.4 源码 + 2026-10-28 真 TUI（AH2 L2）|
 // | pi     | 从来不弹确认框，没事可做                               | —           | 0.83.0                                 |
 // | shell / custom | 不支持                                         | —           | —                                      |
 //
@@ -22,7 +22,7 @@ export interface ApprovalStrategy extends AutoApproveSupport {
 const STRATEGIES: Record<string, Omit<ApprovalStrategy, 'agent'>> = {
   claude: { method: 'hook', verified: true, note: null, screen: null },
   codex: { method: 'hook', verified: true, note: null, screen: null },
-  omp: { method: 'keys', verified: false, note: 'Untested for Oh My Pi', screen: 'omp' },
+  omp: { method: 'keys', verified: true, note: null, screen: 'omp' },
   pi: { method: 'never-asks', verified: true, note: 'pi never asks for approval', screen: null },
   kimi: { method: 'unsupported', verified: false, note: 'Not supported for kimi yet', screen: null },
 };

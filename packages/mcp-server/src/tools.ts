@@ -1,14 +1,16 @@
 // MCP 工具：白板里的 agent 用它们开终端、开工作区、开网页、看和指挥别的终端。
 // 只靠注入的服务（contracts 的类型）工作，不 import 别的服务包。工具名、参数名、返回的文字都是英文。
 
-import { AgentDeckError, isAgentDeckErrorData } from '@agentdeck/contracts';
+import { AgentDeckError, isAgentDeckErrorData, MCP_SERVER_NAME, redactCommand } from '@agentdeck/contracts';
 import type {
   AbsPath,
+  AgentDeckErrorData,
   AgentKind,
   AgentService,
   BoardEvent,
   BoardStore,
   BrowserWindowData,
+  InjectionEstimate,
   OpenWindowRequest,
   ProjectId,
   ProjectService,
@@ -24,9 +26,11 @@ import type {
   WorkspaceService,
 } from '@agentdeck/contracts';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import type { CallToolResult, ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
+import { assertAgentTerminalAccess } from './guard.ts';
+import type { AgentTerminalTarget } from './guard.ts';
 
 /** 工具用到的服务，组装时从主进程的注册表拿。 */
 export interface McpToolDeps {
@@ -60,6 +64,11 @@ export interface McpToolDeps {
   confirm?: (req: { title: string; body: string; confirm: string }) => Promise<boolean>;
   /** notify 工具发了一条通知（白板那边由 board.notify 处理）。组装时用来在应用不在前台时发系统通知。 */
   onNotify?: (n: { terminalId: TerminalId | null; message: string }) => void;
+  /**
+   * AH11：用户勾了 Hide from agents 的终端（组装时从保存的白板算，见 hiddenTerminalIds）。这些终端 list_terminals、
+   * list_windows 不列，read_terminal、send_to_terminal 拒绝。没有时当作都没隐藏。抛错时工具报错（宁可不给看）。
+   */
+  hiddenFromAgents?: () => Promise<ReadonlySet<TerminalId>>;
 }
 
 /** 这次调用来自哪个终端。不是从 AgentDeck 的终端里调的时为 null。 */
@@ -78,395 +87,465 @@ export const MAX_TERMINALS_PER_CALL = 16;
 const MAX_NOTIFY_CHARS = 300;
 
 /**
- * MCP 的 initialize 里给 agent 的说明（claude 会放进系统提示）：什么时候该用这些工具。
- * 需求里“自动装载一个 AgentDeck skill”先用它代替，不往用户配置里写 skill。
+ * MCP 的 initialize 里给 agent 的说明（claude 会放进系统提示，工具延迟加载时也每轮常驻）：只说什么时候去找这些工具。
+ * IS-100（CR14）：原来七行约 210 token，和自带的 agentdeck skill 重复；缩到两句，每个工具怎么用写在工具自己的说明里。
  */
-export const SERVER_INSTRUCTIONS = [
-  'You are running inside AgentDeck, a desktop board where the user watches terminals (agents and shells) and browser windows side by side.',
-  'Use these tools to put your work where the user can see it:',
-  '- When you split work into parallel subagents that should be visible, use open_terminals (one terminal per subagent, with a prompt each) instead of hidden background tasks; they appear as a group next to you.',
-  '- When you start a dev server or produce an HTML page the user should look at, open it with open_browser; it appears next to your terminal.',
-  '- Use notify for a short "done" or "needs your review" message, and focus_window to show the user a specific window.',
-  '- list_windows and list_terminals show what is on the board; read_terminal and send_to_terminal follow up on other terminals.',
-  '- create_workspace is for work on a separate git branch.',
-].join('\n');
+export const SERVER_INSTRUCTIONS =
+  'You are running inside AgentDeck, a desktop board where the user watches your terminal next to other terminals and browser windows. ' +
+  'When your work should be visible there (subagents in their own terminals, a page or dev server to look at, a short notice), use the agentdeck tools such as open_terminals, open_browser and notify.';
 
-export function registerTools(server: McpServer, deps: McpToolDeps, caller: McpCaller): void {
-  const ctx = new ToolContext(deps, caller);
-
-  server.registerTool(
-    'list_workspaces',
-    {
-      title: 'List workspaces',
-      description:
-        'List the projects and workspaces on the AgentDeck board. A workspace is a folder (usually a git worktree on its own branch) shown as a frame on the board. The workspace you are running in is marked with "current": true.',
-      inputSchema: {},
-      annotations: { readOnlyHint: true },
-    },
-    () =>
-      run(async () => {
-        const [projects, workspaces, me] = await Promise.all([deps.projects.list(), deps.workspaces.list(), ctx.callerWorkspaceId()]);
-        return {
-          projects: projects.map((p) => ({ id: p.id, name: p.name, path: p.path, kind: p.kind })),
-          workspaces: workspaces.map((w) => ({
-            id: w.id,
-            projectId: w.projectId,
-            name: w.name,
-            branch: w.branch,
-            path: w.path,
-            missing: w.missing,
-            current: w.id === me,
-          })),
-        };
-      }),
-  );
-
-  server.registerTool(
-    'list_terminals',
-    {
-      title: 'List terminals',
-      description:
-        'List the terminals AgentDeck is running (agents and shells) with their status: starting, running, needs-approval, needs-reply, idle, exited or error. Your own terminal is marked with "self": true.',
-      inputSchema: {
-        workspace_id: z.string().optional().describe('Only terminals in this workspace.'),
-      },
-      annotations: { readOnlyHint: true },
-    },
-    ({ workspace_id }) =>
-      run(async () => {
-        const [terminals, statuses, workspaces] = await Promise.all([deps.terminals.list(), deps.status.snapshot(), deps.workspaces.list()]);
-        const byId = new Map(statuses.map((s) => [s.terminalId, s]));
-        return {
-          terminals: terminals
-            .map((t) => ({ t, s: byId.get(t.id), ws: ctx.workspaceIdOf(t.id, byId.get(t.id), t.cwd, workspaces) }))
-            .filter(({ ws }) => workspace_id === undefined || ws === workspace_id)
-            .map(({ t, s, ws }) => ({
-              id: t.id,
-              workspaceId: ws,
-              status: s?.status ?? (t.alive ? 'running' : 'exited'),
-              command: t.command,
-              cwd: t.cwd,
-              alive: t.alive,
-              exitCode: t.exitCode,
-              waitingFor: s?.pending ? { kind: s.pending.kind, summary: s.pending.summary } : null,
-              self: t.id === caller.terminalId,
-            })),
-        };
-      }),
-  );
-
-  server.registerTool(
-    'open_terminal',
-    {
-      title: 'Open terminal',
-      description:
-        'Open a new terminal window on the board and start an agent (claude, codex) or a shell in it. Defaults to your own workspace. Give "prompt" to hand the new agent its first message, so it starts working right away.',
-      inputSchema: {
-        agent: z.string().default('claude').describe('Agent id from AgentDeck, e.g. "claude", "codex", "shell".'),
-        workspace_id: z
-          .string()
-          .nullable()
-          .optional()
-          .describe('Workspace to open it in. Omit for your own workspace; null for a loose terminal in the home folder.'),
-        prompt: z.string().optional().describe('First message for the agent. Ignored for shells.'),
-        command: z.string().optional().describe('For "shell": a command to run, e.g. "pnpm dev".'),
-      },
-    },
-    ({ agent, workspace_id, prompt, command }) =>
-      run(async () => {
-        const ws = await ctx.resolveWorkspace(workspace_id);
-        const t = await ctx.startTerminal({ agent, workspace: ws, ...(prompt ? { prompt } : {}), ...(command ? { command } : {}) });
-        return { terminalId: t, workspaceId: ws?.id ?? null };
-      }),
-  );
-
-  server.registerTool(
-    'create_workspace',
-    {
-      title: 'Create workspace',
-      description:
-        'Create a new git worktree on a new branch, put it on the board as a frame, and start an agent in it. Use this to run several agents in parallel on separate branches. Defaults to your own project; the new branch starts from the project base branch unless "from" is given.',
-      inputSchema: {
-        branch: z.string().min(1).describe('Name of the new branch, e.g. "feat/login-page".'),
-        from: z.string().optional().describe('Branch to start from. Defaults to the base branch.'),
-        existing_branch: z.boolean().default(false).describe('Check out an existing branch instead of creating one.'),
-        project_id: z.string().optional().describe('Project to create it in. Defaults to the project of your workspace.'),
-        agent: z.string().default('claude').describe('Agent to start in the new workspace, or "none".'),
-        prompt: z.string().optional().describe('First message for that agent.'),
-      },
-    },
-    ({ branch, from, existing_branch, project_id, agent, prompt }) =>
-      run(async () => {
-        const projectId = await ctx.resolveProject(project_id);
-        const { workspace, setup } = await deps.workspaces.create({
-          projectId,
-          mode: 'worktree',
-          branch: existing_branch ? { kind: 'existing', name: branch } : { kind: 'new', name: branch, ...(from ? { from } : {}) },
-        });
-        deps.emit({ type: 'board.add-frame', workspace });
-        // 和白板的 New workspace 一样：有初始化命令就在框里先开一个 Shell 跑它。
-        const setupTerminal = setup
-          ? await ctx.startTerminal({ agent: 'shell', workspace, command: setup.command, cwd: setup.cwd, highlight: false })
-          : null;
-        const agentTerminal = agent === 'none' ? null : await ctx.startTerminal({ agent, workspace, ...(prompt ? { prompt } : {}) });
-        return {
-          workspaceId: workspace.id,
-          branch: workspace.branch,
-          path: workspace.path,
-          terminalId: agentTerminal,
-          setupTerminalId: setupTerminal,
-          setupCommand: setup?.command ?? null,
-        };
-      }),
-  );
-
-  server.registerTool(
-    'open_browser',
-    {
-      title: 'Open browser',
-      description:
-        'Open a web page in a browser window on the board, next to your own terminal: e.g. the dev server you just started (http://localhost:5173) or a local HTML file. Only http(s) URLs and local files. If a window already shows the same origin, it navigates there and reloads instead of opening another one. Defaults to your own workspace.',
-      inputSchema: {
-        url: z.string().min(1).describe('http(s) URL (e.g. "http://localhost:3000"), a file:// URL, or an absolute path to a local file.'),
-        workspace_id: z.string().nullable().optional().describe('Workspace frame to open it in. Omit for your own; null for loose.'),
-      },
-    },
-    ({ url, workspace_id }) =>
-      run(async () => {
-        const target = browserTarget(url);
-        const ws = await ctx.resolveWorkspace(workspace_id);
-        const data: BrowserWindowData = {
-          url: target,
-          mode: 'frame',
-          reloadToken: Date.now(),
-          openedBy: caller.terminalId ? { terminalId: caller.terminalId, label: 'agent' } : null,
-        };
-        const reuseKey = originOf(target);
-        deps.emit({
-          type: 'board.open-window',
-          request: { type: 'browser', data, workspaceId: ws?.id ?? null, ...(reuseKey ? { reuseKey } : {}) },
-          highlight: true,
-          nearTerminal: caller.terminalId,
-        });
-        return { opened: target, workspaceId: ws?.id ?? null };
-      }),
-  );
-
-  server.registerTool(
-    'read_terminal',
-    {
-      title: 'Read terminal',
-      description: 'Read the last lines shown in another terminal, e.g. to check what another agent did or why a dev server failed.',
-      inputSchema: {
-        terminal_id: z.string().describe('Terminal id from list_terminals.'),
-        lines: z.number().int().min(1).max(MAX_READ_LINES).default(DEFAULT_READ_LINES),
-      },
-      annotations: { readOnlyHint: true },
-    },
-    ({ terminal_id, lines }) =>
-      run(async () => {
-        const id = terminal_id as TerminalId;
-        const [text, status] = await Promise.all([deps.terminals.lastLines(id, lines), ctx.statusOf(id)]);
-        return { terminalId: id, status: status?.status ?? null, lines: trimTrailingBlank(text).join('\n') };
-      }),
-  );
-
-  server.registerTool(
-    'send_to_terminal',
-    {
-      title: 'Send to terminal',
-      description:
-        'Type text into another terminal, as if the user typed it: a message for another agent, or a command for a shell. Presses Enter afterwards unless "submit" is false. Line breaks are sent as spaces. Cannot send to your own terminal.',
-      inputSchema: {
-        terminal_id: z.string().describe('Terminal id from list_terminals.'),
-        text: z.string().min(1),
-        submit: z.boolean().default(true).describe('Press Enter after the text.'),
-      },
-    },
-    ({ terminal_id, text, submit }) =>
-      run(async () => {
-        const id = terminal_id as TerminalId;
-        if (id === caller.terminalId) throw new AgentDeckError({ code: 'invalid-argument', message: 'Can’t send to your own terminal' });
-        await deps.terminals.sendKeys(id, literalKeys(text));
-        if (submit) {
-          await sleep(deps.submitDelayMs ?? 150);
-          await deps.terminals.sendKeys(id, ['Enter']);
-        }
-        deps.onInput?.(id);
-        return { sent: true, terminalId: id };
-      }),
-  );
-
-  server.registerTool(
-    'open_terminals',
-    {
-      title: 'Open terminals',
-      description: `Open several terminals at once, e.g. one per subagent when you split work, and start an agent in each. They appear on the board as a group next to your own terminal, in your workspace (same folder and branch), so the user can watch them. Give "prompts" to hand each one its task. Up to ${MAX_TERMINALS_WITHOUT_CONFIRM} without asking; more asks the user first. Follow up with list_terminals, read_terminal and send_to_terminal. To work on separate branches, use create_workspace instead.`,
-      inputSchema: {
-        count: z.number().int().min(1).max(MAX_TERMINALS_PER_CALL).describe('How many terminals to open.'),
-        agent: z.string().default('claude').describe('Agent id for all of them, e.g. "claude", "codex", "shell".'),
-        prompts: z
-          .array(z.string())
-          .optional()
-          .describe('First message for each terminal, in order (prompts[0] goes to the first one). Fewer than count leaves the rest without one.'),
-        labels: z.array(z.string().max(40)).optional().describe('Short names shown on the board, in order, e.g. ["api", "ui", "tests"].'),
-        workspace_id: z.string().nullable().optional().describe('Workspace to open them in. Omit for your own; null for loose terminals.'),
-      },
-    },
-    ({ count, agent, prompts, labels, workspace_id }) =>
-      run(async () => {
-        if (prompts && prompts.length > count) throw invalid(`Got ${prompts.length} prompts for ${count} terminals`);
-        if (labels && labels.length > count) throw invalid(`Got ${labels.length} labels for ${count} terminals`);
-        const ws = await ctx.resolveWorkspace(workspace_id);
-        if (count > MAX_TERMINALS_WITHOUT_CONFIRM) {
-          if (!deps.confirm) {
-            throw invalid(
-              `Opening more than ${MAX_TERMINALS_WITHOUT_CONFIRM} terminals at once needs the user’s confirmation, which isn’t available. Open at most ${MAX_TERMINALS_WITHOUT_CONFIRM}.`,
-            );
-          }
-          const ok = await deps.confirm({
-            title: `Open ${count} terminals?`,
-            body: `An agent wants to open ${count} ${agent} terminals${ws ? ` in ${ws.name}` : ''} at once.`,
-            confirm: `Open ${count}`,
-          });
-          if (!ok) throw new AgentDeckError({ code: 'cancelled', message: `The user declined opening ${count} terminals` });
-        }
-        // 一个一个开（tmux 会话、agent 的启动准备都不适合并发）；中途失败时已经开了的照样放上白板。
-        const members: WindowGroupMemberRequest[] = [];
-        const opened: { terminalId: TerminalId; label: string | null }[] = [];
-        let failure: string | null = null;
-        for (let i = 0; i < count; i++) {
-          const prompt = prompts?.[i];
-          const label = labels?.[i]?.trim() || null;
-          try {
-            const t = await ctx.launch({ agent, workspace: ws, ...(prompt ? { prompt } : {}) });
-            members.push({ request: t.request, label });
-            opened.push({ terminalId: t.terminalId, label });
-          } catch (e) {
-            failure = errorText(e);
-            break;
-          }
-        }
-        if (members.length > 0) deps.emit({ type: 'board.open-group', lead: caller.terminalId, members, highlight: true });
-        if (opened.length === 0) throw new Error(failure ?? 'No terminals opened');
-        return {
-          workspaceId: ws?.id ?? null,
-          lead: caller.terminalId,
-          terminals: opened,
-          ...(failure ? { error: `Stopped after ${opened.length} of ${count}: ${failure}` } : {}),
-        };
-      }),
-  );
-
-  server.registerTool(
-    'list_windows',
-    {
-      title: 'List windows',
-      description:
-        'List the windows on the AgentDeck board (terminals and browser windows) with their workspace, status, conversation topic (the title the agent set) and group (terminals opened together with open_terminals). Your own terminal is marked with "self": true. Windows opened in the last second may be missing.',
-      inputSchema: {
-        workspace_id: z.string().nullable().optional().describe('Only windows in this workspace; null for loose windows.'),
-      },
-      annotations: { readOnlyHint: true },
-    },
-    ({ workspace_id }) =>
-      run(async () => {
-        if (!deps.board) throw new AgentDeckError({ code: 'unsupported', message: 'The board isn’t available' });
-        const [board, terminals, statuses] = await Promise.all([deps.board.load(), deps.terminals.list(), deps.status.snapshot()]);
-        const infoById = new Map(terminals.map((t) => [t.id, t]));
-        const statusById = new Map(statuses.map((s) => [s.terminalId, s]));
-        return {
-          windows: board.windows
-            .filter((w) => workspace_id === undefined || w.workspaceId === workspace_id)
-            .map((w) => {
-              const term = w.type === 'terminal' ? (w.data as Partial<TerminalWindowData>) : null;
-              const tid = term?.terminalId ?? null;
-              const info = tid ? infoById.get(tid) : undefined;
-              const st = tid ? statusById.get(tid) : undefined;
-              const url = w.type === 'browser' ? ((w.data as Partial<BrowserWindowData>).url ?? null) : null;
-              return {
-                id: w.id,
-                type: w.type,
-                title: w.title ?? defaultTitle(w.type, term?.agent ?? null, url),
-                workspaceId: w.workspaceId,
-                ...(term
-                  ? {
-                      terminalId: tid,
-                      agent: term.agent ?? null,
-                      status: st?.status ?? (info ? (info.alive ? 'running' : 'exited') : null),
-                      waitingFor: st?.pending ? { kind: st.pending.kind, summary: st.pending.summary } : null,
-                      topic: info?.title ?? null,
-                    }
-                  : {}),
-                ...(url !== null ? { url } : {}),
-                group: w.group ? { id: w.group.id, role: w.group.role, label: w.group.label ?? null } : null,
-                self: tid !== null && tid === caller.terminalId,
-              };
-            }),
-        };
-      }),
-  );
-
-  server.registerTool(
-    'focus_window',
-    {
-      title: 'Focus window',
-      description:
-        'Bring a window into view on the board and focus it, e.g. the browser window showing your result, or a terminal that needs the user. If the user is typing somewhere, it only flashes the window instead of taking focus. Give window_id (from list_windows) or terminal_id.',
-      inputSchema: {
-        window_id: z.string().optional().describe('Window id from list_windows.'),
-        terminal_id: z.string().optional().describe('Terminal id from list_terminals or open_terminals.'),
-      },
-    },
-    ({ window_id, terminal_id }) =>
-      run(async () => {
-        if ((window_id === undefined) === (terminal_id === undefined)) throw invalid('Pass either window_id or terminal_id');
-        if (terminal_id !== undefined) {
-          const id = terminal_id as TerminalId;
-          if (!(await deps.terminals.list()).some((t) => t.id === id)) {
-            throw new AgentDeckError({ code: 'not-found', message: `Terminal not found: ${terminal_id}` });
-          }
-          deps.emit({ type: 'board.focus-window', target: { terminalId: id } });
-          return { requested: true, terminalId: id };
-        }
-        const id = window_id as WindowId;
-        if (deps.board && !(await deps.board.load()).windows.some((w) => w.id === id)) {
-          throw new AgentDeckError({ code: 'not-found', message: `Window not found: ${window_id}` });
-        }
-        deps.emit({ type: 'board.focus-window', target: { windowId: id } });
-        return { requested: true, windowId: id };
-      }),
-  );
-
-  server.registerTool(
-    'notify',
-    {
-      title: 'Notify',
-      description:
-        'Tell the user something short without interrupting them, e.g. "Tests passed" or "Ready for review". Your window flashes and a notice shows on the board (only the flash while the user is typing); a system notification when AgentDeck is in the background. Doesn’t take focus.',
-      inputSchema: {
-        message: z.string().min(1).max(MAX_NOTIFY_CHARS).describe('One short sentence.'),
-      },
-    },
-    ({ message }) =>
-      run(async () => {
-        const text = message.replace(/\s+/g, ' ').trim();
-        if (!text) throw invalid('Empty message');
-        deps.emit({ type: 'board.notify', from: caller.terminalId, message: text });
-        deps.onNotify?.({ terminalId: caller.terminalId, message: text });
-        return { notified: true };
-      }),
-  );
+/** 一个工具：名字、给模型看的说明和参数（zod 的 raw shape），和实现。MCP 和命令行（/cli）共用。 */
+export interface ToolDef {
+  name: string;
+  title: string;
+  description: string;
+  inputSchema: Record<string, z.ZodType>;
+  annotations?: ToolAnnotations;
+  run(args: Record<string, unknown>, ctx: ToolContext): Promise<unknown>;
 }
 
-class ToolContext {
+/** 写工具时参数有类型；放进 TOOLS 后按 ToolDef 存。 */
+function tool<S extends Record<string, z.ZodType>>(
+  def: Omit<ToolDef, 'inputSchema' | 'run'> & { inputSchema: S; run(args: z.output<z.ZodObject<S>>, ctx: ToolContext): Promise<unknown> },
+): ToolDef {
+  return def as unknown as ToolDef;
+}
+
+/**
+ * CR14：集群里不是 Lead 的终端（Worker、Reviewer、自由模式的子 session……）在 tools/list 里看不到的工具：
+ * 开终端、开工作区、往别的终端里打字只给 Lead 和集群外的终端（DR-72）。
+ */
+export const LEAD_ONLY_TOOLS: ReadonlySet<string> = new Set(['open_terminals', 'create_workspace', 'send_to_terminal']);
+
+export interface RegisterToolsOptions {
+  /** 不注册这些工具（tools/list 不列，调用时是 “Tool not found”）。 */
+  omit?: ReadonlySet<string>;
+}
+
+export function registerTools(server: McpServer, deps: McpToolDeps, caller: McpCaller, opts: RegisterToolsOptions = {}): void {
+  const ctx = new ToolContext(deps, caller);
+  for (const t of TOOLS) {
+    if (opts.omit?.has(t.name)) continue;
+    server.registerTool(
+      t.name,
+      { title: t.title, description: t.description, inputSchema: t.inputSchema, ...(t.annotations ? { annotations: t.annotations } : {}) },
+      (args: Record<string, unknown>) => run(() => t.run(args, ctx)),
+    );
+  }
+}
+
+/** callTool 的结果：成功时是工具返回的值（MCP 那边是它的 JSON 文本），失败时是错误（MCP 那边是 isError 加 message）。 */
+export type ToolOutcome = { ok: true; value: unknown } | { ok: false; error: AgentDeckErrorData };
+
+/**
+ * 不经 MCP 直接调一个工具（命令行 /cli 的 open、notify 用）：参数照 MCP 一样按 inputSchema 校验、补默认值，
+ * 结果和 MCP 的 tools/call 一样（同一个实现）。
+ */
+export async function callTool(name: string, args: Record<string, unknown>, deps: McpToolDeps, caller: McpCaller): Promise<ToolOutcome> {
+  const t = TOOLS.find((x) => x.name === name);
+  if (!t) return { ok: false, error: { code: 'not-found', message: `Tool not found: ${name}` } };
+  const parsed = z.object(t.inputSchema).safeParse(args);
+  if (!parsed.success) {
+    return { ok: false, error: { code: 'invalid-argument', message: parsed.error.issues.map((i) => `${i.path.join('.') || 'input'}: ${i.message}`).join('; ') } };
+  }
+  try {
+    return { ok: true, value: await t.run(parsed.data as Record<string, unknown>, new ToolContext(deps, caller)) };
+  } catch (e) {
+    return { ok: false, error: toErrorData(e) };
+  }
+}
+
+/**
+ * 各家 agent 怎么带 MCP 工具（DR-72，2026-10-27 核对）：deferred 只常驻工具名和 server instructions（claude 默认 tool search、
+ * omp 的 tools.xdev），upfront 每轮带完整定义。codex 0.164.0 是否延迟加载待 CR12 实测，先按 upfront（多估不少估）。
+ * 不在表里的（pi、kimi、shell）挂不上 AgentDeck MCP。
+ */
+const MCP_LOADING: Partial<Record<AgentKind, 'upfront' | 'deferred'>> = { claude: 'deferred', codex: 'upfront', omp: 'deferred' };
+
+/** Skills · MCP 里 AgentDeck MCP 那一行的 id（contracts 的 SkillItemId）。 */
+export const AGENTDECK_MCP_ITEM_ID = 'mcp:built-in:agentdeck';
+
+/**
+ * CR13 / CR14：AgentDeck MCP 每轮大概多带多少 token（Skills · MCP 那一行右边的 ~130/turn），按自己的文字算：字符数 / 4。
+ * upfront：server instructions 加每个工具的 name、description、input_schema（JSON Schema）；deferred：instructions 加工具名
+ * （claude 里是 mcp__agentdeck__<name>）。omit 是这个终端看不到的工具（集群里非 Lead 的终端，LEAD_ONLY_TOOLS）。
+ * 这家 agent 挂不上 AgentDeck MCP 时返回空数组。
+ */
+export function estimateInjection(agent: AgentKind, opts: RegisterToolsOptions = {}): InjectionEstimate[] {
+  const mode = MCP_LOADING[agent];
+  if (!mode) return [];
+  const tools = TOOLS.filter((t) => !opts.omit?.has(t.name));
+  const text =
+    mode === 'upfront'
+      ? tools.map((t) => JSON.stringify({ name: t.name, description: t.description, input_schema: z.toJSONSchema(z.object(t.inputSchema), { io: 'input' }) })).join('')
+      : tools.map((t) => `${agent === 'claude' ? `mcp__${MCP_SERVER_NAME}__` : ''}${t.name}`).join('\n');
+  return [{ itemId: AGENTDECK_MCP_ITEM_ID, tokensPerTurn: Math.round((SERVER_INSTRUCTIONS.length + text.length) / 4), mode }];
+}
+
+/** 全部工具：MCP（registerTools）和命令行（callTool）用同一份。顺序就是 tools/list 的顺序。 */
+export const TOOLS: readonly ToolDef[] = [
+  tool({
+    name: 'list_workspaces',
+    title: 'List workspaces',
+    description:
+      'List the projects and workspaces on the AgentDeck board. A workspace is a folder (usually a git worktree on its own branch) shown as a frame on the board. The workspace you are running in is marked with "current": true.',
+    inputSchema: {},
+    annotations: { readOnlyHint: true },
+    run: async (_args, ctx) => {
+      const [projects, workspaces, me] = await Promise.all([ctx.deps.projects.list(), ctx.deps.workspaces.list(), ctx.callerWorkspaceId()]);
+      return {
+        projects: projects.map((p) => ({ id: p.id, name: p.name, path: p.path, kind: p.kind })),
+        workspaces: workspaces.map((w) => ({
+          id: w.id,
+          projectId: w.projectId,
+          name: w.name,
+          branch: w.branch,
+          path: w.path,
+          missing: w.missing,
+          current: w.id === me,
+        })),
+      };
+    },
+  }),
+  tool({
+    name: 'list_terminals',
+    title: 'List terminals',
+    description:
+      'List the terminals AgentDeck is running (agents and shells) with their status: starting, running, needs-approval, needs-reply, idle, exited or error. Your own terminal is marked with "self": true. Terminals the user hid from agents are not listed, and passwords in commands are shown as ***.',
+    inputSchema: {
+      workspace_id: z.string().optional().describe('Only terminals in this workspace.'),
+    },
+    annotations: { readOnlyHint: true },
+    run: async ({ workspace_id }, ctx) => {
+      const [terminals, statuses, workspaces, hidden] = await Promise.all([
+        ctx.deps.terminals.list(),
+        ctx.deps.status.snapshot(),
+        ctx.deps.workspaces.list(),
+        ctx.hidden(),
+      ]);
+      const byId = new Map(statuses.map((s) => [s.terminalId, s]));
+      return {
+        terminals: terminals
+          .filter((t) => !hidden.has(t.id))
+          .map((t) => ({ t, s: byId.get(t.id), ws: ctx.workspaceIdOf(t.id, byId.get(t.id), t.cwd, workspaces) }))
+          .filter(({ ws }) => workspace_id === undefined || ws === workspace_id)
+          .map(({ t, s, ws }) => ({
+            id: t.id,
+            workspaceId: ws,
+            status: s?.status ?? (t.alive ? 'running' : 'exited'),
+            // AH11：scheme://用户:密码@、PGPASSWORD= 这类写明的密码换成 ***
+            command: redactCommand(t.command),
+            cwd: t.cwd,
+            alive: t.alive,
+            exitCode: t.exitCode,
+            waitingFor: s?.pending ? { kind: s.pending.kind, summary: s.pending.summary } : null,
+            self: t.id === ctx.caller.terminalId,
+          })),
+      };
+    },
+  }),
+  tool({
+    name: 'open_terminal',
+    title: 'Open terminal',
+    description:
+      'Open a new terminal window on the board and start an agent (claude, codex) or a shell in it. Defaults to your own workspace. Give "prompt" to hand the new agent its first message, so it starts working right away.',
+    inputSchema: {
+      agent: z.string().default('claude').describe('Agent id from AgentDeck, e.g. "claude", "codex", "shell".'),
+      workspace_id: z
+        .string()
+        .nullable()
+        .optional()
+        .describe('Workspace to open it in. Omit for your own workspace; null for a loose terminal in the home folder.'),
+      prompt: z.string().optional().describe('First message for the agent. Ignored for shells.'),
+      command: z.string().optional().describe('For "shell": a command to run, e.g. "pnpm dev".'),
+    },
+    run: async ({ agent, workspace_id, prompt, command }, ctx) => {
+      const ws = await ctx.resolveWorkspace(workspace_id);
+      const t = await ctx.startTerminal({ agent, workspace: ws, ...(prompt ? { prompt } : {}), ...(command ? { command } : {}) });
+      return { terminalId: t, workspaceId: ws?.id ?? null };
+    },
+  }),
+  tool({
+    name: 'create_workspace',
+    title: 'Create workspace',
+    description:
+      'Create a new git worktree on a new branch, put it on the board as a frame, and start an agent in it. Use this to run several agents in parallel on separate branches. Defaults to your own project; the new branch starts from the project base branch unless "from" is given.',
+    inputSchema: {
+      branch: z.string().min(1).describe('Name of the new branch, e.g. "feat/login-page".'),
+      from: z.string().optional().describe('Branch to start from. Defaults to the base branch.'),
+      existing_branch: z.boolean().default(false).describe('Check out an existing branch instead of creating one.'),
+      project_id: z.string().optional().describe('Project to create it in. Defaults to the project of your workspace.'),
+      agent: z.string().default('claude').describe('Agent to start in the new workspace, or "none".'),
+      prompt: z.string().optional().describe('First message for that agent.'),
+    },
+    run: async ({ branch, from, existing_branch, project_id, agent, prompt }, ctx) => {
+      const projectId = await ctx.resolveProject(project_id);
+      const { workspace, setup } = await ctx.deps.workspaces.create({
+        projectId,
+        mode: 'worktree',
+        branch: existing_branch ? { kind: 'existing', name: branch } : { kind: 'new', name: branch, ...(from ? { from } : {}) },
+      });
+      ctx.deps.emit({ type: 'board.add-frame', workspace });
+      // 和白板的 New workspace 一样：有初始化命令就在框里先开一个 Shell 跑它。
+      const setupTerminal = setup
+        ? await ctx.startTerminal({ agent: 'shell', workspace, command: setup.command, cwd: setup.cwd, highlight: false })
+        : null;
+      const agentTerminal = agent === 'none' ? null : await ctx.startTerminal({ agent, workspace, ...(prompt ? { prompt } : {}) });
+      return {
+        workspaceId: workspace.id,
+        branch: workspace.branch,
+        path: workspace.path,
+        terminalId: agentTerminal,
+        setupTerminalId: setupTerminal,
+        setupCommand: setup?.command ?? null,
+      };
+    },
+  }),
+  tool({
+    name: 'open_browser',
+    title: 'Open browser',
+    description:
+      'Open a web page in a browser window on the board, next to your own terminal: e.g. the dev server you just started (http://localhost:5173) or a local HTML file. Only http(s) URLs and local files. If a window already shows the same origin, it navigates there and reloads instead of opening another one. Defaults to your own workspace.',
+    inputSchema: {
+      url: z.string().min(1).describe('http(s) URL (e.g. "http://localhost:3000"), a file:// URL, or an absolute path to a local file.'),
+      workspace_id: z.string().nullable().optional().describe('Workspace frame to open it in. Omit for your own; null for loose.'),
+    },
+    run: async ({ url, workspace_id }, ctx) => {
+      const target = browserTarget(url);
+      const ws = await ctx.resolveWorkspace(workspace_id);
+      const data: BrowserWindowData = {
+        url: target,
+        mode: 'frame',
+        reloadToken: Date.now(),
+        openedBy: ctx.caller.terminalId ? { terminalId: ctx.caller.terminalId, label: 'agent' } : null,
+      };
+      const reuseKey = originOf(target);
+      ctx.deps.emit({
+        type: 'board.open-window',
+        request: { type: 'browser', data, workspaceId: ws?.id ?? null, ...(reuseKey ? { reuseKey } : {}) },
+        highlight: true,
+        nearTerminal: ctx.caller.terminalId,
+      });
+      return { opened: target, workspaceId: ws?.id ?? null };
+    },
+  }),
+  tool({
+    name: 'read_terminal',
+    title: 'Read terminal',
+    description:
+      'Read the last lines shown in another terminal, e.g. to check what another agent did or why a dev server failed. Terminals the user hid from agents can’t be read.',
+    inputSchema: {
+      terminal_id: z.string().describe('Terminal id from list_terminals.'),
+      lines: z.number().int().min(1).max(MAX_READ_LINES).default(DEFAULT_READ_LINES),
+    },
+    annotations: { readOnlyHint: true },
+    run: async ({ terminal_id, lines }, ctx) => {
+      const id = terminal_id as TerminalId;
+      const target = await ctx.accessTarget(id);
+      assertAgentTerminalAccess('read', target);
+      const text = await ctx.deps.terminals.lastLines(id, lines);
+      return { terminalId: id, status: target.status?.status ?? null, lines: trimTrailingBlank(text).join('\n') };
+    },
+  }),
+  tool({
+    name: 'send_to_terminal',
+    title: 'Send to terminal',
+    description:
+      'Type text into another terminal, as if the user typed it: a message for another agent, or a command for a shell. Presses Enter afterwards unless "submit" is false. Line breaks are sent as spaces. Cannot send to your own terminal. Refused while the terminal is waiting for the user (status needs-approval or needs-reply): approvals and answers go through the user’s inbox. Refused for terminals the user hid from agents.',
+    inputSchema: {
+      terminal_id: z.string().describe('Terminal id from list_terminals.'),
+      text: z.string().min(1),
+      submit: z.boolean().default(true).describe('Press Enter after the text.'),
+    },
+    run: async ({ terminal_id, text, submit }, ctx) => {
+      const id = terminal_id as TerminalId;
+      if (id === ctx.caller.terminalId) throw new AgentDeckError({ code: 'invalid-argument', message: 'Can’t send to your own terminal' });
+      assertAgentTerminalAccess('send', await ctx.accessTarget(id));
+      await ctx.deps.terminals.sendKeys(id, literalKeys(text));
+      if (submit) {
+        await sleep(ctx.deps.submitDelayMs ?? 150);
+        // 文字打出去后到回车之间，目标可能刚好停下来问你：这时不按回车，免得替人按了批准。
+        assertAgentTerminalAccess('send', await ctx.accessTarget(id));
+        await ctx.deps.terminals.sendKeys(id, ['Enter']);
+      }
+      ctx.deps.onInput?.(id);
+      return { sent: true, terminalId: id };
+    },
+  }),
+  tool({
+    name: 'open_terminals',
+    title: 'Open terminals',
+    description: `Open several terminals at once, e.g. one per subagent when you split work, and start an agent in each. They appear on the board as a group next to your own terminal, in your workspace (same folder and branch), so the user can watch them. Give "prompts" to hand each one its task. Up to ${MAX_TERMINALS_WITHOUT_CONFIRM} without asking; more asks the user first. Follow up with list_terminals, read_terminal and send_to_terminal. To work on separate branches, use create_workspace instead.`,
+    inputSchema: {
+      count: z.number().int().min(1).max(MAX_TERMINALS_PER_CALL).describe('How many terminals to open.'),
+      agent: z.string().default('claude').describe('Agent id for all of them, e.g. "claude", "codex", "shell".'),
+      prompts: z
+        .array(z.string())
+        .optional()
+        .describe('First message for each terminal, in order (prompts[0] goes to the first one). Fewer than count leaves the rest without one.'),
+      labels: z.array(z.string().max(40)).optional().describe('Short names shown on the board, in order, e.g. ["api", "ui", "tests"].'),
+      workspace_id: z.string().nullable().optional().describe('Workspace to open them in. Omit for your own; null for loose terminals.'),
+    },
+    run: async ({ count, agent, prompts, labels, workspace_id }, ctx) => {
+      if (prompts && prompts.length > count) throw invalid(`Got ${prompts.length} prompts for ${count} terminals`);
+      if (labels && labels.length > count) throw invalid(`Got ${labels.length} labels for ${count} terminals`);
+      const ws = await ctx.resolveWorkspace(workspace_id);
+      if (count > MAX_TERMINALS_WITHOUT_CONFIRM) {
+        if (!ctx.deps.confirm) {
+          throw invalid(
+            `Opening more than ${MAX_TERMINALS_WITHOUT_CONFIRM} terminals at once needs the user’s confirmation, which isn’t available. Open at most ${MAX_TERMINALS_WITHOUT_CONFIRM}.`,
+          );
+        }
+        const ok = await ctx.deps.confirm({
+          title: `Open ${count} terminals?`,
+          body: `An agent wants to open ${count} ${agent} terminals${ws ? ` in ${ws.name}` : ''} at once.`,
+          confirm: `Open ${count}`,
+        });
+        if (!ok) throw new AgentDeckError({ code: 'cancelled', message: `The user declined opening ${count} terminals` });
+      }
+      // 一个一个开（tmux 会话、agent 的启动准备都不适合并发）；中途失败时已经开了的照样放上白板。
+      const members: WindowGroupMemberRequest[] = [];
+      const opened: { terminalId: TerminalId; label: string | null }[] = [];
+      let failure: string | null = null;
+      for (let i = 0; i < count; i++) {
+        const prompt = prompts?.[i];
+        const label = labels?.[i]?.trim() || null;
+        try {
+          const t = await ctx.launch({ agent, workspace: ws, ...(prompt ? { prompt } : {}) });
+          members.push({ request: t.request, label });
+          opened.push({ terminalId: t.terminalId, label });
+        } catch (e) {
+          failure = errorText(e);
+          break;
+        }
+      }
+      if (members.length > 0) ctx.deps.emit({ type: 'board.open-group', lead: ctx.caller.terminalId, members, highlight: true });
+      if (opened.length === 0) throw new Error(failure ?? 'No terminals opened');
+      return {
+        workspaceId: ws?.id ?? null,
+        lead: ctx.caller.terminalId,
+        terminals: opened,
+        ...(failure ? { error: `Stopped after ${opened.length} of ${count}: ${failure}` } : {}),
+      };
+    },
+  }),
+  tool({
+    name: 'list_windows',
+    title: 'List windows',
+    description:
+      'List the windows on the AgentDeck board (terminals and browser windows) with their workspace, status, conversation topic (the title the agent set) and group (terminals opened together with open_terminals). Your own terminal is marked with "self": true. Windows opened in the last second may be missing. Terminals the user hid from agents are not listed.',
+    inputSchema: {
+      workspace_id: z.string().nullable().optional().describe('Only windows in this workspace; null for loose windows.'),
+    },
+    annotations: { readOnlyHint: true },
+    run: async ({ workspace_id }, ctx) => {
+      if (!ctx.deps.board) throw new AgentDeckError({ code: 'unsupported', message: 'The board isn’t available' });
+      const [board, terminals, statuses, hidden] = await Promise.all([ctx.deps.board.load(), ctx.deps.terminals.list(), ctx.deps.status.snapshot(), ctx.hidden()]);
+      const infoById = new Map(terminals.map((t) => [t.id, t]));
+      const statusById = new Map(statuses.map((s) => [s.terminalId, s]));
+      // AH11：隐藏的终端窗口也不列（和 list_terminals 一样），白板上直接勾着的也算
+      const isHidden = (w: (typeof board.windows)[number]) => {
+        if (w.type !== 'terminal') return false;
+        const d = w.data as Partial<TerminalWindowData> | undefined;
+        return d?.hideFromAgents === true || (!!d?.terminalId && hidden.has(d.terminalId));
+      };
+      return {
+        windows: board.windows
+          .filter((w) => !isHidden(w))
+          .filter((w) => workspace_id === undefined || w.workspaceId === workspace_id)
+          .map((w) => {
+            const term = w.type === 'terminal' ? (w.data as Partial<TerminalWindowData>) : null;
+            const tid = term?.terminalId ?? null;
+            const info = tid ? infoById.get(tid) : undefined;
+            const st = tid ? statusById.get(tid) : undefined;
+            const url = w.type === 'browser' ? ((w.data as Partial<BrowserWindowData>).url ?? null) : null;
+            return {
+              id: w.id,
+              type: w.type,
+              title: w.title ?? defaultTitle(w.type, term?.agent ?? null, url),
+              workspaceId: w.workspaceId,
+              ...(term
+                ? {
+                    terminalId: tid,
+                    agent: term.agent ?? null,
+                    status: st?.status ?? (info ? (info.alive ? 'running' : 'exited') : null),
+                    waitingFor: st?.pending ? { kind: st.pending.kind, summary: st.pending.summary } : null,
+                    topic: info?.title ?? null,
+                  }
+                : {}),
+              ...(url !== null ? { url } : {}),
+              group: w.group ? { id: w.group.id, role: w.group.role, label: w.group.label ?? null } : null,
+              self: tid !== null && tid === ctx.caller.terminalId,
+            };
+          }),
+      };
+    },
+  }),
+  tool({
+    name: 'focus_window',
+    title: 'Focus window',
+    description:
+      'Bring a window into view on the board and focus it, e.g. the browser window showing your result, or a terminal that needs the user. If the user is typing somewhere, it only flashes the window instead of taking focus. Give window_id (from list_windows) or terminal_id.',
+    inputSchema: {
+      window_id: z.string().optional().describe('Window id from list_windows.'),
+      terminal_id: z.string().optional().describe('Terminal id from list_terminals or open_terminals.'),
+    },
+    run: async ({ window_id, terminal_id }, ctx) => {
+      if ((window_id === undefined) === (terminal_id === undefined)) throw invalid('Pass either window_id or terminal_id');
+      if (terminal_id !== undefined) {
+        const id = terminal_id as TerminalId;
+        if (!(await ctx.deps.terminals.list()).some((t) => t.id === id)) {
+          throw new AgentDeckError({ code: 'not-found', message: `Terminal not found: ${terminal_id}` });
+        }
+        ctx.deps.emit({ type: 'board.focus-window', target: { terminalId: id } });
+        return { requested: true, terminalId: id };
+      }
+      const id = window_id as WindowId;
+      if (ctx.deps.board && !(await ctx.deps.board.load()).windows.some((w) => w.id === id)) {
+        throw new AgentDeckError({ code: 'not-found', message: `Window not found: ${window_id}` });
+      }
+      ctx.deps.emit({ type: 'board.focus-window', target: { windowId: id } });
+      return { requested: true, windowId: id };
+    },
+  }),
+  tool({
+    name: 'notify',
+    title: 'Notify',
+    description:
+      'Tell the user something short without interrupting them, e.g. "Tests passed" or "Ready for review". Your window flashes and a notice shows on the board (only the flash while the user is typing); a system notification when AgentDeck is in the background. Doesn’t take focus.',
+    inputSchema: {
+      message: z.string().min(1).max(MAX_NOTIFY_CHARS).describe('One short sentence.'),
+    },
+    run: async ({ message }, ctx) => {
+      const text = message.replace(/\s+/g, ' ').trim();
+      if (!text) throw invalid('Empty message');
+      ctx.deps.emit({ type: 'board.notify', from: ctx.caller.terminalId, message: text });
+      ctx.deps.onNotify?.({ terminalId: ctx.caller.terminalId, message: text });
+      return { notified: true };
+    },
+  }),
+];
+
+/** 一次调用的上下文：注入的服务和调用者。工具实现只经它拿东西。 */
+export class ToolContext {
   constructor(
-    private readonly deps: McpToolDeps,
-    private readonly caller: McpCaller,
+    readonly deps: McpToolDeps,
+    readonly caller: McpCaller,
   ) {}
 
   async statusOf(id: TerminalId): Promise<StatusSnapshot | undefined> {
     return (await this.deps.status.snapshot()).find((s) => s.terminalId === id);
+  }
+
+  /** 用户对 agent 隐藏的终端（McpToolDeps.hiddenFromAgents）。 */
+  async hidden(): Promise<ReadonlySet<TerminalId>> {
+    return (await this.deps.hiddenFromAgents?.()) ?? new Set();
+  }
+
+  /** agentTerminalRefusal 要的目标情况（guard.ts）。 */
+  async accessTarget(id: TerminalId): Promise<AgentTerminalTarget> {
+    const [status, hidden] = await Promise.all([this.statusOf(id), this.hidden()]);
+    return { status, hidden: hidden.has(id) };
   }
 
   async callerWorkspaceId(): Promise<WorkspaceId | null> {
@@ -616,9 +695,14 @@ async function run(fn: () => Promise<unknown>): Promise<CallToolResult> {
     const value = await fn();
     return { content: [{ type: 'text', text: JSON.stringify(value, null, 2) }] };
   } catch (e) {
-    const message = e instanceof Error || isAgentDeckErrorData(e) ? e.message : String(e);
-    return { isError: true, content: [{ type: 'text', text: message }] };
+    return { isError: true, content: [{ type: 'text', text: toErrorData(e).message }] };
   }
+}
+
+/** 抛出来的东西变成 AgentDeckErrorData：服务的错保留 code，别的算 internal。 */
+export function toErrorData(e: unknown): AgentDeckErrorData {
+  if (e instanceof AgentDeckError || isAgentDeckErrorData(e)) return { code: e.code, message: e.message };
+  return { code: 'internal', message: e instanceof Error ? e.message : String(e) };
 }
 
 /**

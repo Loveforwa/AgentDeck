@@ -34,6 +34,11 @@ export function useToast(): ToastApi {
   return api;
 }
 
+/** 同 useToast，但不在 ToastProvider 里时返回 null，不抛错。窗口组件用（单独测试、dev 页面里外面没有 Provider）。 */
+export function useOptionalToast(): ToastApi | null {
+  return useContext(ToastContext);
+}
+
 interface Entry extends ToastOptions {
   id: string;
 }

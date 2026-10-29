@@ -1,0 +1,193 @@
+// 文档窗口、代码锚点、评论、核查（M15 · DC0，需求见设计画布“文档”页 D0–D2，形状来自 docs/design/drafts/m15-docs/docs.contracts.ts）。
+// 文档就是仓库里的 .md 文件：白板上的文档窗口（type 'doc'）读写它，代码引用（path:line）按 git blame + diff 挪行号再核对原文。
+// 实现：packages/doc-service（DC2，主进程）；GitService 加的 blameLines、showFile、lineMap 见 git.ts（DC1）。
+// 代码锚点这一层和“代码理解”页的序列图（M16 · CU0、CU1）共用，格式以这里为准；锚点必须保留一行原文 text。
+// 解析文档里的引用是纯函数 parseCodeRefs（code-refs.ts），界面和服务共用一份。
+
+import type { AbsPath, AgentKind, IsoTime, TerminalId } from './common.ts';
+
+// ---------------- 文档窗口（白板上的一种窗口，type 'doc'） ----------------
+
+/** WindowNode<DocWindowData>.data。随白板保存。 */
+export interface DocWindowData {
+  /** 文件的绝对路径。在框里时通常在这个工作区（worktree）里；也可以是 AgentDeck 数据目录里的只读文件（集群汇报）。 */
+  path: AbsPath;
+  /** read：渲染后的阅读视图（默认）；edit：源码编辑（markdown 原文）。 */
+  view: 'read' | 'edit';
+  /** “Ask …”和“Send comments to …”发给谁。agentdeck doc open 打开时是调用者；从终端链接打开时是那个终端。 */
+  linkedTerminal?: { terminalId: TerminalId; label: string } | null;
+  /** 打开时滚到哪里。 */
+  scrollTo?: { heading?: string; line?: number } | null;
+  /** 同 BrowserWindowData.reloadToken：复用窗口打开同一文件时换一个新值。 */
+  reloadToken?: number;
+  /** 你上次看过的版本（内容哈希），用来标“你没看过的改动”。窗口失去焦点时更新。 */
+  seenHash?: string | null;
+}
+
+export interface DocFile {
+  path: AbsPath;
+  text: string;
+  /** 内容的 sha1，写回时当作 baseHash。 */
+  hash: string;
+  mtime: IsoTime;
+  /** 在哪个 git 仓库（worktree 根），不在仓库里为 null。引用按它解析。 */
+  repo: AbsPath | null;
+  readOnly: boolean;
+}
+
+export type DocWriteResult =
+  | { ok: true; hash: string }
+  /** 磁盘上的文件在你读过之后被改了（多半是 agent）。theirs 是现在的内容，窗口做三方合并。 */
+  | { ok: false; conflict: { theirs: DocFile } };
+
+/** 谁改的。只在认得出时填：自己保存是 me；agent 的 PostToolUse 钩子带着这个文件路径、时间对得上时是那个终端。 */
+export type DocAuthor = { kind: 'me' } | { kind: 'agent'; terminalId: TerminalId; agent: AgentKind; label: string };
+
+export interface DocSnapshot {
+  hash: string;
+  at: IsoTime;
+  by: DocAuthor | null;
+}
+
+export interface DocService {
+  /** 文件不存在抛 not-found。 */
+  read(path: AbsPath): Promise<DocFile>;
+  /** baseHash 和磁盘对不上时不写，返回 conflict。写入用临时文件 + rename。只读文件抛 invalid-argument。 */
+  write(path: AbsPath, text: string, opts: { baseHash: string }): Promise<DocWriteResult>;
+  /** 开始盯一个文件（fs.watch + 去抖 200ms），有变化发 doc.changed。窗口关掉时 unwatch。重复调用没有副作用。 */
+  watch(path: AbsPath): Promise<void>;
+  unwatch(path: AbsPath): Promise<void>;
+  /** 这个工作区里的 .md（git ls-files + 未跟踪的，排除 node_modules），给路径下拉用。 */
+  list(root: AbsPath): Promise<{ path: AbsPath; title: string | null }[]>;
+  /** 这次运行里的快照（每次磁盘变化、每次你保存各一份，最多 50 份），给 “Changes since you last looked” 和历史用。新的在后。 */
+  snapshots(path: AbsPath): Promise<DocSnapshot[]>;
+  /** 一份快照的全文；不在了返回 null。 */
+  snapshot(path: AbsPath, hash: string): Promise<string | null>;
+}
+
+/** doc.comments、doc.verify 是第二期（DocCommentService、DocVerifyService）才发的。 */
+export type DocEvent =
+  | { type: 'doc.changed'; path: AbsPath; hash: string; by: DocAuthor | null }
+  | { type: 'doc.anchors'; path: AbsPath; summary: AnchorSummary }
+  | { type: 'doc.comments'; path: AbsPath }
+  | { type: 'doc.verify'; path: AbsPath; runId: string; done: number; total: number };
+
+// ---------------- 代码锚点（文档和序列图共用） ----------------
+
+/**
+ * 一处代码引用的位置。文档里的由 parseCodeRefs 读出；序列图（CU0）的由 agent 写进 seq.json。
+ * 认这几种写法（都可以带反引号）：path:12  path:12-30  path:12:5  path#L12-L30  path#L12-30（claude 的 @path#L12-30）  path@<rev>:12（钉住版本）。
+ * 紧跟在后面的 `Symbol`（反引号里的标识符）算作这处引用的符号。
+ */
+export interface CodeAnchor {
+  /** 仓库根目录下的相对路径（写成绝对路径的原样留着，由服务按仓库根换算）；短路径（claude.ts）原样留着，解析时标 ambiguous。 */
+  path: string;
+  start?: number;
+  end?: number;
+  symbol?: string;
+  /** path@<rev>:line 时的 rev（提交、标签）。钉住的引用不跟着代码走。 */
+  rev?: string;
+  /** 一行原文。序列图的锚点必须有；文档引用不写，由服务在核对时记下。 */
+  text?: string;
+}
+
+export interface CodeRef extends CodeAnchor {
+  /** 在文档里的原文（不含外面的反引号和开头的 @，不含后面的符号），渲染和“Update line numbers”用。 */
+  raw: string;
+  /** raw 在文档里的位置：from / to 是 0 起的字符偏移（to 不含），line 是 1 起的行号。 */
+  at: { from: number; to: number; line: number };
+  /** repo：仓库里的文件；new：(new) 标了的计划文件；external：带来源前缀的外部源码。new 和 external 不核对。 */
+  kind: 'repo' | 'new' | 'external';
+  /** external 时的来源，例如 'openai/codex main (2026-10-26)'。规格没列，外部来源要显示出来所以加了这个可选字段。 */
+  source?: string;
+}
+
+/**
+ * ok：基准以来这几行没变。moved：内容没变、行号挪了（now 是新位置）。changed：这几行被改过，要重新看。
+ * gone：文件、符号或这几行都找不到了。ambiguous：短路径对到了几个文件。outside：不在这个工作区（或文档不在仓库里、new、external）。
+ */
+export type AnchorState = 'ok' | 'moved' | 'changed' | 'gone' | 'ambiguous' | 'outside';
+
+export interface ResolvedRef {
+  ref: CodeRef;
+  state: AnchorState;
+  /** 现在在哪（moved、changed 时和原来不同）。 */
+  now?: { path: string; start: number; end: number } | null;
+  /** 拿哪个版本当“写的时候看到的代码”。顺序：钉住的 rev > 上次核对通过时记下的 > git blame 这一行文档的提交 > 工作区现在。 */
+  baseline: { rev: string | null; source: 'pinned' | 'verified' | 'blame' | 'worktree' };
+  /** ambiguous 时的候选（按这几行原文和句子里的词排过序）。 */
+  candidates?: string[];
+  /** gone 时的原因、改名后的新路径提示（英文，给悬停卡片）。 */
+  detail?: string;
+}
+
+export interface AnchorSummary {
+  total: number;
+  counts: Record<AnchorState, number>;
+  checkedAt: IsoTime;
+}
+
+export interface CodeAnchorService {
+  /** 按文档所在的 worktree 解析。refs 不给时解析整篇。 */
+  resolve(docPath: AbsPath, refs?: CodeRef[]): Promise<{ refs: ResolvedRef[]; summary: AnchorSummary }>;
+  /** 悬停卡片：现在的代码（前后各 3 行），changed 时附上基准 → 现在的 diff。 */
+  peek(docPath: AbsPath, ref: CodeRef): Promise<{ lines: { n: number; text: string }[]; diff: string | null }>;
+  /** 只改 moved 的行号（其余不动），作为一次普通的文件写入，走 DocService.write。返回改了几处。 */
+  fixLines(docPath: AbsPath, refs: CodeRef[]): Promise<number>;
+  /** 把这几处记成“核对过”：记下现在的 blob 和这几行的哈希，之后以它为基准。 */
+  markVerified(docPath: AbsPath, refs: CodeRef[]): Promise<void>;
+}
+
+// ---------------- 评论（第二期，先定形状，不进 Services） ----------------
+
+export interface DocComment {
+  id: string;
+  path: AbsPath;
+  /** 评论挂在哪几个字上：W3C Web Annotation 的 TextQuoteSelector（exact + prefix + suffix），外加创建时的偏移当提示。 */
+  anchor: { exact: string; prefix: string; suffix: string; hint: number } | null;
+  body: string;
+  author: DocAuthor;
+  /** open：还没处理；sent：已发给 agent；addressed：agent 回了 --done；resolved：你点了 Resolve；detached：挂的字被删掉了。 */
+  state: 'open' | 'sent' | 'addressed' | 'resolved' | 'detached';
+  replies: { body: string; author: DocAuthor; at: IsoTime }[];
+  at: IsoTime;
+}
+
+export interface DocCommentService {
+  list(path: AbsPath, opts?: { open?: boolean }): Promise<DocComment[]>;
+  add(path: AbsPath, c: Pick<DocComment, 'anchor' | 'body'>): Promise<DocComment>;
+  reply(id: string, body: string, opts?: { done?: boolean }): Promise<void>;
+  resolve(id: string): Promise<void>;
+  /** 把这几条发给一个终端：拼一行英文提示词，终端空闲时发（发送方式同 PL3，不往等你的终端里打字，IS-102）。 */
+  send(ids: string[], to: TerminalId): Promise<{ queued: boolean }>;
+}
+
+// ---------------- 语义核查（第二期，先定形状，不进 Services） ----------------
+
+export type ClaimVerdict = 'supported' | 'partly' | 'wrong' | 'unclear';
+
+export interface DocClaim {
+  /** 文档里一句（或一条列表项）+ 它带的引用。id 是“这句话的文字 + 引用”的哈希，文字或代码变了就是新的。 */
+  id: string;
+  text: string;
+  refs: CodeRef[];
+  verdict: {
+    result: ClaimVerdict;
+    reason: string;
+    fix: string | null;
+    by: { agent: AgentKind; terminalId: TerminalId };
+    at: IsoTime;
+    /** 核查时这几处代码的哈希。哪个变了，这条结论就作废。 */
+    codeHashes: string[];
+  } | null;
+}
+
+export interface DocVerifyService {
+  /** 抽出要核查的句子（带引用的句子），已有有效结论的不算。给对话框显示数量和估算。 */
+  plan(path: AbsPath): Promise<{ claims: DocClaim[]; toCheck: number; estimateTokens: number }>;
+  /** 开一个核查终端（默认换一家：作者是 claude 就用 codex），只读，第一条提示词里只有句子和代码，没有作者的对话。 */
+  start(path: AbsPath, opts: { agent: AgentKind; claimIds?: string[] }): Promise<{ runId: string; terminalId: TerminalId }>;
+  /** agentdeck doc verdict 走这里。 */
+  submit(runId: string, claimId: string, v: { result: ClaimVerdict; reason: string; fix?: string | null }): Promise<void>;
+  claims(path: AbsPath): Promise<DocClaim[]>;
+}

@@ -58,6 +58,9 @@ function fallbackRunDir(dataDir: string): string {
   return `/tmp/agentdeck-${process.getuid?.() ?? 0}-${hash}`;
 }
 
+/** 沙盒默认挡住的真 agent（claude 本来就换成了假的）。 */
+export const SHIELDED_AGENTS = ['codex', 'pi', 'omp', 'kimi'] as const;
+
 export function createSandbox(name: string): Sandbox {
   // realpath：macOS 的 tmpdir 在 /var 下，git 报的是 /private/var，比较路径时要一致
   const root = realpathSync(mkdtempSync(join(tmpdir(), 'agentdeck-e2e-')));
@@ -79,6 +82,13 @@ export function createSandbox(name: string): Sandbox {
   const claude = join(fakeBin, 'claude');
   writeFileSync(claude, `#!/bin/sh\nexec ${q(process.execPath)} ${q(FAKE_CLAUDE)} "$@"\n`);
   chmodSync(claude, 0o755);
+  // AgentDeck 读登录环境后会在 PATH 末尾补 /opt/homebrew/bin 等目录（login-env.ts 的 withCommonPaths），本机装着的真 codex、pi、omp、kimi
+  // 会被检测到、甚至被运行。fakebin 在 PATH 最前面，放同名的桩挡住（exit 127 = 没装）；要用假程序的测试会覆盖它们（installFake）。
+  for (const name of SHIELDED_AGENTS) {
+    const file = join(fakeBin, name);
+    writeFileSync(file, '#!/bin/sh\n# AgentDeck e2e：挡住真装着的同名程序\nexit 127\n');
+    chmodSync(file, 0o755);
+  }
 
   const path = `${fakeBin}:${sysBin}:${BASE_PATH}`;
   // 登录 shell 的配置：AgentDeck 读环境、终端里的 Shell 都会读它

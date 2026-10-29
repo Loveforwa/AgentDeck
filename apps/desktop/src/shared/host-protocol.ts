@@ -19,6 +19,7 @@ export const HOST_METHODS: readonly HostMethod[] = [
   'write',
   'resize',
   'sendKeys',
+  'sendText',
   'lastLines',
   'attachCommand',
   'recentLinks',

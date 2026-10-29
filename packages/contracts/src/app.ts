@@ -2,6 +2,7 @@
 // 实现：apps/desktop 主进程（组装时完成）。
 
 import type { AbsPath, AgentKind, TerminalId } from './common.ts';
+import type { LaunchPreset } from './launch.ts';
 
 export interface Settings {
   /** 关闭窗口时：后台继续（默认）或直接退出。 */
@@ -18,6 +19,10 @@ export interface Settings {
     /** 破坏性命令名单（正则字符串），Approve all 里默认不勾，Auto-approve 不会自动批准。 */
     destructivePatterns: string[];
   };
+  /** LA0：New terminal ▸ 里所有项目都有的启动预设（COMMANDS 一组的 All projects）。老设置没有它，按空数组。 */
+  launchPresets?: LaunchPreset[];
+  /** PL4 / PL5：Settings › Agents › Resume prompt，续跑时发的英文模板。不填用内置的那段。PL6 的卡片里还能只改某一次的（LimitService.setMessage）。 */
+  resumePrompt?: string;
 }
 
 export interface AgentSettings {
@@ -47,6 +52,12 @@ export interface AppService {
   quit(req: QuitRequest): Promise<void>;
   /** 程序坞角标数字；0 清除。 */
   setBadge(count: number): void;
+  /**
+   * PL3：Prompt queue 在等额度恢复、或正在接着发时不让 Mac 睡（系统睡眠，不管屏幕）；false 放开。重复调用没有副作用。
+   * 合盖照样会睡。
+   * @deprecated 0.1.23：Prompt queue 已退役，界面不再调；不让 Mac 睡由主进程的 LimitService（PL5）自己管。
+   */
+  setKeepAwake(on: boolean): Promise<void>;
 }
 
 export type AppEvent =

@@ -1,13 +1,14 @@
 import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { AgentDeckError } from '@agentdeck/contracts';
-import type { AgentSessionId, StartAgentRequest } from '@agentdeck/contracts';
+import { AgentDeckError, TERMINAL_KEY_ENV } from '@agentdeck/contracts';
+import type { AgentSessionId, CreateTerminalRequest, StartAgentRequest, TerminalId } from '@agentdeck/contracts';
 import { FakeTerminalHost } from '@agentdeck/fakes';
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createDefaultAdapters } from '../src/adapters/index.ts';
 import { AgentServiceImpl } from '../src/agent-service.ts';
 import type { StartedAgent } from '../src/agent-service.ts';
+import { literalKeys } from '../src/first-message.ts';
 
 let bin: string;
 let terminals: FakeTerminalHost;
@@ -98,7 +99,9 @@ describe('AgentServiceImpl', () => {
     expect(res.args).toContain('--settings');
     expect(res.args.slice(-2)).toEqual(['--model', 'opus']);
     expect(res.sessionId).toMatch(/^[0-9a-f-]{36}$/);
-    expect(started).toEqual([{ terminalId: res.terminalId, agent: 'claude', workspaceId: 'ws', hooks: true, sessionId: res.sessionId, skills: null }]);
+    expect(started).toEqual([
+      { terminalId: res.terminalId, agent: 'claude', workspaceId: 'ws', hooks: true, sessionId: res.sessionId, skills: null, watchHooks: 'startup', degraded: null },
+    ]);
   });
 
   it('start: passes the prompt and the MCP endpoint to the adapter', async () => {
@@ -220,5 +223,229 @@ describe('AgentServiceImpl: restoring the last session (X6)', () => {
     expect(terminals.get(claude.terminalId).request.prefill).toBeUndefined();
     const run = await s.start(req({ agent: 'shell', command: 'pnpm dev', prefill: 'pnpm dev' }));
     expect(terminals.get(run.terminalId).request.prefill).toBeUndefined();
+  });
+});
+
+describe('AgentServiceImpl: per-terminal environment (CR15)', () => {
+  let bin2: string;
+  beforeAll(() => {
+    bin2 = mkdtempSync(join(tmpdir(), 'ads-cr15-'));
+    for (const [name, out] of [
+      ['claude', '2.1.291 (Claude Code)'],
+      ['pi', '0.83.0'],
+      ['kimi', 'kimi, version 2.3.2'],
+      ['pnpm', '10.0.0'],
+    ]) {
+      writeFileSync(join(bin2, name!), `#!/bin/sh\necho "${out}"\n`);
+      chmodSync(join(bin2, name!), 0o755);
+    }
+  });
+  afterAll(() => rmSync(bin2, { recursive: true, force: true }));
+
+  const BIN = '/data/agentdeck/bin';
+  const keyOf = (id: string) => `key-of-${id}`;
+
+  /** 记下 create 的请求；照 contracts 用请求里的 id（FakeTerminalHost 不看 req.id）。 */
+  function withStubHost(plain = false) {
+    const env = { PATH: `${bin2}:/usr/bin`, SHELL: '/bin/sh' };
+    const created: CreateTerminalRequest[] = [];
+    const s = new AgentServiceImpl({
+      adapters: createDefaultAdapters({ env: () => env }),
+      terminals: { create: async (r) => (created.push(r), { id: r.id ?? ('t-host' as TerminalId) }) },
+      env: () => env,
+      notifyCommand: '/opt/agentdeck/agentdeck-notify',
+      mcp: () => ({ url: 'http://127.0.0.1:1/mcp', token: 'shared-token' }),
+      ...(plain ? {} : { terminalKey: keyOf, binDir: BIN }),
+    });
+    return { s, created };
+  }
+
+  it('every terminal gets the agentdeck bin dir first on PATH and its own key; the id is chosen before the key', async () => {
+    const { s, created } = withStubHost();
+    for (const r of [req({}), req({ agent: 'shell' }), req({ agent: 'custom', command: 'pnpm dev' }), req({ agent: 'pi' }), req({ agent: 'kimi' })]) {
+      const res = await s.start(r);
+      const c = created.at(-1)!;
+      expect(c.id).toBe(res.terminalId);
+      expect(res.terminalId).toMatch(/^t-[0-9a-f]{12}$/);
+      expect(c.env?.[TERMINAL_KEY_ENV]).toBe(keyOf(res.terminalId));
+      expect(c.env?.PATH).toBe(`${BIN}:${bin2}:/usr/bin`);
+      // tmux 不认 -e PATH=：经 /usr/bin/env 设好 PATH 再 exec 原来的命令；返回给窗口的仍是原来的
+      expect(c.cmd).toBe('/usr/bin/env');
+      expect(c.args).toEqual([`PATH=${BIN}:${bin2}:/usr/bin`, res.cmd, ...res.args]);
+      expect(res.cmd).not.toBe('/usr/bin/env');
+    }
+    expect(new Set(created.map((c) => c.id)).size).toBe(5);
+  });
+
+  it('the MCP config gets the terminal key instead of the shared token', async () => {
+    const { s, created } = withStubHost();
+    const res = await s.start(req({}));
+    expect(res.args).toContain('--mcp-config');
+    expect(created[0]!.env).toMatchObject({ AGENTDECK_MCP_TOKEN: keyOf(res.terminalId), AGENTDECK_TERM_KEY: keyOf(res.terminalId) });
+    expect(JSON.stringify(created[0])).not.toContain('shared-token');
+  });
+
+  it('without terminalKey and binDir nothing changes (the host picks the id)', async () => {
+    const { s, created } = withStubHost(true);
+    const res = await s.start(req({ agent: 'shell' }));
+    expect(res.terminalId).toBe('t-host');
+    expect(created[0]!.id).toBeUndefined();
+    expect(created[0]!.env).toBeUndefined();
+  });
+});
+
+describe('AgentServiceImpl: the first message reaches every agent (AH1, IS-76)', () => {
+  let agentsBin: string;
+  beforeAll(() => {
+    agentsBin = mkdtempSync(join(tmpdir(), 'ads-ah1-'));
+    for (const [name, out] of [
+      ['claude', '2.1.291 (Claude Code)'],
+      ['codex', 'codex-cli 0.100.0'],
+      ['pi', '0.83.0'],
+      ['omp', 'omp/18.0.4'],
+      ['kimi', '2.3.2'],
+    ]) {
+      writeFileSync(join(agentsBin, name!), `#!/bin/sh\necho "${out}"\n`);
+      chmodSync(join(agentsBin, name!), 0o755);
+    }
+  });
+  afterAll(() => rmSync(agentsBin, { recursive: true, force: true }));
+
+  function withExtra(extra: string[] = ['--model', 'm1'], over: Partial<ConstructorParameters<typeof AgentServiceImpl>[0]> = {}) {
+    const env = { PATH: agentsBin, SHELL: '/bin/sh' };
+    terminals = new FakeTerminalHost({ silenceMs: 0 });
+    started = [];
+    return new AgentServiceImpl({
+      adapters: createDefaultAdapters({ env: () => env }),
+      terminals,
+      env: () => env,
+      notifyCommand: '/opt/agentdeck/agentdeck-notify',
+      extraArgs: () => extra,
+      onStarted: (s) => started.push(s),
+      firstMessageTiming: { typeDelayMs: 0, readyMaxMs: 60_000 },
+      ...over,
+    });
+  }
+  const PROMPT = 'reply with the word PELICAN';
+
+  it.each([
+    ['claude', ['--model', 'm1', '--', PROMPT]],
+    ['codex', ['--model', 'm1', '--', PROMPT]],
+    // omp 认 `--`：之后都是消息
+    ['omp', ['--model', 'm1', '--', PROMPT]],
+    // pi 不认 `--`：消息放在用户参数前面，免得被不认识的 --flag 吃掉
+    ['pi', [PROMPT, '--model', 'm1']],
+  ] as const)('%s takes it as a launch argument', async (agent, tail) => {
+    const s = withExtra();
+    const res = await s.start(req({ agent, prompt: PROMPT }));
+    expect(res.args.slice(-tail.length)).toEqual([...tail]);
+    expect(terminals.get(res.terminalId).request.args).toEqual(res.args);
+    expect(terminals.get(res.terminalId).keys).toEqual([]);
+  });
+
+  it('pi: a message starting with @ or - gets a leading space, so pi does not read it as a file or an option', async () => {
+    const s = withExtra([]);
+    expect((await s.start(req({ agent: 'pi', prompt: '@README.md fix it' }))).args.at(-1)).toBe(' @README.md fix it');
+    expect((await s.start(req({ agent: 'pi', prompt: '--help me' }))).args.at(-1)).toBe(' --help me');
+    // omp 有 `--`，照原文
+    expect((await s.start(req({ agent: 'omp', prompt: '@README.md fix it' }))).args.slice(-2)).toEqual(['--', '@README.md fix it']);
+  });
+
+  it('kimi: not in the arguments; typed in (sendText, as written) when the terminal first goes quiet, then Enter', async () => {
+    const s = withExtra([]);
+    const res = await s.start(req({ agent: 'kimi', prompt: '@README.md reply with the word PELICAN;\nthen stop' }));
+    expect(res.args).toEqual([]);
+    const id = res.terminalId;
+    expect(terminals.get(id).keys).toEqual([]);
+    terminals.feed(id, '╭──╮\n│ > │\n╰──╯\n');
+    s.onTerminalEvent({ type: 'terminal.silence', id, at: new Date().toISOString() });
+    await vi.waitFor(() => expect(terminals.get(id).keys).toEqual([['Enter']]));
+    // 换行换成空格（不会提前提交），别的照原文
+    expect(terminals.get(id).texts).toEqual(['@README.md reply with the word PELICAN; then stop']);
+    // 只打一次
+    s.onTerminalEvent({ type: 'terminal.silence', id, at: new Date().toISOString() });
+    await new Promise((r) => setTimeout(r, 10));
+    expect(terminals.get(id).keys).toHaveLength(1);
+    expect(terminals.get(id).texts).toHaveLength(1);
+  });
+
+  it('kimi: a TerminalHost without sendText gets the text through sendKeys (literalKeys)', async () => {
+    const host = new FakeTerminalHost({ silenceMs: 0 });
+    const env = { PATH: agentsBin, SHELL: '/bin/sh' };
+    const s = new AgentServiceImpl({
+      adapters: createDefaultAdapters({ env: () => env }),
+      terminals: { create: (r) => host.create(r), sendKeys: (id, k) => host.sendKeys(id, k), lastLines: (id, n) => host.lastLines(id, n) },
+      env: () => env,
+      notifyCommand: '/opt/agentdeck/agentdeck-notify',
+      firstMessageTiming: { typeDelayMs: 0, readyMaxMs: 60_000 },
+    });
+    const { terminalId: id } = await s.start(req({ agent: 'kimi', prompt: 'Enter' }));
+    s.onTerminalEvent({ type: 'terminal.silence', id, at: new Date().toISOString() });
+    await vi.waitFor(() => expect(host.get(id).keys).toEqual([['E', 'n', 't', 'e', 'r'], ['Enter']]));
+    expect(host.get(id).texts).toEqual([]);
+    host.dispose();
+  });
+
+  it('kimi: waits while "Trust this folder?" is on screen (Enter would pick an option for you)', async () => {
+    const s = withExtra([]);
+    const { terminalId: id } = await s.start(req({ agent: 'kimi', prompt: PROMPT }));
+    terminals.feed(id, '  Trust this folder?\n   ❯ Trust and continue\n     Exit\n');
+    s.onTerminalEvent({ type: 'terminal.silence', id, at: new Date().toISOString() });
+    await new Promise((r) => setTimeout(r, 20));
+    expect(terminals.get(id).keys).toEqual([]);
+    expect(terminals.get(id).texts).toEqual([]);
+    // 用户选了之后屏幕刷新（假终端里直接换掉输出），再次安静时打进去
+    terminals.feed(id, `${'\n'.repeat(70)}╭──╮\n│ > │\n╰──╯\n`);
+    s.onTerminalEvent({ type: 'terminal.silence', id, at: new Date().toISOString() });
+    await vi.waitFor(() => expect(terminals.get(id).keys).toEqual([['Enter']]));
+    expect(terminals.get(id).texts).toEqual([PROMPT]);
+  });
+
+  it('kimi: nothing is typed once the terminal has exited', async () => {
+    const s = withExtra([]);
+    const { terminalId: id } = await s.start(req({ agent: 'kimi', prompt: PROMPT }));
+    s.onTerminalEvent({ type: 'terminal.exit', id, code: 1 });
+    s.onTerminalEvent({ type: 'terminal.silence', id, at: new Date().toISOString() });
+    await new Promise((r) => setTimeout(r, 10));
+    expect(terminals.get(id).keys).toEqual([]);
+    expect(terminals.get(id).texts).toEqual([]);
+  });
+
+  it.each(['shell', 'custom'] as const)('%s cannot take one: unsupported, and no terminal is opened', async (agent) => {
+    const s = withExtra([]);
+    const p = s.start(req({ agent, prompt: PROMPT, ...(agent === 'custom' ? { command: 'pnpm dev' } : {}) }));
+    await expect(p).rejects.toMatchObject({ code: 'unsupported' });
+    await expect(p).rejects.toThrow(/^(Shell|Custom command) can't take a first message yet\. Open it without "prompt"/);
+    expect(await terminals.list()).toEqual([]);
+  });
+
+  it('kimi without a way to type (no sendKeys) is unsupported too', async () => {
+    const env = { PATH: agentsBin, SHELL: '/bin/sh' };
+    const created: unknown[] = [];
+    const s = new AgentServiceImpl({
+      adapters: createDefaultAdapters({ env: () => env }),
+      terminals: { create: async (r) => (created.push(r), { id: 't1' as never }) },
+      env: () => env,
+      notifyCommand: '/opt/agentdeck/agentdeck-notify',
+    });
+    expect(await code(s.start(req({ agent: 'kimi', prompt: PROMPT })))).toBe('unsupported');
+    expect(created).toEqual([]);
+  });
+
+  it('resume and fork ignore the prompt as before (it only means something for a new conversation)', async () => {
+    const s = withExtra([]);
+    const res = await s.start(req({ agent: 'pi', prompt: PROMPT, mode: { kind: 'resume', sessionId: 'abc' as AgentSessionId } }));
+    expect(res.args).not.toContain(PROMPT);
+  });
+});
+
+describe('literalKeys', () => {
+  it('sends text as characters: control characters become spaces, a trailing ; is escaped, single words that could be key names are split', () => {
+    expect(literalKeys('fix the bug')).toEqual(['fix the bug']);
+    expect(literalKeys('line one\nline two')).toEqual(['line one line two']);
+    expect(literalKeys('do this; then that;')).toEqual(['do this; then that\\;']);
+    expect(literalKeys('Enter')).toEqual(['E', 'n', 't', 'e', 'r']);
+    expect(literalKeys('a;')).toEqual(['a', '\\;']);
+    expect(literalKeys('')).toEqual([]);
   });
 });

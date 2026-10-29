@@ -3,9 +3,10 @@
 
 import type { AgentDeckApi, AgentDeckErrorData, BackgroundAgent, FrameArrange, FrameLayout, AgentKind, BoardState, LaunchMode, CreateWorkspaceRequest, ErrorCode, FrameNode, OpenWindowRequest, ProjectId, ProjectPatch, Rect, Settings, Size, TerminalId, TerminalWindowData, Unsubscribe, Viewport, WindowCommand, WindowGroupId, WindowGroupMemberRequest, WindowId, WindowNode, WindowStatusBadge, Workspace, WorkspaceId } from '@agentdeck/contracts';
 import { TITLE_BAR_HEIGHT, resizeRect, type ResizeEdge } from '@agentdeck/ui-window-shell';
-import { isSummarySize, windowRegistry, type WindowDefinition, type WindowRegistry } from './registry.ts';
+import { isSummarySize, windowContents, windowRegistry, type WindowContentRegistry, type WindowDefinition, type WindowRegistry } from './registry.ts';
 import { ApprovalsModel } from './approvals/model.ts';
 import { usageOutset } from './plugins/usage-model.ts';
+import { LimitsModel } from './plugins/auto-resume-model.ts';
 import { PLUGIN_MARK_HEIGHT } from './plugins/types.ts';
 import { hintOf, transcriptRect } from './model/background.ts';
 import { LAYOUT_LABEL, arrangeBlocks, type ArrangeBlock } from './model/arrange.ts';
@@ -52,8 +53,9 @@ import {
 import { BoardHistory, applyStep, diffLayout, type BoardLayout, type Direction, type HistoryStep } from './model/history.ts';
 import { adjacentWindow, windowOrder } from './model/navigation.ts';
 import { restoreResultMessage, type RestoreOutcome, type RestoreSessionItem } from './model/restore.ts';
+import { trimForSend } from './model/send.ts';
 import { boxFrom, boxSelection, byWorkspace, toggleSelection, translate, windowsInBox } from './model/selection.ts';
-import type { ShortcutId } from './model/shortcuts.ts';
+import { jumpAgentRow, type ShortcutId } from './model/shortcuts.ts';
 import { NEAR_FRAME_PX, SNAP_PX, snapMove, snapResize, type Guide } from './model/snap.ts';
 import {
   BROWSER_TYPE,
@@ -88,6 +90,8 @@ export interface ViewportApi {
 export interface BoardControllerOptions {
   api: AgentDeckApi;
   registry?: WindowRegistry;
+  /** CO3：窗口内容的登记表（选中文字、粘贴）。不给用全局的 windowContents。 */
+  contents?: WindowContentRegistry;
   /** 散放的终端在哪个目录运行。contracts 里没有取主目录的方法，默认交给服务展开 '~'（见 CONTRACT_NOTES.md）。 */
   homeDir?: string;
   /** 保存防抖，默认 500ms。 */
@@ -96,6 +100,11 @@ export interface BoardControllerOptions {
   notify?(message: string): void;
   /** 换掉默认的 Add project… 流程（选文件夹 → probe → add）。返回新加的项目，取消返回 null。 */
   addProject?(): Promise<ProjectId | null>;
+  /**
+   * CO4：⌥⌘1–9 跳到第几个窗口。是 BoardNav 的 Agents 视图从上到下的顺序（board-nav-panel 的 agentOrder），
+   * 白板不能 import 面板，由组装方（apps/desktop）传进来。不给时 ⌥⌘1–9 不处理。
+   */
+  agentOrder?(state: BoardStoreState): readonly WindowId[];
 }
 
 /** 新窗口默认大小：终端 560×360（需求「5 · 终端窗口」）。没有注册时用这个。 */
@@ -168,6 +177,8 @@ function errorCode(e: unknown): string | null {
 export class BoardController {
   readonly store: BoardStore;
   readonly registry: WindowRegistry;
+  /** CO3：窗口内容的句柄（选中文字、粘贴），窗口组件挂上时登记。 */
+  readonly contents: WindowContentRegistry;
   viewportApi: ViewportApi | null = null;
   readonly api: AgentDeckApi;
   private readonly opts: BoardControllerOptions;
@@ -183,6 +194,8 @@ export class BoardController {
   private pendingSeq = 0;
   /** 批准（PL1 Auto-approve、Approval history、X3 Approve all），见 approvals/model.ts。 */
   readonly approvals: ApprovalsModel;
+  /** PL6：LimitService 的受限账号（Auto-resume 书签、卡片），见 plugins/auto-resume-model.ts。 */
+  readonly limits: LimitsModel;
   /** X10：撤销 / 重做（只在这次运行里）。 */
   readonly history = new BoardHistory();
   /** 正在拖动（移动、改大小）时，按下那一刻的白板；松手时和现在比，算成一步。 */
@@ -197,8 +210,10 @@ export class BoardController {
     this.opts = opts;
     this.api = opts.api;
     this.registry = opts.registry ?? windowRegistry;
+    this.contents = opts.contents ?? windowContents;
     this.store = createBoardStore();
     this.approvals = new ApprovalsModel(this, (message) => this.notify(message));
+    this.limits = new LimitsModel(this.api, (message) => this.notify(message));
     this.autosave = createAutosave<BoardState>({
       save: (state) => this.api.board.save(state),
       delayMs: opts.autosaveMs ?? 500,
@@ -272,6 +287,7 @@ export class BoardController {
       this.unsubs.push(() => window.removeEventListener('keydown', onKey, true));
     }
     void this.approvals.start();
+    void this.limits.start();
     // 标记（书签、后台 agent 的小提示）、Usage 条出现了：框长到装得下（N10，只变大）。两个 store 都可能让它变，合并到下一个微任务里查一次
     let marksQueued = false;
     const checkMarks = () => {
@@ -282,7 +298,7 @@ export class BoardController {
         if (this.started) this.keepMarksInFrames();
       });
     };
-    this.unsubs.push(this.store.subscribe(checkMarks), this.approvals.store.subscribe(checkMarks));
+    this.unsubs.push(this.store.subscribe(checkMarks), this.approvals.store.subscribe(checkMarks), this.limits.store.subscribe(checkMarks));
     // N12：开着 Auto-arrange 的框里多了、少了窗口：下一个微任务里重排
     this.unsubs.push(this.store.subscribe(() => this.noteFrameMembers()));
     // 存档：保存的那部分一变就排进防抖
@@ -306,6 +322,7 @@ export class BoardController {
       windows: board.windows,
       panel: board.panel,
       leftPanel: board.leftPanel ?? { ...DEFAULT_LEFT_PANEL },
+      autoResume: board.autoResume === true,
       workspaces: Object.fromEntries(workspaces.map((w) => [w.id, w])),
       projects,
       agents,
@@ -410,6 +427,7 @@ export class BoardController {
     this.started = false;
     for (const u of this.unsubs.splice(0)) u();
     this.approvals.dispose();
+    this.limits.dispose();
     void this.autosave.flush();
     this.autosave.dispose();
   }
@@ -553,7 +571,11 @@ export class BoardController {
   markOutset(w: WindowNode): { top: number; bottom: number } {
     const u = usageOutset(w);
     const tid = terminalIdOf(w);
-    const marks = this.approvals.windowOn(w) || (tid !== null && hintOf(this.state.backgroundAgents[tid] ?? []) !== null);
+    const marks =
+      this.approvals.windowOn(w) ||
+      (tid !== null && hintOf(this.state.backgroundAgents[tid] ?? []) !== null) ||
+      // PL6：Auto-resume 的书签（这个终端在受限账号里时）也挂在底边
+      this.limits.marked(w);
     return { top: u.top, bottom: u.bottom + (marks ? PLUGIN_MARK_HEIGHT : 0) };
   }
 
@@ -1128,6 +1150,17 @@ export class BoardController {
     const target = adjacentWindow(order, s.focusedId, step, frameStart);
     if (target) this.jumpToWindow(target);
     return target;
+  }
+
+  /** CO4：⌥⌘n 跳到 Agents 视图的第 n 行（和单击那一行一样：跳过去、闪一下、聚焦）。没有这一行返回 null。 */
+  jumpToAgentRow(n: number): WindowId | null {
+    const order = this.opts.agentOrder?.(this.state);
+    const id = order?.[n - 1] ?? null;
+    if (id && this.windowById(id)) {
+      this.jumpAndFlash(id);
+      return id;
+    }
+    return null;
   }
 
   /** 跳过去、闪一下并聚焦（⌘J 的效果）。面板的快速定位列表（V5）也用它。 */
@@ -1935,6 +1968,70 @@ export class BoardController {
     if (this.state.menu) this.set({ menu: null });
   }
 
+  // ---- CO3：Copy · Paste · Send selection to ▸ ----
+
+  /** 窗口里现在选中的文字（窗口组件登记了句柄才有）；没有为 ''。 */
+  selectionOf(id: WindowId): string {
+    try {
+      return this.contents.get(id)?.selectionText() ?? '';
+    } catch {
+      return '';
+    }
+  }
+
+  /** 内容区右键菜单的 Paste：读系统剪贴板，照 ⌘V 贴进这个窗口（多行时也贴，和 ⌘V 一样）。 */
+  async pasteClipboard(id: WindowId): Promise<boolean> {
+    const h = this.contents.get(id);
+    if (!h) return false;
+    let text: string;
+    try {
+      text = (await navigator.clipboard?.readText()) ?? '';
+    } catch {
+      this.notify('Couldn’t read the clipboard');
+      return false;
+    }
+    if (!text) return false;
+    const r = await h.paste(text, { requireBracketed: false });
+    if (!r.ok) this.notify(r.reason);
+    return r.ok;
+  }
+
+  /**
+   * Send selection to ▸：把 text 当作一次粘贴放进目标终端，不按回车；先跳过去并聚焦它（收起的组成员先显示、拉小的摘要卡恢复大小），
+   * 目标还没接上显示就等它接上再贴。不经过服务（MCP 的 send_to_terminal 会把换行变成空格、还会按回车）。
+   */
+  async sendSelection(fromId: WindowId, toId: WindowId, text: string, opts: { fresh?: boolean } = {}): Promise<boolean> {
+    const body = trimForSend(text);
+    const target = this.windowById(toId);
+    if (!body || !target || toId === fromId) return false;
+    this.jumpToWindow(toId);
+    // 拉小成摘要卡的窗口不接上显示，先恢复原来的大小
+    const def = this.definitionOf(target);
+    if (def && isSummarySize(def, target.rect) && target.restoreRect) this.expandSummary(toId);
+    const name = defaultName(target, def?.label);
+    const h = await this.contents.whenRegistered(toId, opts.fresh ? 10_000 : 3_000);
+    if (!h) {
+      this.notify(`Couldn’t send to ${name}: the window isn’t open`);
+      return false;
+    }
+    const r = await h.paste(body, { requireBracketed: true, ...(opts.fresh ? { fresh: true } : {}) });
+    if (!r.ok) {
+      this.notify(r.reason);
+      return false;
+    }
+    return true;
+  }
+
+  /** 子菜单最后的 New terminal here…：在源终端旁边（同一个框）开一个新终端，等程序准备好后贴进去。 */
+  async sendSelectionToNew(fromId: WindowId, agent: AgentKind, text: string): Promise<WindowId | null> {
+    const from = this.windowById(fromId);
+    if (!from || !trimForSend(text)) return null;
+    const id = await this.newTerminal({ agent, workspaceId: from.workspaceId, nextTo: fromId });
+    if (!id) return null;
+    await this.sendSelection(fromId, id, text, { fresh: true });
+    return id;
+  }
+
   /** W5 的 Open new：在目标框里新开一个同款 agent，放在松手的位置。 */
   async openInWorkspace(windowId: WindowId, to: WorkspaceId, at: Point | null): Promise<WindowId | null> {
     this.set({ dialog: null });
@@ -2557,6 +2654,13 @@ export class BoardController {
       case 'redo':
         this.redo();
         return true;
+      default: {
+        // ⌥⌘1–9（CO4）。没有组装 Agents 视图时不处理，按键照常交给页面
+        const row = jumpAgentRow(id);
+        if (row === null || !this.opts.agentOrder) return false;
+        this.jumpToAgentRow(row);
+        return true;
+      }
     }
   }
 }

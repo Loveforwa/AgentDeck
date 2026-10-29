@@ -2,13 +2,19 @@
 
 import type {
   AgentCapabilities,
+  AgentCapabilityReport,
   AgentInfo,
   AgentKind,
+  AgentLastReply,
   AgentService,
   AgentSessionId,
+  CapabilityEntry,
+  CapabilityKey,
+  CapabilityVia,
   LaunchMode,
   StartAgentRequest,
   StartAgentResult,
+  TerminalId,
 } from '@agentdeck/contracts';
 import type { FakeStatusService } from './status-service.ts';
 import type { FakeTerminalHost } from './terminal-host.ts';
@@ -53,6 +59,8 @@ export class FakeAgentService implements AgentService {
   private readonly nextId = idGenerator();
   /** 每次 start 的请求和结果，测试里断言用。 */
   readonly started: { request: StartAgentRequest; result: StartAgentResult }[] = [];
+  /** setLastReply 预置的“会话记录里的最后一条回复”。 */
+  private readonly replies = new Map<TerminalId, { text: string; at: string | null }>();
 
   constructor(opts: FakeAgentServiceOptions) {
     this.terminals = opts.terminals;
@@ -68,6 +76,33 @@ export class FakeAgentService implements AgentService {
 
   async refresh(): Promise<AgentInfo[]> {
     return this.list();
+  }
+
+  /** 有预置的 info.report 就返回它（checkedAt 换成现在），没有就按 capabilities 粗推一份。 */
+  async check(agent: AgentKind): Promise<AgentCapabilityReport> {
+    const a = this.agents.find((x) => x.info.id === agent);
+    if (!a) fail('not-found', `Unknown agent: ${agent}`);
+    const checkedAt = new Date().toISOString();
+    if (a.info.report) return { ...clone(a.info.report), checkedAt };
+    const c = a.info.capabilities;
+    const entry = (key: CapabilityKey, ok: boolean, via: CapabilityVia): CapabilityEntry =>
+      ok
+        ? { key, level: 'yes', via, verifiedUpTo: a.info.version, reason: null }
+        : { key, level: 'no', via: null, verifiedUpTo: a.info.version, reason: `Not supported for ${agent}` };
+    return {
+      agent,
+      version: a.info.version,
+      checkedAt,
+      entries: [
+        c.hooks
+          ? entry('status', true, 'hook')
+          : { key: 'status', level: 'partial', via: 'output', verifiedUpTo: a.info.version, reason: 'Status from terminal activity' },
+        entry('question', c.askTool, 'hook'),
+        entry('resume', c.resume, 'flag'),
+        entry('fork', c.fork, 'flag'),
+        entry('approve-keys', a.approveOnceKeys !== null, 'hook'),
+      ],
+    };
   }
 
   async start(req: StartAgentRequest): Promise<StartAgentResult> {
@@ -87,7 +122,22 @@ export class FakeAgentService implements AgentService {
     return clone(result);
   }
 
+  /** contracts 0.1.22：预置了就当成读到了会话记录，否则给屏幕最后 20 行（同真实现的退回）。终端不存在抛 not-found。 */
+  async lastReply(terminalId: TerminalId): Promise<AgentLastReply> {
+    const lines = await this.terminals.lastLines(terminalId, 20);
+    const preset = this.replies.get(terminalId);
+    if (preset) return { text: preset.text, source: 'transcript', at: preset.at };
+    const text = lines.join('\n').trim();
+    return { text: text || null, source: 'screen', at: null };
+  }
+
   // ---- 假实现专用 ----
+
+  /** 预置一个终端的最后一条回复（像是从会话记录里读到的）；null 去掉，回到读屏幕。 */
+  setLastReply(terminalId: TerminalId, text: string | null, at: string | null = null): void {
+    if (text === null) this.replies.delete(terminalId);
+    else this.replies.set(terminalId, { text, at });
+  }
 
   approveOnceKeys(agent: AgentKind): string[] | null {
     return this.agents.find((a) => a.info.id === agent)?.approveOnceKeys ?? null;

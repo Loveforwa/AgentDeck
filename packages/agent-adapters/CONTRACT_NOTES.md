@@ -40,6 +40,27 @@
   但 `AgentInfo.capabilities.hooks` 仍然是 true，界面不知道。
 - 建议：`AgentInfo.warning?: string`（英文，例如 "Hooks are disabled in your Claude settings; status uses terminal activity."），或在 StatusSnapshot 上加 `degraded?: boolean`。
 - 现在怎么做：没做。启动后一段时间没收到 SessionStart 就退回“看输出活动”可以在状态机里做，等定了接口再加。
+- 2026-10-28（AH3）：contracts 0.1.17 有了 `StatusSnapshot.degraded`，状态机做了（第 20–23 行），`AgentInfo.warning` 写上一次启动的说明。
+
+### 10. UsageLimit 没有额度的范围（PL5）
+> **已处理（2026-10-28，contracts 0.1.22）**：加了 `UsageLimit.scope?`，本包的 `ScopedUsageLimit` 去掉了，claude 的读取器直接填 `scope`。
+
+- claude 的 Opus / Sonnet 每周额度（quotaLimits.rateLimitType 为 seven_day_opus / seven_day_sonnet）只算用同一家族模型的终端，账号键要带范围（LimitScope）。
+  UsageLimit 只有 kind（weekly），看不出是哪一种。
+- 建议：`UsageLimit.scope?: LimitScope`（不填是 all）。
+- 现在怎么做：本包的 `ScopedUsageLimit = UsageLimit & { scope?: LimitScope }`（`src/usage/types.ts`），claude 的读取器只在 Opus / Sonnet 时带上，
+  跟着 `TerminalUsage.limit` 原样传出去（界面会多看到一个字段，不影响）；limits 模块用 `limitScopeOf` 读。
+
+### 11. LimitedTerminal 看不出“Auto-resume 关着”和 claude 自己续跑到哪一步（PL5，给 PL3 / PL6）
+> **已处理（2026-10-28，contracts 0.1.22）**：加了 `LimitedTerminal.autoResume?`、`selfResume?`（`SelfResumeState`，不带 null：没有就不填），LimitServiceImpl 填上；PL3 改成按 LimitService 发（去掉了 trackSelfResume 的猜测，只在 LimitService 没列这个终端时作为兜底）。
+
+- Auto-resume 默认关（2026-10-28 用户定）。关着的终端照样列在账号里（PL3、收件箱、CR8 要知道这个账号受限），owner 是 auto-resume，
+  但 resumeAt 为 null，和“读不到恢复时间”分不开，界面要自己再读白板上的开关；到了恢复时间变 skipped。
+- claude 自己续跑的信号（Notification quota_auto_resume_fired / stale / disabled）现在只能拼出来：
+  owner agent + interrupted = 等它自己续；owner agent + resuming = fired 了（或看到它开始干活）；账号 needsYou 'stale' = 有终端卡在等回车（看不出是哪个）；
+  disabled = owner 从 agent 变成 auto-resume。
+- 建议：`LimitedTerminal.autoResume?: boolean`（这次算下来开没开）、`LimitedTerminal.selfResume?: 'waiting' | 'fired' | 'stale' | 'disabled' | null`。
+  有了后者 PL3 可以去掉 trackSelfResume 的猜测（见 PL5 的汇报）。
 
 ## 需要说清楚（只改注释）
 
@@ -54,3 +75,22 @@
 ### 9. 没有钩子的程序要不要发 agent.turn-end
 - `agent.turn-end` 注释是“一轮结束”。Shell、自定义命令没有“一轮”，现在 running → idle 时**不发**（免得 dev server 每次停下都刷新源代码管理面板）。
   如果线 3 希望 Shell 里跑完 git 命令也刷新，可以改成发，或者另加事件。建议在注释里写明现在的做法。
+
+## AH1–AH3 留下的（2026-10-28）
+
+### 10. TerminalHost 没有“按原文打字”（send-keys -l）
+> **已处理（2026-10-28，contracts 0.1.22）**：加了可选的 `TerminalHost.sendText`，tmux-host 实现了；`FirstMessageTyper` 有它就用（控制字符先换成空格），没有时退回 `literalKeys`。mcp-server 的 send_to_terminal 还在用自己的 literalKeys（没改）。
+
+- kimi 的第一条消息是启动后打进去的（AH1）。`sendKeys` 不带 `-l`，现在用 `literalKeys()` 绕：控制字符换空格、结尾的 `;` 写成 `\;`、
+  没有空格的一段拆成单个字符（免得正好是 Enter 这类按键名）。
+- 建议：`TerminalHost.sendText(id, text)`（`send-keys -l`，可选 bracketed paste），之后换过去。
+
+### 11. 重开应用接回终端时不知道那次启动带没带钩子（IS-77 的一条）
+> 2026-10-28：contracts 0.1.22 没有加（要连着改 store 的终端表或白板数据，留给 IS-77）。
+
+- apps/desktop 按当前适配器的能力 `track(id, { hooks })`，不是那次启动实际带的（codex 信任哈希没拿到、参数被拒只带会话参数重开的，都没带）。
+- 建议：`StartAgentResult` 加 `hooks: boolean`（或 `degraded`），存进 `TerminalWindowData`，重开时按它 track。
+
+### 12. 能力报告里的 “newer than checked”
+- 报告有 `version` 和每项的 `verifiedUpTo`，界面自己比。整体 “tested up to” 用的是 compat 记录的顶层 verifiedUpTo，报告里没有这一项；
+  AH4 画 Settings › Agents 顶上那行时要么按每项的最大值算，要么给 `AgentCapabilityReport` 加 `verifiedUpTo?: string | null`。

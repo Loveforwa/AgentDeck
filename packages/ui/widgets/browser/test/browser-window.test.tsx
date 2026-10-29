@@ -142,6 +142,38 @@ describe('opening a page', () => {
   });
 });
 
+describe('local PDFs and files the board can’t show (IS-124)', () => {
+  it('a local PDF loads in a frame without the sandbox (Chromium’s PDF viewer doesn’t start in a sandboxed frame); HTML keeps it', async () => {
+    const h = setup({ url: '/Users/me/paper.pdf#page=4' });
+    const frame = await loaded(h);
+    expect(frame.getAttribute('src')).toBe('agentdeck-file:///Users/me/paper.pdf#page=4');
+    expect(frame.hasAttribute('sandbox')).toBe(false);
+    h.boardSets({ url: '/Users/me/report.html' });
+    await waitFor(() => expect(h.frame()?.getAttribute('src')).toBe('agentdeck-file:///Users/me/report.html'));
+    expect(h.frame()!.getAttribute('sandbox')).toContain('allow-scripts');
+  });
+
+  it('another #page on the open PDF reloads it with a changing query so the viewer jumps', async () => {
+    const h = setup({ url: '/Users/me/paper.pdf' });
+    await loaded(h);
+    h.boardSets({ url: '/Users/me/paper.pdf#page=5' });
+    await waitFor(() => expect(h.frame()?.getAttribute('src')).toMatch(/^agentdeck-file:\/\/\/Users\/me\/paper\.pdf\?r=\d+#page=5$/));
+    const first = h.frame()!.getAttribute('src');
+    h.boardSets({ url: '/Users/me/paper.pdf#page=2' });
+    await waitFor(() => expect(h.frame()?.getAttribute('src')).toMatch(/\?r=\d+#page=2$/));
+    expect(h.frame()!.getAttribute('src')).not.toBe(first);
+  });
+
+  it('a .pptx is not loaded (it would only download): says so and offers the default app', async () => {
+    const user = userEvent.setup();
+    const h = setup({ url: '/Users/me/slides.pptx' });
+    await screen.findByText('This file can’t be shown on the board.');
+    expect(h.frame()).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Open in default app' }));
+    expect(h.api.fakes.browser.opened).toEqual(['/Users/me/slides.pptx']);
+  });
+});
+
 describe('error page (U3)', () => {
   it('shows “isn’t responding” and Retry when the server is down', async () => {
     const h = setup();

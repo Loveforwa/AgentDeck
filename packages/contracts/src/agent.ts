@@ -1,7 +1,9 @@
 // agent 接入：每个 agent 一个适配器，加一个 agent 就是加一个文件再注册一行。
 // 需求见「5 · 终端窗口」「6 · 终端状态与提醒」。实现：packages/agent-adapters（线 4）。
 
-import type { AbsPath, AgentKind, AgentSessionId, IsoTime, TermSize, TerminalId, WorkspaceId } from './common.ts';
+import type { AbsPath, AgentKind, AgentSessionId, IsoTime, SessionId, TermSize, TerminalId, WorkspaceId } from './common.ts';
+import type { AgentSessionReason, SessionOrigin } from './session.ts';
+import type { AgentCapabilityReport, CapabilityEntry } from './capabilities.ts';
 import type { McpEndpoint } from './mcp.ts';
 
 export interface AgentCapabilities {
@@ -46,11 +48,22 @@ export interface LaunchSpec {
    * claude 由我们生成并通过 --session-id 传入，所以启动时就知道；codex 要等 session-start 钩子才知道，这里为 null。
    */
   sessionId: AgentSessionId | null;
+  /**
+   * AH1：这次启动用上了 ctx.prompt 没有（放进了启动参数）。不填按旧规矩：claude、codex 算用上了。
+   * prompt 没用上、也没给 sendAfterReady 时，AgentService.start 抛 unsupported（“<Label> can't take a first message yet”），不开终端。
+   */
+  consumed?: { prompt: boolean };
+  /**
+   * AH1：启动后要替用户打进去的第一条消息（kimi 这类没有交互参数的）：AgentService 等终端第一次安静下来，
+   * send-keys -l 打进去再按回车。和 consumed.prompt 为 true 不会同时出现。
+   */
+  sendAfterReady?: string;
 }
 
 /** 钩子原始负载转换后的统一事件。 */
 export type AgentHookEvent =
-  | { type: 'session-start'; sessionId: AgentSessionId }
+  /** reason（SE0 加）：claude SessionStart 的 source 等；agent 不报时不填，按 unknown 处理。 */
+  | { type: 'session-start'; sessionId: AgentSessionId; reason?: AgentSessionReason }
   | { type: 'prompt-submitted' }
   | {
       type: 'permission-request';
@@ -64,7 +77,10 @@ export type AgentHookEvent =
   | { type: 'question'; summary: string }
   /** 一个工具跑完了（claude 的 PostToolUse）。claude 会并行跑工具，跑完的不一定是还在等批准的那个。 */
   | { type: 'tool-done'; tool: string | null; summary: string }
-  | { type: 'turn-end' }
+  /** error（PL4 加）：这一轮是出错结束的，例如 claude StopFailure 的 "rate_limit"（额度用完）。正常结束不填。 */
+  | { type: 'turn-end'; error?: string | null }
+  /** PL4：claude 自己的额度续跑（Notification 钩子 quota_auto_resume_fired / stale / disabled，2.1.234 起）。 */
+  | { type: 'quota-resume'; what: 'fired' | 'stale' | 'disabled' }
   | { type: 'session-end' };
 
 export interface AgentAdapter {
@@ -82,6 +98,11 @@ export interface AgentAdapter {
   parseHook(hookName: string, payload: unknown): AgentHookEvent | null;
   /** 发给 tmux 的“允许一次”按键，例如 claude ['Enter']、codex ['y']。没有就不支持 Approve all。 */
   approveOnceKeys: string[] | null;
+  /**
+   * AH0：适配器自己声明的能力（每项 yes / partial / no、via、原因），AgentService 再叠上合格测试记录（verifiedUpTo）
+   * 和运行时降级，算出 AgentInfo.report。没实现的老适配器由 capabilities() 粗推。
+   */
+  declareCapabilities?(version: string | null): CapabilityEntry[];
 }
 
 /** 给界面用的 agent 信息。 */
@@ -93,6 +114,8 @@ export interface AgentInfo {
   capabilities: AgentCapabilities;
   /** 有问题时给 Settings › Agents 显示的一句话（英文），例如钩子被用户关掉、状态退回看输出活动。 */
   warning?: string | null;
+  /** AH0：这家的能力报告（Settings › Agents、菜单 hint、New crew 下拉都读它）。老实现不填。 */
+  report?: AgentCapabilityReport | null;
 }
 
 export interface StartAgentRequest {
@@ -111,6 +134,12 @@ export interface StartAgentRequest {
    * 恢复上次会话时用；不要和 command 一起给（command 会直接运行）。X6 加。
    */
   prefill?: string;
+  /** SE0：开回这条已有的 Session（Reopen、恢复）。不填时服务新建一条（parent、origin 记在新的上面）。 */
+  session?: SessionId;
+  /** SE0：新建 Session 时的父。不填或 null 是没有父。 */
+  parent?: SessionId | null;
+  /** SE0：新建 Session 时的来历。不填按 { kind: 'user' }。 */
+  origin?: SessionOrigin;
 }
 
 export interface StartAgentResult {
@@ -120,6 +149,19 @@ export interface StartAgentResult {
   /** 存进 TerminalWindowData，重启后按同样的命令恢复。 */
   cmd: string;
   args: string[];
+  /** SE0：这个终端对应的 Session（存进 TerminalWindowData.session）。还没接上 SessionService 的实现不填。 */
+  session?: SessionId;
+}
+
+/**
+ * 0.1.22（CO4）：终端里 agent 最后一条回复。读 agent 自己的会话记录（claude、codex，和 CrewService.result 同一段代码）；
+ * 读不到时退回屏幕最后几行（source 为 screen，at 为 null）。text 为 null 表示什么都没读到。
+ */
+export interface AgentLastReply {
+  text: string | null;
+  source: 'transcript' | 'screen';
+  /** 这条回复写进会话记录的时间；屏幕上读的为 null。 */
+  at: IsoTime | null;
 }
 
 export interface AgentService {
@@ -132,6 +174,16 @@ export interface AgentService {
    * 新建、恢复会话（resume）、Fork 都走这里。界面不直接调 terminals.create 来开 agent。
    */
   start(req: StartAgentRequest): Promise<StartAgentResult>;
+  /**
+   * AH0：Check again。只做不花钱的探测（--version、--help 里找要带的参数、带钩子空启动等 SessionStart 再关掉），
+   * 不发提示词、不写 agent 自己的配置，返回新的报告。不认识的 agent 抛 not-found。
+   */
+  check(agent: AgentKind): Promise<AgentCapabilityReport>;
+  /**
+   * 0.1.22（CO4）：这个终端里 agent 最后一条回复（Agents 视图的悬停提示）。只读，不碰终端。终端不存在抛 not-found。
+   * 可选：没实现时调用方自己读屏幕（terminals.lastLines）。
+   */
+  lastReply?(terminalId: TerminalId): Promise<AgentLastReply>;
 }
 
 // ---- 钩子传输协议 ----

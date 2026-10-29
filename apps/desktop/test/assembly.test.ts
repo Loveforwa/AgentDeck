@@ -25,6 +25,7 @@ describe('resolvePaths', () => {
     expect(p.tmuxConf).toBe('/r/packages/tmux-host/tmux.conf');
     expect(p.notifyScript).toBe('/r/tools/agentdeck-notify/bin/agentdeck-notify.mjs');
     expect(p.agentExtension).toBe('/r/tools/agentdeck-notify/bin/agentdeck-pi-extension.mjs');
+    expect(p.cliScript).toBe('/r/tools/agentdeck-cli/bin/agentdeck.mjs');
   });
   it('packaged uses ~/.agentdeck and the default worktree home', () => {
     const p = resolvePaths({ ...base, env: {}, isDev: false, repoRoot: null, resourcesPath: '/App/Resources' });
@@ -33,6 +34,7 @@ describe('resolvePaths', () => {
     expect(p.worktreeHome).toBe('/Users/me');
     expect(p.tmuxConf).toBe('/App/Resources/tmux.conf');
     expect(p.agentExtension).toBe('/App/Resources/agentdeck-pi-extension.mjs');
+    expect(p.cliScript).toBe('/App/Resources/agentdeck.mjs');
   });
   it('AGENTDECK_DATA_DIR and AGENTDECK_TMUX_SOCKET override', () => {
     const p = resolvePaths({ ...base, env: { AGENTDECK_DATA_DIR: '/d', AGENTDECK_TMUX_SOCKET: 'x' }, isDev: true, repoRoot: '/r' });
@@ -99,6 +101,11 @@ describe('settings file', () => {
     expect(s.closeWindow).toBe('background');
     expect(s.notifications).toBe(false);
     expect(s.approvals.destructivePatterns).toEqual(['x']);
+  });
+  it('keeps the Resume prompt (PL6), drops a non-string one', () => {
+    const d = defaultSettings([]);
+    expect(mergeSettings(d, { resumePrompt: 'Limit reset. Continue.' }).resumePrompt).toBe('Limit reset. Continue.');
+    expect(mergeSettings(d, { resumePrompt: 3 })).not.toHaveProperty('resumePrompt');
   });
   it('writes the merged settings and reads them back', async () => {
     dir = await mkdtemp(join(tmpdir(), 'agentdeck-settings-'));
@@ -316,7 +323,13 @@ describe('menu', () => {
       ['Previous Waiting Terminal', 'Shift+CmdOrCtrl+J'],
       ['Next Window', 'Shift+CmdOrCtrl+]'],
       ['Previous Window', 'Shift+CmdOrCtrl+['],
+      ['Jump to Agent', undefined],
     ]);
+    // CO4：⌥⌘1–9 跳到 Agents 视图的第 n 行
+    const jump = (go.submenu as (Item & { label?: string })[]).find((i) => i.label === 'Jump to Agent')!;
+    expect((jump.submenu as (Item & { label?: string })[]).map((i) => [i.label, i.accelerator])).toEqual(
+      [1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => [`Row ${n}`, `Alt+CmdOrCtrl+${n}`]),
+    );
   });
   it('Settings… ⌘, opens the settings dialog in the board instead of the file', () => {
     const shortcut = vi.fn();
@@ -325,5 +338,30 @@ describe('menu', () => {
     expect(settings.accelerator).toBe('CmdOrCtrl+,');
     settings.click!();
     expect(shortcut).toHaveBeenCalledWith('open-settings');
+  });
+});
+
+describe('limits assembly (PL5)', () => {
+  it('reads the test timings from the environment', async () => {
+    const { limitTimingFromEnv } = await import('../src/main/limits.ts');
+    expect(limitTimingFromEnv({ AGENTDECK_RESUME_STAGGER_MS: '2000', AGENTDECK_LIMIT_GRACE_MS: '5000' })).toEqual({ staggerMs: 2000, graceMs: 5000 });
+    expect(limitTimingFromEnv({ AGENTDECK_RESUME_STAGGER_MS: 'soon' })).toEqual({});
+    expect(limitTimingFromEnv({})).toEqual({});
+  });
+
+  it('keeps the Mac awake while the queue or the limits want it, and lets go when neither does', async () => {
+    const { createKeepAwake } = await import('../src/main/limits.ts');
+    const start = vi.fn(() => 7);
+    const stop = vi.fn();
+    const keepAwake = createKeepAwake({ start, stop });
+    keepAwake('queue', true);
+    keepAwake('limits', true);
+    expect(start).toHaveBeenCalledTimes(1);
+    keepAwake('queue', false);
+    expect(stop).not.toHaveBeenCalled();
+    keepAwake('limits', false);
+    expect(stop).toHaveBeenCalledWith(7);
+    keepAwake('limits', false);
+    expect(stop).toHaveBeenCalledTimes(1);
   });
 });

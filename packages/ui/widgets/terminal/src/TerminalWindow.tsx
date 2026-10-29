@@ -22,7 +22,8 @@ import {
   type WindowComponentProps,
   type WindowStatusBadge,
 } from '@agentdeck/contracts';
-import { Button } from '@agentdeck/ui-kit';
+import { CONTENT_MENU_EVENT, registerWindowContent, type ContentMenuDetail, type PasteOptions, type PasteResult } from '@agentdeck/ui-canvas/registry';
+import { Button, useOptionalToast } from '@agentdeck/ui-kit';
 import { quotePaths } from './keys.ts';
 import { termSizeFor } from './metrics.ts';
 import { outsideWorkspaceTag, platformCompareOptions } from './cwd.ts';
@@ -57,6 +58,8 @@ const SNAPSHOT_MIN: { w: number; h: number } = { w: 320, h: 160 };
 const SUMMARY_REFRESH_MS = 1000;
 /** Restore 时接不回原来的对话、开了新对话：标题栏的 “new conversation” 标签留这么久。 */
 const FRESH_NOTE_MS = 60_000;
+/** CO3：“Hold Option to select text” 每个用户只提示一次，记在这里。 */
+export const OPTION_SELECT_HINT_KEY = 'agentdeck.hint.option-select';
 
 function api(): AgentDeckApi {
   return window.agentdeck;
@@ -229,6 +232,18 @@ export function TerminalWindow(props: TerminalWindowProps): ReactNode {
     sentRef.current = next;
   }, [badgeKey]);
 
+  // ---- CO3：拖动没选上（程序要鼠标）时提示一次按住 Option ----
+  const toast = useOptionalToast();
+  const toastRef = useRef(toast);
+  toastRef.current = toast;
+  const onEmptyDrag = useCallback(() => {
+    if (hintShown()) return;
+    const t = toastRef.current;
+    if (!t) return;
+    markHintShown();
+    t.show({ message: IS_MAC ? 'Hold Option to select text' : 'Hold Shift to select text' });
+  }, []);
+
   // ---- xterm ----
   const onLink = useCallback((link: TerminalLink | { kind: 'external'; url: string }) => {
     const p = propsRef.current;
@@ -253,10 +268,10 @@ export function TerminalWindow(props: TerminalWindowProps): ReactNode {
   const showScreen = phase.kind === 'live';
   useLayoutEffect(() => {
     if (!showScreen || summary || sessionRef.current || !screenRef.current) return;
-    const s = new TerminalSession({ api: api(), container: screenRef.current, onLink });
+    const s = new TerminalSession({ api: api(), container: screenRef.current, onLink, onEmptyDrag });
     sessionRef.current = s;
     setSession(s);
-  }, [showScreen, summary, onLink]);
+  }, [showScreen, summary, onLink, onEmptyDrag]);
 
   useEffect(
     () => () => {
@@ -302,6 +317,17 @@ export function TerminalWindow(props: TerminalWindowProps): ReactNode {
       mo.disconnect();
     };
   }, [session]);
+
+  // ---- CO3：白板的菜单（Copy · Paste · Send selection to ▸）要的选中文字和粘贴 ----
+  const windowId = node.id;
+  useEffect(
+    () =>
+      registerWindowContent(windowId, {
+        selectionText: () => sessionRef.current?.selectionText() ?? '',
+        paste: (text: string, opts?: PasteOptions): Promise<PasteResult> => deliverTo(sessionRef, propsRef, text, opts),
+      }),
+    [windowId],
+  );
 
   // ---- 重启、换成 Shell ----
   const start = useCallback(
@@ -458,7 +484,18 @@ export function TerminalWindow(props: TerminalWindowProps): ReactNode {
       onDrop={onDrop}
     >
       {/* 留白放在外层：FitAddon 按 xterm 父元素的尺寸算行列数，父元素自己不能有 padding */}
-      <div className="ad-terminal__screen" hidden={!showScreen || summary}>
+      {/* CO3：屏幕上右键（⌃ 单击也是 contextmenu）出白板的 Copy · Paste · Send selection to ▸。tmux 不把右键交给程序
+          （tmux.conf 的 root 表没有 MouseDown3Pane），所以程序要鼠标时也一样 */}
+      <div
+        className="ad-terminal__screen"
+        hidden={!showScreen || summary}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const detail: ContentMenuDetail = { clientX: e.clientX, clientY: e.clientY };
+          e.currentTarget.dispatchEvent(new CustomEvent(CONTENT_MENU_EVENT, { bubbles: true, detail }));
+        }}
+      >
         <div className="ad-terminal__xterm" ref={screenRef} />
       </div>
 
@@ -550,6 +587,44 @@ export function TerminalWindow(props: TerminalWindowProps): ReactNode {
       )}
     </div>
   );
+}
+
+/**
+ * CO3：把白板送来的文字贴进这个终端。窗口刚跳过去还没 attach、刚开的程序还在启动时，session.deliver 会等；
+ * 不能贴时返回给用户看的原因（白板用 Toast 显示）。
+ */
+async function deliverTo(
+  sessionRef: { current: TerminalSession | null },
+  propsRef: { current: TerminalWindowProps },
+  text: string,
+  opts: PasteOptions = {},
+): Promise<PasteResult> {
+  const name = commandName(propsRef.current.window.data);
+  // 会话还没建（Connecting…、刚重启）：等一会儿
+  const t0 = Date.now();
+  while (!sessionRef.current && Date.now() - t0 < 3000) await new Promise((r) => setTimeout(r, 50));
+  const session = sessionRef.current;
+  if (!session) return { ok: false, reason: `Couldn’t send to ${name}: the terminal isn’t running` };
+  const r = await session.deliver(text, { requireBracketed: opts.requireBracketed ?? true, fresh: opts.fresh ?? false });
+  if (r.ok) return r;
+  if (r.reason === 'not-bracketed') return { ok: false, reason: `Nothing was sent: ${name} would run each line as a command` };
+  return { ok: false, reason: `Couldn’t send to ${name}: the terminal isn’t ready` };
+}
+
+function hintShown(): boolean {
+  try {
+    return window.localStorage.getItem(OPTION_SELECT_HINT_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function markHintShown(): void {
+  try {
+    window.localStorage.setItem(OPTION_SELECT_HINT_KEY, '1');
+  } catch {
+    // 存不下就下次再提示
+  }
 }
 
 function summaryText(phase: Phase, name: string): string {

@@ -12,6 +12,7 @@ import {
   claudeProjectDirName,
   claudeWindow,
   CodexUsageParser,
+  codexRetryAt,
   JsonlTail,
   KimiUsageParser,
   parseKimiConfig,
@@ -392,5 +393,57 @@ describe('UsageServiceImpl', () => {
   it('the extension uses the same hook name', () => {
     const src = readFileSync(fileURLToPath(new URL('../../../tools/agentdeck-notify/bin/agentdeck-pi-extension.mjs', import.meta.url)), 'utf8');
     expect(src).toContain(`export const USAGE_HOOK = '${USAGE_HOOK}';`);
+  });
+});
+
+describe('usage limits (PL3)', () => {
+  const claudeLimitLine = JSON.stringify({
+    type: 'assistant',
+    timestamp: '2026-10-26T11:23:00.000Z',
+    error: 'rate_limit',
+    isApiErrorMessage: true,
+    apiErrorStatus: 429,
+    quotaLimits: { status: 'rejected', resetsAt: 1793014200, rateLimitType: 'five_hour' },
+    message: { model: '<synthetic>', role: 'assistant', content: [{ type: 'text', text: "You've hit your limit · resets 3:30pm" }] },
+  });
+  const claudeOk = (id: string) =>
+    JSON.stringify({ type: 'assistant', timestamp: '2026-10-26T15:31:00.000Z', message: { id, model: 'claude-opus-5-5', usage: { input_tokens: 5, output_tokens: 7 } } });
+
+  it('claude: the rate_limit line gives the reset time; the next answer clears it', () => {
+    const p = new ClaudeUsageParser();
+    p.feed(claudeOk('m1'));
+    p.feed(claudeLimitLine);
+    expect(p.snapshot().limit).toEqual({
+      kind: 'five_hour',
+      resetsAt: new Date(1793014200 * 1000).toISOString(),
+      at: '2026-10-26T11:23:00.000Z',
+      detail: "You've hit your limit · resets 3:30pm",
+    });
+    p.feed(claudeOk('m2'));
+    expect(p.snapshot().limit).toBeNull();
+  });
+
+  it('codex: usage_limit_exceeded takes the reset time from the full window, and clears on the next request', () => {
+    const p = new CodexUsageParser();
+    const tokenCount = (used: number, info: object | null) =>
+      JSON.stringify({ type: 'event_msg', timestamp: '2026-10-26T10:00:00.000Z', payload: { type: 'token_count', info, rate_limits: { primary: { used_percent: used, window_minutes: 300, resets_at: 1793014200 }, secondary: null } } });
+    p.feed(tokenCount(100, null));
+    p.feed(
+      JSON.stringify({
+        type: 'event_msg',
+        timestamp: '2026-10-26T10:00:05.000Z',
+        payload: { type: 'task_complete', error: { message: "You've hit your usage limit. Try again at Aug 2nd, 2026 1:12 PM.", codex_error_info: 'usage_limit_exceeded' } },
+      }),
+    );
+    expect(p.snapshot().limit).toMatchObject({ kind: 'five_hour', resetsAt: new Date(1793014200 * 1000).toISOString() });
+    p.feed(tokenCount(3, { total_token_usage: { input_tokens: 10, output_tokens: 2, total_tokens: 12 }, last_token_usage: { input_tokens: 10, output_tokens: 2, total_tokens: 12 } }));
+    expect(p.snapshot().limit).toBeNull();
+  });
+
+  it('codex: without rate limits it reads the time from the message', () => {
+    expect(codexRetryAt("You've hit your usage limit. Visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at Aug 2nd, 2026 1:12 PM.")).toBe(
+      new Date('Aug 2, 2026 1:12 PM').toISOString(),
+    );
+    expect(codexRetryAt('something else')).toBeNull();
   });
 });

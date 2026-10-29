@@ -13,6 +13,7 @@ import { Board } from './Board.tsx';
 import { BoardProvider, useBoardState, useController } from './context.tsx';
 import { SettingsDialogHost } from './SettingsDialog.tsx';
 import { useShortcuts } from './useShortcuts.ts';
+import { PLUGINS } from '../plugins/index.ts';
 
 export interface PanelContext {
   /** 聚焦的窗口所在的工作区，或选中的框；都没有时为 null。 */
@@ -65,10 +66,13 @@ function WorkbenchInner(props: WorkbenchProps) {
   useEffect(() => {
     if (given) given.setNotify((message) => toastRef.current.show({ message }));
     void controller.start();
+    // 要在后台一直跑的插件（PluginDefinition.start；PL3 Prompt queue 退役后现在没有）
+    const stops = PLUGINS.flatMap((p) => (p.start ? [p.start(controller)] : []));
     const flush = () => void controller.flush();
     window.addEventListener('pagehide', flush);
     return () => {
       window.removeEventListener('pagehide', flush);
+      for (const stop of stops) stop();
       if (!given) controller.dispose();
     };
   }, [controller, given]);

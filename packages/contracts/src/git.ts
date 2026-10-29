@@ -2,7 +2,7 @@
 // 实现：packages/git-service（线 3），运行在主进程，命令在子进程里跑，不阻塞。
 // 所有方法的第一个参数都是仓库目录（一个 worktree 的路径）。多仓库工作区由调用方按仓库各调一次。
 
-import type { AbsPath, IsoTime } from './common.ts';
+import type { AbsPath, IsoTime, WorkspaceId } from './common.ts';
 
 /** 对应 git status --porcelain=v2 的 X / Y 字段。 */
 export type ChangeKind = 'unmodified' | 'modified' | 'added' | 'deleted' | 'renamed' | 'copied' | 'untracked' | 'ignored';
@@ -175,6 +175,59 @@ export interface GitService {
   repairWorktrees(repo: AbsPath): Promise<void>;
   defaultBranch(repo: AbsPath): Promise<string>;
   init(dir: AbsPath): Promise<void>;
+
+  // 以下给代码锚点用（DC0 加，DC1 实现）。都只读。
+  /**
+   * 每行最后改它的提交（git blame --porcelain，只要每行的提交）。rev 不填是工作区（没提交的行 commit 为 40 个 0）。
+   * line 从 1 起。文件不存在抛 not-found。
+   */
+  blameLines(repo: AbsPath, path: string, opts?: { rev?: string }): Promise<{ line: number; commit: string }[]>;
+  /** 某个版本的文件全文（git show rev:path）；那个版本里没有这个文件返回 null。 */
+  showFile(repo: AbsPath, rev: string, path: string): Promise<string | null>;
+  /**
+   * 行号映射：git diff -U0 --no-color -M from [to] -- path 的 @@ 头。to 为 'worktree' 时对工作区（含没提交的改动）。
+   * 文件被改名时按改名后的路径给（hunk 里看不出新路径，调用方用 status / log 的改名找）。没有变化返回空数组。
+   */
+  lineMap(repo: AbsPath, path: string, from: string, to: 'worktree' | string): Promise<LineMapHunk[]>;
+
+  /**
+   * CO0：同一仓库的几个 worktree 两两算重叠（哪些文件两边都改了、git 能不能自动合）。只读：不碰工作区、index、stash 列表，不写 ref
+   * （有改动的 worktree 用临时 GIT_INDEX_FILE 拍快照，会往对象库里写临时对象）。已经合进另一边的不比；没有重叠的一对不返回。
+   * 最多 12 个 worktree，多了抛 invalid-argument。不监视文件，调用时机由调用方定（和 SCM 面板刷新同一套）。
+   * worktrees 带上工作区 id：git-service 不认识工作区，结果按调用方给的 id 写。
+   */
+  overlaps(repo: AbsPath, worktrees: { workspaceId: WorkspaceId; path: AbsPath }[]): Promise<WorkspaceOverlap[]>;
+
+  /**
+   * 0.1.22（DC1）：from → to（'worktree' 是工作区，默认）之间 path 被改名成了什么（git diff --name-status -M --diff-filter=R）；
+   * 没改名返回 null。代码锚点据此提示新路径。可选：没实现时改名的文件只能报 gone。
+   */
+  renamedPath?(repo: AbsPath, path: string, from: string, to?: 'worktree' | string): Promise<string | null>;
+  /**
+   * 0.1.22（DC1）：仓库里的文件，跟踪的 + 没被忽略的未跟踪文件（git ls-files --cached --others --exclude-standard），
+   * 相对仓库根，去重排序。文档窗口列 .md、按路径后缀找短路径的候选。可选：没实现时调用方自己走目录。
+   */
+  listFiles?(repo: AbsPath): Promise<string[]>;
+}
+
+/** CO0：重叠文件的结论。clean：两边都改了但 git 能自动合；conflict：会冲突；unknown：git 低于 2.38（没有 merge-tree --write-tree），只知道两边都改了。 */
+export type OverlapVerdict = 'clean' | 'conflict' | 'unknown';
+
+/** CO0：两个 worktree 的重叠。 */
+export interface WorkspaceOverlap {
+  a: WorkspaceId;
+  b: WorkspaceId;
+  /** 两边都改了的文件（相对仓库根目录）。 */
+  files: { path: string; verdict: OverlapVerdict }[];
+  checkedAt: IsoTime;
+}
+
+/** lineMap 的一段：旧文件从 oldStart 起的 oldLines 行变成新文件从 newStart 起的 newLines 行（同 @@ -a,b +c,d @@，行数 0 时 start 是前一行）。 */
+export interface LineMapHunk {
+  oldStart: number;
+  oldLines: number;
+  newStart: number;
+  newLines: number;
 }
 
 export type GitEvent =

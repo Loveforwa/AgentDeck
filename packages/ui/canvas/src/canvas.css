@@ -251,33 +251,15 @@
   fill: var(--mascot-food);
 }
 
-/* 两帧交替：一帧亮着时另一帧藏着 */
-.ad-clawd-frame {
-  animation: ad-clawd-flip 700ms steps(1, end) infinite;
-}
-
-.ad-clawd-frame-2 {
-  animation-delay: -350ms;
-}
-
-@keyframes ad-clawd-flip {
-  0% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0;
-  }
+/* 两帧交替：Clawd.tsx 的定时器换 data-frame，只显示那一帧（不用无限循环的 CSS 动画，空闲时界面不用每帧都画，IS-161） */
+.ad-clawd-sprite[data-frame='1'] .ad-clawd-frame-2,
+.ad-clawd-sprite[data-frame='2'] .ad-clawd-frame-1 {
+  display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .ad-clawd {
     transition: none;
-  }
-  .ad-clawd-frame {
-    animation: none;
-  }
-  .ad-clawd-frame-2 {
-    opacity: 0;
   }
 }
 
@@ -474,9 +456,9 @@
   top: calc(100% + var(--plugin-strip-gap));
 }
 
-/* 下边同时挂着 Auto-approve 的书签时，条放在书签下面 */
-.ad-window-node:has(.ad-auto-approve-mark) > .ad-usage-strip[data-position='bottom'],
-.ad-window-node:has(.ad-auto-approve-mark) > .ad-usage-drop[data-position='bottom'] {
+/* 下边同时挂着 Auto-approve、Auto-resume 的书签时，条放在书签下面 */
+.ad-window-node:has(.ad-auto-approve-mark, .ad-auto-resume-mark) > .ad-usage-strip[data-position='bottom'],
+.ad-window-node:has(.ad-auto-approve-mark, .ad-auto-resume-mark) > .ad-usage-drop[data-position='bottom'] {
   top: calc(100% + var(--plugin-mark-height) + var(--plugin-strip-gap));
 }
 
@@ -1433,4 +1415,177 @@
 
 .ad-settings-file {
   margin-right: auto;
+}
+
+/*
+  Auto-resume 的书签（PL6）：终端底边左侧，排在 Auto-approve 书签后面（left 由组件量出来）；只在这个终端被额度上限停下时挂。
+  白底细边，颜色只给 7px 的状态点：续着绿、等你或等恢复黄、又撞了红、别的灰。点开小卡片改这一次续跑发的话。
+*/
+.ad-auto-resume-mark {
+  position: absolute;
+  top: 100%;
+  left: var(--space-lg);
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  box-sizing: border-box;
+  height: var(--plugin-mark-height);
+  padding: 0 7px;
+  border: 1px solid var(--line-strong);
+  border-top: 0;
+  border-radius: 0 0 var(--plugin-mark-radius) var(--plugin-mark-radius);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--plugin-mark-text);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  pointer-events: all;
+}
+
+.ad-auto-resume-mark[data-tone='muted'] {
+  color: var(--muted);
+}
+
+.ad-auto-resume-mark:hover,
+.ad-auto-resume-mark[aria-expanded='true'] {
+  background: var(--hover);
+}
+
+.ad-auto-resume-mark:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.ad-auto-resume-lamp {
+  flex: none;
+  box-sizing: border-box;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.ad-auto-resume-lamp--running {
+  background: var(--status-running);
+}
+
+.ad-auto-resume-lamp--waiting {
+  background: var(--status-waiting);
+}
+
+.ad-auto-resume-lamp--error {
+  background: var(--status-error);
+}
+
+.ad-auto-resume-lamp--muted {
+  border: 1px solid var(--muted);
+}
+
+.ad-popover.ad-auto-resume-card {
+  width: 380px;
+  padding: 0;
+}
+
+.ad-auto-resume-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  font-size: var(--text-sm);
+  line-height: var(--leading);
+}
+
+.ad-auto-resume-card-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-xs);
+}
+
+.ad-auto-resume-muted {
+  color: var(--muted);
+}
+
+.ad-auto-resume-line {
+  margin: 0;
+  color: var(--muted);
+}
+
+.ad-auto-resume-line[data-tone='waiting'] {
+  color: var(--attention);
+}
+
+.ad-auto-resume-line[data-tone='error'] {
+  color: var(--status-error);
+}
+
+.ad-auto-resume-message {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.ad-auto-resume-message-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-strong);
+}
+
+.ad-auto-resume-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-weight: normal;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.ad-auto-resume-link:hover:not(:disabled) {
+  color: var(--ink);
+}
+
+.ad-auto-resume-message textarea {
+  box-sizing: border-box;
+  width: 100%;
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: var(--leading);
+  resize: vertical;
+}
+
+.ad-auto-resume-message textarea[readonly] {
+  color: var(--muted);
+}
+
+.ad-auto-resume-message textarea:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -1px;
+}
+
+.ad-auto-resume-hint {
+  margin: 0;
+  font-size: var(--text-xs);
+}
+
+.ad-auto-resume-save,
+.ad-auto-resume-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.ad-auto-resume-foot .ad-auto-resume-muted {
+  font-size: var(--text-xs);
 }

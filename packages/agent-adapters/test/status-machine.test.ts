@@ -8,9 +8,9 @@ import type {
   TerminalStatus,
   WorkspaceId,
 } from '@agentdeck/contracts';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_DESTRUCTIVE_PATTERNS } from '../src/status/destructive.ts';
-import { StatusMachine } from '../src/status/machine.ts';
+import { HOOKS_DIDNT_REPORT, StatusMachine } from '../src/status/machine.ts';
 import type { HookHint } from '../src/status/machine.ts';
 
 const T = 'term-1' as TerminalId;
@@ -393,5 +393,213 @@ describe('since and duplicate events', () => {
     track(true);
     m.forget(T);
     expect(await m.snapshot()).toEqual([]);
+  });
+});
+
+describe('hooks that never report (AH3, IS-74)', () => {
+  let degradedNotes: { terminalId: TerminalId; agent: string; reason: string }[];
+  let alive: string[];
+  beforeEach(() => {
+    vi.useFakeTimers();
+    degradedNotes = [];
+    alive = [];
+    m = new StatusMachine({
+      emit: (e) => events.push(e),
+      destructivePatterns: () => DEFAULT_DESTRUCTIVE_PATTERNS,
+      now: () => new Date(clock),
+      hookTimeoutMs: 10_000,
+      onDegraded: (d) => degradedNotes.push(d),
+      onHooksAlive: (d) => alive.push(d.agent),
+    });
+  });
+  afterEach(() => vi.useRealTimers());
+
+  const snap = () => m.get(T)!;
+
+  it('20: no hook within 10 s of the start → status from terminal activity, with the reason on the snapshot', () => {
+    m.track(T, { agent: 'claude', workspaceId: WS, hooks: true, watchHooks: 'startup' });
+    activity();
+    expect(status()).toBe('running');
+    silence();
+    // 有钩子时启动画面画完就是 idle（第 14 行）；钩子没来之前照常
+    expect(status()).toBe('idle');
+    vi.advanceTimersByTime(9_999);
+    expect(snap().degraded).toBeUndefined();
+    vi.advanceTimersByTime(1);
+    expect(snap().degraded).toBe(HOOKS_DIDNT_REPORT);
+    expect(changes().at(-1)).toMatchObject({ snapshot: { degraded: HOOKS_DIDNT_REPORT } });
+    expect(degradedNotes).toEqual([{ terminalId: T, agent: 'claude', reason: HOOKS_DIDNT_REPORT }]);
+    // 之后按没有钩子的规则：有输出 running，安静 idle（第 17、18 行），不发 turn-end
+    activity();
+    expect(status()).toBe('running');
+    silence();
+    expect(status()).toBe('idle');
+    expect(turnEnds()).toHaveLength(0);
+  });
+
+  it('20: a hook in time keeps the hook rules and says the hooks are alive', () => {
+    m.track(T, { agent: 'claude', workspaceId: WS, hooks: true, watchHooks: 'startup' });
+    hook({ type: 'session-start', sessionId: 's1' as AgentSessionId });
+    vi.advanceTimersByTime(20_000);
+    expect(snap().degraded).toBeUndefined();
+    expect(degradedNotes).toEqual([]);
+    expect(alive).toEqual(['claude']);
+  });
+
+  it('21: codex waits from the first input, not from the start', () => {
+    m.track(T, { agent: 'codex', workspaceId: WS, hooks: true, watchHooks: 'first-input' });
+    vi.advanceTimersByTime(60_000);
+    expect(snap().degraded).toBeUndefined();
+    m.noteInput(T);
+    vi.advanceTimersByTime(10_000);
+    expect(snap().degraded).toBe(HOOKS_DIDNT_REPORT);
+  });
+
+  it('22: a late hook brings the hook rules back and clears the reason', () => {
+    m.track(T, { agent: 'claude', workspaceId: WS, hooks: true, watchHooks: 'startup' });
+    vi.advanceTimersByTime(10_000);
+    expect(snap().degraded).toBe(HOOKS_DIDNT_REPORT);
+    hook({ type: 'prompt-submitted' });
+    expect(status()).toBe('running');
+    expect(snap().degraded).toBeUndefined();
+    // 回到有钩子的规则：输出不改状态（第 16 行）
+    silence();
+    expect(status()).toBe('running');
+  });
+
+  it('23: a reason given at track time stays on every snapshot', () => {
+    m.track(T, { agent: 'kimi', workspaceId: WS, hooks: false, degraded: 'Status from terminal activity · Kimi has no hooks' });
+    activity();
+    silence();
+    expect(snap()).toMatchObject({ status: 'idle', degraded: 'Status from terminal activity · Kimi has no hooks' });
+    vi.advanceTimersByTime(60_000);
+    expect(degradedNotes).toEqual([]);
+  });
+
+  it('an exit before the timeout stops the watch', () => {
+    m.track(T, { agent: 'claude', workspaceId: WS, hooks: true, watchHooks: 'startup' });
+    exit(1);
+    vi.advanceTimersByTime(20_000);
+    expect(degradedNotes).toEqual([]);
+    expect(snap().degraded).toBeUndefined();
+  });
+});
+
+describe('IS-06: claude waiting on its trust prompt (rows 24–26)', () => {
+  // 2026-10-29 本机 claude 安装包里的原文
+  const TRUST = [
+    ' Accessing workspace:',
+    '',
+    ' /Users/me/new-repo',
+    '',
+    ' Quick safety check: Is this a project you created or one you trust? (Like your own code, a well-known open',
+    ' source project, or work from your team). If not, take a moment to review what’s in this folder first.',
+    '',
+    ' Claude Code’ll be able to read, edit, and execute files here.',
+    '',
+    ' Security guide',
+    '',
+    ' ❯ 1. Yes, I trust this folder',
+    '   2. No, exit',
+    '',
+    ' Enter to confirm · Esc to cancel',
+  ];
+  let screen: string[];
+  let degradedNotes: string[];
+  const flush = () => vi.advanceTimersByTimeAsync(0);
+  beforeEach(() => {
+    vi.useFakeTimers();
+    screen = TRUST;
+    degradedNotes = [];
+    m = new StatusMachine({
+      emit: (e) => events.push(e),
+      destructivePatterns: () => DEFAULT_DESTRUCTIVE_PATTERNS,
+      now: () => new Date(clock),
+      screen: async () => screen,
+      onDegraded: (d) => degradedNotes.push(d.reason),
+    });
+    m.track(T, { agent: 'claude', workspaceId: WS, hooks: true, watchHooks: 'startup' });
+    events = [];
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it('24: no hook yet and the screen stops on the trust prompt → needs-reply “Trust this folder?”, and the hook watch pauses', async () => {
+    activity();
+    silence();
+    await flush();
+    expect(m.get(T)).toMatchObject({ status: 'needs-reply', pending: { kind: 'question', summary: 'Trust this folder?' } });
+    // 你一直没点：不算钩子坏了
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(degradedNotes).toEqual([]);
+    // 屏幕又停一次：还是同一条，不重新提醒
+    const id = m.get(T)!.pending!.id;
+    silence();
+    await flush();
+    expect(m.get(T)!.pending!.id).toBe(id);
+  });
+
+  it('25: trusting the folder brings SessionStart → idle, pending cleared', async () => {
+    activity();
+    silence();
+    await flush();
+    hook({ type: 'session-start', sessionId: 's-1' as AgentSessionId });
+    expect(m.get(T)).toMatchObject({ status: 'idle', pending: null, sessionId: 's-1' });
+  });
+
+  it('26: the prompt is gone but no hook came → idle and the hook watch starts again', async () => {
+    activity();
+    silence();
+    await flush();
+    screen = [' ❯ ', '', ' ? for shortcuts'];
+    silence();
+    await flush();
+    expect(m.get(T)).toMatchObject({ status: 'idle', pending: null });
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(degradedNotes).toEqual([HOOKS_DIDNT_REPORT]);
+  });
+
+  it('a normal start (no trust prompt on screen) stays idle; after the first hook the screen is not read any more', async () => {
+    let reads = 0;
+    m = new StatusMachine({
+      emit: (e) => events.push(e),
+      destructivePatterns: () => DEFAULT_DESTRUCTIVE_PATTERNS,
+      screen: async () => {
+        reads++;
+        return [' ❯ ', '', ' ? for shortcuts'];
+      },
+    });
+    m.track(T, { agent: 'claude', workspaceId: WS, hooks: true });
+    activity();
+    silence();
+    await flush();
+    expect(status()).toBe('idle');
+    hook({ type: 'session-start', sessionId: 's-2' as AgentSessionId });
+    silence();
+    await flush();
+    expect(reads).toBe(1);
+  });
+
+  it('only claude: codex and agents without hooks are never read for it', async () => {
+    let reads = 0;
+    m = new StatusMachine({ emit: () => {}, destructivePatterns: () => [], screen: async () => (reads++, TRUST) });
+    m.track(T, { agent: 'codex', workspaceId: WS, hooks: true });
+    activity();
+    silence();
+    await flush();
+    expect(reads).toBe(0);
+    expect(status()).toBe('idle');
+  });
+});
+
+describe('matchTrustPrompt', () => {
+  it('needs the title and the trust option; older wording too; not other agents', async () => {
+    const { matchTrustPrompt } = await import('../src/status/screens.ts');
+    expect(matchTrustPrompt('claude', [' Quick safety check: Is this a project …', ' ❯ 1. Yes, I trust this folder', '   2. No, exit'])).toBe('Trust this folder?');
+    expect(matchTrustPrompt('claude', [' Do you trust the files in this folder?', ' ❯ 1. Yes, proceed', '   2. No, exit'])).toBe('Trust this folder?');
+    expect(matchTrustPrompt('claude', [' ❯ 1. Yes, I trust this folder'])).toBeNull();
+    expect(matchTrustPrompt('claude', [' Quick safety check: …'])).toBeNull();
+    expect(matchTrustPrompt('codex', [' Quick safety check: …', ' ❯ 1. Yes, I trust this folder'])).toBeNull();
+    // 被后面的输出顶上去了：不是当前的提示
+    expect(matchTrustPrompt('claude', [' Quick safety check: …', ' ❯ 1. Yes, I trust this folder', ...Array.from({ length: 12 }, (_, i) => `line ${i}`)])).toBeNull();
   });
 });

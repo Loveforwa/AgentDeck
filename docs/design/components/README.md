@@ -1,4 +1,4 @@
-AgentDeck is a desktop workbench where real coding-agent TUIs (claude, codex, pi, omp, kimi) and shells run in windows on a whiteboard. Each workspace frame is one git worktree and branch; the right panel is source control; localhost links open as browser windows on the board. Everything here is copied from the repository `Loveforwa/AgentDeck` (main @ 6cfff24): the tokens from `packages/design-tokens`, the component styles verbatim from `packages/ui/**`. When this page and the code disagree, the code wins; fix this page. The same inventory lives in the repository as `docs/components.md` (in Chinese); change both together.
+AgentDeck is a desktop workbench where real coding-agent TUIs (claude, codex, pi, omp, kimi) and shells run in windows on a whiteboard. Each workspace frame is one git worktree and branch; the right panel is source control; localhost links open as browser windows on the board. Everything here is copied from the repository `Loveforwa/AgentDeck` (integrate/W0-W1 @ d51382e): the tokens from `packages/design-tokens`, the component styles verbatim from `packages/ui/**`. When this page and the code disagree, the code wins; fix this page. The same inventory lives in the repository as `docs/components.md` (in Chinese); change both together.
 
 Use this system to build any AgentDeck screen, spec drawing or plugin. Read a component's card before drawing it again: every window part, mark, panel and dialog already exists here with its states and rules.
 
@@ -17,7 +17,7 @@ Use this system to build any AgentDeck screen, spec drawing or plugin. Read a co
 - Status is one capitalised word, then a middle dot and the age: "Running · 4m", "Waiting · 2m", "Idle · now", "Exited", "Error · exit 1". Ages read "now", "4m", "2h", then a date "Oct 21". The hover gives the detail ("Needs approval" or "Needs reply").
 - Counts are lower case after a number: "2 running", "1 waiting", "3 subagents", "5 background agents · 3 running", "✓ 5 done".
 - Join parts with " · " (space, middle dot, space): "api-server · feat/oauth", "sub-2 · ui", "BACKGROUND · READ-ONLY".
-- Group headings are uppercase `eyebrow` text: "PLUGINS", "SOURCE CONTROL", "BOARD", "TERMINALS".
+- Group headings are uppercase `eyebrow` text, with a count after a middle dot where it helps: "PLUGINS", "SOURCE CONTROL", "BOARD", "TERMINALS", "AGENTS · 6", "NEEDS YOU · 2", "IDLE · 3".
 - Tags are lower case and quiet: "outside workspace", "lead", "Read-only".
 - Toasts state a fact, past tense, with at most one action: "Removed api-server · feat/oauth from the board" + Undo; "Approved 1 request · 2 still need you".
 - Errors say what happened and what to do: "Can’t redo: the terminal was restarted. Close it instead." "notes isn’t a Git repository." Use curly apostrophes in UI text.
@@ -43,7 +43,7 @@ Use this system to build any AgentDeck screen, spec drawing or plugin. Read a co
 - The left HISTORY panel (toggled from the far left of the top bar) takes its own column 4px in from the edges, 240–480 wide, with `radius-panel`; the board narrows beside it.
 - The right panel floats 4px in from the edges, is 280–480 wide (⌘B toggles), and collapses to a 28px rail.
 - A window group's sidebar is 168 wide, 8px right of its lead.
-- Plugin marks hang outside the window frame. The bookmark (left) and background hint (right) hang from the bottom edge; the Usage strip sits 6px above or below. They never cover terminal content.
+- Plugin marks hang outside the window frame. The bookmarks (left: the red Auto-approve, then the white Auto-resume with its status lamp, 4px apart) and the background hint (right) hang from the bottom edge; the Usage strip sits 6px above or below, below the bookmarks when both are at the bottom. They never cover terminal content.
 
 **Interaction states.**
 - Hover fills a row or ghost control with `hover` and darkens a `muted` icon to `ink`.

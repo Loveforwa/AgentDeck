@@ -145,6 +145,10 @@ describe('Settings dialog (TC-15)', () => {
     fireEvent.click(within(d).getByRole('checkbox'));
     fireEvent.change(within(d).getByLabelText('Editor command'), { target: { value: ' zed ' } });
     fireEvent.change(within(d).getByLabelText('Terminal app'), { target: { value: 'Ghostty' } });
+    // PL6：Resume prompt（多行，空着用内置的那段）
+    const resume = within(d).getByLabelText('Resume prompt') as HTMLTextAreaElement;
+    expect(resume.placeholder).toMatch(/^Your usage limit has reset\./);
+    fireEvent.change(resume, { target: { value: 'Limit reset. Continue.\nRun the tests before you stop.\n' } });
     const codex = c.state.agents.find((a) => a.id === 'codex')!;
     expect(codex.installed).toBe(true);
     await choose('Default agent', codex.label);
@@ -156,6 +160,7 @@ describe('Settings dialog (TC-15)', () => {
       editorCommand: 'zed',
       terminalApp: 'Ghostty',
       defaultAgent: 'codex',
+      resumePrompt: 'Limit reset. Continue.\nRun the tests before you stop.',
     });
     expect(await c.defaultAgent()).toBe('codex');
   });
@@ -305,5 +310,8 @@ describe('settings drafts', () => {
     const d = generalDraft(s);
     expect(generalPatch(s, d)).toEqual({});
     expect(generalPatch(s, { ...d, terminalApp: ' iTerm ' })).toEqual({ terminalApp: 'iTerm' });
+    expect(d.resumePrompt).toBe('');
+    expect(generalPatch(s, { ...d, resumePrompt: '  ' })).toEqual({});
+    expect(generalPatch({ ...s, resumePrompt: 'Go on' }, { ...d, resumePrompt: '' })).toEqual({ resumePrompt: '' });
   });
 });

@@ -2,9 +2,10 @@
 // 框的标题栏、窗口的标题栏各有自己的项。新建的东西放在右键的位置。
 
 import { Menu, Popover, type MenuEntry } from '@agentdeck/ui-kit';
-import type { AgentInfo, TerminalWindowData, WorkspaceId } from '@agentdeck/contracts';
+import type { AgentInfo, TerminalWindowData, WindowId, WorkspaceId } from '@agentdeck/contracts';
 import type { BoardController } from '../controller.ts';
 import { startableAgents } from '../model/agents.ts';
+import { sendTargets } from '../model/send.ts';
 import { SHORTCUT_LABELS } from '../model/shortcuts.ts';
 import { BROWSER_TYPE, TERMINAL_TYPE, isTerminal } from '../model/windows.ts';
 import { PLUGINS, pluginMenuSection, type PluginTarget } from '../plugins/index.ts';
@@ -19,6 +20,8 @@ export function BoardMenu() {
   useBoardState((s) => s.frames);
   // Fork 要看会话 id（X4）
   useBoardState((s) => s.statuses);
+  // Send selection to ▸ 的状态灯（CO3）
+  useBoardState((s) => s.badges);
   useBoardState((s) => s.windows);
   // 插件项的勾和灰掉的原因
   useApprovals((s) => s.auto);
@@ -78,6 +81,17 @@ export function menuItems(c: BoardController, menu: MenuState, available: { term
   ];
 
   switch (target.kind) {
+    case 'window-content': {
+      // CO3：终端内容区右键、⌃ 单击。选中的文字在打开菜单时取一次
+      const id = target.windowId;
+      const text = c.selectionOf(id);
+      return [
+        { id: 'copy', label: 'Copy', shortcut: '⌘C', disabled: !text, onSelect: () => copyText(text) },
+        { id: 'paste', label: 'Paste', shortcut: '⌘V', onSelect: () => void c.pasteClipboard(id) },
+        { type: 'separator' },
+        sendSelectionItem(c, id, text),
+      ];
+    }
     case 'pane':
     case 'frame-body': {
       const ws = target.kind === 'frame-body' ? target.workspaceId : null;
@@ -85,7 +99,8 @@ export function menuItems(c: BoardController, menu: MenuState, available: { term
         ...create(ws, flow),
         { id: 'new-workspace', label: 'New workspace…', shortcut: SHORTCUT_LABELS['new-workspace'], onSelect: () => c.openNewWorkspace({ at: flow }) },
         { id: 'add-project', label: 'Add project…', onSelect: () => void c.addProject(flow) },
-        ...(ws ? plugins({ kind: 'frame', workspaceId: ws }) : []),
+        // 白板空白处：整块白板的插件（PL6 Auto-resume）
+        ...(ws ? plugins({ kind: 'frame', workspaceId: ws }) : plugins({ kind: 'board' })),
         ...(ws ? [autoArrangeItem(ws)] : []),
         { type: 'separator' },
         { id: 'show-all', label: 'Show all', shortcut: SHORTCUT_LABELS['show-all'], onSelect: () => c.showAll() },
@@ -122,6 +137,8 @@ export function menuItems(c: BoardController, menu: MenuState, available: { term
           onSelect: () => c.toggleMaximize(id),
         },
       ];
+      // CO3：标题栏菜单也有 Send selection to ▸，有选中的文字时才能用
+      if (isTerminal(w)) items.push(sendSelectionItem(c, id, c.selectionOf(id)));
       // 窗口类型自己的菜单项（WindowTypeDefinition.menu），选中时作为 WindowCommand 发给窗口；例如终端的
       // Clear、Restart、Restart and resume conversation。“Open in system terminal” 白板下面已经有一项，不重复
       const own = (c.definitionOf(w)?.menu ?? []).filter((m) => m.id !== 'open-in-system-terminal');
@@ -185,6 +202,36 @@ export function menuItems(c: BoardController, menu: MenuState, available: { term
       return items;
     }
   }
+}
+
+/**
+ * CO3 · Send selection to ▸：子菜单按框分组列出白板上别的终端（源终端所在的框在前，散放的也列），
+ * 每行 = 状态灯 + 等宽名字 + 灰字标签；在等你的不列，底下说一句；最后一项 New terminal here…（▸ 选开哪种）。
+ */
+export function sendSelectionItem(c: BoardController, fromId: WindowId, text: string): MenuEntry {
+  const s = c.state;
+  const { groups, skippedWaiting } = sendTargets(s, fromId);
+  const items: MenuEntry[] = [];
+  for (const g of groups) {
+    items.push({ type: 'heading', label: (g.workspaceId ? c.workspaceTitle(g.workspaceId) : 'Not in a workspace').toUpperCase() });
+    for (const t of g.targets) {
+      items.push({
+        id: `send-${t.windowId}`,
+        label: t.name,
+        mono: true,
+        icon: <span className={`ad-group-lamp ad-group-lamp--${t.lamp}`} />,
+        ...(t.label ? { hint: t.label } : {}),
+        onSelect: () => void c.sendSelection(fromId, t.windowId, text),
+      });
+    }
+  }
+  if (groups.length === 0) items.push({ id: 'send-none', label: 'No other terminals', disabled: true });
+  if (skippedWaiting > 0) items.push({ type: 'separator' }, { id: 'send-skipped', label: 'Waiting terminals are skipped', disabled: true });
+  items.push(
+    { type: 'separator' },
+    { id: 'send-new', label: 'New terminal here…', items: terminalItems(s.agents, (agent) => void c.sendSelectionToNew(fromId, agent, text)) },
+  );
+  return { id: 'send-selection', label: 'Send selection to', disabled: !text, items };
 }
 
 function copyText(text: string): void {

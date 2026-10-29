@@ -9,8 +9,11 @@
 //   - 子 agent 的记录在 <sessionId>/subagents/ 下的单独文件，不算进这次对话（只看主对话）。
 //   - 窗口不写在文件里，按模型查表（下面 CLAUDE_WINDOWS，从 2.1.291 自带的模型表抄的）；
 //     看到的上下文超过表里的窗口时，说明用户开了 1M（[1m] 后缀或 beta），按 1M 算，windowSource 为 observed。
+//   - 额度用完（PL3，DR-63，2026-10-26 本机真遇到过）：一行 type:"assistant"、error:"rate_limit"、isApiErrorMessage、
+//     apiErrorStatus 429，带 quotaLimits { status:"rejected", rateLimitType:"five_hour" | …, resetsAt:<秒> }，message.model
+//     是 "<synthetic>"。之后再有成功的回答（带 usage 的非 synthetic assistant）就算恢复了。
 
-import type { TokenCounts } from '@agentdeck/contracts';
+import type { LimitScope, TokenCounts, UsageLimit } from '@agentdeck/contracts';
 import type { Json, ParsedUsage, UsageParser } from './types.ts';
 import { addCounts, contextOf, isoOf, num, obj, parseLine, str, subCounts, zeroCounts } from './types.ts';
 
@@ -73,10 +76,16 @@ export class ClaudeUsageParser implements UsageParser {
   private updatedAt: string | null = null;
   private sessionId: string | null = null;
   private anon = 0;
+  private limit: UsageLimit | null = null;
 
   feed(line: string): void {
     // 先粗筛，大文件里绝大多数是用户消息和工具结果，不用 JSON.parse
     const assistant = line.includes('"assistant"');
+    if (assistant && line.includes('"rate_limit"') && line.includes('isApiErrorMessage')) {
+      const d = parseLine(line);
+      if (d && d['type'] === 'assistant' && d['error'] === 'rate_limit') this.limit = claudeLimitOf(d);
+      return;
+    }
     const compact = !assistant && line.includes('compact_boundary');
     if (!assistant && !compact) return;
     const d = parseLine(line);
@@ -93,6 +102,8 @@ export class ClaudeUsageParser implements UsageParser {
     if (model === '<synthetic>') return;
     const counts = countsOf(u);
     if (!counts) return;
+    // 碰到上限之后又有成功的请求：额度恢复了
+    if (this.limit && d['isSidechain'] !== true) this.limit = null;
     const id = str(m['id']) ?? str(d['requestId']) ?? `anon-${++this.anon}`;
     const prev = this.byId.get(id);
     if (prev) this.total = subCounts(this.total, prev);
@@ -126,6 +137,40 @@ export class ClaudeUsageParser implements UsageParser {
       rateLimits: null,
       updatedAt: this.updatedAt,
       sessionId: this.sessionId,
+      limit: this.limit ? { ...this.limit } : null,
     };
   }
+}
+
+const CLAUDE_LIMIT_KIND: Record<string, UsageLimit['kind']> = { five_hour: 'five_hour', seven_day: 'weekly', seven_day_opus: 'weekly', seven_day_sonnet: 'weekly', weekly: 'weekly' };
+
+/** quotaLimits.rateLimitType 是 Opus / Sonnet 单独的每周额度时（PL5：账号键的范围）。 */
+const CLAUDE_LIMIT_SCOPE: Record<string, LimitScope> = { seven_day_opus: 'opus', seven_day_sonnet: 'sonnet' };
+
+/** error "rate_limit" 那一行 → 碰到的额度上限。Opus / Sonnet 单独的额度另带 scope（UsageLimit.scope，contracts 0.1.22）。 */
+export function claudeLimitOf(d: Json): UsageLimit {
+  const q = obj(d['quotaLimits']);
+  const type = q ? str(q['rateLimitType']) : null;
+  const resets = q ? num(q['resetsAt']) : null;
+  const m = obj(d['message']);
+  const content = m?.['content'];
+  let detail: string | null = null;
+  if (Array.isArray(content)) {
+    for (const c of content) {
+      const t = obj(c);
+      if (t?.['type'] === 'text' && str(t['text'])) {
+        detail = str(t['text']);
+        break;
+      }
+    }
+  }
+  const scope = type ? CLAUDE_LIMIT_SCOPE[type] : undefined;
+  return {
+    kind: (type && CLAUDE_LIMIT_KIND[type]) || (type ? 'other' : 'five_hour'),
+    // 秒；毫秒的值也认（大于 1e12）
+    resetsAt: resets !== null ? new Date(resets > 1e12 ? resets : resets * 1000).toISOString() : null,
+    at: isoOf(d['timestamp']),
+    detail,
+    ...(scope ? { scope } : {}),
+  };
 }

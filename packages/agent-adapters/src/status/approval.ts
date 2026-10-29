@@ -40,7 +40,8 @@ import { compilePatterns, isDestructive } from './destructive.ts';
 import type { TrackedTerminal } from './machine.ts';
 import { matchApprovalScreen } from './screens.ts';
 import type { ScreenKind, ScreenPrompt } from './screens.ts';
-import { approvalStrategy, autoApproveSupport } from './support.ts';
+import { approvalStrategy, SUPPORT_AGENTS } from './support.ts';
+import type { ApprovalStrategy } from './support.ts';
 
 /** 状态机里 ApprovalService 用到的部分。 */
 export interface ApprovalStatusSource {
@@ -78,6 +79,11 @@ export interface ApprovalServiceOptions {
   now?: () => Date;
   /** 写库失败时（不影响批准本身）。 */
   onError?: (error: unknown) => void;
+  /**
+   * AH3：每种 agent 的做法，默认 support.ts 的 approvalStrategy。runtime 按能力报告改：版本超过合格测试核对的版本时，
+   * 靠认屏、按键的（omp）改成 unsupported，note 是 “Untested on <版本>”，不再替你按（TC-48）。
+   */
+  strategy?: (agent: AgentKind) => ApprovalStrategy;
 }
 
 /** 看屏幕时取最后多少行。 */
@@ -111,8 +117,10 @@ export class ApprovalServiceImpl implements ApprovalService {
   private readonly pollMs: number;
   private readonly keyDelayMs: number;
   private readonly now: () => Date;
+  private readonly strategy: (agent: AgentKind) => ApprovalStrategy;
 
   constructor(private readonly opts: ApprovalServiceOptions) {
+    this.strategy = opts.strategy ?? approvalStrategy;
     this.confirmMs = opts.timing?.confirmMs ?? 2000;
     this.pollMs = opts.timing?.pollMs ?? 250;
     this.keyDelayMs = opts.timing?.keyDelayMs ?? 400;
@@ -144,9 +152,22 @@ export class ApprovalServiceImpl implements ApprovalService {
 
   async setTerminalAutoApprove(terminalId: TerminalId, on: boolean | null): Promise<void> {
     const t = this.opts.status.tracked().find((x) => x.terminalId === terminalId);
-    if (on === true && t && approvalStrategy(t.agent).method === 'unsupported') {
-      throw new AgentDeckError({ code: 'unsupported', message: approvalStrategy(t.agent).note ?? `Auto-approve is not supported for ${t.agent}` });
+    if (on === true && t && this.strategy(t.agent).method === 'unsupported') {
+      throw new AgentDeckError({ code: 'unsupported', message: this.strategy(t.agent).note ?? `Auto-approve is not supported for ${t.agent}` });
     }
+    this.applyTerminal(terminalId, on, t);
+  }
+
+  /**
+   * 重开应用时按白板恢复一个终端的开关（apps/desktop 调，不在 IPC 上）。和 setTerminalAutoApprove 不同，
+   * agent 现在不支持（例如升到没核对过的版本，IS-154）也照样记下：不按键，要批准时报 needs-you（unsupported），
+   * 界面的书签变 Needs you，用户看得出为什么不管用，也能自己关掉。
+   */
+  restoreTerminalAutoApprove(terminalId: TerminalId, on: boolean | null): void {
+    this.applyTerminal(terminalId, on, this.opts.status.tracked().find((x) => x.terminalId === terminalId));
+  }
+
+  private applyTerminal(terminalId: TerminalId, on: boolean | null, t: TrackedTerminal | undefined): void {
     if (this.scopes.setTerminal(terminalId, on, t?.workspaceId ?? null, this.iso())) this.emitState();
     if (t && this.scopes.isOn(terminalId, t.workspaceId)) this.sweep([t]);
     this.updateNeedsYou(terminalId);
@@ -161,7 +182,10 @@ export class ApprovalServiceImpl implements ApprovalService {
   }
 
   async autoApproveSupport(): Promise<AutoApproveSupport[]> {
-    return autoApproveSupport();
+    return SUPPORT_AGENTS.map((a) => {
+      const { screen: _screen, ...rest } = this.strategy(a);
+      return rest;
+    });
   }
 
   async history(workspaceId: WorkspaceId, limit: number): Promise<ApprovalRecord[]> {
@@ -188,7 +212,7 @@ export class ApprovalServiceImpl implements ApprovalService {
   decide(hook: ReceivedHook): 'allow' | 'none' {
     const e = hook.event;
     if (e?.type !== 'permission-request') return 'none';
-    if (approvalStrategy(hook.agent).method !== 'hook') return 'none';
+    if (this.strategy(hook.agent).method !== 'hook') return 'none';
     const t = this.opts.status.get(hook.terminalId);
     if (!t || !this.scopes.isOn(hook.terminalId, t.workspaceId)) return 'none';
     if (isDestructive(this.compiledPatterns(), e.command, e.summary)) return 'none';
@@ -243,7 +267,7 @@ export class ApprovalServiceImpl implements ApprovalService {
     let reason: AutoApproveNeedsYouReason | null = null;
     const p = t?.pending ?? null;
     if (t && p && WAITING_STATUSES.includes(t.status) && this.scopes.isOn(terminalId, t.workspaceId)) {
-      const method = approvalStrategy(p.agent).method;
+      const method = this.strategy(p.agent).method;
       if (p.kind === 'question') reason = 'question';
       else if (p.destructive) reason = 'destructive';
       else if ((method !== 'hook' && method !== 'keys') || !this.opts.approveKeys(p.agent)?.length) reason = 'unsupported';
@@ -265,7 +289,7 @@ export class ApprovalServiceImpl implements ApprovalService {
   /** 一条在等的批准请求，开着 Auto-approve 时按键批准。retry：打开开关时，之前没按成的也再试一次。 */
   private maybeAuto(pending: PendingRequest, retry: boolean): void {
     if (pending.destructive) return;
-    const method = approvalStrategy(pending.agent).method;
+    const method = this.strategy(pending.agent).method;
     if (method !== 'hook' && method !== 'keys') return;
     if (!this.scopes.isOn(pending.terminalId, pending.workspaceId)) return;
     if (this.attempted.has(pending.id) && !retry) return;
@@ -293,7 +317,7 @@ export class ApprovalServiceImpl implements ApprovalService {
 
   private async sendApproveKeys(pending: PendingRequest, by: ApprovalRecord['by']): Promise<ApproveResult> {
     const id = pending.id;
-    const strategy = approvalStrategy(pending.agent);
+    const strategy = this.strategy(pending.agent);
     const keys = this.opts.approveKeys(pending.agent);
     if ((strategy.method !== 'hook' && strategy.method !== 'keys') || !keys || keys.length === 0) {
       return { id, ok: false, reason: 'unsupported' };

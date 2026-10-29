@@ -12,7 +12,8 @@
   },
   "dependencies": {
     "@agentdeck/contracts": "workspace:*",
-    "@agentdeck/design-tokens": "workspace:*"
+    "@agentdeck/design-tokens": "workspace:*",
+    "@agentdeck/ui-kit": "workspace:*"
   },
   "peerDependencies": {
     "react": "^18.3.1",

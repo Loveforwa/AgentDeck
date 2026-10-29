@@ -13,6 +13,7 @@ export {
   Toast,
   ToastProvider,
   useToast,
+  useOptionalToast,
   TOAST_DEFAULT_MS,
   TOAST_WITH_ACTION_MS,
   type ToastAction,

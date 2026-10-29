@@ -7,6 +7,7 @@ import react from '@vitejs/plugin-react';
 const internal = [
   '@agentdeck/agent-adapters',
   '@agentdeck/contracts',
+  '@agentdeck/doc-service',
   '@agentdeck/git-service',
   '@agentdeck/mcp-server',
   '@agentdeck/port-watch',

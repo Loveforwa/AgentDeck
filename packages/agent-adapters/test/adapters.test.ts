@@ -1,4 +1,4 @@
-import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { AgentDeckError } from '@agentdeck/contracts';
@@ -26,7 +26,12 @@ function ctx(over: Partial<LaunchContext & { command: string }> = {}): LaunchCon
 
 /** 一个临时 bin 目录，放假的 claude / codex：打印版本号。 */
 let bin: string;
+/** 新版的 codex（0.165.0），钩子、MCP 都带。 */
+let newBin: string;
 beforeAll(() => {
+  newBin = mkdtempSync(join(tmpdir(), 'adb-new-'));
+  writeFileSync(join(newBin, 'codex'), '#!/bin/sh\necho "codex-cli 0.165.0"\n');
+  chmodSync(join(newBin, 'codex'), 0o755);
   bin = mkdtempSync(join(tmpdir(), 'adb-'));
   for (const [name, out] of [
     ['claude', '2.1.291 (Claude Code)'],
@@ -38,7 +43,10 @@ beforeAll(() => {
   }
   mkdirSync(join(bin, 'notexec'));
 });
-afterAll(() => rmSync(bin, { recursive: true, force: true }));
+afterAll(() => {
+  rmSync(bin, { recursive: true, force: true });
+  rmSync(newBin, { recursive: true, force: true });
+});
 
 describe('ClaudeAdapter', () => {
   const claude = new ClaudeAdapter({ env: () => ({ PATH: bin }), newSessionId: () => 'new-uuid' });
@@ -135,7 +143,19 @@ describe('ClaudeAdapter', () => {
     expect(claude.parseHook('SessionStart', fx.claude.SessionStart)).toEqual({
       type: 'session-start',
       sessionId: 'c2874ef2-d753-4246-a52b-c4eec2e93598',
+      reason: 'start',
     });
+    // SE2：SessionStart 的 source 记成这一段对话的原因
+    const id = 'c2874ef2-d753-4246-a52b-c4eec2e93598';
+    for (const [source, reason] of [
+      ['resume', 'resume'],
+      ['clear', 'clear'],
+      ['compact', 'compact'],
+      ['something-new', 'unknown'],
+    ] as const) {
+      expect(claude.parseHook('SessionStart', { session_id: id, source })).toEqual({ type: 'session-start', sessionId: id, reason });
+    }
+    expect(claude.parseHook('SessionStart', { session_id: id })).toEqual({ type: 'session-start', sessionId: id });
     expect(claude.parseHook('UserPromptSubmit', fx.claude.UserPromptSubmit)).toEqual({ type: 'prompt-submitted' });
     expect(claude.parseHook('PermissionRequest', fx.claude.PermissionRequestBash)).toEqual({
       type: 'permission-request',
@@ -189,6 +209,7 @@ describe('ClaudeAdapter', () => {
 
 describe('CodexAdapter', () => {
   const env = () => ({ PATH: bin });
+  const envNew = () => ({ PATH: newBin });
   const allTrusted: CodexTrustQuery = async ({ overrides }) => {
     const commands = overrides.filter((_, i) => i % 2 === 1).map((o) => /command=("(?:[^"\\]|\\.)*")/.exec(o)![1]!).map((s) => JSON.parse(s) as string);
     return parseHooksList(fx.codex.hooksList(commands));
@@ -204,12 +225,13 @@ describe('CodexAdapter', () => {
   it('prepare() asks codex for the hook hashes and launch() trusts exactly those', async () => {
     let seen: Parameters<CodexTrustQuery>[0] | null = null;
     const codex = new CodexAdapter({
-      env,
+      env: envNew,
       queryTrust: async (q) => {
         seen = q;
         return allTrusted(q);
       },
     });
+    await codex.detect();
     expect(await codex.prepare(ctx())).toEqual({ hooks: true });
     expect(seen!.cwd).toBe('/repo');
     expect(seen!.overrides).toEqual(codexHookOverrides(NOTIFY));
@@ -250,9 +272,10 @@ describe('CodexAdapter', () => {
     expect(spec.args.slice(-3)).toEqual(['--full-auto', '--', 'review this']);
   });
 
-  it('mcp (N1): -c mcp_servers.agentdeck with env var names only; the token goes into env', () => {
+  it('mcp (N1): -c mcp_servers.agentdeck with env var names only; the token goes into env', async () => {
     const mcp = { url: 'http://127.0.0.1:47621/mcp', token: 'secret-token' };
-    const codex = new CodexAdapter({ env, queryTrust: allTrusted });
+    const codex = new CodexAdapter({ env: envNew, queryTrust: allTrusted });
+    await codex.detect();
     const spec = codex.launch(ctx({ mcp }));
     const overrides = codexMcpOverrides(mcp);
     // 0.164.0 用临时 CODEX_HOME 实测 `codex mcp get agentdeck --json` 认出的就是这三条
@@ -300,6 +323,38 @@ describe('CodexAdapter', () => {
     expect(failing.launch(ctx()).args).toEqual([]);
   });
 
+  it('an unreadable version is not taken as new enough (AH3): no hooks, no legacy notify, no MCP', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'adb-nover-'));
+    writeFileSync(join(dir, 'codex'), '#!/bin/sh\necho "codex dev build"\n');
+    chmodSync(join(dir, 'codex'), 0o755);
+    const codex = new CodexAdapter({ env: () => ({ PATH: dir }), queryTrust: allTrusted });
+    expect(await codex.detect()).toMatchObject({ installed: true, version: null });
+    expect(codex.capabilities(null).hooks).toBe(false);
+    expect(await codex.prepare(ctx())).toEqual({ hooks: false });
+    expect(codex.launch(ctx({ mcp: { url: 'http://x/mcp', token: 't' } })).args).toEqual([]);
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('the trust hashes are asked again when the codex binary changes (IS-77)', async () => {
+    let asked = 0;
+    const codex = new CodexAdapter({
+      env: envNew,
+      queryTrust: async (q) => {
+        asked++;
+        return allTrusted(q);
+      },
+    });
+    await codex.detect();
+    await codex.prepare(ctx());
+    await codex.prepare(ctx());
+    expect(asked).toBe(1);
+    // codex 升级了：文件的修改时间变了
+    const later = new Date(Date.now() + 60_000);
+    utimesSync(join(newBin, 'codex'), later, later);
+    await codex.prepare(ctx());
+    expect(asked).toBe(2);
+  });
+
   it('old versions get the legacy notify instead', async () => {
     const codex = new CodexAdapter({ env });
     await codex.detect();
@@ -311,6 +366,7 @@ describe('CodexAdapter', () => {
     expect(codex.parseHook('SessionStart', fx.codex.SessionStart)).toEqual({
       type: 'session-start',
       sessionId: '01a168da-2729-7752-adf2-dd274b58dd05',
+      reason: 'start',
     });
     expect(codex.parseHook('PermissionRequest', fx.codex.PermissionRequest)).toEqual({
       type: 'permission-request',
@@ -338,7 +394,7 @@ describe('ShellAdapter and CustomCommandAdapter', () => {
   it('shell runs the login shell from the environment', () => {
     const shell = new ShellAdapter({ env: () => ({ SHELL: '/bin/bash' }) });
     expect(shell.command).toBe('/bin/bash');
-    expect(shell.launch(ctx())).toEqual({ cmd: '/bin/bash', args: ['-l'], sessionId: null });
+    expect(shell.launch(ctx())).toEqual({ cmd: '/bin/bash', args: ['-l'], sessionId: null, consumed: { prompt: false } });
     expect(shell.launch(ctx({ command: 'pnpm install' })).args).toEqual(['-l', '-c', 'pnpm install']);
     expect(new ShellAdapter({ env: () => ({}) }).command).toBe('/bin/zsh');
   });
@@ -365,6 +421,7 @@ describe('ShellAdapter and CustomCommandAdapter', () => {
       cmd: 'gemini',
       args: ['--prompt', 'hello world', 'a b'],
       sessionId: null,
+      consumed: { prompt: false },
     });
     expect(() => c.launch(ctx({ command: '   ' }))).toThrow('Enter a command to run');
     expect(c.parseHook()).toBeNull();

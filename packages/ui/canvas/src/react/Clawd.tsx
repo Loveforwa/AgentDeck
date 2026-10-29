@@ -1,5 +1,9 @@
-// 左下角的小吉祥物 Clawd：每 10 秒左右在白板底部随机冒出来一次，随机做一件事（举杠铃、写代码、吃饭），几秒后缩回去。
-// 像素画：一格一个 <rect>，每个动作两帧，CSS steps 交替显示，不用图片。只是装饰：不挡鼠标，读屏器忽略。
+// 左下角的小吉祥物 Clawd：有人在用时每 10 秒左右在白板底部随机冒出来一次，随机做一件事（举杠铃、写代码、吃饭），几秒后缩回去。
+// 像素画：一格一个 <rect>，每个动作两帧，不用图片。只是装饰：不挡鼠标，读屏器忽略。
+// 空闲时 CPU 要接近 0（G4，IS-161）：白板每出一帧都不便宜（2026-10-29 量过，Clawd 升降和换帧加起来约 2.5% 一个核），所以
+// - 键盘鼠标 30 秒没动（人走开了）就不再冒出来，碰一下再叫醒；窗口在后台时也不冒；
+// - 两帧由定时器每 350ms 换一次（只在换的时候重画，不用无限循环的 CSS 动画），缩回去以后把精灵卸掉；
+// - 系统开了减少动态效果时不换帧。
 
 import { useEffect, useState } from 'react';
 
@@ -10,6 +14,15 @@ export const CLAWD_ACTIVITIES: readonly ClawdActivity[] = ['lifting', 'coding', 
 export const CLAWD_EVERY_MS = 10_000;
 /** 每次露面多久。 */
 export const CLAWD_STAY_MS = 6_000;
+/** 两帧各停多久。 */
+export const CLAWD_FRAME_MS = 350;
+/** 缩回去的过渡（canvas.css 的 .ad-clawd）走完后再卸掉。 */
+export const CLAWD_EXIT_MS = 400;
+/** 多久没碰键盘鼠标算人走开了，不再冒出来。 */
+export const CLAWD_NAP_MS = 30_000;
+
+/** 算“人还在”的输入。 */
+const INPUT_EVENTS = ['pointerdown', 'pointermove', 'keydown', 'wheel'] as const;
 
 type Px = readonly [x: number, y: number, w: number, h: number];
 
@@ -110,8 +123,8 @@ function Rects({ px, className }: { px: Px[]; className: string }) {
   );
 }
 
-/** 一只 Clawd 做一件事，不管出现和消失。测试和以后别处想放一只时用。 */
-export function ClawdSprite({ activity }: { activity: ClawdActivity }) {
+/** 一只 Clawd 做一件事，画第 frame 帧（1 或 2），不管出现和消失。测试和以后别处想放一只时用。 */
+export function ClawdSprite({ activity, frame = 1 }: { activity: ClawdActivity; frame?: 1 | 2 }) {
   return (
     <svg
       className="ad-clawd-sprite"
@@ -121,6 +134,7 @@ export function ClawdSprite({ activity }: { activity: ClawdActivity }) {
       shapeRendering="crispEdges"
       aria-hidden="true"
       data-activity={activity}
+      data-frame={frame}
     >
       {FRAMES[activity].map((f, i) => (
         <g key={i} className={`ad-clawd-frame ad-clawd-frame-${i + 1}`}>
@@ -150,18 +164,46 @@ export function Clawd({ random = Math.random }: { random?: () => number }) {
   useEffect(() => {
     const timers: ReturnType<typeof setTimeout>[] = [];
     const later = (ms: number, fn: () => void) => timers.push(setTimeout(fn, ms));
+    let lastInput = Date.now();
+    let napping = false;
     const appear = () => {
+      if (Date.now() - lastInput >= CLAWD_NAP_MS || document.visibilityState === 'hidden') {
+        // 睡了：不再排下一次，等有输入再叫醒（空闲时一个定时器也不留）
+        napping = true;
+        return;
+      }
       const activity = CLAWD_ACTIVITIES[Math.floor(random() * CLAWD_ACTIVITIES.length)] ?? 'coding';
       setVisit({ activity, spot: random() });
       // 先挂上去再升起来，过渡才有起点
       later(20, () => setShown(true));
       later(CLAWD_STAY_MS, () => setShown(false));
+      later(CLAWD_STAY_MS + CLAWD_EXIT_MS, () => setVisit(null));
       // 下一次：10 秒上下浮动 3 秒，不那么机械
       later(CLAWD_EVERY_MS + (random() - 0.5) * 6_000, appear);
     };
+    const onInput = () => {
+      lastInput = Date.now();
+      if (!napping) return;
+      napping = false;
+      later(CLAWD_EVERY_MS, appear);
+    };
     later(CLAWD_EVERY_MS, appear);
-    return () => timers.forEach(clearTimeout);
+    for (const e of INPUT_EVENTS) window.addEventListener(e, onInput, { capture: true, passive: true });
+    document.addEventListener('visibilitychange', onInput);
+    return () => {
+      timers.forEach(clearTimeout);
+      for (const e of INPUT_EVENTS) window.removeEventListener(e, onInput, { capture: true });
+      document.removeEventListener('visibilitychange', onInput);
+    };
   }, [random]);
+
+  // 露着时换帧；缩回去就停（卸掉之前那 400ms 停在当前帧）
+  const [frame, setFrame] = useState<1 | 2>(1);
+  useEffect(() => {
+    if (!shown || prefersReducedMotion()) return;
+    const id = setInterval(() => setFrame((f) => (f === 1 ? 2 : 1)), CLAWD_FRAME_MS);
+    return () => clearInterval(id);
+  }, [shown]);
 
   if (!visit) return null;
   return (
@@ -170,7 +212,11 @@ export function Clawd({ random = Math.random }: { random?: () => number }) {
       data-shown={shown ? 'true' : 'false'}
       style={{ left: `calc(var(--clawd-left) + ${visit.spot.toFixed(3)} * var(--clawd-range))` }}
     >
-      <ClawdSprite activity={visit.activity} />
+      <ClawdSprite activity={visit.activity} frame={frame} />
     </div>
   );
+}
+
+function prefersReducedMotion(): boolean {
+  return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 }

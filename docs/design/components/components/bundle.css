@@ -1,4 +1,4 @@
-/* AgentDeck component styles, copied verbatim from the repository (Loveforwa/AgentDeck@dc06325). Tokens come from tokens.css. */
+/* AgentDeck component styles, copied verbatim from the repository (Loveforwa/AgentDeck, integrate/W0-W1 @ d51382e). Tokens come from tokens.css. */
 /* motion: not a token family on this page, so it is declared here exactly as packages/design-tokens/tokens.css does */
 :root { --motion-duration: 140ms; --motion-ease: cubic-bezier(0.2, 0, 0, 1); --motion: var(--motion-duration) var(--motion-ease); }
 @media (prefers-reduced-motion: reduce) { :root { --motion-duration: 0ms; } }
@@ -151,6 +151,21 @@ pre {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* 终端名、命令名：和标题栏一样用等宽字 */
+.ad-menu-label--mono {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+
+/* 标签前的小标记（状态灯）。同一层里有一项带标记时每项都留这一格 */
+.ad-menu-icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 8px;
 }
 
 .ad-menu-hint {
@@ -1135,33 +1150,15 @@ pre {
   fill: var(--mascot-food);
 }
 
-/* 两帧交替：一帧亮着时另一帧藏着 */
-.ad-clawd-frame {
-  animation: ad-clawd-flip 700ms steps(1, end) infinite;
-}
-
-.ad-clawd-frame-2 {
-  animation-delay: -350ms;
-}
-
-@keyframes ad-clawd-flip {
-  0% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0;
-  }
+/* 两帧交替：Clawd.tsx 的定时器换 data-frame，只显示那一帧（不用无限循环的 CSS 动画，空闲时界面不用每帧都画，IS-161） */
+.ad-clawd-sprite[data-frame='1'] .ad-clawd-frame-2,
+.ad-clawd-sprite[data-frame='2'] .ad-clawd-frame-1 {
+  display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .ad-clawd {
     transition: none;
-  }
-  .ad-clawd-frame {
-    animation: none;
-  }
-  .ad-clawd-frame-2 {
-    opacity: 0;
   }
 }
 
@@ -1358,9 +1355,9 @@ pre {
   top: calc(100% + var(--plugin-strip-gap));
 }
 
-/* 下边同时挂着 Auto-approve 的书签时，条放在书签下面 */
-.ad-window-node:has(.ad-auto-approve-mark) > .ad-usage-strip[data-position='bottom'],
-.ad-window-node:has(.ad-auto-approve-mark) > .ad-usage-drop[data-position='bottom'] {
+/* 下边同时挂着 Auto-approve、Auto-resume 的书签时，条放在书签下面 */
+.ad-window-node:has(.ad-auto-approve-mark, .ad-auto-resume-mark) > .ad-usage-strip[data-position='bottom'],
+.ad-window-node:has(.ad-auto-approve-mark, .ad-auto-resume-mark) > .ad-usage-drop[data-position='bottom'] {
   top: calc(100% + var(--plugin-mark-height) + var(--plugin-strip-gap));
 }
 
@@ -2319,6 +2316,179 @@ pre {
   margin-right: auto;
 }
 
+/*
+  Auto-resume 的书签（PL6）：终端底边左侧，排在 Auto-approve 书签后面（left 由组件量出来）；只在这个终端被额度上限停下时挂。
+  白底细边，颜色只给 7px 的状态点：续着绿、等你或等恢复黄、又撞了红、别的灰。点开小卡片改这一次续跑发的话。
+*/
+.ad-auto-resume-mark {
+  position: absolute;
+  top: 100%;
+  left: var(--space-lg);
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  box-sizing: border-box;
+  height: var(--plugin-mark-height);
+  padding: 0 7px;
+  border: 1px solid var(--line-strong);
+  border-top: 0;
+  border-radius: 0 0 var(--plugin-mark-radius) var(--plugin-mark-radius);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--plugin-mark-text);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  pointer-events: all;
+}
+
+.ad-auto-resume-mark[data-tone='muted'] {
+  color: var(--muted);
+}
+
+.ad-auto-resume-mark:hover,
+.ad-auto-resume-mark[aria-expanded='true'] {
+  background: var(--hover);
+}
+
+.ad-auto-resume-mark:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.ad-auto-resume-lamp {
+  flex: none;
+  box-sizing: border-box;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.ad-auto-resume-lamp--running {
+  background: var(--status-running);
+}
+
+.ad-auto-resume-lamp--waiting {
+  background: var(--status-waiting);
+}
+
+.ad-auto-resume-lamp--error {
+  background: var(--status-error);
+}
+
+.ad-auto-resume-lamp--muted {
+  border: 1px solid var(--muted);
+}
+
+.ad-popover.ad-auto-resume-card {
+  width: 380px;
+  padding: 0;
+}
+
+.ad-auto-resume-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  font-size: var(--text-sm);
+  line-height: var(--leading);
+}
+
+.ad-auto-resume-card-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-xs);
+}
+
+.ad-auto-resume-muted {
+  color: var(--muted);
+}
+
+.ad-auto-resume-line {
+  margin: 0;
+  color: var(--muted);
+}
+
+.ad-auto-resume-line[data-tone='waiting'] {
+  color: var(--attention);
+}
+
+.ad-auto-resume-line[data-tone='error'] {
+  color: var(--status-error);
+}
+
+.ad-auto-resume-message {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.ad-auto-resume-message-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-strong);
+}
+
+.ad-auto-resume-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-weight: normal;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.ad-auto-resume-link:hover:not(:disabled) {
+  color: var(--ink);
+}
+
+.ad-auto-resume-message textarea {
+  box-sizing: border-box;
+  width: 100%;
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: var(--leading);
+  resize: vertical;
+}
+
+.ad-auto-resume-message textarea[readonly] {
+  color: var(--muted);
+}
+
+.ad-auto-resume-message textarea:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -1px;
+}
+
+.ad-auto-resume-hint {
+  margin: 0;
+  font-size: var(--text-xs);
+}
+
+.ad-auto-resume-save,
+.ad-auto-resume-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.ad-auto-resume-foot .ad-auto-resume-muted {
+  font-size: var(--text-xs);
+}
+
 /* ==== packages/ui/canvas/src/background.css ==== */
 /* 后台 agent（MVP v3 · N10，画板 13）。只用 design-tokens 的变量；颜色只给状态灯（绿在跑、红出错）。 */
 
@@ -3172,6 +3342,133 @@ pre {
 /* 标题靠左，组装方给的按钮（收起面板）靠右 */
 .bnav-top > .bnav-title {
   flex: 1;
+}
+
+/* ---- CO4：Board / Agents 切换 ---- */
+
+.bnav-switch {
+  display: inline-flex;
+  flex: none;
+  gap: var(--space-2xs);
+  padding: var(--space-2xs);
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-control);
+}
+
+.bnav-switch-btn {
+  height: calc(var(--control-sm) - 6px);
+  padding: 0 var(--space-sm);
+  border: 0;
+  border-radius: var(--radius-inset);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--text-xs);
+  cursor: default;
+}
+
+.bnav-switch-btn:hover {
+  color: var(--ink);
+}
+
+.bnav-switch-btn[aria-pressed='true'] {
+  background: var(--hover);
+  color: var(--ink);
+  font-weight: var(--weight-strong);
+}
+
+.bnav-switch-btn:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+/* ---- CO4：Agents 视图 ---- */
+
+.bnav-agent-group + .bnav-agent-group {
+  margin-top: var(--space-sm);
+}
+
+/* 分组小标题：大写、灰、和 BOARD 一样的字 */
+.bnav-group-heading {
+  margin: 0;
+  padding: var(--space-2xs) var(--space-xs);
+  color: var(--muted);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-strong);
+  letter-spacing: 0.3px;
+}
+
+.bnav-agent-row {
+  padding-left: var(--space-xs);
+}
+
+.bnav-where {
+  flex: 0 1 auto;
+  min-width: 0;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bnav-spacer {
+  flex: 1;
+  min-width: var(--space-xs);
+}
+
+.bnav-agent-status {
+  flex: none;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.bnav-agent-status--needs-you {
+  color: var(--attention);
+}
+
+.bnav-agent-status--error {
+  color: var(--status-error);
+}
+
+.bnav-agents-hint {
+  margin-top: var(--space-sm);
+  font-size: var(--text-xs);
+}
+
+/* ---- CO4：悬停提示（墨色底，和 Toast 一样在深色主题下变浅底） ---- */
+
+.bnav-tip {
+  position: fixed;
+  z-index: var(--z-popover);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  box-sizing: border-box;
+  width: max-content;
+  max-width: 320px;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-control);
+  background: var(--ink);
+  box-shadow: var(--shadow-float);
+  color: var(--on-ink);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  line-height: var(--leading);
+  pointer-events: none;
+}
+
+.bnav-tip-title {
+  font-weight: var(--weight-strong);
+  overflow-wrap: anywhere;
+}
+
+.bnav-tip-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.bnav-tip-dim {
+  opacity: 0.72;
 }
 
 /* ==== packages/ui/panels/scm/src/scm.css ==== */
@@ -4411,6 +4708,11 @@ button.scm-graph-label:focus-visible {
 .hist-btn:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: -2px;
+}
+
+.hist-other-row {
+  padding-left: 0;
+  font-weight: var(--weight-strong);
 }
 
 .hist-caret {

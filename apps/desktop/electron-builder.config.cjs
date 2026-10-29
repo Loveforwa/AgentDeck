@@ -38,6 +38,8 @@ module.exports = {
     { from: join(root, 'packages/tmux-host/tmux.conf'), to: 'tmux.conf' },
     { from: join(root, 'tools/agentdeck-notify/bin/agentdeck-notify.mjs'), to: 'agentdeck-notify.mjs' },
     { from: join(root, 'tools/agentdeck-notify/bin/agentdeck-pi-extension.mjs'), to: 'agentdeck-pi-extension.mjs' },
+    // CR15：agentdeck 命令（<数据目录>/bin/agentdeck 包装脚本运行它）
+    { from: join(root, 'tools/agentdeck-cli/bin/agentdeck.mjs'), to: 'agentdeck.mjs' },
   ],
   afterPack: join(__dirname, 'scripts/after-pack.cjs'),
   mac: {

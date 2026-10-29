@@ -2,6 +2,10 @@
 // 要真实 git 行为（给线 3 的真实实现做集成测试）用 ./temp-repo.ts 的 createTempRepo()。
 
 import type {
+  LineMapHunk,
+  OverlapVerdict,
+  WorkspaceId,
+  WorkspaceOverlap,
   AbsPath,
   AgentDeckErrorData,
   BranchInfo,
@@ -117,6 +121,10 @@ export class FakeGitService implements GitService {
   private readonly latencyMs: number;
   private readonly repos: Repo[] = [];
   private readonly faults = new Map<Method, AgentDeckErrorData[]>();
+  private readonly files = new Map<string, string>();
+  private readonly blames = new Map<string, string[]>();
+  private readonly lineMaps = new Map<string, LineMapHunk[]>();
+  private readonly overlapVerdicts = new Map<string, OverlapVerdict>();
   private hashCounter = 0;
   private seedClock = 0;
   /** discard 移到废纸篓的未跟踪文件，绝对路径。 */
@@ -498,6 +506,76 @@ export class FakeGitService implements GitService {
     await this.enter('init');
     if (this.findTree(dir, true)) return; // git init 对已有仓库是无害的
     this.addRepo({ path: dir, commits: [] });
+  }
+
+  // DC0：代码锚点用的三个只读方法。假实现不存文件内容，按 setFileAt / setBlame / setLineMap 预置的回。
+
+  async blameLines(repo: AbsPath, path: string, opts: { rev?: string } = {}): Promise<{ line: number; commit: string }[]> {
+    await this.enter('blameLines');
+    this.locate(repo);
+    const blame = this.blames.get(`${opts.rev ?? 'worktree'}\0${path}`) ?? this.blames.get(`*\0${path}`);
+    if (!blame) fail('not-found', `No such file: ${path}`);
+    return blame.map((commit, i) => ({ line: i + 1, commit }));
+  }
+
+  async showFile(repo: AbsPath, rev: string, path: string): Promise<string | null> {
+    await this.enter('showFile');
+    this.locate(repo);
+    return this.files.get(`${rev}\0${path}`) ?? null;
+  }
+
+  async lineMap(repo: AbsPath, path: string, from: string, to: 'worktree' | string): Promise<LineMapHunk[]> {
+    await this.enter('lineMap');
+    this.locate(repo);
+    return clone(this.lineMaps.get(`${from}\0${to}\0${path}`) ?? []);
+  }
+
+  /**
+   * CO0：按每个 worktree 现在的改动（changes）两两求交集。结论默认 clean，setOverlapVerdict 预置的文件按预置的回
+   * （例如 conflict，或模拟 git 太旧时的 unknown）。
+   */
+  async overlaps(repo: AbsPath, worktrees: { workspaceId: WorkspaceId; path: AbsPath }[]): Promise<WorkspaceOverlap[]> {
+    await this.enter('overlaps');
+    const { repo: r } = this.locate(repo);
+    if (worktrees.length > 12) fail('invalid-argument', 'Too many worktrees to compare (at most 12)');
+    const changed = worktrees.map((w) => {
+      const tree = r.trees.get(w.path);
+      if (!tree) fail('not-found', `${w.path} is not a worktree of ${repo}`);
+      return { id: w.workspaceId, files: [...tree.changes.keys()] };
+    });
+    const out: WorkspaceOverlap[] = [];
+    const checkedAt = nowIso();
+    for (let i = 0; i < changed.length; i += 1) {
+      for (let j = i + 1; j < changed.length; j += 1) {
+        const a = changed[i];
+        const b = changed[j];
+        if (!a || !b) continue;
+        const both = a.files.filter((f) => b.files.includes(f)).sort();
+        if (both.length === 0) continue;
+        out.push({ a: a.id, b: b.id, files: both.map((path) => ({ path, verdict: this.overlapVerdicts.get(path) ?? 'clean' })), checkedAt });
+      }
+    }
+    return out;
+  }
+
+  /** CO0：预置某个文件在 overlaps 里的结论。 */
+  setOverlapVerdict(path: string, verdict: OverlapVerdict): void {
+    this.overlapVerdicts.set(path, verdict);
+  }
+
+  /** 预置某个版本的文件全文（showFile 用）。 */
+  setFileAt(rev: string, path: string, text: string): void {
+    this.files.set(`${rev}\0${path}`, text);
+  }
+
+  /** 预置 blame：commits[i] 是第 i + 1 行的提交。rev 不给是工作区，'*' 是任何版本。 */
+  setBlame(path: string, commits: string[], rev = 'worktree'): void {
+    this.blames.set(`${rev}\0${path}`, [...commits]);
+  }
+
+  /** 预置 from → to 的行号映射。 */
+  setLineMap(path: string, from: string, to: string, hunks: LineMapHunk[]): void {
+    this.lineMaps.set(`${from}\0${to}\0${path}`, clone(hunks));
   }
 
   // ---- 内部 ----

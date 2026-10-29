@@ -1,6 +1,6 @@
 # @agentdeck/store
 
-AgentDeck 的本地数据，SQLite（better-sqlite3）。实现 contracts 的 `BoardStore`，另外给主进程里的服务提供项目、工作区、终端恢复信息、批准记录四个仓储。
+AgentDeck 的本地数据，SQLite（better-sqlite3）。实现 contracts 的 `BoardStore`，另外给主进程里的服务提供项目、工作区、终端恢复信息、批准记录、Session（SE1）五个仓储。
 
 只在**主进程**里用。界面拿数据走 IPC 和各个服务，不直接引用本包。
 
@@ -15,6 +15,8 @@ store.projects     // ProjectRepository
 store.workspaces   // WorkspaceRepository
 store.terminals    // TerminalRepository
 store.approvals    // ApprovalRepository
+store.sessions     // SessionRepository（M9 · SE1；服务在 apps/desktop/src/main/sessions.ts）
+store.docAnchors   // DocAnchorRepository（M15 · DC2；用的人是 doc-service 的 CodeAnchorService，由 apps/desktop 注入）
 store.transaction(() => { ... }) // 几步写入放进一个事务，抛错全部回滚；可以嵌套
 store.close()
 ```
@@ -24,7 +26,7 @@ store.close()
 - `put` 都是“有就整条更新、没有就插入”（`ON CONFLICT DO UPDATE`，不会触发级联删除）。部分字段的合并（比如 `ProjectPatch`）由服务先 `get` 再 `put`。
 - `openStore` 打开时自动跑迁移；文件所在的文件夹不存在会建出来。打开失败（比如数据库来自更新版本的应用）抛 `AgentDeckError`，code 为 `unsupported`。
 
-## 表结构（迁移 1）
+## 表结构（迁移 1、2、3）
 
 | 表 | 主键 | 内容 |
 | --- | --- | --- |
@@ -32,7 +34,12 @@ store.close()
 | `board` | id（只能是 1） | `state`：整份 `BoardState` 的 JSON；`saved_at` |
 | `projects` | id | `Project`；`path` 唯一；`repos`、`copy_into_worktrees` 是 JSON；`missing` 0/1；索引 `last_used_at DESC` |
 | `workspaces` | id | `Workspace`；`project_id` → projects（级联删除）；`repos` 是 JSON；每个项目最多一个 `mode = 'main-folder'`（部分唯一索引） |
-| `terminals` | terminal_id | 恢复信息：window_id（唯一，可空）、workspace_id → workspaces（级联删除，可空）、agent、cmd、args（JSON）、cwd、session_id、start_command、last_status、exit_code、updated_at |
+| `terminals` | terminal_id | 恢复信息：window_id（唯一，可空）、workspace_id → workspaces（级联删除，可空）、agent、cmd、args（JSON）、cwd、agent_session_id（agent 自己的会话 id，迁移 1 里叫 session_id）、session_id → sessions（迁移 2，SessionId，删 Session 时置空）、start_command、last_status、exit_code、updated_at |
+| `sessions` | id | 迁移 2 · `Session`：agent、workspace_id → workspaces（**删工作区时置空**，Session 留着当散放的）、cwd、parent_id → sessions（删父时置空）、origin（JSON `SessionOrigin`）、label、title、terminal_id（停了为空，不加外键）、state、handed_off_to → sessions、handoff_note、created_at、updated_at；索引 `(parent_id, created_at)`、`created_at DESC`、terminal_id |
+| `doc_anchor_cache` | (doc_path, ref_key, baseline, target_hash) | 迁移 3 · 文档里代码引用上次的核对结果：doc_path 是文档的绝对路径（每个 worktree 一份）、ref_key（路径、起止行、符号、钉住的版本）、baseline（`pinned:` / `verified:` / `blame:` / `worktree`）、target_hash（工作区里被引用文件的 sha1）、result（doc-service 的 JSON，本包不解析）、checked_at。每篇整篇替换（`replaceCache`） |
+| `doc_anchor_verified` | (doc_path, ref_key) | 迁移 3 · Mark as checked 的记录：path、start_line、end_line（核对时那个版本里的位置）、blob → doc_anchor_blobs、lines_hash（这几行原文的 sha1）、verified_at |
+| `doc_anchor_blobs` | blob | 迁移 3 · 核对时被引用文件的全文（blob 是 git 的 blob id）。`putVerified` 顺手删掉没有记录再用到的 |
+| `session_agent_ids` | (session_id, seq) | 迁移 2 · `Session.agentSessions` 的每一段：session_id → sessions（级联删除）、seq 从 1 起、agent_session_id（有索引，`findByAgentSession` 用）、started_at、reason |
 | `approval_history` | seq（自增） | `ApprovalRecord` 拆成列：request_id、terminal_id、workspace_id → workspaces（级联删除）、agent、kind、summary、command、destructive、requested_at、by、at；索引 `(workspace_id, at DESC)` |
 
 几个约定：
@@ -41,6 +48,10 @@ store.close()
 - 同一个窗口重启后恢复会拿到新的 terminalId：`terminals.put` 会把这个窗口原来那条记录替换掉。窗口关了、终端还在后台跑时 window_id 为空，可以有多条。
 - 枚举类的列（kind、mode、agent、last_status、by）没加 CHECK：SQLite 改 CHECK 要重建表，而 contracts 允许往枚举里加值。类型由 TypeScript 保证。
 - 时间都是 ISO 字符串，排序直接按字符串比。
+- `TerminalRecord.sessionId` 是 agent 自己的会话 id（列 agent_session_id），`TerminalRecord.session` 是 AgentDeck 的 SessionId（列 session_id），和 `TerminalWindowData` 的两个字段同名。
+- IS-95：`terminals.prune(keep)` 只留 tmux 里还在的终端，主进程在启动时拿到 `TerminalHost.list()` 后调一次；拿不到列表时不调。
+- Session（SE1）：`sessions.put` 整条写（连同分段）；`updateState` 只改 state、terminalId、handedOffTo（state 不是 handed-off 时清掉 handedOffTo）；`addSegment` 在最后加一段。`list` 新的在前，`listByParent` 按先后。
+- 迁移 2 的升级（TC-55）：白板上每个还没有 `data.session` 的终端窗口补一条 Session 并写回白板；`WindowNode.group` 里 member 的 parentId 是同组 lead 的那条（origin `spawn · open_terminals`，label 取 group.label，没有再取窗口的 Rename），group 本身留着给 N2 侧边栏；有 terminalId 的记 running（应用启动时对不上 tmux 的由 SE2 改 stopped），没有的 stopped；窗口记着的 agent 会话 id 记成第一段（reason unknown）；对应的 terminals 记录填上 session_id。白板读不出来时跳过，不让迁移失败。
 - 空库 `board.load()` 返回空白板：viewport 0,0,1；panel open、width 320；`savedAt` 为 `NEVER_SAVED`（1970-01-01）。
 - `board.save` 先删再插，在一个事务里；中途失败回到原来那份。`version` 不是 1 时抛 `invalid-argument`。
 
@@ -68,9 +79,10 @@ pnpm --filter @agentdeck/store test       # Vitest，在 Node 里跑，用 :memo
 pnpm --filter @agentdeck/store typecheck
 ```
 
-- `test/migrations.test.ts`：空库建表、重复执行不变、升级保留数据、失败回滚、断外键回滚、拒绝新版本的库、迁移序号不连续。
+- `test/migrations.test.ts`：空库建表、重复执行不变、升级保留数据、失败回滚、断外键回滚、拒绝新版本的库、迁移序号不连续；迁移 2 把旧白板的终端窗口和窗口组变成 Session 和父子关系（TC-55 的后台部分）。
 - `test/board.test.ts`：空库加载、往返、整份替换、中途失败回滚、拒绝未知版本、关闭重开。
-- `test/repositories.test.ts`：四个仓储的往返、查询排序、唯一约束、外键和级联、`transaction` 回滚和嵌套。
+- `test/doc-anchors.test.ts`：核对缓存整篇替换、核对记录和全文往返、改 key、没人用的全文删掉；`test/migrations.test.ts` 里有 2 → 3 的升级。
+- `test/repositories.test.ts`：五个仓储的往返（Session：分段、排序、按 agent 会话 id / 终端找、改状态、删父和删工作区后子 session 还在）、`terminals.prune`、查询排序、唯一约束、外键和级联、`transaction` 回滚和嵌套。
 
 ## 不许碰
 

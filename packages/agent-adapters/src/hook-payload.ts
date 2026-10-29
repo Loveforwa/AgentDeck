@@ -2,7 +2,7 @@
 // 两边钩子的名字和负载基本一致（codex 的 hooks 就是照 claude 的格式做的），差别在各适配器里处理。
 // 字段以本机实测为准：claude 2.1.291、codex 0.159.2，记录见 AGENTS.md「钩子实测」。
 
-import type { AgentHookEvent, AgentSessionId } from '@agentdeck/contracts';
+import type { AgentHookEvent, AgentSessionId, AgentSessionReason } from '@agentdeck/contracts';
 
 type Json = Record<string, unknown>;
 
@@ -36,9 +36,33 @@ const QUESTION_TOOLS = new Set(['AskUserQuestion', 'ExitPlanMode', 'request_user
  */
 const FILE_TOOLS = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit', 'edit', 'write']);
 
+/**
+ * SessionStart 的 source（SE2）：claude 报 startup / resume / clear / compact（2.1.291 实测 startup，其余按官方文档）；
+ * codex 的 SessionStart 照 claude 的格式，有 source 时同样读。pi / omp 的扩展只报 session_id（没有 source），不填 reason。
+ * 认不出的值记 unknown。
+ */
+const SESSION_START_SOURCES: Record<string, AgentSessionReason> = {
+  startup: 'start',
+  start: 'start',
+  new: 'start',
+  resume: 'resume',
+  clear: 'clear',
+  compact: 'compact',
+  fork: 'fork',
+};
+
+export function sessionStartReason(source: unknown): AgentSessionReason | undefined {
+  const s = str(source);
+  if (s === null) return undefined;
+  return SESSION_START_SOURCES[s.toLowerCase()] ?? 'unknown';
+}
+
 export function parseSessionStart(payload: unknown): AgentHookEvent | null {
-  const id = str(obj(payload)?.session_id);
-  return id ? { type: 'session-start', sessionId: id as AgentSessionId } : null;
+  const p = obj(payload);
+  const id = str(p?.session_id);
+  if (!id) return null;
+  const reason = sessionStartReason(p?.source);
+  return reason ? { type: 'session-start', sessionId: id as AgentSessionId, reason } : { type: 'session-start', sessionId: id as AgentSessionId };
 }
 
 export function parsePermissionRequest(payload: unknown): AgentHookEvent | null {
@@ -69,13 +93,31 @@ function approvalSummary(tool: string | null, input: Json, command: string | nul
   return tool ?? 'Permission request';
 }
 
-/** claude 的 Notification：只认 MCP 的 elicitation（在向你要输入）；permission_prompt 已经由 PermissionRequest 处理。 */
+/** claude 2.1.234 起额度续跑的通知（DR-84，按文档写的名字，待用真的 claude 撞一次额度核对）。 */
+const QUOTA_RESUME = /^quota_auto_resume_(fired|stale|disabled)$/;
+
+/**
+ * claude 的 Notification：MCP 的 elicitation（在向你要输入）→ question；额度续跑（PL5）→ quota-resume：
+ * fired 它自己开始续跑了，stale 睡过头、在等你按回车，disabled 用户关掉了 autoContinueAtUsageLimit（要 AgentDeck 来发）。
+ * permission_prompt 已经由 PermissionRequest 处理。
+ */
 export function parseClaudeNotification(payload: unknown): AgentHookEvent | null {
   const p = obj(payload);
   if (p?.notification_type === 'elicitation_dialog') {
     return { type: 'question', summary: oneLine(str(p.message) ?? 'Input requested') };
   }
+  const quota = QUOTA_RESUME.exec(str(p?.notification_type) ?? '');
+  if (quota) return { type: 'quota-resume', what: quota[1] as 'fired' | 'stale' | 'disabled' };
   return null;
+}
+
+/**
+ * claude 的 StopFailure（API 出错结束一轮）：带上 error，例如 "rate_limit"（额度用完，PL5 据此认出“这一轮是被额度结束的”）、
+ * "server_error"。负载里没有 error 时只是 turn-end。
+ */
+export function parseClaudeStopFailure(payload: unknown): AgentHookEvent {
+  const error = str(obj(payload)?.error);
+  return error ? { type: 'turn-end', error } : { type: 'turn-end' };
 }
 
 /**

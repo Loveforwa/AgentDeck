@@ -17,6 +17,8 @@ import { useApprovals, useBoardState, useController } from '../react/context.tsx
 import type { PluginDefinition, PluginTarget } from './types.ts';
 
 function toTarget(t: PluginTarget): AutoApproveTarget {
+  // attachesTo 里没有 board，菜单不会拿白板来问
+  if (t.kind === 'board') throw new Error('Auto-approve does not attach to the board');
   return t.kind === 'frame' ? { kind: 'frame', workspaceId: t.workspaceId } : { kind: 'terminal', windowId: t.windowId };
 }
 

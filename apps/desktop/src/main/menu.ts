@@ -33,7 +33,19 @@ export const MENU_ACCELERATORS: Record<MenuShortcutId, string> = {
   'open-settings': 'CmdOrCtrl+,',
   undo: 'CmdOrCtrl+Z',
   redo: 'Shift+CmdOrCtrl+Z',
+  // CO4：⌥⌘1–9。和 Toggle Developer Tools 的 ⌥⌘I 不冲突
+  'jump-agent-1': 'Alt+CmdOrCtrl+1',
+  'jump-agent-2': 'Alt+CmdOrCtrl+2',
+  'jump-agent-3': 'Alt+CmdOrCtrl+3',
+  'jump-agent-4': 'Alt+CmdOrCtrl+4',
+  'jump-agent-5': 'Alt+CmdOrCtrl+5',
+  'jump-agent-6': 'Alt+CmdOrCtrl+6',
+  'jump-agent-7': 'Alt+CmdOrCtrl+7',
+  'jump-agent-8': 'Alt+CmdOrCtrl+8',
+  'jump-agent-9': 'Alt+CmdOrCtrl+9',
 };
+
+const AGENT_ROWS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
 
 /** 菜单里绝对不能出现的 accelerator（网页窗口和 Electron 默认行为要用）。 */
 export const RESERVED_ACCELERATORS = ['CmdOrCtrl+R', 'CmdOrCtrl+[', 'CmdOrCtrl+]', 'CmdOrCtrl+L'];
@@ -122,6 +134,12 @@ export function buildMenuTemplate(appName: string, actions: MenuActions): MenuIt
         { type: 'separator' },
         sc('next-window', 'Next Window'),
         sc('prev-window', 'Previous Window'),
+        { type: 'separator' },
+        // CO4：右侧 BoardNav 的 Agents 视图（ERROR、NEEDS YOU、RUNNING、IDLE）从上到下第 n 行
+        {
+          label: 'Jump to Agent',
+          submenu: AGENT_ROWS.map((n) => sc(`jump-agent-${n}`, `Row ${n}`)),
+        },
       ],
     },
     {

@@ -4,7 +4,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { AgentDeckErrorData, SkillItemId, TerminalWindowData, WindowNode, Workspace, WorkspaceId } from '@agentdeck/contracts';
-import { BoardNav } from '@agentdeck/board-nav-panel';
+import { agentReplyReader, BoardNav } from '@agentdeck/board-nav-panel';
 import { ScmPanel, type SkillsTarget } from '@agentdeck/scm-panel';
 import { useBoardState, Workbench, type BoardController } from '@agentdeck/ui-canvas';
 import { Button } from '@agentdeck/ui-kit';
@@ -32,6 +32,8 @@ function BoardNavPanel({ controller, headerActions }: { controller: BoardControl
   const windows = useBoardState((s) => s.windows);
   const statuses = useBoardState((s) => s.statuses);
   const badges = useBoardState((s) => s.badges);
+  // 悬停提示的最后一条回复：先读会话记录（agents.lastReply，contracts 0.1.22），读不到再认屏幕
+  const lastReply = useMemo(() => agentReplyReader(controller.api), [controller]);
   return (
     <BoardNav
       projects={projects}
@@ -42,6 +44,7 @@ function BoardNavPanel({ controller, headerActions }: { controller: BoardControl
       badges={badges}
       onJump={(id) => controller.jumpAndFlash(id)}
       headerActions={headerActions}
+      lastReply={lastReply}
     />
   );
 }

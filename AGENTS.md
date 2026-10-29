@@ -59,14 +59,14 @@ Electron + TypeScript + React 18 + Zustand，白板用 React Flow（@xyflow/reac
 
 | 规则 | 内容 |
 | --- | --- |
-| `contracts-standalone` | `packages/contracts` 不依赖任何其他内部包、第三方包、node 内置模块 |
+| `contracts-standalone` | `packages/contracts` 不依赖任何其他内部包、第三方包、node 内置模块（`packages/contracts/test/` 下的纯函数单元测试可以用 vitest） |
 | `ui-allowed-deps` / `ui-widget-panel-allowed-deps` | `packages/ui/**` 只能依赖 contracts、design-tokens、`ui/kit`、`ui/canvas` 的注册表和自己包里的文件（第三方包如 react 可以） |
 | `ui-canvas-allowed-deps` | `ui/canvas`（白板）在上一条之外还能用 `ui/window-shell` 和 `ui/topbar`；这两个包只管外观，不反过来依赖 canvas |
 | `no-widget-to-widget` / `no-panel-to-panel` | `ui/widgets/*` 之间、`ui/panels/*` 之间不互相 import |
 | `ui-no-services` | 界面不 import 服务包，走 `window.agentdeck` |
 | `ui-no-electron` / `ui-no-node-builtins` | 界面不 import electron 和 node 内置模块（vite / vitest / playwright 的构建配置可以用 node 内置模块） |
-| `service-no-ui` | 服务包（tmux-host、git-service、workspace-service、agent-adapters、port-watch、store、mcp-server）不依赖 `packages/ui/**` |
-| `service-to-service` / `workspace-service-only-git-service` | 服务包之间不互相 import，只有 workspace-service → git-service 可以 |
+| `service-no-ui` | 服务包（tmux-host、git-service、workspace-service、agent-adapters、port-watch、store、mcp-server、doc-service）不依赖 `packages/ui/**` |
+| `service-to-service` / `workspace-service-only-git-service` | 服务包之间不互相 import，只有 workspace-service → git-service 可以（doc-service 要的 git 和 store 的核对表由 apps/desktop 注入） |
 | `fakes-only-contracts` | `tools/fakes` 在内部只依赖 contracts（第三方包和 node 内置模块可以） |
 | `fakes-only-in-tests-and-dev` | 只有测试文件和 dev 入口能 import `tools/fakes` |
 | `only-desktop-uses-services` / `only-desktop-uses-ui` | 只有 `apps/desktop` 能用服务包、能把界面装起来，也就是只有它把两边接在一起 |

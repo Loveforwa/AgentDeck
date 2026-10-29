@@ -56,6 +56,8 @@ export interface FakeTerminalState {
   inputs: string[];
   /** sendKeys() 收到的按键，每次调用一组。 */
   keys: string[][];
+  /** sendText() 收到的文字（contracts 0.1.22），每次调用一条。 */
+  texts: string[];
   recording: string | null;
   /** 回放停在 waitForInput 上。 */
   waitingForInput: boolean;
@@ -79,6 +81,7 @@ interface Term {
   output: string;
   inputs: string[];
   keys: string[][];
+  texts: string[];
   recording: Recording | null;
   cursor: number;
   started: boolean;
@@ -236,6 +239,14 @@ export class FakeTerminalHost implements TerminalHost {
     this.input(t, keysToData(keys));
   }
 
+  /** 按原文打字：不认按键名，原样当输入（回显）。 */
+  async sendText(id: TerminalId, text: string): Promise<void> {
+    const t = this.require(id);
+    if (text === '') return;
+    t.texts.push(text);
+    this.input(t, text);
+  }
+
   async lastLines(id: TerminalId, n: number): Promise<string[]> {
     const t = this.require(id);
     if (n <= 0) return [];
@@ -255,9 +266,9 @@ export class FakeTerminalHost implements TerminalHost {
 
   // ---- 假实现专用的控制方法 ----
 
-  /** 和 create 一样，但可以指定 id、录制、已有输出。返回终端 id。 */
+  /** 和 create 一样，但可以指定 id、录制、已有输出。返回终端 id。id 先看 o.id，再看 req.id（contracts：调用方生成的 id），都没有才自己生成。 */
   createWith(req: CreateTerminalRequest, o: CreateWithOptions = {}): TerminalId {
-    const id = o.id ?? this.nextId<TerminalId>('term');
+    const id = o.id ?? req.id ?? this.nextId<TerminalId>('term');
     if (this.terms.has(id)) fail('invalid-argument', `Terminal ${id} already exists`);
     const recording = o.recording !== undefined ? o.recording : (this.opts.recordingFor?.(req) ?? null);
     const t: Term = {
@@ -276,6 +287,7 @@ export class FakeTerminalHost implements TerminalHost {
       output: (o.history ?? '') + (req.prefill ? req.prefill.replace(/[\u0000-\u001f\u007f]+/g, ' ').trim() : ''),
       inputs: [],
       keys: [],
+      texts: [],
       recording,
       cursor: 0,
       started: false,
@@ -357,6 +369,7 @@ export class FakeTerminalHost implements TerminalHost {
       output: t.output,
       inputs: t.inputs,
       keys: t.keys,
+      texts: t.texts,
       recording: t.recording?.name ?? null,
       waitingForInput: t.waiting,
       playbackDone: !t.recording || t.cursor >= t.recording.events.length,

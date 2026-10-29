@@ -1,4 +1,4 @@
-import { useMemo, useRef, type MouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
+import { useEffect, useMemo, useRef, type MouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import type { NodeProps } from '@xyflow/react';
 import type { OpenWindowRequest, WindowCommand, WindowComponentProps, WindowId, WindowStatusBadge } from '@agentdeck/contracts';
 import { WindowShell } from '@agentdeck/ui-window-shell';
@@ -6,6 +6,7 @@ import { isWaiting } from '../model/attention.ts';
 import { defaultName } from '../model/windows.ts';
 import { groupTitle } from '../model/groups.ts';
 import { SUMMARY_ZOOM } from '../controller.ts';
+import { CONTENT_MENU_EVENT, type ContentMenuDetail } from '../registry.ts';
 import { useBoardState, useController, useWindowType } from './context.tsx';
 import { WindowStopConfirm } from './dialogs.tsx';
 import { metaHeld } from './Guides.tsx';
@@ -39,6 +40,22 @@ export function WindowNodeView({ data }: NodeProps & { data: WindowNodeData }) {
   const zoomedOut = useBoardState((s) => s.viewport.zoom < SUMMARY_ZOOM);
   // N2：窗口组里的标题栏灰字是 “lead” / “sub-2 · ui”（用户没改名时）
   const groupLabel = useBoardState((s) => (node?.group ? groupTitle(s.windows, node) : null));
+
+  // CO3：内容区要白板的右键菜单（终端屏幕上右键、⌃ 单击）：窗口组件发 CONTENT_MENU_EVENT，这里接住
+  const rootRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const onContentMenu = (e: Event) => {
+      const d = (e as CustomEvent<ContentMenuDetail>).detail;
+      if (!d) return;
+      e.stopPropagation();
+      c.focusWindow(id);
+      c.openMenu({ screen: { x: d.clientX, y: d.clientY }, flow: c.clientToFlow({ x: d.clientX, y: d.clientY }), target: { kind: 'window-content', windowId: id } });
+    };
+    el.addEventListener(CONTENT_MENU_EVENT, onContentMenu);
+    return () => el.removeEventListener(CONTENT_MENU_EVENT, onContentMenu);
+  }, [c, id]);
 
   const actions = useMemo(
     () => ({
@@ -85,8 +102,18 @@ export function WindowNodeView({ data }: NodeProps & { data: WindowNodeData }) {
     c.openMenu({ screen: { x: e.clientX, y: e.clientY }, flow: flowPoint(e), target: { kind: 'window', windowId: id } });
   };
 
+  // 没聚焦的窗口盖着一层：内容登记了句柄（终端）时，右键盖层也出内容区的菜单（先聚焦）
+  const onCoverContextMenu = (e: MouseEvent) => {
+    if (summary || !c.contents.get(id)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    c.focusWindow(id);
+    c.openMenu({ screen: { x: e.clientX, y: e.clientY }, flow: flowPoint(e), target: { kind: 'window-content', windowId: id } });
+  };
+
   return (
     <div
+      ref={rootRef}
       className="ad-window-node"
       data-window-id={id}
       data-summary={summary || undefined}
@@ -134,6 +161,7 @@ export function WindowNodeView({ data }: NodeProps & { data: WindowNodeData }) {
             className="ad-window-cover"
             onClick={() => (summary ? c.expandSummary(id) : c.focusWindow(id))}
             onWheel={(e) => passWheelToContent(e.currentTarget, e.nativeEvent)}
+            onContextMenu={onCoverContextMenu}
             aria-hidden="true"
           />
         ) : null}

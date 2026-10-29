@@ -1,12 +1,37 @@
 // 快速定位列表（MVP v2 · V5）：什么都没选中时右侧面板显示整块白板的目录。
 // 项目 → 工作区（分支）→ 窗口（状态灯、名字、对话主题）；单击一行由组装方跳过去（和 ⌘J 一样平移、闪一下、聚焦）。
 // 白板数据由组装方用普通 props 传进来；对话主题自己从 window.agentdeck.terminals.list() 取。
+// CO4：顶上 Board / Agents 切换（记住上次选的）。Agents 只列 agent 终端，按状态分组，悬停看最后一条回复（AgentsView.tsx）。
 
-import { useMemo, type ReactNode } from 'react';
+import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import type { WindowId } from '@agentdeck/contracts';
+import { buildAgents } from './agents.ts';
+import { AgentsView } from './AgentsView.tsx';
+import { screenReplyReader, type LastReplyReader } from './lastReply.ts';
 import { buildTree, LAMP_LABEL, type BoardNavInput, type NavWindow } from './model.ts';
 import { useTopics, type BoardNavApi } from './useTopics.ts';
 import './board-nav.css';
+
+export type BoardNavView = 'board' | 'agents';
+
+/** 上次选的视图记在这里（每台电脑一份；读写失败就当 Board）。 */
+export const VIEW_STORAGE_KEY = 'agentdeck.board-nav.view';
+
+function loadView(): BoardNavView {
+  try {
+    return globalThis.localStorage?.getItem(VIEW_STORAGE_KEY) === 'agents' ? 'agents' : 'board';
+  } catch {
+    return 'board';
+  }
+}
+
+function saveView(view: BoardNavView): void {
+  try {
+    globalThis.localStorage?.setItem(VIEW_STORAGE_KEY, view);
+  } catch {
+    // 存不下就只在这次记住
+  }
+}
 
 export interface BoardNavProps extends BoardNavInput {
   /** 单击一行。组装方平移白板、让窗口闪一下并聚焦它。 */
@@ -17,25 +42,71 @@ export interface BoardNavProps extends BoardNavInput {
   refreshMs?: number;
   /** 标题栏右边的按钮，例如白板给的收起面板按钮（MVP v2 · V4）。 */
   headerActions?: ReactNode;
+  /**
+   * Agents 视图悬停提示里的最后一条回复。默认读屏幕最后几行（terminals.lastLines）认出回复；
+   * 应用里传 agentReplyReader(api)：先读会话记录（contracts 0.1.22 的 agents.lastReply），读不到再认屏幕。
+   */
+  lastReply?: LastReplyReader;
+  /** 测试用：固定 “现在”。 */
+  now?: number;
 }
 
 export function BoardNav(props: BoardNavProps) {
-  const { projects, workspaces, frames, windows, statuses, badges, onJump, api: apiProp, refreshMs, headerActions } = props;
+  const { projects, workspaces, frames, windows, statuses, badges, onJump, api: apiProp, refreshMs, headerActions, lastReply, now } = props;
   const api = apiProp ?? window.agentdeck;
+  const [view, setView] = useState<BoardNavView>(loadView);
+  const choose = useCallback((next: BoardNavView) => {
+    setView(next);
+    saveView(next);
+  }, []);
+  const readReply = useMemo(() => lastReply ?? screenReplyReader(api), [lastReply, api]);
+  const agents = useMemo(
+    () => buildAgents({ projects, workspaces, frames, windows, statuses, badges }),
+    [projects, workspaces, frames, windows, statuses, badges],
+  );
+
+  return (
+    <nav className="bnav" aria-label="Board">
+      <div className="bnav-top">
+        <h2 className="bnav-title">{view === 'agents' ? `AGENTS · ${agents.rows.length}` : 'BOARD'}</h2>
+        <ViewSwitch view={view} onChange={choose} />
+        {headerActions}
+      </div>
+      <div className="bnav-body">
+        {view === 'agents' ? (
+          <AgentsView view={agents} onJump={onJump} readReply={readReply} now={now} />
+        ) : (
+          <BoardTree {...{ projects, workspaces, frames, windows, statuses, badges }} api={api} refreshMs={refreshMs} onJump={onJump} />
+        )}
+      </div>
+    </nav>
+  );
+}
+
+/** Board / Agents 两段的切换（按下的那段 `--hover` 底 + 600，和选中的行一样）。 */
+function ViewSwitch({ view, onChange }: { view: BoardNavView; onChange(view: BoardNavView): void }) {
+  return (
+    <div className="bnav-switch" role="group" aria-label="View">
+      {(['board', 'agents'] as const).map((v) => (
+        <button key={v} type="button" className="bnav-switch-btn" aria-pressed={view === v} onClick={() => onChange(v)}>
+          {v === 'board' ? 'Board' : 'Agents'}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** Board 视图：项目 → 工作区（分支）→ 窗口。对话主题只在这个视图开着时取。 */
+function BoardTree(props: BoardNavInput & { api: BoardNavApi; refreshMs: number | undefined; onJump(id: WindowId): void }) {
+  const { projects, workspaces, frames, windows, statuses, badges, api, refreshMs, onJump } = props;
   const topics = useTopics(api, refreshMs);
   const tree = useMemo(
     () => buildTree({ projects, workspaces, frames, windows, statuses, badges }),
     [projects, workspaces, frames, windows, statuses, badges],
   );
   const empty = tree.projects.length === 0 && tree.loose.length === 0;
-
   return (
-    <nav className="bnav" aria-label="Board">
-      <div className="bnav-top">
-        <h2 className="bnav-title">BOARD</h2>
-        {headerActions}
-      </div>
-      <div className="bnav-body">
+    <>
         {empty ? <p className="bnav-note">Nothing on the board yet.</p> : null}
         {tree.projects.map((p) => (
           <section className="bnav-project" key={p.id} aria-label={p.name}>
@@ -56,8 +127,7 @@ export function BoardNav(props: BoardNavProps) {
             <WindowRows windows={tree.loose} topics={topics} onJump={onJump} />
           </section>
         ) : null}
-      </div>
-    </nav>
+    </>
   );
 }
 

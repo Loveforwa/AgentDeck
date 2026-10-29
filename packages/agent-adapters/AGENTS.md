@@ -11,6 +11,7 @@
 - **批准**（PL1 Auto-approve、X3 Approve all）：`ApprovalServiceImpl` 实现 `ApprovalService`，见下面「Auto-approve 和 Approve all」。
 - **后台通知规则**（S4）：`backgroundAlerts()` / `badgeCount()`，纯函数；真正发通知、设角标在 apps/desktop。
 - **token 用量**（PL2 · Usage 插件，DR-55）：`src/usage/`，`UsageServiceImpl` 实现 contracts 的 `UsageService`，读各 agent 自己的会话文件。见下面「token 用量」。
+- **额度上限**（M7 · PL5，插件 Auto-resume）：`src/limits/`，`LimitServiceImpl` 实现 contracts 的 `LimitService`：认出被额度打断的终端、按账号归组、恢复后错开续跑。见下面「额度上限」。
 - **Skills · MCP**（MVP v3 · N9）：`src/skills/`，`SkillsServiceImpl` 实现 contracts 的 `SkillsService`（库、仓库里的 skill、每种 agent 怎么带），启动前算出这次带什么交给适配器。见下面「Skills · MCP」。
 
 不许碰：`packages/contracts`（不够用写进本目录的 `CONTRACT_NOTES.md`）、`apps/desktop`、其他包。
@@ -31,6 +32,8 @@ const rt = createAgentRuntime({
   destructivePatterns: () => settings.approvals.destructivePatterns,
   extraArgs: (agent) => settings.agents[agent]?.extraArgs ?? [],
   mcp: () => mcpServer.endpoint,                  // M1：AgentDeck 的 MCP 服务（packages/mcp-server），没起来返回 null
+  terminalKey: (id) => terminalKey(token, id),    // CR15：每个终端的钥匙（AGENTDECK_TERM_KEY，也当 MCP 的 Bearer）
+  binDir: '<dataDir>/bin',                        // CR15：agentdeck 命令的目录，放在每个终端 PATH 最前面
   mcpPluginDir: '/…/mcp-plugin',                  // N1：写好 mcpPluginFiles() 的目录，omp 用 --plugin-dir 加载；不给时 omp 不挂
 });
 await rt.start();                                 // 监听 ~/.agentdeck/run/hooks.sock
@@ -50,7 +53,7 @@ tmuxHostEvents.on((e) => rt.onTerminalEvent(e));  // terminal.activity / silence
 | --- | --- |
 | `createAgentRuntime(opts)` | 把下面几块接好：`agents`、`status`、`approvals`、`hookServer`、`onTerminalEvent`、`noteInput`、`start`、`close` |
 | `conversationExists(roots)` / `conversationCheckFromEnv(env)` | X4：fork 前找原来的对话文件（见「Fork 对话」）；runtime 默认按登录环境接好，`sessionRoots: null` 关掉 |
-| `AgentServiceImpl` | `AgentService`。`onStarted` 回调告诉状态机这次启动是否真的带上了钩子 |
+| `AgentServiceImpl` | `AgentService`（含 AH3 的 `check`）。`onStarted` 回调告诉状态机这次启动是否真的带上了钩子、钩子什么时候该来、一开始的降级原因；`cachedReport(agent)`、`noteLaunch(agent, reason)` 给 runtime 用 |
 | `createDefaultAdapters({ env, agentExtension? })` | `[ClaudeAdapter, CodexAdapter, …已知表里的每一行（KnownAgentAdapter）, ShellAdapter, CustomCommandAdapter]` |
 | `KNOWN_AGENTS` / `KnownAgentAdapter` / `EXTENSION_ENV` | 已知 agent 表、通用适配器、扩展读的环境变量名 |
 | `codexMcpOverrides` / `mcpPluginFiles` / `MCP_URL_ENV` | N1：codex 挂 MCP 的 `-c` 参数；omp 的插件目录内容（相对路径 → 文本）和清单里 url 读的环境变量 |
@@ -61,28 +64,33 @@ tmuxHostEvents.on((e) => rt.onTerminalEvent(e));  // terminal.activity / silence
 | `autoApproveSupport` / `approvalStrategy` | 每种 agent 的做法（`src/status/support.ts`） |
 | `matchOmpApproval` | omp 的 Approve / Deny 确认框认屏规则（`src/status/screens.ts`） |
 | `backgroundAlerts` / `badgeCount` | S4 规则 |
-| `UsageServiceImpl` / `defaultUsageRoots` / `USAGE_HOOK` | token 用量（见「token 用量」）；各 agent 的读取器 `ClaudeUsageParser` 等也导出 |
+| `UsageServiceImpl` / `defaultUsageRoots` / `USAGE_HOOK` | token 用量（见「token 用量」）；各 agent 的读取器 `ClaudeUsageParser` 等也导出；`sessionFile(id)` 只找会话文件不读（最后一条回复用） |
 | `SkillsServiceImpl` / `SkillLibrary` / `skillsSupport` / `builtinSkillFiles` / `scanRepoSkills` | N9，见「Skills · MCP」；`codexLibraryMcpOverrides`、`claudeMcpConfig(mcp, library)` 是库里 MCP 的启动参数 |
+| `LimitServiceImpl` / `limitConfigDir` / `effectiveAutoResume` / `resumePromptText` / `claudeSelfResumes` | PL5，见「额度上限」 |
+| `parseClaudeStopFailure` / `parseClaudeNotification` | claude 的 StopFailure（带 error）、Notification（elicitation、quota_auto_resume_*） |
+| `COMPAT_RECORDS` / `SCENARIOS` / `buildReport` / `strategyFromReport` / `HOOKS_DIDNT_REPORT` | AH2、AH3：合格测试记录（src/compat/records.ts，由 compat/*.json 生成）、K1–K18、能力报告的算法、按报告改 Auto-approve 做法、钩子没来时快照里的那句话 |
+| `literalKeys` / `plainText` / `FirstMessageTyper` | AH1：启动后打第一条消息（有 `TerminalHost.sendText` 就用它按原文打，控制字符换空格；没有时退回 sendKeys + literalKeys） |
+| `createLastReply` / `readLastReply` / `lastReplyFromLines` / `replyFromScreenLines` | contracts 0.1.22 的 `AgentService.lastReply`（CO4 悬停提示；CrewService.result 也用它）：`UsageServiceImpl.sessionFile(id)` 找到会话文件，只读结尾 256KB（找不到再读多些，最多 4MB），claude 取最后一条有字的 assistant（同一 message.id 的 text 块拼起来，子 agent、`<synthetic>` 不算），codex 取最后的 task_complete.last_agent_message / assistant message / AgentMessage，pi、omp 取最后的 assistant message；读不到退回屏幕最后 20 行（source screen）。apps/desktop 把它挂在 `agents.lastReply` 上 |
 | `DEFAULT_DESTRUCTIVE_PATTERNS` | 建议的 Settings 默认值，在整段命令里找：rm -r/-f、sudo rm、find -delete、git push -f/--force/+refspec、reset --hard、clean -f、checkout -- / .、restore、stash drop/clear、DROP/TRUNCATE/DELETE FROM 无 WHERE、FLUSHDB/ALL、mkfs、dd of=、写 /dev/sd*、chmod -R 777、kubectl delete、terraform destroy、.env |
 
 ## 各 agent 怎么启动
 
 | agent | 新建 | resume | fork | 钩子 | “允许一次” |
 | --- | --- | --- | --- | --- | --- |
-| claude | `claude --session-id <新 uuid> --settings <json>` | `--resume <id>` | `--resume <id> --fork-session --session-id <新 uuid>` | `--settings` 里的 hooks | `Enter` |
+| claude | `claude --session-id <新 uuid> --settings <json>` | `--resume <id>` | `--resume <id> --fork-session --session-id <新 uuid>` | `--settings` 里的 hooks | `1`（不发 Enter：用户按过方向键时 Enter 可能选成“以后都允许”） |
 | codex | `codex -c hooks.…（7 条）-c hooks.state={…}` | `codex resume <id> …` | `codex fork -C <cwd> <id> …` | `-c` 覆盖 + 信任哈希 | `y` |
 | shell | `$SHELL -l`；带命令时 `$SHELL -l -c <命令>` | 不支持 | 不支持 | 无 | 无 |
 | custom | 按 shell 规则拆开的命令 | 不支持 | 不支持 | 无 | 无 |
 | pi | `pi --session-id <新 uuid>` | `--session <id>` | `--fork <id> --session-id <新 uuid>` | `-e agentdeck-pi-extension.mjs`（0.80.4 起） | 不用（pi 从不请求批准） |
-| omp | `omp`（会话 id 等扩展报） | `--resume <id>` | `--fork <id>`（新 id 等扩展报） | `-e agentdeck-pi-extension.mjs`（18.0 起，更早没验证） | `Up Enter`（读源码得出，**没在真终端核对**；发前先认屏） |
+| omp | `omp`（会话 id 等扩展报） | `--resume <id>` | `--fork <id>`（新 id 等扩展报） | `-e agentdeck-pi-extension.mjs`（18.0 起，更早没验证） | `Up Enter`（发前先认屏；2026-10-28 在真 TUI 里核对，AH2 L2 的 K6） |
 | kimi | `kimi` | `-S <id>` | 不支持（见「Fork 对话」） | 无 | 先不支持（2.3.1 是 `1`，见 known.ts） |
 
 - 用户在 Settings 里加的启动参数放在最后。claude 的 LaunchSpec.env 带 `CLAUDE_CODE_TMUX_TRUECOLOR=1`。
 - 恢复上次会话（X6）：白板按记下的会话 id 用上表的 resume 重开（`test/agent-service.test.ts` 逐个 agent 核对进 tmux 的参数）。`StartAgentRequest.prefill` 只对不带 command 的 shell 转给 `terminals.create`（Shell 在输入行里填好上次的命令、不运行），agent 和 `-c` 跑命令的 shell 忽略它。
 - `--settings` 的值是一整段 JSON，**线 1 的 tmux-host 建会话时要按参数数组传**（`new-session … -- cmd arg1 arg2`），不要拼成一行 shell 命令，否则要自己转义。
-- 检测：在传入环境的 PATH 里找命令，跑 `--version` 取 x.y.z。版本取不到时按“够新”处理。
+- 检测：在传入环境的 PATH 里找命令，跑 `--version` 取 x.y.z。版本取不到时**不当作够新**（AH3）：再读一次 `--help`，要带的参数在里面才带（`env.ts` 的 `atLeast(version, min, help)`），见「运行时降级」。
 - claude 的钩子要 2.0 以上（粗略下限），StopFailure 事件只在 2.1 以上加；codex 的钩子要 0.159 以上（本机实测的版本，更早的没验证）。
-- “允许一次”的按键是看确认框得出的（claude “❯ 1. Yes” 默认选中；codex “1. Yes, proceed (y)”），**待线 1 用真终端核对 send-keys 的效果**。
+- “允许一次”的按键是看确认框得出的（claude “❯ 1. Yes”，发 `1`；codex “1. Yes, proceed (y)”，发 `y`）；线 1 用真终端核对过 send-keys 的效果（tmux-host/AGENTS.md「Approve all 的按键核对」）。
 
 ## Fork 对话（X4，DR-42，2026-10-26 实测）
 
@@ -121,6 +129,8 @@ cwd 是目标工作区的目录。原来的终端和对话都不动。
 ### claude：各事件什么时候来
 
 - 启动：`SessionStart`（`session_id` 就是我们传的 `--session-id`，`source: startup`）。
+  SE2：`parseSessionStart` 把 `source` 读成 `AgentHookEvent.reason`：startup → start、resume、clear、compact（后三个按官方文档，没在真 claude 里逐个核对），
+  认不出的记 unknown，没有 source 时不填（pi / omp 的扩展只报 session_id）。codex 0.159.2 的 SessionStart 也带 `source: startup`，同样读。
 - 用户发消息：`UserPromptSubmit`。
 - 要批准：`PreToolUse` → `PermissionRequest`（`tool_name`、`tool_input.command`）→ `Notification`（`notification_type: permission_prompt`）。
   批准后工具跑完有 `PostToolUse`，一轮结束 `Stop`。
@@ -166,7 +176,7 @@ LaunchSpec.env 带 `AGENTDECK_NOTIFY`（notify 路径）、`AGENTDECK_AGENT`（i
 实测（2026-10-24，pi 0.83.0、omp 18.0.4）：临时 HOME、本地假的 OpenAI 兼容服务（不用账号、不花钱），`--mode rpc`（omp 的提问要 `--mode rpc-ui`）。
 pi：SessionStart（就是 `--session-id` 给的 id）→ UserPromptSubmit → Stop → SessionEnd；`--session <id>` 接回、`--fork <id> --session-id <新>` 都报对了 id。
 omp：`--approval-mode always-ask` 跑 bash，PermissionRequest 带上了 `command`，批准后 UserPromptSubmit、Stop；ask 工具 → Question（问题文字）→ 回答后 UserPromptSubmit → Stop；
-`--resume <id>` 报原 id，`--fork <id>` 报新 id。没在真 TUI 里核对：omp 确认框“允许一次”的按键（PL1 按源码定为 Up Enter，发前先认屏，见下面）。
+`--resume <id>` 报原 id，`--fork <id>` 报新 id。omp 确认框“允许一次”的按键（PL1 按源码定为 Up Enter）2026-10-28 在真 TUI 里核对过（AH2 L2 的 K6）：标题在上边框里（`╭─ Allow tool: bash ──╮`），命令前有 `Command: `，按完命令照常运行。
 真窗口（单独的 AgentDeck 实例、临时 HOME、同一个假模型）：菜单列出 Pi、Oh My Pi；pi 一轮 running → idle → turn-end；omp 的 bash 批准显示 needs-approval（summary 是命令），
 在确认框按 Enter 批准后 running → idle → turn-end；omp 新会话的 id 由 SessionStart 报上来存进库，`--resume <id>` 能接回（omp 只在第一条消息后才写会话文件，没说过话的会话接不回）。
 
@@ -221,10 +231,41 @@ token 本身只放进 `LaunchSpec.env`，不进命令行。和用户自己配的
 | pi 0.83.0 | 否 | — | — | pi 不内置 MCP：README 写 “No MCP.”、`docs/usage.md` 说故意不做，要用扩展自己实现。我们的 `agentdeck-pi-extension.mjs` 可以加一个 MCP 客户端（initialize + tools/list，用 `pi.registerTool` 注册代理工具），留到以后 |
 | kimi 2.3.1 | 否 | — | — | `--help` 没有 MCP 参数，也没有 `mcp` 子命令。它只从 `$KIMI_CODE_HOME/mcp.json`、仓库根的 `.mcp.json`、`<cwd>/.kimi-code/mcp.json` 读；改 `KIMI_CODE_HOME` 会连账号和设置一起换掉，项目里的两个文件要写进用户的仓库，而且只在用户信任过这个目录时才读（`~/.kimi-code/workspace-trust/`），每个新 worktree 都要点一次。按会话加 MCP 只有 ACP（`kimi acp` 的 `session/new mcpServers`），TUI 用不上 |
 
-- 版本：codex 低于 0.164.0 不挂（`-c` 里不认识的字段可能让整份配置加载失败、codex 起不来）；omp 低于 18.0.4 不挂。版本取不到时按够新处理（同钩子）。
+- 版本：codex 低于 0.164.0 不挂（`-c` 里不认识的字段可能让整份配置加载失败、codex 起不来）；omp 低于 18.0.4 不挂。版本取不到时看 `--help` 里有没有 `--plugin-dir`（codex 的 `-c mcp_servers` 看不出来，不挂；AH3）。
 - omp 在 tmux 里有没有真的连上、工具名在 omp 里显示成什么，没有在真 TUI 里核对（只核对了配置解析）。
 
-`StartAgentRequest.prompt`（第一条消息）：claude、codex 都放在参数最后、`--` 之后（`--mcp-config` 和不少用户参数后面能跟多个值，不隔开会被吃掉）。只在新会话时带。
+## 第一条消息（`StartAgentRequest.prompt`，AH1，IS-76）
+
+只在新会话时带（resume、fork 照旧不带）。适配器在 `LaunchSpec.consumed.prompt` 报有没有放进启动参数；没放进、也没给
+`LaunchSpec.sendAfterReady` 时，`AgentServiceImpl.start` 抛 `unsupported`
+“<Label> can't take a first message yet. Open it without "prompt", or pick an agent that can (see Settings › Agents).”，**不开终端**；
+MCP 的 open_terminals / create_workspace 把这句原样返回给调用的 agent。
+
+| agent | 怎么带 | 核对（2026-10-28） |
+| --- | --- | --- |
+| claude | 参数最后、`--` 之后（`--mcp-config` 和不少用户参数后面能跟多个值，不隔开会被吃掉） | 2.1.291 实测（M1） |
+| codex | 同上（`codex [PROMPT]`） | 0.164.0 |
+| omp | 同上：omp 认 `--`，之后的 @、- 开头的也照原文 | 18.0.4 真 TUI：`omp -- '@README.md reply with the word PELICAN'`，假模型收到原文（omp 另外附上了 README.md，和在输入框里打 @ 一样） |
+| pi | 不认 `--`（会被当成名字为空的未知参数、吃掉下一项），所以放在用户的额外参数**前面**；开头是 @（文件）或 -（参数）时前面加一个空格 | 0.83.0 真 TUI：`' @README.md …'`、`' --help me …'` 原文（多一个空格）送到假模型；不加空格的 `@README.md say …` 被当成文件，pi 直接退出 |
+| kimi | 交互模式没有这个参数（`-p` 是一次性问答）：`sendAfterReady`，AgentService 等终端第一次安静下来（monitor-silence）后 `sendKeys` 打字，停 500ms 再回车（`src/first-message.ts`）。屏幕上有 “Trust this folder?” 时等下一次安静（回车会替用户选 Trust and continue）。能力报告里是 Partial · Typed after start | 2.3.2 真 TUI（临时 `KIMI_CODE_HOME`、假模型）：`@README.md reply with the word PELICAN` 原文送到；新目录第一次打开先弹信任框 |
+| shell、custom | 带不了，报 unsupported | — |
+
+- 打字用 `literalKeys(text)` 转成 sendKeys 的参数（tmux-host 的 sendKeys 不带 `-l`）：控制字符换成空格；结尾的 `;` 写成 `\;`（tmux 把以 `;` 结尾的参数当命令分隔符）；
+  没有空格的一段可能正好是按键名（Enter、Up……），拆成一个字一个参数。TerminalHost 以后有 `send-keys -l` 的方法时换成它。
+- 等待：终端一直不安静时 20 秒后照样看一次屏幕再打；终端退出了就不打。要组装方把 TerminalHost 的事件交给 `rt.onTerminalEvent`（已经接好）。
+
+### 每个终端一把钥匙、agentdeck 命令（CR15，IS-101）
+
+`createAgentRuntime({ terminalKey, binDir })`（组装时 `terminalKey: (id) => terminalKey(mcp-token, id)`，`binDir: <数据目录>/bin`）：
+
+- 给了 `terminalKey`：`AgentServiceImpl.start` 先生成终端 id（`t-` 加 12 位十六进制，和 tmux-host 一样，经 `CreateTerminalRequest.id` 交给它），
+  算出这个终端的钥匙，放进 `LaunchSpec.env` 的 `AGENTDECK_TERM_KEY`；挂 AgentDeck MCP 时 `LaunchContext.mcp.token` 也换成钥匙，
+  所以 `AGENTDECK_MCP_TOKEN` 展开出来的是钥匙，终端环境里不再有共用的密钥。mcp-server 按钥匙和终端 id 认调用者，冒充别的终端是 401。
+- 给了 `binDir`：每个 AgentDeck 终端（claude、codex、omp、pi、kimi、Shell、自定义命令都算）的 PATH 前面加它，`agentdeck` 命令（tools/agentdeck-cli）就在那里。
+  **tmux 3.6a 不认 `new-session -e PATH=…`**（窗格的 PATH 取 tmux 客户端自己的，2026-10-28 实测），所以 PATH 要改时 tmux 收到的命令是
+  `/usr/bin/env PATH=<…> <原命令> <原参数>`（env exec 之后窗格里就是程序本身）；返回给窗口记的 cmd / args 仍是原来的。PATH 也照样写进 env（tmux 以后认了不用改）。
+- 都只放进这个终端的启动参数和环境，不写任何配置文件。pi、kimi 没有 MCP，也照样有钥匙和 PATH（能用 agentdeck 命令）。
+- `tools/fakes` 的 `FakeTerminalHost.create` 不看 `req.id`（用自己的 id），所以假服务里钥匙对不上终端；单元测试用的是照 contracts 认 id 的小桩。
 
 ## Skills · MCP（N9，2026-10-25 核对）
 
@@ -238,7 +279,10 @@ token 本身只放进 `LaunchSpec.env`，不进命令行。和用户自己配的
   经 `createAgentRuntime({ skills })` → `AgentServiceImpl` → `AdapterLaunchContext.skills` 给适配器。没勾 built-in 的 agentdeck MCP 时不给 `LaunchContext.mcp`。
   出错时当作没有（照常启动，不带）。`onStarted` 报回 `StartedAgent.skills`，组装方 `noteLaunched` 记成 running（`stateFile`，重开应用后还在）。
 - setDir：claude、omp、kimi 要一个目录：`<setsDir>/<agent>-<内容哈希>/`，`skills/<name>/` 是选中 skill 的副本，`.claude-plugin/plugin.json` 是清单
-  （名字 `agentdeck-skills`；omp 的清单里还有库里的 MCP）。目录名按内容（含 skill 文件的大小、修改时间）算，一样就复用，不改正在用的目录；旧目录目前不清理。
+  （名字 `agentdeck-skills`；omp 的清单里还有库里的 MCP）。目录名按内容（含 skill 文件的大小、修改时间）算，一样就复用（复用时把目录的修改时间更新到现在），不改正在用的目录。
+- 清理旧目录（IS-112）：`cleanupSkillSets()`（组装方启动时调一次、之后每天一次，`SKILL_SETS_CLEANUP_INTERVAL_MS`）。只看 `setsDir` 里名字是 `<agent>-<16 位十六进制>`（或写到一半留下的 `….tmp-<uuid>`）的真目录，别的名字、文件、符号链接不碰；
+  `noteLaunched(终端, ids, setDir)` 把每个终端用的目录记进 `stateFile`（`sets`），`liveTerminals()`（组装方给：tmux 里还活着的终端）里的终端用着的不删，其余修改时间超过 7 天的删；删之前确认路径在 `setsDir` 里面。
+  没给 `liveTerminals` 时记过的每个终端都算在用；读不到活着的终端、或活着的 claude / omp / kimi 终端没有记录（旧版本启动的）时这一轮不删。`prepareLaunch` 刚给出去还没 `noteLaunched` 的目录 10 分钟内不碰。
 
 | agent | skill（built in + library） | MCP（agentdeck + library） | repo 里它自己读的 | 核对 |
 | --- | --- | --- | --- | --- |
@@ -250,8 +294,57 @@ token 本身只放进 `LaunchSpec.env`，不进命令行。和用户自己配的
 | shell、custom | — | — | — | 小节写 “Skills and MCP servers are for agents” |
 
 - 面板的状态点：只有 built in 的 agentdeck（AgentDeck 的 MCP 服务起来了是绿、没起来是红）；库里的 MCP 连没连上不知道，不画。
-- 版本门槛：codex 的库里 MCP 同 N1（0.164.0），omp 的 setDir 同 N1（18.0.4）。版本取不到时按够新处理。running 记的是选中的 id，版本太低被适配器跳过的也算在里面（只影响 “Changes apply after restart” 的提示）。
+- 版本门槛：codex 的库里 MCP 同 N1（0.164.0），omp 的 setDir 同 N1（18.0.4）。版本取不到时看 `--help` 里有没有那个参数（AH3）。running 记的是选中的 id，版本太低被适配器跳过的也算在里面（只影响 “Changes apply after restart” 的提示）。
 - 测试：`test/skills.test.ts`（临时目录里的库、repo、每种 agent 列出什么、prepareLaunch 写的目录、每种 agent 的启动参数、running 存档、选择规则）。
+
+## 额度上限（PL5 · 插件 Auto-resume，DR-63、DR-84）
+
+`src/limits/`：主进程里只有这一份，Auto-resume（PL6）和集群（CR8）共用（Prompt queue PL3 2026-10-28 退役）。规则（纯函数、各种时长）在 `rules.ts`，服务在 `service.ts`。
+
+```ts
+const limits = new LimitServiceImpl({
+  emit,                                            // limits.changed（完整列表）
+  lookup: (id) => ({ terminalId: id, agent, configDir: limitConfigDir(agent, loginEnv, homedir()), selfResumes: claudeSelfResumes(版本) }),
+  targets: () => [...所有终端],                     // 标“同一账号、当时空闲”的
+  sendKeys: (id, keys) => tmux.sendKeys(id, keys), // bracketed paste 一段 + Enter（同 PL3）
+  setKeepAwake: (on) => …,                         // 离恢复 12 小时以内有终端在等时 true
+  usage, subagents,                                // UsageServiceImpl（get / watch / unwatch）、SubagentServiceImpl（list）
+  board: () => store.board.load(),                 // Auto-resume 开关
+  resumePrompt: () => settings.resumePrompt,
+  staggerMs, graceMs,                              // AGENTDECK_RESUME_STAGGER_MS、AGENTDECK_LIMIT_GRACE_MS（组装方读环境）
+});
+limits.start();
+// tapHook → limits.noteHook；usage.changed → noteUsage；status.changed → noteStatus；terminal.input → noteInput；terminal.exit → noteTerminalGone
+```
+
+- **怎么认出撞上**：claude 的 StopFailure `error: "rate_limit"`（马上），再读会话记录的 rate_limit 行拿恢复时间、范围（seven_day_opus / sonnet）；
+  codex 只能读会话记录（最后一个 task_complete 带 usage_limit_exceeded），所以 codex 终端一直 watch 用量，claude 撞上后才 watch（第一次见到时 get 一次，
+  接回重开应用前停在额度上的）。恢复时间过去 12 小时以上的旧记录不管。
+- **账号**：`<agent>:<配置目录>:<范围>`，配置目录是登录环境的 CLAUDE_CONFIG_DIR / CODEX_HOME（没设是 ~/.claude、~/.codex）。同一账号别的活着的终端标 idle；
+  Opus / Sonnet 的只标最近用同一家族模型的。钩子先到时按 all 建，读到 Opus 再挪过去。
+- **状态**：interrupted（这一轮是被额度结束的）→ resuming（发了续跑 / claude 自己开始续）→ resumed（这一轮做完、没再撞）；
+  idle（同账号、自己没撞）：到点直接 resumed（PL3 退役后不再给排着提示词的终端留位置，老白板里的 queue 不看）；
+  took-over：撞完后你打过字（`noteInput`，自己发的按键 3 秒内不算）或发了新消息（UserPromptSubmit，claude 的 task-notification 不算）；
+  gave-up：连续两次续了又撞（codex 的 Stop 可能比会话记录先到，续完 2 分钟内又撞也算），或发不出按键 3 次；skipped：skip / cancel / 开关关着。
+  了结了的账号先带着最后的状态发一次 limits.changed，再去掉（书签能写 “you took over”）。
+- **什么时候发**：恢复时间 + 1 分钟（graceMs），按被打断的先后、隔 30 秒（staggerMs）；终端那时不空闲就等下一次检查。5 秒检查一次，下一件事更早时按点叫醒。
+  文字 = Settings 的 Resume prompt（或 setOwner 给的，集群带任务编号）+ claude 跟着断掉的后台子 agent（SubagentService 里 failed、主线撞上前 5 分钟之后结束的，逐个点名、让它 SendMessage）/ codex 的一句。
+- **Auto-resume 开关**：`effectiveAutoResume(白板, 终端)` = 终端 → 框 → 白板，默认关。关着的照样列出来，不发按键、不阻止睡眠，到点变 skipped；Resume now 不看开关。
+- **claude 自己续**（`claudeSelfResumes`：2.1.234 起，恢复在 24 小时内）：owner agent，不发；quota_auto_resume_fired（或恢复后看到它开始干活）→ resuming；
+  stale → 账号 needsYou 'stale'，你点 Continue（`resumeNow(账号, [终端])`）只按回车；disabled → owner auto-resume，按上面的规矩发；
+  恢复 3 分钟后（从开始看着算）还没动静 → 自己发。它续完那一轮后，子 agent 还 failed、这一轮没有 SubagentStart，就补发子 agent 那一段（只一次）。
+- **睡过头**：恢复前最近一次检查离现在超过 150 秒（Mac 睡着、应用没开），醒来已过恢复时间 30 分钟以上：needsYou 'slept'，不续，等 Resume now。
+  读不到恢复时间 1 分钟后：needsYou 'reset-unknown'。
+- **owner**：crew 等集群调 `resumeNow`；run（Day run 选了 Hand off）不管；`setOwner` 可以在撞上之前先登记。
+- **改过的续跑文字**（PL6，contracts 0.1.23）：`setMessage(终端, 文字 | null)` 只管这一次（null、空白、和默认一样都算回到默认；
+  已经发出去、到了发送时间、已经送进 claude 的抛 invalid-argument）。列表里每个终端带 `defaultMessage`（没改时发的，卡片预填）和 `message`。
+  发的时候用改过的文字代替模板；claude 断掉的子 agent 文字里没出现它的 id 的照样补在后面（删掉了也补），codex 那一句不补；集群给的提示词（setOwner）仍然优先。
+  发出去就清掉（没发出去留着重试），续了又撞、这一次了结也清。claude 自己续（owner agent、interrupted）时改过的文字马上 bracketed paste + 回车送进去
+  （`messageDelivered`：claude 在等恢复时收到消息，恢复时改发这一条，DR-84，**待用真 claude 核对**），之后不能再改、它续完不再补发子 agent 那一段，
+  Resume now 对它只按回车；没改就什么都不发。
+- contracts 0.1.22：每个 `LimitedTerminal` 带 `autoResume`（这次算下来开关开没开）和 `selfResume`（owner 是 agent 时：waiting → fired / stale；收到 disabled 后 owner 变 auto-resume、报 disabled；AgentDeck 自己续的不报）。PL3 的 Prompt queue 按这些发，不再自己猜。
+- 状态只在内存里（改过的续跑文字也是，重开应用后从默认开始）。原来和 PL3 各写一份的几个数（宽限、2.1.234、3 分钟、30 分钟、150 秒）现在只在 `rules.ts`。
+- 测试：`test/limits.test.ts`（注入的时钟、按键、用量、子 agent、白板，不起定时器）。
 
 ## 历史会话（N11，DR-62，2026-10-26 本机核对）
 
@@ -299,7 +392,7 @@ pi 扩展 `agentdeck-pi-extension.mjs` 也要一起放进 Resources（它在 age
 | --- | --- | --- | --- |
 | claude | PermissionRequest 钩子回 allow（终端不进 needs-approval）；开关前就在等的、钩子回答没送到的发 `1` | 发 `1` | 钩子实测；按键见 DR-43 |
 | codex | 同上，发 `y`（永远不发 p / a） | 发 `y` | 同上 |
-| omp | 扩展报 PermissionRequest → needs-approval；屏幕上认出 `Allow tool:` 和 Approve / Deny 后发 `Up Enter` | 同左 | 18.0.4 源码，**没在真终端核对**（support 报 verified: false） |
+| omp | 扩展报 PermissionRequest → needs-approval；屏幕上认出 `Allow tool:` 和 Approve / Deny（Approve 要是第一项）后发 `Up Enter` | 同左 | 18.0.4 源码 + 2026-10-28 真 TUI（AH2 L2 的 K6，support 报 verified: true） |
 | pi | 不用按（从不请求批准）；support 报 never-asks | — | — |
 | kimi、shell、custom | 不支持（`setTerminalAutoApprove(id, true)` 抛 unsupported） | unsupported | — |
 
@@ -311,6 +404,68 @@ pi 扩展 `agentdeck-pi-extension.mjs` 也要一起放进 Resources（它在 age
 - `approve(ids, { by, includeDestructive })`：一条默认算 user（破坏性的也批），多条默认算 approve-all（破坏性的不批，返回 `destructive`，除非 includeDestructive）。同一条请求和 Auto-approve 撞上时只按一次。
 - 记录：每次批准一条 ApprovalRecord（user / approve-all / auto-approve），内存里留最近 1000 条；给了 `approvalRecords` 就写进库，`history()` 从库里读。
 - 开关状态本身只在内存里；随白板保存的是 `FrameNode.autoApprove`、`TerminalWindowData.autoApprove`，apps/desktop 启动、终端接回状态机之后按白板恢复一次。
+
+## 能力声明和合格测试（AH0、AH2，画布 A0、A1）
+
+- **能力声明**：每个适配器实现 `declareCapabilities(version)`（contracts 的 `CapabilityEntry[]`）：每项 yes / partial / no、via、不是 yes 的原因（英文，界面原样用）。
+  claude、codex 写在各自的文件里，pi、omp、kimi 是 known.ts 每行的 `declared`（扩展没给、版本太老时通用适配器把靠扩展的几项改掉），shell、custom 只有几项 no。
+  只写做了什么、靠什么做；没核对过的写 partial 并说明，没做的写 no 并说明。image-input、video-input、invoke-skill、clear-context 留给 RS14、LR2、LR7。
+- **合格测试**：一张表 K1–K18（`src/compat/scenarios.ts`，每项对应一个能力），按声明逐项跑：声明 no 的跳过（没写原因算失败），yes / partial 的必须过。
+  - L1（`test/conformance/l1.test.ts`，在 `pnpm check` 里）：假 PATH 里的假程序、实测抓到的钩子负载、样例会话文件。启动参数和按键对照
+    `test/conformance/verified.ts`（真程序上核对过的标准答案，和适配器代码分开写），改了参数对应的 K 会失败。另外核对旧的 AgentCapabilities、AutoApproveSupport 能由声明推出。
+  - L2（`test/conformance/l2.test.ts`）：真程序在 `tmux -L agentdeck-conformance -f /dev/null` 里，`AGENTDECK_REAL_AGENTS=1 pnpm --filter @agentdeck/agent-adapters conformance [--agent pi]`。
+    pi、omp、kimi 接本地假模型（`support/fake-model.ts`，临时 HOME，不用账号、不花钱）；claude、codex 用登录的账号，只问不改文件的问题（批准请求一律 Esc 拒绝），五轮以内的短对话。
+    目录在本包的 `.conformance/`（.gitignore 里），在信任过的仓库里不弹信任框。omp 的首次设置向导、pi / kimi 的信任框由测试脚手架代替用户处理。
+  - 跑完写 `compat/<agent>.json`（版本、日期、每项 pass / fail / skip 和原因、每项的 verifiedUpTo；pass 才前进，fail 不前进），再生成 `src/compat/records.ts`（运行时读它）。
+    L2 不跑、但以前手工在真程序上核对过的项记成 `suite: manual`（原因里写怎么核对的），L2 跳过时保留。手改记录后跑 `… conformance --records`。
+  - `.github/workflows/agents-conformance.yml`：手动触发，装 pi、omp 最新版跑 L1 + L2，记录作为 artifact 上传。
+- K18（IS-144）：AgentDeck 生成的参数里没有让 agent 自己另开 worktree 的（claude `--worktree`/`-w`/`--tmux`、codex `--worktree`、omp `--cwd`），终端的目录就是框的目录；
+  L2 里再看窗格的当前目录、claude 钩子负载里的 cwd、`git worktree list` 没多出来。用户在 Settings 里自己加的参数不管。
+
+## 运行时降级（AH3，DR-60 P0，画布 A0 的规则、A1）
+
+能力报告（`AgentInfo.report`、`agents.check` 的返回值）= 适配器的声明 + 合格测试记录 + 运行时的情况，在 `src/capabilities/report.ts`：
+
+- **verifiedUpTo**：这一项对应的 K 在 `compat/<agent>.json` 里通过的最低版本（有一项从没通过就是 null；跳过的不算）。没有 K 的能力为 null。
+- **版本超过核对版本**（比记录新、读不出版本、没有记录）：替你按东西的（`approve-keys`，以及靠认屏 `screen` 的）降为 no，`downgrade: 'off'`，
+  reason “Untested on <版本>”（读不出版本时 “Untested: couldn't read the <Label> version”）。钩子、扩展、会话文件、启动参数（A、B 档）照常，
+  界面拿 `report.version` 和 `verifiedUpTo` 比，自己写 “newer than checked”。`createAgentRuntime` 给 ApprovalService 的策略跟着报告走
+  （`strategyFromReport`）：omp 超过 18.0.4 时 Auto-approve / Approve all 报 unsupported、note 是同一句，开着 Auto-approve 的终端发
+  `approval.needs-you`（reason unsupported），不发键（TC-48）。kimi 的第一条消息也是按键打进去的，但只是打字，不关。
+- **版本读不出**：不再当作够新（`env.ts` 的 `atLeast`）。检测时再读一次 `--help`：claude 有 `--settings` 才带钩子，pi / omp 有 `-e` 才带扩展，
+  omp 有 `--plugin-dir` 才挂 MCP、带 skill，kimi 有 `--skills-dir` 才带 skill；codex 的钩子、MCP 从 help 看不出来，不带（也不带会顶掉用户 notify 的 legacy notify）。
+- **钩子该来没来**（IS-74，状态表第 20–23 行）：claude、pi、omp 启动后 10 秒、codex 第一次输入后 10 秒没有任何钩子，这个终端改按输出判断，
+  `StatusSnapshot.degraded` 写 “Hooks didn't report · status from terminal activity”，报告的 status 一项写 Partial · output “Hooks didn't report at the last launch”；
+  之后钩子来了恢复（这个终端回到钩子规则，下一次有钩子的启动清掉报告里的说明）。没有钩子的 agent（kimi）一开始就带 “Status from terminal activity · Kimi has no hooks”。
+- **启动参数被拒**（IS-73）：版本没核对过、这次运行里也还没正常起来过的那次启动，等 3 秒：非 0 退出、输出里有 unknown option / unrecognized / unexpected argument 之类时，
+  收掉它，用 `AdapterLaunchContext.sessionOnly` 只带会话参数（新建 / 接回 / fork 的 id 和第一条消息）重开一次，返回新的终端；不带钩子、MCP、skill、用户的额外参数。
+  终端标降级（“Started with session options only · <那一行>”），报告的 status 写同一句，`AgentInfo.warning` 也是它。同一版本之后直接只带会话参数，不再等。
+  核对过的版本不等（每次启动不会多 3 秒）；起来过一次的版本也不再等。
+- **agent 自己升级了**（IS-77）：启动前看可执行文件的修改时间，变了就重读这一家（版本、help、报告）；codex 的信任哈希缓存按“notify 路径 + codex 路径 + 修改时间”存。
+  本机 kimi 会自己在后台升级（合格测试期间从 2.3.2 升到了 2.3.3）。
+- **Check again**（`agents.check`）：重读版本；在 `--help` 里找每次会带的参数（`launchFlags()`），没有的那几项 no、`downgrade: 'failed'`、reason “--plugin-dir isn't in claude --help”；
+  有钩子、不是 codex、知道上次在哪个目录启动过时，在那个目录带钩子空启动一次（不发提示词），等 10 秒钩子再关掉：来了清掉 status 的说明，没来写 “Hooks didn't report when checked”。
+  空启动的终端不交给状态机（runtime 的 `waitForHook`）。不写 agent 自己的配置。
+- 没做：IS-75（回了 allow 后几秒内没有 PostToolUse / Stop 就退回 needs-approval），重开应用接回终端时按那次启动实际带没带钩子（要 apps/desktop 记下来）。
+- 测试：`test/degradation.test.ts`（TC-48、读不出版本、参数被拒、升级后重读、Check again、钩子没来）、`test/status-machine.test.ts`（第 20–23 行）、合格测试 L1 的 K16、K17（K17 用真子进程跑会拒参数的假程序）。
+
+### 新增或升级一家 agent（五步）
+
+1. **加一行或写适配器**：known.ts 加一行（命令名、启动参数模板、扩展、第一条消息怎么带、能力声明）；钩子、扩展、读文件不够时才写专门的适配器。参数先用真程序核对（`--help`、源码、真跑一次）。
+2. **写能力声明**：每项 yes / partial / no、via、原因（`declareCapabilities`）。
+3. **L1**：在 `verified.ts` 加这家的标准答案（版本、会话参数、第一条消息、按键……），`pnpm --filter @agentdeck/agent-adapters test` 全过。L1 的钩子负载、会话文件样例不够时补进 test/fixtures.ts、test/usage-fixtures/。
+4. **L2**：`AGENTDECK_REAL_AGENTS=1 pnpm --filter @agentdeck/agent-adapters conformance --agent <id>`（能接假模型的在 l2.test.ts 的 PROFILES 里加一份临时配置；要账号的只问不改文件的问题）。
+5. **提交记录**：`compat/<agent>.json` 和 `src/compat/records.ts` 一起提交。升级时同样跑 3–5，记录前进后，超过核对版本时关掉的功能（AH3）自动回来。
+
+### 合格测试结果（2026-10-28，本机）
+
+| agent | 版本 | pass | fail | skip | 说明 |
+| --- | --- | --- | --- | --- | --- |
+| claude | 2.1.291 | 16 | 0 | 2 | K13 不读额度；K17 L2 不跑（L1 用假程序覆盖）。K6、K14、K15 是以前手工核对的（manual） |
+| codex | 0.165.0 | 15 | 0 | 3 | K8 没有提问工具；K15 不支持；K17。K6（0.159.2）、K14（0.164.0）是 manual |
+| pi | 0.83.0 | 12 | 0 | 6 | K5、K6、K8 pi 不问；K13；K14 没有 MCP；K17。K15 是 manual |
+| omp | 18.0.4 | 15 | 0 | 3 | K6 第一次在真 TUI 里核对（确认框标题在上边框里，见 screens.ts）；K13；K14 只核对了配置解析；K17。K15 是 manual |
+| kimi | 2.3.3 | 9 | 0 | 9 | 本机 kimi 跑测试期间自己从 2.3.2 升到了 2.3.3。K5、K6、K8 不认等待；K10 不能 fork；K13；K14；K15 没在 kimi 里核对；K16 没有钩子；K17 |
 
 ## 测试
 

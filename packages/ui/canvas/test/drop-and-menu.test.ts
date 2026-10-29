@@ -81,7 +81,8 @@ describe('context menus (B3)', () => {
       menuItems(c, { screen: { x: 0, y: 0 }, flow: { x: 0, y: 0 }, target }, { terminal: true, browser: true }).map((i) =>
         i.type === 'separator' ? '-' : i.label,
       );
-    expect(labels({ kind: 'pane' })).toEqual(['New terminal', 'New browser', 'New workspace…', 'Add project…', '-', 'Show all']);
+    // PL6：白板空白处有整块白板的 Auto-resume
+    expect(labels({ kind: 'pane' })).toEqual(['New terminal', 'New browser', 'New workspace…', 'Add project…', '-', 'PLUGINS', 'Auto-resume', '-', 'Show all']);
     expect(labels({ kind: 'frame-body', workspaceId: c.state.frames[0]!.workspaceId })[0]).toBe('New terminal');
     expect(labels({ kind: 'frame-title', workspaceId: c.state.frames[0]!.workspaceId })).toEqual([
       'New terminal',
@@ -94,6 +95,7 @@ describe('context menus (B3)', () => {
       'PLUGINS',
       'Auto-approve',
       'Approval history…',
+      'Auto-resume',
       '-',
       'Auto-arrange new windows',
       '-',
@@ -103,10 +105,12 @@ describe('context menus (B3)', () => {
     expect(labels({ kind: 'window', windowId: 'win-login-claude' as WindowId })).toEqual([
       'Rename…',
       'Maximize',
+      'Send selection to', // CO3
       '-',
       'PLUGINS',
       'Auto-approve',
       'Usage',
+      'Auto-resume',
       '-',
       'Copy folder path',
       'Open in system terminal',
@@ -143,6 +147,7 @@ describe('context menus (B3)', () => {
     expect(items.map((i) => (i.type === 'separator' ? '-' : i.label))).toEqual([
       'Rename…',
       'Maximize',
+      'Send selection to', // CO3
       '-',
       'Clear',
       'Restart',
@@ -151,6 +156,7 @@ describe('context menus (B3)', () => {
       'PLUGINS',
       'Auto-approve',
       'Usage',
+      'Auto-resume',
       '-',
       'Copy folder path',
       'Open in system terminal',

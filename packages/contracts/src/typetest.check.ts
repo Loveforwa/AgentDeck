@@ -1,9 +1,16 @@
 // 只用于类型检查：确认接口能被实现、事件能按 type 收窄。不会被打包。
 import type {
-  AgentDeckApi, ApproveResult, BoardState, FrameArrange, SessionSummary, BackgroundAgent, TerminalBackgroundAgents, TranscriptLine, AutoApproveState, CommitInfo, EventOf, GitService, LogOptions, SkillItemId, TerminalHost, TerminalId,
+  AgentDeckApi, LimitService, ApproveResult, BoardState, FrameArrange, PromptQueueSettings, UsageLimit, SessionSummary, BackgroundAgent, TerminalBackgroundAgents, TranscriptLine, AutoApproveState, CommitInfo, EventOf, GitService, LogOptions, SkillItemId, TerminalHost, TerminalId,
   TerminalSkills, TerminalUsage, TerminalWindowData, UsageService, WindowGroupId, WindowId, WindowNode, WindowRestoreSupport, WorkspaceId,
+  LaunchPreset, ProjectPatch, Settings,
+  Session, SessionId, SessionOrigin, AgentSessionSegment, HandoffResult,
+  AgentCapabilityReport, LaunchSpec,
+  AccountLimit, LimitedTerminal, AgentHookEvent,
+  CrewId, CrewMembership, CrewSession, InboxItem, InboxItemId, CliRequest, CliResponse, InjectionEstimate,
+  CodeRef, DocVerifyService, DocWindowData, DocWriteResult, LineMapHunk, ResolvedRef, WorkspaceOverlap,
+  AgentLastReply, SelfResumeState, AgentService,
 } from './index.ts';
-import { effectiveSkillSelection, FIRE_AND_FORGET, isAutoApproveOn, skillsRestartNeeded } from './index.ts';
+import { effectiveSkillSelection, FIRE_AND_FORGET, isAutoApproveOn, skillsRestartNeeded, findInlineSecret, redactCommand, capabilitiesFromReport, cliCommandAllowed, TERMINAL_KEY_ENV, API_ENDPOINT_FILE, parseCodeRefs } from './index.ts';
 
 declare const api: AgentDeckApi;
 api.on('status.changed', (e) => {
@@ -125,3 +132,119 @@ void api.history.list().then((all: SessionSummary[]) => all.filter((x) => x.agen
 // N11：左边栏的开关和宽度随白板保存，可选字段
 const left: BoardState['leftPanel'] = { open: true, width: 280 };
 void left;
+// PL3：Prompt queue。队列随白板保存；额度上限在 TerminalUsage.limit；watch 可以按 owner 分开
+const queue: PromptQueueSettings = { on: true, prompts: [{ id: 'p1', text: 'Add tests' }], sent: [], paused: false, keepAwake: true, running: false };
+const qdata: TerminalWindowData['queue'] = queue;
+void qdata;
+const limit: UsageLimit = { kind: 'five_hour', resetsAt: '2026-10-27T07:30:00.000Z', at: null, detail: null };
+void limit;
+void api.usage.watch('t1' as TerminalId, 'prompt-queue');
+void api.app.setKeepAwake(true);
+// PL3 / IS-113（0.1.14）：armed 记下碰到上限的时间，limit 被清掉也不忘
+const armedQueue: PromptQueueSettings = { ...queue, armed: { resetsAt: Date.parse('2026-10-27T07:30:00.000Z'), at: Date.now() } };
+const disarmed: PromptQueueSettings = { ...queue, armed: null };
+void armedQueue; void disarmed;
+// LA0（0.1.15）：启动预设、Hide from agents、命令里的密码
+const presets: LaunchPreset[] = [
+  { id: 'p1', name: 'harlequin · shop dev', target: { kind: 'command', command: 'harlequin -P dev' }, hideFromAgents: true },
+  { id: 'p2', name: 'Teach me', target: { kind: 'agent', agent: 'claude', prompt: '/teach' }, hideFromAgents: false },
+];
+const globalPresets: Settings['launchPresets'] = presets;
+const projectPresets: ProjectPatch = { launchPresets: presets };
+const hidden: TerminalWindowData = { ...termData, hideFromAgents: true };
+const blocked: boolean = findInlineSecret('pgcli postgres://a:b@h/db') !== null;
+const shown: string = redactCommand('pgcli postgres://a:b@h/db');
+void globalPresets; void projectPresets; void hidden; void blocked; void shown;
+// SE0（0.1.16）：Session
+api.on('session.changed', (e: EventOf<'session.changed'>) => {
+  const s: Session = e.session;
+  if (s.origin.kind === 'crew') void [s.origin.crewId, s.origin.taskId, s.origin.role];
+  if (s.origin.kind === 'forge') void s.origin.number;
+  void s.agentSessions.map((seg: AgentSessionSegment) => seg.reason);
+});
+void api.sessions.children('s1' as SessionId).then((xs) => xs.length);
+void api.sessions.handoff({ from: 's1' as SessionId, agent: 'codex', note: 'Goal: …' }).then((r: HandoffResult) => r.session.handoffNote);
+void api.agents.start({ agent: 'codex', cwd: '/r', workspaceId: null, mode: { kind: 'new' }, parent: 's1' as SessionId, origin: { kind: 'spawn', tool: 'open_terminals' } })
+  .then((r) => r.session);
+const withSession: TerminalWindowData = { ...termData, session: 's1' as SessionId };
+const origin: SessionOrigin = { kind: 'fork', agentSessionId: null };
+void withSession; void origin;
+// AH0 / AH1（0.1.17）：能力报告、Check again、降级原因、第一条消息
+void api.agents.check('omp').then((r: AgentCapabilityReport) => r.entries.filter((e) => e.level !== 'yes').map((e) => [e.key, e.reason]));
+void api.agents.list().then((xs) => xs.map((x) => (x.report ? capabilitiesFromReport(x.report).hooks : x.capabilities.hooks)));
+api.on('status.changed', (e) => void e.snapshot.degraded);
+const kimiLaunch: LaunchSpec = { cmd: 'kimi', args: [], sessionId: null, consumed: { prompt: false }, sendAfterReady: 'reply with PELICAN' };
+void kimiLaunch;
+// PL4（0.1.18）：Auto-resume 的 LimitService
+api.on('limits.changed', (e: EventOf<'limits.changed'>) => {
+  const a: AccountLimit | undefined = e.limits[0];
+  void a?.terminals.filter((t: LimitedTerminal) => t.state === 'interrupted' && t.owner !== 'run').map((t) => t.resumeAt);
+  void a?.needsYou;
+});
+void api.limits.resumeNow('codex:/Users/you/.codex:all', ['t1' as TerminalId]);
+void api.limits.setOwner('t1' as TerminalId, 'crew', 'Your usage limit has reset. Continue T4.');
+const turnEnd: AgentHookEvent = { type: 'turn-end', error: 'rate_limit' };
+const fired: AgentHookEvent = { type: 'quota-resume', what: 'stale' };
+const resumeData: TerminalWindowData = { ...termData, autoResume: null };
+void turnEnd; void fired; void resumeData;
+// CR0 / CR13（0.1.19）：集群、收件箱的一条、命令行
+api.on('crew.session-spawned', (e: EventOf<'crew.session-spawned'>) => void [e.session.label, e.session.worktree]);
+api.on('crew.changed', (e) => void (e.crew.mode === 'free' ? e.crew.free?.allowedAgents : e.crew.roles));
+void api.crew.membership('t1' as TerminalId).then((m: CrewMembership | null) => m?.role === 'lead');
+void api.crew.digest('c1' as CrewId);
+void api.crew.spawn('t1' as TerminalId, { agent: 'codex', label: 'race', prompt: 'Find the race' }).then((s: CrewSession) => s.branch);
+void api.crew.merge('t1' as TerminalId, 'race').then((r) => (r.state === 'conflict' ? r.files : []));
+const item: InboxItem = {
+  id: 'i1' as InboxItemId, source: 'ready-to-merge', crewId: 'c1' as CrewId, terminalId: null, title: 'Ready to merge', from: 'Lead · claude',
+  summary: 'login-fix is done', options: [], at: '', suggestion: null, resolved: { by: 'user', answer: 'merged', at: '' },
+};
+const req: CliRequest = { v: 1, command: 'session spawn', args: ['--agent', 'codex'], stdin: 'Find the race' };
+const res: CliResponse = { ok: false, error: { code: 'invalid-argument', message: 'Only the lead can open sessions.' } };
+const crewFrame: NonNullable<BoardState['crews']>[number] = { crewId: 'c1' as CrewId, rect: { x: 0, y: 0, w: 1, h: 1 }, z: 0, collapsed: false, planView: 'board' };
+const est: InjectionEstimate = { itemId: 'skill:built-in:crew', tokensPerTurn: null, mode: 'on-demand' };
+const key: string = TERMINAL_KEY_ENV + API_ENDPOINT_FILE;
+void item; void req; void res; void crewFrame; void est; void key; void cliCommandAllowed('crew status', { crew: null, origin: null });
+// DC0（0.1.20）：文档窗口、代码锚点、GitService 的 blame / show / lineMap
+api.on('doc.changed', (e: EventOf<'doc.changed'>) => void (e.by?.kind === 'agent' ? e.by.terminalId : null));
+api.on('doc.anchors', (e) => void e.summary.counts.moved);
+void api.docs.write('/r/a.md', 'x', { baseHash: 'h' }).then((r: DocWriteResult) => (r.ok ? r.hash : r.conflict.theirs.text));
+void api.anchors.resolve('/r/a.md').then((r) => r.refs.map((x: ResolvedRef) => [x.state, x.baseline.source]));
+const refs: CodeRef[] = parseCodeRefs('src/a.ts:12-30 `onLink`');
+void api.anchors.fixLines('/r/a.md', refs);
+void api.git.lineMap('/r', 'src/a.ts', 'HEAD~1', 'worktree').then((h: LineMapHunk[]) => h.map((x) => x.newStart));
+void api.git.showFile('/r', 'HEAD', 'src/a.ts').then((t) => t ?? '');
+void api.git.blameLines('/r', 'docs/a.md').then((b) => b[0]?.commit);
+const docData: DocWindowData = { path: '/r/a.md', view: 'read', linkedTerminal: null, seenHash: null };
+const verifier: Pick<DocVerifyService, 'submit'> = { submit: async () => {} };
+void docData; void verifier;
+// CO0 / CO4（0.1.21）：worktree 两两的重叠，终端的 Unseen
+void api.git.overlaps('/r', [{ workspaceId: 'w1' as WorkspaceId, path: '/r' }, { workspaceId: 'w2' as WorkspaceId, path: '/wt/b' }])
+  .then((xs: WorkspaceOverlap[]) => xs.flatMap((o) => o.files.filter((f) => f.verdict === 'conflict').map((f) => [o.a, o.b, f.path])));
+const unseen: TerminalWindowData = { ...termData, unseen: true };
+void unseen;
+// 0.1.22：额度的范围、续跑的两个字段、最后一条回复、按原文打字、改名和列文件（都是可选的，老实现照样能用）
+const opusLimit: UsageLimit = { kind: 'weekly', resetsAt: null, at: null, detail: null, scope: 'opus' };
+const selfLimited: LimitedTerminal = { terminalId: 't1' as TerminalId, state: 'interrupted', owner: 'agent', resumeAt: null, lostSubagents: 0, autoResume: false, selfResume: 'waiting' };
+const oldLimited: LimitedTerminal = { terminalId: 't1' as TerminalId, state: 'idle', owner: 'auto-resume', resumeAt: null, lostSubagents: 0 };
+const stale: SelfResumeState = 'stale';
+void opusLimit; void selfLimited; void oldLimited; void stale;
+const oldAgents: Pick<AgentService, 'list' | 'refresh' | 'start' | 'check'> = api.agents;
+void oldAgents;
+void api.agents.lastReply?.('t1' as TerminalId).then((r: AgentLastReply) => (r.source === 'transcript' ? r.at : r.text));
+void api.terminals.sendText?.('t1' as TerminalId, 'Enter;');
+void api.git.renamedPath?.('/r', 'src/old.ts', 'HEAD~1').then((p) => p ?? 'gone');
+void api.git.listFiles?.('/r').then((xs: string[]) => xs.filter((x) => x.endsWith('.md')));
+const oldHost: Omit<TerminalHost, 'sendText'> = {} as TerminalHost;
+const asHost: TerminalHost = oldHost;
+const oldGit: Omit<GitService, 'renamedPath' | 'listFiles'> = {} as GitService;
+const asGit: GitService = oldGit;
+void asHost; void asGit;
+// 0.1.23（PL6）：Auto-resume 卡片改这一次续跑的文字（可选方法，老实现照样能用）；PL3 的队列字段留着读老白板
+const edited: LimitedTerminal = { ...selfLimited, message: 'Finish the tests first', defaultMessage: 'Your usage limit has reset.', messageDelivered: true };
+const notEdited: LimitedTerminal = { ...oldLimited, message: null };
+void edited; void notEdited;
+void api.limits.setMessage?.('t1' as TerminalId, 'Also update the docs');
+void api.limits.setMessage?.('t1' as TerminalId, null);
+const oldLimits: Omit<LimitService, 'setMessage'> = {} as LimitService;
+const asLimits: LimitService = oldLimits;
+void asLimits;

@@ -1,8 +1,8 @@
-import type { AgentSessionId, ProjectId, TerminalId, WindowId, WorkspaceId } from '@agentdeck/contracts';
+import type { AgentSessionId, CrewId, ProjectId, SessionId, TerminalId, WindowId, WorkspaceId } from '@agentdeck/contracts';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { openStore } from '../src/index.ts';
 import type { Store } from '../src/index.ts';
-import { approval, project, terminal, workspace } from './fixtures.ts';
+import { approval, project, session, terminal, workspace } from './fixtures.ts';
 
 let store: Store;
 beforeEach(() => {
@@ -254,5 +254,117 @@ describe('transaction', () => {
     });
     expect(store.projects.list()).toHaveLength(1);
     expect(store.workspaces.list()).toEqual([]);
+  });
+});
+
+describe('terminals.prune (IS-95)', () => {
+  beforeEach(() => {
+    store.projects.put(project());
+    store.workspaces.put(workspace());
+  });
+
+  it('keeps only the terminals that are still in tmux', () => {
+    store.terminals.put(terminal({ terminalId: 't1' as TerminalId, windowId: null }));
+    store.terminals.put(terminal({ terminalId: 't2' as TerminalId, windowId: null }));
+    store.terminals.put(terminal({ terminalId: 't3' as TerminalId, windowId: null }));
+    expect(store.terminals.prune(['t2' as TerminalId, 'gone' as TerminalId])).toBe(2);
+    expect(store.terminals.list().map((t) => t.terminalId)).toEqual(['t2']);
+  });
+
+  it('stores which Session a terminal runs', () => {
+    store.sessions.put(session());
+    store.terminals.put(terminal({ session: 'ses1' as SessionId }));
+    expect(store.terminals.get('t1' as TerminalId)?.session).toBe('ses1');
+    // Session 删掉后终端记录还在，只是不再指向它
+    store.sessions.remove('ses1' as SessionId);
+    expect(store.terminals.get('t1' as TerminalId)?.session).toBeNull();
+  });
+});
+
+describe('sessions', () => {
+  beforeEach(() => {
+    store.projects.put(project());
+    store.workspaces.put(workspace());
+  });
+  const ses = (id: string) => id as SessionId;
+  const aid = (id: string) => id as AgentSessionId;
+
+  it('round-trips a session with its origin and conversation segments', () => {
+    const s = session({
+      origin: { kind: 'crew', crewId: 'c1' as CrewId, taskId: null, role: 'lead' },
+      label: 'lead',
+      title: 'Plan search',
+      agentSessions: [
+        { id: aid('a1'), startedAt: '2026-10-02T09:05:00.000Z', reason: 'start' },
+        { id: aid('a2'), startedAt: '2026-10-02T09:30:00.000Z', reason: 'clear' },
+      ],
+    });
+    store.sessions.put(s);
+    expect(store.sessions.get(s.id)).toEqual(s);
+    expect(store.sessions.get(ses('nope'))).toBeNull();
+
+    // put 整条替换，分段也换掉
+    const next = { ...s, label: null, agentSessions: [s.agentSessions[1]!], updatedAt: '2026-10-02T10:00:00.000Z' };
+    store.sessions.put(next);
+    expect(store.sessions.get(s.id)).toEqual(next);
+  });
+
+  it('lists newest first, filters by workspace and state, lists children oldest first', () => {
+    store.sessions.put(session({ id: ses('lead'), createdAt: '2026-10-02T09:00:00.000Z' }));
+    store.sessions.put(session({ id: ses('b'), parentId: ses('lead'), createdAt: '2026-10-02T09:02:00.000Z', state: 'stopped', terminalId: null }));
+    store.sessions.put(session({ id: ses('a'), parentId: ses('lead'), createdAt: '2026-10-02T09:01:00.000Z' }));
+    store.sessions.put(session({ id: ses('loose'), workspaceId: null, createdAt: '2026-10-02T09:03:00.000Z' }));
+    expect(store.sessions.list().map((s) => s.id)).toEqual(['loose', 'b', 'a', 'lead']);
+    expect(store.sessions.list({ workspaceId: null }).map((s) => s.id)).toEqual(['loose']);
+    expect(store.sessions.list({ workspaceId: 'w1' as WorkspaceId, state: 'stopped' }).map((s) => s.id)).toEqual(['b']);
+    expect(store.sessions.listByParent(ses('lead')).map((s) => s.id)).toEqual(['a', 'b']);
+  });
+
+  it('finds a session by an agent conversation id and by its terminal', () => {
+    store.sessions.put(session({ id: ses('x'), agentSessions: [{ id: aid('a1'), startedAt: '2026-10-02T09:05:00.000Z', reason: 'start' }] }));
+    store.sessions.put(session({ id: ses('y'), agent: 'codex', terminalId: 't2' as TerminalId, agentSessions: [{ id: aid('a1'), startedAt: '2026-10-02T09:05:00.000Z', reason: 'start' }] }));
+    expect(store.sessions.findByAgentSession('claude', aid('a1'))?.id).toBe('x');
+    expect(store.sessions.findByAgentSession('codex', aid('a1'))?.id).toBe('y');
+    expect(store.sessions.findByAgentSession('claude', aid('a9'))).toBeNull();
+    expect(store.sessions.findByTerminal('t2' as TerminalId)?.id).toBe('y');
+    expect(store.sessions.findByTerminal('t9' as TerminalId)).toBeNull();
+  });
+
+  it('updates the state and adds segments', () => {
+    store.sessions.put(session({ id: ses('a') }));
+    store.sessions.put(session({ id: ses('b'), terminalId: null, state: 'stopped' }));
+    const handed = store.sessions.updateState(ses('a'), { state: 'handed-off', handedOffTo: ses('b'), terminalId: null, at: '2026-10-02T11:00:00.000Z' });
+    expect(handed).toMatchObject({ state: 'handed-off', handedOffTo: 'b', terminalId: null, updatedAt: '2026-10-02T11:00:00.000Z' });
+    // 开回来：handed-off 以外的状态不留 handedOffTo
+    expect(store.sessions.updateState(ses('a'), { state: 'running', terminalId: 't7' as TerminalId })).toMatchObject({
+      state: 'running',
+      handedOffTo: null,
+      terminalId: 't7',
+    });
+    expect(store.sessions.updateState(ses('nope'), { state: 'stopped' })).toBeNull();
+
+    const seg = { id: aid('a2'), startedAt: '2026-10-02T12:00:00.000Z', reason: 'clear' as const };
+    const after = store.sessions.addSegment(ses('a'), seg, '2026-10-02T12:00:00.000Z');
+    expect(after?.agentSessions.map((x) => [x.id, x.reason])).toEqual([
+      ['s-123', 'start'],
+      ['a2', 'clear'],
+    ]);
+    expect(after?.updatedAt).toBe('2026-10-02T12:00:00.000Z');
+    expect(store.sessions.addSegment(ses('nope'), seg)).toBeNull();
+  });
+
+  it('keeps children and sessions when a parent or a workspace goes away', () => {
+    store.sessions.put(session({ id: ses('lead') }));
+    store.sessions.put(session({ id: ses('kid'), parentId: ses('lead') }));
+    expect(store.sessions.remove(ses('lead'))).toBe(true);
+    expect(store.sessions.remove(ses('lead'))).toBe(false);
+    expect(store.sessions.get(ses('kid'))?.parentId).toBeNull();
+
+    store.workspaces.remove('w1' as WorkspaceId);
+    expect(store.sessions.get(ses('kid'))?.workspaceId).toBeNull();
+  });
+
+  it('refuses a parent that does not exist', () => {
+    expect(() => store.sessions.put(session({ parentId: ses('ghost') }))).toThrow(/FOREIGN KEY/);
   });
 });

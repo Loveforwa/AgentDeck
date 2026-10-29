@@ -13,8 +13,9 @@
 //        新会话的 id 启动时不知道，要等扩展的 session_start 报上来。提问工具叫 ask。
 //        批准确认框（2026-10-25 读源码，PL1）：src/extensibility/extensions/wrapper.ts 里 select("Allow tool: <name>\n…", ["Approve", "Deny"])，
 //        选择列表 src/modes/components/hook-selector.ts 的 ↑ 到顶就停、不绕回，所以 approveOnceKeys = Up Enter 一定选中 Approve
-//        （只这一次，omp 的选择列表没有“总是允许”）。**没在真终端里核对**：ApprovalService 发键前先在屏幕上认出
-//        Allow tool: 和 Approve / Deny（status/screens.ts），认不出就不发；autoApproveSupport 报 verified: false。
+//        （只这一次，omp 的选择列表没有“总是允许”）。ApprovalService 发键前先在屏幕上认出 Allow tool: 和 Approve / Deny
+//        （status/screens.ts），认不出就不发。2026-10-28 在真 TUI 里核对（AH2 的 L2）：标题在上边框里、命令前有 “Command: ”，
+//        Up Enter 选中 Approve、命令照常运行；autoApproveSupport 报 verified: true。
 //   kimi 2.3.1（~/.kimi-code/bin/kimi，2026-10-24 从 0.29.1 升上来，0.29 的核对记录作废）：-S/--session [id]、-V/--version 还在
 //        （launch 参数沿用 0.29 的核对，2.3.1 没有重新跑 --help）。没有 fork；钩子不能批准，没有扩展；会话 id 启动时不知道。
 //        批准确认框（读 2.3.1 打包的源码，DR-56）：标题 Run this command? / Write this file? / Apply these edits? / Approve <Tool>?，
@@ -22,11 +23,14 @@
 //        所以“允许一次”是 1。计划确认（Ready to build with this plan?）和 Start a goal? 用同一个面板但选项不同，不能答。
 //        2026-10-25 定：Auto-approve / Approve all 先不支持 kimi（status/support.ts 报 "Not supported for kimi yet"），
 //        所以 approveOnceKeys 仍为 null；以后要做就照上面的规则看屏幕（kimi 没有 needs-approval 状态，要在终端安静下来时看）。
+//   2026-10-28（AH1、AH2）：第一条消息怎么带用真 pi 0.83.0、omp 18.0.4、kimi 2.3.2 / 2.3.3 核对（见各行的 prompt）；合格测试
+//        L2 跑过这三家（假模型）、结果在 compat/<agent>.json。本机 kimi 在测试期间自己升到了 2.3.3（它会自动升级）。
 // 本机没有 gemini、opencode、aider，参数没法核对，先不登记。
 // MCP（N1，2026-10-25）：pi 0.83.0 没有 MCP；omp 18.0.4 用 --plugin-dir；kimi 2.3.1 的 --help 仍是 -S/--session [id]，
 // 没有 MCP 的启动参数。详见 AGENTS.md「AgentDeck 的 MCP」。
 
-import type { AgentKind } from '@agentdeck/contracts';
+import type { AgentKind, CapabilityEntry } from '@agentdeck/contracts';
+import { no, partial, statusFromActivity, yes } from '../capabilities/declare.ts';
 
 /** 扩展从这几个环境变量知道发给谁、自己是哪个 agent。和 tools/agentdeck-notify/bin/agentdeck-pi-extension.mjs 一致，测试会核对。 */
 export const EXTENSION_ENV = {
@@ -75,6 +79,23 @@ export interface KnownAgent {
    * repoDirs：仓库里它自己会读的 skill 目录（相对目录，从 cwd 往上找到仓库根），面板上列成 repo，只显示、不开关。
    */
   skills: { kind: 'plugin-dir' | 'skill-flag' | 'skills-dir'; flag: string; minVersion: string | null; repoDirs: string[] } | null;
+  /**
+   * 第一条消息（AH1，StartAgentRequest.prompt，只在新会话时带）。
+   * arg：放进启动参数。separator 为 '--' 时放在所有参数最后、`--` 之后（agent 认 `--`）；为 null 时 agent 不认 `--`，
+   *   消息放在用户的额外参数前面（免得被某个不认识的 `--flag` 当成它的值吃掉），开头是 @ 或 - 时前面加一个空格（不然会被当成文件或参数）。
+   * after-ready：交互模式没有这个参数，由 AgentService 在终端第一次安静下来后替用户打进去、按回车（LaunchSpec.sendAfterReady）；
+   *   notReadyScreens 里的字出现在屏幕上时（例如“信任这个文件夹吗”），说明它还没到输入框，等下一次安静再打，免得回车替用户选了选项。
+   * null = 带不了（AgentService.start 报 unsupported，不开终端）。
+   */
+  prompt: { kind: 'arg'; separator: '--' | null } | { kind: 'after-ready'; notReadyScreens: string[] } | null;
+  /**
+   * 能力声明（AH0 / AH2，画布 A0 第 2 节的表）：按扩展装好了写。扩展没给、版本太老时，通用适配器把靠扩展的几项
+   * （via 'extension' 的 status、approval-wait、question、session-id）改成按输出判断或 no（generic.ts declareCapabilities）。
+   * 没核对过的写 partial 并说明，没做的写 no 并说明；合格测试（test/conformance）按它逐项跑。
+   */
+  declared: CapabilityEntry[];
+  /** AH3：启动参数里用、但 `--help` 不列的参数（Check again 不在 help 里找它们）。 */
+  helpHides?: string[];
 }
 
 export const KNOWN_AGENTS: readonly KnownAgent[] = [
@@ -95,16 +116,40 @@ export const KNOWN_AGENTS: readonly KnownAgent[] = [
     // N9：--skill <文件夹>，可重复，和自己发现的叠加（README「Resource Options」、docs/skills.md；0.83.0 用 rpc 的 get_commands 实测列出）。
     // 仓库里读 .pi/skills、.agents/skills（从 cwd 往上，README「Skills」）。
     skills: { kind: 'skill-flag', flag: '--skill', minVersion: null, repoDirs: ['.pi/skills', '.agents/skills'] },
+    // AH1（2026-10-28 用真 pi 0.83.0 核对，dist/cli/args.js parseArgs）：位置参数就是消息；不认 `--`（会被当成名字为空的未知参数，
+    // 把后面一项吃成它的值）；@ 开头的是文件（找不到文件时 pi 直接退出），- 开头的是参数。所以开头是 @ 或 - 时前面加一个空格，
+    // 模型收到的就是原文（前面多一个空格）。不认识的 `--x` 会吃掉后面一项，所以消息放在用户的额外参数前面。
+    prompt: { kind: 'arg', separator: null },
+    declared: [
+      yes('first-prompt', 'flag'),
+      yes('status', 'extension'),
+      no('approval-wait', 'Pi never asks for approval', { notNeeded: true }),
+      no('question', 'Pi has no question tool'),
+      yes('session-id', 'flag'),
+      yes('resume', 'flag'),
+      yes('fork', 'flag'),
+      yes('history', 'session-file'),
+      yes('usage', 'session-file'),
+      no('quota', 'Not read for Pi yet'),
+      no('approve-keys', 'Pi never asks for approval', { notNeeded: true }),
+      no('agentdeck-mcp', 'Pi has no MCP'),
+      yes('skills', 'flag'),
+      no('subagents', 'Not read for Pi yet'),
+      yes('append-instructions', 'flag'),
+      yes('shell-tool', null),
+    ],
   },
   {
     id: 'omp',
     label: 'Oh My Pi',
     commands: ['omp'],
     launch: { new: [], resume: ['--resume', '{id}'], fork: ['--fork', '{id}'] },
+    // --fork 能用（cli/flag-tables.ts），但 18.0.4 的 --help 不列它
+    helpHides: ['--fork'],
     // 本机实测的版本。更早的版本可能也有这些事件，没验证过就按没有处理。
     extension: { flag: '-e', turnEnd: 'agent_end', minVersion: '18.0.0' },
     askTool: true,
-    // 没在真终端里核对（见上面的核对记录）：发之前 ApprovalService 会先在屏幕上认出 Approve / Deny
+    // 发之前 ApprovalService 会先在屏幕上认出 Approve / Deny（2026-10-28 真 TUI 核对，见上面的核对记录）
     approveOnceKeys: ['Up', 'Enter'],
     // --plugin-dir 加载 Claude 插件格式的目录（.claude-plugin/plugin.json 里内联 mcpServers），url 和 headers 展开 ${VAR}。
     // 18.0.4 实测（源码 discovery/helpers.ts injectPluginDirRoots、discovery/claude-plugins.ts loadMCPServers），见 AGENTS.md。
@@ -112,6 +157,28 @@ export const KNOWN_AGENTS: readonly KnownAgent[] = [
     // N9：同一个 --plugin-dir（可重复）的目录里 skills/<name>/ 也会被发现（18.0.4 源码 discovery/claude-plugins.ts loadSkills；
     // 用 bun 跑 omp 自己的 injectPluginDirRoots + loadCapability('skills') 实测列出）。仓库里读 .omp、.claude、.codex、.agent(s) 的 skills/。
     skills: { kind: 'plugin-dir', flag: '--plugin-dir', minVersion: '18.0.4', repoDirs: ['.omp/skills', '.claude/skills', '.codex/skills', '.agents/skills', '.agent/skills'] },
+    // AH1（2026-10-28 用真 omp 18.0.4 核对，cli.js 的参数解析）：`--` 之后的都是消息，@ 和 - 开头的也照原文送到
+    // （omp 会像你在输入框里打了 @README.md 一样另外附上那个文件）。
+    prompt: { kind: 'arg', separator: '--' },
+    declared: [
+      yes('first-prompt', 'flag'),
+      yes('status', 'extension'),
+      yes('approval-wait', 'extension'),
+      yes('question', 'extension'),
+      yes('session-id', 'extension'),
+      yes('resume', 'flag'),
+      yes('fork', 'flag'),
+      yes('history', 'session-file'),
+      yes('usage', 'session-file'),
+      no('quota', 'Not read for Oh My Pi yet'),
+      // 认屏后发 Up Enter（status/screens.ts）；2026-10-28 在真 TUI 里核对过（AH2 的 L2 K6），版本超过核对版本时自动关掉（AH3）
+      yes('approve-keys', 'screen'),
+      partial('agentdeck-mcp', 'extension', 'Not checked in the terminal yet'),
+      yes('skills', 'extension'),
+      no('subagents', 'Not read for Oh My Pi yet'),
+      yes('append-instructions', 'flag'),
+      yes('shell-tool', null),
+    ],
   },
   {
     id: 'kimi',
@@ -126,5 +193,26 @@ export const KNOWN_AGENTS: readonly KnownAgent[] = [
     // N9：--skills-dir <目录>，可重复（2.3.1 --help）。给了它就不再自动发现用户和项目目录（读打包的源码 extraFileSkillSource.ts），
     // 所以 LaunchSkills.keepSkillRoots 把那几个目录一起传回去。仓库里读 <仓库根>/.kimi-code/skills、.agents/skills。
     skills: { kind: 'skills-dir', flag: '--skills-dir', minVersion: null, repoDirs: ['.kimi-code/skills', '.agents/skills'] },
+    // AH1（2026-10-28 用真 kimi 2.3.2 核对）：交互模式没有带消息的参数（-p 是非交互的一次性问答）。启动后在输入框里打字、回车，
+    // @ 开头的照原文送到。第一次在某个目录打开时先弹 “Trust this folder?”（回车会选中 Trust and continue），等用户处理完再打。
+    prompt: { kind: 'after-ready', notReadyScreens: ['Trust this folder?'] },
+    declared: [
+      partial('first-prompt', 'keys', 'Typed into Kimi after it starts'),
+      statusFromActivity('Kimi has no hooks; Running and Idle come from screen activity'),
+      no('approval-wait', 'Waiting is not detected for Kimi'),
+      no('question', 'Waiting is not detected for Kimi'),
+      partial('session-id', 'session-file', 'Guessed from session files'),
+      yes('resume', 'flag'),
+      no('fork', "Kimi can't fork conversations"),
+      yes('history', 'session-file'),
+      yes('usage', 'session-file'),
+      no('quota', 'Not read for Kimi yet'),
+      no('approve-keys', 'Not supported for kimi yet'),
+      no('agentdeck-mcp', 'No AgentDeck MCP yet'),
+      partial('skills', 'flag', 'Not checked yet'),
+      no('subagents', 'Not read for Kimi yet'),
+      no('append-instructions', 'Kimi has no option to add instructions'),
+      yes('shell-tool', null),
+    ],
   },
 ];

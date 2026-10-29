@@ -64,7 +64,9 @@ export type MenuTarget =
   /** 框里的空白处：和白板的右键菜单相同，但新建的东西放进这个框。 */
   | { kind: 'frame-body'; workspaceId: WorkspaceId }
   | { kind: 'frame-title'; workspaceId: WorkspaceId }
-  | { kind: 'window'; windowId: WindowId };
+  | { kind: 'window'; windowId: WindowId }
+  /** CO3：窗口内容区（终端屏幕）右键、⌃ 单击：Copy · Paste · Send selection to ▸。 */
+  | { kind: 'window-content'; windowId: WindowId };
 
 export interface MenuState {
   /** 屏幕坐标，菜单放在这里。 */
@@ -77,6 +79,8 @@ export interface MenuState {
 export type SavedBoard = Pick<BoardState, 'viewport' | 'frames' | 'windows' | 'panel'> & {
   /** 左边栏（N11 历史会话），contracts 里是可选的，这里总有。 */
   leftPanel: { open: boolean; width: number };
+  /** PL6：白板上的 Auto-resume（BoardState.autoResume，默认关）。contracts 里是可选的，这里总有。 */
+  autoResume: boolean;
 };
 
 /** 左边栏默认收着、宽 280。 */
@@ -128,6 +132,7 @@ export function initialState(): BoardStoreState {
     windows: [],
     panel: { open: true, width: 320 },
     leftPanel: { ...DEFAULT_LEFT_PANEL },
+    autoResume: false,
     loaded: false,
     focusedId: null,
     selectedFrame: null,
@@ -160,9 +165,9 @@ export function createBoardStore(init: Partial<BoardStoreState> = {}): BoardStor
 
 /** 要保存的那部分。引用没变就是没改。 */
 export function savedPart(s: BoardStoreState): SavedBoard {
-  return { viewport: s.viewport, frames: s.frames, windows: s.windows, panel: s.panel, leftPanel: s.leftPanel };
+  return { viewport: s.viewport, frames: s.frames, windows: s.windows, panel: s.panel, leftPanel: s.leftPanel, autoResume: s.autoResume };
 }
 
 export function savedPartChanged(a: BoardStoreState, b: BoardStoreState): boolean {
-  return a.viewport !== b.viewport || a.frames !== b.frames || a.windows !== b.windows || a.panel !== b.panel || a.leftPanel !== b.leftPanel;
+  return a.viewport !== b.viewport || a.frames !== b.frames || a.windows !== b.windows || a.panel !== b.panel || a.leftPanel !== b.leftPanel || a.autoResume !== b.autoResume;
 }

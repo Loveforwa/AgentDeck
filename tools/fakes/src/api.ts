@@ -27,6 +27,10 @@ import { FakeApprovalService, FakeStatusService } from './status-service.ts';
 import { FakeSkillsService } from './skills-service.ts';
 import { FakeTerminalHost } from './terminal-host.ts';
 import { FakeHistoryService } from './history-service.ts';
+import { FakeSessionService } from './session-service.ts';
+import { FakeLimitService } from './limit-service.ts';
+import { FakeCrewService } from './crew-service.ts';
+import { FakeCodeAnchorService, FakeDocService } from './doc-service.ts';
 import { FakeSubagentService } from './subagent-service.ts';
 import { FakeUsageService } from './usage-service.ts';
 import { bindMethods, sleep } from './util.ts';
@@ -48,6 +52,11 @@ export interface FakeServices {
   skills: FakeSkillsService;
   subagents: FakeSubagentService;
   history: FakeHistoryService;
+  sessions: FakeSessionService;
+  limits: FakeLimitService;
+  crew: FakeCrewService;
+  docs: FakeDocService;
+  anchors: FakeCodeAnchorService;
 }
 
 export interface CreateFakeApiOptions {
@@ -101,6 +110,8 @@ export function createFakeServices(opts: CreateFakeApiOptions = {}): { bus: Fake
   const approvals = new FakeApprovalService({ status, terminals, approveKeys: (agent) => agents.approveOnceKeys(agent) });
   const projects = opts.home === undefined ? new FakeProjectService({ bus, git }) : new FakeProjectService({ bus, git, home: opts.home });
   const workspaces = new FakeWorkspaceService({ bus, projects, git });
+  const sessions = new FakeSessionService({ bus, agents });
+  const docs = new FakeDocService({ bus });
   const fakes: FakeServices = {
     app,
     projects,
@@ -115,6 +126,11 @@ export function createFakeServices(opts: CreateFakeApiOptions = {}): { bus: Fake
     usage: new FakeUsageService({ bus }),
     subagents: new FakeSubagentService({ bus }),
     history: new FakeHistoryService(),
+    sessions,
+    limits: new FakeLimitService({ bus }),
+    crew: new FakeCrewService({ bus, sessions }),
+    docs,
+    anchors: new FakeCodeAnchorService({ bus, docs }),
     // 终端的 agent 看状态机里 track 的，目录看建终端时的 cwd
     skills: new FakeSkillsService({
       bus,
@@ -152,6 +168,11 @@ export function createFakeApi(opts: CreateFakeApiOptions = {}): FakeApi {
     skills: svc('skills'),
     subagents: svc('subagents'),
     history: svc('history'),
+    sessions: svc('sessions'),
+    limits: svc('limits'),
+    crew: svc('crew'),
+    docs: svc('docs'),
+    anchors: svc('anchors'),
     on: (type, listener) => bus.on(type, listener),
     onTerminalData: (listener) => bus.onTerminalData(listener),
     contractsVersion: CONTRACTS_VERSION,

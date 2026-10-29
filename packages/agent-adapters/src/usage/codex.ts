@@ -10,8 +10,11 @@
 //   - 模型在 type:"turn_context" 的 payload.model；会话 id 在 type:"session_meta" 的 payload.id。
 //   - 另有 type:"token_usage_record"（每次响应一条，含压缩请求），和 token_count 的累计略有出入；
 //     我们跟 codex 自己的 /status 一样用 token_count。
+//   - 额度用完（PL3，DR-63）：那一轮的 event_msg task_complete 带 error { message: "You've hit your usage limit. … try again at
+//     Aug 2nd, 2026 1:12 PM.", codex_error_info: "usage_limit_exceeded" }；恢复时间取 rate_limits 里用到 100% 的那个窗口的
+//     resets_at，没有就从 message 里的 “try again at …” 读。之后有成功的请求（token_count 带 info）或没有 error 的 task_complete 就算恢复了。
 
-import type { RateLimitWindow, TokenCounts } from '@agentdeck/contracts';
+import type { RateLimitWindow, TokenCounts, UsageLimit } from '@agentdeck/contracts';
 import type { Json, ParsedUsage, UsageParser } from './types.ts';
 import { contextOf, isoOf, num, obj, parseLine, str } from './types.ts';
 
@@ -49,9 +52,17 @@ export class CodexUsageParser implements UsageParser {
   private rateLimits: ParsedUsage['rateLimits'] = null;
   private updatedAt: string | null = null;
   private sessionId: string | null = null;
+  private limit: UsageLimit | null = null;
 
   feed(line: string): void {
-    if (!line.includes('token_count') && !line.includes('"turn_context"') && !line.includes('"session_meta"') && !line.includes('"compacted"')) return;
+    if (
+      !line.includes('token_count') &&
+      !line.includes('"turn_context"') &&
+      !line.includes('"session_meta"') &&
+      !line.includes('"compacted"') &&
+      !line.includes('task_complete')
+    )
+      return;
     const d = parseLine(line);
     if (!d) return;
     const p = obj(d['payload']);
@@ -67,6 +78,7 @@ export class CodexUsageParser implements UsageParser {
         return;
       case 'event_msg':
         if (p?.['type'] === 'token_count') this.tokenCount(p, d['timestamp']);
+        else if (p?.['type'] === 'task_complete') this.taskComplete(p, d['timestamp']);
         return;
     }
   }
@@ -80,6 +92,8 @@ export class CodexUsageParser implements UsageParser {
     }
     const info = obj(p['info']);
     if (!info) return;
+    // 碰到上限之后又有成功的请求：额度恢复了
+    this.limit = null;
     const totalRaw = obj(info['total_token_usage']);
     const lastRaw = obj(info['last_token_usage']);
     const total = countsOf(totalRaw);
@@ -100,8 +114,28 @@ export class CodexUsageParser implements UsageParser {
     this.updatedAt = isoOf(at) ?? this.updatedAt;
   }
 
+  private taskComplete(p: Json, at: unknown): void {
+    const err = obj(p['error']);
+    if (!err) {
+      this.limit = null;
+      return;
+    }
+    if (str(err['codex_error_info']) !== 'usage_limit_exceeded') return;
+    const detail = str(err['message']);
+    const windows = [this.rateLimits?.primary, this.rateLimits?.secondary].filter((w): w is RateLimitWindow => !!w);
+    const full = windows.find((w) => w.usedPercent >= 100) ?? null;
+    const minutes = full?.windowMinutes ?? null;
+    this.limit = {
+      kind: minutes === 300 ? 'five_hour' : minutes === 10080 ? 'weekly' : full ? 'other' : 'five_hour',
+      resetsAt: full?.resetsAt ?? codexRetryAt(detail),
+      at: isoOf(at),
+      detail,
+    };
+  }
+
   snapshot(): ParsedUsage {
     return {
+      limit: this.limit ? { ...this.limit } : null,
       model: this.model,
       total: this.total ? { ...this.total } : null,
       last: this.last ? { ...this.last } : null,
@@ -112,4 +146,13 @@ export class CodexUsageParser implements UsageParser {
       sessionId: this.sessionId,
     };
   }
+}
+
+/** codex 的 “try again at Aug 2nd, 2026 1:12 PM.” → ISO（按本机时区）。读不出为 null。 */
+export function codexRetryAt(message: string | null): string | null {
+  const m = message ? /try again at ([^.]+(?:\.\d+)?[^.]*?)(?:\.|$)/i.exec(message) : null;
+  if (!m) return null;
+  const text = m[1]!.replace(/(\d+)(st|nd|rd|th)\b/, '$1').trim();
+  const t = Date.parse(text);
+  return Number.isNaN(t) ? null : new Date(t).toISOString();
 }

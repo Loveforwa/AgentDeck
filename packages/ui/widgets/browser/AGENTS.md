@@ -40,6 +40,9 @@ registerWindow(browserWindowType); // 组装时调用；registerWindow 由 packa
 - 没有小桥时（普通浏览器里跑 dev 页面、注入失败）也能用：后退前进只走网页窗口自己打开过的地址，刷新靠重建 iframe，地址栏跟不上 iframe 里的跳转。
 - 小桥报上来的地址只认 http(s)；本地文件地址只在本来就开着本地文件时才认，防止网页把本地路径塞进 `data.url`。
 - iframe 的 sandbox 不给 `allow-top-navigation`：嵌进来的页面不能把白板页面跳走。
+- 本地 PDF（IS-124，2026-10-29）：iframe 不加 sandbox（沙盒化的 frame 里 Chromium 不起自带的 PDF 查看器；`agentdeck-file://` 的来源是不透明的 null，碰不到白板页面）。`…pdf#page=N` 打开在第 N 页；开着同一个 PDF 再换 `#page` 时只改 # 不跳，界面带一个变化的查询串（`?r=n#page=N`，`pdfJumpSrc`）重新载入，小桥报回来时去掉 `?r=n`，`data.url` 里没有它。
+- 本地文件地址（`data.url` 的路径形式）里第一个 `?` 或 `#` 起算后缀，主进程 `prepare` / `ping` 也这样算；文件名本身带 `?`、`#` 的只能用 `file://`（`%23`）打开。
+- pptx、docx、xlsx、Keynote、压缩包这类 Chromium 只会当下载处理的本地文件不载入，显示 “This file can’t be shown on the board.” + Open in default app（`isUnshownFile`）。
 
 ## webview 模式（IS-44，2026-10-24）
 

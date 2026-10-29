@@ -19,6 +19,12 @@ export type AgentSessionId = Brand<string, 'AgentSessionId'>;
 export type RequestId = Brand<string, 'RequestId'>;
 /** 白板上的一个窗口组（MVP v3 · N1、N2：agent 一次开出的子终端和开它们的主 agent）。N1 加。 */
 export type WindowGroupId = Brand<string, 'WindowGroupId'>;
+/** AgentDeck 自己的一条 Session（M9 · SE0，见 session.ts）。和 AgentSessionId（agent 自己的会话记录）不是一回事。 */
+export type SessionId = Brand<string, 'SessionId'>;
+/** 一个集群（M8 · CR0，见 crew.ts）。SE0 加，Session 的 origin 要用。 */
+export type CrewId = Brand<string, 'CrewId'>;
+/** 集群任务表里的一条任务，例如 'T4'（CR0）。SE0 加。 */
+export type CrewTaskId = Brand<string, 'CrewTaskId'>;
 
 /** 内置的 agent，加上任意自定义命令。 */
 export type AgentKind = 'claude' | 'codex' | 'gemini' | 'shell' | 'custom' | (string & {});
