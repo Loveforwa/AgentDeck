@@ -130,6 +130,8 @@ export class ApprovalsModel {
   /** 每个终端窗口上次看到的 terminalId，换了 id 时补推单独的设置。 */
   private readonly seenTerminalIds = new Map<WindowId, TerminalId | null>();
   private autoSeq = 0;
+  /** 取 autoApproveSupport 的次数：晚回来的旧结果不盖新的。 */
+  private supportSeq = 0;
 
   constructor(
     private readonly c: BoardController,
@@ -191,21 +193,33 @@ export class ApprovalsModel {
         });
       }),
       this.c.store.subscribe((s) => this.watchTerminalIds(s)),
+      // IS-153：支持情况看主进程检测到的 agent 版本（超过核对版本就不按键）。界面启动时取的那次可能早于检测完，
+      // 白板的 agent 列表（agents.list 等检测完才回）一到就再取一次
+      this.c.store.subscribe((s, prev) => {
+        if (s.agents !== prev.agents) void this.refreshSupport();
+      }),
     );
     this.watchTerminalIds(this.c.state);
 
     const seq = this.autoSeq;
-    const [auto, support, needsYou] = await Promise.all([
+    const [auto, needsYou] = await Promise.all([
       this.api.autoApproveState().catch(() => null),
-      this.api.autoApproveSupport().catch(() => null),
       this.api.autoApproveNeedsYou().catch(() => []),
+      this.refreshSupport(),
     ]);
     this.set((s) => ({
       // 启动期间已经收到的 auto-approve-changed 比这里新，保留
       ...(auto && seq === this.autoSeq ? { auto } : {}),
-      support,
       needsYou: { ...Object.fromEntries(needsYou.map((n) => [n.terminalId, { reason: n.reason, request: n.request }])), ...s.needsYou },
     }));
+  }
+
+  /** 重新取每种 agent 能不能开。取不到时保留上次的。 */
+  async refreshSupport(): Promise<void> {
+    const seq = ++this.supportSeq;
+    const support = await this.api.autoApproveSupport().catch(() => null);
+    if (seq !== this.supportSeq) return;
+    if (support || this.state.support === null) this.set({ support });
   }
 
   dispose(): void {
@@ -278,16 +292,27 @@ export class ApprovalsModel {
     return s.support === null ? AUTO_APPROVE_AGENTS.includes(agent) : false;
   }
 
-  /** 这个窗口实际开没开（单独设置优先，其次看它所在的框）。不能自动批准的窗口总是 false。 */
+  /**
+   * 开关算不算在这个窗口上：能自动批准的，加上本来能、现在服务说不能的（IS-154：agent 升到没核对过的版本，
+   * 主进程保留开关但不按键）。后者照样挂书签，要批准时变 Needs you（unsupported），卡片里能 Turn off。
+   * kimi、shell、自定义命令这类一直不能的不算（IS-68）。
+   */
+  private counts(w: WindowNode, s: ApprovalsState): boolean {
+    if (this.canAutoApprove(w, s)) return true;
+    const agent = isAgentTerminal(w) ? agentOf(w) : null;
+    return agent !== null && AUTO_APPROVE_AGENTS.includes(agent);
+  }
+
+  /** 这个窗口实际开没开（单独设置优先，其次看它所在的框）。一直不能自动批准的窗口总是 false。 */
   windowOn(w: WindowNode, s: ApprovalsState = this.state): boolean {
     const id = terminalIdOf(w);
-    return id !== null && this.canAutoApprove(w, s) && isAutoApproveOn(s.auto, id, w.workspaceId);
+    return id !== null && this.counts(w, s) && isAutoApproveOn(s.auto, id, w.workspaceId);
   }
 
   /** 从什么时候开着。 */
   since(w: WindowNode, s: ApprovalsState = this.state): string | null {
     const id = terminalIdOf(w);
-    if (!id || !this.canAutoApprove(w, s)) return null;
+    if (!id || !this.counts(w, s)) return null;
     const own = s.auto.terminals.find((t) => t.terminalId === id);
     if (own) return own.on ? own.since : null;
     return s.auto.workspaces.find((x) => x.workspaceId === w.workspaceId)?.since ?? null;

@@ -414,8 +414,8 @@ async function main(): Promise<void> {
     for (const w of board.windows) {
       const data = w.type === 'terminal' ? (w.data as Partial<TerminalWindowData> | null) : null;
       if (!data?.terminalId || typeof data.autoApprove !== 'boolean') continue;
-      // 不支持的 agent（例如 kimi）会抛 unsupported，跳过它，不影响别的终端
-      await rt.approvals.setTerminalAutoApprove(data.terminalId, data.autoApprove).catch(() => undefined);
+      // IS-154：现在不支持的 agent（升到没核对过的版本）也保留开关，不按键、要批准时报 Needs you
+      rt.approvals.restoreTerminalAutoApprove(data.terminalId, data.autoApprove);
     }
   };
   void Promise.all([terminals.list(), rt.agents.list()]).then(

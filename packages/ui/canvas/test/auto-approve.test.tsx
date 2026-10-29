@@ -421,6 +421,63 @@ describe('X3 Approve all', () => {
   });
 });
 
+describe('IS-153 / IS-154: an agent upgraded past the checked version', () => {
+  /** 检测完之前服务还按声明报 claude 能用钩子；检测完（agents.list 回来）以后报 Untested on 3.0.0。 */
+  function upgradedClaude(api: FakeApi) {
+    const original = api.approvals.autoApproveSupport.bind(api.approvals);
+    const list = api.agents.list.bind(api.agents);
+    let detected = false;
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    vi.spyOn(api.agents, 'list').mockImplementation(async () => {
+      await gate;
+      detected = true;
+      return list();
+    });
+    vi.spyOn(api.approvals, 'autoApproveSupport').mockImplementation(async () =>
+      (await original()).map((x) => (detected && x.agent === 'claude' ? { ...x, method: 'unsupported' as const, verified: false, note: 'Untested on 3.0.0' } : x)),
+    );
+    return release;
+  }
+
+  it('IS-153: the menu follows the support the service reports once agents are detected, not the one from before', async () => {
+    const api = createFakeApi();
+    const release = upgradedClaude(api);
+    const c = new BoardController({ api, registry: registry() });
+    const starting = c.start();
+    await waitFor(() => expect(c.approvals.state.support?.find((x) => x.agent === 'claude')?.method).toBe('hook'));
+    release();
+    await starting;
+    await waitFor(() => expect(c.approvals.supportOf('claude')?.method).toBe('unsupported'));
+    expect(item(windowMenu(c, CLAUDE), 'Auto-approve')).toMatchObject({ disabled: true, hint: 'Untested on 3.0.0' });
+    c.dispose();
+  });
+
+  it('IS-154: a saved switch on a downgraded agent keeps its bookmark, turns Needs you (Not supported) when it asks, and Turn off still works', async () => {
+    const api = createFakeApi();
+    upgradedClaude(api)();
+    // claude 在等一条批准（先进等待再开开关：假服务对开着的终端会自己批掉，真服务对不支持的不按键）
+    const request = api.scenario.agentNeedsApproval(T.loginClaude, { command: 'pnpm test' });
+    // 主进程按白板恢复了开关（restoreTerminalAutoApprove，不检查支持）
+    await api.approvals.setTerminalAutoApprove(T.loginClaude, true);
+    const c = new BoardController({ api, registry: registry() });
+    render(<Workbench api={api} controller={c} />);
+    await waitFor(() => expect(c.approvals.supportOf('claude')?.method).toBe('unsupported'));
+    const bookmark = () => document.querySelector<HTMLElement>(`[data-window-id="${CLAUDE}"] .ad-auto-approve-mark`);
+    await waitFor(() => expect(bookmark()?.textContent).toBe('Auto-approve'));
+    expect(bookmark()!.title).toBe('Untested on 3.0.0');
+    // 菜单里灰掉、写原因（灰掉的插件项不打钩）；开着的看书签，关它走书签的卡片
+    expect(item(windowMenu(c, CLAUDE), 'Auto-approve')).toMatchObject({ disabled: true, checked: false, hint: 'Untested on 3.0.0' });
+    act(() => api.bus.emit({ type: 'approval.needs-you', terminalId: T.loginClaude, reason: 'unsupported', request }));
+    await waitFor(() => expect(bookmark()?.textContent).toBe('Needs you'));
+    expect(bookmark()!.title).toMatch(/^Not supported/);
+    fireEvent.click(bookmark()!);
+    fireEvent.click(await screen.findByRole('button', { name: 'Turn off' }));
+    await waitFor(() => expect(bookmark()).toBeNull());
+    c.dispose();
+  });
+});
+
 describe('restore and helpers', () => {
   it('does not push saved settings again on start (desktop restores), but does when a terminal gets a new terminalId', async () => {
     const api = createFakeApi();

@@ -155,6 +155,19 @@ export class ApprovalServiceImpl implements ApprovalService {
     if (on === true && t && this.strategy(t.agent).method === 'unsupported') {
       throw new AgentDeckError({ code: 'unsupported', message: this.strategy(t.agent).note ?? `Auto-approve is not supported for ${t.agent}` });
     }
+    this.applyTerminal(terminalId, on, t);
+  }
+
+  /**
+   * 重开应用时按白板恢复一个终端的开关（apps/desktop 调，不在 IPC 上）。和 setTerminalAutoApprove 不同，
+   * agent 现在不支持（例如升到没核对过的版本，IS-154）也照样记下：不按键，要批准时报 needs-you（unsupported），
+   * 界面的书签变 Needs you，用户看得出为什么不管用，也能自己关掉。
+   */
+  restoreTerminalAutoApprove(terminalId: TerminalId, on: boolean | null): void {
+    this.applyTerminal(terminalId, on, this.opts.status.tracked().find((x) => x.terminalId === terminalId));
+  }
+
+  private applyTerminal(terminalId: TerminalId, on: boolean | null, t: TrackedTerminal | undefined): void {
     if (this.scopes.setTerminal(terminalId, on, t?.workspaceId ?? null, this.iso())) this.emitState();
     if (t && this.scopes.isOn(terminalId, t.workspaceId)) this.sweep([t]);
     this.updateNeedsYou(terminalId);

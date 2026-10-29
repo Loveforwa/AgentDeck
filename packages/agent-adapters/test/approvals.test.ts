@@ -197,6 +197,24 @@ describe('decide (hook answer for claude / codex)', () => {
     track('k' as TerminalId, 'kimi', W1);
     await expect(svc.setTerminalAutoApprove('k' as TerminalId, true)).rejects.toMatchObject({ code: 'unsupported' });
   });
+
+  it('IS-154: restoring a saved switch keeps it even when the agent is not supported now; no keys, needs-you says unsupported', async () => {
+    const K = 'k' as TerminalId;
+    track(K, 'kimi', W1);
+    svc.restoreTerminalAutoApprove(K, true);
+    expect(isAutoApproveOn(await svc.autoApproveState(), K, W1)).toBe(true);
+    expect(ofType('approval.auto-approve-changed')).toHaveLength(1);
+    const p = ask(K, 'pnpm test');
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(sent).toEqual([]);
+    expect(svc.decide(hook(K, 'kimi', bash('pnpm test')))).toBe('none');
+    expect(await svc.autoApproveNeedsYou()).toEqual([{ terminalId: K, reason: 'unsupported', request: p }]);
+    expect(ofType('approval.needs-you').at(-1)).toMatchObject({ terminalId: K, reason: 'unsupported' });
+    // 关掉照常
+    await svc.setTerminalAutoApprove(K, null);
+    expect(isAutoApproveOn(await svc.autoApproveState(), K, W1)).toBe(false);
+    expect(ofType('approval.needs-you').at(-1)).toMatchObject({ terminalId: K, reason: null });
+  });
 });
 
 describe('key fallback and couldnt-approve', () => {

@@ -172,7 +172,7 @@ test('TC-81 after the limit you take over: the terminal is marked took-over and 
     )
     .toContain('took-over');
   await expect.poll(() => limitsList(deck)).toEqual([]);
-  // 书签收起（“Not resumed · you took over” 只闪一下，见下一个测试）
+  // 书签写着 “Not resumed · you took over” 停几秒再收起（见下一个测试）
   await expect(mark).toHaveCount(0, { timeout: 30_000 });
 
   // 2. 等到恢复时间 + 宽限之后：AgentDeck 没往这个终端发东西（sendKeys 没调用：假 codex 只收到你打的那几行）
@@ -181,12 +181,16 @@ test('TC-81 after the limit you take over: the terminal is marked took-over and 
   await deck.screenshot('after-reset');
 });
 
-// 已知缺口（IS 待登记）：LimitService 了结一个账号时先带最后的状态发一次 limits.changed、紧接着又发一次去掉它的列表（同一个 tick），
-// 界面（LimitsModel）照单全收，书签在 “Not resumed · you took over” 上停不到一帧就收起了。用例要的是写着这句、几秒后再收起。
-// “Resumed” 也一样看不到。
-test.fail('TC-81 (known gap) the bookmark says “Not resumed · you took over” for a few seconds before it goes away', async ({ deck }) => {
+// IS-155：LimitService 了结一个账号时先带最后的状态发一次 limits.changed、紧接着又发一次去掉它的列表（同一个 tick）；
+// 界面（LimitsModel）把了结的终端按最后的样子多留 LINGER_MS（5 秒）再收起。“Resumed” 也一样。
+test('TC-81 the bookmark says “Not resumed · you took over” for a few seconds before it goes away', async ({ deck }) => {
   const { codex, mark } = await pausedCodex(deck);
   await deck.focusWindow(codex.windowId);
   await deck.typeLine("let's do something else");
   await expect(mark).toHaveText('Not resumed · you took over', { timeout: 10_000 });
+  await expect(mark).toHaveAttribute('data-state', 'took-over');
+  await deck.screenshot('took-over');
+  const shownAt = Date.now();
+  await expect(mark).toHaveCount(0, { timeout: 15_000 });
+  expect(Date.now() - shownAt).toBeGreaterThan(3000);
 });

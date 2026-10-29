@@ -3,11 +3,11 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import type { MenuEntry, MenuItem } from '@agentdeck/ui-kit';
-import type { AccountLimit, LimitedTerminal, TerminalWindowData, WindowComponentProps, WindowId } from '@agentdeck/contracts';
+import type { AccountLimit, AgentDeckApi, LimitedTerminal, TerminalWindowData, WindowComponentProps, WindowId, WindowNode } from '@agentdeck/contracts';
 import { createFakeApi, FAKE_RESUME_PROMPT, SAMPLE, type FakeApi } from '@agentdeck/fakes';
 import { BoardController } from '../src/controller.ts';
 import { PLUGINS, pluginMenuSection } from '../src/plugins/index.ts';
-import { clock, resumeActions, resumeLabel, toggledAutoResume, windowAutoResume, type LimitView } from '../src/plugins/auto-resume-model.ts';
+import { clock, LimitsModel, LINGER_MS, resumeActions, resumeLabel, toggledAutoResume, windowAutoResume, type LimitView } from '../src/plugins/auto-resume-model.ts';
 import { menuItems } from '../src/react/BoardMenu.tsx';
 import { Workbench } from '../src/react/Workbench.tsx';
 import { createWindowRegistry } from '../src/registry.ts';
@@ -130,6 +130,52 @@ describe('Auto-resume bookmark text (PL6)', () => {
 });
 
 // ---- 开关 ----
+
+describe('IS-155: the last state stays on the bookmark for a few seconds after LimitService drops it', () => {
+  it('took-over lingers LINGER_MS, then goes; a terminal that comes back in the list is shown from the list', async () => {
+    vi.useFakeTimers();
+    try {
+      let emit: (limits: AccountLimit[]) => void = () => undefined;
+      const api = {
+        limits: { list: async () => [] },
+        on: (type: string, fn: (e: { limits: AccountLimit[] }) => void) => {
+          if (type === 'limits.changed') emit = (limits) => fn({ limits });
+          return () => undefined;
+        },
+      } as unknown as AgentDeckApi;
+      const m = new LimitsModel(api, () => undefined);
+      await m.start();
+      const node = { id: CODEX, type: 'terminal', workspaceId: W.agentdeckLogin, data: { terminalId: T.loginCodex, agent: 'codex' } } as unknown as WindowNode;
+      const paused = view();
+      emit([paused.account]);
+      expect(m.viewOf(node)?.terminal.state).toBe('interrupted');
+      // 同一刻：先带最后的状态，紧接着去掉它
+      const tookOver = view({ state: 'took-over' });
+      emit([tookOver.account]);
+      emit([]);
+      expect(m.state.list).toEqual([]);
+      expect(m.viewOf(node)?.terminal.state).toBe('took-over');
+      expect(m.marked(node)).toBe(true);
+      vi.advanceTimersByTime(LINGER_MS - 1);
+      expect(m.viewOf(node)?.terminal.state).toBe('took-over');
+      vi.advanceTimersByTime(1);
+      expect(m.viewOf(node)).toBeNull();
+      // 还在等着的终端被去掉（不是了结）：直接收起
+      emit([paused.account]);
+      emit([]);
+      expect(m.viewOf(node)).toBeNull();
+      // 留着的时候又撞上：按新的列表画，到点也不会被收掉
+      emit([view({ state: 'resumed' }).account]);
+      emit([]);
+      emit([paused.account]);
+      vi.advanceTimersByTime(LINGER_MS);
+      expect(m.viewOf(node)?.terminal.state).toBe('interrupted');
+      m.dispose();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
 
 describe('Auto-resume switch: terminal → frame → board, off by default (PL6)', () => {
   it('lists it for agent terminals (pi, kimi, omp too), frames and the blank board; not for shell', async () => {

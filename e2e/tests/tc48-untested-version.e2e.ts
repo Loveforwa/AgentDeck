@@ -3,7 +3,7 @@
 // 换成报 18.12.6 的版本（重写 PATH 里的 omp，修改时间也变了）后重启 AgentDeck。omp 的扩展（真的 agentdeck-pi-extension.mjs）
 // 照常报状态：要批准时进 needs-approval，AgentDeck 不发 Up Enter，omp 等你自己按。
 // Settings › Agents 页还没做（SettingsDialog 只有 General 等页），那一步只核对它要显示的数据（agents.list 的 report）。
-// 第二个测试是已知缺口（test.fail）：PLUGINS 里的 Auto-approve 没灰掉、书签没变 Needs you，见里面的注释。
+// 第二个测试不刷新页面：重启后 PLUGINS 里的 Auto-approve 直接灰掉（IS-153），保存的开关还在、书签变 Needs you（IS-154）。
 import type { Page } from '@playwright/test';
 import type { Deck } from '../support/deck.ts';
 import { expect, test } from '../support/fixtures.ts';
@@ -56,8 +56,7 @@ test('TC-48 omp newer than the checked version: approve keys off with “Unteste
   );
   expect(support.find((s) => s.agent === 'omp')).toEqual(expect.objectContaining({ method: 'unsupported', note: 'Untested on 18.12.6' }));
 
-  // 3. PLUGINS 里 Auto-approve 灰掉、hint 写 Untested on 18.12.6：界面启动时取的 support 是检测完之前的（见下一个测试），
-  // 刷新一次页面后再看
+  // 3. PLUGINS 里 Auto-approve 灰掉、hint 写 Untested on 18.12.6；刷新页面后也一样（不刷新的见下一个测试）
   await page.reload();
   await page.locator('.react-flow').first().waitFor();
   await expect(deck.windowEl(omp.windowId)).toBeVisible();
@@ -86,13 +85,9 @@ test('TC-48 omp newer than the checked version: approve keys off with “Unteste
   await deck.waitForStatus(omp.terminalId, 'idle');
 });
 
-// 已知缺口（IS 待登记）：
-// 1. 界面的 ApprovalsModel 只在白板读出来时取一次 autoApproveSupport()，那时主进程还没检测完 agent（omp 还按声明算能按键），
-//    之后不再取：重启后不刷新页面，PLUGINS 里的 Auto-approve 仍然能点，没有 “Untested on 18.12.6”。
-// 2. 主进程启动时按白板恢复 Auto-approve（restoreAutoApprove），omp 不支持了 setTerminalAutoApprove 抛 unsupported 被吞掉，
-//    这个终端的开关就没了；界面对不支持的 agent 也不画书签（canAutoApprove）。所以书签直接消失，不会变成 Needs you，
-//    也没有 approval.needs-you（reason unsupported）。安全上没问题（不发键），但用户看不出 Auto-approve 为什么不管用了。
-test.fail('TC-48 (known gap) right after the restart: PLUGINS greys out Auto-approve and the bookmark turns into Needs you', async ({ deck }) => {
+// IS-153：界面检测完 agent（白板的 agent 列表到了）再取一次 autoApproveSupport()，不用刷新页面。
+// IS-154：主进程按白板恢复时保留开关（restoreTerminalAutoApprove），不按键；书签还在，要批准时变 Needs you（unsupported）。
+test('TC-48 right after the restart: PLUGINS greys out Auto-approve and the bookmark turns into Needs you', async ({ deck }) => {
   const { page, omp } = await upgradedOmp(deck);
   await rightClickTitlebar(deck, omp.windowId);
   const item = page.getByRole('menuitemcheckbox', { name: /^Auto-approve/ });
@@ -104,4 +99,8 @@ test.fail('TC-48 (known gap) right after the restart: PLUGINS greys out Auto-app
   const mark = deck.windowEl(omp.windowId).locator('.ad-auto-approve-mark');
   await expect(mark).toHaveText('Needs you', { timeout: 10_000 });
   await expect(mark).toHaveAttribute('title', /^Not supported/);
+  await deck.screenshot('needs-you');
+  // AgentDeck 一个键都不发
+  await page.waitForTimeout(3000);
+  expect(fakeLog(deck, omp.terminalId).filter((e) => e.kind === 'key' || e.kind === 'approved')).toEqual([]);
 });

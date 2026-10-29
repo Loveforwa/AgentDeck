@@ -74,7 +74,8 @@ export function AutoResumeMark({ windowId }: { windowId: WindowId }) {
   const node = useBoardState((s) => s.windows.find((w) => w.id === windowId));
   // selector 只取 store 里已有的引用（新对象会让 zustand 每次都重画）
   const list = useLimits(c, (s) => s.list);
-  const view = c.limits.viewOf(node, { list, popover: null });
+  const lingering = useLimits(c, (s) => s.lingering);
+  const view = c.limits.viewOf(node, { list, lingering, popover: null });
   const open = useLimits(c, (s) => s.popover === windowId);
   const now = useMinuteTick();
   // Auto-approve 书签挂着时排在它后面：量它的右边

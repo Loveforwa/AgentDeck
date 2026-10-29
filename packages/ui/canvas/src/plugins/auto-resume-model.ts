@@ -7,6 +7,8 @@
 // - 开关：终端 → 框 → 白板（TerminalWindowData.autoResume、FrameNode.autoResume、BoardState.autoResume），默认关，随白板保存，
 //   LimitService 每次检查时读白板；在上一级点开关会清掉下一级单独的设置（框上关掉 = 框里的都关，同 Auto-approve 的规矩）；
 // - 书签只在这个终端出现在某个受限账号里时挂（开着但没撞上不挂），账号从列表里消失就收起；
+//   了结时的最后一句（Resumed、Not resumed · you took over 这些）多留 LINGER_MS 再收起（IS-155：服务发完最后状态
+//   紧接着就把它去掉，不留的话一帧都看不到）；
 // - 卡片里改这一次续跑发的文字：LimitService.setMessage（contracts 0.1.23），预填 LimitedTerminal.defaultMessage。
 //
 // 这里不碰 React。书签和卡片在 auto-resume.tsx。
@@ -233,9 +235,17 @@ export function messageOf(t: LimitedTerminal): string {
 
 // ---- 状态 ----
 
+/** 了结后书签再留多久（毫秒）。 */
+export const LINGER_MS = 5000;
+
+/** 了结了的状态：从列表里去掉时书签带着它多留一会儿。 */
+const SETTLED: readonly LimitedTerminal['state'][] = ['resumed', 'took-over', 'skipped', 'handed-off', 'gave-up'];
+
 export interface LimitsState {
   /** LimitService 现在的受限账号（limits.list + limits.changed）。 */
   list: AccountLimit[];
+  /** 刚了结、服务已经去掉的终端，各带着最后的样子（只这一个终端），到点去掉。 */
+  lingering: AccountLimit[];
   /** 开着卡片的窗口。 */
   popover: WindowId | null;
 }
@@ -245,9 +255,10 @@ export interface LimitsState {
  * 主进程没有 limits（老版本、假实现没给）时一直是空的。
  */
 export class LimitsModel {
-  readonly store: StoreApi<LimitsState> = createStore<LimitsState>()(() => ({ list: [], popover: null }));
+  readonly store: StoreApi<LimitsState> = createStore<LimitsState>()(() => ({ list: [], lingering: [], popover: null }));
   private readonly unsubs: (() => void)[] = [];
   private events = 0;
+  private readonly timers = new Map<TerminalId, ReturnType<typeof setTimeout>>();
 
   constructor(
     private readonly api: AgentDeckApi,
@@ -264,23 +275,57 @@ export class LimitsModel {
     this.unsubs.push(
       api.on('limits.changed', (e) => {
         this.events += 1;
-        this.store.setState({ list: e.limits });
+        this.setList(e.limits);
       }),
     );
     const before = this.events;
     const list = await api.limits.list().catch(() => null);
     // 已经来了 limits.changed 的，以事件为准（更新）
-    if (list && this.events === before) this.store.setState({ list });
+    if (list && this.events === before) this.setList(list);
   }
 
   dispose(): void {
     for (const u of this.unsubs.splice(0)) u();
+    for (const t of this.timers.values()) clearTimeout(t);
+    this.timers.clear();
   }
 
-  /** 这个窗口的终端在受限账号里的样子；不在为 null。 */
+  /** 换上服务的新列表。上一份里已经了结、这一份里没了的终端留 LINGER_MS；又出现在列表里的不再留。 */
+  private setList(list: AccountLimit[]): void {
+    const prev = this.state;
+    const present = new Set(list.flatMap((a) => a.terminals.map((t) => t.terminalId)));
+    const gone = prev.list.flatMap((a) =>
+      a.terminals.filter((t) => !present.has(t.terminalId) && SETTLED.includes(t.state)).map((t) => ({ ...a, terminals: [t] })),
+    );
+    for (const g of gone) {
+      const id = g.terminals[0]!.terminalId;
+      clearTimeout(this.timers.get(id));
+      this.timers.set(
+        id,
+        setTimeout(() => {
+          this.timers.delete(id);
+          this.store.setState((s) => ({ lingering: s.lingering.filter((x) => x.terminals[0]?.terminalId !== id) }));
+        }, LINGER_MS),
+      );
+    }
+    for (const id of present) {
+      const t = this.timers.get(id);
+      if (t !== undefined) clearTimeout(t);
+      this.timers.delete(id);
+    }
+    const goneIds = new Set(gone.map((g) => g.terminals[0]!.terminalId));
+    const kept = prev.lingering.filter((x) => {
+      const id = x.terminals[0]?.terminalId;
+      return id !== undefined && !present.has(id) && !goneIds.has(id);
+    });
+    this.store.setState({ list, lingering: [...kept, ...gone] });
+  }
+
+  /** 这个窗口的终端在受限账号里的样子（刚了结的也算，见 LINGER_MS）；不在为 null。 */
   viewOf(node: WindowNode | undefined, s: LimitsState = this.state): LimitView | null {
     if (!node || !isAgentTerminal(node)) return null;
-    return viewOf(s.list, terminalIdOf(node));
+    const id = terminalIdOf(node);
+    return viewOf(s.list, id) ?? viewOf(s.lingering, id);
   }
 
   /** 底边挂不挂书签（框要给它留地方）。 */
