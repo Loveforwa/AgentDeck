@@ -154,6 +154,9 @@ app.test 像 github 带登录和第三方登录弹窗、auth.test 是授权页�
 | TC-68 | tc68-send-to-waiting | A 用 send_to_terminal 往等批准的 B 打 1 → “This terminal is waiting for the user. Use the inbox.”、B 没收到键；Approve all… 批准 B（ApprovalRecord）后再发一句正常送到 |
 | TC-80、TC-81 | tc80-tc81-codex-limits | 三个 codex 同一个 CODEX_HOME：一组（2 个 interrupted、1 个 idle）、书签、卡片 Don’t resume → Skipped、恢复 + 5 秒宽限后只续 T5、空闲的不发；再撞两个都续、间隔 ≥ 2 秒按先后；limits.cancel 后都不发。撞完自己打字 → took-over、到点不发。书签写 “Not resumed · you took over” 停几秒（3 秒以上）再收起（IS-155） |
 | TC-109 | tc109-send-sql | codex 里拖选多行 SQL → 右键标题栏 Send selection to ▸（按框分组）› harlequin · shop dev → 原样贴进编辑器、没按回车、焦点过去；没选中时灰掉 |
+| IS-02（TC-02 回滚） | is02-worktree-rollback | 真右键 Add project… / New workspace… → .env 读不了（chmod 000），worktree add 之后复制失败 → 框上 EACCES + Retry、没有工作区框；worktree list、分支、refs、worktree 目录、.git/worktrees 都回到原样 → 改好后 Retry 建好、.env 复制了 |
+| IS-23（TC-09 补充） | is23-summary-restore | Shell（80 行输出）和假 claude 都拉成摘要卡（Shell 卡上正好最后 3 行，tmux 没有客户端）→ 卡片期间 claude 出字 → 两个都单击恢复：原大小、聚焦、各一个客户端，xterm 行列数和拉小前一样、tmux 窗格同大小、屏幕和 capture-pane 一行对一行；之后输入照常 |
+| IS-27（TC-10 的强杀版） | is27-sigkill-restore | 真鼠标拖开 Shell、等自动保存进库 → kill -9 主进程 → 渲染 / GPU / utilityProcess 都退出（ps 里没有沙盒 user-data-dir 的进程）、tmux 会话在、客户端断开，应用不在时 claude 的 Stop 钩子照跑不卡 → 再打开：没有 Restore 提示、框和窗口位置不变、每个会话一个客户端、历史在、钩子（等批准 → 1 → Running → done）和 Shell 输入照常 → 再 ⌘Q 重开布局还在 |
 | TC-110 | tc110-hide-from-agents | 窗口数据 hideFromAgents（LA1 的勾还没做）→ list_terminals / list_windows 不列，read / send 报 “The user hid this terminal from agents”，一个键都没进；lazysql 照常；返回里没有密码 |
 
 `test.fail` 标着的是**已知缺口**（现在失败才算通过；修好后会报“意外通过”，那时去掉 `test.fail`）：
