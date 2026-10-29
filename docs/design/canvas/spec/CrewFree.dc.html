@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Agent 集群 · 自由模式</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.at{position:absolute}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1240px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.tag{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:11.5px;background:#F2F2EF;color:#5F5F5A}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#8A8A85}
+.pf{position:absolute;box-sizing:border-box;border:1px solid #CFCFCA;border-radius:12px;background:rgba(255,255,255,0.35)}
+.pfh{position:absolute;left:14px;top:8px;font-size:12px;color:#5F5F5A}
+.cf{position:absolute;box-sizing:border-box;border:1.5px solid #1A1A1A;border-radius:12px;background:rgba(255,255,255,0.55)}
+.cfh{position:absolute;left:0;top:0;right:0;height:40px;box-sizing:border-box;padding:0 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #E3E3E0;background:#FFFFFF;border-radius:11px 11px 0 0;font-size:12px}
+.dot{width:7px;height:7px;border-radius:50%;flex:none;box-sizing:border-box}
+.am{width:6px;height:6px;border-radius:1.5px;flex:none}
+.btn{display:inline-flex;align-items:center;height:22px;padding:0 8px;border:1px solid #D6D6D2;border-radius:6px;font-size:11px;background:#FFFFFF;color:#1A1A1A}
+.win{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;overflow:hidden;font-size:11px}
+.wt{display:flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-bottom:1px solid #EEEEEB;white-space:nowrap}
+.wb{padding:6px 9px;font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.7;color:#6B6B6B}
+.tf{position:absolute;box-sizing:border-box;border:1px solid #BDBDB8;border-radius:10px;background:rgba(255,255,255,0.5)}
+.tfh{position:absolute;left:10px;top:5px;font-size:11px;color:#3D3D3A;white-space:nowrap}
+.chip{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border:1px solid #D6D6D2;border-radius:6px;font-size:11px;background:#FFFFFF;color:#5F5F5A}
+.ex{display:flex;flex-direction:column;gap:10px;font-size:13.5px;line-height:1.65}
+.gs{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;font-size:11px;display:flex;flex-direction:column}
+.gsh{padding:7px 10px;border-bottom:1px solid #EEEEEB;font-weight:600}
+.gsr{display:flex;align-items:center;gap:6px;padding:5px 10px;white-space:nowrap}
+.sl{font-size:10px;font-weight:600;color:#8A8A85;letter-spacing:0.04em;padding:6px 10px 2px}
+.box{box-sizing:border-box;border:1px solid #E3E3E0;border-radius:8px;padding:10px 12px;background:#FFFFFF;font-size:12.5px;line-height:1.55;display:flex;flex-direction:column;gap:4px}
+.box.gate{border:1.5px dashed #BF8700}
+.arrow{font-size:18px;color:#8A8A85;align-self:center}
+</style>
+</helmet>
+<div style="width: 1760px; height: 3560px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">C6 · 自由模式：一个 Lead 按需开子 session，AgentDeck 只守安全的规矩</h1>
+      <span class="concept">2026-10-28 已定（按推荐）</span>
+    </div>
+    <p class="lead">New crew 里选 <b>No template</b>（C1 第 2 节）。没有任务表、阶段和角色表：只开一个 Lead，你在它的终端里跟它说话，它自己决定开几个子 session、开哪家、怎么写交接提示词、什么时候合。流程交给 Lead；安全和记账还是 AgentDeck 做：子 session 只能由 Lead 开、同时几个有上限、worktree 和分支由 AgentDeck 开、谁开了谁记在 AgentDeck 里、等你的事进收件箱、合回 main 永远你点。适合你在电脑前、任务形状说不清的时候；长任务和整夜跑用模板（C1–C5）。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 白板上：自由模式的集群框</span>
+    <div class="fig" style="width: 1632px; height: 900px">
+      <div class="pf" style="left: 14px; top: 14px; width: 1604px; height: 872px"></div>
+      <span class="pfh" style="left: 28px; top: 20px">agenduck · main</span>
+
+      <div class="cf" style="left: 30px; top: 44px; width: 1572px; height: 826px">
+        <div class="cfh">
+          <b style="font-size: 13px">Crew · login-fix</b>
+          <span class="tag">No template</span>
+          <span class="muted">Lead-driven</span>
+          <span style="flex: 1"></span>
+          <span style="display: inline-flex; align-items: center; gap: 5px"><span class="dot" style="background: #1A7F37"></span>2 running</span>
+          <span style="display: inline-flex; align-items: center; gap: 5px"><span class="dot" style="background: #BF8700"></span>1 needs you</span>
+          <span class="muted">· 1 merged · 3 of 3 slots · 48m</span>
+          <span class="btn">Report</span><span class="btn">Pause crew</span><span class="muted">⋯</span>
+        </div>
+
+        <div class="win" style="left: 14px; top: 54px; width: 470px; height: 500px; border: 1.5px solid #1A1A1A">
+          <div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="am" style="background: #A8503A"></span><span class="mono" style="font-weight: 500">Lead · claude</span><span style="flex: 1"></span><span class="muted">Running</span></div>
+          <div class="wb">› Login fails after a token refresh. Find out why.<br><br>● Two likely causes: the refresh races with the<br>  retry, or the new token isn’t saved before reuse.<br>  I’ll check both in parallel.<br>● session spawn --agent codex --label race<br>  ⎿ race · crew/login-fix/race · 1 of 3 slots<br>● session spawn --agent codex --label store<br>  ⎿ store · crew/login-fix/store · 2 of 3 slots<br>● session spawn --agent claude --label docs --shared<br>  ⎿ docs · shares the lead’s folder · 3 of 3<br>● session wait --any --timeout 5m<br>  ⎿ docs: idle (finished)<br>● session result docs · session close docs<br>● session wait --any<br>  ⎿ store: needs you (approval)<br><br><span style="color: #1A1A1A">store is waiting for you to approve a command;<br>it’s in Needs you. race is still running.</span></div>
+        </div>
+
+        <div class="gs" style="left: 492px; top: 54px; width: 168px; height: 500px">
+          <span class="gsh">3 subagents</span>
+          <span class="sl">OWN WORKTREE</span>
+          <span class="gsr" style="background: #EDEDEA; font-weight: 600"><span class="dot" style="background: #1A7F37"></span>sub-1 · race</span>
+          <span class="gsr" style="background: #FFF7E6"><span class="dot" style="background: #BF8700"></span>sub-2 · store</span>
+          <span class="sl">SHARED</span>
+          <span class="gsr muted"><span class="dot" style="border: 1px solid #8A8A85"></span>sub-3 · docs ✓</span>
+          <span style="flex: 1"></span>
+          <span class="gsr muted" style="border-top: 1px solid #EEEEEB; padding-top: 7px">Show all · Collapse</span>
+        </div>
+
+        <div class="tf" style="left: 680px; top: 54px; width: 430px; height: 330px"></div>
+        <span class="tfh" style="left: 692px; top: 60px">race · <span class="mono muted">crew/login-fix/race</span></span>
+        <div class="win" style="left: 692px; top: 84px; width: 406px; height: 288px">
+          <div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="am" style="background: #2F5E9E"></span><span class="mono" style="font-weight: 500">sub-1 · codex · race</span><span style="flex: 1"></span><span class="muted">Running · 9m</span></div>
+          <div class="wb">• Wrote a test that refreshes and retries at once<br>  ⎿ fails 3 of 10 runs<br>• Edited src/auth/refresh.ts: one refresh at a time<br>• Running pnpm test auth<br>  ⎿ 10 of 10 pass</div>
+        </div>
+        <div class="at" style="left: 708px; top: 384px; height: 16px; padding: 0 7px; display: flex; align-items: center; font-size: 9.5px; font-weight: 600; border-radius: 0 0 4px 4px; background: #CF222E; color: #FFFFFF">Auto-approve</div>
+
+        <div class="tf" style="left: 1126px; top: 54px; width: 430px; height: 330px"></div>
+        <span class="tfh" style="left: 1138px; top: 60px">store · <span class="mono muted">crew/login-fix/store</span></span>
+        <div class="win" style="left: 1138px; top: 84px; width: 406px; height: 288px; border: 1.5px solid #BF8700">
+          <div class="wt"><span class="dot" style="background: #BF8700"></span><span class="am" style="background: #2F5E9E"></span><span class="mono" style="font-weight: 500">sub-2 · codex · store</span><span style="flex: 1"></span><span style="color: #8A6700">Needs approval</span></div>
+          <div class="wb">• Reading src/auth/tokenStore.ts<br><br>Allow command?<br>  rm -rf .cache/auth<br><span style="color: #1A1A1A">› Yes, once</span><br>  No, tell codex what to do</div>
+        </div>
+        <span class="at" style="left: 1138px; top: 386px; width: 410px; font-size: 10.5px; color: #8A6700">收件箱里有一条；Lead 的 wait 也看得到，但不能替你批</span>
+
+        <div class="box" style="position: absolute; left: 680px; top: 420px; width: 876px">
+          <span style="font-size: 11px; font-weight: 600; color: #8A8A85; letter-spacing: 0.04em">FIRST LINES ADDED TO EVERY SUBAGENT PROMPT</span>
+          <span class="mono" style="font-size: 11px; color: #3D3D3A; line-height: 1.7">You are a subagent in crew “login-fix”, opened by its lead. Work in /…/agenduck-crews/login-fix/race on branch crew/login-fix/race.<br>Commit your work on this branch. Do not merge into other branches and do not open new sessions.<br>When you are done, end with a short summary of what you changed and what you found.</span>
+          <span class="muted" style="font-size: 11px">下面原样接 Lead 写的交接提示词。AgentDeck 只加这几行事实和安全约定，不规定做法。开了 Results 或 Compute 的集群，多 4 行 run / job / out 命令（“研究和竞赛”页 E1 第 6 节）。</span>
+        </div>
+
+        <div class="at" style="left: 14px; top: 580px; display: flex; align-items: center; gap: 8px; font-size: 11px; color: #6B6B6B">Merged into crew branch<span class="chip"><span class="mono">sub-0</span> repro test</span><span class="muted">· click to open the worktree read-only</span></div>
+        <div class="win" style="left: 14px; top: 620px; width: 470px; height: 70px">
+          <div class="wt"><span class="dot" style="border: 1px solid #8A8A85"></span><span class="mono" style="font-weight: 500">Integration</span><span class="muted mono">crew/login-fix</span></div>
+          <div class="wb">Merged sub-0 · next: race after the lead runs crew check race</div>
+        </div>
+        <span class="at muted" style="left: 14px; top: 720px; width: 1540px; font-size: 11px; line-height: 1.6">Lead 终端和它的侧边栏（N2 GroupSidebar，零件不变，多两个小标题 OWN WORKTREE / SHARED）固定在左上；有自己 worktree 的子 session 一个小框（和 C2 的任务小框是同一个零件），标题写标签和分支；共用 Lead 目录的子 session 不开小框，选中时贴在侧边栏右边；合进集群分支的收成标签。没有任务看板。集群框用 N12 自动排版。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 两种模式各管什么</span>
+    <div class="tbl" style="grid-template-columns: 220px minmax(0, 1fr) minmax(0, 1fr)">
+      <span class="th">事情</span><span class="th">模板模式（C1–C5）</span><span class="th">自由模式</span>
+      <span class="td"><b>合回 main</b></span><span class="td">永远你点</span><span class="td"><b>一样，不能取消。</b>Lead 调 done 后收件箱出 Ready to merge</span>
+      <span class="td"><b>谁能开 session</b></span><span class="td">调度器</span><span class="td"><b>只有 Lead</b>，子 session 不能再开（一层）；AgentDeck 按调用者终端认</span>
+      <span class="td"><b>同时几个</b></span><span class="td">默认 3</span><span class="td"><b>默认 3</b>（Lead 不算），超了直接拒绝，不排队</span>
+      <span class="td"><b>能开哪几家</b></span><span class="td">每个角色选一家</span><span class="td">New crew 里勾的几家；五家都能当子 session</span>
+      <span class="td"><b>worktree、分支</b></span><span class="td">调度器开</span><span class="td"><b>AgentDeck 开</b>：默认每个一个 <span class="mono">crew/&lt;name&gt;/&lt;label&gt;</span>，可选共用 Lead 的目录</span>
+      <span class="td"><b>收件箱</b></span><span class="td">关卡 + 所有终端</span><span class="td">所有终端 + Lead 的 ask + Ready to merge + 碰到 Locked paths</span>
+      <span class="td"><b>记录</b></span><span class="td">任务表</span><span class="td"><b>子 session 表</b>：谁、哪家、标签、第一条提示词、分支、状态、最后一条回复、合没合</span>
+      <span class="td"><b>重启</b></span><span class="td">对账接上</span><span class="td">一样</span>
+      <span class="td">任务表、Approve plan</span><span class="td">有</span><span class="td muted">没有</span>
+      <span class="td">检查命令</span><span class="td">每次交付必跑</span><span class="td">不自动跑；Lead 叫 AgentDeck 跑；Ready to merge 时跑一次给你看，不拦</span>
+      <span class="td">owns 越界</span><span class="td">打回</span><span class="td">只在 diff 和合并结果里标出</span>
+      <span class="td">锁接口</span><span class="td">锁 contracts，改走关卡</span><span class="td">默认不锁；填了 Locked paths 才进关卡</span>
+      <span class="td">换家审</span><span class="td">必须，最多两轮</span><span class="td muted">Lead 自己决定</span>
+      <span class="td">额度用完</span><span class="td">换下一家或等恢复</span><span class="td">告诉 Lead 恢复时间，由它决定；Lead 自己用完时整组等恢复</span>
+      <span class="td">合进集群分支</span><span class="td">调度器 merge --no-ff，冲突开 Integrator</span><span class="td">Lead 叫 merge，AgentDeck merge --no-ff，冲突把文件列回给 Lead</span>
+    </div>
+    <span class="muted" style="font-size: 12px">加粗的是安全和记账，两种模式都由 AgentDeck 守；其余是流程，自由模式交给 Lead。</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · Lead 能做的事（<span class="mono">agentdeck session</span> 和 <span class="mono">agentdeck crew</span> 命令行，只在 Lead 里打开，C7）</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start">
+      <div class="tbl" style="width: 1040px; flex: none; grid-template-columns: 210px minmax(0, 1fr) 300px">
+        <span class="th">命令</span><span class="th">做什么</span><span class="th">AgentDeck 守的规矩</span>
+        <span class="td mono">crew status</span><span class="td">集群和子 session 表、剩几个位置。Lead 压缩上下文后靠它找回来</span><span class="td">只读</span>
+        <span class="td mono">session spawn</span><span class="td">开子 session（就是 open）：agent、label、prompt、own（默认）或 shared、可选 owns</span><span class="td">只有 Lead；不超上限；只开勾上的几家；提示词前加固定说明</span>
+        <span class="td mono">session list</span><span class="td">自己开的子 session 和各自的状态</span><span class="td">只读；只列这个 Lead 开的</span>
+        <span class="td mono">session send</span><span class="td">给子 session 发一条消息</span><span class="td">它在跑时返回 busy</span>
+        <span class="td mono">session read · result</span><span class="td">屏幕最后几行；会话记录里最后一条完整回复</span><span class="td">只读；读不到会话记录退回屏幕</span>
+        <span class="td mono">session wait</span><span class="td">等一个、任一或全部子 session 空闲、等你、出错、退出、碰到额度上限</span><span class="td">带超时，超时返回还在跑的</span>
+        <span class="td mono">crew diff · check</span><span class="td">相对集群分支的改动；在 worktree 里跑检查命令</span><span class="td">检查命令是 New crew 里填的，Lead 换不了</span>
+        <span class="td mono">crew merge</span><span class="td">merge --no-ff 进集群分支；冲突列文件，--continue / --abort</span><span class="td">只进集群分支；碰到 Locked paths 进关卡</span>
+        <span class="td mono">session close</span><span class="td">关掉子 session 的终端</span><span class="td">只能关自己开的；worktree 留到集群结束</span>
+        <span class="td mono">crew ask · note</span><span class="td">问你（进收件箱，回答发回 Lead）；记一条发现（进汇报）</span><span class="td">—</span>
+        <span class="td mono">crew done</span><span class="td">目标达成：跑检查、出汇报、Ready to merge</span><span class="td">合回 main 由你点</span>
+        <span class="td mono">crew plan · handoff</span><span class="td">第二期：写任务表，交给模板模式（第 4 节）</span><span class="td">走 Approve plan</span>
+      </div>
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 12px">
+        <div class="win" style="position: relative; width: 100%; height: 210px">
+          <div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="am" style="background: #A8503A"></span><span class="mono" style="font-weight: 500">Lead · claude</span></div>
+          <div class="wb">● session spawn --agent codex --label tests<br>  ⎿ Refused: 3 of 3 subagents are running<br>    (race, store, docs). Close one or wait.<br>● session spawn --agent kimi --label notes<br>  ⎿ Refused: kimi isn’t allowed in this crew.<br>    Allowed: claude, codex, omp.</div>
+        </div>
+        <div class="win" style="position: relative; width: 100%; height: 120px">
+          <div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="am" style="background: #2F5E9E"></span><span class="mono" style="font-weight: 500">sub-1 · codex · race</span></div>
+          <div class="wb">• agentdeck session spawn --agent claude …<br>  ⎿ Refused: only the lead of crew “login-fix”<br>    can open sessions.</div>
+        </div>
+        <span class="muted" style="font-size: 12px; line-height: 1.6">开子 session 和管子 session 是一套 <span class="mono">agentdeck session spawn · list · read · send · wait · result · close</span>，只有 Lead 能用；集群本身的是 <span class="mono">agentdeck crew status · diff · check · merge · ask · note · done</span>。被拒时返回一句能照着做的英文。子 session 本来就拿不到这些操作的说明（C7），万一调了，AgentDeck 按终端认出来拒绝。<br>只碰自己产物的命令所有 AgentDeck 终端都有（子 session、Worker 也有）：<span class="mono">agentdeck doc</span>（D0）、<span class="mono">agentdeck flow</span>（verdicts 只认 Verifier，F2）、<span class="mono">agentdeck lesson propose / list / search</span>（W1），研究集群里的 <span class="mono">run start / run done / job start / out add</span>（E1 第 6 节）。认身份靠终端钥匙；这些命令都不能开终端、不能批准、不能提交、不能合并。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: center; gap: 10px"><span class="h2">4 · 中途换模式（第二期，CR11）</span><span class="concept">已定（按推荐）</span></div>
+    <div style="display: flex; gap: 12px; align-items: stretch">
+      <div class="box"><b>自由模式</b><span class="muted">Lead 探索，想清楚了</span></div>
+      <span class="arrow">→</span>
+      <div class="box"><b>Lead 写任务表</b><span class="mono" style="font-size: 11.5px">crew plan add …</span><span class="muted">开着的子 session 先合并或关掉</span></div>
+      <span class="arrow">→</span>
+      <div class="box"><b>Lead 交出去</b><span class="mono" style="font-size: 11.5px">crew handoff</span><span class="muted">还有开着的子 session 就拒绝并列出来</span></div>
+      <span class="arrow">→</span>
+      <div class="box gate"><b>关卡 · Approve plan</b><span class="muted">和模板模式同一个（C4）</span></div>
+      <span class="arrow">→</span>
+      <div class="box"><b>模板模式</b><span class="muted">Contract-first build，调度器从集群分支当前位置派活；Lead 变成模板里的 Lead</span></div>
+    </div>
+    <div style="display: flex; gap: 12px; align-items: stretch">
+      <div class="box"><b>模板模式</b><span class="muted">任务表拆错了，或者卡住了</span></div>
+      <span class="arrow">→</span>
+      <div class="box"><b>集群框 ⋯ › Switch to free mode</b><span class="muted">你点，不是 agent 点</span></div>
+      <span class="arrow">→</span>
+      <div class="box"><b>调度器停手</b><span class="muted">不派新任务，不再跑检查和审查轮次</span></div>
+      <span class="arrow">→</span>
+      <div class="box"><b>自由模式</b><span class="muted">在跑的 Worker、Reviewer 变成 Lead 的子 session；没开始的任务在 status 里列出来</span></div>
+    </div>
+    <span class="muted" style="font-size: 12px">两个方向都在集群框和汇报里记一笔。已经合进集群分支的工作都留着；合回 main 的关卡两边一样。</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">5 · 已定（2026-10-28，没特别说明的都按推荐）</span>
+    <div class="tbl" style="grid-template-columns: 220px minmax(0, 1fr) minmax(0, 1fr)">
+      <span class="th">问题</span><span class="th">选项</span><span class="th">建议</span>
+      <span class="td">自由模式里 AgentDeck 管什么</span><span class="td">全放开（现在的 N1） / 安全的留、流程的放 / 全留（等于模板）</span><span class="td">安全的留、流程的放（第 2 节）</span>
+      <span class="td">子 session 默认在哪干活</span><span class="td">各自 worktree / 共用 Lead 的目录 / 每次让 Lead 选</span><span class="td">各自 worktree，Lead 可以让只读的共用。共用目录的子 session 受同目录改动提醒保护（CO2，第二期）；跨 worktree 的重叠由 crew status 告诉 Lead（CO0，O1）</span>
+      <span class="td">提示词前加不加固定说明</span><span class="td">不加 / 加几行事实和安全约定 / 套角色提示词</span><span class="td">加几行（第 1 节的样子）</span>
+      <span class="td">Lead 怎么知道做完了</span><span class="td">轮询读屏幕 / AgentDeck 的 wait + result / 子 session 自己报</span><span class="td">wait + result；子 session 不带 crew 和 session 命令（只碰自己产物的 doc、flow、lesson 等命令所有终端都有，见第 3 节）</span>
+      <span class="td">超过上限</span><span class="td">拒绝 / 排队 / 问你</span><span class="td">拒绝</span>
+      <span class="td">中途换模式</span><span class="td">不支持 / 两个方向 / 只能模板 → 自由</span><span class="td">两个方向，第二期</span>
+      <span class="td">先做哪个</span><span class="td">自由模式先 / 模板先 / 一起</span><span class="td">自由模式先（第一期 1a），模板在 1b</span>
+      <span class="td">谁能当子 session</span><span class="td">只 claude、codex、omp / 五家</span><span class="td">五家（不需要 crew 和 session 命令），pi、kimi 默认不勾</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":3560}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

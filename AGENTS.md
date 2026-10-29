@@ -11,6 +11,8 @@
 - MVP 任务表（任务编号、依赖、完成标准）：https://claude.ai/artifact/8UAh7Quj23xxk7oEikgdEg ，本地副本 `docs/design/agentdeck-mvp-plan.html`
 - **MVP v2 和 v3（2026-10-24 第一轮验收后定的）**：需求在设计画布的“MVP v2 · v3”那一页（画板 11 · MVP v2、12 · MVP v3、13 · 后台 agent、14 · 左边栏历史会话、15 · 项目框排版，带概念图）；任务在 MVP 任务表的 M5（V1–V5，MVP v2）和 M6（N1–N12，MVP v3）；对应的问题是 IS-51～IS-60，要先调研的是 DR-52～DR-55；v2 的分波和每条线的范围见 MVP 任务表的“MVP v2 实施安排”，验收用例是 TC-29～TC-33。v2 做完之前不开 v3。MVP 是分版本做的：M0–M4 是 MVP v1。
 - **Agent 集群（M8，2026-10-27 定）**：按模板组一队 agent 做复杂任务，需求在设计画布“Agent 集群”那一页（画板 C0–C5），任务在 MVP 任务表的 M8（CR0–CR9），问题 IS-89、IS-90，调研 DR-64、DR-65，已定的几条在 `docs/decisions.md`。第一期是 CR0–CR6，CR0（contracts）先做。
+- **下一代 harness 九点（2026-10-28 定）**：Session（M9 SE0–SE6）、Agent 接入加固（M10 AH0–AH7）、Skill 管理（M11 SK0–SK7）、远程（M12 RM0–RM4）、集群的自由模式和 `agentdeck` 命令行（M8 CR10–CR21）、插件 Auto-resume（M7 PL4–PL9）。需求在设计画布的“Session”“Agent 接入”“Skill 管理”“手机 · 远程”几页和“Agent 集群”页 C6–C9，决定见 `docs/decisions.md` 2026-10-28 一段。**PL3 提交前先修 IS-113；AH7（send_to_terminal 保护，IS-102）现在就该做。**
+- **第二轮（2026-10-28 定）**：长期运行 · Lessons（M13 LR）、研究和竞赛（M14 RS）、文档（M15 DC）、代码理解（M16 CU）、Issue · PR（M17 FG）、同仓协作（M18 CO）、学习和辅助（M19 LA），以及 M10 的 AH8–AH11。需求在设计画布对应的新页，决定见 `docs/decisions.md` 2026-10-28（第二轮）一段。产品要改名为 Trireme（CR22），改名前新文档仍写 AgentDeck。
 - 已定的决策（平台、tmux、环境变量等）：`docs/decisions.md`
 - MVP 验收报告（现状、验收证据、端到端用例、问题清单）：https://claude.ai/artifact/FfnyWBeBAg1oPtyHieMbuu ，本地 `docs/status/index.html`（由 `docs/status/build.py` 生成）
 - 调研记录（实现中和最初设想不一样的地方、怎么决定的、好处和代价）：`docs/research-log.md`，网页版 https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK 。各条线发现新的情况写进自己的汇报或 CONTRACT_NOTES.md，合并时由集成负责人加进 `docs/research/entries.py`，不要各自直接改它（避免并行冲突）。

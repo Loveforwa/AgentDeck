@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>代码理解 · 联动和集群</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D6D6D2 1px,transparent 1px);background-size:20px 20px}
+.at{position:absolute}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1240px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#6B6B6B}
+.win{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;overflow:hidden;font-size:12px}
+.win.focus{border-color:#1A1A1A;box-shadow:0 6px 20px rgba(26,26,26,0.12)}
+.win.wait{border-color:#BF8700}
+.tb{height:28px;display:flex;align-items:center;gap:6px;padding:0 10px;border-bottom:1px solid #EEEEEB;font-size:12px;white-space:nowrap}
+.tb .n{font-family:'IBM Plex Mono',monospace;font-weight:500}
+.tb .s{color:#6B6B6B}
+.tb .tag{color:#6B6B6B;font-size:11px;border:1px solid #E3E3E0;border-radius:4px;padding:0 5px;line-height:16px}
+.tb .tag.att{color:#B45309}
+.body{padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.7;color:#3D3D3A}
+.lr{display:inline-block;width:7px;height:7px;border-radius:50%;flex:none;background:#1A7F37}
+.lw{display:inline-block;width:7px;height:7px;border-radius:50%;flex:none;background:#BF8700}
+.le{display:inline-block;width:7px;height:7px;border-radius:50%;flex:none;background:#CF222E}
+.li{display:inline-block;width:7px;height:7px;border-radius:50%;flex:none;box-sizing:border-box;border:1.5px solid #6B6B6B}
+.lx{display:inline-block;width:7px;height:2px;flex:none;background:#6B6B6B}
+.am{display:inline-block;width:7px;height:7px;border-radius:2px;flex:none}
+.menu{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;box-shadow:0 6px 20px rgba(26,26,26,0.12);padding:4px;font-size:12px;display:flex;flex-direction:column}
+.mi{display:flex;align-items:center;gap:8px;height:24px;padding:0 10px;border-radius:6px;white-space:nowrap}
+.mi.on{background:#EDEDEA}
+.mi .k{margin-left:auto;color:#6B6B6B;font-size:11px;padding-left:16px}
+.sep{height:1px;background:#EEEEEB;margin:4px 2px}
+.card{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;box-shadow:0 6px 20px rgba(26,26,26,0.12);padding:10px 12px;font-size:12px;line-height:1.6;display:flex;flex-direction:column;gap:6px}
+.btn{display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:6px;font-size:12px;border:1px solid #D6D6D2;background:#FFFFFF;color:#1A1A1A;font-family:inherit}
+.btn.pri{background:#1A1A1A;border-color:#1A1A1A;color:#FFFFFF}
+.ta{box-sizing:border-box;border:1px solid #D6D6D2;border-radius:6px;padding:6px 8px;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.6;color:#1A1A1A;background:#FFFFFF}
+.banner{display:flex;align-items:center;gap:8px;padding:6px 12px;background:#FFF7E6;border-bottom:1px solid #EEEEEB;font-size:12px;color:#1A1A1A}
+.sr{display:grid;grid-template-columns:24px 170px minmax(0,1fr);align-items:center;gap:8px;height:24px;padding:0 10px;border-top:1px solid #EEEEEB;font-size:11.5px}
+.sr .k{font-family:'IBM Plex Mono',monospace;color:#6B6B6B}
+.sr .a{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#3D3D3A}
+.sr.sel{background:#EDEDEA}
+.callout{position:absolute;display:flex;gap:6px;font-size:12px;line-height:1.5;color:#3D3D3A}
+.num{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:#1A1A1A;color:#FFFFFF;font-size:11px;font-weight:600;flex:none}
+.chip{display:inline-flex;align-items:center;gap:4px;height:18px;padding:0 6px;border:1px solid #E3E3E0;border-radius:4px;font-size:11px;color:#3D3D3A}
+.eb{font-size:10px;font-weight:600;letter-spacing:0.04em;color:#6B6B6B}
+.pre{box-sizing:border-box;border:1px solid #E3E3E0;border-radius:8px;background:#FBFBFA;font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.7;color:#3D3D3A;padding:12px 14px;white-space:pre;margin:0}
+.tcard{box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.6;display:flex;flex-direction:column;gap:4px;flex:none}
+.gatecard{box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;font-size:12px;line-height:1.6;display:flex;flex-direction:column;flex:none;overflow:hidden}
+</style>
+</helmet>
+<div style="width: 1760px; height: 3200px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 48px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">F2 · 图和终端、编辑器、文档怎么联动，代码变了怎么办，集群里谁用它</h1>
+      <span class="concept">2026-10-28 按推荐先定，待你确认</span>
+    </div>
+    <p class="lead">Flow 窗口不是一张挂着看的图，它连着三样东西：点一步跳到编辑器那一行；在画它的终端里问 agent 这一步为什么这样；文档里引用一步，点开就是这张图的这一步。代码变了，窗口自己先核锚点，只把要重看的几步交给核对的人。到了集群里，Reviewer 拿到“这个任务动到了哪些流程的哪几步”，QA 拿到这些步骤的测试和用例覆盖。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 点一步能去哪</span>
+    <div class="fig" style="width: 1632px; height: 760px">
+      <div class="win" style="left: 24px; top: 40px; width: 330px; height: 330px">
+        <div class="tb"><span class="lr"></span><span class="n">claude</span><span class="s">agentdeck · main</span><span class="s" style="margin-left: auto">Running</span></div>
+        <div class="body">
+          <div style="color: #1A1A1A">&gt; Explain step 6 of flow</div>
+          <div style="color: #1A1A1A">&#160;&#160;open-terminals (packages/mcp-server/</div>
+          <div style="color: #1A1A1A">&#160;&#160;src/tools.ts:526): why does it go</div>
+          <div style="color: #1A1A1A">&#160;&#160;through the service registry instead</div>
+          <div style="color: #1A1A1A">&#160;&#160;of calling AgentService directly?</div>
+          <div>&#160;</div>
+          <div>● Read apps/desktop/src/main/mcp.ts</div>
+          <div>&#160;</div>
+          <div style="color: #1A1A1A">mcp-server must not import other</div>
+          <div style="color: #1A1A1A">service packages (service-to-service</div>
+          <div style="color: #1A1A1A">rule), so the desktop app hands it a</div>
+          <div style="color: #1A1A1A">Proxy (viaRegistry, mcp.ts:19) …</div>
+        </div>
+      </div>
+
+      <div class="win focus" style="left: 400px; top: 40px; width: 620px; height: 420px">
+        <div class="tb"><span class="lr"></span><span class="n">flow · open-terminals</span><span class="s">agentdeck · main · 22 steps</span><span class="tag att">step 9 needs re-check</span></div>
+        <div class="banner"><span class="lw"></span><span>Code changed since 11:12. 3 anchors followed; step 9 needs re-check.</span><span style="flex: 1"></span><button class="btn">Show changes</button><button class="btn pri">Re-check with codex</button></div>
+        <div class="sr" style="border-top: none"><span class="k">4</span><span>resolveWorkspace</span><span class="a"><span class="lr"></span>&#160; tools.ts:320</span></div>
+        <div class="sr"><span class="k">5</span><span>confirm “Open 7 terminals?”</span><span class="a"><span class="lr"></span>&#160; tools.ts:327</span></div>
+        <div class="sr sel"><span class="k">6</span><span><b>agents.start</b></span><span class="a"><span class="lr"></span>&#160; tools.ts:526</span></div>
+        <div class="sr"><span class="k">7</span><span>registry.invoke</span><span class="a"><span class="lr"></span>&#160; mcp.ts:25</span></div>
+        <div class="sr"><span class="k">8</span><span>start</span><span class="a"><span class="lr"></span>&#160; index.ts:317 <span class="muted">+11</span></span></div>
+        <div class="sr"><span class="k">9</span><span>adapter.launch</span><span class="a"><span class="lw"></span>&#160; agent-service.ts:123 <span class="muted">function changed</span></span></div>
+        <div class="sr"><span class="k">10</span><span>create</span><span class="a"><span class="lr"></span>&#160; agent-service.ts:128</span></div>
+        <div class="sr"><span class="k">11</span><span>post call</span><span class="a"><span class="lr"></span>&#160; terminal-service.ts:56</span></div>
+        <div class="sr"><span class="k">…</span><span class="muted">12 more</span><span></span></div>
+        <div style="padding: 8px 10px; font-size: 11px; color: #6B6B6B">This list view is what the window shows when it is small or zoomed out; the diagram view is in F0.</div>
+      </div>
+
+      <div class="menu" style="left: 700px; top: 196px; width: 280px">
+        <div class="mi on">Open in editor<span class="k">⌘↩</span></div>
+        <div class="mi">Ask claude about this step…</div>
+        <div class="mi">Explain in a new session…</div>
+        <div class="sep"></div>
+        <div class="mi">Copy anchor<span class="k">⌘C</span></div>
+        <div class="mi">Copy flow as Mermaid</div>
+        <div class="sep"></div>
+        <div class="mi">Mark step as wrong…</div>
+      </div>
+
+      <div class="card" style="left: 1060px; top: 40px; width: 300px">
+        <span class="eb">OPEN IN EDITOR</span>
+        <span>Runs <span class="mono">code -g …/tools.ts:526</span> with your editor command. Without -g (or zed, subl) the file opens at the top.</span>
+        <span class="muted">Already in AgentDeck: app.openInEditor(path, line).</span>
+      </div>
+
+      <div class="card" style="left: 1060px; top: 190px; width: 300px">
+        <span class="eb">ASK CLAUDE ABOUT THIS STEP</span>
+        <div class="ta">Explain step 6 of flow open-terminals (packages/mcp-server/src/tools.ts:526): </div>
+        <span class="muted">claude is running. It gets this when it’s idle.</span>
+        <div style="display: flex; gap: 6px"><button class="btn pri">Send when idle</button><button class="btn">New session instead</button></div>
+      </div>
+
+      <div class="win" style="left: 1400px; top: 40px; width: 208px; height: 300px">
+        <div class="tb"><span class="li"></span><span class="n">doc · mcp.md</span></div>
+        <div style="padding: 10px; font-size: 11.5px; line-height: 1.6; display: flex; flex-direction: column; gap: 6px">
+          <span>Agents open their subagents with open_terminals. Each call goes through the service registry</span>
+          <span class="chip" style="align-self: flex-start">flow open-terminals · step 6–8</span>
+          <span>so mcp-server never imports AgentService …</span>
+          <span class="muted" style="font-size: 11px">Clicking the chip opens the flow at step 6. The doc window and its anchors belong to point 11.</span>
+        </div>
+      </div>
+
+      <div class="callout" style="left: 24px; top: 500px; width: 360px"><span class="num">1</span><span>单击锚点或 ⌘↩：用现有的 <span class="mono">app.openInEditor(path, line)</span>（contracts/app.ts:40）。编辑器命令要带 <span class="mono">-g</span>，或者是 zed、subl，才会跳到行；不然只打开文件，提示里要说。</span></div>
+      <div class="callout" style="left: 24px; top: 590px; width: 360px"><span class="num">2</span><span>Ask claude…：默认问画这张图的终端（图记着是哪个 session 画的）；第一行替你填好“第几步 + 锚点”。它在跑就等它空下来再发；它在等你（要批准、要回答）时绝不往里打字（AH7 的规矩），只给 New session instead。</span></div>
+      <div class="callout" style="left: 420px; top: 500px; width: 380px"><span class="num">3</span><span>Explain in a new session…：开一个子 session（S1、SE6 的交接），第一条消息带这一步、前后两步和锚点附近的代码。适合在画图的 agent 正忙时问。</span></div>
+      <div class="callout" style="left: 420px; top: 590px; width: 380px"><span class="num">4</span><span>代码变了：窗口里不弹框，只在顶上出一条横幅，标题栏 tag 写最要紧的一件。Re-check with codex 只把黄、红的那几步交给核对的人。</span></div>
+      <div class="callout" style="left: 840px; top: 500px; width: 380px"><span class="num">5</span><span>Copy flow as Mermaid：导出 Mermaid（autonumber）加一张“编号 → path:line”表，贴进 PR 描述或 Markdown。Mermaid 里的消息不能挂链接，所以链接放在表里。</span></div>
+      <div class="callout" style="left: 840px; top: 590px; width: 380px"><span class="num">6</span><span>Mark step as wrong…：你自己发现说错了，写一句原因，记成一条 Wrong（作者是你），和 Verifier 的结论放在一起。</span></div>
+      <div class="callout" style="left: 1260px; top: 500px; width: 348px"><span class="num">7</span><span>文档里引用一步（<span class="mono">flow:open-terminals#6</span>）显示成一个小签，点开是这张图的这一步；图上每一步也能反查“哪些文档引用了我”。文档窗口和锚点格式是“文档”页 D0、D1 的，这里只约定引用的写法。</span></div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 代码变了以后，图还对不对：三档检查</span>
+    <div class="tbl" style="grid-template-columns: 200px minmax(0, 1fr) 200px 230px">
+      <span class="th">检查</span><span class="th">怎么做</span><span class="th">什么时候</span><span class="th">结果</span>
+      <span class="td">锚点原文还在不在</span><span class="td">按 anchor.text 在文件里找，离原来的行最近的那处；找到但行号变了就自动改行号。open_terminals 实测：主检出目录里 19 步原地、3 步挪了、0 步失效</span><span class="td">文件保存后（防抖）、切分支、打开窗口</span><span class="td">绿（含 +n）或红 Stale</span>
+      <span class="td">锚点所在的函数改过没有</span><span class="td">git diff 的改动块和锚点所在符号的范围（codegraph 有索引时用它的 start_line / end_line，没有就用缩进粗判）有交集</span><span class="td">同上</span><span class="td">黄 Needs re-check</span>
+      <span class="td">说法还对不对</span><span class="td">只把黄、红的步骤，连同 diff，交给 Verifier（F1 第 2 节）；它可以建议改哪几步，由原作者或你接受</span><span class="td">你点 Re-check，或集群里 Reviewer 审到这个任务时</span><span class="td">Confirmed / Wrong / Unsure</span>
+    </div>
+    <span style="font-size: 12.5px; line-height: 1.6; color: #5F5F5A">前两档是机器、几乎零成本，不打扰你；第三档花 token，只在你点或集群审查时做。锚点和 diff 映射的实现和 D1 共用一层（D1 的实验：过 100 个提交后，原行号还对的只剩 3%，按 diff 挪能找回 94%）。</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · 集群里：Reviewer 和 QA 怎么用</span>
+    <div class="tbl" style="grid-template-columns: 130px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr)">
+      <span class="th">角色</span><span class="th">拿到什么</span><span class="th">做什么</span><span class="th">交回什么、显示在哪</span>
+      <span class="td">调度器</span><span class="td">任务的 diff、项目里存的图（docs/flows/）</span><span class="td">算“动到的流程”：哪些图有锚点落在改动块里，是哪几步；跑前两档检查</span><span class="td">任务卡片上的 FLOWS 一行（C2、C3）；关卡卡片上一行（C4）</span>
+      <span class="td">Lead</span><span class="td">任务表草稿</span><span class="td">拆任务时可以先让人画要动的那条流程，任务的完成标准里写“flow X 第几步改成…”</span><span class="td">任务表里引用图的步骤</span>
+      <span class="td">Reviewer</span><span class="td">diff + 动到的流程和步骤 + 前两档的结果</span><span class="td">按图核对这次改动：改动后图上的说法还成立吗？要不要改图？（就是 Verifier 的那套，只看动到的步骤）</span><span class="td">审查结论里多一节 Flows；说错的步骤让任务回到实现者，连图一起改</span>
+      <span class="td">QA</span><span class="td">动到的步骤 + Tests、Requirements 两层</span><span class="td">跑这些步骤相关的测试（Run tests for this flow）；看跑到的步骤有没有断言；对没有 TC 管的步骤提新用例</span><span class="td">验收汇报里的 “Not run / Not loaded” 步骤表和建议的 TC</span>
+      <span class="td">Worker</span><span class="td">—</span><span class="td">不用。可以 show 图来理解代码，不能交核对结论</span><span class="td">—</span>
+    </div>
+    <div style="display: flex; gap: 24px; align-items: flex-start">
+      <div class="tcard" style="width: 420px">
+        <div style="display: flex; align-items: center; gap: 6px"><span class="lr"></span><b class="mono">T3</b><span>Stop opening terminals into a waiting one</span></div>
+        <span class="muted">Worker codex · Reviewer claude</span>
+        <span class="eb" style="margin-top: 4px">FLOWS</span>
+        <span><span class="mono">open-terminals</span> · steps 6–10 touched · <span class="lr"></span> re-checked by claude</span>
+        <span><span class="mono">send-to-terminal</span> · steps 3–5 touched · <span class="lw"></span> 1 needs re-check</span>
+      </div>
+      <div class="gatecard" style="width: 560px">
+        <div style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid #EEEEEB"><span class="lw"></span><b>Ready to merge · T3</b><span class="muted" style="margin-left: auto">crew fix-send</span></div>
+        <div style="padding: 8px 12px; display: flex; flex-direction: column; gap: 4px">
+          <span>Checks passed · Review: approved by claude</span>
+          <span>Flows: 2 touched, 1 step still needs re-check · 7 touched steps not loaded by any test</span>
+          <div style="display: flex; gap: 6px; margin-top: 4px"><button class="btn pri">Merge into crew branch</button><button class="btn">Open flows</button><button class="btn">Send back</button></div>
+        </div>
+      </div>
+      <div style="flex: 1; font-size: 13px; line-height: 1.65; display: flex; flex-direction: column; gap: 8px">
+        <span>模板模式（第一期 1b 之后）：模板的审查阶段可以勾一个 Flow check，Reviewer 的提示词里带上动到的步骤。自由模式：Lead 想核对时自己开一个 Verifier 子 session。</span>
+        <span>“1 step still needs re-check” 不挡合并，只提醒你；挡不挡由模板定（默认不挡）。合回 main 永远你点。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · agent 用的命令（走 agentdeck 命令行，不加 MCP 工具）</span>
+    <div style="display: flex; gap: 24px; align-items: flex-start">
+      <pre class="pre" style="width: 860px">agentdeck flow list                          flows in this project (docs/flows + drafts)
+agentdeck flow show &lt;id&gt; [--json]            print a flow with anchor states
+agentdeck flow save &lt;file.seq.json&gt;          validate, check anchors, store as draft
+agentdeck flow open &lt;id&gt; [--step 6]          open the Flow window next to this terminal
+agentdeck flow check &lt;id&gt; [--against &lt;rev&gt;] anchors and changed functions only
+agentdeck flow touched [--diff &lt;rev&gt;]        which flows and steps a diff touches
+agentdeck flow cover &lt;id&gt; --tests [--e2e]    run related tests with coverage, overlay
+agentdeck flow verdicts &lt;id&gt; &lt;file.json&gt;     submit review results (Verifier only)</pre>
+      <div style="flex: 1; font-size: 13px; line-height: 1.65; display: flex; flex-direction: column; gap: 8px">
+        <span>照 C7 的决定：新能力不进 MCP（现有 11 个工具不动），做成 <span class="mono">agentdeck</span> 命令行；怎么写一张图（锚点规则、kind 的含义、粒度）写进自带的 flow skill，按需加载。</span>
+        <span>谁能用：list / show / save / open / check / touched 在 AgentDeck 的每个终端里都能用（只读或只写草稿，没有开 session 的能力）；verdicts 只认 AgentDeck 开的 Verifier 子 session（按每个终端自己的钥匙 AGENTDECK_TERM_KEY 认，CR14）；cover 会跑测试，第一次在这个项目里跑要你点一次同意。这些命令都不能开终端、不能批准、不能提交、不能合并。</span>
+        <span class="muted">图先存成草稿（AgentDeck 数据目录）；你点 Save to repo 才写进仓库的 docs/flows/&lt;id&gt;.seq.json，AgentDeck 不提交。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">5 · 分期（M16 代码理解，CU0–CU8）</span>
+    <div class="tbl" style="grid-template-columns: 110px 320px minmax(0, 1fr) 160px">
+      <span class="th">任务</span><span class="th">做什么</span><span class="th">要点</span><span class="th">期</span>
+      <span class="td mono">CU0</span><span class="td">contracts：Flow 数据和 FlowService</span><span class="td">seq.json 的格式（参与者、步骤、锚点、loop / alt、requirements、review）；单独提交</span><span class="td">第一期</span>
+      <span class="td mono">CU1</span><span class="td">flow-service：存取和锚点检查</span><span class="td">前两档检查；锚点层和 D1 共用，以 D1 的格式为准；codegraph 有索引时只读用</span><span class="td">第一期</span>
+      <span class="td mono">CU2</span><span class="td">Flow 窗口</span><span class="td">图和列表两种视图、四层、详情栏、右键菜单、横幅</span><span class="td">第一期</span>
+      <span class="td mono">CU3</span><span class="td">agentdeck flow 命令和 flow skill</span><span class="td">依赖 C7 的命令行（CR12 起）</span><span class="td">第一期</span>
+      <span class="td mono">CU4</span><span class="td">Verifier 子 session 和结论</span><span class="td">换一家、只读、证据锚点机器核</span><span class="td">第一期</span>
+      <span class="td mono">CU5</span><span class="td">Tests 层（单元测试）</span><span class="td">给仓库装 @vitest/coverage-v8（pnpm coverage，不进 pnpm check；这一步可以在 CU0 之后单独提前做）；按测试文件归属；Run · fakes · Not run · Not loaded</span><span class="td">第一期末</span>
+      <span class="td mono">CU6</span><span class="td">Requirements 层</span><span class="td">agent 提对应、你确认；状态读 tracking.py</span><span class="td">第二期</span>
+      <span class="td mono">CU7</span><span class="td">集群：动到的流程、Reviewer、QA</span><span class="td">依赖 M8 的 CR2、CR5、CR6</span><span class="td">第二期</span>
+      <span class="td mono">CU8</span><span class="td">e2e 覆盖和关口记录</span><span class="td">主进程、utility、界面进程的覆盖；在注册表、IPC、TerminalProxy、MCP、钩子 socket 五个关口记顺序，用来核跨进程那几步</span><span class="td">第三期</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":3200}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

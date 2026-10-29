@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Issue · PR · 主流程和规矩</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1300px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.tag{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:11.5px;background:#F2F2EF;color:#5F5F5A;white-space:nowrap}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#8A8A85}
+.dot{width:7px;height:7px;border-radius:50%;flex:none;box-sizing:border-box;display:inline-block}
+.am{width:6px;height:6px;border-radius:1.5px;flex:none;display:inline-block}
+.box{box-sizing:border-box;border:1px solid #E3E3E0;border-radius:8px;padding:10px 12px;background:#FFFFFF;font-size:12.5px;line-height:1.55;display:flex;flex-direction:column;gap:4px}
+.box b{font-size:13px}
+.gate{box-sizing:border-box;border:1.5px dashed #BF8700;border-radius:8px;padding:8px 10px;background:#FFFBF0;font-size:12px;line-height:1.5;display:flex;flex-direction:column;gap:3px}
+.gate b{color:#8A6700;font-size:12px}
+.arrow{font-size:18px;color:#8A8A85;align-self:center;flex:none}
+.who{font-size:11px;color:#8A8A85}
+.lane{display:flex;align-items:stretch;gap:10px}
+.lanehead{width:120px;flex:none;font-size:12px;font-weight:600;color:#5F5F5A;padding-top:10px}
+.fig{box-sizing:border-box;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px;padding:24px;display:flex;flex-direction:column;gap:22px}
+.ex{display:flex;flex-direction:column;gap:10px;font-size:13.5px;line-height:1.65}
+.col{box-sizing:border-box;border:1px solid #E3E3E0;border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.6;background:#FFFFFF}
+.col h3{margin:0;font-size:14px}
+.no{color:#5F5F5A}
+</style>
+</helmet>
+<div style="width: 1760px; height: 3360px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">I0 · 开源项目的 issue 和 PR：主流程、谁做什么、对外发言只在你点的时候</h1>
+      <span class="concept">2026-10-28 按推荐先定，待你确认</span>
+    </div>
+    <p class="lead">你维护或参与一个几百个 open issue 的项目：每天的分拣、自己 PR 的 review 和 CI 来回、审别人的 PR，都可以交给几个 agent 并行做。AgentDeck 不是云上的机器人，它在你的 Mac 上、用你的 gh / glab 登录，所以 agent 写的每一句对外的话都是“以你的名义”。规矩只有一条：<b>agent 只起草，AgentDeck 把草稿放进收件箱，你看过全文点 Post，才由 AgentDeck 发出去</b>。一个 issue 就是一个 worktree 加一个 session，修复可以是单个终端，也可以开集群（自由模式或模板）。</p>
+    <p class="lead">这一页讲流程和规矩；白板和面板长什么样见 I1；收件箱、发言对话框、审别人的 PR、防注入见 I2。任务是 M17 的 FG0–FG13。黄色虚线框是要你点的地方。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 主流程</span>
+    <div class="fig">
+      <div class="lane">
+        <span class="lanehead">你自己的 issue 和 PR</span>
+        <div class="box" style="width: 170px"><b>0 · 连上、同步</b><span>remote 是 GitHub / GitLab 时，项目框菜单多一项 Issues &amp; PRs。用你已登录的 gh / glab 拉 open 的元数据。</span><span class="who">AgentDeck</span></div>
+        <span class="arrow">→</span>
+        <div class="box" style="width: 190px"><b>1 · 分拣一批</b><span>选 10 条点 Triage with ▸ claude。一个分拣终端一条条看：建议标签、可能重复、缺复现时起草提问。</span><span class="who">agent · 一批一个 session</span></div>
+        <span class="arrow">→</span>
+        <div class="gate" style="width: 150px"><b>Post 8</b><span>分拣表里逐行勾，标签可以整批点；评论逐条看全文。</span><span class="who">你</span></div>
+        <span class="arrow">→</span>
+        <div class="box" style="width: 190px"><b>2 · Work on it</b><span>一个 issue 开一个 worktree <span class="mono">issue/18231-…</span> 加一个 session。槽位满了进 Up next。</span><span class="who">你点 · AgentDeck 开</span></div>
+        <span class="arrow">→</span>
+        <div class="box" style="width: 180px"><b>3 · 修</b><span>单个终端；或者开集群（No template / 模板），issue 就是 Goal。</span><span class="who">agent</span></div>
+        <span class="arrow">→</span>
+        <div class="gate" style="width: 160px"><b>Open PR</b><span>推到 origin 或你的 fork、目标分支、Draft、标题描述。</span><span class="who">你</span></div>
+      </div>
+      <div class="lane" style="padding-left: 130px">
+        <div class="box" style="width: 270px"><b>4 · review 和 CI 的循环</b><span>新 review 线程：在面板勾几条 Send to agent。CI 失败：日志清洗后自动交给 agent（同一个 PR 最多 3 轮，之后叫你）。agent 改、提交、起草回复。</span><span class="who">AgentDeck 盯 · agent 改</span></div>
+        <span class="arrow">→</span>
+        <div class="gate" style="width: 220px"><b>Push 1 commit and reply to 2 threads</b><span>推送和回复合成一条，一次点。重跑 CI 也是一条要点的。</span><span class="who">你</span></div>
+        <span class="arrow">↺</span>
+        <span class="muted" style="align-self: center; font-size: 12px; width: 160px">还有意见、CI 还红就回到 4</span>
+        <span class="arrow">→</span>
+        <div class="gate" style="width: 230px"><b>Merge…</b><span>只给仓库允许的合并方式；必过的检查、review 不满足时灰掉；不绕过保护。</span><span class="who">你（维护者）</span></div>
+        <span class="arrow">→</span>
+        <div class="box" style="width: 160px"><b>5 · 收尾</b><span>框收成标签 “✓ merged”，worktree 留到你删。</span><span class="who">AgentDeck</span></div>
+      </div>
+      <div style="height: 1px; background: #E3E3E0"></div>
+      <div class="lane">
+        <span class="lanehead">审别人的 PR</span>
+        <div class="box" style="width: 210px"><b>Review requests</b><span>列表里请你审的 PR，点 Review… 选一家 agent。</span><span class="who">你点</span></div>
+        <span class="arrow">→</span>
+        <div class="box" style="width: 230px"><b>review worktree，只读开始</b><span><span class="mono">review/18244</span>，从 <span class="mono">pull/18244/head</span> 拉。agent 先读 diff 和上下文，不装依赖、不跑。</span><span class="who">AgentDeck 开 · agent 读</span></div>
+        <span class="arrow">→</span>
+        <div class="gate" style="width: 210px"><b>Run this PR’s code</b><span>装依赖、跑测试、开 dev server 前要你点；作者不是成员时多一句警告。</span><span class="who">你</span></div>
+        <span class="arrow">→</span>
+        <div class="box" style="width: 230px"><b>审查草稿</b><span>总评、逐行意见、建议的结论。dev server 在白板网页窗口里看。</span><span class="who">agent</span></div>
+        <span class="arrow">→</span>
+        <div class="gate" style="width: 230px"><b>Submit review</b><span>在 diff 上删改意见、选 Comment / Approve / Request changes；或 Save as pending review 去网页接着改。</span><span class="who">你</span></div>
+      </div>
+    </div>
+    <span class="muted" style="font-size: 12.5px">一个 issue 也可以先 “Try to reproduce”：同样开 worktree 和 session，按 issue 里的步骤试；issue 里写的命令照普通批准走，Auto-approve 默认关。</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 谁做什么</span>
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px">
+      <div class="col"><h3>你</h3><span>选哪些 issue 分拣、哪些开工（或者开 Start the next one automatically 让它按分数接着开）。</span><span>在收件箱看每一条要发出去的话，改、丢、或点 Post。</span><span>决定什么时候跑别人的代码、什么时候合并。</span><span class="muted">你的身份发的每一句话都经过你。</span></div>
+      <div class="col"><h3>agent</h3><span>读 issue 和代码、判断标签和重复、起草提问。</span><span>在自己的 worktree 里修、提交、跑检查；读 review 意见和 CI 日志接着改。</span><span>审别人的 PR：读 diff、在你允许后跑起来看、写审查草稿。</span><span class="muted">只能用 <span class="mono">agentdeck forge …</span> 写草稿；拿不到你的 gh 登录和推送凭据。</span></div>
+      <div class="col"><h3>AgentDeck</h3><span>用你的 gh / glab 同步、算分、排队、开 worktree 和终端、盯 CI 和 review 线程。</span><span>把 issue / PR 的文字清洗、包起来再交给 agent，标出作者是谁。</span><span>你点了以后推送、发评论、开 PR、提交 review、合并；发前重新核对，只发一次，记进 Decisions。</span><span class="muted">不收 webhook、不在云上跑；AgentDeck 关着就不做事。</span></div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · 对外动作：谁起草、在哪点、谁执行</span>
+    <div class="tbl" style="grid-template-columns: 230px 240px 1fr 1fr">
+      <span class="th">动作</span><span class="th">谁起草</span><span class="th">在哪点</span><span class="th">说明</span>
+      <span class="td"><b>加 / 去标签、指派</b></span><span class="td">分拣 agent</span><span class="td">收件箱 Triage · N issues 的表，可以整批 Apply</span><span class="td">只能用仓库已有的标签</span>
+      <span class="td"><b>评论、问复现</b></span><span class="td">分拣或修复的 agent</span><span class="td">收件箱 Ready to post，一条一条</span><span class="td">6 行以内直接展开全文</span>
+      <span class="td"><b>Close as duplicate</b></span><span class="td">分拣 agent</span><span class="td">收件箱，一条一条</span><span class="td">AgentDeck 从不自动关 issue</span>
+      <span class="td"><b>认领（Claim on GitHub）</b></span><span class="td">Work on it 对话框里你勾</span><span class="td">收件箱</span><span class="td">默认不勾：开工不等于对外宣布</span>
+      <span class="td"><b>推送</b></span><span class="td">agent 提交，AgentDeck 推</span><span class="td">收件箱，和回复合成一条</span><span class="td">推到自己的 PR 分支也要点（已定，见第 6 节）</span>
+      <span class="td"><b>Fork 仓库、开 PR / MR</b></span><span class="td">agent 写标题描述，或 AgentDeck 按提交拼</span><span class="td">收件箱 Open PR</span><span class="td">描述带 Closes #N；Draft 可选</span>
+      <span class="td"><b>回复 / resolve review 线程</b></span><span class="td">修复的 agent</span><span class="td">收件箱</span><span class="td">发前重拉，线程已被 resolve 时再问一次</span>
+      <span class="td"><b>重跑 CI</b></span><span class="td">你在面板点 Re-run…</span><span class="td">收件箱</span><span class="td">会触发别人能看到的 CI</span>
+      <span class="td"><b>提交 review</b></span><span class="td">审查 agent</span><span class="td">审查对话框</span><span class="td">也能存成只有你看得见的 pending review</span>
+      <span class="td"><b>合并</b></span><span class="td">—</span><span class="td">面板 Merge… 对话框</span><span class="td">照仓库规则，不带 --admin；集群的 Ready to merge 主按钮变成 Open PR</span>
+    </div>
+    <span class="muted" style="font-size: 12.5px">Auto-approve、Approve all、Lead suggests、Lead 代答（CR20）一律不碰这一类；手机上第一版只能看不能发。</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · 现有工具怎么做（2026-10-28 核对）</span>
+    <div class="tbl" style="grid-template-columns: 210px 1fr 170px 1fr 120px 1fr">
+      <span class="th">工具</span><span class="th">怎么触发、产出什么</span><span class="th">在哪跑、谁的身份</span><span class="th">什么要人点 · 防注入</span><span class="th">GitLab</span><span class="th">来源</span>
+      <span class="td"><b>Copilot coding agent</b>（现称 cloud agent）</span><span class="td">把 issue 指派给 Copilot，或在 agents 面板开；一个任务一个分支一个 PR，59 分钟；在它的 PR 上评论让它接着改</span><span class="td">GitHub Actions 临时环境 · Copilot</span><span class="td">只有写权限的人能触发；非写权限的评论不交给它；过滤 HTML 注释；只推 copilot/ 分支；workflow 要人点 Approve and run；请求人不能批准；防火墙默认开</span><span class="td">不支持</span><span class="td mono" style="font-size: 11px">docs.github.com · about-coding-agent · risks-and-mitigations</span>
+      <span class="td"><b>Claude Code GitHub Actions</b>（@claude）</span><span class="td">评论、review、新 issue 里 @claude，或按事件自动跑；进度写成评论；能推提交、开 PR、写行内 review</span><span class="td">你仓库的 runner · Claude GitHub App</span><span class="td">触发者要写权限；bot 默认不能触发；fork 来的 PR 拿不到 secrets</span><span class="td">另有 GitLab CI/CD 集成</span><span class="td mono" style="font-size: 11px">code.claude.com/docs/en/github-actions</span>
+      <span class="td"><b>Codex cloud</b></span><span class="td">@codex review 贴标准 review，只报 P0 / P1，可自动审，按 AGENTS.md 的 Code Review Rules；其他 @codex 评论开云端任务，可推修复</span><span class="td">Codex cloud · Codex</span><span class="td">待核对</span><span class="td">Beta（待核对）</span><span class="td mono" style="font-size: 11px">learn.chatgpt.com/docs/third-party/github</span>
+      <span class="td"><b>Sweep</b></span><span class="td">原来是 issue 转 PR 的机器人；创始人说达不到想要的可靠性，转做 JetBrains 插件</span><span class="td">云端 · bot</span><span class="td">—</span><span class="td">—</span><span class="td mono" style="font-size: 11px">github.com/sweepai/sweep（第三方转载，待核对）</span>
+      <span class="td"><b>OpenHands resolver</b></span><span class="td">fix-me 标签或 @openhands-agent；PR 上同样能改 review 意见；Cloud 版觉得解决了就开 MR</span><span class="td">Actions 或 OpenHands Cloud · bot</span><span class="td">可设自己的 GITLAB_TOKEN 限制能访问什么</span><span class="td">Cloud 支持（openhands 标签 / @openhands）</span><span class="td mono" style="font-size: 11px">docs.all-hands.dev · docs.openhands.dev（部分页 404，待核对）</span>
+      <span class="td"><b>Conductor</b></span><span class="td">从 GitHub / Linear issue 或 PR 建 workspace（0.66.0、0.15.2）；Checks 页集中 CI、评论、review 线程，可发给 agent（0.31.1、0.12.0）</span><span class="td">你的 Mac · 你（GH_TOKEN）</span><span class="td">开 PR、合并由你在应用里点</span><span class="td">没看到</span><span class="td mono" style="font-size: 11px">conductor.build/docs/reference/checks · changelog</span>
+      <span class="td" style="background: #FBFBFA"><b>AgentDeck（本设计）</b></span><span class="td" style="background: #FBFBFA">Issues &amp; PRs 窗口里你点 Triage / Work on it / Review；几十个 issue 框在白板上同时看</span><span class="td" style="background: #FBFBFA">你的 Mac · 你（gh / glab）</span><span class="td" style="background: #FBFBFA"><b>每一次</b>对外动作都要你点；内容清洗、标出作者；从 issue 开的终端不带你的凭据</span><span class="td" style="background: #FBFBFA">紧跟 GitHub（1b）</span><span class="td" style="background: #FBFBFA">DR-108…113</span>
+    </div>
+    <div class="ex" style="max-width: 1500px">
+      <span><b>学到的</b>：云端产品用 bot 身份，所以关卡放在“合并、跑 workflow”；AgentDeck 用的是你的身份，关卡要放在每一次发言。Conductor 的“每个工作区一个 PR 页、把评论和失败检查发给 agent”是本地工具里最完整的，我们的面板 PULL REQUEST 一节对标它。Copilot 过滤隐藏内容、Invariant Labs 2025-05 用一个恶意 issue 让 agent 把私有仓库内容贴到公开 PR（toxic agent flow），说明清洗、标作者、agent 不拿写权限三层要一起做。Sweep 的转向说明全自动 issue → PR 在真实项目里不可靠。</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">5 · 做什么、不做什么</span>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px">
+      <div class="col"><h3>做</h3>
+        <span>GitHub（github.com、GHE）和 GitLab（gitlab.com、自建），都通过你已登录的 gh / glab。</span>
+        <span>同步 open 的 issue 和 PR；本地全文搜索找重复；代码算分排优先级（能看为什么）。</span>
+        <span>分拣草稿；Work on it 开 worktree 和 session；修复用单个终端或集群两种模式。</span>
+        <span>开 PR、review 线程交给 agent、CI 失败跟进、审别人的 PR、合并：全部经收件箱或对话框你点。</span>
+        <span>白板上 issue 框挂 #编号和 PR 状态灯，面板里看这个工作区的 PR。</span>
+      </div>
+      <div class="col"><h3>不做</h3>
+        <span class="no">不当机器人：不收 webhook、不监听别人 @ 谁、不在云上跑、不用 bot 账号。</span>
+        <span class="no">不自动发任何东西：没有自动回复、自动打标签、自动合并；Auto-approve 永远不碰。</span>
+        <span class="no">不让 agent 拿你的写令牌；不自动关 issue；不改别人写的正文；不删评论。</span>
+        <span class="no">不管 Discussions、Projects 看板、Milestones、Releases、Wiki。不做 Bitbucket、Gitea。</span>
+        <span class="no">不同步你 GitHub 的全部通知，只看加进 AgentDeck 的项目。</span>
+        <span class="no">第一期不做：跑 PR 的沙箱、手机上发、令牌登录、可调的算分权重。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">6 · 按推荐先定（2026-10-28），待你确认</span>
+    <div class="tbl" style="grid-template-columns: 300px 1fr 1fr">
+      <span class="th">问题</span><span class="th">选项</span><span class="th">定的</span>
+      <span class="td">数据从哪来</span><span class="td">gh / glab 命令 / 自己调 API 存令牌 / 交给 agent 的 GitHub MCP</span><span class="td">gh / glab，AgentDeck 不存令牌；从 issue 开的终端不带推送凭据（这不是沙箱）；第二期加令牌登录</span>
+      <span class="td">对外动作</span><span class="td">agent 直接发 / 草稿进收件箱你点 / 标签自动发</span><span class="td">全部草稿进收件箱新的一类 Ready to post，你看过全文点了，才用你的 gh / glab 发；标签可整批点。Auto-approve、Lead、手机都碰不到</span>
+      <span class="td">推送到自己的 PR 分支</span><span class="td">要点 / 项目设置允许不问</span><span class="td">要点（可以和回复合成一次）</span>
+      <span class="td">列表放哪</span><span class="td">右边面板页签 / 白板窗口 / 单独全屏视图</span><span class="td">白板上的 Issues &amp; PRs 窗口；框标题挂 #编号和 CI 灯；SCM 面板只加 PULL REQUEST 一节</span>
+      <span class="td">同时处理几个</span><span class="td">不限 / 项目 Issue slots / 全局一个数</span><span class="td">每个项目同时 3 个；待发草稿到 6 条就不开新的；开新的之前看额度</span>
+      <span class="td">跑别人 PR 的代码</span><span class="td">agent 想跑就跑 / 你点了才跑 / 只在容器里</span><span class="td">你点了才跑，沙箱第二期</span>
+      <span class="td">GitLab</span><span class="td">一起 / 紧跟（1b）/ 第二期</span><span class="td">紧跟</span>
+      <span class="td">发出去的话加不加 AI 声明</span><span class="td">不加 / 总加 / 项目设置默认关 / 默认开</span><span class="td">项目设置，默认关；仓库有 AI 规定时提醒</span>
+      <span class="td">手机上能不能发</span><span class="td">能 / 只能看</span><span class="td">第一版只能看</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":3360}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

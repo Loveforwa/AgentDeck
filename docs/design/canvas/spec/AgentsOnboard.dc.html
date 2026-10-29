@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>接入和升级 agent</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.at{position:absolute}
+.cap{margin:0;font-size:13px;line-height:1.55}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1240px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#6B6B6B}
+.node{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #D6D6D2;border-radius:8px;padding:10px 12px;font-size:12.5px;line-height:1.5;display:flex;flex-direction:column;gap:3px}
+.node b{font-size:13px}
+.arr{position:absolute;font-size:18px;color:#8A8A85}
+.who{position:absolute;font-size:10.5px;color:#6B6B6B}
+.win{box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;overflow:hidden;font-size:11px}
+.wt{display:flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-bottom:1px solid #EEEEEB}
+.wb{padding:6px 9px;font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.7;color:#6B6B6B}
+.dot{width:7px;height:7px;border-radius:50%;flex:none}
+.ring{width:7px;height:7px;border-radius:50%;flex:none;box-sizing:border-box;border:1.5px solid #6B6B6B}
+.tip{position:absolute;box-sizing:border-box;background:#1A1A1A;color:#FFFFFF;border-radius:6px;padding:6px 9px;font-size:11px;line-height:1.45;display:flex;flex-direction:column;gap:1px}
+.code{box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;padding:10px 12px;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.7;color:#1A1A1A;white-space:pre}
+</style>
+</helmet>
+<div style="width: 1760px; height: 2560px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">A1 · 接入和升级一家 agent：每家都过同一套合格测试，结果写进记录，界面照记录开关功能</h1>
+      <span class="concept">2026-10-28 已定（按推荐）</span>
+    </div>
+    <p class="lead">跑原生 TUI 的代价是每家单独适配：五家 agent，十几项能力，每项靠的东西不一样，升级一次就可能有几项悄悄坏掉（IS-73～IS-77），也可能根本没做却没人发现（IS-76：pi、omp、kimi 的第一条消息被丢掉）。这一页定三件事：一套每家都要过的合格测试；一份提交进仓库的“核对到哪个版本”的记录；agent 超过核对版本或某项失灵时，界面上怎么说、哪些功能自动关掉。</p>
+  </div>
+
+  <!-- 1 · 流程 -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 新增一家、升级一家，走同一条路</span>
+    <div class="fig" style="width: 1632px; height: 420px">
+      <span class="who" style="left: 24px; top: 20px">开发者（或 agent）</span>
+      <div class="node" style="left: 24px; top: 40px; width: 200px"><b>1 · 加一行或写适配器</b><span>known.ts 加一行；钩子、扩展、读文件不够时才写专门的适配器</span></div>
+      <span class="arr" style="left: 232px; top: 64px">→</span>
+      <div class="node" style="left: 256px; top: 40px; width: 220px"><b>2 · 写能力声明</b><span>每项 Yes / Partial / No、靠什么（via）、不是 Yes 的写原因（英文，界面直接用）</span></div>
+      <span class="arr" style="left: 484px; top: 64px">→</span>
+      <div class="node" style="left: 508px; top: 40px; width: 220px"><b>3 · L1 离线测试</b><span>在 pnpm check 里：启动参数、样例负载、样例会话文件；声明 No 的项检查原因写了</span></div>
+      <span class="arr" style="left: 736px; top: 64px">→</span>
+      <div class="node" style="left: 760px; top: 40px; width: 250px"><b>4 · L2 真程序</b><span>tmux 里跑真的 agent，K1–K17 逐项；能接本地假模型服务的不花额度（pi、omp 已验证）</span></div>
+      <span class="arr" style="left: 1018px; top: 64px">→</span>
+      <div class="node" style="left: 1042px; top: 40px; width: 250px"><b>5 · 提交 compat 记录</b><span class="mono" style="font-size: 11px">compat/omp.json</span><span>版本、日期、每项 pass / fail / skip</span></div>
+      <span class="arr" style="left: 1300px; top: 64px">→</span>
+      <div class="node" style="left: 1324px; top: 40px; width: 284px"><b>6 · 界面照记录开关</b><span>Settings › Agents（A0）、菜单 hint、New crew 下拉、Auto-approve 都读同一份报告</span></div>
+
+      <span class="who" style="left: 24px; top: 210px">用户的电脑上（不用开发者）</span>
+      <div class="node" style="left: 24px; top: 230px; width: 240px"><b>agent 自己升级了</b><span>启动时发现二进制的修改时间变了，重读版本</span></div>
+      <span class="arr" style="left: 272px; top: 254px">→</span>
+      <div class="node" style="left: 296px; top: 230px; width: 300px"><b>比核对过的新</b><span>Settings › Agents 写 Newer than checked；只关掉 Screen + keys 类功能（Off · Untested on &lt;版本&gt;）</span></div>
+      <span class="arr" style="left: 604px; top: 254px">→</span>
+      <div class="node" style="left: 628px; top: 230px; width: 280px"><b>启动时某项失灵</b><span>参数被拒：只带会话参数重开一次；钩子 10 秒没来：退回按输出判断。都写进那一项的 Note</span></div>
+      <span class="arr" style="left: 916px; top: 254px">→</span>
+      <div class="node" style="left: 940px; top: 230px; width: 300px"><b>Check again</b><span>不花钱的探测：版本、--help 里的参数、空启动等钩子；能确认的项恢复</span></div>
+      <span class="arr" style="left: 1248px; top: 254px">→</span>
+      <div class="node" style="left: 1272px; top: 230px; width: 336px"><b>下个版本的 AgentDeck</b><span>开发者按 1–5 跑过新版本，记录前进，Off 的功能自动回来</span></div>
+      <span class="at" style="left: 24px; top: 360px; width: 1580px; font-size: 12.5px; color: #5F5F5A">原则：靠官方参数和钩子的（A 档）、靠会话文件的（B 档），升级后照常用、只提示；靠认屏和按键的（C 档）会替你按东西，没核对过就不按。所有降级都写在那一项的 Note 里，不弹框，不用黄色（黄色只给“等你”）。</span>
+    </div>
+  </div>
+
+  <!-- 2 · 合格测试 -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 合格测试：每家都跑同一张表</span>
+    <p class="lead">适配器声明 No 的项跳过（检查原因写了）；声明 Yes / Partial 的项必须过。L1 进 <span class="mono">pnpm check</span>；L2 要 tmux 和真程序，<span class="mono">AGENTDECK_REAL_AGENTS=1 pnpm --filter @agentdeck/agent-adapters conformance --agent &lt;id&gt;</span>，另有一个手动触发的 CI workflow 装最新版跑。</p>
+    <div class="tbl" style="grid-template-columns: 60px 300px minmax(0, 1fr) minmax(0, 1fr) 300px; font-size: 12.5px">
+      <span class="th">编号</span><span class="th">场景（Capability）</span><span class="th">L1 离线</span><span class="th">L2 真程序</span><span class="th">不过时界面上</span>
+      <span class="td mono">K1</span><span class="td">检测命令和版本</span><span class="td">假 PATH 里的假程序</span><span class="td"><span class="mono">--version</span></span><span class="td">菜单里没有这家；Agents 页写 Not installed</span>
+      <span class="td mono">K2</span><span class="td">新建并带第一条消息，agent 收到（First message）</span><span class="td">启动参数里有它，或标了“启动后发送”</span><span class="td">第一条消息是 “reply with the word PELICAN”，屏幕或钩子里等到 PELICAN</span><span class="td">First message: No；MCP 开这家时返回错误，不再空着启动</span>
+      <span class="td mono">K3</span><span class="td">会话 id 知道（Session id）</span><span class="td">样例钩子</span><span class="td">和 agent 自己写的会话文件对上</span><span class="td">Resume、History、Usage 跟着降成 Partial</span>
+      <span class="td mono">K4</span><span class="td">idle → running → idle，发 turn-end（Status）</span><span class="td">样例钩子回放进状态机</span><span class="td">真跑一轮</span><span class="td">Status: Partial · Terminal activity</span>
+      <span class="td mono">K5</span><span class="td">请求批准 → 黄灯，带命令摘要（Approval wait）</span><span class="td">样例 PermissionRequest</span><span class="td">让它 touch 一个临时文件</span><span class="td">Approval wait: No；收件箱收不到它</span>
+      <span class="td mono">K6</span><span class="td">允许一次 → 接着跑（Approve keys）</span><span class="td">按键表、认屏规则</span><span class="td">钩子回 allow，或认屏后真发键</span><span class="td">Auto-approve、Approve all 灰掉，hint 用 Note</span>
+      <span class="td mono">K7</span><span class="td">拒绝或 Esc → idle（Status）</span><span class="td">—</span><span class="td">真按 Esc</span><span class="td">同 K4</span>
+      <span class="td mono">K8</span><span class="td">提问 → 等你回答（Questions）</span><span class="td">样例</span><span class="td">让它用自己的提问工具</span><span class="td">Questions: No</span>
+      <span class="td mono">K9</span><span class="td">按 id 恢复，答出暗号（Resume）</span><span class="td">启动参数</span><span class="td">真 resume</span><span class="td">Resume 灰掉；重开应用时这家新开并说明</span>
+      <span class="td mono">K10</span><span class="td">fork 到另一个目录，答出暗号（Fork）</span><span class="td">启动参数</span><span class="td">同 X4 的核对方法</span><span class="td">Fork conversation into… 灰掉</span>
+      <span class="td mono">K11</span><span class="td">历史会话列出这次的会话和标题（History）</span><span class="td">样例会话文件</span><span class="td">本次会话</span><span class="td">左边栏 HISTORY 里这家的小标题下写 Can't read Kimi sessions</span>
+      <span class="td mono">K12</span><span class="td">用量不为空、上下文和 agent 自己显示的一致（Usage）</span><span class="td">样例会话文件</span><span class="td">本次会话</span><span class="td">Usage 卡片写 No usage recorded yet</span>
+      <span class="td mono">K13</span><span class="td">额度读得出恢复时间（Usage limits）</span><span class="td">样例</span><span class="td">跳过（不能故意把额度用完）</span><span class="td">Prompt queue 灰掉；集群不拿它换家</span>
+      <span class="td mono">K14</span><span class="td">调 MCP 的 list_workspaces，调用者认对（AgentDeck MCP）</span><span class="td">启动参数</span><span class="td">真调一次</span><span class="td">New crew 下拉里灰掉</span>
+      <span class="td mono">K15</span><span class="td">选中的 skill 出现在 agent 的列表里（Skills）</span><span class="td">启动参数</span><span class="td">真列</span><span class="td">SKILLS 小节写 Not supported for &lt;agent&gt;</span>
+      <span class="td mono">K16</span><span class="td">钩子没来时退回按输出判断，报降级</span><span class="td">不给 notify 路径</span><span class="td">给一个错的 notify 路径</span><span class="td">（测的就是降级本身）</span>
+      <span class="td mono">K17</span><span class="td">某个参数被拒时只带会话参数重开</span><span class="td">假程序遇到不认识的参数就退出</span><span class="td">跳过</span><span class="td">（测的就是降级本身）</span>
+    </div>
+  </div>
+
+  <!-- 3 · 终端上的文字 -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · 终端上只多两句话，不多颜色、不多图标</span>
+    <div style="display: flex; gap: 28px; align-items: flex-start">
+      <div class="fig" style="width: 900px; height: 360px">
+        <div class="at win" style="left: 24px; top: 40px; width: 380px; height: 150px">
+          <div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="mono" style="font-weight: 500">kimi</span><span style="color: #6B6B6B">· Refactor the parser</span><span style="flex: 1"></span><span style="color: #1A7F37">Running · 2m</span></div>
+          <div class="wb">Run this command?<br>  rm -rf build &amp;&amp; pnpm build<br>  1. Approve once<br>  2. Approve for this session<br>  3. Reject</div>
+        </div>
+        <div class="tip" style="left: 220px; top: 70px; width: 290px"><span>Running</span><span style="color: #D6D6D2">Status from terminal activity · Kimi has no hooks</span></div>
+        <span class="at" style="left: 24px; top: 206px; width: 380px; font-size: 12px; line-height: 1.55; color: #5F5F5A">kimi 没有钩子：它停在确认框上，屏幕还在刷新，所以写 Running。悬停状态灯时第二行说明这个状态是看屏幕猜的（IS-92）。</span>
+
+        <div class="at win" style="left: 460px; top: 40px; width: 410px; height: 150px">
+          <div class="wt"><span class="ring"></span><span class="mono" style="font-weight: 500">claude</span><span style="color: #6B6B6B">· Fix the login bug</span><span style="flex: 1"></span><span style="color: #6B6B6B">Idle · now</span></div>
+          <div class="wb">⏺ Edit src/auth/oauth.ts<br>&gt;</div>
+        </div>
+        <div class="tip" style="left: 640px; top: 70px; width: 220px"><span>Idle</span><span style="color: #D6D6D2">Hooks didn't report · status from terminal activity</span></div>
+        <span class="at" style="left: 460px; top: 206px; width: 410px; font-size: 12px; line-height: 1.55; color: #5F5F5A">本来有钩子的终端，钩子 10 秒没来（用户开了 disableAllHooks、codex 信任哈希对不上、扩展加载失败），退回按输出判断，悬停写原因（IS-74）。Settings › Agents 的 Status 一行同一句话。</span>
+      </div>
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 12px; font-size: 13.5px; line-height: 1.65">
+        <span><b>第一条消息送不到时（IS-76 修好以后）</b>：让 agent 用 open_terminals 开一个带 prompt 的终端，这家又收不了时，不再空着启动，MCP 工具直接返回：</span>
+        <div class="code">error: unsupported
+Shell can't take a first message. Open it without
+"prompt", or pick an agent that can (see Settings › Agents).</div>
+        <span>pi、omp 把消息放在启动参数最后；kimi 交互模式没有这个参数，等它启动后终端第一次安静下来，再粘进去、回车（Partial · Typed after start）。以 <span class="mono">@</span> 开头的消息照原文送到，不被当成文件（TC-46）。</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4 · 协议 -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · 哪里借协议（不改界面，记在这里免得以后重复讨论）</span>
+    <div class="tbl" style="grid-template-columns: 200px minmax(0, 1fr) 220px">
+      <span class="th">agent</span><span class="th">做法（2026-10-27）</span><span class="th">状态</span>
+      <span class="td">codex</span><span class="td">TUI 用 <span class="mono">codex --remote</span> 连 AgentDeck 自己起的 app-server，AgentDeck 作为第二个客户端订阅同一个对话的事件：会话 id 一启动就知道，批准、用量、额度都是结构化事件，不用信任哈希。钩子留着兜底。app-server 官方标 experimental。</span><span class="td">先调研（DR-67），通了再定</span>
+      <span class="td">claude</span><span class="td">没有“TUI 连本地服务”的用法；SDK 和 ACP 适配器要用 API key，不能用订阅登录。继续用 <span class="mono">--settings</span> 钩子。</span><span class="td">不借</span>
+      <span class="td">kimi</span><span class="td">有 <span class="mono">kimi acp</span>，但那是另一个进程、另一套界面，和白板上的 TUI 不是同一个对话。先照确认框的文字认屏（DR-56 已读过），或等 kimi 出钩子。</span><span class="td">不做 ACP 窗口</span>
+      <span class="td">ACP 整体</span><span class="td">v1；session/list、resume、上下文用量、压缩都已完成，session/fork 还是 Draft；claude、codex 都靠第三方适配器。</span><span class="td">每季度复核一次</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":2560}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

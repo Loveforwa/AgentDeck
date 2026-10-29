@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>跑完一天回来看</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.plain{background-image:none;background-color:#FBFBFA}
+.at{position:absolute}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1240px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.tag{display:inline-flex;align-items:center;height:18px;padding:0 7px;border-radius:999px;font-size:10.5px;background:#F2F2EF;color:#5F5F5A;white-space:nowrap}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#8A8A85}
+.dot{width:7px;height:7px;border-radius:50%;flex:none;box-sizing:border-box;display:inline-block}
+.am{width:6px;height:6px;border-radius:1.5px;flex:none;display:inline-block}
+.btn{display:inline-flex;align-items:center;height:22px;padding:0 8px;border:1px solid #D6D6D2;border-radius:6px;font-size:11px;background:#FFFFFF;color:#1A1A1A;white-space:nowrap}
+.btn.pri{background:#1A1A1A;border-color:#1A1A1A;color:#FFFFFF}
+.panel{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,0.08);font-size:12px;overflow:hidden}
+.ir{display:flex;flex-direction:column;gap:5px;padding:9px 12px;border-top:1px solid #F0F0ED;line-height:1.45}
+.ih{display:flex;align-items:center;gap:6px}
+.gh{display:flex;align-items:center;gap:6px;padding:7px 12px;border-top:1px solid #E3E3E0;background:#FBFBFA;font-size:10.5px;font-weight:600;color:#8A8A85;letter-spacing:0.04em}
+.rt{display:grid;font-size:11.5px;line-height:1.45}
+.rt > span{padding:5px 10px;border-top:1px solid #F0F0ED}
+.rh{font-size:10.5px;color:#8A8A85;font-weight:600}
+.sec{padding:10px 14px;border-top:1px solid #F0F0ED;display:flex;flex-direction:column;gap:4px;line-height:1.5;font-size:12px}
+.top{position:absolute;left:0;right:0;top:0;height:30px;box-sizing:border-box;padding:0 12px;display:flex;align-items:center;gap:10px;background:#FFFFFF;border-bottom:1px solid #E3E3E0;font-size:11.5px}
+.ex{display:flex;flex-direction:column;gap:10px;font-size:13.5px;line-height:1.65}
+.box{box-sizing:border-box;border:1px solid #D6D6D2;border-radius:8px;background:#FFFFFF;padding:9px 11px;font-size:12px;line-height:1.5;display:flex;flex-direction:column;gap:2px}
+.box.ink{border:1.5px solid #1A1A1A}
+.arr{font-size:16px;color:#8A8A85;align-self:center}
+.decide{display:grid;grid-template-columns:36px 1fr;gap:6px 10px;font-size:13px;line-height:1.6}
+</style>
+</helmet>
+<div style="width: 1760px; height: 1820px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">W2 · 跑完一天，你回来看什么：一条推送、收件箱、一份报告</h1>
+      <span class="concept">2026-10-28 按推荐先定，待你确认</span>
+      <span class="concept">2026-10-29 提议：报告改从 Session 笔记和计划生成（S3），版式不变</span>
+    </div>
+    <p class="lead">回来不用翻终端。顺序是：手机上收到一条推送 → 回到电脑按 ⌘J → 收件箱里要你拍板的在上面（算数），跑完的报告和要审的 Lesson 在下面（不算数）→ 打开报告看每一条做没做成、为什么、花了多少 → 把卡住的那条改一改重新排进队列。报告由代码按固定格式生成，不让 agent 写，版式照集群的汇报（C4）。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 收件箱和报告</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start">
+      <div class="fig" style="width: 1180px; height: 900px">
+        <div class="top"><b>AgentDeck</b><span class="muted">agenduck</span><span style="flex: 1"></span><span class="btn" style="border-color: #BF8700"><span class="dot" style="background: #BF8700; margin-right: 5px"></span>Needs you · 1</span></div>
+        <div class="panel" style="left: 20px; top: 46px; width: 380px">
+          <div style="display: flex; align-items: center; gap: 8px; padding: 10px 12px"><b>Needs you</b><span class="muted">· 1</span><span style="flex: 1"></span><span class="muted" style="font-size: 11px">⌘J</span></div>
+          <div class="gh"><span>WAITING FOR YOU</span></div>
+          <div class="ir">
+            <div class="ih"><span class="dot" style="background: #BF8700"></span><b>Approval</b><span class="tag"><span class="am" style="background: #2F5E9E; margin-right: 4px"></span>codex · docs</span><span style="flex: 1"></span><span class="muted">25m</span></div>
+            <span class="muted" style="font-size: 11px">rm -rf docs/status/__pycache__</span>
+            <div style="display: flex; gap: 6px"><span class="btn">Deny</span><span class="btn pri">Allow once</span></div>
+          </div>
+          <div class="gh"><span>DAY RUNS · NOT COUNTED</span></div>
+          <div class="ir" style="background: #F2F2EF">
+            <div class="ih"><span class="dot" style="border: 1px solid #8A8A85"></span><b>Day run finished</b><span class="tag"><span class="am" style="background: #A8503A; margin-right: 4px"></span>claude · agenduck</span><span style="flex: 1"></span><span class="muted">17:30</span></div>
+            <span class="muted" style="font-size: 11px">6 of 7 done · 1 skipped · paused 1h 30m by the usage limit</span>
+            <div style="display: flex; gap: 6px"><span class="btn">Go to terminal</span><span class="btn pri">Open report</span></div>
+          </div>
+          <div class="gh"><span>LESSONS TO REVIEW · NOT COUNTED · 1</span></div>
+          <div class="ir">
+            <div class="ih"><b>Lesson proposed</b><span class="tag"><span class="am" style="background: #A8503A; margin-right: 4px"></span>claude · item 5</span><span style="flex: 1"></span><span class="muted">16:44</span></div>
+            <span style="font-size: 11px">When the history reader test times out · Do run it with --pool=forks</span>
+            <div style="display: flex; gap: 6px"><span class="btn">Reject</span><span class="btn">Edit…</span><span class="btn pri">Accept</span></div>
+          </div>
+          <div style="padding: 9px 12px; border-top: 1px solid #F0F0ED; font-size: 11px; line-height: 1.55; color: #5F5F5A">Day run 停下等你（重开应用后、If stuck 选了 Stop）时才进 WAITING FOR YOU，算数。</div>
+        </div>
+
+        <div class="panel" style="left: 420px; top: 46px; width: 740px">
+          <div style="display: flex; align-items: center; gap: 8px; padding: 12px 14px"><b style="font-size: 14px">Day run report · claude · agenduck</b><span class="tag">Done</span><span style="flex: 1"></span><span class="muted">Oct 28 · 08:25 – 17:30</span></div>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px 22px; padding: 0 14px 10px; font-size: 12px"><span><b>6 of 7</b> items done</span><span><b>1</b> skipped</span><span><b>3</b> commits · +412 −96</span><span><b>1h 30m</b> paused by the usage limit</span><span><b>20m</b> waiting for you</span><span><b>~2.1M</b> tokens</span></div>
+          <div class="rt" style="grid-template-columns: 30px 1fr 70px 130px 90px 70px">
+            <span class="rh">#</span><span class="rh">Item</span><span class="rh">Time</span><span class="rh">Check</span><span class="rh">Changes</span><span class="rh">Tokens</span>
+            <span class="mono">1</span><span><span class="mono">/triage-issues</span></span><span>25m</span><span class="muted">no check</span><span class="muted">—</span><span>180k</span>
+            <span class="mono">2</span><span>Fix the failing store test</span><span>1h 25m</span><span><span class="dot" style="background: #1A7F37"></span> passed on try 2</span><span>1 commit · +38</span><span>420k</span>
+            <span class="mono">3</span><span>Write the e2e for TC-55</span><span>2h 10m</span><span><span class="dot" style="background: #1A7F37"></span> passed</span><span>1 commit · +142</span><span>510k</span>
+            <span class="mono">4</span><span><span class="mono">/release-notes 0.3.0</span></span><span>40m</span><span class="muted">no check</span><span>docs only · +60</span><span>160k</span>
+            <span class="mono">5</span><span>Split the history reader into one file per agent</span><span>1h 40m</span><span><span class="dot" style="background: #CF222E"></span> still failing after 2 tries · skipped</span><span>uncommitted · +172 −96</span><span>690k</span>
+            <span class="mono">6</span><span>Review today’s diff and list anything risky</span><span>40m</span><span class="muted">no check</span><span class="muted">—</span><span>150k</span>
+            <span class="mono">7</span><span><span class="mono">/triage-issues</span> <span class="muted">· weekdays 09:00</span></span><span class="muted">—</span><span class="muted">next tomorrow 09:00</span><span class="muted">—</span><span class="muted">—</span>
+          </div>
+          <div class="sec"><span class="rh">WAITED FOR YOU · 1</span><span><span class="mono">14:15</span> item 4 asked “Ship the notes as a draft PR?” · <b>you</b>: No, just the file · answered 14:35 from the phone</span></div>
+          <div class="sec"><span class="rh">USAGE LIMITS · 1</span><span><span class="mono">11:40</span> claude hit its 5-hour limit during item 3 · resumed 13:10 by claude itself · Auto-resume re-sent 1 failed background agent</span></div>
+          <div class="sec"><span class="rh">MISSED · 0</span></div>
+          <div class="sec"><span class="rh">LESSONS · 1 proposed</span><span>item 5 · “When the history reader test times out …” · <span style="text-decoration: underline">Review</span></span><span class="muted">L4 hasn’t come up in 61 days. Still true? · Keep · Archive</span></div>
+          <div class="sec"><span class="rh">AGENT’S LAST WORDS · ITEM 6</span><span class="muted">“Two risky spots: the reader split left codex.ts half moved (item 5), and the e2e uses a fixed port 47621.”</span></div>
+          <div style="display: flex; gap: 6px; padding: 10px 14px; border-top: 1px solid #F0F0ED"><span class="btn">View diff</span><span class="btn">Copy as Markdown</span><span class="btn">Ask claude for a summary</span><span style="flex: 1"></span><span class="btn">Re-queue item 5</span><span class="btn pri">Go to terminal</span></div>
+        </div>
+        <div class="at" style="left: 20px; top: 640px; width: 380px; display: flex; flex-direction: column; gap: 8px">
+          <span style="font-size: 11px; font-weight: 600; color: #8A8A85; letter-spacing: 0.04em">PHONE · PUSH (RM1)</span>
+          <div class="box" style="width: 300px"><b>AgentDeck</b><span>Day run finished · claude · agenduck · 6 of 7 done · 1 skipped</span><span class="muted" style="font-size: 11px">17:30</span></div>
+          <span style="font-size: 11.5px; line-height: 1.6; color: #5F5F5A">默认只写种类、agent · 项目、完成数；Include details 打开才带条目标题。停下、交接时也推一条。</span>
+        </div>
+        <div class="at" style="left: 420px; top: 800px; width: 740px; font-size: 11.5px; line-height: 1.6; color: #5F5F5A">报告里每一项都来自确定的数据：条目和检查来自 QueueService，提交和 diff 来自 git，token 来自 Usage 插件的读取器（PL2），等你的来自收件箱的记录（CR1 的 resolved），额度来自 LimitService。只有最后一节 AGENT’S LAST WORDS 是 agent 自己说的（最后一条回复的原文，不改写），标出来。Ask claude for a summary 才会花 token。</div>
+      </div>
+      <div class="ex" style="flex: 1">
+        <span><b>算不算数</b>：要你现在拍板的（批准、问题、Day run 停下了）算进 Needs you；跑完的报告、要审的 Lesson 不算，放在下面两组，处理不处理都不催你。</span>
+        <span><b>报告在哪还能找到</b>：队列卡片的 Report；左边栏这个 Session 的悬停卡片多一行 “Day run · Oct 28 · 6 of 7”。留 30 天。</span>
+        <span><b>Re-queue item 5</b>：把卡住的那条放回队列（可以先改提示词或 Done when），下次 Start run 或明天的定时跑到它。没提交的改动留在工作区，不替你丢。</span>
+        <span><b>和集群汇报的分别</b>：没有 Merge into main、没有任务看板；有 Time、Tokens、Missed；Decisions 换成 WAITED FOR YOU（同一份数据）。</span>
+        <span><b>不跟 agent 聊进度</b>：单 agent 没有 Lead。想问它，就在终端里问，或点 Ask claude for a summary；它的上下文可能清过（Fresh），以报告为准。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 回来以后的顺序</span>
+    <div style="display: flex; gap: 14px; align-items: stretch; max-width: 1632px">
+      <div class="box"><b>Push</b><span class="muted">17:30 on the phone</span></div>
+      <span class="arr">→</span>
+      <div class="box ink"><b>⌘J</b><span class="muted">counted items first</span></div>
+      <span class="arr">→</span>
+      <div class="box"><b>Open report</b><span class="muted">one line per item</span></div>
+      <span class="arr">→</span>
+      <div class="box"><b>Review lessons</b><span class="muted">Accept / Edit / Reject</span></div>
+      <span class="arr">→</span>
+      <div class="box"><b>Re-queue</b><span class="muted">fix the skipped item’s prompt</span></div>
+      <span class="arr">→</span>
+      <div class="box ink"><b>Start run</b><span class="muted">or leave it for 09:00</span></div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · 按推荐先定（2026-10-28），待你确认</span>
+    <div class="decide" style="max-width: 1500px">
+      <b>1</b><span><b>报告谁写</b>：<b>代码按固定格式生成</b>，只附上 agent 最后一条回复的原文；要 agent 总结时你点一下才花 token。</span>
+      <b>2</b><span><b>跑完的报告算不算进 Needs you</b>：不算（DAY RUNS 一组），停下等你的才算。</span>
+      <b>3</b><span><b>报告留多久</b>：30 天，Lessons 不跟着删。</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":1820}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

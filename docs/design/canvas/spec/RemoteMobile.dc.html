@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>手机和远程 · 手机页和设置</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1240px}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.tag{display:inline-flex;align-items:center;height:18px;padding:0 7px;border-radius:999px;font-size:10.5px;background:#F2F2EF;color:#5F5F5A;white-space:nowrap}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#8A8A85}
+.dot{width:7px;height:7px;border-radius:50%;flex:none;box-sizing:border-box}
+.am{width:6px;height:6px;border-radius:1.5px;flex:none;display:inline-block}
+.btn{display:inline-flex;align-items:center;justify-content:center;height:22px;padding:0 8px;border:1px solid #D6D6D2;border-radius:6px;font-size:11px;background:#FFFFFF;color:#1A1A1A;white-space:nowrap}
+.btn.pri{background:#1A1A1A;border-color:#1A1A1A;color:#FFFFFF}
+.btn.big{height:44px;font-size:14px;border-radius:8px;flex:1}
+.btn.off{color:#6B6B6B;background:#F2F2EF;border-color:#E3E3E0}
+.phone{position:relative;flex:none;box-sizing:border-box;width:330px;height:690px;border:1px solid #D6D6D2;border-radius:28px;background:#F7F7F5;overflow:hidden;display:flex;flex-direction:column;font-size:13px}
+.ph{display:flex;align-items:center;gap:8px;padding:18px 16px 12px;background:#FFFFFF;border-bottom:1px solid #E3E3E0}
+.ph b{font-size:16px}
+.seg{display:flex;gap:4px;padding:10px 16px;background:#FFFFFF;border-bottom:1px solid #E3E3E0}
+.seg span{flex:1;text-align:center;height:30px;line-height:30px;border-radius:6px;font-size:12.5px;color:#6B6B6B}
+.seg span.on{background:#EDEDEA;color:#1A1A1A;font-weight:600}
+.grp{padding:10px 16px 4px;font-size:11px;color:#6B6B6B;font-weight:600}
+.card{margin:0 12px 8px;padding:12px;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:10px;display:flex;flex-direction:column;gap:6px;line-height:1.45}
+.ih{display:flex;align-items:center;gap:6px}
+.acts{display:flex;gap:8px;margin-top:4px}
+.banner{margin:10px 12px 8px;padding:8px 10px;border:1px solid #E3E3E0;border-radius:8px;background:#FFFFFF;font-size:12px;color:#6B6B6B;line-height:1.45}
+.ex{display:flex;flex-direction:column;gap:10px;font-size:13.5px;line-height:1.65}
+.panel{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,0.08);font-size:12px;overflow:hidden}
+.top{position:absolute;left:0;right:0;top:0;height:34px;box-sizing:border-box;padding:0 12px;display:flex;align-items:center;gap:10px;font-size:11.5px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 8px;border-radius:6px;background:#F7F7F5;border:1px solid #E3E3E0}
+.nav{width:168px;box-sizing:border-box;border-right:1px solid #EEEEEB;padding:10px 8px;display:flex;flex-direction:column;gap:2px;font-size:12.5px}
+.nav span{padding:6px 10px;border-radius:6px}
+.nav span.cur{background:#EDEDEA;font-weight:500}
+.fl{display:grid;grid-template-columns:128px 1fr;gap:10px 14px;align-items:start;font-size:12.5px;line-height:1.5}
+.fl .lb{color:#1A1A1A;padding-top:3px}
+.hint{font-size:11.5px;color:#6B6B6B}
+.field{box-sizing:border-box;border:1px solid #D6D6D2;border-radius:6px;padding:5px 8px;font-size:12px;background:#FFFFFF}
+.radio{display:flex;flex-direction:column;gap:4px}
+.radio span{display:flex;align-items:center;gap:6px}
+.rb{width:12px;height:12px;border-radius:50%;border:1px solid #8A8A85;box-sizing:border-box;flex:none}
+.rb.on{border:4px solid #1A1A1A}
+.qr{width:112px;height:112px;box-sizing:border-box;border:1px solid #D6D6D2;border-radius:6px;background-color:#FFFFFF;background-image:repeating-linear-gradient(0deg,#1A1A1A 0 6px,transparent 6px 12px),repeating-linear-gradient(90deg,#1A1A1A 0 6px,transparent 6px 12px);background-blend-mode:normal;opacity:0.85}
+.dev{display:grid;grid-template-columns:1fr 110px 120px 70px;font-size:12px;border:1px solid #E3E3E0;border-radius:8px;overflow:hidden}
+.dev span{padding:6px 10px;border-top:1px solid #F0F0ED}
+.dev .h{border-top:none;font-size:10.5px;color:#8A8A85;font-weight:600;background:#FBFBFA}
+.toast{position:absolute;box-sizing:border-box;padding:8px 12px;border-radius:6px;background:#1A1A1A;color:#FFFFFF;font-size:12px;box-shadow:0 8px 20px rgba(0,0,0,0.12)}
+.push{box-sizing:border-box;width:330px;padding:12px 14px;border-radius:16px;background:#FFFFFF;border:1px solid #E3E3E0;box-shadow:0 8px 20px rgba(0,0,0,0.08);display:flex;flex-direction:column;gap:3px;font-size:13px;line-height:1.45}
+</style>
+</helmet>
+<div style="width: 1760px; height: 2560px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">R1 · 手机页、推送和 Settings › Remote</h1>
+      <span class="concept">2026-10-28 已定（按推荐）</span>
+    </div>
+    <p class="lead">手机页就是收件箱（C4）的手机版：同样的条目、同样的按钮，只是排成一列、按钮够大（44px）。另加两页：集群进度和汇报、一个终端的最后几行。外观用组件库的 tokens 和零件（Button、StatusLamp、agent 身份色小方块），不另起一套。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 推送（RM1）和点开后的收件箱（RM2 只读 / RM3 可操作）</span>
+    <div style="display: flex; gap: 32px; align-items: flex-start">
+
+      <div style="display: flex; flex-direction: column; gap: 14px; flex: none">
+        <div class="push">
+          <div class="ih"><b>AgentDeck</b><span style="flex: 1"></span><span class="muted" style="font-size: 11.5px">02:14</span></div>
+          <span><b>Approve plan</b> · Crew history-sidebar</span>
+          <span class="muted">2 things need you</span>
+        </div>
+        <div class="push">
+          <div class="ih"><b>AgentDeck</b><span style="flex: 1"></span><span class="muted" style="font-size: 11.5px">06:20</span></div>
+          <span><b>Crew finished</b> · history-sidebar</span>
+          <span class="muted">8 of 8 tasks merged. Ready to merge into main.</span>
+        </div>
+        <div class="push">
+          <div class="ih"><b>AgentDeck</b><span style="flex: 1"></span><span class="muted" style="font-size: 11.5px">13:05</span></div>
+          <span><b>Error</b> · codex · agenduck</span>
+          <span class="muted">1 thing needs you</span>
+        </div>
+        <span class="muted" style="width: 330px; font-size: 12px; line-height: 1.5">默认只写种类、集群名或 agent · 项目、数量；命令和代码不进推送（Include details 打开后才写命令）。</span>
+      </div>
+
+      <div class="phone">
+        <div class="ph"><b>Needs you</b><span class="muted">· 3</span><span style="flex: 1"></span><span class="tag">Mac online</span></div>
+        <div class="seg"><span class="on">Inbox</span><span>Crews</span><span>Terminals</span></div>
+        <div class="banner">View only on this phone. Approve at your Mac, or turn on <b>View and act</b> in Settings › Remote.</div>
+        <div class="grp">AGENDUCK</div>
+        <div class="card">
+          <div class="ih"><span class="dot" style="background: #BF8700"></span><b>Approve plan</b><span style="flex: 1"></span><span class="muted">12m</span></div>
+          <span class="tag" style="align-self: flex-start">Crew · history-sidebar</span>
+          <span class="muted">Lead wrote 8 tasks in 3 waves.</span>
+          <div class="acts"><span class="btn big">Review plan</span></div>
+        </div>
+        <div class="card">
+          <div class="ih"><span class="dot" style="background: #BF8700"></span><b>Approval</b><span style="flex: 1"></span><span class="muted">4m</span></div>
+          <span class="tag" style="align-self: flex-start"><span class="am" style="background: #2F5E9E; margin-right: 4px"></span>T5 · codex</span>
+          <span class="mono" style="font-size: 12px">pnpm test --filter ui-canvas</span>
+          <div class="acts"><span class="btn big">Last lines</span></div>
+        </div>
+        <div class="card">
+          <div class="ih"><span class="dot" style="background: #CF222E"></span><b>Error</b><span style="flex: 1"></span><span class="muted">1m</span></div>
+          <span class="tag" style="align-self: flex-start"><span class="am" style="background: #2F5E9E; margin-right: 4px"></span>codex · main</span>
+          <span class="muted">Exited with code 1</span>
+        </div>
+      </div>
+
+      <div class="phone">
+        <div class="ph"><b>Needs you</b><span class="muted">· 3</span><span style="flex: 1"></span><span class="tag">Mac online</span></div>
+        <div class="seg"><span class="on">Inbox</span><span>Crews</span><span>Terminals</span></div>
+        <div class="grp">AGENDUCK</div>
+        <div class="card">
+          <div class="ih"><span class="dot" style="background: #BF8700"></span><b>Approve plan</b><span style="flex: 1"></span><span class="muted">12m</span></div>
+          <span class="tag" style="align-self: flex-start">Crew · history-sidebar</span>
+          <span class="muted">Lead wrote 8 tasks in 3 waves.</span>
+          <div class="acts"><span class="btn big">Review plan</span><span class="btn big pri">Approve</span></div>
+        </div>
+        <div class="card">
+          <div class="ih"><span class="dot" style="background: #BF8700"></span><b>Approval</b><span style="flex: 1"></span><span class="muted">4m</span></div>
+          <span class="tag" style="align-self: flex-start"><span class="am" style="background: #2F5E9E; margin-right: 4px"></span>T5 · codex</span>
+          <span class="mono" style="font-size: 12px">pnpm test --filter ui-canvas</span>
+          <div class="acts"><span class="btn big">No</span><span class="btn big pri">Yes, once</span></div>
+        </div>
+        <div class="card">
+          <div class="ih"><span class="dot" style="background: #BF8700"></span><b>Approval</b><span style="flex: 1"></span><span class="muted">2m</span></div>
+          <span class="tag" style="align-self: flex-start"><span class="am" style="background: #A8503A; margin-right: 4px"></span>claude · agenduck</span>
+          <span class="mono" style="font-size: 12px">rm -rf packages/ui/canvas/dist</span>
+          <div class="acts"><span class="btn big off">Do this at your Mac</span></div>
+          <span class="muted" style="font-size: 11.5px">Matches a destructive pattern.</span>
+        </div>
+        <div class="card">
+          <div class="ih"><span class="dot" style="background: #BF8700"></span><b>Question</b><span style="flex: 1"></span><span class="muted">1m</span></div>
+          <span class="tag" style="align-self: flex-start"><span class="am" style="background: #2F5E9E; margin-right: 4px"></span>QA · codex</span>
+          <span>Resume in the same frame, or a new terminal?</span>
+          <div class="acts"><span class="btn big">Same frame</span><span class="btn big">New terminal</span></div>
+        </div>
+      </div>
+
+      <div class="ex" style="flex: 1">
+        <span><b>推送</b>（RM1）：收件箱新来一条、集群跑完、集群停住（Stuck）时推一条；同一分钟里的几条合成一条；应用在前台、你在用电脑时不推（和现在的后台通知同一个判断）。点开：装了手机页（RM2）就跳到这一条，没装就只是提醒。</span>
+        <span><b>左边一部手机：View only</b>。和桌面收件箱一样的条目，但没有批准按钮，顶上一句说明怎么打开操作。</span>
+        <span><b>右边一部：View and act</b>（RM3）。按钮和桌面一样，手机上放大到 44px。破坏性命令的按钮换成灰的 “Do this at your Mac”，原因写在下面。提问的按钮来自 agent 给的选项，Reply… 只在 agent 问你时有。</span>
+        <span><b>点 Approve 之后</b>：按钮先变成 “Approving…”，服务回来再消失；没成（例如桌面上已经有人处理了）写 “Already handled at your Mac”。</span>
+        <span><b>Mac online</b>：每 15 秒一次心跳；Mac 睡着或 AgentDeck 退出时变成 “Mac offline · last seen 02:20”，页面保留最后一次看到的内容，按钮都灰掉。</span>
+        <span style="color: #5F5F5A">手机页靠事件流（SSE）实时更新，不轮询；断了自动重连。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 集群和终端两页</span>
+    <div style="display: flex; gap: 32px; align-items: flex-start">
+      <div class="phone">
+        <div class="ph"><b>Crews</b><span style="flex: 1"></span><span class="tag">Mac online</span></div>
+        <div class="seg"><span>Inbox</span><span class="on">Crews</span><span>Terminals</span></div>
+        <div class="card" style="margin-top: 12px">
+          <div class="ih"><span class="dot" style="background: #1A7F37"></span><b>history-sidebar</b><span style="flex: 1"></span><span class="muted">6h 40m</span></div>
+          <span>Wave 3 of 3 · 6 merged · 2 working</span>
+          <span class="muted">Paused 1h 15m for claude’s 5-hour reset</span>
+          <div style="display: grid; grid-template-columns: 34px 1fr 70px; gap: 4px 6px; font-size: 12px; margin-top: 4px">
+            <span class="mono">T7</span><span>History panel width</span><span><span class="am" style="background: #2F5E9E; margin-right: 4px"></span>Review</span>
+            <span class="mono">T8</span><span>Agent color marks</span><span><span class="am" style="background: #A8503A; margin-right: 4px"></span>Working</span>
+            <span class="mono muted">T1–T6</span><span class="muted">Merged</span><span></span>
+          </div>
+          <div class="acts"><span class="btn big">Report so far</span></div>
+        </div>
+        <div class="card">
+          <div class="ih"><b>Crew report · history-sidebar</b></div>
+          <span><b>8 of 8</b> merged · <b>6 of 6</b> cases pass · <b>2</b> notes</span>
+          <span class="muted">T2: claude writes sidechain sessions in a sub-folder; they are skipped on purpose.</span>
+          <div class="acts"><span class="btn big off">Merge at your Mac</span></div>
+        </div>
+      </div>
+
+      <div class="phone">
+        <div class="ph"><span class="am" style="background: #2F5E9E"></span><b>T5 · codex</b><span style="flex: 1"></span><span class="muted" style="font-size: 12px">Needs approval · 4m</span></div>
+        <div style="flex: 1; margin: 12px; padding: 10px; border: 1px solid #E3E3E0; border-radius: 8px; background: #FFFFFF; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; line-height: 1.6; color: #3D3D3A; overflow: hidden">
+          • Ran pnpm --filter ui-canvas typecheck<br>&#160;&#160;└ ok (3.1s)<br>• Edited packages/ui/canvas/src/history/width.ts (+18 −4)<br>• Edited packages/ui/panels/history/src/Panel.tsx (+9 −2)<br><br>Would you like to run the following command?<br><br>&#160;&#160;$ pnpm test --filter ui-canvas<br><br>› 1. Yes, proceed<br>&#160;&#160;2. Yes, and don’t ask again for this command<br>&#160;&#160;3. No, and tell Codex what to do differently
+        </div>
+        <div class="banner" style="margin-top: 0">Last 40 lines, refreshed when they change. Read-only: this page never types into the terminal.</div>
+        <div style="display: flex; gap: 8px; padding: 0 12px 16px"><span class="btn big">No</span><span class="btn big pri">Yes, once</span></div>
+      </div>
+
+      <div class="ex" style="flex: 1">
+        <span><b>Crews</b>：每个开着的集群一张卡：到第几波、几个合进去、几个在跑、因为额度停了多久，任务只列没合进去的（Waiting / Working / Review / Stuck）。Report so far 打开目前为止的汇报（CR7）。</span>
+        <span><b>Merge into main 在手机上永远是灰的</b> “Merge at your Mac”（已定，见 R0 第 6 节）。</span>
+        <span><b>Terminals</b>：按项目列出所有终端和状态灯；点进去是最后 40 行（tmux <span class="mono">capture-pane</span>，和 MCP 的 read_terminal 同一个读法），不 attach，所以桌面上的窗口大小不变。只有在等批准的终端下面才有批准按钮（RM3）。</span>
+        <span style="color: #5F5F5A">手机页没有“往终端里打字”的地方。真要接管一个终端，用 ssh + tmux attach（文档里写怎么做），或者在 claude 终端里自己打 /remote-control。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · 桌面上：Settings › Remote、配对、顶栏标记</span>
+    <div style="display: flex; gap: 32px; align-items: flex-start">
+      <div class="fig" style="width: 1060px; height: 820px">
+        <div class="top"><span class="chip"><b>AgentDeck</b></span><span style="flex: 1"></span><span class="chip"><span class="dot" style="background: #1A7F37"></span>Remote · 1</span><span class="chip" style="color: #B45309"><span class="dot" style="background: #BF8700"></span>Needs you · 3</span></div>
+        <div class="panel" style="left: 40px; top: 56px; width: 760px; display: flex; flex-direction: column">
+          <div style="padding: 12px 16px; border-bottom: 1px solid #EEEEEB"><b style="font-size: 14px">Settings</b></div>
+          <div style="display: flex">
+            <div class="nav"><span class="muted" style="font-size: 11px">PROJECTS</span><span>agenduck</span><span class="muted" style="font-size: 11px; margin-top: 6px">GENERAL</span><span>General</span><span class="cur">Remote</span></div>
+            <div style="flex: 1; padding: 16px 18px; display: flex; flex-direction: column; gap: 18px">
+              <div class="fl">
+                <span class="lb">Push to phone</span>
+                <div style="display: flex; flex-direction: column; gap: 6px">
+                  <div class="radio"><span><span class="rb"></span>Off</span><span><span class="rb on"></span>ntfy</span><span><span class="rb"></span>Bark</span></div>
+                  <div style="display: flex; gap: 6px"><span class="field mono" style="flex: 1">https://ntfy.sh/agentdeck-7f3k9q2m</span><span class="btn">Send test</span></div>
+                  <span class="hint">Anyone who knows the topic can read it. The topic is random; use your own ntfy server for more privacy.</span>
+                  <span style="display: flex; align-items: center; gap: 6px"><span class="rb" style="border-radius: 3px"></span>Include details (commands, questions)</span>
+                </div>
+                <span class="lb">Phone page</span>
+                <div style="display: flex; flex-direction: column; gap: 6px">
+                  <span><span class="dot" style="background: #1A7F37; display: inline-block; margin-right: 6px"></span>Shared on your tailnet: <span class="mono">https://liu-mac.tail3c9.ts.net</span></span>
+                  <span class="hint">Only devices signed in to your Tailscale account can reach it. AgentDeck listens on 127.0.0.1 only.</span>
+                  <div style="display: flex; gap: 6px"><span class="btn">Stop sharing</span><span class="btn pri">Pair a phone…</span></div>
+                </div>
+                <span class="lb">Paired devices</span>
+                <div class="dev">
+                  <span class="h">Device</span><span class="h">Access</span><span class="h">Last seen</span><span class="h"></span>
+                  <span>iPhone</span><span>View and act ▾</span><span class="muted">2 min ago</span><span><span class="btn">Remove</span></span>
+                  <span>iPad</span><span>View only ▾</span><span class="muted">3 days ago</span><span><span class="btn">Remove</span></span>
+                </div>
+                <span class="lb"></span>
+                <span class="hint">From a phone you can approve crew gates, non-destructive commands and answer questions. Merge into main and destructive commands stay on this Mac.</span>
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 6px; padding: 10px 16px; border-top: 1px solid #EEEEEB"><span class="muted" style="font-size: 11.5px">Open settings.json</span><span style="flex: 1"></span><span class="btn">Cancel</span><span class="btn pri">Save</span></div>
+        </div>
+        <div class="panel" style="left: 640px; top: 300px; width: 380px; padding: 16px; display: flex; flex-direction: column; gap: 10px">
+          <b style="font-size: 14px">Pair a phone</b>
+          <div style="display: flex; gap: 14px; align-items: flex-start">
+            <div class="qr"></div>
+            <div style="display: flex; flex-direction: column; gap: 6px; line-height: 1.5"><span>Scan with the phone’s camera. It opens the page and asks for a name.</span><span class="muted">Or type <span class="mono">482 913</span> on the page.</span><span class="muted">Expires in 4:52 · works once</span></div>
+          </div>
+          <div style="display: flex; gap: 6px"><span style="flex: 1"></span><span class="btn">Done</span></div>
+        </div>
+        <div class="panel" style="left: 660px; top: 40px; width: 360px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; line-height: 1.5">
+          <div style="display: flex; align-items: center; gap: 6px"><span class="dot" style="background: #1A7F37"></span><b>Remote is on</b></div>
+          <span class="muted">iPhone · View and act · last action 02:31</span>
+          <span>Approved “Approve plan · history-sidebar”</span>
+          <div style="display: flex; gap: 6px"><span class="btn">Settings…</span><span style="flex: 1"></span><span class="btn pri">Turn off</span></div>
+        </div>
+        <div class="toast" style="left: 300px; top: 770px">Approved from iPhone: pnpm test --filter ui-canvas</div>
+      </div>
+      <div class="ex" style="flex: 1">
+        <span><b>在哪开</b>：Settings 左边 General 下面加一页 <b>Remote</b>，分三块：Push to phone（RM1）、Phone page（RM2）、Paired devices（RM2、RM3）。</span>
+        <span><b>Phone page</b>：AgentDeck 检查有没有装 Tailscale、有没有登录（<span class="mono">tailscale status --json</span>）。没装写 “Install Tailscale on this Mac and your phone” 加链接；装了点 Share on tailnet，AgentDeck 运行 <span class="mono">tailscale serve</span> 把本机端口给 tailnet，Stop sharing 时撤掉。发现 Funnel（公网）开着就不分享并说明。</span>
+        <span><b>Pair a phone…</b>：二维码 + 6 位数字，5 分钟、用一次。新设备默认 View only，要操作在设备那一行改成 View and act（会再问一次 “This phone will be able to approve commands.”）。</span>
+        <span><b>顶栏标记</b>：分享开着时多一个 “Remote · n”（n = 最近 10 分钟连着的设备），绿点表示开着；点开是小卡片：最后一次操作、Turn off（停止分享，设备留着，下次打开不用重新配对）。</span>
+        <span><b>Toast</b>：手机上每做一次操作，桌面弹一条（过去时，一句话），同时记进 Approval history，by 写 remote · 设备名。</span>
+        <span style="color: #5F5F5A">设置存在 settings.json 的 <span class="mono">remote</span> 下面；设备令牌只存哈希，放在 AgentDeck 的 SQLite 里，不进 settings.json。</span>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":2560}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

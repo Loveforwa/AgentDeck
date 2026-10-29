@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Auto-resume 插件</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.at{position:absolute}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1240px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.tag{display:inline-flex;align-items:center;height:18px;padding:0 7px;border-radius:999px;font-size:10.5px;background:#F2F2EF;color:#5F5F5A;white-space:nowrap}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#8A8A85}
+.win{box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;overflow:hidden;font-size:11px}
+.wt{display:flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-bottom:1px solid #EEEEEB}
+.wb{padding:6px 9px;font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.7;color:#6B6B6B}
+.dot{width:7px;height:7px;border-radius:50%;flex:none;box-sizing:border-box}
+.am{width:6px;height:6px;border-radius:1.5px;flex:none;display:inline-block}
+.q{position:absolute;height:16px;padding:0 7px;display:flex;align-items:center;gap:5px;font-size:9.5px;border:1px solid #D6D6D2;border-top:none;border-radius:0 0 4px 4px;white-space:nowrap;background:#FFFFFF;color:#3D3D3A;box-sizing:border-box}
+.menu{background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;box-shadow:0 8px 20px rgba(0,0,0,0.08);padding:4px;font-size:11.5px;display:flex;flex-direction:column}
+.mi{display:flex;align-items:center;gap:8px;padding:4px 9px;border-radius:5px;white-space:nowrap}
+.ms{padding:4px 9px 2px;font-size:10px;font-weight:600;color:#8A8A85;letter-spacing:0.04em}
+.sep{height:1px;background:#EEEEEB;margin:3px 4px}
+.btn{display:inline-flex;align-items:center;height:22px;padding:0 8px;border:1px solid #D6D6D2;border-radius:6px;font-size:11px;background:#FFFFFF;color:#1A1A1A;white-space:nowrap}
+.btn.pri{background:#1A1A1A;border-color:#1A1A1A;color:#FFFFFF}
+.btn.off{color:#A3A39E}
+.panel{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,0.08);font-size:12px;overflow:hidden}
+.ir{display:flex;flex-direction:column;gap:5px;padding:9px 12px;border-top:1px solid #F0F0ED;line-height:1.45}
+.ih{display:flex;align-items:center;gap:6px}
+.sub{display:flex;align-items:center;gap:6px;font-size:11.5px;padding-left:13px}
+.acts{display:flex;gap:6px;flex-wrap:wrap}
+.top{position:absolute;left:0;right:0;top:0;height:30px;box-sizing:border-box;padding:0 12px;display:flex;align-items:center;gap:10px;background:#FFFFFF;border-bottom:1px solid #E3E3E0;font-size:11.5px}
+.frame{position:absolute;box-sizing:border-box;border:1.5px solid #3D3D3A;border-radius:10px;background:rgba(255,255,255,0.55)}
+.fl{position:absolute;left:10px;top:-10px;padding:0 6px;background:#F7F7F5;font-size:11px;font-weight:600}
+.ex{display:flex;flex-direction:column;gap:10px;font-size:13.5px;line-height:1.65}
+.state{font-size:12px;font-weight:600;color:#3D3D3A}
+.tl{display:flex;flex-direction:column;gap:2px;font-size:12px;line-height:1.5}
+.prompt{box-sizing:border-box;border:1px solid #E3E3E0;border-radius:8px;background:#FFFFFF;padding:12px 14px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.7;color:#1A1A1A}
+.add{color:#5F5F5A;border-left:2px solid #D6D6D2;padding-left:10px;margin-top:8px}
+.card{box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,0.08);font-size:12px}
+</style>
+</helmet>
+<div style="width: 1760px; height: 4360px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">PL4 · Auto-resume：被额度打断的任务，恢复后自己接着做</h1>
+      <span class="concept">草案，待定</span>
+      <span class="tag" style="height: 20px; font-size: 12px">2026-10-28 书签和卡片已实现（PL6，integrate/W0-W1）</span>
+      <span class="mono" style="font-size: 12px; color: #6B6B6B">收进退役的 PL3 · 任务 PL4–PL9 · IS-113～IS-115、IS-150 · DR-84 · 依赖 N10、CR1、CR8</span>
+    </div>
+    <p class="lead">额度是按账号算的：一个账号用完，同一家的几个终端会一起停在半路，里面的后台子 agent 也跟着断。Auto-resume 在恢复后让每个被打断的终端把手上的事做完、把断掉的子 agent 接回来。2026-10-28 用户试用后定：Prompt queue（PL3）退役，并进这里——各家 agent 大多自己会排提示词，要紧的是撞上限那一刻发什么，所以卡片里能改这一次续跑的话、往里加要求（第 2 节）。同一账号的终端一起看、一起续、一起取消。agent 自己会续的（claude 2.1.234 起），AgentDeck 不重复发，只盯着它续没续上。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 撞额度的那一刻：白板和收件箱</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start">
+      <div class="fig" style="width: 1100px; height: 640px">
+        <div class="top"><b>AgentDeck</b><span class="muted">agenduck</span><span style="flex: 1"></span><span class="btn"><span class="dot" style="border: 1px solid #8A8A85; margin-right: 5px"></span>Needs you · 0 · 2 paused</span></div>
+        <div class="frame" style="left: 24px; top: 70px; width: 470px; height: 540px"><span class="fl">feat/N12-arrange</span></div>
+        <div class="at win" style="left: 40px; top: 92px; width: 440px; height: 140px">
+          <div class="wt"><span class="dot" style="background: #BF8700"></span><span class="mono" style="font-weight: 500">codex</span><span class="muted">· T5 Index codex sessions</span><span style="flex: 1"></span><span class="muted">Idle · 3m</span></div>
+          <div class="wb">• Edited packages/agent-adapters/src/history/readers.ts<br>• Running pnpm --filter agent-adapters test<br><span style="color: #9A6700">■ You've hit your usage limit. … try again at 9:00 PM.</span></div>
+        </div>
+        <div class="q" style="left: 56px; top: 232px"><span class="dot" style="background: #BF8700"></span>Paused · resumes 9:01pm</div>
+        <div class="at win" style="left: 40px; top: 270px; width: 440px; height: 140px">
+          <div class="wt"><span class="dot" style="background: #BF8700"></span><span class="mono" style="font-weight: 500">codex</span><span class="muted">· T6 History search box</span><span style="flex: 1"></span><span class="muted">Idle · 1m</span></div>
+          <div class="wb">• Explored panels/history/src/List.tsx<br><span style="color: #9A6700">■ You've hit your usage limit. … try again at 9:00 PM.</span></div>
+        </div>
+        <div class="q" style="left: 56px; top: 410px"><span class="dot" style="background: #BF8700"></span>Paused · resumes 9:01pm</div>
+        <div class="at win" style="left: 40px; top: 448px; width: 440px; height: 130px">
+          <div class="wt"><span class="dot" style="border: 1px solid #8A8A85"></span><span class="mono" style="font-weight: 500">codex</span><span class="muted">· Review docs</span><span style="flex: 1"></span><span class="muted">Idle · 40m</span></div>
+          <div class="wb">› Review docs/plugins.md for typos<br>• Fixed 3 typos. Nothing else to change.</div>
+        </div>
+        <div class="q" style="left: 56px; top: 578px; color: #8A8A85">Limit · resets 9:00pm</div>
+
+        <div class="panel" style="left: 520px; top: 40px; width: 560px">
+          <div style="display: flex; align-items: center; gap: 8px; padding: 10px 12px"><b>Needs you</b><span class="muted">· 0</span><span style="flex: 1"></span><span class="muted" style="font-size: 11px">⌘J</span></div>
+          <div style="padding: 2px 12px 6px; font-size: 10.5px; font-weight: 600; color: #8A8A85; letter-spacing: 0.04em">PAUSED BY USAGE LIMIT · NOT COUNTED</div>
+          <div class="ir">
+            <div class="ih"><span class="dot" style="background: #BF8700"></span><b>Usage limit</b><span class="tag"><span class="am" style="background: #2F5E9E; margin-right: 4px"></span>codex · ~/.codex</span><span style="flex: 1"></span><span class="muted">resets 9:00pm</span></div>
+            <span class="muted">3 terminals paused · resuming one by one from 9:01pm, 30s apart</span>
+            <div class="sub"><span>☑</span><span class="mono">T5</span><span>Index codex sessions</span><span class="muted">· stopped mid-task</span><span style="flex: 1"></span><span class="muted">9:01pm</span></div>
+            <div class="sub"><span>☑</span><span class="mono">T6</span><span>History search box</span><span class="muted">· stopped mid-task</span><span style="flex: 1"></span><span class="muted">9:01:30pm</span></div>
+            <div class="sub"><span>☑</span><span>Review docs</span><span class="muted">· was idle · nothing to resume</span><span style="flex: 1"></span><span class="muted">—</span></div>
+            <div class="acts" style="margin-top: 4px"><span class="btn off">Resume now</span><span class="btn">Don’t resume</span><span class="btn">Go to terminals</span></div>
+          </div>
+          <div class="ir">
+            <div class="ih"><span class="dot" style="background: #BF8700"></span><b>Usage limit</b><span class="tag"><span class="am" style="background: #A8503A; margin-right: 4px"></span>claude · ~/.claude</span><span style="flex: 1"></span><span class="muted">resets 9:30pm</span></div>
+            <span class="muted">1 terminal paused · claude continues by itself at 9:30pm · 2 background agents stopped</span>
+            <div class="sub"><span>☑</span><span>Refactor auth</span><span class="muted">· claude’s own auto-continue</span><span style="flex: 1"></span><span class="tag">handled by claude</span></div>
+            <div class="acts" style="margin-top: 4px"><span class="btn">Don’t resume</span><span class="btn">Go to terminal</span></div>
+          </div>
+          <div style="padding: 2px 12px 6px; border-top: 1px solid #F0F0ED; padding-top: 8px; font-size: 10.5px; font-weight: 600; color: #8A8A85; letter-spacing: 0.04em">WAITING FOR YOU</div>
+          <div class="ir">
+            <div class="ih"><span class="dot" style="background: #BF8700"></span><b>Usage limit · reset time unknown</b><span class="tag"><span class="am" style="background: #4A4F7A; margin-right: 4px"></span>kimi</span><span style="flex: 1"></span><span class="muted">12m</span></div>
+            <span class="muted">kimi didn’t say when it resets. 1 terminal stopped mid-task.</span>
+            <div class="acts"><span class="btn pri">Resume now</span><span class="btn">Dismiss</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="ex" style="flex: 1">
+        <span><b>按账号归一组</b>：账号 = agent + 它的配置目录（CLAUDE_CONFIG_DIR / CODEX_HOME，没设就是 ~/.claude、~/.codex）。一个终端撞上，同一账号的终端都标成“受限”，包括当时空闲、自己没撞的那个（它没什么要续：灰书签 “Limit · resets 9:00pm”，到点算续完；2026-10-28 起不再给它留发送位置）。</span>
+        <span><b>收件箱</b>（CR1，按集群分组的样子见 C4）：一个账号一条 “Usage limit”，列出被打断的终端和几点续。会自己续的不算进 “Needs you” 的数字，放在 PAUSED 一组；读不到恢复时间、连撞两次、睡过头了，才进 WAITING FOR YOU 算数。</span>
+        <span><b>Don’t resume</b>（收件箱这一条）：这个账号这一次都不续。只不续某一个：去掉那一行的勾，或在终端的卡片里点 Don’t resume（只管这个终端）。<b>Resume now</b>：恢复时间读不到、或你买了额度时用；恢复时间还没到时灰掉。</span>
+        <span><b>终端书签</b>：被打断的终端底边挂 “Paused · resumes 9:01pm”（黄点），只在这个终端被额度停下时挂，开着 Auto-resume 但没撞上不挂；点开是第 2 节的卡片。</span>
+        <span style="color: #5F5F5A">顶栏按钮在只有 PAUSED 时写 “Needs you · 0 · 2 paused”，灰色。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 书签的几种样子，点开的卡片（2026-10-28 照实现改）</span>
+    <div class="fig" style="width: 1632px; height: 290px">
+      <div class="q" style="left: 40px; top: 36px"><span class="dot" style="background: #BF8700"></span>Paused · resumes 9:01pm</div>
+      <span class="at state" style="left: 40px; top: 64px">被打断，AgentDeck 到点续</span>
+      <div class="q" style="left: 360px; top: 36px"><span class="dot" style="background: #1A7F37"></span>Resuming</div>
+      <span class="at state" style="left: 360px; top: 64px">续跑这一轮在跑：绿点，做完收起</span>
+      <div class="q" style="left: 680px; top: 36px; color: #8A8A85">claude resumes 9:30pm</div>
+      <span class="at state" style="left: 680px; top: 64px">claude 自己会续：灰色</span>
+      <div class="q" style="left: 1000px; top: 36px"><span class="dot" style="background: #1A7F37"></span>claude resuming</div>
+      <span class="at state" style="left: 1000px; top: 64px">claude 自己续的这一轮在跑</span>
+      <div class="q" style="left: 1320px; top: 36px"><span class="dot" style="background: #BF8700"></span>claude waits for Enter</div>
+      <span class="at state" style="left: 1320px; top: 64px">claude 在等你按回车（stale）</span>
+      <div class="q" style="left: 40px; top: 116px"><span class="dot" style="background: #CF222E"></span>Hit the limit again</div>
+      <span class="at state" style="left: 40px; top: 144px">续了又撞，连续两次后停：红点</span>
+      <div class="q" style="left: 360px; top: 116px"><span class="dot" style="background: #BF8700"></span>Reset time unknown</div>
+      <span class="at state" style="left: 360px; top: 144px">读不到恢复时间（pi、kimi）：等你点</span>
+      <div class="q" style="left: 680px; top: 116px"><span class="dot" style="background: #BF8700"></span>Waiting for you</div>
+      <span class="at state" style="left: 680px; top: 144px">Mac 睡过了恢复时间：先问你</span>
+      <div class="q" style="left: 1000px; top: 116px; color: #8A8A85">Not resumed · you took over</div>
+      <span class="at state" style="left: 1000px; top: 144px">撞完你自己打过字：不管</span>
+      <div class="q" style="left: 1320px; top: 116px; color: #8A8A85">Skipped</div>
+      <span class="at state" style="left: 1320px; top: 144px">你点了 Don’t resume</span>
+      <div class="q" style="left: 40px; top: 196px; color: #8A8A85">handled by omp</div>
+      <span class="at state" style="left: 40px; top: 224px">omp 自己处理额度：只显示</span>
+      <div class="q" style="left: 360px; top: 196px; color: #8A8A85">Crew resumes</div>
+      <span class="at state" style="left: 360px; top: 224px">集群里的任务：调度器处理（CR8）</span>
+      <div class="q" style="left: 680px; top: 196px; color: #8A8A85">Limit · resets 9:00pm</div>
+      <span class="at state" style="left: 680px; top: 224px">Auto-resume 关着，或当时空闲没什么要续</span>
+      <span class="at" style="left: 1000px; top: 196px; width: 600px; font-size: 12px; line-height: 1.6; color: #5F5F5A">颜色只用状态色：绿在跑、黄等你或等恢复、红又撞，其余灰。原来的 “Paused · ↻ + 2 queued”（和 Prompt queue 合成的书签）随 PL3 退役作废。</span>
+    </div>
+    <div style="display: flex; gap: 40px; align-items: flex-start">
+      <div class="fig" style="width: 900px; height: 400px">
+        <div class="at card" style="left: 30px; top: 24px; width: 380px">
+          <div style="display: flex; align-items: center; gap: 6px; padding: 10px 12px"><b>Auto-resume</b><span class="muted">· resets 9:00pm</span></div>
+          <div style="padding: 0 12px 8px; font-size: 11.5px; color: #8A6700">Stopped by the usage limit. Resumes at 9:01pm, after the limit resets at 9:00pm.</div>
+          <div style="padding: 8px 12px; border-top: 1px solid #F0F0ED">
+            <div style="display: flex; align-items: center; font-size: 11px; font-weight: 600; color: #5F5F5A; margin-bottom: 4px">Message<span style="flex: 1"></span><span style="font-weight: 400; color: #1A1A1A; text-decoration: underline">Reset to default</span></div>
+            <div class="mono" style="box-sizing: border-box; height: 112px; border: 1px solid #1A1A1A; border-radius: 6px; padding: 6px 8px; font-size: 10.5px; line-height: 1.6">Limit reset. Finish the migration first, then run pnpm test.<br>These background agents stopped at the usage limit…<br>• Index claude sessions (agent id a1b2c3)</div>
+            <div class="muted" style="font-size: 10.5px; margin-top: 4px">Sent when this terminal resumes. Only for this limit; next time starts from the default (Settings › Resume prompt).</div>
+            <div style="display: flex; align-items: center; gap: 6px; margin-top: 6px"><span class="btn">Save</span><span class="btn" style="border-color: transparent">Cancel</span><span class="muted" style="font-size: 10.5px">⌘↩</span></div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-top: 1px solid #F0F0ED"><span class="btn off">Resume now</span><span class="btn" style="border-color: transparent">Don’t resume</span></div>
+        </div>
+        <div class="at card" style="left: 450px; top: 24px; width: 420px">
+          <div style="display: flex; align-items: center; gap: 6px; padding: 10px 12px"><b>Auto-resume</b><span class="muted">· resets 9:30pm</span></div>
+          <div style="padding: 0 12px 8px; font-size: 11.5px; color: #5F5F5A">claude continues by itself at 9:30pm. It will send your message instead of its own continue.</div>
+          <div style="padding: 8px 12px; border-top: 1px solid #F0F0ED">
+            <div style="font-size: 11px; font-weight: 600; color: #5F5F5A; margin-bottom: 4px">Message</div>
+            <div class="mono" style="box-sizing: border-box; height: 72px; border: 1px solid #E3E3E0; border-radius: 6px; padding: 6px 8px; font-size: 10.5px; line-height: 1.6; background: #FBFBFA">Limit reset. Also add a test for the refresh path.</div>
+            <div class="muted" style="font-size: 10.5px; margin-top: 4px">Given to claude: it sends this instead of its own continue when the limit resets.</div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-top: 1px solid #F0F0ED"><span class="btn off">Resume now</span><span class="muted" style="font-size: 10.5px">To stop claude continuing, press Esc in the terminal.</span></div>
+        </div>
+        <span class="at" style="left: 30px; top: 352px; width: 840px; font-size: 12px; color: #5F5F5A">左：AgentDeck 来续（codex，或关了自己续的 claude），改过话、还没保存。右：claude 自己续，改过的话已经送进去（Give to claude 之后只读）。</span>
+      </div>
+      <div class="ex" style="flex: 1">
+        <span><b>Message</b>：这一次续跑发的话。预填 Settings › General › Resume prompt（没填用第 4 节的内置模板），后面是断掉的子 agent；改了按 ⌘↩ 或 Save，改过时出 Reset to default。只管这一次：发出去、这一次了结后就清，下一次从默认开始。改过的话里没点到 id 的子 agent 照样补在后面；codex 那一句不补。</span>
+        <span><b>Resume now</b>：恢复时间到了才能点（读不到恢复时间时一直能点），发的就是 Message 里的话。<b>Don’t resume</b>：只这个终端这一次不续；整个账号不续在收件箱里点（CR1）。</span>
+        <span><b>claude 自己续时</b>：没改什么都不发；改了按钮叫 Give to claude，马上送进 claude，它恢复时改发这一条、不发自己的 continue（照文档的说法，只用假 claude 验证过，待真 claude 核对，IS-150），之后只读，续完也不再补发子 agent 那一段。AgentDeck 拦不住它续，所以不给 Don’t resume，写一句按 Esc。</span>
+        <span style="color: #5F5F5A">没有 Keep Mac awake 勾选框：不让睡由主进程管（第 5 节的规则）。集群里的终端卡片不给改话和按钮，由调度器续。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · 怎么认出“干到一半被打断”</span>
+    <div class="tbl" style="grid-template-columns: 240px minmax(0, 1fr) 360px">
+      <span class="th">情况</span><span class="th">怎么认</span><span class="th">恢复后做什么</span>
+      <span class="td"><b>这一轮是被额度结束的</b></span><span class="td">claude：StopFailure 钩子 <span class="mono">error: "rate_limit"</span>，或会话记录最后一条是 <span class="mono">error: "rate_limit"</span> 的那一行（之后没有成功的回答）。codex：最后一个 <span class="mono">task_complete</span> 带 <span class="mono">codex_error_info: "usage_limit_exceeded"</span>。</span><span class="td">发续跑提示（第 4 节）；claude 自己会续时不发，只看它续没续上</span>
+      <span class="td">同一账号，当时空闲</span><span class="td">这个终端上一轮正常结束（Stop / 没有 error 的 task_complete），是因为别的终端撞了才标成受限。</span><span class="td">不续跑；排着的提示词照 PL3 发</span>
+      <span class="td">撞完以后你接手了</span><span class="td">之后在这个终端打过字、发过消息、按过 Esc（状态机的 noteInput，或新的 UserPromptSubmit）。</span><span class="td">不管它，书签写 “you took over” 后收起</span>
+      <span class="td">只有后台子 agent 撞了</span><span class="td">N10 看到子 agent failed（原因是额度），主线这一轮还没结束。</span><span class="td">先不算；主线下一次请求也会撞，那时按第一行算</span>
+      <span class="td">撞的是 claude 的 Opus / Sonnet 单独额度</span><span class="td"><span class="mono">quotaLimits.rateLimitType</span> 是 <span class="mono">seven_day_opus</span> / <span class="mono">seven_day_sonnet</span>。</span><span class="td">只把用同一家族模型的终端标成受限</span>
+    </div>
+    <p class="lead" style="max-width: none">为什么不靠 todo 或“有没有没做完的工具调用”来判断：撞额度只会发生在发请求的时候，也就是一轮还没结束；“这一轮是被额度结束的”本身就说明没做完。正好做完的那一轮已经回到空闲，不会再发请求，也就撞不上。todo、后台子 agent 只拿来写续跑提示，不参与判断。claude 后台请求（起标题、猜下一句）撞额度不会触发 StopFailure，不算（待核对）。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · 续跑发什么</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start">
+      <div style="width: 900px; flex: none">
+        <div class="prompt">Your usage limit has reset. Continue the task you were working on when the limit stopped you, from where you left off. Don’t redo work that is already done.
+          <div class="add">+ claude，N10 看到有后台子 agent 因为额度停了：<br>These background agents stopped at the usage limit before they finished:<br>• Index claude sessions (agent id a1b2c3)<br>• Weather 10 years ago (agent id d4e5f6)<br>Check what each one already did, then resume it with SendMessage to its id. If it can’t be resumed, start it again.</div>
+          <div class="add">+ codex：<br>If any sub-agents you spawned didn’t finish, check them and spawn them again.</div>
+        </div>
+      </div>
+      <div class="ex" style="flex: 1">
+        <span><b>为什么不是一个 “continue”</b>：主线 “continue” 就够，但后台子 agent 断了以后主 agent 只收到一条 failed 通知，不一定会重派；要点名告诉它是哪几个、怎么接回（claude 的子 agent 可以用 SendMessage 按 id 接着做，记录还在）。</span>
+        <span><b>为什么不写长上下文</b>：任务的来龙去脉都在 agent 自己的会话里，AgentDeck 知道的不比它多；多写只是多花 token。</span>
+        <span><b>顺序</b>：一个终端只发这一次续跑，这一轮做完就完了；想加的要求写进卡片的 Message（第 2 节）。原来“做完再按 PL3 发排着的第一条”随 PL3 退役作废。</span>
+        <span><b>claude 自己续的时候</b>：它的续跑不重发你的消息、也不一定重派子 agent。它那一轮做完后，N10 里还有因额度 failed、之后没有重新开的后台子 agent，就补发上面第二段（只发一次）。你在卡片里改过话时，子 agent 那一段已经跟着改过的话送进去了，续完不再补发。</span>
+        <span style="color: #5F5F5A">提示词是英文，默认的在 Settings › General › Resume prompt 里改，只改这一次的在书签卡片的 Message 里改；每次续跑只发一次。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">5 · 同一账号几个终端：恢复时怎么排</span>
+    <div class="fig" style="width: 1632px; height: 230px">
+      <div class="at tl" style="left: 30px; top: 26px; width: 230px"><b>20:12</b><span>T5 codex 撞上，记录写 9:00pm 恢复</span><span class="muted">账号 codex · ~/.codex 受限</span></div>
+      <div class="at tl" style="left: 290px; top: 26px; width: 230px"><b>20:14</b><span>T6 codex 也撞上</span><span class="muted">Review docs 空闲，也标受限</span></div>
+      <div class="at tl" style="left: 550px; top: 26px; width: 230px"><b>21:01</b><span>恢复 + 1 分钟：T5 先续（先被打断的先续）</span><span class="muted">书签 Resuming</span></div>
+      <div class="at tl" style="left: 810px; top: 26px; width: 230px"><b>21:01:30</b><span>隔 30 秒，T6 续</span></div>
+      <div class="at tl" style="left: 1070px; top: 26px; width: 230px"><b>21:00</b><span>Review docs 当时空闲：没什么要续，到点算续完</span><span class="muted">不再发排着的（PL3 已退役）</span></div>
+      <div class="at tl" style="left: 1330px; top: 26px; width: 270px"><b>22:40</b><span>T6 又撞上：等下一次恢复再续；连续两次续了就撞，停下进收件箱</span></div>
+      <div class="at" style="left: 30px; top: 150px; width: 1570px; font-size: 12px; line-height: 1.6; color: #5F5F5A">错开 30 秒不省额度（恢复后是整份新的），只是避免几个终端同一秒一起发请求撞上并发限流，也让先被打断的先拿到额度。睡着的 Mac 过了恢复时间超过 30 分钟才醒：不自己续，进收件箱 “Limit reset while your Mac was asleep · Resume all”（和 claude 自己的做法一致）。离恢复超过 12 小时（每周额度）时不阻止睡眠，醒来后过了恢复时间照样续。</div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">6 · 各家自带什么，谁来发（2026-10-27 查）</span>
+    <div class="tbl" style="grid-template-columns: 120px minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1.1fr)">
+      <span class="th">agent</span><span class="th">撞额度时界面</span><span class="th">会话文件 / 钩子里</span><span class="th">自带续跑、排队</span><span class="th">AgentDeck 怎么做</span>
+      <span class="td mono">claude<br>2.1.291</span><span class="td">“You’ve hit your session limit · resets 3:45pm”，底下 “Continuing automatically at 3:45pm · esc to cancel”</span><span class="td">rate_limit 行带 quotaLimits.resetsAt；StopFailure 钩子 error rate_limit；Notification 钩子 quota_auto_resume_fired / stale / disabled（2.1.234 起）</span><span class="td">有：autoContinueAtUsageLimit 默认开，恢复后自己续（不重发你的消息），连撞两次停；睡着超过 30 分钟要按回车；恢复超过 24 小时不自己等；子 agent 标 failed，不自动重派；跑着时打字会排队</span><span class="td">不重复发：等 fired；stale 进收件箱（Continue = 替你按回车）；disabled、或恢复 3 分钟后还没动静才自己发；补发子 agent 那一段</span>
+      <span class="td mono">codex<br>0.164</span><span class="td">“You’ve hit your usage limit. … try again at Aug 2nd, 2026 1:12 PM.”</span><span class="td">task_complete 带 usage_limit_exceeded；token_count 的 rate_limits.resets_at</span><span class="td">没有自带续跑（GitHub #21073、#34188、#48392 都在要，未回复）；有 <span class="mono">codex queue --thread</span> 给已开的会话排一条，TUI 里跑着时也能排</span><span class="td">AgentDeck 发续跑（send-keys）；以后可改用 codex queue（能不能送进 TUI 里的会话待核对）</span>
+      <span class="td mono">omp<br>18.0.4</span><span class="td">待核对</span><span class="td">待核对</span><span class="td">有一部分：撞额度时换到另一个已登录的账号；没得换时按恢复时间算等多久再重试（源码 markUsageLimitReached、retryAtMs；最长等多久待核对）</span><span class="td">先不接：书签写 “handled by omp”，只显示；实测后再定</span>
+      <span class="td mono">pi</span><span class="td">待核对</span><span class="td">待核对（assistant 消息的 stopReason / errorMessage）</span><span class="td">只有短重试（retry.maxRetries 3、最长 60 秒），不等额度恢复；Enter / Alt+Enter 排队</span><span class="td">读不到恢复时间：能开，只有 Resume now（2026-10-28 实现；撞额度还认不出来，等 PL9）</span>
+      <span class="td mono">kimi<br>2.3.2</span><span class="td">“You’ve reached your 5-hour usage limit. Your quota will reset when the current 5-hour window ends.”（不写几点）</span><span class="td">待核对</span><span class="td">没有；官方说额度错误重试没用</span><span class="td">只能等你点：收件箱 “reset time unknown · Resume now”</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">7 · 开关在哪、默认是什么</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start">
+      <div class="fig" style="width: 760px; height: 300px">
+        <div class="at menu" style="left: 30px; top: 30px; width: 280px">
+          <span class="ms">BOARD</span>
+          <span class="mi">New terminal</span><span class="mi">New project…</span>
+          <span class="sep"></span>
+          <span class="ms">PLUGINS</span>
+          <span class="mi" style="background: #EDEDEA"><span style="width: 12px">✓</span>Auto-resume<span style="flex: 1"></span><span class="muted" style="font-size: 10.5px">all terminals</span></span>
+          <span class="mi"><span style="width: 12px"></span>Usage</span>
+        </div>
+        <div class="at menu" style="left: 360px; top: 30px; width: 300px">
+          <span class="ms">TERMINAL · PLUGINS</span>
+          <span class="mi"><span style="width: 12px">✓</span>Auto-approve</span>
+          <span class="mi"><span style="width: 12px">✓</span>Auto-resume<span style="flex: 1"></span><span class="muted" style="font-size: 10.5px">from board</span></span>
+        </div>
+      </div>
+      <div class="ex" style="flex: 1">
+        <span><b>贴在白板上</b>（整块白板的所有 agent 终端），框和单个终端可以单独关，规则和 Auto-approve 一样：终端上的设置优先，框上关掉框里的都关。</span>
+        <span><b>默认关</b>（2026-10-28 用户定，原来建议默认开）：要用时右键白板空白处打开。pi、kimi 也能开（只有 Resume now），omp 书签只写 handled by omp，shell、自定义命令不列。</span>
+        <span><b>Keep Mac awake</b>：有终端在等恢复时主进程不让 Mac 睡；离恢复超过 12 小时不阻止。卡片里没有勾选框（2026-10-28）。</span>
+        <span style="color: #5F5F5A">集群里的终端不归它管，见第 8 节。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">8 · 和集群 CR8 的分工：一个终端只有一个“续跑的人”</span>
+    <div class="tbl" style="grid-template-columns: 260px minmax(0, 1fr) minmax(0, 1fr)">
+      <span class="th">终端</span><span class="th">谁决定（换家 / 等恢复）</span><span class="th">谁发</span>
+      <span class="td">集群里的任务终端</span><span class="td">集群调度器（CR8），按模板的 onLimit 规则：实现者另一家有额度就换家，没有就等；审查者只等（审查必须换一家）</span><span class="td">等恢复时调度器调同一个 LimitService 续，提示词带任务编号；换家时原终端标 “handed to …”，Auto-resume 跳过</span>
+      <span class="td">集群外的 agent 终端</span><span class="td">只会等恢复（不换家：换家要换会话，上下文丢了）</span><span class="td">Auto-resume（本插件）</span>
+      <span class="td">claude 自己会续的</span><span class="td">claude</span><span class="td">claude；AgentDeck 只补发子 agent 那一段，你改过话时把它送进去由 claude 发</span>
+    </div>
+    <p class="lead" style="max-width: none">撞额度的识别、按账号归组、错开发送、Keep Mac awake 只写一份，放在主进程（agent-adapters 的 limits 模块，经 contracts 的 LimitService 给界面和集群用）。规则写在 docs/plugins.md 的 PL4 一行和 docs/decisions.md；集群模板里只写 onLimit 选哪种，不另写一套等待和发送。</p>
+  </div>
+
+  <div style="display: flex; gap: 40px; align-items: flex-start">
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 14px">
+      <span class="h2">已定（2026-10-28：默认关，其余按推荐）</span>
+      <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; line-height: 1.65">
+        <span>1. Auto-resume 默认开（建议），还是默认关、要用时右键白板打开。→ 你定：默认关。</span>
+        <span>2. 名字：Auto-resume（建议，和 Auto-approve 成对），或并进 Prompt queue 不单独列。→ 叫 Auto-resume；2026-10-28 试用后反过来，Prompt queue 并进它。</span>
+        <span>3. PL3 的“只在碰到上限后才发”改成“这个账号碰到上限后”：空闲、自己没撞的终端排着的提示词也在这次恢复后发。（PL3 退役后作废）</span>
+        <span>4. Mac 睡过恢复时间 30 分钟以上：问你（建议，和 claude 一致），还是醒来就续。</span>
+        <span>5. 2026-10-28 试用后：PL3 退役，并进本插件；卡片里能改这一次续跑的话；Don’t resume 在终端上只管这个终端；Keep Mac awake 不给勾选框。</span>
+      </div>
+    </div>
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 14px">
+      <span class="h2">做不到的</span>
+      <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; line-height: 1.65">
+        <span>· 子 agent 自己接不回来：它们跑在主 agent 进程里，没有终端。只能发提示让主 agent 去接（claude 用 SendMessage 按 id，codex 重新开）。</span>
+        <span>· 应用关着、Mac 合盖睡着时续不了；重开后按记下的状态接着等。</span>
+        <span>· pi、kimi 读不到恢复时间，只能你点 Resume now。</span>
+        <span>· claude 自己续时，改过的话靠 claude 在等恢复时收到消息改发；只用假 claude 验证过，要用真 claude 撞一次核对（IS-150）。</span>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":4360}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

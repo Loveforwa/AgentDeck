@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>代码理解 · Flow 窗口</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D6D6D2 1px,transparent 1px);background-size:20px 20px}
+.at{position:absolute}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1240px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#6B6B6B}
+.win{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;overflow:hidden;font-size:12px}
+.win.focus{border-color:#1A1A1A;box-shadow:0 6px 20px rgba(26,26,26,0.12)}
+.tb{height:28px;display:flex;align-items:center;gap:6px;padding:0 10px;border-bottom:1px solid #EEEEEB;font-size:12px;white-space:nowrap}
+.tb .n{font-family:'IBM Plex Mono',monospace;font-weight:500}
+.tb .s{color:#6B6B6B}
+.tb .tag{color:#6B6B6B;font-size:11px;border:1px solid #E3E3E0;border-radius:4px;padding:0 5px;line-height:16px}
+.tb .tag.att{color:#B45309;border-color:#E3E3E0}
+.body{padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.7;color:#3D3D3A}
+.lr{display:inline-block;width:7px;height:7px;border-radius:50%;flex:none;background:#1A7F37}
+.lw{display:inline-block;width:7px;height:7px;border-radius:50%;flex:none;background:#BF8700}
+.le{display:inline-block;width:7px;height:7px;border-radius:50%;flex:none;background:#CF222E}
+.li{display:inline-block;width:7px;height:7px;border-radius:50%;flex:none;box-sizing:border-box;border:1.5px solid #6B6B6B}
+.lx{display:inline-block;width:7px;height:2px;flex:none;background:#6B6B6B}
+.am{display:inline-block;width:7px;height:7px;border-radius:2px;flex:none}
+.btn{display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:6px;font-size:12px;border:1px solid #D6D6D2;background:#FFFFFF;color:#1A1A1A;font-family:inherit}
+.btn.pri{background:#1A1A1A;border-color:#1A1A1A;color:#FFFFFF}
+.seg{display:inline-flex;border:1px solid #D6D6D2;border-radius:6px;overflow:hidden;font-size:12px}
+.seg span{padding:0 10px;height:22px;display:inline-flex;align-items:center;border-left:1px solid #D6D6D2}
+.seg span:first-child{border-left:none}
+.seg .on{background:#1A1A1A;color:#FFFFFF}
+.eb{font-size:10px;font-weight:600;letter-spacing:0.04em;color:#6B6B6B}
+.code{box-sizing:border-box;border:1px solid #E3E3E0;border-radius:6px;background:#FBFBFA;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.65;color:#3D3D3A;padding:6px 0;white-space:pre;overflow:hidden}
+.code .ln{display:inline-block;width:34px;text-align:right;padding-right:8px;color:#8A8A85}
+.code .hl{background:#EDEDEA;display:block}
+.row{display:flex;align-items:center;gap:6px}
+.callout{position:absolute;display:flex;gap:6px;font-size:12px;line-height:1.5;color:#3D3D3A}
+.num{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:#1A1A1A;color:#FFFFFF;font-size:11px;font-weight:600;flex:none}
+.chip{display:inline-flex;align-items:center;gap:4px;height:18px;padding:0 6px;border:1px solid #E3E3E0;border-radius:4px;font-size:11px;color:#3D3D3A}
+.pre{box-sizing:border-box;border:1px solid #E3E3E0;border-radius:8px;background:#FBFBFA;font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.6;color:#3D3D3A;padding:12px 14px;white-space:pre;margin:0}
+</style>
+</helmet>
+<div style="width: 1760px; height: 2700px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 48px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">F0 · Flow 窗口：一张每一步都能点回源码的序列图</h1>
+      <span class="concept">2026-10-28 按推荐先定，待你确认</span>
+    </div>
+    <p class="lead">你在终端里让 agent “画一下 open_terminals 是怎么走的”。agent 读代码，把每一步写成一条带锚点（文件、行、符号、那一行的原文）的数据，AgentDeck 把它画成白板上的一个 Flow 窗口，开在这个终端旁边。图上每一步都能点开编辑器跳到那一行；代码变了，AgentDeck 先自己核对锚点还在不在，再请另一家 agent 核对说法对不对。图上可以叠三层“覆盖”：图漏了哪些分支、测试跑到哪几步、哪些 TC 用例管到哪几步（F1）。</p>
+    <p class="lead" style="color: #1A1A1A">下面这张图是真的：拿 AgentDeck 自己的 “agent 通过 MCP 开终端” 画的，22 步、9 个参与者、跨 3 个进程。锚点按 6925f35 写，再拿你主检出目录（feat/PL3-prompt-queue，有未提交改动）核对：19 步原地、3 步行号挪了、0 步失效。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 白板上的样子</span>
+    <div class="fig" style="width: 1632px; height: 900px">
+
+      <div class="win" style="left: 24px; top: 40px; width: 300px; height: 380px">
+        <div class="tb"><span class="li"></span><span class="n">claude</span><span class="s">agentdeck · main</span><span class="s" style="margin-left: auto">Idle</span></div>
+        <div class="body">
+          <div style="color: #1A1A1A">&gt; draw the sequence of what happens</div>
+          <div style="color: #1A1A1A">&#160;&#160;when an agent calls open_terminals.</div>
+          <div style="color: #1A1A1A">&#160;&#160;cite path:line for every step</div>
+          <div>&#160;</div>
+          <div>● Read packages/mcp-server/src/tools.ts</div>
+          <div>● Read apps/desktop/src/main/mcp.ts</div>
+          <div>● Read packages/agent-adapters/src/</div>
+          <div>&#160;&#160;agent-service.ts</div>
+          <div>● … 9 more files</div>
+          <div>● Bash agentdeck flow save</div>
+          <div>&#160;&#160;docs/flows/open-terminals.seq.json</div>
+          <div>&#160;&#160;⎿ 22 steps · anchors 22/22 ok</div>
+          <div>● Bash agentdeck flow open</div>
+          <div>&#160;&#160;open-terminals</div>
+          <div>&#160;</div>
+          <div style="color: #1A1A1A">The flow is open next to me. It</div>
+          <div style="color: #1A1A1A">crosses three processes; steps 11–13</div>
+          <div style="color: #1A1A1A">run in the terminal host.</div>
+        </div>
+      </div>
+      <div class="at" style="left: 324px; top: 200px; width: 30px; border-top: 1px dashed #1A1A1A"></div>
+
+      <div class="win focus" style="left: 354px; top: 40px; width: 1254px; height: 836px">
+        <div class="tb"><span class="lr"></span><span class="n">flow · open-terminals</span><span class="s">agentdeck · main · 22 steps</span><span class="tag att">3 anchors moved</span><span class="s" style="margin-left: auto">from claude · checked 11:12</span></div>
+        <div style="display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; border-bottom: 1px solid #EEEEEB">
+          <span class="muted" style="font-size: 12px">Show</span>
+          <span class="seg"><span class="on">Anchors</span><span>Review</span><span>Tests</span><span>Requirements</span></span>
+          <span style="flex: 1"></span>
+          <button class="btn">Re-check</button>
+          <button class="btn">Verify with codex…</button>
+          <button class="btn">Run tests for this flow</button>
+          <button class="btn">Save to repo</button>
+        </div>
+        <div style="display: flex">
+          <div style="width: 880px; height: 766px; border-right: 1px solid #EEEEEB; position: relative">
+            <svg width="880" height="760" viewBox="0 0 880 760" role="img" aria-label="Sequence diagram of open_terminals, 22 steps" style="position: absolute; left: 0; top: 0">
+              <defs>
+                <marker id="p13b1-ah" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" fill="#1A1A1A"></path></marker>
+                <marker id="p13b1-ahm" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" fill="#6B6B6B"></path></marker>
+              </defs>
+              <g font-family="IBM Plex Sans, Noto Sans SC, sans-serif" font-size="10" fill="#6B6B6B">
+                <text x="30" y="14" text-anchor="middle">agent</text>
+                <text x="235" y="14" text-anchor="middle">main process</text>
+                <line x1="100" y1="18" x2="370" y2="18" stroke="#D6D6D2"></line>
+                <text x="440" y="14" text-anchor="middle">utility</text>
+                <text x="522" y="14" text-anchor="middle">tmux</text>
+                <text x="604" y="14" text-anchor="middle">renderer</text>
+              </g>
+              <g font-family="IBM Plex Mono, monospace" font-size="10.5" fill="#1A1A1A">
+                <rect x="4" y="24" width="52" height="24" rx="5" fill="#FFFFFF" stroke="#D6D6D2"></rect><text x="30" y="40" text-anchor="middle">claude</text>
+                <rect x="78" y="24" width="68" height="24" rx="5" fill="#FFFFFF" stroke="#D6D6D2"></rect><text x="112" y="40" text-anchor="middle">mcp</text>
+                <rect x="160" y="24" width="68" height="24" rx="5" fill="#FFFFFF" stroke="#D6D6D2"></rect><text x="194" y="40" text-anchor="middle">registry</text>
+                <rect x="242" y="24" width="68" height="24" rx="5" fill="#FFFFFF" stroke="#D6D6D2"></rect><text x="276" y="40" text-anchor="middle">agents</text>
+                <rect x="324" y="24" width="68" height="24" rx="5" fill="#FFFFFF" stroke="#D6D6D2"></rect><text x="358" y="40" text-anchor="middle">proxy</text>
+                <rect x="406" y="24" width="68" height="24" rx="5" fill="#FFFFFF" stroke="#D6D6D2"></rect><text x="440" y="40" text-anchor="middle">host</text>
+                <rect x="488" y="24" width="68" height="24" rx="5" fill="#FFFFFF" stroke="#D6D6D2"></rect><text x="522" y="40" text-anchor="middle">tmux</text>
+                <rect x="570" y="24" width="68" height="24" rx="5" fill="#FFFFFF" stroke="#D6D6D2"></rect><text x="604" y="40" text-anchor="middle">board</text>
+                <rect x="652" y="24" width="68" height="24" rx="5" fill="#FFFFFF" stroke="#D6D6D2"></rect><text x="686" y="40" text-anchor="middle">you</text>
+              </g>
+              <g stroke="#D6D6D2" stroke-dasharray="3 3">
+                <line x1="30" y1="48" x2="30" y2="740"></line><line x1="112" y1="48" x2="112" y2="740"></line><line x1="194" y1="48" x2="194" y2="740"></line>
+                <line x1="276" y1="48" x2="276" y2="740"></line><line x1="358" y1="48" x2="358" y2="740"></line><line x1="440" y1="48" x2="440" y2="740"></line>
+                <line x1="522" y1="48" x2="522" y2="740"></line><line x1="604" y1="48" x2="604" y2="740"></line><line x1="686" y1="48" x2="686" y2="740"></line>
+              </g>
+              <!-- 选中的第 6 步 -->
+              <rect x="0" y="243" width="880" height="26" fill="#EDEDEA"></rect>
+              <!-- alt 和 loop 框 -->
+              <rect x="96" y="214" width="604" height="26" fill="none" stroke="#8A8A85"></rect>
+              <text x="100" y="224" font-size="9.5" fill="#6B6B6B" font-family="IBM Plex Mono, monospace">alt count &gt; 6</text>
+              <rect x="96" y="244" width="452" height="290" fill="none" stroke="#8A8A85"></rect>
+              <rect x="96" y="244" width="108" height="14" fill="#FFFFFF" stroke="#8A8A85"></rect>
+              <text x="100" y="254" font-size="9.5" fill="#6B6B6B" font-family="IBM Plex Mono, monospace">loop each terminal</text>
+              <g font-family="IBM Plex Sans, Noto Sans SC, sans-serif" font-size="10.5" fill="#1A1A1A" stroke-width="1.2">
+                <!-- 0 setup -->
+                <line x1="276" y1="88" x2="30" y2="88" stroke="#6B6B6B" stroke-dasharray="4 3" marker-end="url(#p13b1-ahm)"></line><text x="36" y="83" fill="#6B6B6B">0  launch claude + MCP header ${AGENTDECK_TERM}</text>
+                <!-- 1 -->
+                <line x1="30" y1="115" x2="112" y2="115" stroke="#1A1A1A" marker-end="url(#p13b1-ah)"></line><text x="36" y="110">1  POST /mcp</text>
+                <!-- 2 self -->
+                <path d="M112,136 h16 v8 h-16" fill="none" stroke="#1A1A1A" marker-end="url(#p13b1-ah)"></path><text x="132" y="140">2  origin · host · token</text>
+                <!-- 3 self -->
+                <path d="M112,163 h16 v8 h-16" fill="none" stroke="#1A1A1A" marker-end="url(#p13b1-ah)"></path><text x="132" y="167">3  caller = terminal header</text>
+                <!-- 4 self -->
+                <path d="M112,190 h16 v8 h-16" fill="none" stroke="#1A1A1A" marker-end="url(#p13b1-ah)"></path><text x="132" y="194">4  resolveWorkspace</text>
+                <!-- 5 alt -->
+                <line x1="112" y1="232" x2="686" y2="232" stroke="#1A1A1A" marker-end="url(#p13b1-ah)"></line><text x="200" y="230">5  confirm “Open 7 terminals?”</text>
+                <!-- 6 -->
+                <line x1="112" y1="263" x2="194" y2="263" stroke="#1A1A1A" marker-end="url(#p13b1-ah)"></line><text x="210" y="267" font-weight="600">6  agents.start</text>
+                <!-- 7 self -->
+                <path d="M194,280 h16 v8 h-16" fill="none" stroke="#1A1A1A" marker-end="url(#p13b1-ah)"></path><text x="214" y="288">7  registry.invoke</text>
+                <!-- 8 -->
+                <line x1="194" y1="313" x2="276" y2="313" stroke="#1A1A1A" marker-end="url(#p13b1-ah)"></line><text x="198" y="308">8  start</text>
+                <!-- 9 self -->
+                <path d="M276,334 h16 v8 h-16" fill="none" stroke="#1A1A1A" marker-end="url(#p13b1-ah)"></path><text x="296" y="342">9  adapter.launch</text>
+                <!-- 10 -->
+                <line x1="276" y1="367" x2="358" y2="367" stroke="#1A1A1A" marker-end="url(#p13b1-ah)"></line><text x="280" y="362">10 create</text>
+                <!-- 11 -->
+                <line x1="358" y1="394" x2="440" y2="394" stroke="#1A1A1A" stroke-dasharray="1 0" marker-end="url(#p13b1-ah)"></line><text x="362" y="389">11 post call</text>
+                <!-- 12 self -->
+                <path d="M440,415 h16 v8 h-16" fill="none" stroke="#1A1A1A" marker-end="url(#p13b1-ah)"></path><text x="460" y="423">12 host[method]</text>
+                <!-- 13 -->
+                <line x1="440" y1="448" x2="522" y2="448" stroke="#1A1A1A" marker-end="url(#p13b1-ah)"></line><text x="444" y="443">13 new-session</text>
+                <!-- 14 self -->
+                <path d="M276,469 h16 v8 h-16" fill="none" stroke="#1A1A1A" marker-end="url(#p13b1-ah)"></path><text x="296" y="477">14 status.track</text>
+                <!-- 15 self -->
+                <path d="M194,496 h16 v8 h-16" fill="none" stroke="#1A1A1A" marker-end="url(#p13b1-ah)"></path><text x="214" y="504">15 store.terminals.put</text>
+                <!-- 16 -->
+                <line x1="112" y1="556" x2="194" y2="556" stroke="#1A1A1A" marker-end="url(#p13b1-ah)"></line><text x="116" y="551">16 emit</text>
+                <!-- 17 -->
+                <line x1="194" y1="583" x2="604" y2="583" stroke="#1A1A1A" marker-end="url(#p13b1-ah)"></line><text x="300" y="578">17 board.open-group (IPC.event)</text>
+                <!-- 18 self -->
+                <path d="M604,604 h16 v8 h-16" fill="none" stroke="#1A1A1A" marker-end="url(#p13b1-ah)"></path><text x="624" y="612">18 api.on</text>
+                <!-- 19 self -->
+                <path d="M604,631 h16 v8 h-16" fill="none" stroke="#1A1A1A" marker-end="url(#p13b1-ah)"></path><text x="624" y="639">19 openGroup…</text>
+                <!-- 20 -->
+                <line x1="604" y1="664" x2="358" y2="664" stroke="#1A1A1A" marker-end="url(#p13b1-ah)"></line><text x="380" y="659">20 terminals.attach (port)</text>
+                <!-- 21 return -->
+                <line x1="112" y1="691" x2="30" y2="691" stroke="#6B6B6B" stroke-dasharray="4 3" marker-end="url(#p13b1-ahm)"></line><text x="36" y="686" fill="#6B6B6B">21 { lead, terminals }</text>
+              </g>
+              <!-- 锚点一列 -->
+              <g font-family="IBM Plex Mono, monospace" font-size="10" fill="#3D3D3A">
+                <circle cx="732" cy="85" r="3.5" fill="#1A7F37"></circle><text x="742" y="88">claude.ts:152</text>
+                <circle cx="732" cy="112" r="3.5" fill="#1A7F37"></circle><text x="742" y="115">server.ts:73</text>
+                <circle cx="732" cy="139" r="3.5" fill="#1A7F37"></circle><text x="742" y="142">server.ts:79</text>
+                <circle cx="732" cy="166" r="3.5" fill="#1A7F37"></circle><text x="742" y="169">server.ts:87</text>
+                <circle cx="732" cy="193" r="3.5" fill="#1A7F37"></circle><text x="742" y="196">tools.ts:320</text>
+                <circle cx="732" cy="229" r="3.5" fill="#1A7F37"></circle><text x="742" y="232">tools.ts:327</text>
+                <circle cx="732" cy="259" r="3.5" fill="#1A7F37"></circle><text x="742" y="262" font-weight="500" fill="#1A1A1A">tools.ts:526</text>
+                <circle cx="732" cy="286" r="3.5" fill="#1A7F37"></circle><text x="742" y="289">mcp.ts:25</text>
+                <circle cx="732" cy="313" r="3.5" fill="#BF8700"></circle><text x="742" y="316">index.ts:317</text><text x="822" y="316" fill="#B45309">+11</text>
+                <circle cx="732" cy="340" r="3.5" fill="#1A7F37"></circle><text x="742" y="343">agent-service.ts:123</text>
+                <circle cx="732" cy="367" r="3.5" fill="#1A7F37"></circle><text x="742" y="370">agent-service.ts:128</text>
+                <circle cx="732" cy="394" r="3.5" fill="#1A7F37"></circle><text x="742" y="397">terminal-service.ts:56</text>
+                <circle cx="732" cy="421" r="3.5" fill="#1A7F37"></circle><text x="742" y="424">tmux-host.ts:86</text>
+                <circle cx="732" cy="448" r="3.5" fill="#1A7F37"></circle><text x="742" y="451">host.ts:260</text>
+                <circle cx="732" cy="475" r="3.5" fill="#1A7F37"></circle><text x="742" y="478">runtime.ts:97</text>
+                <circle cx="732" cy="502" r="3.5" fill="#BF8700"></circle><text x="742" y="505">index.ts:319</text><text x="822" y="505" fill="#B45309">+11</text>
+                <circle cx="732" cy="556" r="3.5" fill="#1A7F37"></circle><text x="742" y="559">tools.ts:350</text>
+                <circle cx="732" cy="583" r="3.5" fill="#1A7F37"></circle><text x="742" y="586">events.ts:16</text>
+                <circle cx="732" cy="610" r="3.5" fill="#1A7F37"></circle><text x="742" y="613">api.ts:96</text>
+                <circle cx="732" cy="637" r="3.5" fill="#BF8700"></circle><text x="742" y="640">controller.ts:261</text><text x="842" y="640" fill="#B45309">+1</text>
+                <circle cx="732" cy="664" r="3.5" fill="#1A7F37"></circle><text x="742" y="667">terminal-service.ts:74</text>
+                <circle cx="732" cy="691" r="3.5" fill="#1A7F37"></circle><text x="742" y="694">tools.ts:352</text>
+              </g>
+            </svg>
+          </div>
+          <div style="flex: 1; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; font-size: 12px; line-height: 1.55">
+            <span class="eb">STEP 6 OF 22</span>
+            <span style="font-size: 14px; font-weight: 600">agents.start, through the service registry</span>
+            <span class="muted">mcp → registry · inside loop each terminal</span>
+            <div class="row"><span class="lr"></span><a class="mono" href="#" style="color: #1A1A1A">packages/mcp-server/src/tools.ts:526</a><span class="muted">ToolContext.launch</span></div>
+            <div class="code"><span class="ln">523</span>  async launch(opts: LaunchOptions) {
+<span class="ln">524</span>    const cwd = opts.cwd ?? opts.workspace?.path …
+<span class="ln">525</span>    const workspaceId = opts.workspace?.id ?? null;
+<span class="hl"><span class="ln">526</span>    const res = await this.deps.agents.start({</span><span class="ln">527</span>      agent: opts.agent,
+<span class="ln">528</span>      cwd,
+<span class="ln">529</span>      workspaceId,
+<span class="ln">530</span>      mode: { kind: 'new' },</div>
+            <div class="row" style="flex-wrap: wrap; gap: 6px"><button class="btn pri">Open in editor</button><button class="btn">Ask claude about this step…</button><button class="btn">Copy anchor</button></div>
+            <div style="height: 1px; background: #EEEEEB"></div>
+            <span class="eb">ANCHOR</span>
+            <span><span class="lr"></span>&#160; Found at the same line in your checkout. Last checked 11:12.</span>
+            <span class="eb">REVIEW</span>
+            <span class="muted">Not verified yet. Verify with codex… asks another agent to check every step against the code.</span>
+            <span class="eb">TESTS</span>
+            <span><span class="lr"></span>&#160; Run by <span class="mono">server.test.ts</span> › N1 · open_terminals <span class="chip">fakes</span></span>
+            <span class="muted">The registry and AgentService are replaced by fakes there: steps 7–15 are not loaded by any automated test.</span>
+            <span class="eb">REQUIREMENTS</span>
+            <span class="row" style="flex-wrap: wrap"><span class="chip">TC-34 · Verified</span><span class="chip">TC-46 · Not built</span><span class="chip">TC-50 · Not built</span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout" style="left: 40px; top: 450px; width: 280px"><span class="num">1</span><span>agent 写完用 <span class="mono">agentdeck flow open</span> 打开，窗口开在这个终端右边，和 open_browser 一样；窗口记得是哪个终端（哪个 session）画的。</span></div>
+      <div class="callout" style="left: 40px; top: 540px; width: 280px"><span class="num">2</span><span>标题栏的 tag 只说要你看的事：锚点挪了、失效了、核对没过。tag 用 attention 色字，窗口边框不变色（WindowShell 规矩：边框只给 waiting）。</span></div>
+      <div class="callout" style="left: 40px; top: 640px; width: 280px"><span class="num">3</span><span>Show 切四层：Anchors（锚点还对不对）、Review（核对结论）、Tests（测试跑到没有）、Requirements（TC 用例）。一次只看一层，免得一步上挂四个灯。</span></div>
+      <div class="callout" style="left: 40px; top: 740px; width: 280px"><span class="num">4</span><span>右边一列是锚点：绿 = 原地；黄 = 行号挪了、原文还在，已自动跟上（+11 是挪了几行）；红 = 原文没了，这一步要重画。单击行号就是 Open in editor。</span></div>
+    </div>
+    <span style="font-size: 12.5px; line-height: 1.6; color: #5F5F5A">图里的 22 步、锚点和“+11 / +1”都是实测（调研 DR-100：open-terminals.seq.json、seqcheck.py）：主检出目录的 apps/desktop/src/main/index.ts 因为 PL3 多了 11 行，controller.ts 多了 1 行。右栏 Tests 一节也是实测：用假服务跑 open_terminals 时 V8 覆盖只到 MCP 这一侧。Review 一节是示意。</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 每一步存什么（图的数据，不是图片）</span>
+    <div style="display: flex; gap: 24px">
+      <div class="tbl" style="grid-template-columns: 150px minmax(0, 1fr); width: 820px; flex: none">
+        <span class="th">字段</span><span class="th">内容</span>
+        <span class="td mono">from · to · kind</span><span class="td">参与者和箭头种类：call、http、ipc、event、process（起外部进程）、return、setup、check。kind 决定画法（ipc 和 event 在图上能一眼看出跨进程）。</span>
+        <span class="td mono">label</span><span class="td">一句话，英文（界面文字）。解释写在 note 里，可以中文。</span>
+        <span class="td mono">anchor</span><span class="td"><span class="mono">path</span>、<span class="mono">line</span>、<span class="mono">symbol</span>、<span class="mono">text</span>（那一行里的一段原文）、<span class="mono">commit</span>。核对靠 text，不靠行号：行号会挪，原文在不在才说明这一步还成立。锚点层和“文档”页 D1 的代码锚点共用，格式以 D1 为准。</span>
+        <span class="td mono">loop · alt</span><span class="td">这一步在哪个循环、哪个分支里（open_terminals 的 “each terminal”、“count &gt; 6”）。</span>
+        <span class="td mono">requirements</span><span class="td">哪些 TC 用例说到这一步（第三层覆盖）。</span>
+        <span class="td mono">review</span><span class="td">核对结论：谁、哪一版、每步 confirmed / wrong / unsure 和证据锚点（F1）。</span>
+      </div>
+      <pre class="pre" style="flex: 1">{ "n": 6, "from": "M", "to": "R", "kind": "call",
+  "label": "agents.start via viaRegistry (Proxy)",
+  "loop": "for each terminal",
+  "anchor": {
+    "path": "packages/mcp-server/src/tools.ts",
+    "line": 526, "symbol": "launch",
+    "text": "const res = await this.deps.agents.start({",
+    "commit": "6925f35" } }</pre>
+    </div>
+    <span style="font-size: 13px; line-height: 1.65; color: #3D3D3A">为什么不直接存 Mermaid：Mermaid 的 sequenceDiagram 只能给参与者挂链接（<span class="mono">link</span> / <span class="mono">links</span> 菜单），消息上不能挂（mermaid.js.org 的 sequenceDiagram 文档，2026-10-28 查）。我们要每一步都能点、能挂状态、能叠覆盖，所以真身是自己的 JSON，另外能导出 Mermaid（带 <span class="mono">autonumber</span>，下面附“编号 → 锚点”表），贴进 PR 和文档。</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · 图从哪来：三种做法的实测</span>
+    <div class="tbl" style="grid-template-columns: 200px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr)">
+      <span class="th"></span><span class="th">agent 读代码写图（带锚点）</span><span class="th">运行时录下来（trace）</span><span class="th">静态调用图（codegraph）</span>
+      <span class="td">open_terminals 实测</span><span class="td">22 步全有锚点，22/22 原文能找到；跨 3 个进程、Proxy、事件都画得出来。这次花了约 15 次读代码调用。会不会说错顺序和条件，锚点核对查不出来，要第二家核对。</span><span class="td">没做：OpenTelemetry 的 JS 自动插桩只管 http 等库，内部调用要手写 span；没找到现成的“trace → 序列图”工具。AgentDeck 三个进程加 tmux，要在几个关口自己记。</span><span class="td">508 个文件 1.6 秒建完索引。22 个锚点：5 步边全对、3 步部分对、4 步指错（例如 terminals.create 指到网页窗口的 create）、10 步没有边（HTTP、IPC、Proxy、事件、tmux 都断）。</span>
+      <span class="td">准不准</span><span class="td">取决于 agent；锚点保证“引用的代码存在”，不保证“说法对”</span><span class="td">对跑过的那一次绝对准；没跑到的分支看不到</span><span class="td">进程内的直接调用准；同名方法会混（launch 有 8 个）</span>
+      <span class="td">代价</span><span class="td">每张图几万 token；代码改了要再核对</span><span class="td">插桩 + 每次跑 e2e（要 tmux、假 agent）</span><span class="td">几乎为零；要用户自己装 codegraph 并在仓库里建 .codegraph/</span>
+      <span class="td">现成的同类</span><span class="td">Ilograph Agent Skills（2026-09-09，Apache-2.0，ilograph.yaml，每步引用代码行，/update-ilograph 更新）；Google Code Wiki（2025-11，序列图随代码重生成，链回代码）</span><span class="td">AppMap（appmap-node 包住 node / jest / vitest 录函数调用，出序列图；没提 Electron；序列图包是 Commons Clause + MIT）</span><span class="td">codegraph（tree-sitter + SQLite，MIT，就是本机这个 MCP）；infigraph 自称能从调用图出 Mermaid 序列图（页面 403，待核对）</span>
+      <span class="td">在 AgentDeck 里的角色</span><span class="td" style="color: #1A1A1A">主路：agent 写，AgentDeck 核对</span><span class="td">第三期：在关口记录，用来核对跨进程那几步</span><span class="td">旁证：有索引就读，给核对的 agent 当候选和反证，不当真相</span>
+    </div>
+    <span style="font-size: 12.5px; line-height: 1.6; color: #5F5F5A">来源和日期：mermaid.js.org sequenceDiagram（2026-10-28）；ilograph.com 博客与 github.com/ilograph/skills（2026-10-28 读）；InfoQ、tessl 关于 Google Code Wiki（2025-11）；github.com/getappmap/appmap-node（2026-10-28 读）；codegraph 0.9.9 本机实测。用户说的 Octop 最可能是 github.com/TencentCloud/Octop（腾讯云，2026-07 开源，MIT）：自托管多用户、多 agent 助手，经 ACP 把活交给 Claude Code、Codex；README 里没有代码理解、序列图、覆盖率。2026-10-28 定：不引入（DR-103）；待用户确认是不是这个项目。</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":2700}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

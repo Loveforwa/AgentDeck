@@ -1,0 +1,34 @@
+第 11 点：AgentDeck 发给 agent 的两段英文提示词草稿（P11-T-7、P11-T-9）。都可以在设置里改，产品里是英文。
+
+==== 1. 把评论发给 agent（Send 2 comments to claude） ====
+一行，不带换行（send_to_terminal 会把换行变空格，packages/mcp-server/src/tools.ts:279；PL3 的发送方式同样按一行发最稳）。
+评论原文不放进提示词，agent 用命令去读，免得引号、换行出问题，也方便它逐条回复。
+
+Please address the 2 open comments on docs/design/doc-window.md: run `agentdeck doc comments docs/design/doc-window.md` to read them, edit the file, then reply to each with `agentdeck doc reply <id> "<what you did>"` (add --done if you changed the doc). Don't resolve them.
+
+没有 agentdeck 命令时（kimi 每条命令要批准、或 AgentDeck 的命令行没装上）：改成 bracketed paste 多行发，评论原文放进去，回复由你在窗口里看 diff 后自己 Resolve：
+
+Please address these comments on docs/design/doc-window.md, then tell me in one line per comment what you changed:
+1. On “the doc window watches the file”: Which process watches it, main or renderer?
+2. On “Send 2 comments to claude”: What happens if claude is waiting for approval?
+
+==== 2. 核查终端的第一条提示词（Verify claims…） ====
+由 AgentDeck 开的终端（默认换一家），只读启动（claude --permission-mode plan、codex -s read-only、omp/pi 的只读参数，待 AH0 能力报告核对），
+带 agentdeck-docs skill 的第 8 节。提示词里只有句子和代码位置，不带作者的对话。
+
+You are checking whether sentences in a design doc match the code in this repository. You did not write the doc. For each claim below, read the cited lines (and more of the repository if you need to), then record a verdict with `agentdeck doc verdict <id> <supported|partly|wrong|unclear> "<one sentence citing the lines>" [--fix "<corrected sentence>"]`. Do not edit any file. When all 12 are done, say "done".
+
+Claims (from docs/design/doc-window.md, worktree feat/doc-window, HEAD 871dd81):
+c1  "Clicking a file path in a terminal opens it in the editor set in Settings."  refs: packages/ui/widgets/terminal/src/TerminalWindow.tsx:243-247, packages/contracts/src/app.ts:40
+c2  "GitService has no way to read a file at an older commit."  refs: packages/contracts/src/git.ts:130-177
+...
+
+==== 3. agentdeck doc 命令（给 agentdeck-docs skill 和 /cli 用，依赖 CR13–CR15） ====
+所有 AgentDeck 终端都能用（不像 crew / session 命令只给 Lead）：只读或只改文档本身和评论，不能开终端、不能批准。
+
+agentdeck doc open <path> [--at <heading|line>]      打开文档窗口，放在调用者旁边，linkedTerminal = 调用者
+agentdeck doc check <path>... [--fix-lines] [--json]  核对引用；有 gone / ambiguous 时退出码 1，有 changed 时 2；--fix-lines 只改 moved 的行号
+agentdeck doc comments <path> [--all] [--json]         列出评论：id、挂的字、内容、谁写的、状态
+agentdeck doc reply <id> "<text>" [--done]              回复；--done 把它标成 Addressed（不 Resolve）
+agentdeck doc claims <path> [--json]                    核查用：列出要核查的句子和引用
+agentdeck doc verdict <claim-id> <result> "<reason>" [--fix "<text>"]   只有核查终端能调（按钥匙认，CR14）

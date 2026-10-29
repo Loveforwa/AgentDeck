@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>多 agent 防覆盖</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1240px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#6B6B6B}
+.node{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #D6D6D2;border-radius:8px;padding:10px 12px;font-size:12.5px;line-height:1.5;display:flex;flex-direction:column;gap:3px}
+.node b{font-size:13px}
+.nodeq{border-style:dashed}
+.arr{position:absolute;font-size:18px;color:#8A8A85}
+.ann{position:absolute;font-size:12px;line-height:1.55;color:#5F5F5A}
+.frame{position:absolute;box-sizing:border-box;border:1px solid #D6D6D2;border-radius:10px;background:rgba(255,255,255,0.55)}
+.fh{display:flex;align-items:center;gap:8px;height:30px;padding:0 10px;font-size:11.5px;border-bottom:1px solid #EEEEEB}
+.win{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;overflow:hidden;font-size:11px}
+.wt{display:flex;align-items:center;gap:6px;height:26px;padding:0 9px;border-bottom:1px solid #EEEEEB;font-size:11.5px}
+.wb{padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.75;color:#1A1A1A}
+.dot{width:7px;height:7px;border-radius:50%;flex:none}
+.ring{width:7px;height:7px;border-radius:50%;flex:none;box-sizing:border-box;border:1px solid #6B6B6B}
+.panel{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:12px}
+.ph{display:flex;align-items:center;height:34px;padding:0 12px;border-bottom:1px solid #EEEEEB;font-size:10.5px;font-weight:600;letter-spacing:0.04em;color:#6B6B6B}
+.gh{padding:9px 12px 3px;font-size:10px;font-weight:600;letter-spacing:0.04em;color:#6B6B6B}
+.row{display:flex;align-items:center;gap:7px;min-height:24px;padding:0 12px;font-size:11.5px}
+.st{width:12px;font-family:'IBM Plex Mono',monospace;color:#6B6B6B;flex:none}
+.sub{padding:0 12px 4px 31px;font-size:10.5px;color:#6B6B6B;line-height:1.5}
+.tip{position:absolute;box-sizing:border-box;background:#1A1A1A;color:#FFFFFF;border-radius:6px;padding:8px 10px;font-size:11px;line-height:1.5;display:flex;flex-direction:column;gap:2px}
+.code{box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;padding:10px 12px;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.7;color:#1A1A1A;white-space:pre}
+.layer{box-sizing:border-box;border:1px solid #D6D6D2;border-radius:8px;background:#FFFFFF;padding:10px 14px;display:grid;grid-template-columns:150px minmax(0,1fr) 220px;gap:14px;align-items:start;font-size:12.5px;line-height:1.55}
+.layerq{border-style:dashed}
+</style>
+</helmet>
+<div style="width: 1760px; height: 3260px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">O1 · 几个 agent 改同一个仓库：先隔离，再提前看出重叠，合并前先预演，同一个目录里互相提醒</h1>
+      <span class="concept">2026-10-28 按推荐先定，待你确认</span>
+    </div>
+    <p class="lead">用户笔记的重点：多个 agent 同时改同一个仓库时的冲突、覆盖和合并。查了八家，做法几乎一样：每个 agent 一个 git worktree，合并交给 git 或 PR，没有一家在合并前告诉你“这两个分支改了同一处”，也没有一家锁文件。AgentDeck 已经做到隔离和集群里的分工；这一页补三层：跨框的重叠提示、合并前预演、同一个目录里的改动提醒。都只提醒、不拦，最后一道还是 git 合并。2026-10-28 按推荐先定，待你确认：L2、L3 先做，L4 放第二期，不做硬锁；任务是 M18 的 CO0–CO2。</p>
+  </div>
+
+  <!-- 1 · 八家 -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 现有的多 agent 工具怎么做（2026-10-28 读的官方文档或仓库）</span>
+    <div class="tbl" style="grid-template-columns: 170px minmax(0, 1fr) minmax(0, 1fr) 190px 300px; font-size: 12.5px">
+      <span class="th">产品</span><span class="th">隔离</span><span class="th">合并、冲突</span><span class="th">提前提示</span><span class="th">来源</span>
+      <span class="td">Conductor</span><span class="td">每个工作区一个 git worktree 加分支；一个分支只能在一个工作区检出</span><span class="td">审 diff、跑 Checks、开 PR；有冲突时“让 agent 帮你解”，再重跑测试</span><span class="td">没有</span><span class="td mono" style="font-size: 11px">conductor.build/docs/concepts/workspaces-and-branches、/workflow</span>
+      <span class="td">Claude Squad</span><span class="td">每个任务一个 tmux 会话和一个 worktree</span><span class="td">在它的 TUI 里 commit、push，或 checkout（提交并暂停会话）；合并交给 git、GitHub</span><span class="td">没有</span><span class="td mono" style="font-size: 11px">github.com/smtg-ai/claude-squad README（最后推送 2026-08-20）</span>
+      <span class="td">Crystal（2026-02 起改名 Nimbalyst）</span><span class="td">每个会话一个 worktree</span><span class="td">Rebase from main（把 main 拉进 worktree）、Squash and rebase to main</span><span class="td">没有</span><span class="td mono" style="font-size: 11px">github.com/stravu/crystal 旧版 README</span>
+      <span class="td">Nodeterm</span><span class="td">每个终端一个 tmux 会话；“组”可以绑一个 worktree，一组一个分支</span><span class="td">自带 git 面板 commit、push</span><span class="td">没有；agent 之间连线能互读对话</span><span class="td mono" style="font-size: 11px">github.com/eneskirca/nodeterm README</span>
+      <span class="td">TermCanvas</span><span class="td">项目 → worktree → 终端三层；Hydra 由 Lead 派活，每个 worker 一个 worktree</span><span class="td">worker 交 result.json 当关卡，Lead 决定怎么合</span><span class="td">没有</span><span class="td mono" style="font-size: 11px">github.com/blueberrycongee/termcanvas README</span>
+      <span class="td">Cursor</span><span class="td">本地并行 agent 用 worktree（/worktree）；云端 agent 每个一台虚拟机；best-of-n 每个模型一个 worktree</span><span class="td">/apply-worktree 拿回主目录，或开 PR；冲突怎么处理文档没写</span><span class="td">没有</span><span class="td mono" style="font-size: 11px">cursor.com/docs/configuration/worktrees</span>
+      <span class="td">Codex app</span><span class="td">新对话选 Worktree 时开一个（$CODEX_HOME/worktrees，detached HEAD）；Handoff 在本地和 worktree 之间搬改动</span><span class="td">Create branch here 再开 PR，或 Handoff 回本地；文档没写冲突</span><span class="td">没有</span><span class="td mono" style="font-size: 11px">learn.chatgpt.com/docs/environments/git-worktrees</span>
+      <span class="td">Claude agent teams</span><span class="td">默认同一个目录，不开 worktree</span><span class="td">文档原话：两个队友改同一个文件会互相覆盖，按文件分工；认领任务用文件锁（锁任务，不锁文件）</span><span class="td">没有</span><span class="td mono" style="font-size: 11px">code.claude.com/docs/en/agent-teams（实验功能）</span>
+    </div>
+    <span style="font-size: 12.5px; color: #5F5F5A">归类：worktree 隔离 7 家；按文件分工（owns 一类的约定）1 家；合并时才发现冲突 8 家都是；乐观并发、文件锁 0 家。我们旧原型（v1“同仓多 Agent 合并台”、v2 画板 2）画过“文件重叠”表、合并队列和“同文件软锁”，一直没做。</span>
+  </div>
+
+  <!-- 2 · 五层 -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · AgentDeck 的五层：两层已有，补三层（虚线是新的）</span>
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <div class="layer"><b>L0 · 隔离</b><span>一个框一个 worktree 和分支；集群每个任务 <span class="mono">crew/&lt;name&gt;/&lt;任务&gt;</span>；自由模式的子 session 默认自己的 worktree，可选 shared（Lead 的目录，C6 建议只给只读的活）。</span><span class="muted">已有（M2、CR2、C6）</span></div>
+      <div class="layer"><b>L1 · 分工</b><span>模板模式：交付时比对 diff 和 owns，越界打回；contracts 锁住，改走关卡。自由模式：owns 只在 diff 和合并结果里标出；填了 Locked paths 才进关卡。</span><span class="muted">已有（CR2、CR6）</span></div>
+      <div class="layer layerq"><b>L2 · 提前看出重叠</b><span>同一个仓库的几个 worktree（框、集群任务、子 session）两两比：哪些文件两边都改了，git 能不能自动合。SCM 面板和框头上提示，集群里写进 <span class="mono">crew status</span> 给 Lead。所有 agent 都适用，不靠钩子。</span><span>新：CO0、CO1</span></div>
+      <div class="layer layerq"><b>L3 · 合并前预演</b><span>合进集群分支、Ready to merge、合回 main 之前，先用 <span class="mono">git merge-tree</span> 在内存里合一遍：干净才真合；有冲突就不碰分支，把文件列出来（自由模式给 Lead，模板模式进关卡或交 Integrator）。</span><span>新：改 CR2、CR10 的文字</span></div>
+      <div class="layer layerq"><b>L4 · 同一个目录里的提醒</b><span>同一个 worktree 里有两个以上活着的 agent（一个框开几个终端、N1 的 open_terminals、shared 子 session）时，记下谁改了哪个文件；另一个 agent 要改同一个文件时，在它的上下文里提醒一句；要跑会带走别人改动的 git 命令（stash、checkout、restore、reset --hard、clean、commit -a、add -A）时先问你。</span><span>新：CO2（第二期）</span></div>
+      <div class="layer" style="background: #F7F7F5"><b>不做 · 硬锁</b><span>拦住编辑、排队等锁：要每家都能拦（kimi、hermes 拦不了），agent 会卡住或绕过去（改用 shell 写文件），锁还要解。和“只提醒、最后靠 git”的原则冲突。</span><span class="muted">不做</span></div>
+    </div>
+  </div>
+
+  <!-- 3 · L2 -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · L2 跨框的重叠：框头一句，SCM 面板一节</span>
+    <div class="fig" style="width: 1632px; height: 520px">
+      <div class="frame" style="left: 24px; top: 24px; width: 520px; height: 300px">
+        <div class="fh"><span class="dot" style="background: #1A7F37"></span><b>api-server</b><span class="mono muted">feat/oauth</span><span style="flex: 1"></span><span class="muted">Overlaps fix/rate-limit · 2 files</span></div>
+        <div class="win" style="left: 12px; top: 44px; width: 494px; height: 240px"><div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="mono">claude</span><span class="muted">· Running · 4m</span></div><div class="wb">● Update(src/config/index.ts)<br>  ⎿ added OAUTH_CALLBACK_URL<br>● Update(src/auth/session.ts)<br>  ⎿ refresh token on 401</div></div>
+      </div>
+      <div class="frame" style="left: 580px; top: 24px; width: 520px; height: 300px">
+        <div class="fh"><span class="dot" style="background: #1A7F37"></span><b>api-server</b><span class="mono muted">fix/rate-limit</span><span style="flex: 1"></span><span class="muted">Overlaps feat/oauth · 2 files</span></div>
+        <div class="win" style="left: 12px; top: 44px; width: 494px; height: 240px"><div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="mono">codex</span><span class="muted">· Running · 2m</span></div><div class="wb">• Edited src/config/index.ts (+3 −0)<br>• Edited src/auth/session.ts (+8 −5)<br>• Edited src/middleware/limiter.ts</div></div>
+      </div>
+      <div class="tip" style="left: 760px; top: 60px; width: 330px"><span style="font-weight: 600">Also changed in feat/oauth (claude)</span><span>src/config/index.ts · merges cleanly</span><span>src/auth/session.ts · will conflict</span><span style="color: #D6D6D2">Checked when an agent ended its turn · 1m ago</span></div>
+
+      <div class="panel" style="left: 1130px; top: 24px; width: 478px; height: 470px">
+        <div class="ph">SOURCE CONTROL</div>
+        <div class="row" style="height: 30px"><span class="mono">fix/rate-limit</span><span class="muted">↑2</span></div>
+        <div class="gh">CHANGES · 3</div>
+        <div class="row"><span class="st">M</span><span class="mono">src/auth/session.ts</span></div>
+        <div class="row"><span class="st">M</span><span class="mono">src/config/index.ts</span></div>
+        <div class="row"><span class="st">M</span><span class="mono">src/middleware/limiter.ts</span></div>
+        <div class="gh">ALSO CHANGED ELSEWHERE · 2</div>
+        <div class="row"><span class="st">!</span><span class="mono">src/auth/session.ts</span></div>
+        <div class="sub">feat/oauth · claude · will conflict at lines 30–48</div>
+        <div class="row"><span class="st">·</span><span class="mono">src/config/index.ts</span></div>
+        <div class="sub">feat/oauth · claude · merges cleanly</div>
+        <div style="padding: 10px 12px; font-size: 10.5px; color: #6B6B6B; line-height: 1.6">单击一行：并排看两边对这个文件的改动（只读 diff）。悬停分支名：跳到那个框。“!” 用 muted，不用黄色：还没到合并、不是在等你；真进了冲突，原来的 Merging 标记和 attention 色照旧。</div>
+      </div>
+      <span class="ann" style="left: 24px; top: 350px; width: 1076px">框头那句只在有重叠时出现，muted 文字，悬停出明细（上面的黑色提示）。两个框不在一个仓库、或者一边已经合进另一边时不比。集群框里的任务小框同样有这句，Lead 用 <span class="mono">crew status</span> 看到同样的内容（“store and race both changed src/cart.ts · will conflict”），自己决定先合哪个、要不要叫一个改别处。</span>
+      <div class="code" style="position: absolute; left: 24px; top: 410px; width: 1076px">每个 worktree 拍快照：没改动用 HEAD；有改动用临时 index（GIT_INDEX_FILE）add -A 后 write-tree + commit-tree，不碰工作区、不碰 stash 列表
+两两比：git merge-tree --write-tree --name-only &lt;快照A&gt; &lt;快照B&gt;   退出码 0 = 能自动合，1 = 冲突（带文件列表）
+什么时候算：和 SCM 面板刷新同一套时机（agent 一轮结束、面板操作完、点 Refresh），不监视文件；2026-10-28 在暂存目录实测 git 2.50 上可用</div>
+    </div>
+  </div>
+
+  <!-- 4 · L3 -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · L3 合并前预演：冲突不碰分支，先列出来</span>
+    <div class="fig" style="width: 1632px; height: 250px">
+      <div class="node" style="left: 24px; top: 30px; width: 250px"><b>Lead：crew merge store</b><span>或模板模式里调度器要合一个任务；或你在 Ready to merge 里点 Merge into main</span></div>
+      <span class="arr" style="left: 282px; top: 56px">→</span>
+      <div class="node nodeq" style="left: 306px; top: 30px; width: 300px"><b>预演</b><span class="mono" style="font-size: 11px">git merge-tree --write-tree<br>  crew/login-fix crew/login-fix/store</span><span>只在内存里合，几毫秒</span></div>
+      <span class="arr" style="left: 614px; top: 40px">↗</span>
+      <span class="arr" style="left: 614px; top: 110px">↘</span>
+      <div class="node" style="left: 640px; top: 14px; width: 420px"><b>干净</b><span>照原来 <span class="mono">merge --no-ff</span>，接着跑检查（CR2）</span></div>
+      <div class="node nodeq" style="left: 640px; top: 104px; width: 420px"><b>有冲突</b><span>集群分支不动，不留半截的合并。自由模式：返回给 Lead “store conflicts with race in src/cart.ts; merge one first or ask one to rebase”。模板模式：进 Stuck 关卡（第二期交 Integrator）</span></div>
+      <div class="node nodeq" style="left: 1090px; top: 30px; width: 518px"><b>Ready to merge 的汇报（CR10）多一行</b><span>“Merging into main: clean” 或 “Conflicts with main in 2 files: …”，这时 main 已经往前走了就能看出来，不用等你点了才失败</span></div>
+    </div>
+  </div>
+
+  <!-- 5 · L4 -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">5 · L4 同一个目录里的提醒：给 agent 一句话，危险的 git 命令先问你</span>
+    <div class="fig" style="width: 1632px; height: 560px">
+      <div class="frame" style="left: 24px; top: 24px; width: 1060px; height: 380px">
+        <div class="fh"><span class="dot" style="background: #BF8700"></span><b>api-server</b><span class="mono muted">feat/pool</span><span style="flex: 1"></span><span class="muted">2 agents in this folder</span></div>
+        <div class="win" style="left: 12px; top: 44px; width: 510px; height: 320px"><div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="mono">claude</span><span class="muted">· lead · Running</span></div><div class="wb">● Update(db/pool.ts)<br>  ⎿ idleTimeout 60s → 300s<br>● Update(db/pool.ts)<br>  ⎿ PreToolUse:Edit says: AgentDeck: codex<br>    (sub-1) changed db/pool.ts 2m ago in this<br>    same folder. Read it again and keep those<br>    changes.<br>● Read(db/pool.ts)</div></div>
+        <div class="win" style="left: 536px; top: 44px; width: 510px; height: 320px; border-color: #BF8700"><div class="wt"><span class="dot" style="background: #BF8700"></span><span class="mono">codex</span><span class="muted">· sub-1</span><span style="color: #B45309">· Waiting · now</span></div><div class="wb">Would you like to run the following command?<br>  $ git stash<br>  AgentDeck: claude (lead) has uncommitted<br>  changes in 2 files here (db/pool.ts,<br>  db/pool.test.ts). git stash would take them.<br>› 1. Yes, proceed (y)<br>  2. No, and tell Codex what to do (esc)</div></div>
+      </div>
+      <div class="panel" style="left: 1110px; top: 24px; width: 498px; height: 380px">
+        <div class="ph">SOURCE CONTROL</div>
+        <div class="gh">CHANGES · 3</div>
+        <div class="row"><span class="st">M</span><span class="mono">db/pool.ts</span><span style="flex: 1"></span><span class="muted">claude, codex</span></div>
+        <div class="row"><span class="st">M</span><span class="mono">db/pool.test.ts</span><span style="flex: 1"></span><span class="muted">claude</span></div>
+        <div class="row"><span class="st">A</span><span class="mono">db/keepalive.ts</span><span style="flex: 1"></span><span class="muted">codex</span></div>
+        <div style="padding: 10px 12px; font-size: 10.5px; color: #6B6B6B; line-height: 1.6">右边写这个文件是哪几个终端改的（按 AgentDeck 收到的改文件事件记，只记这个框里活着的终端，文字不加颜色）。提交时 Commit 按钮旁多一个 Only mine… 的选项留到第二期再定。</div>
+      </div>
+      <span class="ann" style="left: 24px; top: 420px; width: 1584px">左：claude 要改 codex 两分钟前改过的文件，AgentDeck 不拦，只在它的上下文里加一句（claude 的 PreToolUse 钩子返回附加说明），它会重读再改。右：codex 要跑 git stash，而 claude 还有没提交的改动，AgentDeck 把这条变成要你批准的命令，原因写在确认框里；收件箱里同样出现一条。别人没有改动、或者只有一个 agent 在这个目录时，一切照旧，不打扰。</span>
+      <span class="ann" style="left: 24px; top: 490px; width: 1584px">哪几家能做：claude（PreToolUse / PostToolUse，已在用 PostToolUse）、codex（钩子能不能拦 apply_patch 和 Bash 待核对）、opencode（插件 tool.execute.before / file.edited）能收到“谁要改哪个文件”；pi、omp 看扩展事件（待核对）；kimi、hermes 收不到，SCM 那一列只能写 “someone”。</span>
+    </div>
+  </div>
+
+  <!-- 6 · 选项 -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">6 · 按推荐先定（2026-10-28），待你确认</span>
+    <div class="tbl" style="grid-template-columns: 40px minmax(0, 1fr) minmax(0, 1fr) 360px; font-size: 12.5px">
+      <span class="th">#</span><span class="th">问题</span><span class="th">选项</span><span class="th">定的</span>
+      <span class="td mono">1</span><span class="td">补哪几层</span><span class="td">只 L2 / L2 + L3 / L2 + L3 + L4 / 再加硬锁</span><span class="td">L2 + L3 先做（纯 git，五家都管用）；L4 第二期；不做硬锁</span>
+      <span class="td mono">2</span><span class="td">重叠提示的位置</span><span class="td">只在 SCM 面板 / 面板加框头 / 再加 Toast</span><span class="td">面板加框头；不弹 Toast（不是在等你）</span>
+      <span class="td mono">3</span><span class="td">同目录里另一个 agent 要改同一个文件</span><span class="td">只提醒 agent / 提醒并问你 / 拦住</span><span class="td">只提醒 agent，你不用管</span>
+      <span class="td mono">4</span><span class="td">会带走别人改动的 git 命令</span><span class="td">不管 / 提醒 agent / 变成要你批准</span><span class="td">变成要你批准（只在别人有没提交的改动时）</span>
+      <span class="td mono">5</span><span class="td">快照要往仓库的对象库里写临时对象（不写分支、不写 stash）</span><span class="td">接受 / 只比文件名不预测冲突</span><span class="td">接受，git gc 会清；只比文件名时说不出“能不能自动合”</span>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":3260}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

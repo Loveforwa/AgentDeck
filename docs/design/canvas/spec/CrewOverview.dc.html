@@ -31,12 +31,12 @@ body{margin:0}
 .col b{font-size:15px}
 </style>
 </helmet>
-<div style="width: 1760px; height: 1560px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+<div style="width: 1760px; height: 2060px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
 
   <div style="display: flex; flex-direction: column; gap: 10px">
     <div style="display: flex; align-items: center; gap: 10px">
       <h1 style="margin: 0; font-size: 28px; font-weight: 600">C0 · Agent 集群：按模板组一队 agent，做一个人盯不过来的复杂任务</h1>
-      <span class="concept">2026-10-27 草案 · 待你定</span>
+      <span class="concept">2026-10-28 已定（按推荐）</span>
     </div>
     <p class="lead">做一个大功能、一次大迁移、一个查不出原因的 bug：一个 agent 做不完，自己开一堆窗口又盯不过来。选一个集群模板，写一句目标，AgentDeck 按模板组一队 agent：总设计拆任务、定接口，几个实现者在各自的 worktree 里并行做，换一家模型来审，合进集群分支，最后验收、出汇报。排活、开窗口、跑检查、守规矩、等额度由 AgentDeck 里一段确定的代码负责，不靠某个 agent 自觉；你只在关卡上出现。</p>
     <p class="lead" style="color: #1A1A1A">这就是 AgentDeck 自己的开发方式（MVP 任务表、contracts 先冻结、每条线只改自己的目录、集成负责人合并、TC 用例验收），做成产品。</p>
@@ -91,7 +91,7 @@ body{margin:0}
     <span class="h2">3 · 谁做什么</span>
     <div style="display: flex; gap: 24px">
       <div class="col"><b>你</b><span>选模板、写目标、定分工和上限。</span><span>在关卡上做决定：任务表行不行、接口能不能改、卡住的任务怎么办。</span><span>最后看汇报、把集群分支合回 main。</span><span class="muted">其余时间不用盯着。</span></div>
-      <div class="col"><b>agent</b><span>想和做：拆任务、定接口、写代码、审 diff、解决合并冲突、跑验收。</span><span>通过 AgentDeck 的 MCP 和调度器打交道：领任务、交付、报问题、申请改接口、叫你（C3）。</span><span class="muted">不负责排活，也不负责记进度。</span></div>
+      <div class="col"><b>agent</b><span>想和做：拆任务、定接口、写代码、审 diff、解决合并冲突、跑验收。</span><span>通过 <span class="mono">agentdeck crew</span> 命令和调度器打交道：领任务、交付、报问题、申请改接口、叫你（C3、C7）。</span><span class="muted">不负责排活，也不负责记进度。Lead 负责跟你聊进度，说之前先读任务表（C8）。</span></div>
       <div class="col"><b>AgentDeck 调度器</b><span>派活：依赖满足的任务给空着、有额度的 agent，在对应 worktree 里按角色开终端。</span><span>守规矩：自己跑检查、拦越界改动、锁接口、限制同时开几个。</span><span>记录和恢复：任务状态存在 AgentDeck 里，额度用完等恢复，重启接着跑。</span><span>只在关卡上叫你。</span></div>
     </div>
   </div>
@@ -106,16 +106,19 @@ body{margin:0}
       <span class="td">能用几家</span><span class="td">它会开谁就开谁，额度全压在一家</span><span class="td">每个角色选哪家，claude 用完了按模板交给 codex 接着做</span>
       <span class="td">你怎么看</span><span class="td">去问它</span><span class="td">集群框、任务看板、收件箱、汇报</span>
     </div>
+    <span style="font-size: 13px; line-height: 1.6; color: #1A1A1A">任务形状说不清、你在电脑前时，用自由模式（No template，C6）：只开一个 Lead，流程交给它，安全的规矩 AgentDeck 照样守。</span>
+    <span style="font-size: 12.5px; line-height: 1.6; color: #5F5F5A">官方也有一家内的版本：Claude Code 的 agent teams（实验，Lead + 队友 + 共享任务表）和 Projects（公测，云端 thread），Codex App 的 subagents。它们只用一家，进度和规矩靠 Lead。集群的区别是跨家，加上调度器守规矩（C9）。</span>
   </div>
 
   <div style="display: flex; flex-direction: column; gap: 10px; font-size: 13.5px; line-height: 1.65">
     <span class="h2">这一页的画板</span>
-    <span><b>C1</b> 新建集群 · <b>C2</b> 白板上的集群 · <b>C3</b> 一个任务的一生、调度规则、agent 用的工具 · <b>C4</b> 关卡、收件箱、汇报 · <b>C5</b> 模板、分期、待你定的事</span>
-    <span style="color: #5F5F5A">和已有的关系：集群用到 N1 的 AgentDeck MCP（加一组 crew 工具）、N12 的项目框排版、PL3 的“等额度恢复再发”和发送方式、PL1 的 Auto-approve（每个角色可以开）、PL2 的 Usage（汇报里的用量）。</span>
+    <span><b>C1</b> 新建集群 · <b>C2</b> 白板上的集群 · <b>C3</b> 一个任务的一生、调度规则、agent 用的命令 · <b>C4</b> 关卡、收件箱、汇报 · <b>C5</b> 模板、分期、已定的事 · <b>C6</b> 自由模式 · <b>C7</b> agentdeck 命令行 · <b>C8</b> Lead 记进度、跟你聊 · <b>C9</b> 定位</span>
+    <span>研究和竞赛（Kaggle、收论文、复现、视频转 PPT）见“研究和竞赛”页 E0–E3：产物不只是集群分支，还有报告、实验表、PPT、提交文件。</span>
+    <span style="color: #5F5F5A">和已有的关系：集群用到 <span class="mono">agentdeck</span> 命令行（C7，N1 的 AgentDeck MCP 不加 crew 工具）、N12 的项目框排版、PL3 的“等额度恢复再发”和发送方式、PL1 的 Auto-approve（每个角色可以开）、PL2 的 Usage（汇报里的用量）。</span>
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":1560}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":2060}}'>
 class Component extends DCLogic {
   renderVals() {
     return {};

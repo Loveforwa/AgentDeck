@@ -36,10 +36,13 @@ body{margin:0}
 .rt{display:grid;font-size:11.5px;line-height:1.45}
 .rt span{padding:5px 10px;border-top:1px solid #F0F0ED}
 .rh{font-size:10.5px;color:#8A8A85;font-weight:600}
+.gh{display:flex;align-items:center;gap:6px;padding:7px 12px;border-top:1px solid #E3E3E0;background:#FBFBFA;font-size:10.5px;font-weight:600;color:#8A8A85;letter-spacing:0.04em}
+.sug{display:flex;align-items:baseline;gap:6px;padding:5px 8px;border:1px dashed #D6D6D2;border-radius:6px;font-size:11.5px;color:#3D3D3A;line-height:1.45}
+.new{outline:1.5px dashed #8A8A85;outline-offset:3px;border-radius:6px}
 .diff{font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.7;padding:8px 12px;background:#FBFBFA;border-top:1px solid #F0F0ED;color:#3D3D3A}
 </style>
 </helmet>
-<div style="width: 1760px; height: 2440px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+<div style="width: 1760px; height: 2800px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
 
   <div style="display: flex; flex-direction: column; gap: 10px">
     <div style="display: flex; align-items: center; gap: 10px">
@@ -47,15 +50,17 @@ body{margin:0}
       <span class="concept">草案</span>
     </div>
     <p class="lead">所有等你的事集中在一个收件箱里：集群的关卡、终端在等批准、agent 问你的问题。每一条都能在收件箱里直接处理，不用先找到那个终端。集群跑完（或者你早上回来）看一份汇报。</p>
+    <p class="lead">分工（2026-10-27 补，2026-10-28 定）：<b>收件箱管要你拍板的事，Lead 跟你聊进度</b>。集群的条目归在集群的小标题下，能“问 Lead”，Lead 能先给建议；你处理过的每一条记进集群的 Decisions，Lead 和后开的任务都读得到。虚线框是这次加的，细节见 C8。</p>
   </div>
 
   <div style="display: flex; flex-direction: column; gap: 14px">
     <span class="h2">1 · 收件箱（Needs you）</span>
     <div style="display: flex; gap: 40px; align-items: flex-start">
-      <div class="fig" style="width: 960px; height: 820px">
+      <div class="fig" style="width: 960px; height: 960px">
         <div class="top"><b>AgentDeck</b><span class="muted">agenduck</span><span style="flex: 1"></span><span class="btn" style="border-color: #BF8700"><span class="dot" style="background: #BF8700; margin-right: 5px"></span>Needs you · 6</span></div>
         <div class="panel" style="left: 360px; top: 40px; width: 580px">
           <div style="display: flex; align-items: center; gap: 8px; padding: 10px 12px"><b>Needs you</b><span class="muted">· 6</span><span style="flex: 1"></span><span class="muted" style="font-size: 11px">Oldest first · ⌘J</span></div>
+          <div class="gh new"><span>CREW · HISTORY-SIDEBAR</span><span class="muted" style="font-weight: 400; letter-spacing: 0">· 5</span><span style="flex: 1"></span><span class="am" style="background: #A8503A"></span><span class="mono" style="font-weight: 500; letter-spacing: 0; color: #3D3D3A">Lead · claude</span><span style="font-weight: 400; letter-spacing: 0">Idle</span><span class="btn" style="margin-left: 6px">Ask lead…</span></div>
           <div class="ir">
             <div class="ih"><span class="dot" style="background: #BF8700"></span><b>Approve plan</b><span class="tag">Crew · history-sidebar</span><span style="flex: 1"></span><span class="muted">12m</span></div>
             <span class="muted">Lead wrote 8 tasks in 3 waves. Nothing starts until you approve.</span>
@@ -79,8 +84,10 @@ body{margin:0}
           <div class="ir">
             <div class="ih"><span class="dot" style="background: #BF8700"></span><b>Question</b><span class="tag"><span class="am" style="background: #2F5E9E; margin-right: 4px"></span>QA · codex</span><span style="flex: 1"></span><span class="muted">1m</span></div>
             <span>Should resuming a session open it in the same frame, or a new terminal next to it?</span>
-            <div class="acts"><span class="btn">Same frame</span><span class="btn">New terminal</span><span class="btn">Reply…</span></div>
+            <div class="sug new"><span class="am" style="background: #A8503A; align-self: center"></span><b style="font-weight: 600">Lead suggests</b><span>Same frame: Resume in the history sidebar already does that (N11).</span></div>
+            <div class="acts"><span class="btn pri">Same frame</span><span class="btn">New terminal</span><span class="btn">Reply…</span><span class="btn new">Ask lead…</span></div>
           </div>
+          <div class="gh"><span>OTHER TERMINALS</span><span class="muted" style="font-weight: 400; letter-spacing: 0">· 1</span></div>
           <div class="ir">
             <div class="ih"><span class="dot" style="background: #BF8700"></span><b>Approval</b><span class="tag"><span class="am" style="background: #A8503A; margin-right: 4px"></span>claude · not in a crew</span><span style="flex: 1"></span><span class="muted">just now</span></div>
             <span class="mono" style="font-size: 11px">git push origin feat/N12-arrange</span>
@@ -90,10 +97,14 @@ body{margin:0}
       </div>
       <div class="ex" style="flex: 1">
         <span><b>在哪</b>：顶栏右边一个按钮 <b>Needs you · 6</b>，有事时带黄点（出错的那条是红点），没事时变灰写 “All clear”。⌘J 打开，↑↓ 选，回车跳到对应的终端或任务。</span>
-        <span><b>收什么</b>：集群的关卡（确认任务表、改接口、卡住、合回 main）、所有终端在等批准或回答（集群外的也收）、agent 调 <span class="mono">crew_ask_human</span> 问的问题。</span>
+        <span><b>收什么</b>：集群的关卡（确认任务表、改接口、卡住、合回 main）、所有终端在等批准或回答（集群外的也收）、agent 跑 <span class="mono">agentdeck crew ask</span> 问的问题。以后加上对外发言的草稿（Ready to post：在 issue / PR 上评论、推送、开 PR、提交 review、合并，见“Issue · PR”页 I2）。</span>
         <span><b>直接处理</b>：批准就是替你按终端里的那个选项（和 Auto-approve 走同一条路）；问题的按钮来自 agent 给的 options，Reply… 写一句话原样发回那个终端。</span>
-        <span><b>提醒</b>：新来一条发一个 macOS 通知（能关）。离开电脑时推到手机：第二期再做。</span>
+        <span><b>提醒</b>：新来一条发一个 macOS 通知（能关）。离开电脑时推到手机、在手机上看和批：见“手机 · 远程”页 R0、R1（推送 RM1 和 CR8 一起做）。</span>
         <span style="color: #5F5F5A">收件箱不只给集群用，单个终端等你也在里面，所以可以先于集群单独做出来。</span>
+        <span class="new" style="padding: 6px 8px"><b>分组</b>（CR6 起）：一个集群的条目归在它的小标题下，小标题写 Lead 现在在干什么；不在集群里的终端归在 OTHER TERMINALS。CR1 单独做时只有 OTHER TERMINALS 一组，不显示小标题。</span>
+        <span class="new" style="padding: 6px 8px"><b>Lead suggests</b>：worker 问的问题，Lead 读了任务表和 Decisions 后可以先给一个建议（<span class="mono">crew suggest</span>），带一句理由；建议的选项按钮变成主按钮，<b>点不点由你</b>。Lead 不能替你批准命令、不能过关卡。第二期你可以在 New crew 里授权 Lead 直接回答 worker 的问题（C8 第 4 节，CR20）。</span>
+        <span class="new" style="padding: 6px 8px"><b>Ask lead…</b>：小标题上是问整个集群（“现在到哪了？”），条目上是问这一条（“T6 为什么卡住？”）。写一句话，AgentDeck 把它连同条目内容发进 Lead 的终端，回答在 Lead 终端里看；这一条下面多一行 “Asked lead · 1m · Go to lead”。</span>
+        <span class="new" style="padding: 6px 8px"><b>记下来</b>：每处理一条（你点的、Auto-approve 放的、以后 Lead 答的）都记进集群的 Decisions：谁问的、问什么、答了什么、谁答的、几点。Lead 被压缩或重开后从这里接上（C8 第 3 节），汇报里也有一节。</span>
       </div>
     </div>
   </div>
@@ -127,7 +138,7 @@ body{margin:0}
   <div style="display: flex; flex-direction: column; gap: 14px">
     <span class="h2">3 · 汇报</span>
     <div style="display: flex; gap: 40px; align-items: flex-start">
-      <div class="fig" style="width: 960px; height: 640px">
+      <div class="fig" style="width: 960px; height: 760px">
         <div class="panel" style="left: 24px; top: 24px; width: 912px">
           <div style="display: flex; align-items: center; gap: 8px; padding: 12px 14px"><b style="font-size: 14px">Crew report · history-sidebar</b><span class="tag">Done</span><span style="flex: 1"></span><span class="muted">Started 23:40 · finished 06:20</span></div>
           <div style="display: flex; gap: 24px; padding: 0 14px 10px; font-size: 12px"><span><b>8 of 8</b> tasks merged</span><span><b>6 of 6</b> acceptance cases pass</span><span><b>1h 15m</b> paused for claude’s 5-hour reset</span><span><b>2</b> notes · <b>0</b> open issues</span></div>
@@ -139,21 +150,25 @@ body{margin:0}
             <span class="muted">…</span><span class="muted">5 more</span><span></span><span></span><span></span><span></span>
           </div>
           <div style="padding: 10px 14px; border-top: 1px solid #F0F0ED; display: flex; flex-direction: column; gap: 4px; line-height: 1.5"><span class="rh">NOTES FROM THE CREW</span><span>T2: claude writes sidechain sessions in a sub-folder; they are skipped on purpose.</span><span>T5: resuming a codex session needs codex ≥ 0.164.</span></div>
+          <div class="new" style="padding: 10px 14px; border-top: 1px solid #F0F0ED; display: flex; flex-direction: column; gap: 4px; line-height: 1.5"><span class="rh">DECISIONS · 4</span><span><span class="mono">00:12</span> Approve plan · <b>you</b> approved after “Split T5”</span><span><span class="mono">01:40</span> QA asked “Same frame or new terminal?” · <b>you</b>: Same frame (lead suggested)</span><span><span class="mono">02:05</span> T7 interface change · <b>you</b> approved</span><span class="muted">1 more</span></div>
+          <div class="new" style="padding: 10px 14px; border-top: 1px solid #F0F0ED; display: flex; flex-direction: column; gap: 4px; line-height: 1.5"><span class="rh">LESSONS · 1</span><span>1 lesson proposed in this crew · <b>Review</b></span></div>
           <div style="padding: 10px 14px; border-top: 1px solid #F0F0ED; display: flex; flex-direction: column; gap: 4px; line-height: 1.5"><span class="rh">USAGE</span><span><span class="am" style="background: #A8503A; display: inline-block; margin-right: 4px"></span>claude · hit the 5-hour limit once</span><span><span class="am" style="background: #2F5E9E; display: inline-block; margin-right: 4px"></span>codex · within limits</span></div>
           <div style="display: flex; gap: 6px; padding: 10px 14px; border-top: 1px solid #F0F0ED"><span class="btn">Open diff</span><span class="btn">Copy as Markdown</span><span style="flex: 1"></span><span class="btn">Create PR</span><span class="btn pri">Merge into main</span></div>
         </div>
       </div>
       <div class="ex" style="flex: 1">
         <span><b>什么时候出</b>：集群跑完、你点 Stop、或者你点集群框上的 Report 看到目前为止的。集群跑完时收件箱多一条 “Ready to merge”。</span>
-        <span><b>写什么</b>：每个任务谁做的、来回几轮、检查过没过、改了多少；agent 用 <span class="mono">crew_note</span> 记下的发现；没解决的问题；每家的用量（来自 PL2 Usage）和因为额度停了多久。</span>
-        <span><b>Merge into main</b>：最后一道关卡，永远由你点。也可以 Create PR，汇报原样当 PR 描述（Copy as Markdown）。</span>
-        <span style="color: #5F5F5A">汇报存在 AgentDeck 的数据里，随集群一起留着，左边栏历史里能找回。</span>
+        <span><b>写什么</b>：每个任务谁做的、来回几轮、检查过没过、改了多少；agent 用 <span class="mono">agentdeck crew note</span> 记下的发现；没解决的问题；每家的用量（来自 PL2 Usage）和因为额度停了多久。研究集群另有 RUNS、SUBMISSIONS、CLAIMS、SOURCES、OUTPUTS 几节，最后一道关可以是 Accept（“研究和竞赛”页 E1 第 5 节）。</span>
+        <span class="new" style="padding: 6px 8px"><b>Lessons</b>：这次集群里提的 Lesson 候选列在 DECISIONS 下面的 LESSONS 一节，点 Review 跳到收件箱的 LESSONS TO REVIEW；你点了 Accept 才收进项目的 Lessons（“长期运行 · Lessons”页 W1）。</span>
+        <span class="new" style="padding: 6px 8px"><b>Decisions</b>：你在收件箱和关卡上做过的每个决定（和谁给的建议）。这些是集群的“短期记忆”，不写进仓库；值得长期留的（比如“恢复会话一律在原来的框里”）由你自己抄进 AGENTS.md，AgentDeck 不替你写。</span>
+        <span><b>Merge into main</b>：最后一道关卡，永远由你点。也可以 Create PR，汇报原样当 PR 描述（Copy as Markdown）。<span class="muted">第二期：Ready to merge 卡片多一行 FLOWS（动到的流程、几步、核对状态），样子见“代码理解”页 F2 第 3 节。</span></span>
+        <span style="color: #5F5F5A">汇报存在 AgentDeck 的数据里，随集群一起留着，左边栏历史里能找回。汇报在文档窗口里只读打开，任务改动列成代码引用，代码变了会标出来；可以 Save to repo…，你点了才写，AgentDeck 不提交（“文档”页 D0、D1）。</span>
       </div>
     </div>
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":2440}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":2800}}'>
 class Component extends DCLogic {
   renderVals() {
     return {};

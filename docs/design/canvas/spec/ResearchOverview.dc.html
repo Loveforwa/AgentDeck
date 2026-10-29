@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>研究和竞赛 · 总览</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1280px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.tag{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:11.5px;background:#F2F2EF;color:#5F5F5A;white-space:nowrap}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#8A8A85}
+.card{box-sizing:border-box;border:1px solid #E3E3E0;border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;font-size:12.5px;line-height:1.6;background:#FFFFFF}
+.card.on{border:1.5px solid #1A1A1A}
+.box{box-sizing:border-box;border:1px solid #D6D6D2;border-radius:8px;padding:10px 12px;background:#FFFFFF;font-size:12.5px;line-height:1.55;display:flex;flex-direction:column;gap:4px}
+.box.gate{border:1.5px dashed #BF8700;background:#FFF8E5}
+.box.ad{border:1.5px solid #1A1A1A}
+.bt{font-size:11px;font-weight:600;color:#8A8A85;letter-spacing:0.04em}
+.arrow{font-size:18px;color:#8A8A85;align-self:center;flex:none}
+.flow{display:flex;flex-wrap:wrap;align-items:center;gap:4px;font-size:11.5px}
+.fs{display:inline-flex;align-items:center;height:22px;padding:0 7px;border:1px solid #D6D6D2;border-radius:5px;background:#FFFFFF;white-space:nowrap}
+.fg{display:inline-flex;align-items:center;height:22px;padding:0 7px;border:1px dashed #BF8700;border-radius:5px;background:#FFF8E5;color:#5C4400;white-space:nowrap}
+.fa{color:#8A8A85}
+.layer{box-sizing:border-box;border:1px solid #D6D6D2;border-radius:10px;padding:14px 18px;background:#FFFFFF;display:grid;grid-template-columns:220px minmax(0,1fr) 300px;gap:20px;font-size:13px;line-height:1.6}
+.chain{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px}
+.ck{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 9px;border:1px solid #D6D6D2;border-radius:6px;background:#FFFFFF;white-space:nowrap}
+.am{width:6px;height:6px;border-radius:1.5px;flex:none;display:inline-block}
+.q{display:flex;gap:12px;font-size:13.5px;line-height:1.65}
+</style>
+</helmet>
+<div style="width: 1760px; height: 3960px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">E0 · 研究和竞赛：一队 agent 做 Kaggle、收论文、复现、视频转 PPT</h1>
+      <span class="concept">2026-10-28 按推荐先定，待你确认</span>
+    </div>
+    <p class="lead">用户笔记第 2 条：让多 agent 帮你打 Kaggle、从几个网站收论文新闻日程并辅助读论文、搭论文环境复现代码，视频链接也进同一个流程（取原文、分析、出 PPT）。这些任务的产物不是一条要合回 main 的分支，而是<b>报告、表格、PPT、提交文件</b>；“做完”看的不是检查过没过，而是<b>一个分数</b>或者<b>和论文里的数差多少</b>；几路尝试<b>不合并，而是比</b>；一次训练要跑几个小时。</p>
+    <p class="lead">结论：做法交给 skill，记账交给 AgentDeck，形状最后才做成模板。第一期在<b>自由模式（C6）</b>上加四样记账的东西：实验记录（Runs）、长任务（Jobs）、产物（Outputs）、提交关卡（Submit）。第二期加资料库（Library）和定期跑（Schedule）。模板文件开放（CR9）以后，再出四个研究模板（E3）。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 研究类任务和写代码的集群哪里不一样</span>
+    <div class="tbl" style="grid-template-columns: 180px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr)">
+      <span class="th">事情</span><span class="th">写代码的集群（C0–C8）</span><span class="th">研究、竞赛</span><span class="th">所以 AgentDeck 要加</span>
+      <span class="td"><b>产物</b></span><span class="td">集群分支，最后合回 main</span><span class="td">报告、实验表、PPT、提交文件、笔记；代码只是顺带的</span><span class="td"><b>Outputs</b>：登记每个产物（路径、哈希、谁做的、从哪个 run 来），集群结束前存一份快照，汇报里列出来、能在白板上打开</span>
+      <span class="td"><b>做完的标准</b></span><span class="td">检查命令过了、审过了</span><span class="td">验证分数多高；复现的数和论文差多少</span><span class="td"><b>Runs</b>：每次实验一行，分数由 AgentDeck 用锁住的打分命令自己算，不信 agent 嘴上报的</span>
+      <span class="td"><b>几路并行</b></span><span class="td">分头做不同的目录，最后合到一起</span><span class="td">几路试不同方向，<b>不合并，按同一个分数比</b>，好的留下、差的停掉</span><span class="td">Runs 表按分数排；方向就是 Lead 开的子 session（C6），一个方向一个 session</span>
+      <span class="td"><b>耗时</b></span><span class="td">一轮几分钟到几十分钟</span><span class="td">一次训练几小时，常常要 GPU</span><span class="td"><b>Jobs</b>：长命令由 AgentDeck 在 tmux 或远程机器上看着，跑完再叫醒 agent；agent 等的时候不花 token，额度用完训练也不停</span>
+      <span class="td"><b>输入</b></span><span class="td">仓库和 AGENTS.md</span><span class="td">网页、论文 PDF、视频；来路多、会重复、不可信</span><span class="td"><b>Library</b>：收到的东西先过去重再存，一条一个文件；搜索本身还是各家 agent 自己的（RM4）</span>
+      <span class="td"><b>多久一次</b></span><span class="td">一次性</span><span class="td">论文和新闻要每天收</span><span class="td"><b>Schedule</b>：把一个集群设成每天几点跑一次（AgentDeck 开着时）</span>
+      <span class="td"><b>最后一道关</b></span><span class="td">Merge into main</span><span class="td">提交到 Kaggle（每天几次、交了就算）；接受这批产物</span><span class="td"><b>Submit</b> 关卡（AgentDeck 自己提交，agent 不能交）；<b>Accept outputs</b> 关卡</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 一条流水线，四种场景都走它</span>
+    <div style="display: flex; align-items: stretch; gap: 8px">
+      <div class="box" style="width: 170px"><span class="bt">INPUTS</span><b>题目和数据</b><span class="muted">比赛页、论文、网址列表、视频链接</span></div>
+      <span class="arrow">→</span>
+      <div class="box gate" style="width: 190px"><span class="bt">PLAN · 你确认</span><b>Lead 读懂、拆开</b><span>方向、要复现的数、来源、预算（GPU 小时、提交次数）</span></div>
+      <span class="arrow">→</span>
+      <div class="box ad" style="width: 180px"><span class="bt">LOCK · AGENTDECK</span><b>锁住怎么算分</b><span>验证集划分、打分命令；论文里的目标数</span></div>
+      <span class="arrow">→</span>
+      <div class="box" style="width: 210px"><span class="bt">EXPLORE · SESSIONS</span><b>几路并行</b><span>每个方向 / 每个来源 / 每个视频一个子 session，在自己的 worktree 里做</span></div>
+      <span class="arrow">→</span>
+      <div class="box ad" style="width: 200px"><span class="bt">RUNS · JOBS · AGENTDECK</span><b>跑、记、打分</b><span>长命令交给 Jobs；每次结果记一行 Run，分数 AgentDeck 自己算</span></div>
+      <span class="arrow">→</span>
+      <div class="box" style="width: 170px"><span class="bt">OUTPUTS</span><b>报告 · 表 · PPT</b><span>每个数都能点回 run、页码、时间点</span></div>
+      <span class="arrow">→</span>
+      <div class="box gate" style="width: 150px"><span class="bt">GATE · 你点</span><b>Submit · Accept</b><span>有代码改动时才有 Merge into main</span></div>
+    </div>
+    <span style="font-size: 12.5px; color: #5F5F5A">黑框是 AgentDeck 的代码做的（记账、守规矩），黄色虚线是停下来等你的地方，其余是 agent 做的（靠 skill 和各家自己的搜索、读图能力）。中间 EXPLORE → RUNS 会来回几轮：Lead 看 Runs 表决定哪个方向继续、哪个停掉、要不要开新的。</span>
+    <div class="tbl" style="grid-template-columns: 170px repeat(5, minmax(0, 1fr))">
+      <span class="th">场景</span><span class="th">Plan（你确认）</span><span class="th">Lock</span><span class="th">Explore</span><span class="th">Runs · Jobs</span><span class="th">Outputs · Gate</span>
+      <span class="td"><b>Kaggle 竞赛</b><br><span class="muted">E1</span></span><span class="td">读规则、数据、指标；列 3–5 个方向和预算</span><span class="td">CV 划分、<span class="mono">score.py</span>、数据目录锁住</span><span class="td">先跑 baseline，再一个方向一个 session</span><span class="td">训练是 Job（本机或 GPU 机）；分数 = AgentDeck 跑 score 命令</span><span class="td">实验表、提交文件、汇报；<b>Submit</b> 每次你点</span>
+      <span class="td"><b>收论文新闻日程</b><br><span class="muted">E2 第 1–2 节</span></span><span class="td">主题、来源列表、怎么排序</span><span class="td">—（去重规则是固定的）</span><span class="td">一个来源一个 session，用各家自己的搜索工具</span><span class="td">没有分数；<span class="mono">lib add</span> 进资料库，AgentDeck 去重</span><span class="td">今日摘要、资料库；不用关卡；可以每天跑</span>
+      <span class="td"><b>复现论文</b><br><span class="muted">E2 第 3–4 节</span></span><span class="td">要复现哪几个数、容差、只评测还是重训</span><span class="td">论文里的目标数（Claims）、评测命令</span><span class="td">先搭环境，再一个数一个 session</span><span class="td">训练和评测是 Job；Δ 由 AgentDeck 算</span><span class="td">对照表、和论文的差异、补丁；<b>Accept</b>，有补丁时可合回</span>
+      <span class="td"><b>视频转 PPT</b><br><span class="muted">E2 第 5–6 节</span></span><span class="td">哪几个视频、给谁看、多少页</span><span class="td">—</span><span class="td">一个视频一个 session：取字幕或转写、截关键帧</span><span class="td">转写是 Job；每步进度一行</span><span class="td">PPT、原文、核对表；<b>Accept</b></span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · 三层：skill 管做法，AgentDeck 管记账，模板管形状</span>
+    <div class="layer"><b style="font-size: 15px">第三层 · 研究模板<br><span class="tag">研究第三期 · 等 CR9</span></b><span>四个模板文件（E3）：Competition、Literature watch、Paper reproduction、Video to slides。只写形状：角色、阶段、关卡、规矩。要加三种新阶段（<span class="mono">explore</span>、<span class="mono">fanout</span>、<span class="mono">deliver</span>），其余用 C5 已有的。</span><span class="muted">给长任务和整夜跑；任务形状清楚以后才值得写成模板。</span></div>
+    <div class="layer" style="border: 1.5px solid #1A1A1A"><b style="font-size: 15px">第二层 · 集群核心里的记账<br><span class="tag">研究第一、二期</span></b><span>Runs、Jobs、Outputs、Submit（第一期）；Library、Schedule、按条目的进度（第二期）。两种模式都能用，自由模式里也有。这些是“安全和记账”，和 C6 的分法一致：不能交给 Lead 自觉，分数不能让 agent 自己报、提交不能让 agent 自己交、几小时的训练不能让 agent 盯着。</span><span class="muted">这是 AgentDeck 自己要写的代码，第 4 节列出每一样。</span></div>
+    <div class="layer"><b style="font-size: 15px">第一层 · skill 和各家的工具<br><span class="tag">现在就有</span></b><span>怎么读论文、怎么做特征、怎么用 whisper 转写、怎么出 pptx，都写在 skill 里，放在 N9 / Skill 管理（K0、K1）的库里，按角色带进去。你的库里已经有不少（本会话能看到的名字里有 arxiv、semantic-scholar、research-lit、run-experiment、experiment-queue、vast-gpu、paper-slides、pptx、alphaxiv 等）。搜索、看图、看视频是各家 agent 自己的能力。AgentDeck 不写这些 skill，也不打包 yt-dlp、whisper。</span><span class="muted">只靠这一层就是“自由模式 + skill”：能跑，但分数、提交、长任务、去重没人记账。</span></div>
+    <span style="font-size: 13px; color: #5F5F5A">回答“做成新模板，还是自由模式加 skill 就够”：<b>先自由模式加 skill，再补第二层的记账，最后才是模板。</b>只有 skill 不够，因为缺的是记账，不是做法；直接做模板太早，因为 CR9 第三期才开放模板文件，而且 Kaggle 每个比赛的形状都不太一样，先在自由模式里跑几次再定。</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · AgentDeck 要新做的东西（界面 + 底层）</span>
+    <div class="tbl" style="grid-template-columns: 170px minmax(0, 1.2fr) minmax(0, 1.2fr) 150px 120px">
+      <span class="th">东西</span><span class="th">界面</span><span class="th">底层</span><span class="th">哪些场景</span><span class="th">期</span>
+      <span class="td"><b>Runs</b> 实验记录</span><span class="td">白板上一种新窗口 <b>Results</b>：Runs 页按分数排、最好的加粗、点一行看 Run 卡片（E1 第 1、2 节）；Claims 页给复现用（E2 第 3 节）</span><span class="td">SQLite 里的 Run：session、分支和提交、命令和配置、种子、数据和环境的指纹、Job、各折分数、产物；分数由 AgentDeck 在这个提交上跑锁住的 score 命令</span><span class="td">竞赛、复现</span><span class="td">第一期</span>
+      <span class="td"><b>Jobs</b> 长任务</span><span class="td">集群框底部一条 JOBS：在哪跑、跑了多久、最后一行日志；Job 也能开成一个只读终端</span><span class="td">本机 tmux 或 SSH 机器上的长命令，记日志和退出码；跑完把结果打进开它的 session；排队等 GPU；重启对账</span><span class="td">竞赛、复现、视频转写</span><span class="td">第一期本机，第二期 SSH</span>
+      <span class="td"><b>Outputs</b> 产物</span><span class="td">集群框标题条多一个 Outputs · N；汇报多 Outputs、Runs、Claims、Sources 几节；最后的关卡按模板变成 Accept outputs / Submit</span><span class="td">登记路径、哈希、出处；集群结束前把产物复制到 <span class="mono">&lt;数据目录&gt;/crews/&lt;id&gt;/outputs</span>，先存快照再清任务 worktree（C3 写了结束时清掉任务 worktree）</span><span class="td">全部</span><span class="td">第一期</span>
+      <span class="td"><b>Submit</b> 提交关卡</span><span class="td">收件箱一条 Submit to Kaggle：哪个 run、CV 多少、格式检查、今天还剩几次</span><span class="td">AgentDeck 自己执行提交，取回公榜分数；发现绕过关卡的提交时报红</span><span class="td">竞赛</span><span class="td">第一期</span>
+      <span class="td"><b>Library</b> 资料库</span><span class="td">左边栏多一页 Library（和 History 并排）：论文、新闻、日程、视频，新的加粗，疑似重复能合并；点开在白板上开 PDF 或网页</span><span class="td">一条一个 Markdown 文件 + SQLite 索引；文件夹默认在数据目录，你主动改了位置才写到别处（你点了才写，AgentDeck 不提交）；<span class="mono">agentdeck lib add</span> 写入时按 DOI、arXiv 号、网址、标题指纹去重</span><span class="td">收论文、复现、视频</span><span class="td">第二期</span>
+      <span class="td"><b>Schedule</b> 定期跑</span><span class="td">集群框 ⋯ › Repeat…：每天 / 每周几点；资料库顶上写上次和下次</span><span class="td">AgentDeck 开着时到点用同一套设置新开一个集群；错过的下次打开时补一次；额度用完就等</span><span class="td">收论文</span><span class="td">第二期</span>
+      <span class="td"><b>条目进度</b></span><span class="td">集群框里一张小表：每个视频 / 来源一行，每一步一格（E2 第 5 节）</span><span class="td">模板的 <span class="mono">fanout</span> 阶段按步骤记状态；自由模式里 Lead 用 <span class="mono">crew item</span> 报</span><span class="td">视频、收论文</span><span class="td">第二期</span>
+      <span class="td"><b>需要的工具</b></span><span class="td">New crew 里写 Needs kaggle, yt-dlp, ffmpeg · 2 of 3 found，带安装提示</span><span class="td">模板的 <span class="mono">requires</span>；只检查，不替你装</span><span class="td">全部</span><span class="td">第一期</span>
+      <span class="td muted">不做的</span><span class="td muted" style="grid-column: span 4">搜索（RM4）、租 GPU 和开关云机器、自己的视频模型、自己的 PPT 引擎、替你建 conda 环境、实验平台（MLflow、W&amp;B 有的话以后只读导入）。</span>
+    </div>
+    <span style="font-size: 12.5px; color: #5F5F5A">“视频转 PPT 的进度”不单独做界面：用通用的条目进度表加 Jobs。“论文和资料库”做成左边栏一页。“实验对照表”是 Results 窗口，竞赛和复现共用一个零件。</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">5 · 每个数都有出处（过程可追溯、产物能对应到源码）</span>
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <div class="chain"><span class="ck">汇报里的 <b>CV 0.8530</b></span><span class="fa">→</span><span class="ck mono">Run R4</span><span class="fa">→</span><span class="ck mono">crew/s6e11/fe@3f2a1c9</span><span class="fa">+</span><span class="ck mono">configs/fe_v3.yaml</span><span class="fa">+</span><span class="ck">seed 42</span><span class="fa">+</span><span class="ck">data sha 9b1e…</span><span class="fa">+</span><span class="ck">uv.lock 4c0d…</span><span class="fa">+</span><span class="ck mono">Job J2 log</span><span class="fa">→</span><span class="ck"><span class="am" style="background: #2F5E9E"></span>session fe · codex</span></div>
+      <div class="chain"><span class="ck">对照表里的 <b>79.8 vs 80.3</b></span><span class="fa">→</span><span class="ck">Claim C2 · Table 2 · p.6</span><span class="fa">→</span><span class="ck mono">Runs R11 R12 R13（3 seeds）</span><span class="fa">→</span><span class="ck mono">eval.py @ 81c0e2a</span><span class="fa">→</span><span class="ck">Differences: batch 256 → 128</span></div>
+      <div class="chain"><span class="ck">PPT 第 7 页的一句话</span><span class="fa">→</span><span class="ck mono">[12:31–13:05]</span><span class="fa">→</span><span class="ck">transcript.srt（自动字幕）</span><span class="fa">→</span><span class="ck">Verify：Confirmed · 2 sources</span></div>
+      <div class="chain"><span class="ck">今日摘要里的一篇</span><span class="fa">→</span><span class="ck mono">library/papers/2510.01234.md</span><span class="fa">→</span><span class="ck">seen on arxiv · hf papers · hn</span><span class="fa">→</span><span class="ck">notes p.5 §3.2</span></div>
+    </div>
+    <span style="font-size: 12.5px; color: #5F5F5A">规矩：产物里出现的分数只能来自 Run（AgentDeck 算的）；复现的差值只能来自 Claim 和 Run；摘要和 PPT 里的说法要带页码、时间点或网址。Lead 的提示词里写明，汇报里没有出处的数标 “unsourced”。</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">6 · 和已有部分的关系</span>
+    <div class="tbl" style="grid-template-columns: 240px minmax(0, 1fr)">
+      <span class="th">已有的</span><span class="th">研究和竞赛怎么用它、要它改什么</span>
+      <span class="td">C6 自由模式 · CR10</span><span class="td">第一期就建在它上面：方向 = Lead 开的子 session。<b>改一处</b>：开了 Results 或 Jobs 的集群，子 session 的第一条提示词多 4 行 worker 命令（<span class="mono">run start · run done · job start · out add</span>），仍然不能开 session、不能申请提交（已定：C6 改为“子 session 不带 crew 和 session 命令”，这 4 行所有 AgentDeck 终端都有）。</span>
+      <span class="td">C5 模板格式 · CR9</span><span class="td">四个研究模板用同一种文件；加 <span class="mono">explore</span>、<span class="mono">fanout</span>、<span class="mono">deliver</span> 三种阶段，<span class="mono">score</span>、<span class="mono">jobs</span>、<span class="mono">submit</span>、<span class="mono">library</span>、<span class="mono">schedule</span>、<span class="mono">requires</span> 几条规矩。Bug hunt 的“几路查、不合并”和 Competition 的 explore 是同一种阶段。</span>
+      <span class="td">C4 汇报 · CR7</span><span class="td">汇报按模板多几节；最后的关卡从只有 Merge into main 扩成 Merge / Accept outputs / Submit。</span>
+      <span class="td">S0、S1 Session（SE0–SE6）</span><span class="td">一个方向是一个 session，一次实验是这个 session 里的一行 Run，不是每次实验开一个 session（太多）。换一家接着做（SE6）时，交接说明带上这个 session 的 Runs 和在跑的 Jobs。</span>
+      <span class="td">PL4 Auto-resume · PL5 LimitService · CR8</span><span class="td">训练是 Job，额度用完不影响它；Job 跑完要叫醒的 session 正在等额度时，消息排在续跑后面再发。整夜跑另加 GPU 预算（GPU 小时用完不再开新 Job）。</span>
+      <span class="td">K0、K1 Skill 管理（SK6 角色预设）</span><span class="td">研究角色的预设：Lead 带读论文和计划类 skill，Explorer 带实验类，Fetcher 带下载转写类；库里没有就跳过，不替你装。</span>
+      <span class="td">搜索不做（RM4）</span><span class="td">资料库只管存和去重，搜什么、用什么搜由各家 agent 和你装的工具（Exa、OpenCLI…）决定。下视频要不要用浏览器的登录态（cookies）每次问你，默认不用（DR-91）。</span>
+      <span class="td">A0 能力报告（AH0）</span><span class="td">加两项：<span class="mono">image-input</span>、<span class="mono">video-input</span>。视频要不要走“截帧给模型看”就按它判断。</span>
+      <span class="td">D0–D2 文档（M15）</span><span class="td">报告、笔记、实验文档的编辑体验依赖“文档”页 D0–D2（M15）；在那之前，产物用网页窗口打开（已经能开本地 HTML，PDF 待核对）。</span>
+      <span class="td">PL1 Auto-approve</span><span class="td">永远不自动放行 <span class="mono">kaggle competitions submit</span>（已定，另登记问题，不改 PL1 已有的结论）。</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">7 · 分期（M14「研究和竞赛」，任务前缀 RS）</span>
+    <div class="tbl" style="grid-template-columns: 150px minmax(0, 1fr) minmax(0, 0.8fr)">
+      <span class="th">期</span><span class="th">做什么</span><span class="th">做完能怎样</span>
+      <span class="td"><b>研究第一期</b><br><span class="muted">等 CR10（1a）</span></span><span class="td">contracts（RS0）；本机 Jobs（RS1）；Runs 和锁住的打分（RS3）；Results 窗口（RS4）；Outputs 和汇报（RS5）；Kaggle 提交关卡（RS6）；Claims（RS10）；需要的工具和环境护栏（RS13）；调研（RS14）</span><span class="td">在自由模式里开一个 Kaggle 集群：几个方向并行，表里按 CV 排，你点了才提交；复现一个有代码的论文，看到每个数差多少</span>
+      <span class="td"><b>研究第二期</b></span><span class="td">SSH 的 GPU 机器（RS2）；资料库服务和左边栏（RS7、RS8）；定期跑（RS9）；条目进度（RS11）</span><span class="td">每天早上资料库里有去过重的新论文和日程；训练放到你自己的 GPU 机器上跑</span>
+      <span class="td"><b>研究第三期</b><br><span class="muted">等 CR9</span></span><span class="td">四个研究模板文件（RS12）</span><span class="td">New crew 里直接选 Competition 等模板，整夜跑</span>
+    </div>
+    <span style="font-size: 12.5px; color: #5F5F5A">顺序：C9 定了集群排在所有新方向前面，所以研究第一期排在 M8 的 1a（CR10）之后；和 1b 模板模式可以并行。</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">8 · 按推荐先定（2026-10-28），待你确认</span>
+    <div class="tbl" style="grid-template-columns: 260px minmax(0, 1fr) minmax(0, 1fr)">
+      <span class="th">问题</span><span class="th">选项</span><span class="th">定了</span>
+      <span class="td">做成新模板还是自由模式加 skill</span><span class="td">只靠 skill / 先补记账再出模板 / 现在就做四个模板</span><span class="td">分三层：skill；集群核心里的记账（Runs、Jobs、Outputs、Submit、Claims）；研究模板放第三期（等 CR9）。研究第一期建在自由模式上</span>
+      <span class="td">分数谁算</span><span class="td">agent 报 / AgentDeck 跑锁住的 score 命令 / 接 MLflow、W&amp;B</span><span class="td">AgentDeck 在提交上跑锁住的打分命令算；agent 报的数只作对照</span>
+      <span class="td">GPU 和长训练放哪</span><span class="td">agent 自己在 shell 里跑 / AgentDeck 的 Jobs（本机 + SSH）/ AgentDeck 管云机器</span><span class="td">Jobs：第一期在本机 tmux 里跑，第二期加 SSH 机器；云平台走你自己的命令和 skill</span>
+      <span class="td">谁能提交 Kaggle</span><span class="td">agent 自己交 / 只走关卡，AgentDeck 执行</span><span class="td">只经 Submit 关卡，AgentDeck 执行；Auto-approve 永远不放行 <span class="mono">kaggle competitions submit</span>；绕过的报红</span>
+      <span class="td">资料库放哪</span><span class="td">AgentDeck 的数据库 / 你选的文件夹里的 Markdown + 索引 / Zotero</span><span class="td">一个文件夹，一条一个 Markdown + 索引，默认放在数据目录；只有你主动改了位置（例如你的笔记库）才写到别处，AgentDeck 不提交</span>
+      <span class="td">定期跑</span><span class="td">AgentDeck 开着时 / 系统 launchd 起无头 agent / 各家的云端定时</span><span class="td">AgentDeck 开着时，错过补一次</span>
+      <span class="td">复现的环境</span><span class="td">只用 worktree / worktree 里的独立环境 / 容器 / 远程</span><span class="td">worktree + 里面的 .venv 或 conda 前缀；要 CUDA 的去远程机器</span>
+      <span class="td">研究集群的子 session 带不带命令</span><span class="td">不带（C6 现状）/ 带 4 行 worker 命令</span><span class="td">带 4 行（所有 AgentDeck 终端都有），仍然不能开 session、不能申请提交</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":3960}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

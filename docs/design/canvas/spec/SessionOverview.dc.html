@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Session · 长期运行 · 记忆</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1300px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#8A8A85}
+.box{box-sizing:border-box;border:1px solid #D6D6D2;border-radius:10px;background:#FFFFFF;padding:14px 16px;font-size:13px;line-height:1.6;display:flex;flex-direction:column;gap:6px}
+.box.ink{border:1.5px solid #1A1A1A}
+.box b.t{font-size:16px}
+.arr{font-size:13px;color:#5F5F5A;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center;min-width:140px}
+.arr i{font-style:normal;font-size:18px;color:#8A8A85}
+.lane{display:grid;grid-template-columns:150px 1fr;align-items:stretch;border-top:1px solid #E3E3E0}
+.lane > span:first-child{padding:10px 12px;font-size:12px;font-weight:600;color:#6B6B6B;background:#FBFBFA;border-right:1px solid #E3E3E0}
+.track{display:flex;gap:6px;padding:8px 10px;align-items:center;flex-wrap:nowrap;overflow:hidden}
+.seg{box-sizing:border-box;height:30px;border-radius:6px;padding:0 8px;display:flex;align-items:center;font-size:11.5px;white-space:nowrap;border:1px solid #D6D6D2;background:#FFFFFF}
+.seg.run{background:#F2F2EF}
+.seg.wait{border:1px dashed #BF8700;color:#7A5600;background:#FFFFFF}
+.seg.ev{border:1.5px solid #1A1A1A;font-weight:500}
+.seg.mem{border-color:#8A8A85;background:#FBFBFA}
+.seg.bad{border-color:#CF222E;color:#A40E26}
+.note{font-size:12.5px;line-height:1.6;color:#5F5F5A}
+.ex{display:flex;flex-direction:column;gap:10px;font-size:13.5px;line-height:1.65}
+.decide{display:grid;grid-template-columns:36px 1fr;gap:6px 10px;font-size:13px;line-height:1.6}
+</style>
+</helmet>
+<div style="width: 1760px; height: 3000px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">S2 · Session、长期运行、记忆：合成一个需求</h1>
+      <span class="concept">2026-10-29 提议，待你确认</span>
+    </div>
+    <p class="lead">三件事是同一件事的三面。<b>Session</b> 是骨架：谁在做、在哪做、从哪来，关掉以后还在（S0、S1）。<b>长期运行</b>是 Session 的一种跑法：排好一串事，它自己一件件往下做，做没做完由 AgentDeck 跑检查说了算（W0、W2）。<b>记忆</b>让一条 Session 跨过 /clear、额度、交接、重开以后还接得上，也让新开的 Session 一开始就知道这个项目的坑（S3、W1）。原来它们分在两页，记忆散在三处：W0 的“进度记在队列里”、W1 的 Lessons、DR-74 的“偏好和进度归各家”，而且互相打架；W0 的队列还挂在已经退役的 PL3 卡片上。这一页把它们合起来：先讲关系，再讲改了什么、分几期、任务表怎么跟着改。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 三件事的关系</span>
+    <div style="display: flex; gap: 0; align-items: stretch; max-width: 1632px">
+      <div class="box ink" style="width: 400px"><b class="t">Session</b><span>一条做事的线：一家 agent、一个目录、父子和来历。下面按先后挂几段对话（start、/clear、resume、fork）。</span><span class="muted">S0 · S1 · 已做 SE0–SE2</span></div>
+      <div class="arr"><i>→</i>上面挂一份计划<br>它自己往下做</div>
+      <div class="box" style="width: 400px"><b class="t">长期运行 · Plan</b><span>Session 上的一串条目：做什么、什么时候做、做完怎么验。主进程按条派活、跑检查、等额度、交接。</span><span class="muted">W0 · W2 · 原来挂在 PL3 卡片上</span></div>
+      <div class="arr"><i>→</i>每一步记下来<br>断了靠它接上</div>
+      <div class="box" style="width: 400px"><b class="t">记忆</b><span>Session 笔记：这条线的目标、做到哪、定了什么、卡在哪、下一步。项目记忆（Lessons）：反复踩的坑。</span><span class="muted">S3 · W1</span></div>
+    </div>
+    <p class="note" style="max-width: 1500px">反过来也成立：记忆要挂在 Session 上才有主人（窗口一关就散的东西记不住）；计划要读记忆才能在 Fresh、额度恢复、交接以后接着做；Session 要有计划和记忆，才谈得上“跑一整天”和“换一家接着做”。所以做成一个需求、一个里程碑，接口（contracts）一起定，不然三处各写一套“进度”。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 一条 Session 的一天：三条线怎么对上</span>
+    <div style="border: 1px solid #E3E3E0; border-radius: 10px; overflow: hidden; max-width: 1632px">
+      <div class="lane" style="border-top: 0"><span>Session<br><span class="muted" style="font-weight: 400">claude · agenduck · fix/history</span></span>
+        <div class="track"><span class="seg run" style="width: 220px">段 1 · start 08:25</span><span class="seg ev">/clear（Fresh）</span><span class="seg run" style="width: 150px">段 2</span><span class="seg wait" style="width: 170px">额度 · paused 11:40–13:10</span><span class="seg run" style="width: 150px">段 2 接着</span><span class="seg ev">Hand off ▸ codex</span><span class="seg run" style="width: 210px">子 Session · codex</span><span class="seg ev">应用重开 · Reopen</span></div>
+      </div>
+      <div class="lane"><span>Plan<br><span class="muted" style="font-weight: 400">W0</span></span>
+        <div class="track"><span class="seg">1 ✓ /triage-issues</span><span class="seg">2 ✓ store test · try 2</span><span class="seg">3 e2e TC-55 · checking</span><span class="seg bad">5 ✗ split reader · skipped</span><span class="seg">6–7 剩下的交给 codex</span><span class="seg">7 ⏰ Weekdays 09:00</span></div>
+      </div>
+      <div class="lane"><span>Session 笔记<br><span class="muted" style="font-weight: 400">S3 · AgentDeck 记</span></span>
+        <div class="track"><span class="seg mem">GOAL 你写的一句</span><span class="seg mem">DONE #1 #2 · a1b2c3d</span><span class="seg mem">DECIDED 你在收件箱的回答</span><span class="seg mem">LIMIT 11:40 → 13:10</span><span class="seg mem">BLOCKED #5 · 检查输出末尾</span><span class="seg mem">NEXT #6</span><span class="seg mem">HANDOFF → codex</span></div>
+      </div>
+      <div class="lane"><span>带回去<br><span class="muted" style="font-weight: 400">什么时候给 agent</span></span>
+        <div class="track"><span class="seg ev">Fresh 后第一条消息：Session brief</span><span class="seg ev">codex 额度恢复：续跑提示带 NEXT</span><span class="seg ev">交接：brief + 剩下的计划 + 上一家记录的路径</span><span class="seg ev">Reopen 接不上对话时：brief</span></div>
+      </div>
+      <div class="lane"><span>项目记忆<br><span class="muted" style="font-weight: 400">W1 · Lessons</span></span>
+        <div class="track"><span class="seg mem">每个新 Session 开头：系统提示里追加已确认的 Lessons（≤ 1,000 token）</span><span class="seg mem">#5 卡住后：提一条候选</span><span class="seg mem">晚上看报告时你 Accept / Reject</span></div>
+      </div>
+    </div>
+    <p class="note" style="max-width: 1500px">灰色是 agent 在做，黄色虚线是停着等，墨色粗框是 AgentDeck 做的动作（确定的代码，不花 token）。交接以后剩下的计划和笔记跟着子 Session 走；重开应用后 Session、计划、笔记都还在，Reopen 时 agent 用自己的 resume 接上对话，接不上才把 brief 发过去。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · 原来的页改了什么</span>
+    <div class="tbl" style="grid-template-columns: 220px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); max-width: 1632px">
+      <span class="th">画板</span><span class="th">原来</span><span class="th">现在</span><span class="th">为什么</span>
+      <span class="td"><b>W0</b> 跑一整天</span><span class="td">队列挂在 Prompt queue（PL3）的卡片上，打开 Run all day 多几列</span><span class="td">挂在 Session 上：<b>Session 的 Plan</b>。卡片和书签沿用 Auto-resume（PL6）那一套，条目的 When / Done when / If stuck 不变</span><span class="td">PL3 10-28 退役、代码删了（DR-107 一直待定）；计划要跟着 Reopen、交接走，挂在 Session 上才对</span>
+      <span class="td"><b>W0</b> Fresh</span><span class="td">先发 /clear，进度只记在队列里</span><span class="td">/clear 以后 AgentDeck 先发一条 <b>Session brief</b>（目标、做完的、定了的、卡住的、下一步），再发这一条</span><span class="td">只给条目，agent 不知道上一条做出了什么、你定了什么</span>
+      <span class="td"><b>S0 · SE6</b> 交接</span><span class="td">交接说明由上一家写，或者 AgentDeck 拼</span><span class="td">交接说明 = Session brief + 剩下的计划 + 上一家会话记录的路径，AgentDeck 拼；上一家空闲时可以补一句</span><span class="td">常见的交接正好发生在上一家撞额度、写不了的时候</span>
+      <span class="td"><b>PL4 · PL6</b> 续跑</span><span class="td">续跑提示词“从停下的地方接着做”</span><span class="td">AgentDeck 自己发续跑提示时带上 NEXT 一行；claude 自己续时照旧什么都不发</span><span class="td">停了一个半小时，提醒一句下一步不贵</span>
+      <span class="td"><b>W1</b> Lessons</span><span class="td">单独一页，“DR-74 补一条例外”</span><span class="td">记忆的第 3 层（S3 第 1 节），规则一条不改</span><span class="td">同一套：谁提、谁审、上限、什么时候注入</span>
+      <span class="td"><b>W2</b> 报告</span><span class="td">从 QueueService 拼</span><span class="td">从这一天的 Session 笔记和计划拼，版式不变</span><span class="td">同一份数据，不另记一套</span>
+      <span class="td"><b>DR-74</b></span><span class="td">长期记忆不归 AgentDeck；偏好和进度归各家（Lessons 一条例外）</span><span class="td">补第二条例外：<b>AgentDeck 自己的 Session 的进度由 AgentDeck 记</b>（只记确定的事件）。偏好仍归 AGENTS.md 和各家 memory</span><span class="td">跨 /clear、跨家、跨重开的进度，只有 AgentDeck 看得见；各家的 memory 不跨家、claude 的不记 debugging</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · 分期</span>
+    <div class="tbl" style="grid-template-columns: 120px minmax(0, 1fr) minmax(0, 1fr); max-width: 1632px">
+      <span class="th">期</span><span class="th">做什么</span><span class="th">做完以后能干什么</span>
+      <span class="td"><b>第一期</b></span><span class="td">Session 笔记（只记确定事件）和左边栏的 Notes 一栏；Fresh、交接、Reopen、AgentDeck 续跑时带回去；Session 的 Plan 最小版：Now / After previous、Done when、If stuck、On usage limit 等恢复；报告（W2）</span><span class="td">排好一串事走开，回来看报告；撞额度、清上下文、换一家都接得上</span>
+      <span class="td"><b>第二期</b></span><span class="td">Lessons（W1 全部）；定时条目（At、Weekdays）；On usage limit 交给另一家；手机推送（RM1）</span><span class="td">坑记一次，每个新 Session 都知道；夜里撞额度自动换家</span>
+      <span class="td"><b>第三期</b></span><span class="td">agent 用 agentdeck note 补笔记；只在相关时补一条 Lesson（LR11）；All projects 偏好</span><span class="td">更省 token，笔记更全</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">5 · 任务表怎么跟着改（你在审查台同意以后再改）</span>
+    <div class="ex" style="max-width: 1500px">
+      <span><b>里程碑</b>：M9 Session 和 M13 长期运行 · Lessons 合成一个 <b>M9 · Session · 长期运行 · 记忆</b>，任务编号不变（SE、LR），M13 撤掉。SE0–SE2 已做，不动。</span>
+      <span><b>新加</b>：SE7 contracts 加 SessionNote 和 Session.plan（单独提交，只加不改）；SE8 主进程记笔记（只收确定事件：计划条目、检查、提交、收件箱回答、额度、交接）和 <span class="mono">agentdeck session notes</span>；SE9 带回去（Fresh、交接、Reopen 接不上、AgentDeck 续跑时发 Session brief，各家写法实测）；SE10 左边栏 Session 卡片的 Notes 一栏（看、改、删一条、Copy as Markdown）。</span>
+      <span><b>改</b>：LR6 “把 PL3 队列搬进主进程” 改成 “Session 的 Plan：RunService（主进程）”，依赖从 PL3 改成 SE2、SE8；LR8 “队列卡片” 改成 “Plan 卡片和书签（沿用 PL6 的样子）”；LR9 报告改从 Session 笔记生成；LR0、LR1 的 queue_items 改名 plan_items，挂 session_id（本来就挂 session）；SE6 交接说明改用 Session brief。DR-107 了结。</span>
+      <span><b>不变</b>：LR2–LR5、LR11（Lessons）规则和完成标准不变，放第二期；集群（CR）里 Lead 看子 Session 进度改用 <span class="mono">agentdeck session notes</span>，CR18 的进度摘要从这里取。</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">6 · 按推荐先定（2026-10-29），待你确认</span>
+    <div class="tbl" style="grid-template-columns: 40px minmax(0, 1fr) minmax(0, 1fr) 420px; font-size: 12.5px; max-width: 1632px">
+      <span class="th">#</span><span class="th">问题</span><span class="th">选项</span><span class="th">推荐</span>
+      <span class="td mono">1</span><span class="td">合不合成一个需求、一个里程碑</span><span class="td">分开做 / 合成一个（M9 · Session · 长期运行 · 记忆）</span><span class="td">合成一个，接口一起定</span>
+      <span class="td mono">2</span><span class="td">一天的计划挂在哪</span><span class="td">另起一个队列插件 / Session 的 Plan / 集群的任务表</span><span class="td">Session 的 Plan（DR-107 了结）</span>
+      <span class="td mono">3</span><span class="td">第一期做到哪</span><span class="td">只做笔记 / 笔记 + 计划最小版 + 报告 / 连 Lessons 一起</span><span class="td">笔记 + 计划最小版 + 报告；Lessons 第二期</span>
+      <span class="td mono">4</span><span class="td">DR-74 怎么改</span><span class="td">不改 / 补第二条例外（Session 的进度归 AgentDeck） / 推翻（偏好也归 AgentDeck）</span><span class="td">补第二条例外，偏好不动</span>
+    </div>
+    <p class="note">记忆本身的几项选择（笔记谁能写、怎么给 agent、存哪、留多久）在 S3 第 6 节。</p>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":3000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

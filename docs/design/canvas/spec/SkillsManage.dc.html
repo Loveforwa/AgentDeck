@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Skill 管理 · 界面</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.at{position:absolute}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1240px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#6B6B6B}
+.dlg{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;box-shadow:0 12px 32px rgba(0,0,0,0.10);font-size:12px;display:flex;flex-direction:column;overflow:hidden}
+.dh{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid #EEEEEB;font-size:15px;font-weight:600}
+.nav{width:168px;flex:none;box-sizing:border-box;border-right:1px solid #EEEEEB;padding:8px;display:flex;flex-direction:column;gap:2px}
+.ni{display:flex;align-items:center;height:26px;padding:0 8px;border-radius:6px;font-size:12px}
+.ni.on{background:#EDEDEA;font-weight:500}
+.eb{font-size:10.5px;font-weight:600;color:#6B6B6B;letter-spacing:0.06em;padding:6px 8px 2px}
+.page{flex:1;box-sizing:border-box;padding:14px 18px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.am{display:inline-block;width:7px;height:7px;border-radius:1.5px;flex:none}
+.sum{display:flex;gap:8px}
+.sb{flex:1;box-sizing:border-box;border:1px solid #E3E3E0;border-radius:6px;padding:6px 8px;display:flex;flex-direction:column;gap:1px;line-height:1.45}
+.chip{display:inline-flex;align-items:center;height:22px;padding:0 8px;border:1px solid #D6D6D2;border-radius:6px;font-size:11.5px}
+.chip.on{background:#1A1A1A;border-color:#1A1A1A;color:#FFFFFF}
+.st{display:grid;grid-template-columns:150px minmax(0,1fr) 50px 50px 50px 50px 50px 62px 18px;font-size:11.5px;line-height:1.4}
+.st span{padding:5px 6px;border-top:1px solid #EEEEEB;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st .h{border-top:none;color:#6B6B6B;font-weight:600;font-size:10.5px;display:flex;align-items:center;gap:4px}
+.st .c{text-align:center}
+.foot{display:flex;align-items:center;gap:8px;padding:10px 16px;border-top:1px solid #EEEEEB}
+.btn{display:inline-flex;align-items:center;height:26px;padding:0 10px;border:1px solid #D6D6D2;border-radius:6px;font-size:12px;background:#FFFFFF;color:#1A1A1A}
+.btn.pri{background:#1A1A1A;border-color:#1A1A1A;color:#FFFFFF}
+.fld{display:grid;grid-template-columns:128px minmax(0,1fr);gap:12px;align-items:start;line-height:1.5}
+.fld .l{color:#6B6B6B;padding-top:2px}
+.ck{display:flex;align-items:center;gap:6px;line-height:1.6}
+.box{width:11px;height:11px;border:1px solid #6B6B6B;border-radius:2px;flex:none;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;font-size:9px}
+.box.on{background:#1A1A1A;border-color:#1A1A1A;color:#FFFFFF}
+.rad{width:11px;height:11px;border:1px solid #6B6B6B;border-radius:50%;flex:none;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center}
+.rad.on::after{content:'';width:5px;height:5px;border-radius:50%;background:#1A1A1A}
+.menu{position:absolute;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;box-shadow:0 8px 20px rgba(0,0,0,0.08);padding:4px;font-size:11.5px;display:flex;flex-direction:column}
+.mi{display:flex;align-items:center;gap:8px;padding:4px 9px;border-radius:5px;white-space:nowrap}
+.mi.hv{background:#EDEDEA}
+.sep{height:1px;background:#EEEEEB;margin:3px 0}
+.note{position:absolute;box-sizing:border-box;font-size:12.5px;line-height:1.6;color:#5F5F5A}
+.note b{color:#1A1A1A}
+.panel{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:10px;font-size:12px;display:flex;flex-direction:column;overflow:hidden}
+.ph{padding:8px 12px;font-size:10.5px;font-weight:600;color:#6B6B6B;letter-spacing:0.06em;border-bottom:1px solid #EEEEEB}
+.sec{padding:6px 12px;border-bottom:1px solid #EEEEEB;display:flex;flex-direction:column;gap:2px}
+.row{display:flex;align-items:center;gap:6px;height:24px}
+.row .r{margin-left:auto;color:#6B6B6B;font-size:11px}
+.sel{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 6px;border:1px solid #D6D6D2;border-radius:6px;font-size:11px}
+.lnk{text-decoration:underline;text-underline-offset:2px}
+.col{flex:1;box-sizing:border-box;border:1px solid #E3E3E0;border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;font-size:13.5px;line-height:1.6;background:#FFFFFF}
+.col b{font-size:15px}
+</style>
+</helmet>
+<div style="width: 1760px; height: 2740px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">K0 · 大批量 skill：一处看全，按项目减掉，换一家不用重装</h1>
+      <span class="concept">2026-10-28 已定（按推荐）</span>
+    </div>
+    <p class="lead">你手上一百多个 skill 散在 claude、codex、pi、omp、kimi 各自的目录里，每个的描述每轮都进上下文。AgentDeck 不去改这些目录，只做三件事：把各家目录读出来放在一张表里（谁装了什么、哪些重名、哪些副本已经不一样、每家每轮多少 token）；按项目决定 AgentDeck 开的终端里带哪些、其余的“只给名字”或“关掉”；库里的 skill 由 AgentDeck 在启动时带给每一家（N9 的办法），换一家 agent 不用重装。</p>
+    <p class="lead" style="color: #1A1A1A">规则和 N9 一样：只通过启动参数和环境变量，只影响 AgentDeck 开的终端；改了以后 Restart and resume 生效。你在系统终端里直接开的 claude 不受影响。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · Settings › Skills：一张表看全</span>
+    <div class="fig" style="width: 1632px; height: 820px">
+      <div class="dlg" style="left: 24px; top: 24px; width: 1060px; height: 672px">
+        <div class="dh"><span>Settings</span></div>
+        <div style="display: flex; flex: 1; min-height: 0">
+          <div class="nav">
+            <span class="eb">PROJECTS</span>
+            <span class="ni">agenduck</span>
+            <span class="ni">shop</span>
+            <span class="eb">APP</span>
+            <span class="ni">General</span>
+            <span class="ni on" aria-current="page">Skills</span>
+          </div>
+          <div class="page">
+            <div class="sum">
+              <div class="sb"><span><span class="am" style="background: #A8503A"></span> <span class="mono">claude</span></span><span>97 skills · ~9.1k per turn</span><span style="color: #B45309">Descriptions cut to fit</span></div>
+              <div class="sb"><span><span class="am" style="background: #2F5E9E"></span> <span class="mono">codex</span></span><span>45 skills · ~3.3k per turn</span><span class="muted">15 manual only</span></div>
+              <div class="sb"><span><span class="am" style="background: #7347A8"></span> <span class="mono">pi</span></span><span>12 skills · ~1.9k per turn</span><span class="muted">No limit</span></div>
+              <div class="sb"><span><span class="am" style="background: #0F6F7F"></span> <span class="mono">omp</span></span><span>130 skills · ~10.5k per turn</span><span class="muted">Reads claude and codex folders too</span></div>
+              <div class="sb"><span><span class="am" style="background: #4A4F7A"></span> <span class="mono">kimi</span></span><span>12 skills · ~1.9k per turn</span><span class="muted">No limit</span></div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px">
+              <span class="chip on">All 163</span><span class="chip">Duplicates 12</span><span class="chip">Copies differ 1</span><span class="chip">Not found by claude 33</span><span class="chip">In library 3</span>
+              <span style="margin-left: auto" class="chip">Search skills</span>
+            </div>
+            <div class="st">
+              <span class="h">Name</span><span class="h">Found in</span>
+              <span class="h c"><span class="am" style="background: #A8503A"></span>claude</span><span class="h c"><span class="am" style="background: #2F5E9E"></span>codex</span><span class="h c"><span class="am" style="background: #7347A8"></span>pi</span><span class="h c"><span class="am" style="background: #0F6F7F"></span>omp</span><span class="h c"><span class="am" style="background: #4A4F7A"></span>kimi</span><span class="h">Est. / turn</span><span class="h"></span>
+
+              <span class="mono">pdf</span><span class="muted mono">~/.agents/skills · ~/.claude/skills (link)</span><span class="c">✓</span><span class="c">✓</span><span class="c">✓</span><span class="c">✓</span><span class="c">✓</span><span>~60</span><span>⋯</span>
+              <span class="mono">xlsx</span><span class="muted mono">~/.claude/skills · ~/.codex/skills (copy)</span><span class="c">✓</span><span class="c">✓</span><span class="c">·</span><span class="c">✓</span><span class="c">·</span><span>~240</span><span>⋯</span>
+              <span class="mono">release-notes</span><span class="muted mono">AgentDeck library</span><span class="c">✓</span><span class="c muted">n/a</span><span class="c">✓</span><span class="c">✓</span><span class="c">✓</span><span>~45</span><span>⋯</span>
+              <span class="mono">agentdeck-plugin</span><span class="muted mono">repo .claude/skills</span><span class="c">✓</span><span class="c">·</span><span class="c">·</span><span class="c">✓</span><span class="c">·</span><span>~70</span><span>⋯</span>
+              <span class="mono">deploy</span><span class="muted mono">~/.claude/skills</span><span class="c muted">manual</span><span class="c">·</span><span class="c">·</span><span class="c">✓</span><span class="c">·</span><span>0 / ~50</span><span>⋯</span>
+              <span class="mono">code-review</span><span class="muted mono">~/.claude/skills · ~/.codex/skills</span><span class="c">✓</span><span class="c">✓</span><span class="c">·</span><span class="c">✓</span><span class="c">·</span><span style="color: #B45309">differ</span><span>⋯</span>
+              <span class="mono">old-notes</span><span class="muted mono">~/.claude/skills (no SKILL.md)</span><span class="c muted">—</span><span class="c muted">—</span><span class="c muted">—</span><span class="c muted">—</span><span class="c muted">—</span><span class="muted">skipped</span><span>⋯</span>
+              <span class="muted">156 more</span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+            </div>
+            <span class="muted" style="margin-top: auto">AgentDeck reads these folders and never changes them. Estimates count description length; claude’s /context has the exact number.</span>
+          </div>
+        </div>
+        <div class="foot"><span class="btn">Open settings.json</span><span style="margin-left: auto" class="btn">Cancel</span><span class="btn pri">Save</span></div>
+      </div>
+      <div class="menu" style="left: 870px; top: 396px; width: 180px">
+        <span class="mi hv">Add to library</span>
+        <span class="mi">Compare copies…</span>
+        <span class="sep"></span>
+        <span class="mi">Reveal in Finder</span>
+        <span class="mi">Copy path</span>
+      </div>
+      <div class="note" style="left: 1110px; top: 24px; width: 496px">
+        <b>顶上一排</b>：每家一块，agent 身份色只用在小方块上。写这家在 AgentDeck 开的终端里会看到几个、每轮大约多少 token。claude、codex 超了自己的预算时写 “Descriptions cut to fit”（等你的黄色字：模型会选不中）。<br><br>
+        <b>表</b>：按名字合并。Found in 写在哪些目录，软链写 (link)，独立副本写 (copy)。五列写这家看不看得到：✓ 看得到；· 不在它会读的目录里；manual 是 disable-model-invocation，描述不进上下文；n/a 是这家带不了（codex 加不进库里的 skill）；— 是坏的（没有 SKILL.md、frontmatter 读不出）。<br><br>
+        <b>筛选</b>：Duplicates 同名出现在两处以上；Copies differ 同名但内容不一样（说明有一份过时了），Est. 一列写 differ；Not found by claude 在 ~/.agents/skills 这类 claude 不读的目录里。<br><br>
+        <b>⋯ 菜单</b>：Add to library 把它复制进 AgentDeck 的库（之后能带给任何一家）；Compare copies… 并排看两份的差别；Reveal in Finder 让你自己去整理。没有删除、没有移动，AgentDeck 只读这些目录。<br><br>
+        <b>图里的数</b>：顶上一排是 2026-10-27 本机只读统计的结果；表里的几行是举例（用的是公开的 skill 名字，不是你的私人 skill）。<br><br>
+        <b>数据从哪来</b>：主进程按每家自己的发现规则扫用户目录、仓库目录和已装的插件（画板 K1 第 1 节），按修改时间缓存，和左边栏历史（N11）一样。
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · Project settings › Skills：这个项目带哪些，其余的减掉</span>
+    <div class="fig" style="width: 1632px; height: 520px">
+      <div class="dlg" style="left: 24px; top: 24px; width: 1060px; height: 472px">
+        <div class="dh"><span>Settings</span></div>
+        <div style="display: flex; flex: 1; min-height: 0">
+          <div class="nav">
+            <span class="eb">PROJECTS</span>
+            <span class="ni on" aria-current="page">agenduck</span>
+            <span class="ni">shop</span>
+            <span class="eb">APP</span>
+            <span class="ni">General</span>
+            <span class="ni">Skills</span>
+          </div>
+          <div class="page" style="gap: 14px">
+            <div class="fld"><span class="l">Setup command</span><span class="mono muted">pnpm install</span></div>
+            <div style="height: 1px; background: #EEEEEB"></div>
+            <div class="fld"><span class="l">Library skills</span>
+              <span style="display: flex; flex-direction: column">
+                <span class="ck"><span class="box on">✓</span><span class="mono">agentdeck</span><span class="muted">built in</span></span>
+                <span class="ck"><span class="box">&#160;</span><span class="mono">agentdeck-docs</span><span class="muted">built in</span></span>
+                <span class="ck"><span class="box on">✓</span><span class="mono">release-notes</span></span>
+                <span class="ck"><span class="box">&#160;</span><span class="mono">xlsx</span></span>
+                <span class="muted">Repo skills (.claude/skills, .agents/skills) always follow the repo.</span>
+              </span>
+            </div>
+            <div class="fld"><span class="l">Other skills in your agent folders</span>
+              <span style="display: flex; flex-direction: column">
+                <span class="ck"><span class="rad">&#160;</span>Leave as is</span>
+                <span class="ck"><span class="rad on">&#160;</span>List names only <span class="muted">· the agent reads one when it needs it</span></span>
+                <span class="ck"><span class="rad">&#160;</span>Turn off</span>
+                <span class="ck"><span class="btn" style="height: 22px">Keep these… · 4</span><span class="muted mono">pdf, frontend-design, code-review, deploy</span></span>
+              </span>
+            </div>
+            <div class="fld"><span class="l">Per turn, estimate</span>
+              <span class="mono" style="display: grid; grid-template-columns: 70px 150px 1fr; row-gap: 2px; font-size: 11.5px">
+                <span><span class="am" style="background: #A8503A"></span> claude</span><span>~9.1k → ~1.2k</span><span class="muted">names only (skillOverrides)</span>
+                <span><span class="am" style="background: #2F5E9E"></span> codex</span><span>~3.3k → ~0.5k</span><span class="muted">Names only isn’t supported for codex: turned off instead</span>
+                <span><span class="am" style="background: #7347A8"></span> pi</span><span>~1.9k → ~0.5k</span><span class="muted">turned off, kept ones added back</span>
+                <span><span class="am" style="background: #0F6F7F"></span> omp</span><span>~10.5k → ~0.5k</span><span class="muted">turned off, kept ones added back</span>
+                <span><span class="am" style="background: #4A4F7A"></span> kimi</span><span>~1.9k → ~0.5k</span><span class="muted">turned off, kept ones added back</span>
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="foot"><span class="btn">Open settings.json</span><span style="margin-left: auto" class="btn">Cancel</span><span class="btn pri">Save</span></div>
+      </div>
+      <div class="note" style="left: 1110px; top: 24px; width: 496px">
+        <b>在项目页里加一节</b>，不另开对话框（SettingsDialog 的 128px 标签栏、Field、RadioGroup 照用）。<br><br>
+        <b>Library skills</b>：这个项目里 AgentDeck 开的终端默认带哪些。和 N9 的面板勾选是同一份选择，面板上还能按终端再改。<br><br>
+        <b>Other skills in your agent folders</b>：各家自己目录里的那些（~/.claude/skills 等）。默认 Leave as is，和现在一样。选 List names only 时，claude 用它自带的 name-only，其他几家没有这一档，按 Turn off 处理并写明；Keep these… 里的照常带。<br><br>
+        <b>估算</b>：改前 → 改后，写在旁边，让你知道减了多少。不支持的那一档写原因，不悄悄退回。<br><br>
+        <b>存哪</b>：项目设置（settings.json 里这个项目的 skills），不往仓库写。全局默认在 Settings › Skills 底部有同样一组（没画）。
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · 源代码管理面板（N9 的小节）和新建集群：只加一行</span>
+    <div class="fig" style="width: 1632px; height: 460px">
+      <div class="panel" style="left: 24px; top: 24px; width: 320px; height: 400px">
+        <span class="ph">SOURCE CONTROL</span>
+        <div class="sec"><span class="row">▸ CHANGES <span class="r">3</span></span><span class="row">▸ COMMITS</span></div>
+        <div class="sec">
+          <span class="row">▾ SKILLS · MCP <span class="r">for <span class="mono">claude</span> · Fix the login bug</span></span>
+          <span class="row"><span class="box on">✓</span><span class="mono">agentdeck</span><span class="r">~65/turn · built in</span></span>
+          <span class="row"><span class="box on">✓</span><span class="mono">release-notes</span><span class="r">~45/turn · library</span></span>
+          <span class="row"><span class="box on">✓</span><span class="mono">agentdeck-plugin</span><span class="r">repo</span></span>
+          <span class="row"><span class="box on">✓</span><span class="mono">agentdeck</span> MCP<span class="r">~130/turn · built in</span></span>
+          <span class="row" style="border-top: 1px solid #EEEEEB; margin-top: 2px; padding-top: 2px"><span>Your other skills · 93</span><span class="r"><span class="sel">Names only ▾</span></span></span>
+          <span class="row"><span class="muted">About 1.4k tokens per turn in all.</span></span>
+          <span class="row" style="color: #B45309">Changes apply after restart</span>
+          <span class="row"><span class="lnk">Add skill…</span><span class="lnk">Add MCP…</span><span class="lnk">Manage…</span><span class="r"><span class="btn" style="height: 22px">Restart and resume</span></span></span>
+        </div>
+      </div>
+      <div class="menu" style="left: 236px; top: 236px; width: 210px">
+        <span class="mi">As the project <span class="muted">(Names only)</span></span>
+        <span class="sep"></span>
+        <span class="mi">Leave as is</span>
+        <span class="mi hv">✓ Names only</span>
+        <span class="mi">Turn off</span>
+      </div>
+      <div class="dlg" style="left: 500px; top: 24px; width: 470px; height: 230px">
+        <div class="dh" style="font-size: 13px"><span>New crew</span><span class="muted" style="font-weight: 400">· Roles</span></div>
+        <div style="padding: 10px 16px; display: grid; grid-template-columns: 80px 1fr; row-gap: 8px; column-gap: 10px; line-height: 1.5">
+          <span>Lead</span><span><span class="mono">crew</span>, <span class="mono">agentdeck</span> · others <span class="sel">As the project ▾</span></span>
+          <span>Workers</span><span><span class="mono">agentdeck-plugin</span> · others <span class="sel">Names only ▾</span></span>
+          <span>Reviewer</span><span><span class="mono">code-review</span> · others <span class="sel">Names only ▾</span></span>
+          <span class="muted" style="grid-column: 1 / 3">From the template. crew is only for the Lead; Workers never get it.</span>
+        </div>
+      </div>
+      <div class="note" style="left: 1000px; top: 24px; width: 606px">
+        <b>面板</b>：每行右边的 token 估算、built in 的 crew 项是画板 C7（agentdeck 命令行）加的，这里照用。这一页只加一行 <span class="mono">Your other skills · 93</span>：默认跟项目设置，下拉里能只给这个终端换一档（存在 TerminalWindowData.skills 里，和 N9 的勾选一起）。合计一行把它算进去。<br><br>
+        <b>Manage…</b> 打开 Settings › Skills。改了任何一项都照 N9 出现 Changes apply after restart，点 Restart and resume 生效。<br><br>
+        <b>codex 终端</b>：库里的 skill 行灰掉写 Not supported for codex（N9 已有）；Your other skills 的下拉里没有 Names only，只有 Leave as is 和 Turn off。<br><br>
+        <b>新建集群（C1）</b>：每个角色多一行 skill，默认值来自模板（C5 的 skills 字段），加上这个角色的“其余的怎么办”。Lead 带 crew（C7），Worker、Reviewer 默认 Names only，省掉每个实现者每轮的那几千 token。集群开终端时把这一套当作终端选择传进去，不另设一层。<br><br>
+        <b>agentdeck-docs</b>：写文档的 built in skill，默认不勾；AgentDeck 为文档开的终端自动勾上（“文档”页 D2）。
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · 规矩</span>
+    <div style="display: flex; gap: 16px">
+      <div class="col"><b>只读用户目录</b><span>~/.claude/skills、~/.agents/skills、~/.codex/skills、~/.pi/agent/skills、~/.omp/agent/skills、~/.kimi-code/skills 和仓库里的 skill 目录只读，不写、不删、不搬、不建软链。要整理请自己动手（Reveal in Finder）。</span></div>
+      <div class="col"><b>只影响 AgentDeck 开的终端</b><span>加法用 N9 的 setDir，减法用各家的启动参数（K1 第 3 节）。你在系统终端里开的 agent 和以前一样。</span></div>
+      <div class="col"><b>三层</b><span>Settings › Skills（全局默认）→ Project settings › Skills → 面板上的这个终端。集群角色是开终端时套上的一套选择。</span></div>
+      <div class="col"><b>不支持就写原因</b><span>codex 加不进库里的 skill，也没有 Names only；不支持的格子灰掉写原因，不悄悄换成别的做法。估算一律写 “~”。</span></div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":2740}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

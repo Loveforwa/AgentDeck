@@ -1,0 +1,4 @@
+When you are done, run: agentdeck crew done "<one-line summary>"
+If you need a change under packages/contracts, run: agentdeck crew contract "<paths>" "<why>" and wait.
+Write findings others should know with: agentdeck crew note "<text>"
+If you are stuck, run: agentdeck crew ask "<question>"

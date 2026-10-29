@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>文档 · 文档窗口</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D6D6D2 1px,transparent 1px);background-size:20px 20px}
+.at{position:absolute}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1240px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.td.rec{background:#FBFBFA;font-weight:500}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#6B6B6B}
+.frame{position:absolute;box-sizing:border-box;border:1px solid #D6D6D2;border-radius:12px;background:rgba(255,255,255,0.35)}
+.fh{height:36px;display:flex;align-items:center;gap:8px;padding:0 14px;font-size:12px;border-bottom:1px solid #E3E3E0}
+.win{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;overflow:hidden;font-size:12px}
+.win.focus{border-color:#1A1A1A;box-shadow:0 6px 20px rgba(26,26,26,0.12)}
+.tb{height:28px;display:flex;align-items:center;gap:6px;padding:0 10px;border-bottom:1px solid #EEEEEB;font-size:12px;white-space:nowrap}
+.tb .n{font-family:'IBM Plex Mono',monospace;font-weight:500}
+.tb .s{color:#6B6B6B}
+.term{padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.75;color:#3D3D3A;white-space:pre}
+.lr{display:inline-block;width:7px;height:7px;border-radius:50%;flex:none;background:#1A7F37}
+.li{display:inline-block;width:7px;height:7px;border-radius:50%;flex:none;box-sizing:border-box;border:1.5px solid #6B6B6B}
+.am{display:inline-block;width:7px;height:7px;border-radius:2px;flex:none}
+.dtb{height:30px;display:flex;align-items:center;gap:8px;padding:0 10px;border-bottom:1px solid #EEEEEB;font-size:11.5px;white-space:nowrap}
+.seg{display:inline-flex;border:1px solid #D6D6D2;border-radius:6px;overflow:hidden}
+.seg span{padding:2px 8px}
+.seg .on{background:#EDEDEA;font-weight:600}
+.chip{display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 7px;border-radius:6px;border:1px solid #D6D6D2;font-size:11px}
+.gb{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;font-size:11.5px;color:#1A1A1A}
+.doc{padding:14px 22px;font-size:12.5px;line-height:1.7;color:#1A1A1A;display:flex;flex-direction:column;gap:8px}
+.doc h3{margin:0;font-size:17px;font-weight:600}
+.doc h4{margin:4px 0 0;font-size:13.5px;font-weight:600}
+.doc p{margin:0}
+.ref{font-family:'IBM Plex Mono',monospace;font-size:11px;text-decoration:underline;text-decoration-color:#D6D6D2;text-underline-offset:2px}
+.ref.chg{text-decoration-color:#BF8700;text-decoration-style:wavy}
+.ref.gone{text-decoration-color:#CF222E;text-decoration-style:wavy}
+.rtag{font-size:10px;margin-left:3px}
+.sym{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#3D3D3A;background:#F2F2EF;border-radius:4px;padding:0 3px}
+.newblk{position:relative;padding-left:10px;border-left:2px solid #1A1A1A}
+.sel{background:#EDEDEA;border-radius:2px}
+.pop{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;box-shadow:0 6px 20px rgba(26,26,26,0.12);padding:4px;display:flex;gap:2px;font-size:11.5px;white-space:nowrap}
+.pop span{padding:3px 8px;border-radius:6px}
+.cmt{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;padding:8px 10px;font-size:11px;line-height:1.55;display:flex;flex-direction:column;gap:4px}
+.cmt .who{font-size:10.5px;color:#6B6B6B;display:flex;align-items:center;gap:5px}
+.cmt .q{color:#6B6B6B;border-left:2px solid #E3E3E0;padding-left:6px}
+.st{font-size:10px;padding:0 6px;border-radius:999px;border:1px solid #D6D6D2;color:#6B6B6B}
+.num{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:#1A1A1A;color:#FFFFFF;font-size:11px;font-weight:600;flex:none}
+.cn{position:absolute;z-index:40}
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:8px 32px;font-size:13px;line-height:1.6}
+.legend div{display:flex;gap:10px}
+.node{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #D6D6D2;border-radius:8px;padding:10px 12px;font-size:12.5px;line-height:1.5;display:flex;flex-direction:column;gap:3px}
+.node b{font-size:13px}
+.node.you{background:#FFFFFF;border:1px dashed #1A1A1A}
+.arr{position:absolute;font-size:18px;color:#8A8A85}
+.wl{position:absolute;font-size:10.5px;color:#6B6B6B}
+.col{flex:1;box-sizing:border-box;border:1px solid #E3E3E0;border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.6;background:#FFFFFF}
+.col b{font-size:14.5px}
+.bar{display:flex;align-items:center;gap:10px;padding:6px 10px;background:#FFF7E6;border-bottom:1px solid #E3E3E0;font-size:11.5px}
+.bar .t{color:#B45309;flex:1}
+.btn{display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:6px;font-size:11.5px;border:1px solid #D6D6D2;background:#FFFFFF;color:#1A1A1A}
+.btn.pri{background:#1A1A1A;color:#FFFFFF;border-color:#1A1A1A}
+ul.l{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px}
+</style>
+</helmet>
+<div style="width: 1760px; height: 3040px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">D0 · 文档窗口：在白板上和 agent 一起写需求、技术、实现、实验文档</h1>
+      <span class="concept">2026-10-28 按推荐先定，待你确认</span>
+    </div>
+    <p class="lead">白板上多一种窗口：文档窗口，和终端、网页窗口并列。它打开的是工作区里的一个 .md 文件，放在写它的 agent 终端旁边。agent 用自己的工具改文件，窗口跟着刷新、标出它改了哪几段；你在窗口里读、改、选中一段写评论，一键把评论发回那个终端，agent 改完逐条回复。文档里的 <span class="mono">path:line</span> 能点回源码，代码变了以后窗口会告诉你哪些引用对不上了（D1）。怎么写得像人话、引用够密，靠自带的 agentdeck-docs skill（D2）。</p>
+    <p class="lead" style="color: #1A1A1A">文件就是文档本身：存在仓库里、跟着分支走、和代码一起提交和审。评论、核查结果、“你看过哪一版”这些不属于文档的东西存在 AgentDeck 自己的库里。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 和 Claude、ChatGPT 的 canvas 比</span>
+    <div class="tbl" style="grid-template-columns: 200px minmax(0, 1fr) minmax(0, 1fr)">
+      <span class="th"></span><span class="th">Claude Docs · artifact，ChatGPT 的 canvas（已被 writing blocks 取代）</span><span class="th">AgentDeck 的文档窗口</span>
+      <span class="td">左右两边</span><span class="td">左边对话，右边文档，同一个网页里</span><span class="td">左边是真终端里的 agent（任何一家），右边是文档窗口；两个都是白板上的窗口，可以拖开、放进别的框</span>
+      <span class="td">文档存在哪</span><span class="td">服务商的云里，导出成 Word、Google Docs</span><span class="td">工作区里的 .md 文件（通常在 <span class="mono">docs/</span>），git 管历史</span>
+      <span class="td">agent 怎么改</span><span class="td">专门的编辑接口（Claude Docs 按块 id 改，带版本号防冲突）</span><span class="td">用它自己的读写文件工具，和改代码一样；不用学新接口</span>
+      <span class="td">评论</span><span class="td">挂在文字上，@Claude 让它按评论改</span><span class="td">挂在文字上，存在 AgentDeck 的库里；Send to claude 发一行提示词，agent 用 <span class="mono">agentdeck doc</span> 命令读和回复</span>
+      <span class="td">看它改了什么</span><span class="td">版本箭头、Show changes</span><span class="td">“你没看过的改动”在左边画一条线；History 里是这次的快照和 git log</span>
+      <span class="td">和代码的关系</span><span class="td">没有</span><span class="td">引用点得回去、代码变了会提示、可以让另一家 agent 逐句核查（D1，第二期）</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 白板上的样子</span>
+    <div class="fig" style="width: 1632px; height: 720px">
+      <div class="frame" style="left: 24px; top: 24px; width: 1360px; height: 672px">
+        <div class="fh"><b>agentdeck</b><span class="muted mono">feat/doc-window</span></div>
+      </div>
+
+      <div class="win" style="left: 44px; top: 80px; width: 470px; height: 596px">
+        <div class="tb"><span class="am" style="background: #A8503A"></span><span class="n">claude</span><span style="flex: 1"></span><span class="li"></span><span class="s">Idle · now</span></div>
+        <div class="term">&gt; write the design doc for the doc window,
+  docs/design/doc-window.md
+
+● Read(packages/ui/widgets/browser/src/index.ts)
+● Read(packages/contracts/src/board.ts)
+● Write(docs/design/doc-window.md)
+● Bash(agentdeck doc open docs/design/doc-window.md)
+  Opened next to this terminal.
+● Bash(agentdeck doc check docs/design/doc-window.md)
+  24 refs · 1 ambiguous: index.ts:296
+● Update(docs/design/doc-window.md)
+  index.ts:296 → apps/desktop/src/main/index.ts:296
+● Bash(agentdeck doc check docs/design/doc-window.md)
+  24 refs · all found
+
+Wrote the design doc. Two things are still
+to be checked; they're marked in the doc.
+
+&gt; Please address the 2 open comments on
+  docs/design/doc-window.md: run `agentdeck
+  doc comments docs/design/doc-window.md` …
+
+● Bash(agentdeck doc comments docs/…)
+● Update(docs/design/doc-window.md)
+● Bash(agentdeck doc reply c1 "Main process:
+  DocService.watch. Added a line." --done)</div>
+      </div>
+
+      <div class="win focus" style="left: 534px; top: 80px; width: 830px; height: 596px">
+        <div class="tb"><span class="n">doc-window.md</span><span class="s">docs/design</span><span style="flex: 1"></span><span class="s">Updated by claude · now</span></div>
+        <div class="dtb">
+          <span class="mono" style="font-size: 11px">docs/design/doc-window.md ▾</span>
+          <span class="seg"><span class="on">Read</span><span>Edit</span></span>
+          <span class="chip"><span class="am" style="background: #A8503A"></span><span class="mono">claude</span></span>
+          <span style="flex: 1"></span>
+          <span>24 refs · <span style="color: #B45309">1 changed</span> · <span style="color: #CF222E">1 not found</span></span>
+          <span class="gb">Comments 2</span>
+          <span class="gb">Verify claims…</span>
+          <span class="gb">⋯</span>
+        </div>
+        <div style="display: flex">
+          <div class="doc" style="width: 560px; box-sizing: border-box">
+            <h3>Doc window</h3>
+            <p>A new window type on the board, next to terminals and browser windows. It registers like the browser window (<span class="ref">packages/ui/widgets/browser/src/index.ts:13-23</span> <span class="sym">browserWindowType</span>) through <span class="ref">packages/contracts/src/board.ts:275</span> <span class="sym">WindowTypeDefinition</span>.</p>
+            <h4>Opening a doc</h4>
+            <div class="newblk"><p>Today a file path clicked in a terminal goes to the editor from Settings (<span class="ref chg">packages/ui/widgets/terminal/src/TerminalWindow.tsx:243-247</span><span class="rtag" style="color: #B45309">changed</span>). For <span class="mono" style="font-size: 11px">.md</span> files the click opens a doc window instead; <span class="sel">⌥-click still opens the editor.</span></p></div>
+            <p>The main process watches the file and sends <span class="mono" style="font-size: 11px">doc.changed</span>; agents' writes are attributed from the PostToolUse hook path (<span class="ref">packages/agent-adapters/src/hook-payload.ts:63</span>).</p>
+            <h4>Reading code at an older commit</h4>
+            <p>GitService has no blame or show yet (<span class="ref">packages/contracts/src/git.ts:130-177</span> <span class="sym">GitService</span>); the anchor check needs both. The old helper in <span class="ref gone">packages/git-service/src/show.ts:12</span><span class="rtag" style="color: #CF222E">not found</span> was never merged.</p>
+            <p class="muted" style="font-size: 11.5px">To be checked: does codex 0.164.0 report the file path in PostToolUse?</p>
+          </div>
+          <div style="position: relative; flex: 1; border-left: 1px solid #EEEEEB; height: 520px"></div>
+        </div>
+      </div>
+
+      <div class="pop" style="left: 846px; top: 300px"><span style="background: #EDEDEA">Comment…</span><span>Ask claude…</span></div>
+
+      <div class="cmt" style="left: 1106px; top: 200px; width: 246px">
+        <div class="who"><span>You · 3m</span><span style="flex: 1"></span><span class="st">Addressed</span></div>
+        <span class="q">The main process watches the file</span>
+        <span>Which process watches it, and what if two windows show the same file?</span>
+        <div class="who" style="margin-top: 2px"><span class="am" style="background: #A8503A"></span><span class="mono">claude</span><span>· now</span></div>
+        <span>Main process: DocService.watch, one watcher per path. Added a line.</span>
+        <div style="display: flex; justify-content: flex-end"><span class="btn">Resolve</span></div>
+      </div>
+      <div class="cmt" style="left: 1106px; top: 404px; width: 246px">
+        <div class="who"><span>You · 1m</span><span style="flex: 1"></span><span class="st">Sent</span></div>
+        <span class="q">⌥-click still opens the editor</span>
+        <span>Should ⌥-click be a setting instead?</span>
+      </div>
+
+      <span class="cn" style="left: 545px; top: 70px"><span class="num">1</span></span>
+      <span class="cn" style="left: 840px; top: 98px"><span class="num">2</span></span>
+      <span class="cn" style="left: 1010px; top: 98px"><span class="num">3</span></span>
+      <span class="cn" style="left: 1110px; top: 98px"><span class="num">4</span></span>
+      <span class="cn" style="left: 1236px; top: 98px"><span class="num">5</span></span>
+      <span class="cn" style="left: 530px; top: 264px"><span class="num">6</span></span>
+      <span class="cn" style="left: 836px; top: 284px"><span class="num">7</span></span>
+      <span class="cn" style="left: 1096px; top: 190px"><span class="num">8</span></span>
+
+      <div class="at" style="left: 1404px; top: 40px; width: 210px; display: flex; flex-direction: column; gap: 8px; font-size: 12px; line-height: 1.55; color: #3D3D3A">
+        <b style="font-size: 13px">放在哪</b>
+        <span>agent 跑 <span class="mono">agentdeck doc open</span> 时放在它的终端右边（同 open_browser 的 nearTerminal，<span class="mono">board.ts:190</span> BoardEvent）；从终端链接打开时放在那个终端右边。</span>
+        <span>默认 760×600，最小 420×300；在框里时属于这个工作区，可以拖出去。</span>
+        <span>拉小到摘要卡时只显示标题、引用的状态数和评论数。</span>
+      </div>
+    </div>
+    <div class="legend">
+      <div><span class="num">1</span><span>标题栏：文件名（等宽）和所在目录；右边是最近一次谁改的：“Updated by claude · now”（PostToolUse 钩子带着这个路径、时间对得上时），认不出来写 “Changed on disk · now”，你自己保存写 “Saved · now”。不用状态色。</span></div>
+      <div><span class="num">2</span><span>Read（默认，渲染后的阅读视图，能评论）和 Edit（markdown 原文，CodeMirror 6）。Edit 里停 1 秒自动保存，⌘S 立刻保存。</span></div>
+      <div><span class="num">3</span><span>这个窗口连着哪个终端（agent 的身份色小方块 + 名字）。Ask 和 Send comments 发给它；点开可以换成同一个框里的别的终端。</span></div>
+      <div><span class="num">4</span><span>引用的总数和出问题的数：<span style="color: #B45309">changed</span>（代码改过，要重看）用 attention，<span style="color: #CF222E">not found</span> 用 error，单击滚到第一处。细节见 D1。</span></div>
+      <div><span class="num">5</span><span>Comments 打开右边的评论栏；Verify claims… 让另一家 agent 逐句核查（D1 第 5 节，第二期）；⋯ 里是 History、Changes since you looked、Open in editor、Reveal in Finder、Copy path。</span></div>
+      <div><span class="num">6</span><span>你上次看过以后被改的段落，左边一条墨色竖线；悬停写 “Changed by claude · 2m”，点一下看这段的 diff。窗口失去焦点时算你看过了。</span></div>
+      <div><span class="num">7</span><span>选中文字：Comment… 写评论（挂在这几个字上）；Ask claude… 直接问，问题和这段文字、文件路径、行号一起发给连着的终端，不存成评论。</span></div>
+      <div><span class="num">8</span><span>评论卡：Open → Sent（发给 agent 了）→ Addressed（agent 用 <span class="mono">reply --done</span> 回了）→ 你点 Resolve 才关掉。挂的字被删掉时变 Detached，移到最下面。</span></div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · 主流程：写、看、评论、按评论改、提交</span>
+    <div class="fig" style="width: 1632px; height: 300px">
+      <span class="wl" style="left: 24px; top: 22px">你 · 终端</span>
+      <div class="node you" style="left: 24px; top: 42px; width: 170px"><b>1 · 让 agent 写</b><span>“write the design doc for …”；或右键框 › New doc… 选模板</span></div>
+      <span class="arr" style="left: 202px; top: 66px">→</span>
+      <span class="wl" style="left: 226px; top: 22px">agent</span>
+      <div class="node" style="left: 226px; top: 42px; width: 200px"><b>2 · 写文件、打开窗口</b><span>用自己的工具写 .md；<span class="mono">agentdeck doc open</span>，窗口跟着刷新</span></div>
+      <span class="arr" style="left: 434px; top: 66px">→</span>
+      <span class="wl" style="left: 458px; top: 22px">agent</span>
+      <div class="node" style="left: 458px; top: 42px; width: 190px"><b>3 · 自查引用</b><span><span class="mono">agentdeck doc check</span>，修掉 not found 和短路径</span></div>
+      <span class="arr" style="left: 656px; top: 66px">→</span>
+      <span class="wl" style="left: 680px; top: 22px">你 · 文档窗口</span>
+      <div class="node you" style="left: 680px; top: 42px; width: 190px"><b>4 · 读、评论</b><span>选中一段 Comment…；小改直接在 Edit 里改</span></div>
+      <span class="arr" style="left: 878px; top: 66px">→</span>
+      <span class="wl" style="left: 902px; top: 22px">你 → AgentDeck</span>
+      <div class="node you" style="left: 902px; top: 42px; width: 200px"><b>5 · Send 2 comments to claude</b><span>终端空闲时发一行提示词；在等你或在跑时排队，不打断</span></div>
+      <span class="arr" style="left: 1110px; top: 66px">→</span>
+      <span class="wl" style="left: 1134px; top: 22px">agent</span>
+      <div class="node" style="left: 1134px; top: 42px; width: 200px"><b>6 · 按评论改、回复</b><span><span class="mono">doc comments</span> 读，改文件，<span class="mono">doc reply … --done</span></span></div>
+      <span class="arr" style="left: 1342px; top: 66px">→</span>
+      <span class="wl" style="left: 1366px; top: 22px">你</span>
+      <div class="node you" style="left: 1366px; top: 42px; width: 240px"><b>7 · 看改了什么、Resolve、提交</b><span>竖线标出的段落、每条回复；和代码一起在源代码管理面板提交</span></div>
+      <div class="at" style="left: 24px; top: 170px; width: 1580px; display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; line-height: 1.6; color: #3D3D3A">
+        <span>虚线框是你做的事。第 4–7 步可以来回多轮；评论一直留到你 Resolve，Resolve 过的在 Comments 栏的 Resolved 里还看得到。</span>
+        <span>没有 <span class="mono">agentdeck</span> 命令可用的 agent（kimi 每条命令都要批准、或者 AgentDeck 外面开的终端）：第 5 步改成把评论原文多行粘贴进去，agent 改完你看竖线标出的改动自己 Resolve。</span>
+        <span>第 2 步之前没有任何新东西要学：哪家 agent 都会写文件。AgentDeck 只多了打开、自查、评论三组命令（<span class="mono">agentdeck doc …</span>，走 C7 的 agentdeck 命令行，所有 AgentDeck 终端都有，不只 Lead；认身份靠终端钥匙，这组命令不能开终端、不能批准、不能提交、不能合并）。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 24px; align-items: flex-start">
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 14px">
+      <span class="h2">4 · 怎么打开</span>
+      <ul class="l" style="font-size: 13.5px; line-height: 1.65">
+        <li>终端输出里单击 <span class="mono">.md</span> 路径（现在是交给编辑器，<span class="mono">TerminalWindow.tsx:243-247</span>）：开成文档窗口，放在这个终端右边，连着这个终端。⌥ 单击还是用编辑器。同一个文件已经开着就聚焦它（reuseKey 用文件路径，同网页窗口）。</li>
+        <li>agent 跑 <span class="mono">agentdeck doc open &lt;path&gt;</span>：同上，不抢键盘焦点、窗口闪一下（同 board.open-window 的 highlight）。</li>
+        <li>右键框 › <b>New doc…</b>：选 Requirements、Design、Implementation、Experiment 或 Blank，写文件名（默认 <span class="mono">docs/</span> 下），生成带提纲的空文件；可以顺手选一个终端 “Ask claude to draft it”。</li>
+        <li>源代码管理面板的改动列表里，<span class="mono">.md</span> 文件的右键菜单多一项 <b>Open as doc</b>。</li>
+        <li>从访达拖入 <span class="mono">.md</span> 文件。窗口里路径下拉列出这个工作区的所有 .md，可以直接切换。</li>
+      </ul>
+    </div>
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 14px">
+      <span class="h2">5 · 你和 agent 同时改</span>
+      <div class="win" style="position: relative; width: 100%; height: 150px">
+        <div class="tb"><span class="n">doc-window.md</span><span class="s">docs/design</span><span style="flex: 1"></span><span class="s">Edit · unsaved</span></div>
+        <div class="bar"><span class="t">claude changed “Opening a doc” while you were editing it.</span><span class="btn">Show both</span><span class="btn">Use claude’s</span><span class="btn pri">Keep mine</span></div>
+        <div class="doc" style="padding: 10px 16px; font-size: 12px"><p>For <span class="mono">.md</span> files the click opens a doc window instead; ⌥-click still opens the editor<span style="background: #EDEDEA">, or the setting picks which</span>.</p></div>
+      </div>
+      <ul class="l" style="font-size: 13px; line-height: 1.65">
+        <li>文件是唯一的真相。窗口记着读进来那一版的哈希；磁盘变了而你没改过：直接换成新的，滚动位置按标题留住。</li>
+        <li>你有没保存的修改时磁盘变了：三方合并（读进来的那版、你的、磁盘上的）。改的不是同一段就自动合上，写 “Merged claude’s changes”；同一段才出上面这条黄条。</li>
+        <li>你保存时用 baseHash，磁盘在这之间又变了就不写，回到上一条。agent 那边：claude 的 Edit 在文件读过后被改会拒绝，codex 的 apply_patch 对不上上下文会失败（各家待核对），所以它也不会盖掉你刚存的。</li>
+        <li>两个 agent 改同一篇：同一个工作区里不拦，窗口在标题栏写两个名字，提示 “claude and codex both changed this doc in the last minute”。不同工作区各有一份，合并时按 git 处理。集群里文档路径归哪个任务，按 owns 规则管（CR2）。</li>
+      </ul>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">6 · 文档放哪、谁来写（已定 2026-10-28：A，仓库里的 .md）</span>
+    <div class="tbl" style="grid-template-columns: 220px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr)">
+      <span class="th"></span><span class="th">A · 仓库里的 .md（已定）</span><span class="th">B · AgentDeck 自己的库</span><span class="th">C · 网页窗口里看渲染后的页面</span>
+      <span class="td">文档本身</span><span class="td rec">工作区里的文件，git 管历史、跟着分支走、随代码一起审</span><span class="td">SQLite 里一份按块存的文档，像 Claude Docs</span><span class="td">只读：把 .md 渲染成 HTML 放进网页窗口</span>
+      <span class="td">agent 怎么写</span><span class="td rec">用自己的文件工具，零学习；五家都会</span><span class="td">每次都要走 <span class="mono">agentdeck doc</span> 命令，按块 id 改；指令要进上下文</span><span class="td">同 A，但人不能在窗口里改</span>
+      <span class="td">评论、核查结果</span><span class="td rec">存在 AgentDeck 的库里，按文件路径（每个 worktree 一份）</span><span class="td">和文档放一起</span><span class="td">没有</span>
+      <span class="td">代价</span><span class="td">评论在别的编辑器里看不到；文件被外面改了评论要重新找位置（按引用的原文找）</span><span class="td">不在 git 里、不跟分支、PR 里看不到，换工具就带不走</span><span class="td">没有评论、没有编辑，等于没做</span>
+    </div>
+    <span style="font-size: 13px; line-height: 1.6">数据目录里的文件（集群汇报 CR7、AgentDeck 生成的报告）也能用文档窗口打开，只读，⋯ 里有 Save to repo…（你点了才写进仓库，AgentDeck 不提交）。不在仓库里的普通 .md 也能开，只是引用一律算 outside。</span>
+  </div>
+
+  <div style="display: flex; gap: 24px">
+    <div class="col"><b>第一期做</b><span>文档窗口（Read / Edit、盯文件、自动保存、三方合并、你没看过的改动）；四种打开方式；引用的渲染、悬停看代码、单击用编辑器打开；机械核对（D1 第 2–4 节）；<span class="mono">agentdeck doc open · check</span>；自带 agentdeck-docs skill。</span></div>
+    <div class="col"><b>第二期做</b><span>评论和 Send comments、<span class="mono">doc comments · reply</span>；Verify claims（另一家 agent 逐句核查）；New doc… 的模板；集群汇报用文档窗口显示（CR7）；符号锚点用 tree-sitter（和“代码理解”页 F0–F2 一起）。</span></div>
+    <div class="col"><b>不做</b><span>多人实时一起编辑（AgentDeck 是本机应用；别人看用 PR 或手机页 RM2）；所见即所得的富文本编辑（会把 markdown 重新排版，git diff 全是噪音，和 agent 的改动打架）；.docx、Google Docs 格式；把评论写进文件里。</span></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":3040}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
