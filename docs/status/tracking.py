@@ -1390,6 +1390,9 @@ ACCEPTED = {
 
 # 已经处理的问题：处理状态和备注
 RESOLVED = {
+    'IS-82': '2026-10-29 已修（75d96f3，合进 integrate/W0-W1 5246c6e，未合进 main）：白板用 CSS transform 缩放，xterm 算鼠标位置时用缩放后的元素位置除以没缩放的格子宽高；现在包一层 xterm 的 MouseService（链接、选字、tmux 鼠标上报都走它），把坐标按缩放比换回来。e2e is82-zoomed-mouse 在 60%、140% 下点链接、拖选都对（去掉修复时失败）',
+    'IS-06': '2026-10-29 已修（9f81538，合进 integrate/W0-W1 5246c6e，未合进 main）：claude 还没来钩子、屏幕停下时读一次屏，认出信任提示（原文取自本机 claude 安装包）就显示 Needs reply · Trust this folder?，并暂停“钩子没来”的计时；点了信任、SessionStart 到了回到 Idle。状态机第 24–26 行，有单元测试；e2e is06-trust-prompt（假 claude 画同样的提示）',
+    'IS-07': '2026-10-25 已修（X6，f6284c8）：合并过的 terminals.list() 里找不到新终端时再问一次，有单元测试。2026-10-29 核对：e2e 去掉 openTerminal 之间 600ms 的间隔，is07-back-to-back-terminals 同时连开 5 个都正常（integrate/W0-W1 5246c6e）',
     'IS-161': '2026-10-29 已修（e84a9fc，分支 integrate/W0-W1，未合进 main）：Clawd 两帧改由露着时的定时器每 350ms 换一次（不用无限循环的 CSS 动画），缩回去后卸掉；键盘鼠标 30 秒没动或窗口在后台时不再冒出来，碰一下叫醒。白板每出一帧都不便宜，只给 Clawd 单独合成层不管用（实测 3.8%），所以要让它在人走开时不出帧。e2e is26-performance 的 G4（原 test.fail）连跑 2 次通过：应用合计 1.3%、GPU 0.6%、界面进程 0.4%；你在用时 Clawd 照旧每 10 秒左右冒出来',
     'IS-124': '2026-10-29 已修（e84a9fc，分支 integrate/W0-W1，未合进 main）：本地 PDF 的 iframe 不加 sandbox，Chromium 的 PDF 查看器显示出来；本地路径里第一个 ? 或 # 起算后缀，file://…pdf#page=4 打开在第 4 页；开着同一个 PDF 再换 #page 时带变化的 ?r=n 重新载入、跳过去（存下的地址不带 ?r）；pptx、docx、xlsx、Keynote、压缩包不载入，写 This file can’t be shown on the board. 和 Open in default app，不再弹保存框。e2e is124-local-pdf 4 条通过（截图看过第 5 页和 pptx 的提示）。TC-92 的 Read with agent、pptx 另出 PDF 预览还没做',
     'IS-02': '2026-10-29 Claude 自动化验收（e2e tc01-tc02-project-workspace、is02-worktree-rollback，假 agent、真 tmux 和 git，连跑 3 次通过，分支 integrate/W0-W1 b35f5fd，未合进 main）：通过。真右键 Add project… / New workspace… 建 feat/oauth，框出现在右键处，setup Shell 跑了初始化命令，worktree、分支、.env 都建好；.env 复制失败（EACCES）时框上有 Retry，worktree、分支、refs、目录、.git/worktrees 都回到原样，改好后 Retry 建成。选子文件夹时不提示用了仓库根目录仍是 TC-01 的已知缺口；失败时的报错文字另记 IS-158',
