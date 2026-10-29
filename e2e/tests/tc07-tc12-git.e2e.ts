@@ -27,13 +27,15 @@ test('TC-07 stage two files from the panel and commit with ⌘↩', async ({ dec
   await expect(changes.locator('.scm-row--file')).toHaveCount(3);
   await deck.screenshot('changes');
 
-  // 2. 悬停文件，单击 + 暂存两个
-  for (const name of ['notes.md', 'app.txt']) {
+  // 2. 悬停文件，单击 + 暂存两个。每暂存一个，上面多出 Staged Changes、列表往下挪：等它挪完再悬停下一个，
+  // 不然鼠标落在挪过来的别的行上，按钮一直不出来（CI 的机器慢，每次都碰上）
+  const staged = panel.getByRole('region', { name: 'Staged Changes', exact: true });
+  for (const [i, name] of ['notes.md', 'app.txt'].entries()) {
     const row = changes.locator('.scm-row--file', { has: page.locator('.scm-name', { hasText: new RegExp(`^${name.replace('.', '\\.')}$`) }) });
     await row.hover();
     await row.getByRole('button', { name: `Stage ${name}` }).click();
+    await expect(staged.locator('.scm-row--file')).toHaveCount(i + 1);
   }
-  const staged = panel.getByRole('region', { name: 'Staged Changes', exact: true });
   await expect(staged.locator('.scm-row--file')).toHaveCount(2);
   await expect(changes.locator('.scm-row--file')).toHaveCount(1);
   // 后台：git add 在这个 worktree 里执行了
