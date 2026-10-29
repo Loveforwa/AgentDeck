@@ -6,15 +6,12 @@
 
 - 需求（设计画布，带配图和操作流程，以它为准）：https://claude.ai/artifact/2GtB5izXeQSV3NecUYuLAo ，仓库副本 `docs/design/canvas/`（各设计文档的副本和同步说明见 `docs/design/README.md`）
 - 组件库（设计系统：tokens、每个界面零件的样子、状态、尺寸、交互规则和代码位置，预览直接用仓库里的 CSS）：https://claude.ai/artifact/MhtbtWuttcdQ4b7uEjvbPN ，仓库副本 `docs/design/components/`，文字版 `docs/components.md`（两边内容一致）。画新界面、画需求配图、做插件前先查它，已有的零件不要重画；改了 `packages/design-tokens` 或 `packages/ui/**` 的样子，同步更新它。
-- 插件（Auto-approve、Usage 用量记录）：**做插件前先读 `docs/plugins.md`（插件手册：能贴在哪些东西上、登记表、决定记录）**；样子在设计画布的“插件能力”页，任务是 MVP 任务表的 M7（PL0–PL3）
-- 实施方案（技术选型、模块、风险）：https://claude.ai/artifact/QrjHF5gpT6zdHJr6wdFaWp ，本地副本 `docs/design/agentdeck-plan.html`
-- MVP 任务表（任务编号、依赖、完成标准）：https://claude.ai/artifact/8UAh7Quj23xxk7oEikgdEg ，本地副本 `docs/design/agentdeck-mvp-plan.html`
-- **MVP v2 和 v3（2026-10-24 第一轮验收后定的）**：需求在设计画布的“MVP v2 · v3”那一页（画板 11 · MVP v2、12 · MVP v3、13 · 后台 agent、14 · 左边栏历史会话、15 · 项目框排版，带概念图）；任务在 MVP 任务表的 M5（V1–V5，MVP v2）和 M6（N1–N12，MVP v3）；对应的问题是 IS-51～IS-60，要先调研的是 DR-52～DR-55；v2 的分波和每条线的范围见 MVP 任务表的“MVP v2 实施安排”，验收用例是 TC-29～TC-33。v2 做完之前不开 v3。MVP 是分版本做的：M0–M4 是 MVP v1。
-- **Agent 集群（M8，2026-10-27 定）**：按模板组一队 agent 做复杂任务，需求在设计画布“Agent 集群”那一页（画板 C0–C5），任务在 MVP 任务表的 M8（CR0–CR9），问题 IS-89、IS-90，调研 DR-64、DR-65，已定的几条在 `docs/decisions.md`。第一期是 CR0–CR6，CR0（contracts）先做。
-- **下一代 harness 九点（2026-10-28 定）**：Session（M9 SE0–SE6）、Agent 接入加固（M10 AH0–AH7）、Skill 管理（M11 SK0–SK7）、远程（M12 RM0–RM4）、集群的自由模式和 `agentdeck` 命令行（M8 CR10–CR21）、插件 Auto-resume（M7 PL4–PL9）。需求在设计画布的“Session”“Agent 接入”“Skill 管理”“手机 · 远程”几页和“Agent 集群”页 C6–C9，决定见 `docs/decisions.md` 2026-10-28 一段。**PL3 提交前先修 IS-113；AH7（send_to_terminal 保护，IS-102）现在就该做。**
-- **第二轮（2026-10-28 定）**：长期运行 · Lessons（M13 LR）、研究和竞赛（M14 RS）、文档（M15 DC）、代码理解（M16 CU）、Issue · PR（M17 FG）、同仓协作（M18 CO）、学习和辅助（M19 LA），以及 M10 的 AH8–AH11。需求在设计画布对应的新页，决定见 `docs/decisions.md` 2026-10-28（第二轮）一段。产品要改名为 Trireme（CR22），改名前新文档仍写 AgentDeck。
+- 分工（2026-10-29 定）：**设计画布只放还要做的需求**（做完的页挪到“已完成 · …”归档，配图还能看）；**任务表只放还要做的任务**；**验收报告放做完的**（已完成的需求、证据、用例、问题、架构）；调研记录放“为什么这样定”；组件库放“长什么样”。一个需求做完，就从画布和任务表沉淀进验收报告（`docs/status/done.py`、`data.py` 的 `DONE_GROUPS`）。
+- 任务表（任务编号、依赖、完成标准，只有还要做的）：https://claude.ai/artifact/6A1xdERmHFXrg3p9Bi4ujo ，本地副本 `docs/design/agentdeck-mvp-plan.html`
+- 验收报告（已完成的需求、架构、验收证据、端到端用例、问题清单）：https://claude.ai/artifact/FfnyWBeBAg1oPtyHieMbuu ，本地 `docs/status/index.html`（由 `docs/status/build.py` 生成）
+- 插件：**做插件前先读 `docs/plugins.md`（插件手册：能贴在哪些东西上、登记表、决定记录）**。做完的 Auto-approve、Usage、Auto-resume 在设计画布“已完成 · 插件”页；PL3 Prompt queue 已退役；还要做的 PL7、PL9 在任务表 M7。
+- 还要做的高级需求：Agent 集群（M8）、Session · 长期运行 · 记忆（M9、M13，设计画布 S2 / S3 是总览）、Agent 接入（M10）、Skill 管理（M11）、远程（M12）、研究和竞赛（M14）、文档（M15）、代码理解（M16）、Issue · PR（M17）、同仓协作（M18）、学习和辅助（M19）。需求在设计画布对应的页，决定见 `docs/decisions.md` 2026-10-28 的几段。产品要改名为 Trireme（CR22），改名前新文档仍写 AgentDeck。
 - 已定的决策（平台、tmux、环境变量等）：`docs/decisions.md`
-- MVP 验收报告（现状、验收证据、端到端用例、问题清单）：https://claude.ai/artifact/FfnyWBeBAg1oPtyHieMbuu ，本地 `docs/status/index.html`（由 `docs/status/build.py` 生成）
 - 调研记录（实现中和最初设想不一样的地方、怎么决定的、好处和代价）：`docs/research-log.md`，网页版 https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK 。各条线发现新的情况写进自己的汇报或 CONTRACT_NOTES.md，合并时由集成负责人加进 `docs/research/entries.py`，不要各自直接改它（避免并行冲突）。
 - 接口：`packages/contracts`，规则见 `packages/contracts/AGENTS.md`
 - 写插件：步骤见 `.claude/skills/agentdeck-plugin/SKILL.md`（给 agent 和外部贡献者看的，英文），规则和登记表见 `docs/plugins.md`；对外的贡献说明是 `CONTRIBUTING.md`。
@@ -23,11 +20,11 @@
 
 全项目统一，写文档、提交说明、汇报时都用这几种：
 
-- `F1`、`T2`、`X3` 等：MVP 任务表的任务（分支名、提交信息里用）。插件任务用 `PL0`–`PL2`（不用 `P` 开头，免得和问题的 P 级混）。
+- `F1`、`T2`、`X3` 等：任务表的任务（做完的在验收报告里）（分支名、提交信息里用）。插件任务用 `PL0`–`PL2`（不用 `P` 开头，免得和问题的 P 级混）。
 - `TC-xx`：端到端用例。`TC-01`–`TC-14` 就是设计画布「10 · 全局规则」的 14 条验收场景，`TC-15` 起是补充的。
 - `IS-xx`：问题清单里的问题，按登记顺序编号，轻重看 P 级（P0–P3）。
 - `DR-xx`：调研记录（`docs/research-log.md`）。
-- 用例和问题的唯一来源是 `docs/status/tracking.py`，调研记录是 `docs/research/entries.py`，MVP 现状是 `docs/status/data.py`；改完运行 `python3 docs/status/build.py`（验收报告网页）。用户在网页上填的验收结果和处理状态存在网页的数据库里（集合 acceptance、issues），读写用 ArtifactData。2026-10-24 之前的旧编号（E01、Q38、A1 这类）只在各表的“旧编号”列里保留。
+- 用例和问题的唯一来源是 `docs/status/tracking.py`，调研记录是 `docs/research/entries.py`，已完成的需求和现状是 `docs/status/data.py` 和 `done.py`；改完运行 `python3 docs/status/build.py`（验收报告网页）。用户在网页上填的验收结果和处理状态存在网页的数据库里（集合 acceptance、issues），读写用 ArtifactData。2026-10-24 之前的旧编号（E01、Q38、A1 这类）只在各表的“旧编号”列里保留。
 
 ## 技术栈
 
@@ -38,7 +35,7 @@ Electron + TypeScript + React 18 + Zustand，白板用 React Flow（@xyflow/reac
 - 只改你的任务负责的目录。要改 `packages/contracts` 先停下，单独提交，见它的 AGENTS.md。
 - 界面依赖方向：`packages/ui/*` 只能依赖 contracts 和 design-tokens；服务不能依赖 ui；各 widget、各 adapter 之间不互相引用。机器检查的完整规则见下面「检查和模块边界」。
 - 产品界面上的所有文字用英文；注释、文档、提交说明里的解释用中文也可以。
-- 组件里不写颜色值，样子只在 `packages/design-tokens` 里定。界面风格：暖灰加墨黑；颜色只表达状态（MVP v2 · V2 红绿灯）：运行中绿（`--status-running`）、等你黄（`--status-waiting` / `--attention`）、出错红（`--status-error`）；插件 Auto-approve 开着时的书签用红色（`--plugin-auto-approve`）；每种 code agent 有一个身份色（`--agent-claude` `--agent-codex` `--agent-pi` `--agent-omp` `--agent-kimi`，2026-10-26 定），只用在区分 agent 的小标记上（左边栏历史会话的 agent 小标题），别处不用彩色；不用渐变、发光、emoji。
+- 组件里不写颜色值，样子只在 `packages/design-tokens` 里定。界面风格：暖灰加墨黑；颜色只表达状态（v2 · V2 红绿灯）：运行中绿（`--status-running`）、等你黄（`--status-waiting` / `--attention`）、出错红（`--status-error`）；插件 Auto-approve 开着时的书签用红色（`--plugin-auto-approve`）；每种 code agent 有一个身份色（`--agent-claude` `--agent-codex` `--agent-pi` `--agent-omp` `--agent-kimi`，2026-10-26 定），只用在区分 agent 的小标记上（左边栏历史会话的 agent 小标题），别处不用彩色；不用渐变、发光、emoji。
 - 分支名和提交信息带任务编号，例如 `feat/F6-fakes`、`F6: add fake TerminalHost`。
 - 提交前：`pnpm check`（含所有包的测试）。
 - 每个包有自己的 AGENTS.md：职责、对外接口、不许碰的目录、怎么跑测试。新建包时一起写。
