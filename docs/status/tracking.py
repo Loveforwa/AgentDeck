@@ -392,7 +392,7 @@ CASES = [
          steps='1. 重启 AgentDeck\n2. 打开 Settings › Agents › Oh My Pi\n3. 右键 omp 终端标题栏 › PLUGINS\n4. 让 omp 跑一条要批准的命令',
          expect='UI：Agents 页顶上写 “18.12.6 · newer than checked (18.0.4)”（muted 文字，不用颜色）；Approve keys 一行写 Off · “Untested on 18.12.6”；状态、历史、用量照常是 Yes。PLUGINS 里 Auto-approve 灰掉，hint 写 “Untested on 18.12.6”；终端底边的书签变成 Needs you；omp 停在确认框，黄灯亮，等你自己按。\n后台：适配器读 compat/omp.json 的 verifiedUpTo；超过时 approve-keys、screen 两类能力的 level 降为 no，reason 是 Untested on <版本>；ApprovalService 不发键，发 approval.needs-you（reason unsupported）。',
          result='agent 升级不会让 AgentDeck 在你不知道时乱按键',
-         issue='已实现（AH3，分支 integrate/W0-W1，未合进 main）：2026-10-28 单元测试覆盖；真 agent 升级的情况没在应用里试过；2026-10-28 Claude 自动化验收（e2e tc48-untested-version，假 agent、真 tmux 和 git，连跑 3 次通过，分支 integrate/W0-W1 d51382e，未合进 main）。主进程不发键、omp 停在确认框等你（report 写 Off · Untested on 18.12.6）通过；Settings › Agents 页还没做（第 2 步）；两处产品缺口用 test.fail 标着：PLUGINS 里 Auto-approve 不灰（IS-153）、书签不变 Needs you（IS-154）。人工：Agents 页做好后看第 2 步', rel='IS-75 IS-77 IS-93 IS-153 IS-154'),
+         issue='已实现（AH3，分支 integrate/W0-W1，未合进 main）：2026-10-28 单元测试覆盖；真 agent 升级的情况没在应用里试过；2026-10-28 Claude 自动化验收（e2e tc48-untested-version，假 agent、真 tmux 和 git，连跑 3 次通过，分支 integrate/W0-W1 d51382e，未合进 main）。主进程不发键、omp 停在确认框等你（report 写 Off · Untested on 18.12.6）通过；Settings › Agents 页还没做（第 2 步）；PLUGINS 里 Auto-approve 不灰（IS-153）、书签不变 Needs you（IS-154）2026-10-29 已修（3cff348），原来标 test.fail 的那条改成普通测试、全量 e2e 通过。人工：Agents 页做好后看第 2 步', rel='IS-75 IS-77 IS-93 IS-153 IS-154'),
     dict(id='TC-49', p='P2', status='部分验证',
          scene='新增或升级一家 agent 时，跑一遍适配器合格测试，结果进 compat 记录（AH2）',
          pre='装好 tmux、claude、codex、pi、omp；仓库在 main',
@@ -631,7 +631,7 @@ CASES = [
          steps='1. 恢复前单击这个终端，输入 “let’s do something else” 回车\n2. 等到恢复时间 + 宽限',
          expect='UI：第 1 步后书签写 “Not resumed · you took over”，几秒后收起；收件箱里这一行没了（这一组只剩别的终端，没有就整条消失）。第 2 步 AgentDeck 没往这个终端发东西。\n后台：limits 里这个终端的状态是 took-over（来自状态机的 noteInput）；sendKeys 没有调用。',
          result='你接手的终端不会被插一句 Continue',
-         issue='未实现（CR1）；2026-10-28 主进程（PL5：撞完你打过字就是 took-over，limits 单元测试）和书签 “Not resumed · you took over”（PL6）已实现（分支 integrate/W0-W1，未合进 main）；收件箱部分等 CR1（PL7），端到端没写；2026-10-28 Claude 自动化验收（e2e tc80-tc81-codex-limits，假 agent、真 tmux 和 git，连跑 3 次通过，分支 integrate/W0-W1 d51382e，未合进 main）。记成 took-over、到点没发通过；书签 “Not resumed · you took over” 一帧都停不住（IS-155，test.fail）；收件箱部分等 CR1。人工：收件箱做好后看这一行消失', rel='IS-115 IS-155'),
+         issue='未实现（CR1）；2026-10-28 主进程（PL5：撞完你打过字就是 took-over，limits 单元测试）和书签 “Not resumed · you took over”（PL6）已实现（分支 integrate/W0-W1，未合进 main）；收件箱部分等 CR1（PL7），端到端没写；2026-10-28 Claude 自动化验收（e2e tc80-tc81-codex-limits，假 agent、真 tmux 和 git，连跑 3 次通过，分支 integrate/W0-W1 d51382e，未合进 main）。记成 took-over、到点没发通过；书签 “Not resumed · you took over” 一帧都停不住（IS-155）2026-10-29 已修（3cff348）：了结后书签按最后的状态留 5 秒再收起，原来的 test.fail 改成普通测试并通过；收件箱部分等 CR1。人工：收件箱做好后看这一行消失', rel='IS-115 IS-155'),
     dict(id='TC-82', p='P2', status='部分验证',
          scene='claude 的后台子 agent 跟着断：续跑提示点名让主 agent 接回；claude 自己续时改过的话由 claude 发',
          pre='真机：claude 2.1.291，开两个后台子 agent 做长任务后撞 5 小时额度。假的：假 claude 的 limit 20 noauto（关了自己续，恢复后发 Notification quota_auto_resume_disabled）；FakeSubagentService 预置这个终端两个 background agent，state failed、reason 是 usage limit 的 API 错误，description “Index claude sessions”、“Weather 10 years ago”',
@@ -1383,6 +1383,9 @@ ACCEPTED = {
 # 已经处理的问题：处理状态和备注
 RESOLVED = {
     'IS-151': '2026-10-28 已修（fix(W3) 083f2cf，分支 integrate/W0-W1，未合进 main）：主进程回答 startup 前先等第一次 tmux 启动的结果，最多 5 秒；e2e tc19-tmux-missing 覆盖',
+    'IS-153': '2026-10-29 已修（3cff348，分支 integrate/W0-W1，未合进 main）：界面拿到检测完的 agent 列表后再取一次 autoApproveSupport，PLUGINS 不用刷新就灰掉、写原因；e2e tc48-untested-version 第二条（原 test.fail）通过',
+    'IS-154': '2026-10-29 已修（3cff348，分支 integrate/W0-W1，未合进 main）：启动时用 restoreTerminalAutoApprove 恢复，现在不支持的也保留开关、不按键；本来支持、被降级的 agent 照样挂书签，要批准时变 Needs you（Not supported），卡片里能 Turn off；单元测试和 e2e tc48 覆盖',
+    'IS-155': '2026-10-29 已修（3cff348，分支 integrate/W0-W1，未合进 main）：界面的 LimitsModel 把了结的终端（took-over、resumed、skipped、handed-off、gave-up）按最后的样子多留 5 秒再收起；e2e tc80-tc81 第二条（原 test.fail）通过',
     'IS-152': '2026-10-28 已修（d51382e，分支 integrate/W0-W1，未合进 main）：e2e 沙盒默认给 codex、pi、omp、kimi 放同名桩；产品在 PATH 后面补常见目录的做法不变（有意的）',
     'IS-73': '2026-10-28 已修（AH3，分支 integrate/W0-W1，未合进 main）：版本读不出时看 --help 里有没有那个参数；参数被拒时只带会话参数重开一次；超过核对版本时关掉按键和认屏类能力；AH2 的 K16、K17 覆盖',
     'IS-74': '2026-10-28 已修（AH3，分支 integrate/W0-W1，未合进 main）：钩子 10 秒没来就退回看输出，并写 degraded',
