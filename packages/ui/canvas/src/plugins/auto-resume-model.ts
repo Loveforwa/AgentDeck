@@ -4,8 +4,8 @@
 // 往里加新要求。所以 Prompt queue（PL3）退役，剩下的并进 Auto-resume：
 // - 识别、按账号归组、到点错开发送、不让 Mac 睡都在主进程的 LimitService（PL5，agent-adapters 的 limits 模块），界面只读它的列表
 //   （limits.list + limits.changed），不自己猜、不自己发按键；
-// - 开关：终端 → 框 → 白板（TerminalWindowData.autoResume、FrameNode.autoResume、BoardState.autoResume），默认关，随白板保存，
-//   LimitService 每次检查时读白板；在上一级点开关会清掉下一级单独的设置（框上关掉 = 框里的都关，同 Auto-approve 的规矩）；
+// - 开关：终端 → 白板（TerminalWindowData.autoResume、BoardState.autoResume），默认关，随白板保存，LimitService 每次检查时读白板；
+//   在白板上点开关会清掉各终端单独的设置。2026-10-29 用户定：项目框上没有这个开关（FrameNode.autoResume 不再读，老白板里的值点白板开关时清掉）；
 // - 书签只在这个终端出现在某个受限账号里时挂（开着但没撞上不挂），账号从列表里消失就收起；
 //   了结时的最后一句（Resumed、Not resumed · you took over 这些）多留 LINGER_MS 再收起（IS-155：服务发完最后状态
 //   紧接着就把它去掉，不留的话一帧都看不到）；
@@ -24,7 +24,6 @@ import type {
   TerminalWindowData,
   WindowId,
   WindowNode,
-  WorkspaceId,
 } from '@agentdeck/contracts';
 import { agentOf, isAgentTerminal, terminalIdOf } from '../model/windows.ts';
 
@@ -43,24 +42,18 @@ export function ownAutoResume(node: WindowNode | undefined): boolean | null {
   return typeof v === 'boolean' ? v : null;
 }
 
-/** 框上开没开：单独设过的看它，否则跟着白板。 */
-export function frameAutoResume(b: AutoResumeBoard, ws: WorkspaceId): boolean {
-  const f = b.frames.find((x) => x.workspaceId === ws)?.autoResume;
-  return typeof f === 'boolean' ? f : b.autoResume;
-}
-
-/** 这个终端的 Auto-resume 开着没有（终端 → 框 → 白板，默认关）。同 agent-adapters 的 effectiveAutoResume。 */
+/** 这个终端的 Auto-resume 开着没有（终端 → 白板，默认关）。同 agent-adapters 的 effectiveAutoResume。 */
 export function windowAutoResume(b: AutoResumeBoard, node: WindowNode | undefined): boolean {
   if (!node || !isAgentTerminal(node)) return false;
   const own = ownAutoResume(node);
   if (own !== null) return own;
-  return node.workspaceId ? frameAutoResume(b, node.workspaceId) : b.autoResume;
+  return b.autoResume;
 }
 
-/** 点开关之后的白板：在哪一级点就设哪一级，并清掉下面各级单独的设置（框上关掉 = 框里的都关）。 */
+/** 点开关之后的白板：在终端上点只设这个终端；在白板上点会清掉各终端单独的设置。 */
 export function toggledAutoResume(
   b: AutoResumeBoard,
-  target: { kind: 'window'; windowId: WindowId } | { kind: 'frame'; workspaceId: WorkspaceId } | { kind: 'board' },
+  target: { kind: 'window'; windowId: WindowId } | { kind: 'board' },
 ): Pick<AutoResumeBoard, 'windows' | 'frames' | 'autoResume'> {
   const clear = (w: WindowNode): WindowNode => {
     if (ownAutoResume(w) === null) return w;
@@ -73,14 +66,6 @@ export function toggledAutoResume(
       autoResume: b.autoResume,
       frames: b.frames,
       windows: b.windows.map((w) => (w.id === target.windowId ? { ...w, data: { ...(w.data as TerminalWindowData), autoResume: next } } : w)),
-    };
-  }
-  if (target.kind === 'frame') {
-    const next = !frameAutoResume(b, target.workspaceId);
-    return {
-      autoResume: b.autoResume,
-      frames: b.frames.map((f) => (f.workspaceId === target.workspaceId ? { ...f, autoResume: next } : f)),
-      windows: b.windows.map((w) => (w.workspaceId === target.workspaceId ? clear(w) : w)),
     };
   }
   return {

@@ -4,8 +4,6 @@ AutoResumeMark is how the Auto-resume plugin (PL6) shows itself. When an agent t
 
 **Code:** `packages/ui/canvas/src/plugins/auto-resume.tsx` (the mark and card), `src/plugins/auto-resume-model.ts` (on/off at the three levels, the mark text, what the card can do, `controller.limits` = the LimitService list), styles in `canvas.css` (`.ad-auto-resume-*`). The dev page's Demo menu has "Usage limit: next Auto-resume bookmarks", which steps through every state. Rules in `docs/plugins.md`.
 
-**Frame tag:** with Auto-resume on for a frame (set on the frame, or following the board), the frame header shows an 18px “Auto-resume” tag after the Auto-approve one: `surface` fill, 1px `line-strong` border, `ink` text, `text-xs` 500, `radius-inset`. No colour, since Auto-resume is not a status.
-
 **When it shows:** only while this terminal is in one of LimitService's limited accounts; it goes away when the account leaves the list. Turned on but not limited, nothing hangs. With Auto-resume off it still hangs, grey, so you can Resume now.
 
 **States** (a 7px lamp, then the text; the hover is the card's status line)
@@ -25,7 +23,7 @@ AutoResumeMark is how the Auto-resume plugin (PL6) shows itself. When an agent t
 - Foot: **Resume now** (greyed before the reset, hover "Available after the limit resets at 3:30pm"; always enabled when the reset time is unknown; greyed while the message is being edited) · **Don’t resume** (ghost, this terminal only). When claude resumes by itself, Don’t resume is replaced by "To stop claude continuing, press Esc in the terminal."
 
 **Rules**
-- Only agent terminals can turn it on; shells and custom commands are not listed. It attaches to the board (off by default, right-click empty space), a frame and a terminal; the terminal's own setting wins, and toggling a higher level clears the lower ones.
+- Only agent terminals can turn it on; shells and custom commands are not listed. It attaches to the board (off by default, right-click empty space) and a terminal, not to project frames (2026-10-29); the terminal's own setting wins, and toggling the board clears the terminals' own settings.
 - claude and codex resume on time; pi and kimi only have Resume now; omp handles limits itself (the mark says "handled by omp").
 - A changed message is for this limit only; the next limit starts from the default again.
 - Colours are only the three status lamps and the status line; everything else is grey. It never uses the plugin red.

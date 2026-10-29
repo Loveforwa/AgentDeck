@@ -1,4 +1,4 @@
-// PL6 Auto-resume：开关（终端 → 框 → 白板）、书签的各种样子、卡片里改这一次续跑的话、Resume now、Don’t resume。
+// PL6 Auto-resume：开关（终端 → 白板，项目框上没有）、书签的各种样子、卡片里改这一次续跑的话、Resume now、Don’t resume。
 // 对着 createFakeApi()（FakeLimitService 发 limits.changed）。PL3 Prompt queue 退役：老白板里的 queue 读得进来、不起作用。
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
@@ -177,13 +177,13 @@ describe('IS-155: the last state stays on the bookmark for a few seconds after L
   });
 });
 
-describe('Auto-resume switch: terminal → frame → board, off by default (PL6)', () => {
-  it('lists it for agent terminals (pi, kimi, omp too), frames and the blank board; not for shell', async () => {
+describe('Auto-resume switch: terminal → board, off by default; not on project frames (PL6, 2026-10-29)', () => {
+  it('lists it for agent terminals (pi, kimi, omp too) and the blank board; not for shell or project frames', async () => {
     const { c } = await started();
     const labels = (t: Parameters<typeof pluginMenuSection>[1]) => pluginMenuSection(c, t, PLUGINS).map((e) => (e.type === 'separator' ? '-' : e.label));
     expect(labels({ kind: 'window', windowId: CLAUDE })).toContain('Auto-resume');
     expect(labels({ kind: 'window', windowId: SHELL })).not.toContain('Auto-resume');
-    expect(labels({ kind: 'frame', workspaceId: W.agentdeckLogin })).toContain('Auto-resume');
+    expect(labels({ kind: 'frame', workspaceId: W.agentdeckLogin })).not.toContain('Auto-resume');
     expect(labels({ kind: 'board' })).toEqual(['PLUGINS', 'Auto-resume']);
     for (const agent of ['pi', 'kimi', 'omp']) {
       c.updateData(CODEX, { agent });
@@ -193,7 +193,7 @@ describe('Auto-resume switch: terminal → frame → board, off by default (PL6)
     c.dispose();
   });
 
-  it('terminal setting wins; switching a frame or the board clears the settings below it; saved with the board', async () => {
+  it('terminal setting wins; switching the board clears the terminals’ own settings; an old frame value is ignored; saved with the board', async () => {
     const { api, c } = await started();
     const on = (id: WindowId) => windowAutoResume(c.state, c.windowById(id));
     expect(on(CLAUDE)).toBe(false);
@@ -207,25 +207,20 @@ describe('Auto-resume switch: terminal → frame → board, off by default (PL6)
     expect(data(c, CLAUDE).autoResume).toBe(false);
     expect(on(CLAUDE)).toBe(false);
     expect(on(CODEX)).toBe(true);
-    // 框上关：框里的都关，单独的设置清掉
-    act(() => item(pluginMenuSection(c, { kind: 'frame', workspaceId: W.agentdeckLogin }, PLUGINS), 'Auto-resume').onSelect?.());
-    expect(c.state.frames.find((f) => f.workspaceId === W.agentdeckLogin)?.autoResume).toBe(false);
-    expect(data(c, CLAUDE).autoResume).toBeNull();
-    expect([on(CLAUDE), on(CODEX)]).toEqual([false, false]);
-    // 框上再开：框里的都开
-    act(() => item(pluginMenuSection(c, { kind: 'frame', workspaceId: W.agentdeckLogin }, PLUGINS), 'Auto-resume').onSelect?.());
-    expect([on(CLAUDE), on(CODEX)]).toEqual([true, true]);
-    // 白板上关：全部回到白板
+    // 老白板里框上存过的值不再算（项目框上没有这个开关）
+    act(() => c.store.setState((st) => ({ frames: st.frames.map((f) => (f.workspaceId === W.agentdeckLogin ? { ...f, autoResume: false } : f)) })));
+    expect(on(CODEX)).toBe(true);
+    // 白板上关：清掉终端单独的设置，全部回到白板
     const next = toggledAutoResume(c.state, { kind: 'board' });
     expect(next.autoResume).toBe(false);
     expect(next.frames.every((f) => f.autoResume === null || f.autoResume === undefined)).toBe(true);
+    expect((next.windows.find((w) => w.id === CLAUDE)?.data as TerminalWindowData).autoResume).toBeNull();
     // 随白板保存
     expect(c.snapshotBoard().autoResume).toBe(true);
     const save = vi.spyOn(api.board, 'save');
     await c.flush();
     await waitFor(() => expect(save).toHaveBeenCalled());
     expect(save.mock.calls.at(-1)?.[0].autoResume).toBe(true);
-    expect(save.mock.calls.at(-1)?.[0].frames.find((f) => f.workspaceId === W.agentdeckLogin)?.autoResume).toBe(true);
     c.dispose();
   });
 
@@ -274,19 +269,11 @@ describe('Auto-resume bookmark and card (PL6)', () => {
       });
     });
 
-  it('frame on: a plain “Auto-resume” tag in the frame title (no plugin colour); off again: gone', async () => {
+  it('project frames have no Auto-resume tag, even with the board switch on', async () => {
     const { c } = await setup();
-    const frame = () => document.querySelector(`[data-id="frame:${W.agentdeckLogin}"] .ad-frame-header`);
-    const tag = () => frame()?.querySelector<HTMLElement>('.ad-auto-resume-tag') ?? null;
-    expect(tag()).toBeNull();
-    act(() => c.store.setState((s) => toggledAutoResume(s, { kind: 'frame', workspaceId: W.agentdeckLogin })));
-    await waitFor(() => expect(tag()?.textContent).toBe('Auto-resume'));
-    expect(tag()!.classList.contains('ad-frame-tag')).toBe(true);
-    // 别的框没开
-    expect(document.querySelector(`[data-id="frame:${W.shopCart}"] .ad-auto-resume-tag`)).toBeNull();
-    expect(css).toMatch(/\.ad-auto-resume-tag \{[^}]*background: var\(--surface\)/);
-    act(() => c.store.setState((s) => toggledAutoResume(s, { kind: 'frame', workspaceId: W.agentdeckLogin })));
-    await waitFor(() => expect(tag()).toBeNull());
+    act(() => c.store.setState((s) => toggledAutoResume(s, { kind: 'board' })));
+    expect(c.state.autoResume).toBe(true);
+    expect(document.querySelector('.ad-frame-header [data-plugin="auto-resume"]')).toBeNull();
     c.dispose();
   });
 

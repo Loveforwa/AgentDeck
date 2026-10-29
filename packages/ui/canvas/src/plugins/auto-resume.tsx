@@ -1,7 +1,7 @@
 // Auto-resume 插件（PL6，设计画布“MVP 插件”页 PluginResume，调研 DR-63、DR-84，规则见 docs/plugins.md）。
 // 2026-10-28 用户定：Prompt queue（PL3）退役，剩下的并进来——撞上额度上限后，到点把续跑的话发出去，你能改这句话、往里加要求。
 //
-// - 贴在白板（默认关）、工作区框、agent 终端上（shell、自定义命令不列）；终端单独的设置优先，框上关掉框里的都关（auto-resume-model）。
+// - 贴在白板（默认关）和 agent 终端上（shell、自定义命令不列），项目框上没有（2026-10-29）；终端单独的设置优先（auto-resume-model）。
 //   claude、codex：恢复时间读得到；pi、kimi：读不到恢复时间，只有 Resume now；omp 自己处理额度，书签只写 handled by omp。
 //   现在 LimitService 只认得出 claude、codex 撞额度（DR-63），pi、kimi、omp 的识别等 PL9。
 // - 书签：终端底边左侧，排在 Auto-approve 书签后面；只在这个终端出现在受限账号里时挂（开着但没撞上不挂）。
@@ -9,7 +9,7 @@
 // - 发送、错开、不让 Mac 睡都在主进程的 LimitService；这里只调它（resumeNow / skip / setMessage）。
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import type { WindowId, WorkspaceId } from '@agentdeck/contracts';
+import type { WindowId } from '@agentdeck/contracts';
 import { Button, Popover } from '@agentdeck/ui-kit';
 import type { BoardController } from '../controller.ts';
 import { terminalIdOf } from '../model/windows.ts';
@@ -18,7 +18,6 @@ import { useApprovals, useBoardState, useController } from '../react/context.tsx
 import {
   agentName,
   clock,
-  frameAutoResume,
   messageOf,
   resumeActions,
   resumeLabel,
@@ -32,37 +31,27 @@ import type { PluginDefinition, PluginTarget } from './types.ts';
 function isOn(c: BoardController, t: PluginTarget): boolean {
   const s = c.state;
   if (t.kind === 'board') return s.autoResume;
-  if (t.kind === 'frame') return frameAutoResume(s, t.workspaceId);
+  if (t.kind !== 'window') return false;
   return windowAutoResume(s, c.windowById(t.windowId));
 }
 
 function toggle(c: BoardController, t: PluginTarget): void {
+  if (t.kind === 'frame') return;
   c.store.setState((s) => toggledAutoResume(s, t));
 }
 
 export const autoResumePlugin: PluginDefinition = {
   id: 'auto-resume',
   label: 'Auto-resume',
-  attachesTo: ['terminal', 'frame', 'board'],
+  // 2026-10-29 用户定：项目框上没有（只按白板或单个终端开）
+  attachesTo: ['terminal', 'board'],
   // claude、codex 到点续；pi、kimi 只有 Resume now；omp 自己处理（书签写 handled by omp）。都能开
   agents: 'all',
   agentsOnly: true,
   isOn,
   toggle,
   WindowMark: AutoResumeMark,
-  FrameMark: AutoResumeFrameTag,
 };
-
-/** 框标题里的小标签：框上开着 Auto-resume 时出现（单独设过的看框，否则跟着白板），排在 Auto-approve 后面。 */
-export function AutoResumeFrameTag({ workspaceId }: { workspaceId: WorkspaceId }) {
-  const on = useBoardState((s) => frameAutoResume(s, workspaceId));
-  if (!on) return null;
-  return (
-    <span className="ad-plugin-tag ad-frame-tag ad-auto-resume-tag" data-plugin="auto-resume" title="Auto-resume is on for the agents in this workspace">
-      Auto-resume
-    </span>
-  );
-}
 
 function useLimits<T>(c: BoardController, selector: (s: LimitsState) => T): T {
   return useStore(c.limits.store, selector);

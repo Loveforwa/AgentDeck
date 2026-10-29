@@ -84,8 +84,9 @@ export function claudeSelfResumes(version: string | null): boolean {
 }
 
 /**
- * 这个终端的 Auto-resume 开着没有：终端单独的设置（TerminalWindowData.autoResume）优先，再看框（FrameNode.autoResume），
- * 再看白板（BoardState.autoResume）；都没设是关（2026-10-28 用户定：默认关）。白板上找不到这个终端也算关。
+ * 这个终端的 Auto-resume 开着没有：终端单独的设置（TerminalWindowData.autoResume）优先，再看白板（BoardState.autoResume）；
+ * 都没设是关（2026-10-28 用户定：默认关）。白板上找不到这个终端也算关。项目框上没有这个开关（2026-10-29 用户定），
+ * 老白板里的 FrameNode.autoResume 不读。
  */
 export function effectiveAutoResume(board: BoardState | null, terminalId: TerminalId): boolean {
   if (!board) return false;
@@ -93,8 +94,6 @@ export function effectiveAutoResume(board: BoardState | null, terminalId: Termin
   if (!w) return false;
   const own = (w.data as Partial<TerminalWindowData>).autoResume;
   if (typeof own === 'boolean') return own;
-  const frame = w.workspaceId ? board.frames.find((f) => f.workspaceId === w.workspaceId) : undefined;
-  if (typeof frame?.autoResume === 'boolean') return frame.autoResume;
   return board.autoResume === true;
 }
 

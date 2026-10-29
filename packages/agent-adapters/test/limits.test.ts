@@ -230,7 +230,7 @@ describe('limit rules', () => {
     expect(limitConfigDir('kimi', {}, '/Users/you')).toBeNull();
   });
 
-  it('Auto-resume: terminal over frame over board, off by default', () => {
+  it('Auto-resume: terminal over board, off by default; a value left on a project frame is ignored (2026-10-29)', () => {
     const ws = 'ws1';
     const b = (frameOn: boolean | null | undefined, termOn: boolean | null | undefined, boardOn?: boolean) =>
       board([win('t1', termOn === undefined ? {} : { autoResume: termOn }, ws)], {
@@ -239,9 +239,10 @@ describe('limit rules', () => {
       });
     expect(effectiveAutoResume(b(undefined, undefined), id('t1'))).toBe(false);
     expect(effectiveAutoResume(b(undefined, undefined, true), id('t1'))).toBe(true);
-    expect(effectiveAutoResume(b(false, null, true), id('t1'))).toBe(false);
-    expect(effectiveAutoResume(b(false, true, true), id('t1'))).toBe(true);
-    expect(effectiveAutoResume(b(true, undefined, false), id('t1'))).toBe(true);
+    expect(effectiveAutoResume(b(false, null, true), id('t1'))).toBe(true);
+    expect(effectiveAutoResume(b(false, false, true), id('t1'))).toBe(false);
+    expect(effectiveAutoResume(b(false, true, false), id('t1'))).toBe(true);
+    expect(effectiveAutoResume(b(true, undefined, false), id('t1'))).toBe(false);
     expect(effectiveAutoResume(b(undefined, undefined, true), id('nope'))).toBe(false);
     expect(effectiveAutoResume(null, id('t1'))).toBe(false);
   });

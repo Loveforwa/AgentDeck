@@ -329,7 +329,7 @@ limits.start();
   了结了的账号先带着最后的状态发一次 limits.changed，再去掉（书签能写 “you took over”）。
 - **什么时候发**：恢复时间 + 1 分钟（graceMs），按被打断的先后、隔 30 秒（staggerMs）；终端那时不空闲就等下一次检查。5 秒检查一次，下一件事更早时按点叫醒。
   文字 = Settings 的 Resume prompt（或 setOwner 给的，集群带任务编号）+ claude 跟着断掉的后台子 agent（SubagentService 里 failed、主线撞上前 5 分钟之后结束的，逐个点名、让它 SendMessage）/ codex 的一句。
-- **Auto-resume 开关**：`effectiveAutoResume(白板, 终端)` = 终端 → 框 → 白板，默认关。关着的照样列出来，不发按键、不阻止睡眠，到点变 skipped；Resume now 不看开关。
+- **Auto-resume 开关**：`effectiveAutoResume(白板, 终端)` = 终端 → 白板，默认关（项目框上没有，老白板里的 FrameNode.autoResume 不读，2026-10-29）。关着的照样列出来，不发按键、不阻止睡眠，到点变 skipped；Resume now 不看开关。
 - **claude 自己续**（`claudeSelfResumes`：2.1.234 起，恢复在 24 小时内）：owner agent，不发；quota_auto_resume_fired（或恢复后看到它开始干活）→ resuming；
   stale → 账号 needsYou 'stale'，你点 Continue（`resumeNow(账号, [终端])`）只按回车；disabled → owner auto-resume，按上面的规矩发；
   恢复 3 分钟后（从开始看着算）还没动静 → 自己发。它续完那一轮后，子 agent 还 failed、这一轮没有 SubagentStart，就补发子 agent 那一段（只一次）。

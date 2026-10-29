@@ -28,10 +28,11 @@ async function launchWithCodex(deck: Deck, branch: string, names: string[]) {
     out[n] = t;
   }
   await deck.showAll();
-  // 右键框 › PLUGINS › Auto-resume（框里的 agent 终端都开）
-  await deck.frameEl(branch).locator('.ad-frame-header').click({ button: 'right', position: { x: 40, y: 12 } });
+  // 右键白板空白处 › PLUGINS › Auto-resume（白板上的 agent 终端都开；项目框上没有这个开关，2026-10-29）
+  const at = await deck.emptyPoint();
+  await page.mouse.click(at.x, at.y, { button: 'right' });
   await page.getByRole('menuitemcheckbox', { name: 'Auto-resume' }).click();
-  await expect.poll(async () => (await deck.board()).frames[0] as unknown as { autoResume?: boolean }).toEqual(expect.objectContaining({ autoResume: true }));
+  await expect.poll(() => page.evaluate(() => (window as unknown as { __board: { state: { autoResume: boolean } } }).__board.state.autoResume)).toBe(true);
   return { page, workspaceId, t: out };
 }
 

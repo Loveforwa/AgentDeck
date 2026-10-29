@@ -95,7 +95,6 @@ describe('context menus (B3)', () => {
       'PLUGINS',
       'Auto-approve',
       'Approval history…',
-      'Auto-resume',
       '-',
       'Auto-arrange new windows',
       '-',

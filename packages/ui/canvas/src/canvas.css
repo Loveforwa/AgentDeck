@@ -332,7 +332,7 @@
   }
 }
 
-/* 框标题里插件的小标签（框上开着 Auto-approve、Auto-resume）。标题一行是基线对齐、上面留了 space-sm：
+/* 框标题里插件的小标签（框上开着 Auto-approve）。标题一行是基线对齐、上面留了 space-sm：
    和排版图标一样往上提 space-sm 再居中，标签的中线就和项目名的中线对齐 */
 .ad-frame-tag {
   display: inline-flex;
@@ -354,12 +354,6 @@
   color: var(--plugin-auto-approve-fg);
 }
 
-/* Auto-resume 不是状态，不用彩色：白底细边，和它的书签一样 */
-.ad-auto-resume-tag {
-  border: 1px solid var(--line-strong);
-  background: var(--surface);
-  color: var(--ink);
-}
 
 /* 点书签弹出的小卡片 */
 .ad-auto-approve-card {

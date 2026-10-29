@@ -188,7 +188,8 @@ describe('PL0 plugin entry in the context menus', () => {
     const terminal = pluginMenuSection(c, { kind: 'window', windowId: CLAUDE }, plugins).map((e) => (e.type === 'separator' ? '-' : e.label));
     expect(terminal).toEqual(['PLUGINS', 'Auto-approve', 'Usage', 'Auto-resume', 'Tokens']);
     const frame = pluginMenuSection(c, { kind: 'frame', workspaceId: W.agentdeckLogin }, plugins).map((e) => (e.type === 'separator' ? '-' : e.label));
-    expect(frame).toEqual(['PLUGINS', 'Auto-approve', 'Approval history…', 'Auto-resume']);
+    // Auto-resume 不贴在项目框上（2026-10-29）
+    expect(frame).toEqual(['PLUGINS', 'Auto-approve', 'Approval history…']);
     // 不在 agents 里的终端灰掉
     const shellTokens = pluginMenuSection(c, { kind: 'window', windowId: 'win-shop-shell' as WindowId }, [tokens]);
     expect(shellTokens[1]).toMatchObject({ label: 'Tokens', disabled: true, hint: 'Not supported for shell' });
