@@ -1150,33 +1150,15 @@ pre {
   fill: var(--mascot-food);
 }
 
-/* 两帧交替：一帧亮着时另一帧藏着 */
-.ad-clawd-frame {
-  animation: ad-clawd-flip 700ms steps(1, end) infinite;
-}
-
-.ad-clawd-frame-2 {
-  animation-delay: -350ms;
-}
-
-@keyframes ad-clawd-flip {
-  0% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0;
-  }
+/* 两帧交替：Clawd.tsx 的定时器换 data-frame，只显示那一帧（不用无限循环的 CSS 动画，空闲时界面不用每帧都画，IS-161） */
+.ad-clawd-sprite[data-frame='1'] .ad-clawd-frame-2,
+.ad-clawd-sprite[data-frame='2'] .ad-clawd-frame-1 {
+  display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .ad-clawd {
     transition: none;
-  }
-  .ad-clawd-frame {
-    animation: none;
-  }
-  .ad-clawd-frame-2 {
-    opacity: 0;
   }
 }
 
