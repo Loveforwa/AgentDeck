@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>记忆系统</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1300px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.tag{display:inline-flex;align-items:center;height:18px;padding:0 7px;border-radius:999px;font-size:10.5px;background:#F2F2EF;color:#5F5F5A;white-space:nowrap}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#8A8A85}
+.dot{width:7px;height:7px;border-radius:50%;flex:none;box-sizing:border-box;display:inline-block}
+.am{width:6px;height:6px;border-radius:1.5px;flex:none;display:inline-block}
+.btn{display:inline-flex;align-items:center;height:22px;padding:0 8px;border:1px solid #D6D6D2;border-radius:6px;font-size:11px;background:#FFFFFF;color:#1A1A1A;white-space:nowrap}
+.btn.pri{background:#1A1A1A;border-color:#1A1A1A;color:#FFFFFF}
+.panel{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,0.08);font-size:12px;overflow:hidden}
+.nr{display:grid;grid-template-columns:76px 1fr 70px;gap:8px;padding:6px 12px;border-top:1px solid #F0F0ED;line-height:1.45;align-items:baseline}
+.k{font-size:10px;font-weight:600;letter-spacing:0.05em;color:#6B6B6B}
+.src{font-size:10.5px;color:#8A8A85;text-align:right}
+.gh{display:flex;align-items:center;gap:6px;padding:7px 12px;border-top:1px solid #E3E3E0;background:#FBFBFA;font-size:10.5px;font-weight:600;color:#8A8A85;letter-spacing:0.04em}
+.code{box-sizing:border-box;background:#1A1A1A;color:#EDEDEA;border-radius:8px;padding:12px 14px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.6;white-space:pre}
+.ex{display:flex;flex-direction:column;gap:10px;font-size:13.5px;line-height:1.65}
+.note{font-size:12.5px;line-height:1.6;color:#5F5F5A}
+</style>
+</helmet>
+<div style="width: 1760px; height: 3560px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">S3 · 记忆系统：一条 Session 断了接得上，新的 Session 一开始就知道坑</h1>
+      <span class="concept">2026-10-29 提议，待你确认</span>
+    </div>
+    <p class="lead">AgentDeck 不替各家 agent 记对话，也不管你的偏好；它只记两样只有它看得见的东西。<b>Session 笔记</b>：这条线的目标、做到哪、你定了什么、卡在哪、下一步，只记 AgentDeck 自己确定知道的事（它派的活、它跑的检查、git 的提交、你在收件箱里的回答、额度、交接），在 /clear、额度恢复、交接、重开以后带回给 agent。<b>项目记忆</b>：反复踩的坑（Lessons，W1），你确认过的才进每个新 Session 的系统提示。三条规矩：只记确定的事；你能看、能改、能删；给 agent 的时刻固定、有上限。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 分四层：谁记、记什么、给谁、活多久</span>
+    <div class="tbl" style="grid-template-columns: 170px minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1.2fr) 150px 170px; max-width: 1632px">
+      <span class="th">层</span><span class="th">记什么</span><span class="th">谁写</span><span class="th">谁读、什么时候</span><span class="th">活多久</span><span class="th">归谁</span>
+      <span class="td"><b>1 · 对话</b></span><span class="td">agent 自己的会话记录（claude 的 jsonl、codex 的 rollout……）</span><span class="td">agent</span><span class="td">同一家 resume 时它自己读；AgentDeck 只记路径（S0 的分段）</span><span class="td">各家定</span><span class="td">各家，不变</span>
+      <span class="td"><b>2 · Session 笔记</b> <span class="tag">新</span></span><span class="td">目标、计划做到哪、做完的（带提交）、你定了的、卡住的（带检查输出末尾）、额度、交接、下一步</span><span class="td">AgentDeck 从确定的事件记；你写目标、改任意一条；agent 只能用 <span class="mono">agentdeck note</span> 补一句（第三期）</span><span class="td">同一条 Session 的下一段（Fresh、额度恢复、Reopen 接不上时）；子 Session（交接、fork）；集群的 Lead；你（左边栏、报告）</span><span class="td">跟着 Session，Session 删了一起删</span><span class="td">AgentDeck（DR-74 第二条例外）</span>
+      <span class="td"><b>3 · 项目记忆</b><br><span class="muted">Lessons（W1）</span></span><span class="td">反复踩的坑，一句 When / Do / Why</span><span class="td">agent 和 AgentDeck 提候选，你 Accept</span><span class="td">这个项目每个新 Session 开头（追加进系统提示，≤ 1,000 token）</span><span class="td">到你归档，或移进 AGENTS.md</span><span class="td">AgentDeck → 你点了进 AGENTS.md</span>
+      <span class="td"><b>4 · 偏好</b></span><span class="td">你的习惯、项目约定</span><span class="td">你（各家的 auto memory 也会记）</span><span class="td">各家开头自己读</span><span class="td">长期</span><span class="td">AGENTS.md、CLAUDE.md、各家 memory，不变；W1 的 All projects 一组只收你手动加的</span>
+    </div>
+    <p class="note" style="max-width: 1500px">只有第 3 层每轮都进上下文（系统提示里，有上限、缓存命中）；第 2 层只在固定的几个时刻作为一条消息发一次。各家自己的 memory 不关、不读、不写（集群里非 Lead 的 claude 照 CR4 关掉 auto memory，不变）。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · Session 笔记长什么样：左边栏 Session 卡片的 Notes 一栏</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start">
+      <div class="fig" style="width: 1060px; height: 640px">
+        <div class="panel" style="left: 24px; top: 24px; width: 640px">
+          <div style="display: flex; align-items: center; gap: 8px; padding: 10px 12px"><span class="am" style="background: #A8503A"></span><b>Fix the history sidebar</b><span class="muted">claude · agenduck · fix/history</span><span style="flex: 1"></span><span class="tag">Running</span></div>
+          <div style="display: flex; gap: 14px; padding: 0 12px 8px; font-size: 11.5px"><span class="muted">Overview</span><b style="border-bottom: 1.5px solid #1A1A1A">Notes · 9</b><span class="muted">Plan · 3 of 7</span><span class="muted">Conversations · 3</span></div>
+          <div class="nr"><span class="k">GOAL</span><span>Make the history sidebar reopen stopped sessions, with an e2e test.</span><span class="src">you · 08:25</span></div>
+          <div class="nr"><span class="k">DONE</span><span>#1 /triage-issues · 3 issues labelled</span><span class="src">08:55</span></div>
+          <div class="nr"><span class="k">DONE</span><span>#2 Fix the failing store test · check passed on try 2 · <span class="mono">a1b2c3d</span></span><span class="src">10:20</span></div>
+          <div class="nr"><span class="k">LIMIT</span><span>Usage limit during #3 · paused 11:40 – 13:10 · claude resumed by itself</span><span class="src">13:10</span></div>
+          <div class="nr"><span class="k">DECIDED</span><span>“Ship the release notes as a file, not a PR.”</span><span class="src">you · inbox · 14:35</span></div>
+          <div class="nr"><span class="k">BLOCKED</span><span>#5 Split the history reader · <span class="mono">pnpm --filter agent-adapters test</span> still failing after 2 tries · skipped · last line: <span class="mono">codex.ts: cannot find module './reader/codex'</span></span><span class="src">16:44</span></div>
+          <div class="nr"><span class="k">NOTE</span><span>“codex.ts is half moved; finish it before splitting more.”</span><span class="src">claude · note</span></div>
+          <div class="nr"><span class="k">NEXT</span><span>#6 Review today’s diff and list anything risky</span><span class="src">plan</span></div>
+          <div style="display: flex; gap: 6px; padding: 9px 12px; border-top: 1px solid #F0F0ED"><span class="btn">Edit goal…</span><span class="btn">Copy as Markdown</span><span style="flex: 1"></span><span class="muted" style="font-size: 11px; align-self: center">Hover a line · Edit · Delete</span></div>
+        </div>
+        <div class="at" style="position: absolute; left: 690px; top: 24px; width: 346px; display: flex; flex-direction: column; gap: 10px; font-size: 11.5px; line-height: 1.6; color: #5F5F5A">
+          <span><b style="color: #1A1A1A">种类</b>：GOAL、PLAN、DONE、DECIDED、BLOCKED、LIMIT、HANDOFF、NOTE、NEXT。每条一行，≤ 200 字符。</span>
+          <span><b style="color: #1A1A1A">来源</b>写在右边：没写的是 AgentDeck 记的（确定的事）；you 是你写或在收件箱回答的；claude · note 是 agent 用命令补的，淡一点。</span>
+          <span><b style="color: #1A1A1A">不收</b>：对话原文、agent 的推理、偏好。DONE 只记计划条目和提交，不记“读了哪些文件”。</span>
+          <span><b style="color: #1A1A1A">存在哪</b>：AgentDeck 的数据目录（SQLite 的 session_notes），不写仓库。Copy as Markdown 由你贴到别处。</span>
+          <span><b style="color: #1A1A1A">没有 Plan 的 Session</b>（你手动聊的）：只有 GOAL（可空）、DECIDED、LIMIT、HANDOFF 和提交，照样能交接。</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · 什么时候带回给 agent：Session brief</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start; max-width: 1632px">
+      <div class="tbl" style="grid-template-columns: 200px minmax(0, 1fr) minmax(0, 1fr); width: 980px; flex: none">
+        <span class="th">时刻</span><span class="th">发什么</span><span class="th">怎么发</span>
+        <span class="td"><b>Fresh / /clear</b>（Plan 里的条目）</span><span class="td">Session brief，再发这一条</span><span class="td">同一条 Session 的新一段；brief 作为第一条消息，不进系统提示</span>
+        <span class="td"><b>额度恢复</b></span><span class="td">AgentDeck 自己发续跑提示时，末尾加 NEXT 一行</span><span class="td">claude 自己续时什么都不发（PL6 的规矩不变）</span>
+        <span class="td"><b>交接 · fork</b></span><span class="td">brief + 剩下的计划 + 上一家会话记录的路径</span><span class="td">子 Session 的第一条消息（SE6 的对话框里能先看、能改）</span>
+        <span class="td"><b>Reopen</b></span><span class="td">先让 agent 用自己的 resume 接上对话；接不上（记录没了、换了机器）才发 brief</span><span class="td">状态写 “Resumed from notes”</span>
+        <span class="td"><b>集群的 Lead</b></span><span class="td">它开的子 Session 的 brief</span><span class="td"><span class="mono">agentdeck session notes &lt;id&gt;</span>，只给 Lead（C7 的分工不变）</span>
+        <span class="td"><b>平时</b></span><span class="td">不发</span><span class="td">不每轮注入，不占上下文</span>
+      </div>
+      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 11px; font-weight: 600; color: #8A8A85; letter-spacing: 0.04em">WHAT THE AGENT GETS · FIRST MESSAGE AFTER /CLEAR</span>
+        <div class="code"># Session brief (from AgentDeck)
+Goal: Make the history sidebar reopen stopped
+sessions, with an e2e test.
+Done: #1 triage · #2 store test (a1b2c3d)
+Decided by the user: ship the release notes
+as a file, not a PR.
+Blocked: #5 split reader skipped;
+codex.ts is half moved.
+Now: #6 Review today’s diff and list anything
+risky.
+Full notes: agentdeck session notes</div>
+        <span class="note">英文（给 agent 看的）；上限 600 token，超了先把 DONE 折成计数。由代码按固定格式拼，不让 agent 总结（不花 token、不会编）。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · 不越记越乱</span>
+    <div class="ex" style="max-width: 1500px">
+      <span>1. <b>只记确定的事</b>：AgentDeck 不读 agent 屏幕上的话来“理解”进度；能记的只有它自己派的活、跑的检查、git 的提交、收件箱里的回答、LimitService 的额度、交接。</span>
+      <span>2. <b>agent 只能补，不能改</b>：<span class="mono">agentdeck note "…"</span> 只追加一条 NOTE，标来源；改和删只有你能做。</span>
+      <span>3. <b>有上限</b>：brief ≤ 600 token；笔记本身不设上限，但 brief 只取 GOAL、最近的 DECIDED、BLOCKED、NEXT 和 DONE 的计数。</span>
+      <span>4. <b>跟着 Session 走</b>：交接、fork 时复制给子 Session（标 “from parent”），之后各记各的；Session 删了笔记一起删；不跨项目。</span>
+      <span>5. <b>和 Lessons 分开</b>：笔记是“这条线的事”，到了晚上就过时；Lessons 是“这个项目下次还会碰到的坑”，要你 Accept。BLOCKED 那一条可以一键 “Propose as lesson”，进 W1 的候选。</span>
+      <span>6. <b>和各家 memory 不打架</b>：AgentDeck 不读不写 ~/.claude、~/.codex 下的 memory；偏好照旧写 AGENTS.md。</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">5 · 和各家自带的记忆比（DR-74、W1 第 1 节核对过）</span>
+    <div class="tbl" style="grid-template-columns: 200px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); max-width: 1632px">
+      <span class="th">需要</span><span class="th">各家自带的</span><span class="th">AGENTS.md</span><span class="th">AgentDeck</span>
+      <span class="td">/clear 以后接着做</span><span class="td">claude auto memory 记“正在做的事”但不保证；codex memories 默认关、几小时后才有</span><span class="td">不该写进度</span><span class="td">Session brief</span>
+      <span class="td">换一家接着做</span><span class="td">都不跨家</span><span class="td">只有规则</span><span class="td">交接时的 brief + 剩下的计划</span>
+      <span class="td">重开、换机器以后</span><span class="td">对话还在就能 resume</span><span class="td">—</span><span class="td">resume 不了时发 brief</span>
+      <span class="td">反复踩的坑</span><span class="td">claude 明说不记 debugging；codex 自己决定</span><span class="td">记，但要手写、跟着分支走</span><span class="td">Lessons（第 3 层）</span>
+      <span class="td">偏好</span><span class="td">记（claude 的 feedback、codex 的 memories）</span><span class="td">记</span><span class="td">不管</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">6 · 按推荐先定（2026-10-29），待你确认</span>
+    <div class="tbl" style="grid-template-columns: 40px minmax(0, 1fr) minmax(0, 1fr) 420px; font-size: 12.5px; max-width: 1632px">
+      <span class="th">#</span><span class="th">问题</span><span class="th">选项</span><span class="th">推荐</span>
+      <span class="td mono">1</span><span class="td">AgentDeck 记不记进度</span><span class="td">照 DR-74 交给各家 / 记 Session 笔记（只记确定事件）</span><span class="td">记 Session 笔记，给 DR-74 补第二条例外</span>
+      <span class="td mono">2</span><span class="td">agent 能不能写笔记</span><span class="td">不能 / 能补一句（标来源） / 能改任意一条</span><span class="td">能补一句，第三期；改和删只有你</span>
+      <span class="td mono">3</span><span class="td">笔记怎么给 agent</span><span class="td">每轮进系统提示 / 只在 Fresh、交接、恢复、Reopen 接不上时发一条</span><span class="td">只在这几个时刻发一条，≤ 600 token</span>
+      <span class="td mono">4</span><span class="td">brief 谁写</span><span class="td">代码按格式拼 / 让 agent 总结</span><span class="td">代码拼；你点 Ask for a summary 才让 agent 写</span>
+      <span class="td mono">5</span><span class="td">存哪、留多久</span><span class="td">AgentDeck 数据目录，跟着 Session / 写进仓库</span><span class="td">数据目录；Session 删了一起删；Copy as Markdown 由你带走</span>
+      <span class="td mono">6</span><span class="td">偏好</span><span class="td">也由 AgentDeck 记 / 照旧归 AGENTS.md 和各家 memory</span><span class="td">照旧（W1 的 All projects 手动加的除外）</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":3560}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

@@ -1,960 +1,966 @@
 {
-  "v": 3,
-  "attachments": {},
-  "boards": {
-    "Board.dc.html": {
-      "expand": "fill",
-      "h": 900,
-      "page": "v1",
-      "title": "D · 看板视图",
-      "w": 1440,
-      "x": 1520,
-      "y": 1130
-    },
-    "Canvas.dc.html": {
-      "h": 900,
-      "is_interactive": true,
-      "page": "v2",
-      "title": "1 · 白板：原地对话，Git 跟随焦点",
-      "w": 1440,
-      "x": 0,
-      "y": 0
-    },
-    "Focus.dc.html": {
-      "expand": "fill",
-      "h": 1010,
-      "is_interactive": true,
-      "page": "v1",
-      "title": "B · 聚焦单会话 + Git 时间线",
-      "w": 1440,
-      "x": 1520,
-      "y": 0
-    },
-    "Frames.dc.html": {
-      "h": 1008,
-      "page": "v2",
-      "title": "2 · 工作区框：拖进去即切换目录、同步配置",
-      "w": 1507,
-      "x": 1520,
-      "y": 0
-    },
-    "Launch.dc.html": {
-      "expand": "fill",
-      "h": 960,
-      "is_interactive": true,
-      "page": "v1",
-      "title": "E · 新建会话",
-      "w": 1440,
-      "x": 0,
-      "y": 2310
-    },
-    "Main.dc.html": {
-      "expand": "fill",
-      "h": 1010,
-      "is_interactive": true,
-      "page": "v1",
-      "title": "A · 网格总览（主界面）",
-      "w": 1440,
-      "x": 0,
-      "y": 0
-    },
-    "Merge.dc.html": {
-      "expand": "fill",
-      "h": 1060,
-      "page": "v1",
-      "title": "C · 同仓多 Agent 合并台",
-      "w": 1440,
-      "x": 0,
-      "y": 1130
-    },
-    "Overview.dc.html": {
-      "h": 979,
-      "page": "v2",
-      "title": "3 · 缩小看全局",
-      "w": 1440,
-      "x": 0,
-      "y": 1020
-    },
-    "spec/SpecOverview.dc.html": {
-      "h": 1280,
-      "page": "spec",
-      "title": "0 · 总览：名词、主流程",
-      "w": 1760,
-      "x": 0,
-      "y": 0
-    },
-    "spec/SpecLayout.dc.html": {
-      "h": 760,
-      "page": "spec",
-      "title": "1 · 整体布局",
-      "w": 1760,
-      "x": 0,
-      "y": 1440
-    },
-    "spec/SpecProject.dc.html": {
-      "h": 1600,
-      "page": "spec",
-      "title": "2 · 项目",
-      "w": 1760,
-      "x": 0,
-      "y": 2360
-    },
-    "spec/SpecBoard.dc.html": {
-      "h": 1020,
-      "page": "spec",
-      "title": "3 · 白板",
-      "w": 1760,
-      "x": 0,
-      "y": 4120
-    },
-    "spec/SpecWorkspace.dc.html": {
-      "h": 2520,
-      "page": "spec",
-      "title": "4 · 工作区框",
-      "w": 1760,
-      "x": 0,
-      "y": 5300
-    },
-    "spec/SpecTerminal.dc.html": {
-      "h": 3040,
-      "page": "spec",
-      "title": "5 · 终端窗口",
-      "w": 1760,
-      "x": 0,
-      "y": 7980
-    },
-    "spec/SpecStatus.dc.html": {
-      "h": 2160,
-      "page": "spec",
-      "title": "6 · 终端状态与提醒",
-      "w": 1760,
-      "x": 0,
-      "y": 11180
-    },
-    "spec/SpecBrowser.dc.html": {
-      "h": 1500,
-      "page": "spec",
-      "title": "7 · 网页窗口",
-      "w": 1760,
-      "x": 0,
-      "y": 13500
-    },
-    "spec/SpecScm.dc.html": {
-      "h": 2560,
-      "page": "spec",
-      "title": "8 · 源代码管理面板",
-      "w": 1760,
-      "x": 0,
-      "y": 15160
-    },
-    "spec/SpecPersist.dc.html": {
-      "h": 2000,
-      "page": "spec",
-      "title": "9 · 保存与重启",
-      "w": 1760,
-      "x": 0,
-      "y": 17880
-    },
-    "spec/SpecRules.dc.html": {
-      "h": 1640,
-      "page": "spec",
-      "title": "10 · 全局规则：删除、快捷键、范围、验收",
-      "w": 1760,
-      "x": 0,
-      "y": 20040
-    },
-    "spec/Term.dc.html": {
-      "h": 140,
-      "page": "parts",
-      "title": "终端窗口",
-      "w": 240,
-      "x": 0,
-      "y": 0
-    },
-    "spec/Frame.dc.html": {
-      "h": 200,
-      "page": "parts",
-      "title": "工作区框",
-      "w": 300,
-      "x": 320,
-      "y": 0
-    },
-    "spec/Web.dc.html": {
-      "h": 170,
-      "page": "parts",
-      "title": "网页窗口",
-      "w": 260,
-      "x": 700,
-      "y": 0
-    },
-    "spec/Menu.dc.html": {
-      "h": 120,
-      "page": "parts",
-      "title": "菜单",
-      "w": 120,
-      "x": 1040,
-      "y": 0
-    },
-    "spec/Dialog.dc.html": {
-      "h": 160,
-      "page": "parts",
-      "title": "对话框",
-      "w": 240,
-      "x": 1240,
-      "y": 0
-    },
-    "spec/Note.dc.html": {
-      "h": 80,
-      "page": "parts",
-      "title": "提示 / 通知",
-      "w": 240,
-      "x": 1560,
-      "y": 0
-    },
-    "spec/Panel.dc.html": {
-      "h": 300,
-      "page": "parts",
-      "title": "源代码管理面板",
-      "w": 220,
-      "x": 1880,
-      "y": 0
-    },
-    "spec/Top.dc.html": {
-      "h": 20,
-      "page": "parts",
-      "title": "顶栏",
-      "w": 300,
-      "x": 0,
-      "y": 420
-    },
-    "spec/Arrow.dc.html": {
-      "h": 80,
-      "page": "parts",
-      "title": "流程箭头",
-      "w": 104,
-      "x": 380,
-      "y": 420
-    },
-    "spec/Cursor.dc.html": {
-      "h": 24,
-      "page": "parts",
-      "title": "光标",
-      "w": 24,
-      "x": 564,
-      "y": 420
-    },
-    "spec/Callout.dc.html": {
-      "h": 17,
-      "page": "parts",
-      "title": "编号",
-      "w": 17,
-      "x": 668,
-      "y": 420
-    },
-    "spec/SpecRound2.dc.html": {
-      "h": 2480,
-      "page": "round2",
-      "title": "11 · MVP v2：少占地方、互不遮挡、一眼看出状态",
-      "w": 1760,
-      "x": 0,
-      "y": 0
-    },
-    "spec/SpecNext.dc.html": {
-      "h": 3260,
-      "page": "round2",
-      "title": "12 · MVP v3：agent 指挥白板、子 agent 窗口组、提交图",
-      "w": 1760,
-      "x": 0,
-      "y": 2640
-    },
-    "spec/PluginOverview.dc.html": {
-      "h": 1040,
-      "page": "plugins",
-      "title": "PL0 · 插件：入口和规则",
-      "w": 1760,
-      "x": 0,
-      "y": 0
-    },
-    "spec/PluginApprove.dc.html": {
-      "h": 1660,
-      "page": "plugins",
-      "title": "PL1 · Auto-approve：替你按“允许一次”",
-      "w": 1760,
-      "x": 0,
-      "y": 1200
-    },
-    "spec/PluginUsage.dc.html": {
-      "h": 1450,
-      "page": "plugins",
-      "title": "PL2 · Usage：这个终端用了多少 token",
-      "w": 1760,
-      "x": 0,
-      "y": 3020
-    },
-    "spec/SpecBackground.dc.html": {
-      "h": 2240,
-      "page": "round2",
-      "title": "13 · 后台 agent：平时一个小提示，点开只读查看",
-      "w": 1760,
-      "x": 0,
-      "y": 6060
-    },
-    "spec/SpecHistory.dc.html": {
-      "h": 2240,
-      "page": "round2",
-      "title": "14 · 左边栏：历史会话，按工作路径再按 agent 分",
-      "w": 1760,
-      "x": 0,
-      "y": 8460
-    },
-    "spec/SpecArrange.dc.html": {
-      "h": 2160,
-      "page": "round2",
-      "title": "15 · 项目框：一键排版，新建时自动排",
-      "w": 1760,
-      "x": 0,
-      "y": 10860
-    },
-    "spec/PluginQueue.dc.html": {
-      "h": 3180,
-      "page": "plugins",
-      "title": "PL3 · Prompt queue：额度用完后到点接着发排好的提示词（2026-10-28 退役，并进 PL6）",
-      "w": 1760,
-      "x": 0,
-      "y": 4630
-    },
-    "spec/CrewOverview.dc.html": {
-      "h": 2060,
-      "page": "crew",
-      "title": "C0 · Agent 集群：按模板组一队 agent 做复杂任务",
-      "w": 1760,
-      "x": 0,
-      "y": 0
-    },
-    "spec/CrewNew.dc.html": {
-      "h": 2800,
-      "page": "crew",
-      "title": "C1 · 新建集群：选模板或 No template、写目标、定分工",
-      "w": 1760,
-      "x": 0,
-      "y": 2220
-    },
-    "spec/CrewBoard.dc.html": {
-      "h": 2280,
-      "page": "crew",
-      "title": "C2 · 白板上的集群：集群框、任务看板、各任务的 worktree",
-      "w": 1760,
-      "x": 0,
-      "y": 5180
-    },
-    "spec/CrewTask.dc.html": {
-      "h": 2560,
-      "page": "crew",
-      "title": "C3 · 一个任务的一生：调度规则和 agent 用的命令",
-      "w": 1760,
-      "x": 0,
-      "y": 7620
-    },
-    "spec/CrewInbox.dc.html": {
-      "h": 2800,
-      "page": "crew",
-      "title": "C4 · 关卡、收件箱、汇报：只在需要你时叫你",
-      "w": 1760,
-      "x": 0,
-      "y": 10340
-    },
-    "spec/CrewTemplates.dc.html": {
-      "h": 2580,
-      "page": "crew",
-      "title": "C5 · 模板、分期、已定",
-      "w": 1760,
-      "x": 0,
-      "y": 13300
-    },
-    "spec/PluginResume.dc.html": {
-      "h": 4360,
-      "page": "plugins",
-      "title": "PL4 · Auto-resume：被额度打断的任务，恢复后自己接着做",
-      "w": 1760,
-      "x": 0,
-      "y": 7970
-    },
-    "spec/CrewFree.dc.html": {
-      "h": 3560,
-      "page": "crew",
-      "title": "C6 · 自由模式（No template）：一个 Lead 按需开子 session",
-      "w": 1760,
-      "x": 0,
-      "y": 16040
-    },
-    "spec/CrewCli.dc.html": {
-      "h": 3000,
-      "page": "crew",
-      "title": "C7 · agentdeck 命令行：crew 命令不进 MCP，只在 Lead 里打开",
-      "w": 1760,
-      "x": 0,
-      "y": 19760
-    },
-    "spec/CrewLead.dc.html": {
-      "h": 3560,
-      "page": "crew",
-      "title": "C8 · Lead 和收件箱：谁记进度、谁叫你、谁跟你聊",
-      "w": 1760,
-      "x": 0,
-      "y": 22920
-    },
-    "spec/CrewPositioning.dc.html": {
-      "h": 3060,
-      "page": "crew",
-      "title": "C9 · 定位：做什么、不做什么（和竞品对照）",
-      "w": 1760,
-      "x": 0,
-      "y": 26640
-    },
-    "spec/SessionModel.dc.html": {
-      "h": 3200,
-      "page": "session",
-      "title": "S0 · 以 session 为核心：AgentDeck 自己的 Session，和窗口、tmux、agent 的会话记录分开",
-      "w": 1760,
-      "x": 0,
-      "y": 0
-    },
-    "spec/SessionBoard.dc.html": {
-      "h": 3200,
-      "page": "session",
-      "title": "S1 · 白板和左边栏：看得出谁开了谁，关掉以后还在，能换一家接着做",
-      "w": 1760,
-      "x": 0,
-      "y": 3360
-    },
-    "spec/AgentsSettings.dc.html": {
-      "h": 2700,
-      "page": "adapters",
-      "title": "A0 · Settings › Agents：每家 agent 能做什么、靠什么做、核对到哪个版本",
-      "w": 1760,
-      "x": 0,
-      "y": 0
-    },
-    "spec/AgentsOnboard.dc.html": {
-      "h": 2560,
-      "page": "adapters",
-      "title": "A1 · 接入和升级一家 agent：同一套合格测试、记录、照记录开关功能",
-      "w": 1760,
-      "x": 0,
-      "y": 2860
-    },
-    "spec/SkillsManage.dc.html": {
-      "h": 2740,
-      "page": "skills",
-      "title": "K0 · 大批量 skill：总览、按项目减掉、换一家不用重装",
-      "w": 1760,
-      "x": 0,
-      "y": 0
-    },
-    "spec/SkillsAgents.dc.html": {
-      "h": 2900,
-      "page": "skills",
-      "title": "K1 · 五家 agent 的 skill：放在哪、怎么加载、怎么加减",
-      "w": 1760,
-      "x": 0,
-      "y": 2900
-    },
-    "spec/RemoteOverview.dc.html": {
-      "h": 2480,
-      "page": "remote",
-      "title": "R0 · 手机和远程：方案对比、分三步、安全规矩",
-      "w": 1760,
-      "x": 0,
-      "y": 0
-    },
-    "spec/RemoteMobile.dc.html": {
-      "h": 2560,
-      "page": "remote",
-      "title": "R1 · 手机页、推送和 Settings › Remote",
-      "w": 1760,
-      "x": 0,
-      "y": 2640
-    },
-    "spec/ResearchOverview.dc.html": {
-      "h": 3960,
-      "page": "research",
-      "title": "E0 · 研究和竞赛：一队 agent 做 Kaggle、收论文、复现、视频转 PPT",
-      "w": 1760,
-      "x": 0,
-      "y": 0
-    },
-    "spec/ResearchCompetition.dc.html": {
-      "h": 3760,
-      "page": "research",
-      "title": "E1 · Kaggle 竞赛：几个方向并行，按同一个分数比，你点了才提交",
-      "w": 1760,
-      "x": 0,
-      "y": 4120
-    },
-    "spec/ResearchLibrary.dc.html": {
-      "h": 3800,
-      "page": "research",
-      "title": "E2 · 资料库和读论文、复现对照表、视频转 PPT",
-      "w": 1760,
-      "x": 0,
-      "y": 8040
-    },
-    "spec/ResearchTemplates.dc.html": {
-      "h": 3560,
-      "page": "research",
-      "title": "E3 · 四个研究模板（C5 格式草稿）和 New crew 里的研究设置",
-      "w": 1760,
-      "x": 0,
-      "y": 12000
-    },
-    "spec/DocWindow.dc.html": {
-      "h": 3040,
-      "page": "docs",
-      "title": "D0 · 文档窗口：在白板上和 agent 一起写需求、技术、实现、实验文档",
-      "w": 1760,
-      "x": 0,
-      "y": 0
-    },
-    "spec/DocAnchors.dc.html": {
-      "h": 2780,
-      "page": "docs",
-      "title": "D1 · 代码锚点和核查：path:line 点得回去，代码变了也对得上",
-      "w": 1760,
-      "x": 0,
-      "y": 3200
-    },
-    "spec/DocSkill.dc.html": {
-      "h": 1940,
-      "page": "docs",
-      "title": "D2 · agentdeck-docs skill：用人话写，少 AI 味，关键的话都能点回代码",
-      "w": 1760,
-      "x": 0,
-      "y": 6140
-    },
-    "spec/FlowWindow.dc.html": {
-      "h": 2700,
-      "page": "flow",
-      "title": "F0 · Flow 窗口：每一步都能点回源码的序列图",
-      "w": 1760,
-      "x": 0,
-      "y": 0
-    },
-    "spec/FlowCoverage.dc.html": {
-      "h": 3300,
-      "page": "flow",
-      "title": "F1 · 三种覆盖：图漏了什么、测试跑到哪、需求管到哪",
-      "w": 1760,
-      "x": 0,
-      "y": 2860
-    },
-    "spec/FlowLinks.dc.html": {
-      "h": 3200,
-      "page": "flow",
-      "title": "F2 · 和终端、编辑器、文档联动；代码变了；集群里谁用",
-      "w": 1760,
-      "x": 0,
-      "y": 6320
-    },
-    "spec/AgentDayRun.dc.html": {
-      "h": 3620,
-      "page": "longrun",
-      "title": "W0 · 一个 agent 跑一整天：同一张队列卡片，排好就自己往下做",
-      "w": 1760,
-      "x": 0,
-      "y": 0
-    },
-    "spec/AgentLessons.dc.html": {
-      "h": 3900,
-      "page": "longrun",
-      "title": "W1 · Lessons：反复踩的坑记一次，五家、每个 worktree、每个新 session 都知道",
-      "w": 1760,
-      "x": 0,
-      "y": 3780
-    },
-    "spec/AgentDayReport.dc.html": {
-      "h": 1760,
-      "page": "longrun",
-      "title": "W2 · 跑完一天，你回来看什么：一条推送、收件箱、一份报告",
-      "w": 1760,
-      "x": 0,
-      "y": 7840
-    },
-    "spec/ForgeFlow.dc.html": {
-      "h": 3360,
-      "page": "forge",
-      "title": "I0 · 开源项目的 issue 和 PR：主流程、谁做什么、对外发言只在你点的时候",
-      "w": 1760,
-      "x": 0,
-      "y": 0
-    },
-    "spec/ForgeBoard.dc.html": {
-      "h": 3540,
-      "page": "forge",
-      "title": "I1 · 白板上：Issues & PRs 窗口、框上的 #编号、面板里这个工作区的 PR",
-      "w": 1760,
-      "x": 0,
-      "y": 3520
-    },
-    "spec/ForgeGate.dc.html": {
-      "h": 3420,
-      "page": "forge",
-      "title": "I2 · 对外发言的关卡、审别人的 PR、喂给 agent 的字怎么防注入",
-      "w": 1760,
-      "x": 0,
-      "y": 7220
-    },
-    "spec/MultiShepherd.dc.html": {
-      "h": 3160,
-      "page": "multi",
-      "title": "O0 · “牧羊人”面板：借哪几样、放在哪",
-      "w": 1760,
-      "x": 0,
-      "y": 0
-    },
-    "spec/MultiConflicts.dc.html": {
-      "h": 3260,
-      "page": "multi",
-      "title": "O1 · 几个 agent 改同一个仓库：隔离、重叠提示、合并预演、同目录提醒",
-      "w": 1760,
-      "x": 0,
-      "y": 3280
-    },
-    "spec/LearnEnv.dc.html": {
-      "h": 11660,
-      "page": "learn",
-      "title": "L1 · 学一门有代码作业的课：学习环境怎么搭",
-      "w": 1760,
-      "x": 0,
-      "y": 0
-    },
-    "spec/LearnAssist.dc.html": {
-      "h": 3820,
-      "page": "learn",
-      "title": "L0 · 学习和辅助：/teach 和数据库终端",
-      "w": 1760,
-      "x": 1920,
-      "y": 0
-    },
-    "spec/AgentsNewTwo.dc.html": {
-      "h": 3440,
-      "page": "adapters",
-      "title": "A2 · 接入 OpenCode 和 Hermes：能力表草稿和预计档位",
-      "w": 1760,
-      "x": 0,
-      "y": 5580
-    }
+ "v": 3,
+ "attachments": {},
+ "boards": {
+  "Board.dc.html": {
+   "expand": "fill",
+   "h": 900,
+   "page": "v1",
+   "title": "D · 看板视图",
+   "w": 1440,
+   "x": 1520,
+   "y": 1130
   },
-  "createdOnFiles": {
-    "at": "2026-10-21T10:00:00Z",
-    "v": 1
+  "Canvas.dc.html": {
+   "h": 900,
+   "is_interactive": true,
+   "page": "v2",
+   "title": "1 · 白板：原地对话，Git 跟随焦点",
+   "w": 1440,
+   "x": 0,
+   "y": 0
   },
-  "designSystems": [],
-  "launch": {
-    "page": "crew",
-    "view": "canvas"
+  "Focus.dc.html": {
+   "expand": "fill",
+   "h": 1010,
+   "is_interactive": true,
+   "page": "v1",
+   "title": "B · 聚焦单会话 + Git 时间线",
+   "w": 1440,
+   "x": 1520,
+   "y": 0
   },
-  "notes": {
-    "head": {
-      "kind": "title1",
-      "maxW": 2960,
-      "page": "v1",
-      "text": "AgentDeck · 多 Agent 并行开发工作台",
-      "w": 240,
-      "x": 0,
-      "y": -300
-    },
-    "head2": {
-      "kind": "title1",
-      "maxW": 2960,
-      "page": "v2",
-      "text": "第二版 · 白板式工作台",
-      "w": 240,
-      "x": 0,
-      "y": -300
-    },
-    "head3": {
-      "kind": "title1",
-      "maxW": 1760,
-      "page": "spec",
-      "text": "AgentDeck MVP 需求 · 结构图与操作流程",
-      "x": 0,
-      "y": -300
-    },
-    "head4": {
-      "kind": "title1",
-      "maxW": 2700,
-      "page": "parts",
-      "text": "需求配图用到的界面零件",
-      "x": 0,
-      "y": -300
-    },
-    "head5": {
-      "kind": "title1",
-      "maxW": 1760,
-      "page": "round2",
-      "text": "MVP v2（M5）与 MVP v3（M6）· 需求",
-      "x": 0,
-      "y": -300
-    },
-    "head6": {
-      "kind": "title1",
-      "maxW": 1760,
-      "page": "plugins",
-      "text": "MVP 插件 · Auto-approve、Usage、Prompt queue、Auto-resume",
-      "x": 0,
-      "y": -300
-    },
-    "head7": {
-      "kind": "title1",
-      "maxW": 1760,
-      "page": "crew",
-      "text": "Agent 集群 · 复杂任务的多 agent 模板",
-      "x": 0,
-      "y": -300
-    },
-    "head10": {
-      "kind": "title1",
-      "maxW": 1760,
-      "page": "skills",
-      "text": "Skill 管理 · 总览、按项目减掉、换一家不用重装",
-      "x": 0,
-      "y": -300
-    },
-    "head11": {
-      "kind": "title1",
-      "maxW": 1760,
-      "page": "remote",
-      "text": "手机 · 远程 · 推送、只读手机页、手机上处理",
-      "x": 0,
-      "y": -300
-    },
-    "head8": {
-      "kind": "title1",
-      "maxW": 1760,
-      "page": "session",
-      "text": "Session · AgentDeck 自己的会话：父子、关掉以后还在、换一家接着做",
-      "x": 0,
-      "y": -300
-    },
-    "head9": {
-      "kind": "title1",
-      "maxW": 1760,
-      "page": "adapters",
-      "text": "Agent 接入 · 能力报告、合格测试、Settings › Agents",
-      "x": 0,
-      "y": -300
-    },
-    "head_research": {
-      "kind": "title1",
-      "maxW": 1760,
-      "page": "research",
-      "text": "研究和竞赛 · Kaggle、收论文、复现、视频转 PPT",
-      "x": 0,
-      "y": -300
-    },
-    "head_docs": {
-      "kind": "title1",
-      "maxW": 1760,
-      "page": "docs",
-      "text": "文档 · 在白板上和 agent 一起写，引用点得回代码",
-      "x": 0,
-      "y": -300
-    },
-    "head_flow": {
-      "kind": "title1",
-      "maxW": 1760,
-      "page": "flow",
-      "text": "代码理解 · 每一步都能点回源码的序列图",
-      "x": 0,
-      "y": -300
-    },
-    "head_longrun": {
-      "kind": "title1",
-      "maxW": 1760,
-      "page": "longrun",
-      "text": "长期运行 · Lessons · 一个 agent 跑一整天，反复踩的坑记一次",
-      "x": 0,
-      "y": -300
-    },
-    "head_forge": {
-      "kind": "title1",
-      "maxW": 1760,
-      "page": "forge",
-      "text": "Issue · PR · 开源项目的 issue 和 PR，对外发言只在你点的时候",
-      "x": 0,
-      "y": -300
-    },
-    "head_multi": {
-      "kind": "title1",
-      "maxW": 1760,
-      "page": "multi",
-      "text": "多 agent 同仓协作 · 牧羊人面板、重叠提示、合并预演",
-      "x": 0,
-      "y": -300
-    },
-    "head_learn": {
-      "kind": "title1",
-      "maxW": 1760,
-      "page": "learn",
-      "text": "学习和辅助 · 课程学习环境、/teach 和数据库终端",
-      "x": 0,
-      "y": -300
-    }
+  "Frames.dc.html": {
+   "h": 1008,
+   "page": "v2",
+   "title": "2 · 工作区框：拖进去即切换目录、同步配置",
+   "w": 1507,
+   "x": 1520,
+   "y": 0
   },
-  "order": [
-    "Main.dc.html",
-    "Focus.dc.html",
-    "Merge.dc.html",
-    "Board.dc.html",
-    "Launch.dc.html",
-    "Canvas.dc.html",
-    "Frames.dc.html",
-    "Overview.dc.html",
-    "spec/SpecOverview.dc.html",
-    "spec/SpecLayout.dc.html",
-    "spec/SpecProject.dc.html",
-    "spec/SpecBoard.dc.html",
-    "spec/SpecWorkspace.dc.html",
-    "spec/SpecTerminal.dc.html",
-    "spec/SpecStatus.dc.html",
-    "spec/SpecBrowser.dc.html",
-    "spec/SpecScm.dc.html",
-    "spec/SpecPersist.dc.html",
-    "spec/SpecRules.dc.html",
-    "spec/SpecRound2.dc.html",
-    "spec/SpecNext.dc.html",
-    "spec/SpecBackground.dc.html",
-    "spec/SpecHistory.dc.html",
-    "spec/SpecArrange.dc.html",
-    "spec/Term.dc.html",
-    "spec/Frame.dc.html",
-    "spec/Web.dc.html",
-    "spec/Menu.dc.html",
-    "spec/Dialog.dc.html",
-    "spec/Note.dc.html",
-    "spec/Panel.dc.html",
-    "spec/Top.dc.html",
-    "spec/Arrow.dc.html",
-    "spec/Cursor.dc.html",
-    "spec/Callout.dc.html",
-    "spec/PluginOverview.dc.html",
-    "spec/PluginApprove.dc.html",
-    "spec/PluginUsage.dc.html",
-    "spec/PluginQueue.dc.html",
-    "spec/PluginResume.dc.html",
-    "spec/CrewOverview.dc.html",
-    "spec/CrewNew.dc.html",
-    "spec/CrewBoard.dc.html",
-    "spec/CrewTask.dc.html",
-    "spec/CrewInbox.dc.html",
-    "spec/CrewTemplates.dc.html",
-    "spec/CrewFree.dc.html",
-    "spec/CrewCli.dc.html",
-    "spec/CrewLead.dc.html",
-    "spec/CrewPositioning.dc.html",
-    "spec/SessionModel.dc.html",
-    "spec/SessionBoard.dc.html",
-    "spec/AgentsSettings.dc.html",
-    "spec/AgentsOnboard.dc.html",
-    "spec/AgentsNewTwo.dc.html",
-    "spec/SkillsManage.dc.html",
-    "spec/SkillsAgents.dc.html",
-    "spec/RemoteOverview.dc.html",
-    "spec/RemoteMobile.dc.html",
-    "spec/ResearchOverview.dc.html",
-    "spec/ResearchCompetition.dc.html",
-    "spec/ResearchLibrary.dc.html",
-    "spec/ResearchTemplates.dc.html",
-    "spec/DocWindow.dc.html",
-    "spec/DocAnchors.dc.html",
-    "spec/DocSkill.dc.html",
-    "spec/FlowWindow.dc.html",
-    "spec/FlowCoverage.dc.html",
-    "spec/FlowLinks.dc.html",
-    "spec/AgentDayRun.dc.html",
-    "spec/AgentLessons.dc.html",
-    "spec/AgentDayReport.dc.html",
-    "spec/ForgeFlow.dc.html",
-    "spec/ForgeBoard.dc.html",
-    "spec/ForgeGate.dc.html",
-    "spec/MultiShepherd.dc.html",
-    "spec/MultiConflicts.dc.html",
-    "spec/LearnEnv.dc.html",
-    "spec/LearnAssist.dc.html"
-  ],
-  "pages": [
-    {
-      "id": "spec",
-      "name": "MVP 需求 · 流程"
-    },
-    {
-      "id": "round2",
-      "name": "MVP v2 · v3"
-    },
-    {
-      "id": "plugins",
-      "name": "MVP 插件"
-    },
-    {
-      "id": "crew",
-      "name": "Agent 集群"
-    },
-    {
-      "id": "session",
-      "name": "Session"
-    },
-    {
-      "id": "adapters",
-      "name": "Agent 接入"
-    },
-    {
-      "id": "skills",
-      "name": "Skill 管理"
-    },
-    {
-      "id": "remote",
-      "name": "手机 · 远程"
-    },
-    {
-      "id": "research",
-      "name": "研究和竞赛"
-    },
-    {
-      "id": "docs",
-      "name": "文档"
-    },
-    {
-      "id": "flow",
-      "name": "代码理解"
-    },
-    {
-      "id": "longrun",
-      "name": "长期运行 · Lessons"
-    },
-    {
-      "id": "forge",
-      "name": "Issue · PR"
-    },
-    {
-      "id": "multi",
-      "name": "多 agent 同仓协作"
-    },
-    {
-      "id": "learn",
-      "name": "学习和辅助"
-    },
-    {
-      "id": "v2",
-      "name": "第二版 · 白板"
-    },
-    {
-      "id": "v1",
-      "name": "第一版"
-    },
-    {
-      "id": "parts",
-      "name": "需求 · 界面零件"
-    }
-  ],
-  "title": "多 Agent 工作台原型"
+  "Launch.dc.html": {
+   "expand": "fill",
+   "h": 960,
+   "is_interactive": true,
+   "page": "v1",
+   "title": "E · 新建会话",
+   "w": 1440,
+   "x": 0,
+   "y": 2310
+  },
+  "Main.dc.html": {
+   "expand": "fill",
+   "h": 1010,
+   "is_interactive": true,
+   "page": "v1",
+   "title": "A · 网格总览（主界面）",
+   "w": 1440,
+   "x": 0,
+   "y": 0
+  },
+  "Merge.dc.html": {
+   "expand": "fill",
+   "h": 1060,
+   "page": "v1",
+   "title": "C · 同仓多 Agent 合并台",
+   "w": 1440,
+   "x": 0,
+   "y": 1130
+  },
+  "Overview.dc.html": {
+   "h": 979,
+   "page": "v2",
+   "title": "3 · 缩小看全局",
+   "w": 1440,
+   "x": 0,
+   "y": 1020
+  },
+  "spec/SpecOverview.dc.html": {
+   "h": 1280,
+   "page": "spec",
+   "title": "0 · 总览：名词、主流程",
+   "w": 1760,
+   "x": 0,
+   "y": 0
+  },
+  "spec/SpecLayout.dc.html": {
+   "h": 760,
+   "page": "spec",
+   "title": "1 · 整体布局",
+   "w": 1760,
+   "x": 0,
+   "y": 1440
+  },
+  "spec/SpecProject.dc.html": {
+   "h": 1600,
+   "page": "spec",
+   "title": "2 · 项目",
+   "w": 1760,
+   "x": 0,
+   "y": 2360
+  },
+  "spec/SpecBoard.dc.html": {
+   "h": 1020,
+   "page": "spec",
+   "title": "3 · 白板",
+   "w": 1760,
+   "x": 0,
+   "y": 4120
+  },
+  "spec/SpecWorkspace.dc.html": {
+   "h": 2520,
+   "page": "spec",
+   "title": "4 · 工作区框",
+   "w": 1760,
+   "x": 0,
+   "y": 5300
+  },
+  "spec/SpecTerminal.dc.html": {
+   "h": 3040,
+   "page": "spec",
+   "title": "5 · 终端窗口",
+   "w": 1760,
+   "x": 0,
+   "y": 7980
+  },
+  "spec/SpecStatus.dc.html": {
+   "h": 2160,
+   "page": "spec",
+   "title": "6 · 终端状态与提醒",
+   "w": 1760,
+   "x": 0,
+   "y": 11180
+  },
+  "spec/SpecBrowser.dc.html": {
+   "h": 1500,
+   "page": "spec",
+   "title": "7 · 网页窗口",
+   "w": 1760,
+   "x": 0,
+   "y": 13500
+  },
+  "spec/SpecScm.dc.html": {
+   "h": 2560,
+   "page": "spec",
+   "title": "8 · 源代码管理面板",
+   "w": 1760,
+   "x": 0,
+   "y": 15160
+  },
+  "spec/SpecPersist.dc.html": {
+   "h": 2000,
+   "page": "spec",
+   "title": "9 · 保存与重启",
+   "w": 1760,
+   "x": 0,
+   "y": 17880
+  },
+  "spec/SpecRules.dc.html": {
+   "h": 1640,
+   "page": "spec",
+   "title": "10 · 全局规则：删除、快捷键、范围、验收",
+   "w": 1760,
+   "x": 0,
+   "y": 20040
+  },
+  "spec/Term.dc.html": {
+   "h": 140,
+   "page": "parts",
+   "title": "终端窗口",
+   "w": 240,
+   "x": 0,
+   "y": 0
+  },
+  "spec/Frame.dc.html": {
+   "h": 200,
+   "page": "parts",
+   "title": "工作区框",
+   "w": 300,
+   "x": 320,
+   "y": 0
+  },
+  "spec/Web.dc.html": {
+   "h": 170,
+   "page": "parts",
+   "title": "网页窗口",
+   "w": 260,
+   "x": 700,
+   "y": 0
+  },
+  "spec/Menu.dc.html": {
+   "h": 120,
+   "page": "parts",
+   "title": "菜单",
+   "w": 120,
+   "x": 1040,
+   "y": 0
+  },
+  "spec/Dialog.dc.html": {
+   "h": 160,
+   "page": "parts",
+   "title": "对话框",
+   "w": 240,
+   "x": 1240,
+   "y": 0
+  },
+  "spec/Note.dc.html": {
+   "h": 80,
+   "page": "parts",
+   "title": "提示 / 通知",
+   "w": 240,
+   "x": 1560,
+   "y": 0
+  },
+  "spec/Panel.dc.html": {
+   "h": 300,
+   "page": "parts",
+   "title": "源代码管理面板",
+   "w": 220,
+   "x": 1880,
+   "y": 0
+  },
+  "spec/Top.dc.html": {
+   "h": 20,
+   "page": "parts",
+   "title": "顶栏",
+   "w": 300,
+   "x": 0,
+   "y": 420
+  },
+  "spec/Arrow.dc.html": {
+   "h": 80,
+   "page": "parts",
+   "title": "流程箭头",
+   "w": 104,
+   "x": 380,
+   "y": 420
+  },
+  "spec/Cursor.dc.html": {
+   "h": 24,
+   "page": "parts",
+   "title": "光标",
+   "w": 24,
+   "x": 564,
+   "y": 420
+  },
+  "spec/Callout.dc.html": {
+   "h": 17,
+   "page": "parts",
+   "title": "编号",
+   "w": 17,
+   "x": 668,
+   "y": 420
+  },
+  "spec/SpecRound2.dc.html": {
+   "h": 2480,
+   "page": "round2",
+   "title": "11 · MVP v2：少占地方、互不遮挡、一眼看出状态",
+   "w": 1760,
+   "x": 0,
+   "y": 0
+  },
+  "spec/SpecNext.dc.html": {
+   "h": 3260,
+   "page": "round2",
+   "title": "12 · MVP v3：agent 指挥白板、子 agent 窗口组、提交图",
+   "w": 1760,
+   "x": 0,
+   "y": 2640
+  },
+  "spec/PluginOverview.dc.html": {
+   "h": 1040,
+   "page": "plugins",
+   "title": "PL0 · 插件：入口和规则",
+   "w": 1760,
+   "x": 0,
+   "y": 0
+  },
+  "spec/PluginApprove.dc.html": {
+   "h": 1660,
+   "page": "plugins",
+   "title": "PL1 · Auto-approve：替你按“允许一次”",
+   "w": 1760,
+   "x": 0,
+   "y": 1200
+  },
+  "spec/PluginUsage.dc.html": {
+   "h": 1450,
+   "page": "plugins",
+   "title": "PL2 · Usage：这个终端用了多少 token",
+   "w": 1760,
+   "x": 0,
+   "y": 3020
+  },
+  "spec/SpecBackground.dc.html": {
+   "h": 2240,
+   "page": "round2",
+   "title": "13 · 后台 agent：平时一个小提示，点开只读查看",
+   "w": 1760,
+   "x": 0,
+   "y": 6060
+  },
+  "spec/SpecHistory.dc.html": {
+   "h": 2240,
+   "page": "round2",
+   "title": "14 · 左边栏：历史会话，按工作路径再按 agent 分",
+   "w": 1760,
+   "x": 0,
+   "y": 8460
+  },
+  "spec/SpecArrange.dc.html": {
+   "h": 2160,
+   "page": "round2",
+   "title": "15 · 项目框：一键排版，新建时自动排",
+   "w": 1760,
+   "x": 0,
+   "y": 10860
+  },
+  "spec/PluginQueue.dc.html": {
+   "h": 3180,
+   "page": "plugins",
+   "title": "PL3 · Prompt queue：额度用完后到点接着发排好的提示词（2026-10-28 退役，并进 PL6）",
+   "w": 1760,
+   "x": 0,
+   "y": 4630
+  },
+  "spec/CrewOverview.dc.html": {
+   "h": 2060,
+   "page": "crew",
+   "title": "C0 · Agent 集群：按模板组一队 agent 做复杂任务",
+   "w": 1760,
+   "x": 0,
+   "y": 0
+  },
+  "spec/CrewNew.dc.html": {
+   "h": 2800,
+   "page": "crew",
+   "title": "C1 · 新建集群：选模板或 No template、写目标、定分工",
+   "w": 1760,
+   "x": 0,
+   "y": 2220
+  },
+  "spec/CrewBoard.dc.html": {
+   "h": 2280,
+   "page": "crew",
+   "title": "C2 · 白板上的集群：集群框、任务看板、各任务的 worktree",
+   "w": 1760,
+   "x": 0,
+   "y": 5180
+  },
+  "spec/CrewTask.dc.html": {
+   "h": 2560,
+   "page": "crew",
+   "title": "C3 · 一个任务的一生：调度规则和 agent 用的命令",
+   "w": 1760,
+   "x": 0,
+   "y": 7620
+  },
+  "spec/CrewInbox.dc.html": {
+   "h": 2800,
+   "page": "crew",
+   "title": "C4 · 关卡、收件箱、汇报：只在需要你时叫你",
+   "w": 1760,
+   "x": 0,
+   "y": 10340
+  },
+  "spec/CrewTemplates.dc.html": {
+   "h": 2580,
+   "page": "crew",
+   "title": "C5 · 模板、分期、已定",
+   "w": 1760,
+   "x": 0,
+   "y": 13300
+  },
+  "spec/PluginResume.dc.html": {
+   "h": 4360,
+   "page": "plugins",
+   "title": "PL4 · Auto-resume：被额度打断的任务，恢复后自己接着做",
+   "w": 1760,
+   "x": 0,
+   "y": 7970
+  },
+  "spec/CrewFree.dc.html": {
+   "h": 3560,
+   "page": "crew",
+   "title": "C6 · 自由模式（No template）：一个 Lead 按需开子 session",
+   "w": 1760,
+   "x": 0,
+   "y": 16040
+  },
+  "spec/CrewCli.dc.html": {
+   "h": 3000,
+   "page": "crew",
+   "title": "C7 · agentdeck 命令行：crew 命令不进 MCP，只在 Lead 里打开",
+   "w": 1760,
+   "x": 0,
+   "y": 19760
+  },
+  "spec/CrewLead.dc.html": {
+   "h": 3560,
+   "page": "crew",
+   "title": "C8 · Lead 和收件箱：谁记进度、谁叫你、谁跟你聊",
+   "w": 1760,
+   "x": 0,
+   "y": 22920
+  },
+  "spec/CrewPositioning.dc.html": {
+   "h": 3060,
+   "page": "crew",
+   "title": "C9 · 定位：做什么、不做什么（和竞品对照）",
+   "w": 1760,
+   "x": 0,
+   "y": 26640
+  },
+  "spec/SessionModel.dc.html": {
+   "h": 3260,
+   "page": "session",
+   "title": "S0 · 以 session 为核心：AgentDeck 自己的 Session，和窗口、tmux、agent 的会话记录分开",
+   "w": 1760,
+   "x": 0,
+   "y": 3160
+  },
+  "spec/SessionBoard.dc.html": {
+   "h": 3200,
+   "page": "session",
+   "title": "S1 · 白板和左边栏：看得出谁开了谁，关掉以后还在，能换一家接着做",
+   "w": 1760,
+   "x": 0,
+   "y": 6580
+  },
+  "spec/AgentsSettings.dc.html": {
+   "h": 2700,
+   "page": "adapters",
+   "title": "A0 · Settings › Agents：每家 agent 能做什么、靠什么做、核对到哪个版本",
+   "w": 1760,
+   "x": 0,
+   "y": 0
+  },
+  "spec/AgentsOnboard.dc.html": {
+   "h": 2560,
+   "page": "adapters",
+   "title": "A1 · 接入和升级一家 agent：同一套合格测试、记录、照记录开关功能",
+   "w": 1760,
+   "x": 0,
+   "y": 2860
+  },
+  "spec/SkillsManage.dc.html": {
+   "h": 2740,
+   "page": "skills",
+   "title": "K0 · 大批量 skill：总览、按项目减掉、换一家不用重装",
+   "w": 1760,
+   "x": 0,
+   "y": 0
+  },
+  "spec/SkillsAgents.dc.html": {
+   "h": 2900,
+   "page": "skills",
+   "title": "K1 · 五家 agent 的 skill：放在哪、怎么加载、怎么加减",
+   "w": 1760,
+   "x": 0,
+   "y": 2900
+  },
+  "spec/RemoteOverview.dc.html": {
+   "h": 2480,
+   "page": "remote",
+   "title": "R0 · 手机和远程：方案对比、分三步、安全规矩",
+   "w": 1760,
+   "x": 0,
+   "y": 0
+  },
+  "spec/RemoteMobile.dc.html": {
+   "h": 2560,
+   "page": "remote",
+   "title": "R1 · 手机页、推送和 Settings › Remote",
+   "w": 1760,
+   "x": 0,
+   "y": 2640
+  },
+  "spec/ResearchOverview.dc.html": {
+   "h": 3960,
+   "page": "research",
+   "title": "E0 · 研究和竞赛：一队 agent 做 Kaggle、收论文、复现、视频转 PPT",
+   "w": 1760,
+   "x": 0,
+   "y": 0
+  },
+  "spec/ResearchCompetition.dc.html": {
+   "h": 3760,
+   "page": "research",
+   "title": "E1 · Kaggle 竞赛：几个方向并行，按同一个分数比，你点了才提交",
+   "w": 1760,
+   "x": 0,
+   "y": 4120
+  },
+  "spec/ResearchLibrary.dc.html": {
+   "h": 3800,
+   "page": "research",
+   "title": "E2 · 资料库和读论文、复现对照表、视频转 PPT",
+   "w": 1760,
+   "x": 0,
+   "y": 8040
+  },
+  "spec/ResearchTemplates.dc.html": {
+   "h": 3560,
+   "page": "research",
+   "title": "E3 · 四个研究模板（C5 格式草稿）和 New crew 里的研究设置",
+   "w": 1760,
+   "x": 0,
+   "y": 12000
+  },
+  "spec/DocWindow.dc.html": {
+   "h": 3040,
+   "page": "docs",
+   "title": "D0 · 文档窗口：在白板上和 agent 一起写需求、技术、实现、实验文档",
+   "w": 1760,
+   "x": 0,
+   "y": 0
+  },
+  "spec/DocAnchors.dc.html": {
+   "h": 2780,
+   "page": "docs",
+   "title": "D1 · 代码锚点和核查：path:line 点得回去，代码变了也对得上",
+   "w": 1760,
+   "x": 0,
+   "y": 3200
+  },
+  "spec/DocSkill.dc.html": {
+   "h": 1940,
+   "page": "docs",
+   "title": "D2 · agentdeck-docs skill：用人话写，少 AI 味，关键的话都能点回代码",
+   "w": 1760,
+   "x": 0,
+   "y": 6140
+  },
+  "spec/FlowWindow.dc.html": {
+   "h": 2700,
+   "page": "flow",
+   "title": "F0 · Flow 窗口：每一步都能点回源码的序列图",
+   "w": 1760,
+   "x": 0,
+   "y": 0
+  },
+  "spec/FlowCoverage.dc.html": {
+   "h": 3300,
+   "page": "flow",
+   "title": "F1 · 三种覆盖：图漏了什么、测试跑到哪、需求管到哪",
+   "w": 1760,
+   "x": 0,
+   "y": 2860
+  },
+  "spec/FlowLinks.dc.html": {
+   "h": 3200,
+   "page": "flow",
+   "title": "F2 · 和终端、编辑器、文档联动；代码变了；集群里谁用",
+   "w": 1760,
+   "x": 0,
+   "y": 6320
+  },
+  "spec/AgentDayRun.dc.html": {
+   "h": 3740,
+   "page": "session",
+   "title": "W0 · 一个 agent 跑一整天：Session 的计划，排好就自己往下做",
+   "w": 1760,
+   "x": 3840,
+   "y": 0
+  },
+  "spec/AgentLessons.dc.html": {
+   "h": 3960,
+   "page": "session",
+   "title": "W1 · Lessons：反复踩的坑记一次，五家、每个 worktree、每个新 session 都知道",
+   "w": 1760,
+   "x": 1920,
+   "y": 3720
+  },
+  "spec/AgentDayReport.dc.html": {
+   "h": 1820,
+   "page": "session",
+   "title": "W2 · 跑完一天，你回来看什么：一条推送、收件箱、一份报告",
+   "w": 1760,
+   "x": 3840,
+   "y": 3900
+  },
+  "spec/ForgeFlow.dc.html": {
+   "h": 3360,
+   "page": "forge",
+   "title": "I0 · 开源项目的 issue 和 PR：主流程、谁做什么、对外发言只在你点的时候",
+   "w": 1760,
+   "x": 0,
+   "y": 0
+  },
+  "spec/ForgeBoard.dc.html": {
+   "h": 3540,
+   "page": "forge",
+   "title": "I1 · 白板上：Issues & PRs 窗口、框上的 #编号、面板里这个工作区的 PR",
+   "w": 1760,
+   "x": 0,
+   "y": 3520
+  },
+  "spec/ForgeGate.dc.html": {
+   "h": 3420,
+   "page": "forge",
+   "title": "I2 · 对外发言的关卡、审别人的 PR、喂给 agent 的字怎么防注入",
+   "w": 1760,
+   "x": 0,
+   "y": 7220
+  },
+  "spec/MultiShepherd.dc.html": {
+   "h": 3160,
+   "page": "multi",
+   "title": "O0 · “牧羊人”面板：借哪几样、放在哪",
+   "w": 1760,
+   "x": 0,
+   "y": 0
+  },
+  "spec/MultiConflicts.dc.html": {
+   "h": 3260,
+   "page": "multi",
+   "title": "O1 · 几个 agent 改同一个仓库：隔离、重叠提示、合并预演、同目录提醒",
+   "w": 1760,
+   "x": 0,
+   "y": 3280
+  },
+  "spec/LearnEnv.dc.html": {
+   "h": 11660,
+   "page": "learn",
+   "title": "L1 · 学一门有代码作业的课：学习环境怎么搭",
+   "w": 1760,
+   "x": 0,
+   "y": 0
+  },
+  "spec/LearnAssist.dc.html": {
+   "h": 3820,
+   "page": "learn",
+   "title": "L0 · 学习和辅助：/teach 和数据库终端",
+   "w": 1760,
+   "x": 1920,
+   "y": 0
+  },
+  "spec/AgentsNewTwo.dc.html": {
+   "h": 3440,
+   "page": "adapters",
+   "title": "A2 · 接入 OpenCode 和 Hermes：能力表草稿和预计档位",
+   "w": 1760,
+   "x": 0,
+   "y": 5580
+  },
+  "spec/SessionOverview.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1760,
+   "h": 3000,
+   "page": "session",
+   "title": "S2 · Session、长期运行、记忆：合成一个需求"
+  },
+  "spec/SessionMemory.dc.html": {
+   "x": 1920,
+   "y": 0,
+   "w": 1760,
+   "h": 3560,
+   "page": "session",
+   "title": "S3 · 记忆系统：一条 Session 断了接得上，新的 Session 一开始就知道坑"
+  }
+ },
+ "createdOnFiles": {
+  "at": "2026-10-21T10:00:00Z",
+  "v": 1
+ },
+ "designSystems": [],
+ "launch": {
+  "page": "crew",
+  "view": "canvas"
+ },
+ "notes": {
+  "head": {
+   "kind": "title1",
+   "maxW": 2960,
+   "page": "v1",
+   "text": "AgentDeck · 多 Agent 并行开发工作台",
+   "w": 240,
+   "x": 0,
+   "y": -300
+  },
+  "head2": {
+   "kind": "title1",
+   "maxW": 2960,
+   "page": "v2",
+   "text": "第二版 · 白板式工作台",
+   "w": 240,
+   "x": 0,
+   "y": -300
+  },
+  "head3": {
+   "kind": "title1",
+   "maxW": 1760,
+   "page": "spec",
+   "text": "AgentDeck MVP 需求 · 结构图与操作流程",
+   "x": 0,
+   "y": -300
+  },
+  "head4": {
+   "kind": "title1",
+   "maxW": 2700,
+   "page": "parts",
+   "text": "需求配图用到的界面零件",
+   "x": 0,
+   "y": -300
+  },
+  "head5": {
+   "kind": "title1",
+   "maxW": 1760,
+   "page": "round2",
+   "text": "MVP v2（M5）与 MVP v3（M6）· 需求",
+   "x": 0,
+   "y": -300
+  },
+  "head6": {
+   "kind": "title1",
+   "maxW": 1760,
+   "page": "plugins",
+   "text": "MVP 插件 · Auto-approve、Usage、Prompt queue、Auto-resume",
+   "x": 0,
+   "y": -300
+  },
+  "head7": {
+   "kind": "title1",
+   "maxW": 1760,
+   "page": "crew",
+   "text": "Agent 集群 · 复杂任务的多 agent 模板",
+   "x": 0,
+   "y": -300
+  },
+  "head10": {
+   "kind": "title1",
+   "maxW": 1760,
+   "page": "skills",
+   "text": "Skill 管理 · 总览、按项目减掉、换一家不用重装",
+   "x": 0,
+   "y": -300
+  },
+  "head11": {
+   "kind": "title1",
+   "maxW": 1760,
+   "page": "remote",
+   "text": "手机 · 远程 · 推送、只读手机页、手机上处理",
+   "x": 0,
+   "y": -300
+  },
+  "head8": {
+   "kind": "title1",
+   "maxW": 5600,
+   "page": "session",
+   "text": "Session · 长期运行 · 记忆 · 一条做事的线：关掉以后还在、排好就自己往下做、断了接得上",
+   "x": 0,
+   "y": -300
+  },
+  "head9": {
+   "kind": "title1",
+   "maxW": 1760,
+   "page": "adapters",
+   "text": "Agent 接入 · 能力报告、合格测试、Settings › Agents",
+   "x": 0,
+   "y": -300
+  },
+  "head_research": {
+   "kind": "title1",
+   "maxW": 1760,
+   "page": "research",
+   "text": "研究和竞赛 · Kaggle、收论文、复现、视频转 PPT",
+   "x": 0,
+   "y": -300
+  },
+  "head_docs": {
+   "kind": "title1",
+   "maxW": 1760,
+   "page": "docs",
+   "text": "文档 · 在白板上和 agent 一起写，引用点得回代码",
+   "x": 0,
+   "y": -300
+  },
+  "head_flow": {
+   "kind": "title1",
+   "maxW": 1760,
+   "page": "flow",
+   "text": "代码理解 · 每一步都能点回源码的序列图",
+   "x": 0,
+   "y": -300
+  },
+  "head_forge": {
+   "kind": "title1",
+   "maxW": 1760,
+   "page": "forge",
+   "text": "Issue · PR · 开源项目的 issue 和 PR，对外发言只在你点的时候",
+   "x": 0,
+   "y": -300
+  },
+  "head_multi": {
+   "kind": "title1",
+   "maxW": 1760,
+   "page": "multi",
+   "text": "多 agent 同仓协作 · 牧羊人面板、重叠提示、合并预演",
+   "x": 0,
+   "y": -300
+  },
+  "head_learn": {
+   "kind": "title1",
+   "maxW": 1760,
+   "page": "learn",
+   "text": "学习和辅助 · 课程学习环境、/teach 和数据库终端",
+   "x": 0,
+   "y": -300
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Focus.dc.html",
+  "Merge.dc.html",
+  "Board.dc.html",
+  "Launch.dc.html",
+  "Canvas.dc.html",
+  "Frames.dc.html",
+  "Overview.dc.html",
+  "spec/SpecOverview.dc.html",
+  "spec/SpecLayout.dc.html",
+  "spec/SpecProject.dc.html",
+  "spec/SpecBoard.dc.html",
+  "spec/SpecWorkspace.dc.html",
+  "spec/SpecTerminal.dc.html",
+  "spec/SpecStatus.dc.html",
+  "spec/SpecBrowser.dc.html",
+  "spec/SpecScm.dc.html",
+  "spec/SpecPersist.dc.html",
+  "spec/SpecRules.dc.html",
+  "spec/SpecRound2.dc.html",
+  "spec/SpecNext.dc.html",
+  "spec/SpecBackground.dc.html",
+  "spec/SpecHistory.dc.html",
+  "spec/SpecArrange.dc.html",
+  "spec/Term.dc.html",
+  "spec/Frame.dc.html",
+  "spec/Web.dc.html",
+  "spec/Menu.dc.html",
+  "spec/Dialog.dc.html",
+  "spec/Note.dc.html",
+  "spec/Panel.dc.html",
+  "spec/Top.dc.html",
+  "spec/Arrow.dc.html",
+  "spec/Cursor.dc.html",
+  "spec/Callout.dc.html",
+  "spec/PluginOverview.dc.html",
+  "spec/PluginApprove.dc.html",
+  "spec/PluginUsage.dc.html",
+  "spec/PluginQueue.dc.html",
+  "spec/PluginResume.dc.html",
+  "spec/CrewOverview.dc.html",
+  "spec/CrewNew.dc.html",
+  "spec/CrewBoard.dc.html",
+  "spec/CrewTask.dc.html",
+  "spec/CrewInbox.dc.html",
+  "spec/CrewTemplates.dc.html",
+  "spec/CrewFree.dc.html",
+  "spec/CrewCli.dc.html",
+  "spec/CrewLead.dc.html",
+  "spec/CrewPositioning.dc.html",
+  "spec/SessionOverview.dc.html",
+  "spec/SessionMemory.dc.html",
+  "spec/SessionModel.dc.html",
+  "spec/SessionBoard.dc.html",
+  "spec/AgentsSettings.dc.html",
+  "spec/AgentsOnboard.dc.html",
+  "spec/AgentsNewTwo.dc.html",
+  "spec/SkillsManage.dc.html",
+  "spec/SkillsAgents.dc.html",
+  "spec/RemoteOverview.dc.html",
+  "spec/RemoteMobile.dc.html",
+  "spec/ResearchOverview.dc.html",
+  "spec/ResearchCompetition.dc.html",
+  "spec/ResearchLibrary.dc.html",
+  "spec/ResearchTemplates.dc.html",
+  "spec/DocWindow.dc.html",
+  "spec/DocAnchors.dc.html",
+  "spec/DocSkill.dc.html",
+  "spec/FlowWindow.dc.html",
+  "spec/FlowCoverage.dc.html",
+  "spec/FlowLinks.dc.html",
+  "spec/AgentDayRun.dc.html",
+  "spec/AgentLessons.dc.html",
+  "spec/AgentDayReport.dc.html",
+  "spec/ForgeFlow.dc.html",
+  "spec/ForgeBoard.dc.html",
+  "spec/ForgeGate.dc.html",
+  "spec/MultiShepherd.dc.html",
+  "spec/MultiConflicts.dc.html",
+  "spec/LearnEnv.dc.html",
+  "spec/LearnAssist.dc.html"
+ ],
+ "pages": [
+  {
+   "id": "spec",
+   "name": "MVP 需求 · 流程"
+  },
+  {
+   "id": "round2",
+   "name": "MVP v2 · v3"
+  },
+  {
+   "id": "plugins",
+   "name": "MVP 插件"
+  },
+  {
+   "id": "crew",
+   "name": "Agent 集群"
+  },
+  {
+   "id": "session",
+   "name": "Session · 长期运行 · 记忆"
+  },
+  {
+   "id": "adapters",
+   "name": "Agent 接入"
+  },
+  {
+   "id": "skills",
+   "name": "Skill 管理"
+  },
+  {
+   "id": "remote",
+   "name": "手机 · 远程"
+  },
+  {
+   "id": "research",
+   "name": "研究和竞赛"
+  },
+  {
+   "id": "docs",
+   "name": "文档"
+  },
+  {
+   "id": "flow",
+   "name": "代码理解"
+  },
+  {
+   "id": "forge",
+   "name": "Issue · PR"
+  },
+  {
+   "id": "multi",
+   "name": "多 agent 同仓协作"
+  },
+  {
+   "id": "learn",
+   "name": "学习和辅助"
+  },
+  {
+   "id": "v2",
+   "name": "第二版 · 白板"
+  },
+  {
+   "id": "v1",
+   "name": "第一版"
+  },
+  {
+   "id": "parts",
+   "name": "需求 · 界面零件"
+  }
+ ],
+ "title": "多 Agent 工作台原型"
 }

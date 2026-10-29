@@ -44,12 +44,13 @@ body{margin:0}
 .decide{display:grid;grid-template-columns:36px 1fr;gap:6px 10px;font-size:13px;line-height:1.6}
 </style>
 </helmet>
-<div style="width: 1760px; height: 3900px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+<div style="width: 1760px; height: 3960px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
 
   <div style="display: flex; flex-direction: column; gap: 10px">
     <div style="display: flex; align-items: center; gap: 10px">
       <h1 style="margin: 0; font-size: 28px; font-weight: 600">W1 · Lessons：反复踩的坑记一次，五家、每个 worktree、每个新 session 都知道</h1>
       <span class="concept">2026-10-28 按推荐先定，待你确认· DR-74 补一条例外</span>
+      <span class="concept">2026-10-29 提议：成为记忆系统的第 3 层（S3），规则不变，放第二期</span>
     </div>
     <p class="lead">DR-74 定了长期记忆交给各家自己。核对下来，各家的 memory 记的是<b>偏好和进度</b>，<b>不记坑</b>（claude 的文档明说跳过 debugging fixes），也不跨家。所以只补一样窄的东西：<b>Lessons</b>。每条一句 When / Do / Why，经你确认才生效，存在 AgentDeck 里（按项目，所有 worktree 共用），开 session 时追加进各家的系统提示，有硬上限；值得全队长期留的，你点一下移进 AGENTS.md。偏好、进度照旧不归 AgentDeck。</p>
   </div>
@@ -213,7 +214,7 @@ To suggest a new one: agentdeck lesson propose --when "..." --do "..." --why "..
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":3900}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":3960}}'>
 class Component extends DCLogic {
   renderVals() {
     return {};
