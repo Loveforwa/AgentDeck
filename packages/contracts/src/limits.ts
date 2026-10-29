@@ -60,7 +60,7 @@ export interface LimitedTerminal {
   /** 因为额度停掉、还没接回的后台子 agent 数（N10）。 */
   lostSubagents: number;
   /**
-   * 0.1.22：这次算下来这个终端的 Auto-resume 开没开（终端 → 框 → 白板，默认关）。关着时 owner 仍是 auto-resume、resumeAt 为 null，
+   * 0.1.22：这次算下来这个终端的 Auto-resume 开没开（终端 → 白板，默认关；2026-10-29 起项目框上没有这个开关，FrameNode.autoResume 不读）。关着时 owner 仍是 auto-resume、resumeAt 为 null，
    * 到了恢复时间变 skipped。不填是不知道（老的实现）。
    */
   autoResume?: boolean;

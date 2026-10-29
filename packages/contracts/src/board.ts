@@ -35,7 +35,10 @@ export interface FrameNode {
   autoApprove: boolean;
   /** 一键排版（MVP v3 · N12，画板 15）。老数据没有它，按 { auto: false, layout: null }。 */
   arrange?: FrameArrange;
-  /** PL4：框上的 Auto-resume。true / false 单独设过；不填或 null 跟着白板（BoardState.autoResume）。规格只写了终端一级，框和白板两级照设计画布第 7 节加。 */
+  /**
+   * PL4：框上的 Auto-resume。true / false 单独设过；不填或 null 跟着白板（BoardState.autoResume）。规格只写了终端一级，框和白板两级照设计画布第 7 节加。
+   * @deprecated 2026-10-29 用户定：项目框上没有 Auto-resume 开关，这个字段不再读（只加不删，老白板里的值读得进来、不起作用）。
+   */
   autoResume?: boolean | null;
 }
 
@@ -156,7 +159,7 @@ export interface TerminalWindowData {
    */
   session?: SessionId | null;
   /**
-   * PL4：这个终端单独的 Auto-resume 设置。true 单独开，false 单独关；不填或 null 跟着框（FrameNode.autoResume），再跟着白板（BoardState.autoResume）。
+   * PL4：这个终端单独的 Auto-resume 设置。true 单独开，false 单独关；不填或 null 跟着白板（BoardState.autoResume）；2026-10-29 起不再看框。
    */
   autoResume?: boolean | null;
   /**
