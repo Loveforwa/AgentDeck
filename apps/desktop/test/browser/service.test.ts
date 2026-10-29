@@ -72,6 +72,9 @@ describe('prepare', () => {
     const file = join(dir, 'site', 'index.html');
     expect((await core.prepare(file)).src).toBe(`agentdeck-file://${file}`);
     expect((await core.prepare(`file://${file}#top`)).src).toBe(`agentdeck-file://${file}#top`);
+    // IS-124：地址栏存的是路径加后缀（…pdf#page=4），# 和 ? 不算文件名
+    expect((await core.prepare(`${file}#page=4`)).src).toBe(`agentdeck-file://${file}#page=4`);
+    expect((await core.prepare(`${file}?r=2#page=5`)).src).toBe(`agentdeck-file://${file}?r=2#page=5`);
     expect(core.fileRoots.list()).toEqual([join(dir, 'site')]);
   });
 
@@ -142,6 +145,8 @@ describe('ping', () => {
     const { core } = service();
     expect(await core.ping(join(dir, 'site', 'index.html'))).toEqual({ ok: true, status: 200 });
     expect(await core.ping(`agentdeck-file://${join(dir, 'site', 'gone.html')}`)).toEqual({ ok: false, status: 404 });
+    // IS-124：路径后面的 #page=N 不当成文件名
+    expect(await core.ping(`${join(dir, 'site', 'index.html')}#page=4`)).toEqual({ ok: true, status: 200 });
   });
 });
 

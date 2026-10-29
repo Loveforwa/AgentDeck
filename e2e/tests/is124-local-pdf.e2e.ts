@@ -3,14 +3,12 @@
 // 看 PDF 查看器：主进程里找 chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai/ 的 frame（Chromium 的 PDF 扩展），
 // 在里面读 viewer-page-selector 的页码和总页数；截图人看（“Page 5” 大字）。
 //
-// 2026-10-29 实测（Electron 45）：
-// - 现在打不开：iframe 带 sandbox，Chromium 不在沙盒化的 frame 里起 PDF 查看器，网页窗口显示 “This page can’t be shown on the board.”；
-//   Show it here 改 data.mode = webview，但本地文件只走 iframe（service.ts prepare），又是同一个出错页。
-// - #page=N 传不进去：地址栏把 file://…pdf#page=4 换成路径 “…/paper.pdf#page=4”，prepare / ping 把 # 当成文件名的一部分 → File not found。
-//   （MCP open_browser 给 file:// 时 fileURLToPath 去掉了 #，给路径时同样 File not found。）
-// - 去掉 sandbox 的 iframe（测试里改 DOM，等于修好后的样子）：PDF 查看器正常显示；只改 # 不跳页；带变化的 query（?r=2#page=5）再载入就跳到第 5 页（RS14 的结论）。
-// - pptx：不能显示，载入时触发下载（will-download，pptx 的 MIME），窗口一直 “Loading…”。应用没有 will-download 处理，
-//   Electron 默认会弹保存对话框；测试里在主进程拦下（preventDefault），没让它弹。
+// 2026-10-29 实测（Electron 45）时的问题和修法（IS-124）：
+// - 沙盒化的 iframe 里 Chromium 不起 PDF 查看器（“can’t be shown”，Show it here 改了 mode 也还是 iframe）→ 本地 PDF 的 iframe 不加 sandbox。
+// - 地址栏把 file://…pdf#page=4 换成路径 “…/paper.pdf#page=4”，prepare / ping 把 # 当成文件名 → 主进程第一个 ? 或 # 起算后缀。
+// - 已经开着的 PDF 只改 # 不跳页 → 界面带一个变化的查询串（?r=n#page=N）重新载入（RS14）。
+// - pptx 载入时变成下载（will-download，Electron 默认弹保存框）、窗口一直 “Loading…” → 界面不载入这类文件，
+//   写 “This file can’t be shown on the board.” 和 Open in default app。测试里主进程照样记下下载、不让它弹。
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Deck } from '../support/deck.ts';
@@ -88,20 +86,20 @@ async function viewers(deck: Deck): Promise<Viewer[]> {
 }
 
 test.describe('IS-124 local PDF in a browser window', () => {
-  // 已知缺口（IS-124）：沙盒化的 iframe 起不了 PDF 查看器。修好后这条会“意外通过”，那时去掉 test.fail。
-  test.fail('IS-124 a local PDF opened from the address bar shows in Chromium’s PDF viewer', async ({ deck }) => {
+  test('IS-124 a local PDF opened from the address bar shows in Chromium’s PDF viewer', async ({ deck }) => {
     const { pdf } = papers(deck);
     await deck.launch();
     const id = await openAddress(deck, pdf);
     const win = deck.windowEl(id);
     await expect(win.locator('iframe')).toHaveAttribute('src', /^agentdeck-file:\/\/\/.*\/paper\.pdf$/);
+    await expect(win.locator('iframe')).not.toHaveAttribute('sandbox', /.*/);
     await expect.poll(() => viewers(deck), { timeout: 15_000 }).toEqual([{ page: '1', pages: 6 }]);
     await expect(win.getByText('This page can’t be shown on the board.')).toHaveCount(0);
+    await expect(win.getByText('This file can’t be shown on the board.')).toHaveCount(0);
     await deck.screenshot('pdf-page-1');
   });
 
-  // 已知缺口（IS-124）：地址栏 / open_browser 都传不进 #page=N（# 被当成文件名的一部分，或被去掉）。
-  test.fail('IS-124 file://…paper.pdf#page=4 opens the PDF at page 4', async ({ deck }) => {
+  test('IS-124 file://…paper.pdf#page=4 opens the PDF at page 4', async ({ deck }) => {
     const { pdf } = papers(deck);
     await deck.launch();
     const id = await openAddress(deck, `file://${pdf}#page=4`);
@@ -111,82 +109,47 @@ test.describe('IS-124 local PDF in a browser window', () => {
     await deck.screenshot('pdf-page-4');
   });
 
-  test('IS-124 today: the sandboxed frame refuses the PDF and Show it here loops; without the sandbox it shows and ?r=…#page=N jumps', async ({ deck }) => {
+  test('IS-124 another #page=N in the address bar on the open PDF jumps there (reloaded with a new query)', async ({ deck }) => {
     const { pdf } = papers(deck);
     const page = await deck.launch();
     await blockDownloads(deck);
     const id = await openAddress(deck, pdf);
     const win = deck.windowEl(id);
     const frame = win.locator('iframe');
-    // 1. 现在：sandbox 里的 iframe → Chromium 出错页 → 网页窗口的 “can’t be shown”
-    await expect(frame).toHaveAttribute('src', /^agentdeck-file:\/\/\/.*\/paper\.pdf$/);
-    await expect(frame).toHaveAttribute('sandbox', /allow-scripts/);
-    await expect(win.getByText('This page can’t be shown on the board.')).toBeVisible();
-    expect(await viewers(deck)).toEqual([]);
-    await deck.screenshot('refused');
-
-    // 2. Show it here：data.mode 变 webview，但本地文件仍然是 iframe，又是同一个出错页（没有 webview）
-    await win.getByRole('button', { name: 'Show it here' }).click();
-    await expect.poll(async () => (await deck.board()).windows.find((w) => w.id === id)?.data['mode']).toBe('webview');
-    await expect(win.getByText('This page can’t be shown on the board.')).toBeVisible();
-    await expect(win.locator('webview')).toHaveCount(0);
-    expect(await viewers(deck)).toEqual([]);
-
-    // 3. 地址里的 #page=N 被当成文件名：File not found（主进程的 ping 也说 404）
-    await win.getByRole('textbox', { name: 'Address' }).click();
-    await page.keyboard.press('Meta+A');
-    await page.keyboard.type(`file://${pdf}#page=4`, { delay: 2 });
-    await page.keyboard.press('Enter');
-    await expect(win.getByText('File not found')).toBeVisible();
-    expect(await page.evaluate((u) => (window as unknown as BrowserApi).agentdeck.browser.ping(u), `${pdf}#page=4`)).toEqual({ ok: false, status: 404 });
-    await deck.screenshot('hash-not-found');
-
-    // 4. 修好后的样子（改 DOM：去掉 sandbox、藏出错页；src 用主进程 prepare 给的地址加后缀）
-    const prepared = await page.evaluate((p) => (window as unknown as BrowserApi).agentdeck.browser.prepare(p), pdf);
-    expect(prepared.mode).toBe('frame');
-    const load = (url: string) =>
-      page.evaluate(
-        ({ id, url }) => {
-          const content = document.querySelector(`.ad-window-node[data-window-id="${id}"] .ad-browser__content`)!;
-          let f = content.querySelector('iframe');
-          if (!f) {
-            f = document.createElement('iframe');
-            f.className = 'ad-browser__frame';
-            content.prepend(f);
-          }
-          f.removeAttribute('sandbox');
-          f.hidden = false;
-          content.querySelectorAll<HTMLElement>(':scope > :not(iframe)').forEach((e) => (e.style.display = 'none'));
-          f.src = url;
-        },
-        { id, url },
-      );
-    await load(prepared.src);
     await expect.poll(() => viewers(deck), { timeout: 15_000 }).toEqual([{ page: '1', pages: 6 }]);
-    await deck.screenshot('no-sandbox-page-1');
-    // 只改 #：不跳页（给它 3 秒机会；跳了就说明 RS14 的结论变了）
-    await load(`${prepared.src}#page=4`);
-    await page.waitForTimeout(3000);
-    expect(await viewers(deck)).toEqual([{ page: '1', pages: 6 }]);
-    // 带变化的 query 再载入：跳到第 5 页
-    await load(`${prepared.src}?r=2#page=5`);
+    expect(await page.evaluate((u) => (window as unknown as BrowserApi).agentdeck.browser.ping(u), `${pdf}#page=4`)).toEqual({ ok: true, status: 200 });
+
+    const goTo = async (address: string) => {
+      await win.getByRole('textbox', { name: 'Address' }).click();
+      await page.keyboard.press('Meta+A');
+      await page.keyboard.type(address, { delay: 2 });
+      await page.keyboard.press('Enter');
+    };
+    await goTo(`file://${pdf}#page=5`);
+    await expect(frame).toHaveAttribute('src', /\/paper\.pdf\?r=\d+#page=5$/);
     await expect.poll(() => viewers(deck), { timeout: 15_000 }).toEqual([{ page: '5', pages: 6 }]);
-    await deck.screenshot('no-sandbox-page-5');
+    await deck.screenshot('pdf-page-5');
+    await goTo(`${pdf}#page=2`);
+    await expect.poll(() => viewers(deck), { timeout: 15_000 }).toEqual([{ page: '2', pages: 6 }]);
+    // 地址栏和存下的地址是路径加 #page，没有 ?r=
+    await expect.poll(async () => (await deck.board()).windows.find((w) => w.id === id)?.data['url']).toBe(`${pdf}#page=2`);
     expect(await downloads(deck)).toEqual([]);
   });
 
-  test('IS-124 today: a .pptx is not displayed; Chromium turns it into a download', async ({ deck }) => {
+  test('IS-124 a .pptx is not loaded: the window says it can’t be shown and offers the default app, nothing downloads', async ({ deck }) => {
     const { pptx } = papers(deck);
     await deck.launch();
     await blockDownloads(deck);
     const id = await openAddress(deck, pptx);
     const win = deck.windowEl(id);
-    await expect(win.locator('iframe')).toHaveAttribute('src', /^agentdeck-file:\/\/\/.*\/slides\.pptx$/);
-    await expect.poll(async () => (await downloads(deck)).map((d) => d.mime)).toEqual(['application/vnd.openxmlformats-officedocument.presentationml.presentation']);
-    expect((await downloads(deck))[0]!.url).toMatch(/^agentdeck-file:\/\/\/.*\/slides\.pptx$/);
-    // 什么也没显示：没有 PDF 查看器，标题栏一直 Loading…
+    await expect(win.getByText('This file can’t be shown on the board.')).toBeVisible();
+    await expect(win.getByRole('button', { name: 'Open in default app' })).toBeVisible();
+    await expect(win.locator('iframe')).toHaveCount(0);
+    await expect(win.locator('.ad-window-titlebar')).not.toContainText('Loading…');
+    // 给它 2 秒：没有载入，也就没有下载（不点 Open in default app，免得真的开 Keynote / PowerPoint）
+    await deck.page.waitForTimeout(2000);
+    expect(await downloads(deck)).toEqual([]);
     expect(await viewers(deck)).toEqual([]);
-    await expect(win.locator('.ad-window-titlebar')).toContainText('Loading…');
     await deck.screenshot('pptx');
   });
 });

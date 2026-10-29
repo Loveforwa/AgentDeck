@@ -21,7 +21,16 @@ import {
 } from 'react';
 import type { BrowserService, BrowserWindowData, WindowComponentProps } from '@agentdeck/contracts';
 import { Button } from '@agentdeck/ui-kit';
-import { addressFromHref, displayAddress, isFileAddress, isLocalAddress, normalizeAddress } from './address.ts';
+import {
+  addressFromHref,
+  displayAddress,
+  isFileAddress,
+  isLocalAddress,
+  isLocalPdfSrc,
+  isUnshownFile,
+  normalizeAddress,
+  pdfJumpSrc,
+} from './address.ts';
 import {
   BOARD_FRAME_NAME_PREFIX,
   ERROR_PAGE_PREFIX,
@@ -41,7 +50,7 @@ export type BrowserWindowProps = WindowComponentProps<BrowserWindowData>;
  */
 type DataWithToken = BrowserWindowData & { reloadToken?: string | number };
 
-type ErrorReason = 'unreachable' | 'refused' | 'missing' | 'invalid';
+type ErrorReason = 'unreachable' | 'refused' | 'missing' | 'invalid' | 'unsupported';
 
 type View =
   | { kind: 'empty' }
@@ -100,6 +109,8 @@ export function BrowserWindow(props: BrowserWindowProps): ReactNode {
 
   const [view, setView] = useState<View>(() => (data.url === '' ? { kind: 'empty' } : { kind: 'loading' }));
   const [src, setSrc] = useState<string | null>(null);
+  /** 本地 PDF 换页时查询串里的计数（pdfJumpSrc）。 */
+  const pdfLoadsRef = useRef(0);
   const [mode, setMode] = useState<'frame' | 'webview'>('frame');
   /** 换 key 会重建 iframe：没有小桥时只能这样强制刷新。 */
   const [frameKey, setFrameKey] = useState(0);
@@ -180,6 +191,11 @@ export function BrowserWindow(props: BrowserWindowProps): ReactNode {
         showError(isFileAddress(url) ? 'missing' : 'unreachable', url);
         return;
       }
+      // pptx、docx 这类 Chromium 只会当下载处理（还会弹保存框）：不载入，给“用默认应用打开”
+      if (isUnshownFile(url)) {
+        showError('unsupported', url);
+        return;
+      }
 
       if (options.record !== false) setStack((s) => pushEntry(s, url));
       bridgedRef.current = false;
@@ -199,6 +215,7 @@ export function BrowserWindow(props: BrowserWindowProps): ReactNode {
         return;
       }
       const frame = modeRef.current === 'frame' ? frameRef.current : null;
+      if (modeRef.current === 'frame') prepared.src = pdfJumpSrc(srcRef.current, prepared.src, ++pdfLoadsRef.current);
       if (modeRef.current !== 'frame') {
         modeRef.current = 'frame';
         setMode('frame');
@@ -567,14 +584,17 @@ export function BrowserWindow(props: BrowserWindowProps): ReactNode {
         )}
         {src !== null && mode === 'frame' && (
           <iframe
-            key={frameKey}
+            // sandbox 只在新载入时生效：本地 PDF 和别的页面之间切换时换一个 iframe
+            key={isLocalPdfSrc(src) ? `${frameKey}-pdf` : frameKey}
             ref={frameRef}
             className="ad-browser__frame"
             name={`${BOARD_FRAME_NAME_PREFIX}${node.id}`}
             title={`Web page: ${displayAddress(shownUrl)}`}
             src={src}
             // 不给 allow-top-navigation：嵌进来的页面不能把白板页面跳走。
-            sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups allow-downloads"
+            // 本地 PDF 例外、不加 sandbox：沙盒化的 frame 里 Chromium 不起 PDF 查看器（IS-124）。PDF 由 Chromium 自己的查看器画，
+            // agentdeck-file:// 的来源是不透明的 null，碰不到白板页面。
+            sandbox={isLocalPdfSrc(src) ? undefined : 'allow-scripts allow-same-origin allow-forms allow-modals allow-popups allow-downloads'}
             allow="clipboard-write; fullscreen"
             hidden={view.kind === 'error'}
             onLoad={onFrameLoad}
@@ -635,7 +655,27 @@ function ErrorPage(props: {
       detail = view.url;
       action = <Button size="sm" onClick={onRetry}>Retry</Button>;
       break;
+    case 'unsupported':
+      title = 'This file can’t be shown on the board.';
+      detail = view.url;
+      action = (
+        <Button size="sm" onClick={onOpenExternal}>
+          Open in default app
+        </Button>
+      );
+      break;
     case 'refused':
+      if (isFileAddress(view.url)) {
+        // 本地文件只走 iframe，Show it here 帮不上
+        title = 'This file can’t be shown on the board.';
+        detail = view.url;
+        action = (
+          <Button size="sm" onClick={onOpenExternal}>
+            Open in default app
+          </Button>
+        );
+        break;
+      }
       title = 'This page can’t be shown on the board.';
       detail = 'It refuses to be embedded. Show it here as a separate web view, or open it in your browser.';
       action = (

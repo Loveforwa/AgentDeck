@@ -66,9 +66,12 @@ export function isFileAddress(url: string): boolean {
   return url.startsWith('/');
 }
 
-/** iframe 里报上来的地址 → 存进 data.url、显示在地址栏里的形式。本地文件用路径。 */
+/** iframe 里报上来的地址 → 存进 data.url、显示在地址栏里的形式。本地文件用路径；本地 PDF 换页时界面加的 ?r=n 去掉（pdfJumpSrc）。 */
 export function addressFromHref(href: string): string {
-  if (href.startsWith(`${LOCAL_FILE_SCHEME}:`) || href.startsWith('file:')) return pathFromFileHref(href) ?? href;
+  if (href.startsWith(`${LOCAL_FILE_SCHEME}:`) || href.startsWith('file:')) {
+    const path = pathFromFileHref(isLocalPdfSrc(href) ? href.replace(/\?r=\d+(?=#|$)/, '') : href);
+    return path ?? href;
+  }
   return href;
 }
 
@@ -90,4 +93,35 @@ export function browserReuseKey(url: string): string {
   } catch {
     return url;
   }
+}
+
+/** 本地文件地址（data.url 的形式）→ 路径和 ?、# 后缀。 */
+export function splitFileSuffix(url: string): { path: string; suffix: string } {
+  const cut = url.search(/[?#]/);
+  return cut < 0 ? { path: url, suffix: '' } : { path: url.slice(0, cut), suffix: url.slice(cut) };
+}
+
+/** Chromium 不显示、只会当下载处理的本地文件（Office、Keynote、压缩包……）。 */
+const NOT_SHOWN = /\.(pptx?|docx?|xlsx?|key|pages|numbers|zip|dmg|gz|tgz|rar|7z)$/i;
+
+/** 本地文件但白板上显示不了（打开会变成下载，IS-124）。 */
+export function isUnshownFile(url: string): boolean {
+  return isFileAddress(url) && NOT_SHOWN.test(splitFileSuffix(url).path);
+}
+
+/** agentdeck-file:// 的 PDF。它要用不带 sandbox 的 iframe：沙盒化的 frame 里 Chromium 不起 PDF 查看器（IS-124）。 */
+export function isLocalPdfSrc(src: string): boolean {
+  return src.startsWith(`${LOCAL_FILE_SCHEME}:`) && /\.pdf$/i.test(src.replace(/[?#].*$/, ''));
+}
+
+/**
+ * 已经开着的本地 PDF 换页：只改 # 后面 Chromium 的 PDF 查看器不跳页，带一个变化的查询串重新载入才跳（RS14）。
+ * prev 和 next 是同一个 PDF、next 带 # 时返回 文件?r=n#…；否则原样返回 next。主进程读文件时不看查询串。
+ */
+export function pdfJumpSrc(prev: string | null, next: string, n: number): string {
+  if (prev === null || !isLocalPdfSrc(next)) return next;
+  const base = (u: string) => u.replace(/[?#].*$/, '');
+  const hash = next.indexOf('#');
+  if (base(prev) !== base(next) || hash < 0) return next;
+  return `${base(next)}?r=${n}${next.slice(hash)}`;
 }

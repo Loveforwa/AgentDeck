@@ -300,11 +300,10 @@ test('IS-26 T2 typing latency with 6 terminals open (4 fake claude + 2 bash)', a
 
 test('IS-26 G4 idle CPU with the board open and terminals idle', async ({ deck, sb }, info) => {
   test.setTimeout(300_000);
-  // 已知缺口：左下角的 Clawd 每约 10 秒冒出来一次、待 6 秒；第一次冒出来以后精灵一直挂在页面上（visit 不清空），
-  // 不管露着还是缩回去（透明、移到下面），两帧交替的 ad-clawd-flip（SVG 上的 opacity，infinite）一直在跑，
-  // 界面进程和 GPU 一直在出帧，空闲时应用合计约 4–5% 一个核；把 Clawd 拿掉（display: none）或开 reduced motion 就降到 2% 以下
-  // （下面第二、三段量给你看）。修好后这里会报“意外通过”，那时去掉 test.fail。
-  test.fail(true, 'idle CPU is not near 0: the Clawd sprite keeps its infinite CSS animation running');
+  // 2026-10-29 量出来不达标（IS-161）：左下角 Clawd 的两帧用无限循环的 CSS 动画交替，缩回去以后精灵也一直挂着，
+  // 界面进程和 GPU 一直出帧，应用合计 3.0–4.6% 一个核。白板每出一帧都不便宜，Clawd 露面时的升降和换帧本身就约 2.5%，
+  // 所以修法是：换帧改成露着时的定时器、缩回去就卸掉，键盘鼠标 30 秒没动（人走开了）就不再冒出来。
+  // “空闲”因此从最后一次输入后 30 秒多算起；下面第二、三段（拿掉 Clawd、开 reduced motion）照样量，方便以后找别的耗电来源。
   const page = await deck.launch({ args: LAUNCH_ARGS });
   const server = await devServer();
   try {
@@ -328,8 +327,9 @@ test('IS-26 G4 idle CPU with the board open and terminals idle', async ({ deck, 
     await deck.focusWindow(terms[0]!.windowId);
     await expect(page.getByText('feat/idle').first()).toBeVisible();
     await deck.screenshot('idle-board');
-    // 启动时的事（检测 agent、第一次 git status、字体……）做完再量
-    await page.waitForTimeout(10_000);
+    // 启动时的事（检测 agent、第一次 git status、字体……）做完，Clawd 也睡下（最后一次输入后 30 秒，CLAWD_NAP_MS）再量
+    await page.waitForTimeout(40_000);
+    await expect(page.locator('.ad-clawd')).toHaveCount(0);
     const tmuxPid = Number(sb.tmux(['display-message', '-p', '#{pid}']).stdout.trim());
 
     /** 不动 seconds 秒，量每个进程的平均 CPU（% 一个核）、这段时间里的 IPC 调用和机器负载。 */
@@ -381,6 +381,8 @@ test('IS-26 G4 idle CPU with the board open and terminals idle', async ({ deck, 
 
     const idle = await measureIdle(60);
     const animations = await runningAnimations();
+    // 量的这一分钟里 Clawd 没再冒出来
+    await expect(page.locator('.ad-clawd')).toHaveCount(0);
     report(info, 'G4', { ...idle, runningAnimations: animations });
     await deck.screenshot('after-idle');
     // 找原因用（不判）：同样的画面只把左下角的 Clawd 拿掉（display: none，它的动画跟着停），再量 30 秒

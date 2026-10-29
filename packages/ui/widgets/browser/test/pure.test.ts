@@ -3,8 +3,12 @@ import {
   addressFromHref,
   browserReuseKey,
   displayAddress,
+  isLocalPdfSrc,
+  isUnshownFile,
   normalizeAddress,
   pathFromFileHref,
+  pdfJumpSrc,
+  splitFileSuffix,
 } from '../src/address.ts';
 import { BOARD_SOURCE, boardCommand, parseFrameMessage } from '../src/bridge.ts';
 import { EMPTY_STACK, canStep, pushEntry, step } from '../src/history.ts';
@@ -39,6 +43,35 @@ describe('normalizeAddress', () => {
     for (const input of ['', 'javascript:alert(1)', 'ftp://localhost/', 'mailto:a@b.c', 'hello', '3000', 'file://host/x']) {
       expect(normalizeAddress(input).ok, input).toBe(false);
     }
+  });
+});
+
+describe('local PDFs and files the board can’t show (IS-124)', () => {
+  it('splits ? and # off a local path', () => {
+    expect(splitFileSuffix('/p/paper.pdf#page=4')).toEqual({ path: '/p/paper.pdf', suffix: '#page=4' });
+    expect(splitFileSuffix('/p/a.html')).toEqual({ path: '/p/a.html', suffix: '' });
+  });
+
+  it('knows which local files only download', () => {
+    expect(isUnshownFile('/p/slides.pptx')).toBe(true);
+    expect(isUnshownFile('/p/Report.DOCX#x')).toBe(true);
+    expect(isUnshownFile('/p/paper.pdf')).toBe(false);
+    expect(isUnshownFile('http://localhost:3000/a.pptx')).toBe(false);
+  });
+
+  it('local PDFs get their own frame; a #page change on the same PDF reloads with a new query', () => {
+    expect(isLocalPdfSrc('agentdeck-file:///p/paper.pdf#page=2')).toBe(true);
+    expect(isLocalPdfSrc('agentdeck-file:///p/a.html')).toBe(false);
+    expect(isLocalPdfSrc('http://localhost:3000/a.pdf')).toBe(false);
+    const pdf = 'agentdeck-file:///p/paper.pdf';
+    expect(pdfJumpSrc(null, `${pdf}#page=4`, 1)).toBe(`${pdf}#page=4`);
+    expect(pdfJumpSrc(pdf, `${pdf}#page=4`, 1)).toBe(`${pdf}?r=1#page=4`);
+    expect(pdfJumpSrc(`${pdf}?r=1#page=4`, `${pdf}#page=5`, 2)).toBe(`${pdf}?r=2#page=5`);
+    expect(pdfJumpSrc(pdf, 'agentdeck-file:///p/other.pdf#page=2', 3)).toBe('agentdeck-file:///p/other.pdf#page=2');
+    expect(pdfJumpSrc(`${pdf}#page=4`, pdf, 4)).toBe(pdf);
+    // 小桥报回来的地址里去掉界面加的 ?r=n，存下的还是路径加 #page
+    expect(addressFromHref(`${pdf}?r=3#page=2`)).toBe('/p/paper.pdf#page=2');
+    expect(addressFromHref('agentdeck-file:///p/a.html?r=3#x')).toBe('/p/a.html?r=3#x');
   });
 });
 

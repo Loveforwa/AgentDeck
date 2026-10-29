@@ -15,7 +15,7 @@ AGENTDECK_E2E_PERF=1 pnpm --filter @agentdeck/e2e exec playwright test is26   # 
 - 要求：`tmux`、`git`、`node` 在 PATH 里；Electron 二进制下好了（`node apps/desktop/node_modules/electron/install.js`）。Playwright 不用下浏览器。
 - **不在 `pnpm check` 里**（慢，要 tmux 和图形环境）。CI 是单独的 `.github/workflows/e2e.yml`（macOS + Ubuntu，Linux 用 `xvfb-run`）。
 - 测试跑时会弹出 AgentDeck 窗口（macOS 上会抢一下焦点）。键盘、鼠标事件走 CDP，不需要窗口在前台。
-- **性能测量（IS-26，`is26-performance`）默认跳过**：一轮约 4 分钟（G4 要静置 90 秒），数字受机器负载影响，设 `AGENTDECK_E2E_PERF=1` 才跑。
+- **性能测量（IS-26，`is26-performance`）默认跳过**：一轮约 5 分钟（G4 要静置 2 分多钟），数字受机器负载影响，设 `AGENTDECK_E2E_PERF=1` 才跑。
   每项打印一行 `[IS-26] {...}`（也附在报告里 `is26-*.json`），旁边带当时的机器负载（整机 CPU 忙的比例、loadavg、同时开着的别的 AgentDeck e2e 实例数）；
   别的 e2e 线同时在跑时数字偏高，没过先看负载、等机器空一点再量。启动时加 `--disable-backgrounding-occluded-windows`，被别的窗口盖住时不停帧。工具在 `support/perf.ts`。
 - 每个测试的截图（`01-…png`，最后一张 `final`）、失败时的 trace 和主进程日志在 `e2e/test-results/<测试>/`（git 忽略）。CI 上另有 HTML 报告 `e2e/playwright-report/`。
@@ -167,20 +167,18 @@ app.test 像 github 带登录和第三方登录弹窗、auth.test 是授权页�
 | IS-16（TC-18 的键盘部分） | is16-keyboard-in-browser | 焦点在网页（跨源 iframe）里用 page.keyboard 按 ⌘J ⌘B ⌘W ⌘0 ⌘1：都进了网页、白板页面收不到、没被网页和小桥 preventDefault（对照 ⌘[ 被拦）；⌘R 只刷新网页（dev server 多一个请求、应用没重载）。键盘到应用菜单这一段 CDP 按不出来（合成的按键没有系统事件），要人用真键盘试 |
 | IS-157 | is157-zoom-idle-shell | 空闲的 shell 捏合缩到 50% 以下再放大、⌘- ⌘= ⌘0 ⌘1、zoomTo：标题栏一直 Idle、状态机没变、tmux 大小没变（没复现）；刚开的 shell 打出提示符后 Running 约 3 秒才 Idle（只记录） |
 | TC-148（ERROR 一组） | tc148-error-group | 6 个散放的假 claude（crash 退出码 3、等批准、两个在跑、刚做完、一直空闲）+ 2 个 shell：分组 ERROR · 1、NEEDS YOU · 1、RUNNING · 2、IDLE · 2，组里按位置，shell 不列；灯和 “exit 3 · now” 是 --status-error、Waiting 是 --attention、其余灰字只写时间；⌥⌘1 跳到出错的、⌥⌘3 跳到第一个在跑的 |
-| IS-124 | is124-local-pdf | 沙盒里现写的 6 页 PDF，右键 New browser、地址栏真键盘：现在沙盒化的 iframe 起不了 Chromium 的 PDF 查看器（“can’t be shown”，Show it here 还是同一页）；地址里带 #page=N 当成文件名（File not found）；去掉 sandbox（改 DOM）后查看器显示 1/6、只改 # 不跳页、`?r=2#page=5` 跳到第 5 页（主进程里读查看器的页码）。.pptx 变成下载（主进程拦下、不弹保存框），窗口一直 Loading… |
+| IS-124 | is124-local-pdf | 沙盒里现写的 6 页 PDF，右键 New browser、地址栏真键盘：本地 PDF 的 iframe 不带 sandbox，Chromium 的 PDF 查看器显示 1/6（主进程里读查看器的页码）；`file://…pdf#page=4` 打开在第 4 页；开着时地址栏换 #page=5、#page=2 都跳过去（界面带 ?r=n 重新载入，存下的地址不带 ?r）；.pptx 不载入，写 “This file can’t be shown on the board.” + Open in default app，没有下载（主进程照样记下载、不弹保存框） |
 | IS-14 | is14-notify-click | agent 调 MCP notify：前台只出白板提示；关窗口后弹系统通知 “claude · <工作区>”（Notification.show 换成记录）→ 单击：窗口回来、视口移回那个终端、选中、键盘焦点在它的 xterm（打的字进了 claude）。设置里关掉通知时后台不发。真通知中心弹出要人工 |
 | IS-15 | is15-system-terminal-apps | Settings 的 Terminal app 填 iTerm（osascript create window … command）、Ghostty（写 run/attach-<id>.command、`open -a`）：截下命令在伪终端里跑，接上沙盒 socket 上同一个会话、两个客户端、打字进 claude。真的弹出 App 要人工 |
-| IS-26（B1 T2 G4，要 `AGENTDECK_E2E_PERF=1`） | is26-performance | B1：30 个窗口（20 个终端有输出、其中 3 个一直打印，10 个网页）6 × 5 排开，100% 和 60% 缩放各真鼠标拖空白处平移 12 次，rAF 记帧间隔：掉帧 ≤ 5%、p95 ≤ 1.5 个刷新间隔、最长 ≤ 100ms，另记 LoAF、attach / detach 次数。T2：4 个假 claude + 2 个 bash 都在视口里，真键盘一个字一个字打，keydown 到达页面 → 回显进 xterm 缓冲区 → xterm 画出来，p95 ≤ 50ms；第二段两个 bash 一直打印再量。G4：框里 6 个空闲终端 + 网页、面板开着，静置 60 秒，`app.getAppMetrics()` 每个进程的 CPU 和 tmux 那一串（ps）：合计 ≤ 2%、每个 ≤ 1% 一个核，空闲时不调 git；再拿掉 Clawd、开 reduced motion 各量 30 秒找原因 |
+| IS-26（B1 T2 G4，要 `AGENTDECK_E2E_PERF=1`） | is26-performance | B1：30 个窗口（20 个终端有输出、其中 3 个一直打印，10 个网页）6 × 5 排开，100% 和 60% 缩放各真鼠标拖空白处平移 12 次，rAF 记帧间隔：掉帧 ≤ 5%、p95 ≤ 1.5 个刷新间隔、最长 ≤ 100ms，另记 LoAF、attach / detach 次数。T2：4 个假 claude + 2 个 bash 都在视口里，真键盘一个字一个字打，keydown 到达页面 → 回显进 xterm 缓冲区 → xterm 画出来，p95 ≤ 50ms；第二段两个 bash 一直打印再量。G4：框里 6 个空闲终端 + 网页、面板开着，最后一次输入后先等 40 秒（Clawd 30 秒没输入就睡，IS-161），静置 60 秒、期间 Clawd 不出现，`app.getAppMetrics()` 每个进程的 CPU 和 tmux 那一串（ps）：合计 ≤ 2%、每个 ≤ 1% 一个核，空闲时不调 git；再拿掉 Clawd、开 reduced motion 各量 30 秒找原因 |
 
 `test.fail` 标着的是**已知缺口**（现在失败才算通过；修好后会报“意外通过”，那时去掉 `test.fail`）：
 
 - TC-01：选子文件夹时界面不提示“用了仓库根目录”（`ProjectProbe.usedRepoRoot` 有，`addProject` 没用）。
 - TC-06：第二次单击同一个地址只聚焦、不刷新（终端打开网页时没带 `reloadToken`）。
-- IS-124：本地 PDF 在沙盒化的 iframe 里显示不了；地址里的 #page=N 传不进去（两条）。
 - IS-159（IS-15 时发现）：系统终端 App 打不开（osascript / open 退出码非 0）时界面什么也不说。
-- IS-161（IS-26 的 G4）：空闲时 CPU 不接近 0（2026-10-29 量 4 次，应用合计 3.0–4.6% 一个核，界面 1.4–2.3%、GPU 1.2–1.9%）。左下角 Clawd 每约 10 秒冒出来一次、待 6 秒，第一次以后精灵一直挂在页面上，两帧交替的 `ad-clawd-flip`（infinite）露着、缩回去都在跑，界面和 GPU 一直出帧；把 Clawd 拿掉（display: none）降到约 1.0%，reduced motion 下 0.8–1.2%。
 
-TC-48、TC-81 的两条（IS-153～IS-155）2026-10-29 修好，已经是普通测试。
+TC-48、TC-81 的两条（IS-153～IS-155）2026-10-29 修好，已经是普通测试；IS-124 的两条和 IS-26 的 G4（IS-161）同一天修好，也是普通测试了。
 
 2026-10-28 起，TC-01–TC-148 里已经实现的用例都有脚本；只能人工的步骤写在上表各行（真 claude、真登录、真重启、触控板手感、系统通知弹窗等）。
 

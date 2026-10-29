@@ -49,9 +49,16 @@ function invalid(message: string): never {
   throw new AgentDeckError({ code: 'invalid-argument', message });
 }
 
-/** 输入是本地文件（绝对路径、file://、agentdeck-file://）时返回路径和 ?、# 后缀；不是返回 null；是但不合法抛错。 */
+/**
+ * 输入是本地文件（绝对路径、file://、agentdeck-file://）时返回路径和 ?、# 后缀；不是返回 null；是但不合法抛错。
+ * 绝对路径（data.url 的形式，地址栏把 file://…pdf#page=4 转成 …pdf#page=4）里第一个 ? 或 # 起算后缀（IS-124），
+ * 和界面 addressFromHref 的写法一致；所以文件名里本身带 ? 或 # 的文件只能用 file:// 地址（%23）打开。
+ */
 function localFileTarget(url: string): { path: string; suffix: string } | null {
-  if (isAbsolute(url)) return { path: normalize(url), suffix: '' };
+  if (isAbsolute(url)) {
+    const cut = url.search(/[?#]/);
+    return cut < 0 ? { path: normalize(url), suffix: '' } : { path: normalize(url.slice(0, cut)), suffix: url.slice(cut) };
+  }
   if (!url.startsWith('file:') && !isLocalFileUrl(url)) return null;
   const path = pathFromFileUrl(url);
   if (path === null) invalid(`Not a valid file address: ${url}`);
