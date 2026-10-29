@@ -168,7 +168,7 @@ export function AutoApproveFrameTag({ workspaceId }: { workspaceId: WorkspaceId 
   if (!on) return null;
   return (
     <span
-      className="ad-plugin-tag ad-auto-approve-tag"
+      className="ad-plugin-tag ad-frame-tag ad-auto-approve-tag"
       data-plugin="auto-approve"
       title={`Auto-approve is on for the agents in this workspace${since ? ` · since ${clockTime(since)}` : ''}`}
     >

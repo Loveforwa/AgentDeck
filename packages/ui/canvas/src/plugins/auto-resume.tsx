@@ -9,7 +9,7 @@
 // - 发送、错开、不让 Mac 睡都在主进程的 LimitService；这里只调它（resumeNow / skip / setMessage）。
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import type { WindowId } from '@agentdeck/contracts';
+import type { WindowId, WorkspaceId } from '@agentdeck/contracts';
 import { Button, Popover } from '@agentdeck/ui-kit';
 import type { BoardController } from '../controller.ts';
 import { terminalIdOf } from '../model/windows.ts';
@@ -50,7 +50,19 @@ export const autoResumePlugin: PluginDefinition = {
   isOn,
   toggle,
   WindowMark: AutoResumeMark,
+  FrameMark: AutoResumeFrameTag,
 };
+
+/** 框标题里的小标签：框上开着 Auto-resume 时出现（单独设过的看框，否则跟着白板），排在 Auto-approve 后面。 */
+export function AutoResumeFrameTag({ workspaceId }: { workspaceId: WorkspaceId }) {
+  const on = useBoardState((s) => frameAutoResume(s, workspaceId));
+  if (!on) return null;
+  return (
+    <span className="ad-plugin-tag ad-frame-tag ad-auto-resume-tag" data-plugin="auto-resume" title="Auto-resume is on for the agents in this workspace">
+      Auto-resume
+    </span>
+  );
+}
 
 function useLimits<T>(c: BoardController, selector: (s: LimitsState) => T): T {
   return useStore(c.limits.store, selector);

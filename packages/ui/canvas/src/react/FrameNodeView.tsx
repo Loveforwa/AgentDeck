@@ -64,7 +64,8 @@ export function FrameNodeView({ data }: NodeProps & { data: FrameNodeData }) {
         onContextMenu={(e) => menuAt(e, 'frame-title')}
       >
         <span className="ad-frame-project">{project?.name ?? 'Loading…'}</span>
-        <span className="ad-frame-branch">{branch ?? name}</span>
+        {/* 主目录工作区（没有 git 的文件夹）的名字常和项目名一样：一样就只写一次 */}
+        {(branch ?? name) && (branch ?? name) !== project?.name ? <span className="ad-frame-branch">{branch ?? name}</span> : null}
         {branch && name && name !== branch ? <span className="ad-frame-name">{name}</span> : null}
         <FramePluginMarks workspaceId={ws} />
         <span className="ad-frame-spacer" />

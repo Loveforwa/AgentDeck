@@ -87,6 +87,13 @@ test('TC-40 Auto-approve on a claude terminal and on the frame: normal commands 
   const tag = deck.frameEl('feat/approve').locator('.ad-auto-approve-tag');
   await expect(tag).toHaveText('Auto-approve');
   expect(await tag.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe(red);
+  // 标签的中线和项目名的中线对齐（差 1px 以内）
+  const middle = async (l: typeof tag) => {
+    const b = (await l.boundingBox())!;
+    return b.y + b.height / 2;
+  };
+  const project = deck.frameEl('feat/approve').locator('.ad-frame-project');
+  expect(Math.abs((await middle(tag)) - (await middle(project)))).toBeLessThanOrEqual(1);
   await expect(codexMark).toHaveText('Auto-approve');
   await expect(claudeMark).toHaveText('Auto-approve');
   await expect(deck.windowEl(shell.windowId).locator('.ad-auto-approve-mark')).toHaveCount(0);

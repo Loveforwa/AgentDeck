@@ -100,6 +100,22 @@ describe('Workbench', () => {
     expect(screen.getByText('2 waiting', { selector: '.ad-frame-waiting' })).toBeTruthy();
   });
 
+  it('frame title: project, then branch or folder name; the same name is written once', async () => {
+    const { c } = setup();
+    await waitFor(() => expect(c.state.loaded).toBe(true));
+    const header = () => document.querySelector<HTMLElement>(`.react-flow__node[data-id="frame:${SAMPLE.workspaces.agentdeckMain}"] .ad-frame-header`)!;
+    expect(header().querySelector('.ad-frame-project')?.textContent).toBe('agentdeck');
+    expect(header().querySelector('.ad-frame-branch')?.textContent).toBe('main');
+    // 没有 git 的文件夹：没有分支，名字就是文件夹名，和项目名一样
+    const ws = c.state.workspaces[SAMPLE.workspaces.agentdeckMain]!;
+    act(() => c.store.setState((s) => ({ workspaces: { ...s.workspaces, [ws.id]: { ...ws, branch: null, name: 'agentdeck' } } })));
+    await waitFor(() => expect(header().querySelector('.ad-frame-branch')).toBeNull());
+    expect(header().querySelectorAll('.ad-frame-project')).toHaveLength(1);
+    // 名字不一样时照写
+    act(() => c.store.setState((s) => ({ workspaces: { ...s.workspaces, [ws.id]: { ...ws, branch: null, name: 'scratch' } } })));
+    await waitFor(() => expect(header().querySelector('.ad-frame-branch')?.textContent).toBe('scratch'));
+  });
+
   it('frame titles show a green running lamp next to the waiting count; zero counts are hidden (IS-64)', async () => {
     const { api, c } = setup();
     await waitFor(() => expect(c.state.loaded).toBe(true));

@@ -4,6 +4,8 @@ AutoResumeMark is how the Auto-resume plugin (PL6) shows itself. When an agent t
 
 **Code:** `packages/ui/canvas/src/plugins/auto-resume.tsx` (the mark and card), `src/plugins/auto-resume-model.ts` (on/off at the three levels, the mark text, what the card can do, `controller.limits` = the LimitService list), styles in `canvas.css` (`.ad-auto-resume-*`). The dev page's Demo menu has "Usage limit: next Auto-resume bookmarks", which steps through every state. Rules in `docs/plugins.md`.
 
+**Frame tag:** with Auto-resume on for a frame (set on the frame, or following the board), the frame header shows an 18px “Auto-resume” tag after the Auto-approve one: `surface` fill, 1px `line-strong` border, `ink` text, `text-xs` 500, `radius-inset`. No colour, since Auto-resume is not a status.
+
 **When it shows:** only while this terminal is in one of LimitService's limited accounts; it goes away when the account leaves the list. Turned on but not limited, nothing hangs. With Auto-resume off it still hangs, grey, so you can Resume now.
 
 **States** (a 7px lamp, then the text; the hover is the card's status line)

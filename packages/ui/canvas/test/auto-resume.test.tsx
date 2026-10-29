@@ -274,6 +274,22 @@ describe('Auto-resume bookmark and card (PL6)', () => {
       });
     });
 
+  it('frame on: a plain “Auto-resume” tag in the frame title (no plugin colour); off again: gone', async () => {
+    const { c } = await setup();
+    const frame = () => document.querySelector(`[data-id="frame:${W.agentdeckLogin}"] .ad-frame-header`);
+    const tag = () => frame()?.querySelector<HTMLElement>('.ad-auto-resume-tag') ?? null;
+    expect(tag()).toBeNull();
+    act(() => c.store.setState((s) => toggledAutoResume(s, { kind: 'frame', workspaceId: W.agentdeckLogin })));
+    await waitFor(() => expect(tag()?.textContent).toBe('Auto-resume'));
+    expect(tag()!.classList.contains('ad-frame-tag')).toBe(true);
+    // 别的框没开
+    expect(document.querySelector(`[data-id="frame:${W.shopCart}"] .ad-auto-resume-tag`)).toBeNull();
+    expect(css).toMatch(/\.ad-auto-resume-tag \{[^}]*background: var\(--surface\)/);
+    act(() => c.store.setState((s) => toggledAutoResume(s, { kind: 'frame', workspaceId: W.agentdeckLogin })));
+    await waitFor(() => expect(tag()).toBeNull());
+    c.dispose();
+  });
+
   it('hangs only while the terminal is in a limited account, after Auto-approve, and the frame makes room for it', async () => {
     const { api, c } = await setup();
     expect(mark(CODEX)).toBeNull();
