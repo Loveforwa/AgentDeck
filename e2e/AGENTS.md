@@ -150,9 +150,9 @@ app.test 像 github 带登录和第三方登录弹窗、auth.test 是授权页�
 | TC-41 | tc41-usage | claude、codex 的 Usage 条：数对上会话文件，每轮更新，拖到下边并保存，卡片（模型、窗口、请求数，codex 的 5h / Weekly limit），上下文 ≥ 85% 变黄 |
 | TC-42 | tc42-approve-all | 三个在等（claude、codex 的 rm -rf、不认按键的 claude）→ Approve all… 列表、rm -rf 不勾、Approve 2 → claude 继续、那一条 Couldn’t approve 留下、提示 “Approved 1 request · 2 still need you” |
 | TC-46 | tc46-first-message | open_terminals 开 pi、omp、kimi 带第一条消息，都原样收到（pi、omp 在参数里，kimi 安静后打进去）；@ 开头的照原文；shell 带 prompt 报错不开终端 |
-| TC-48 | tc48-untested-version | omp 18.0.4 开着 Auto-approve → 换成 18.12.6 重启：report 的 approve-keys Off · Untested on 18.12.6（verifiedUpTo 18.0.4），不发键、omp 停在确认框等你。`test.fail` 一条：重启后菜单没灰（界面的 support 是检测完之前取的）、书签没变 Needs you（恢复时开关被丢了） |
+| TC-48 | tc48-untested-version | omp 18.0.4 开着 Auto-approve → 换成 18.12.6 重启：report 的 approve-keys Off · Untested on 18.12.6（verifiedUpTo 18.0.4），不发键、omp 停在确认框等你。第二条不刷新页面：重启后菜单直接灰掉（IS-153）、开关还在、书签变 Needs you · Not supported、不发键（IS-154） |
 | TC-68 | tc68-send-to-waiting | A 用 send_to_terminal 往等批准的 B 打 1 → “This terminal is waiting for the user. Use the inbox.”、B 没收到键；Approve all… 批准 B（ApprovalRecord）后再发一句正常送到 |
-| TC-80、TC-81 | tc80-tc81-codex-limits | 三个 codex 同一个 CODEX_HOME：一组（2 个 interrupted、1 个 idle）、书签、卡片 Don’t resume → Skipped、恢复 + 5 秒宽限后只续 T5、空闲的不发；再撞两个都续、间隔 ≥ 2 秒按先后；limits.cancel 后都不发。撞完自己打字 → took-over、到点不发。`test.fail` 一条：“Not resumed · you took over” 书签一帧都停不住 |
+| TC-80、TC-81 | tc80-tc81-codex-limits | 三个 codex 同一个 CODEX_HOME：一组（2 个 interrupted、1 个 idle）、书签、卡片 Don’t resume → Skipped、恢复 + 5 秒宽限后只续 T5、空闲的不发；再撞两个都续、间隔 ≥ 2 秒按先后；limits.cancel 后都不发。撞完自己打字 → took-over、到点不发。书签写 “Not resumed · you took over” 停几秒（3 秒以上）再收起（IS-155） |
 | TC-109 | tc109-send-sql | codex 里拖选多行 SQL → 右键标题栏 Send selection to ▸（按框分组）› harlequin · shop dev → 原样贴进编辑器、没按回车、焦点过去；没选中时灰掉 |
 | TC-110 | tc110-hide-from-agents | 窗口数据 hideFromAgents（LA1 的勾还没做）→ list_terminals / list_windows 不列，read / send 报 “The user hid this terminal from agents”，一个键都没进；lazysql 照常；返回里没有密码 |
 
@@ -160,8 +160,8 @@ app.test 像 github 带登录和第三方登录弹窗、auth.test 是授权页�
 
 - TC-01：选子文件夹时界面不提示“用了仓库根目录”（`ProjectProbe.usedRepoRoot` 有，`addProject` 没用）。
 - TC-06：第二次单击同一个地址只聚焦、不刷新（终端打开网页时没带 `reloadToken`）。
-- TC-48：agent 升级到没核对过的版本后重启，PLUGINS 里 Auto-approve 不灰（界面只在启动时取一次 autoApproveSupport，那时还没检测完），书签也不变 Needs you（启动时恢复开关被 unsupported 丢掉）。
-- TC-81：撞额度后你接手，“Not resumed · you took over” 书签一帧都停不住（LimitService 同一个 tick 里发最后状态和去掉它的列表，界面没有停留）。
+
+TC-48、TC-81 的两条（IS-153～IS-155）2026-10-29 修好，已经是普通测试。
 
 2026-10-28 起，TC-01–TC-148 里已经实现的用例都有脚本；只能人工的步骤写在上表各行（真 claude、真登录、真重启、触控板手感、系统通知弹窗等）。
 
