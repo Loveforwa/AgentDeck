@@ -41,6 +41,11 @@
 // 21  | 有钩子，watchHooks 是 first-input（codex：SessionStart 要等第一次输入）| 第一次输入后 10 秒内没有钩子 | 同 20
 // 22  | 第 20、21 行降级之后            | 钩子又来了                    | 回到有钩子的规则，degraded 清掉
 // 23  | track 时给了 degraded（没有钩子的 agent、只带会话参数重开的）| — | 快照一直带着这句（状态灯悬停写它）
+//
+//  -- 信任提示（IS-06）：claude 第一次在某个目录启动先问信任不信任，这时还没有任何钩子 --
+// 24  | 有钩子、还没收到过钩子          | silence，屏幕上是信任提示      | needs-reply（Trust this folder?），暂停第 20 行的计时
+// 25  | 第 24 行之后                    | 任何钩子（一般是 session-start）| 先回到 idle，再按这条钩子的规则走
+// 26  | 第 24 行之后，还没有钩子        | silence，提示不在屏幕上了      | idle，重新开始第 20 行的计时
 
 import { WAITING_STATUSES } from '@agentdeck/contracts';
 import type {
@@ -58,6 +63,7 @@ import type {
   WorkspaceId,
 } from '@agentdeck/contracts';
 import { compilePatterns, isDestructive } from './destructive.ts';
+import { TRUST_PROMPT_AGENTS, matchTrustPrompt } from './screens.ts';
 
 export interface TrackOptions {
   agent: AgentKind;
@@ -104,6 +110,8 @@ export interface StatusMachineOptions {
   hookTimeoutMs?: number;
   /** Settings › Approvals 的破坏性名单（正则字符串）。每次判断时取，改设置立即生效。 */
   destructivePatterns: () => readonly string[];
+  /** 读终端屏幕最后几行（TerminalHost.lastLines）。第 24–26 行用；不给时不认信任提示。 */
+  screen?: (terminalId: TerminalId) => Promise<readonly string[]>;
   now?: () => Date;
 }
 
@@ -124,6 +132,8 @@ interface Entry {
   /** 钩子没来被降级了（第 22 行据此恢复）。 */
   hookFailed: boolean;
   degraded: string | null;
+  /** 第 24 行：屏幕上是信任提示时的那条 pending。 */
+  trust: PendingRequest | null;
 }
 
 const ENDED: readonly TerminalStatus[] = ['exited', 'error'];
@@ -176,6 +186,7 @@ export class StatusMachine implements StatusService {
       hookTimer: null,
       hookFailed: false,
       degraded,
+      trust: null,
     };
     this.entries.set(terminalId, e);
     if (e.watch === 'startup') this.startWatch(terminalId, e); // 20
@@ -202,6 +213,11 @@ export class StatusMachine implements StatusService {
     if (!e.sawHook && e.watch !== null) this.opts.onHooksAlive?.({ terminalId, agent: e.agent });
     e.sawHook = true;
     this.stopWatch(e);
+    if (e.trust) {
+      // 25：点了信任，钩子来了
+      e.trust = null;
+      if (e.snap.status === 'needs-reply') this.set(terminalId, e, 'idle');
+    }
     if (e.hookFailed) {
       // 22：钩子来晚了，回到有钩子的规则
       e.hookFailed = false;
@@ -285,6 +301,7 @@ export class StatusMachine implements StatusService {
           } else if (s === 'running' && !e.turnActive) {
             this.set(event.id, e, 'idle'); // 14
           }
+          if (!e.sawHook && this.opts.screen && TRUST_PROMPT_AGENTS.includes(e.agent)) void this.checkTrust(event.id, e); // 24 26
           return; // 16
         }
         if (s === 'running') this.set(event.id, e, 'idle'); // 18
@@ -333,6 +350,29 @@ export class StatusMachine implements StatusService {
   // ---- 内部 ----
 
   /** 第 20、21 行：hookTimeoutMs 内没有任何钩子就退回按输出判断。 */
+  /** 第 24、26 行：还没收到钩子、屏幕停下时看一眼是不是信任提示。 */
+  private async checkTrust(terminalId: TerminalId, e: Entry): Promise<void> {
+    let lines: readonly string[];
+    try {
+      lines = await this.opts.screen!(terminalId);
+    } catch {
+      return;
+    }
+    if (this.entries.get(terminalId) !== e || this.ended(e) || e.sawHook) return;
+    const summary = matchTrustPrompt(e.agent, lines);
+    if (summary) {
+      if (e.trust) return;
+      // 等你点信任时钩子本来就不会来，不算钩子坏了
+      this.stopWatch(e);
+      e.trust = this.pending(terminalId, e, 'question', summary, null);
+      this.set(terminalId, e, 'needs-reply', e.trust); // 24
+    } else if (e.trust) {
+      e.trust = null;
+      this.set(terminalId, e, 'idle'); // 26
+      if (e.watch === 'startup') this.startWatch(terminalId, e);
+    }
+  }
+
   private startWatch(terminalId: TerminalId, e: Entry): void {
     this.stopWatch(e);
     e.hookTimer = setTimeout(() => {

@@ -113,3 +113,29 @@ export type ScreenKind = 'omp';
 export function matchApprovalScreen(_kind: ScreenKind, lines: readonly string[]): ScreenPrompt | null {
   return matchOmpApproval(lines);
 }
+
+// ---- claude 的信任提示（IS-06） ----
+// 第一次在某个目录开 claude 先问信任不信任这个文件夹；这时还没有任何钩子（SessionStart 要等你点了信任才来），
+// 状态机只看到屏幕停了。2026-10-29 从本机 claude 的安装包里读到的原文：
+//   Accessing workspace:
+//   Quick safety check: Is this a project you created or one you trust? …
+//   ❯ 1. Yes, I trust this folder
+//     2. No, exit                     （文件夹里带权限配置时是 “No, continue without these permissions”）
+// 旧版是 “Do you trust the files in this folder?” 和 “Yes, proceed”。标题和“信任”那个选项都要在才算。
+
+const TRUST_TITLES = [/Quick safety check/, /Do you trust the files in this folder\?/];
+const TRUST_YES = new RegExp(`^${CURSOR}(?:\\d+\\.\\s*)?(?:Yes, I trust this folder|Yes, proceed)\\s*$`);
+
+/** 会显示信任提示的 agent。 */
+export const TRUST_PROMPT_AGENTS: readonly string[] = ['claude'];
+
+/** 屏幕上是不是 agent 的“信任这个文件夹吗”提示。是就返回给人看的一句话（PendingRequest.summary），不是返回 null。 */
+export function matchTrustPrompt(agent: string, raw: readonly string[]): string | null {
+  if (!TRUST_PROMPT_AGENTS.includes(agent)) return null;
+  const lines = raw.map(clean);
+  const title = lines.findIndex((l) => TRUST_TITLES.some((t) => t.test(l)));
+  if (title < 0) return null;
+  const yes = lines.findIndex((l, i) => i > title && TRUST_YES.test(l.trim()));
+  if (yes < 0 || nonEmptyAfter(lines, yes) > MAX_LINES_AFTER_OPTIONS) return null;
+  return 'Trust this folder?';
+}

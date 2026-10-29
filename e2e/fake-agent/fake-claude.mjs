@@ -25,13 +25,15 @@
 //   compact         → SessionStart（source: compact），会话 id 不变
 //   quit / exit     → SessionEnd，退出码 0
 //   crash           → 不发钩子，退出码 3（状态机记成 error）
+// 信任提示（IS-06）：当前目录里有 .fake-claude-untrusted 时，启动先画真 claude 的 “Quick safety check … Yes, I trust this folder”，
+//   不发任何钩子；按 1 或回车 = 信任，接着照常启动（SessionStart）；按 2 或 Esc = No, exit，退出码 1。
 // 每发一个钩子、每收到一次批准，都往 $AGENTDECK_E2E_LOG_DIR/<会话 id>.jsonl 写一行，测试读它核对后台发生了什么。
 //
 // 只用 node 内置模块。
 
 import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 
@@ -411,13 +413,53 @@ function onChars(chunk) {
   }
 }
 
-banner();
-log({ kind: 'start', argv: process.argv.slice(2).filter((a) => !a.startsWith('{')), resume: args.resume });
-void emitHook('SessionStart', { source: args.resume ? 'resume' : 'startup' }).then(() => {
-  if (args.prompt) void runLine(args.prompt);
-  else prompt();
-});
+function start() {
+  banner();
+  log({ kind: 'start', argv: process.argv.slice(2).filter((a) => !a.startsWith('{')), resume: args.resume });
+  void emitHook('SessionStart', { source: args.resume ? 'resume' : 'startup' }).then(() => {
+    if (args.prompt) void runLine(args.prompt);
+    else prompt();
+  });
+}
+
+let trusting = existsSync(join(process.cwd(), '.fake-claude-untrusted'));
+if (trusting) {
+  // 2026-10-29 本机 claude 的原文（IS-06）
+  write(
+    [
+      ' Accessing workspace:',
+      '',
+      ` ${process.cwd()}`,
+      '',
+      ' Quick safety check: Is this a project you created or one you trust? (Like your own code, a well-known open',
+      ' source project, or work from your team). If not, take a moment to review what’s in this folder first.',
+      '',
+      ' Claude Code’ll be able to read, edit, and execute files here.',
+      '',
+      ' Security guide',
+      '',
+      ' ❯ 1. Yes, I trust this folder',
+      '   2. No, exit',
+      '',
+      ' Enter to confirm · Esc to cancel',
+      '',
+    ].join('\n'),
+  );
+  log({ kind: 'trust-prompt' });
+} else start();
 if (process.stdin.isTTY) process.stdin.setRawMode(true);
 process.stdin.setEncoding('utf8');
-process.stdin.on('data', (c) => onInput(String(c)));
+process.stdin.on('data', (c) => {
+  if (!trusting) return onInput(String(c));
+  const ch = String(c)[0];
+  if (ch === '1' || ch === '\r') {
+    trusting = false;
+    log({ kind: 'trusted' });
+    write('\x1b[2J\x1b[H');
+    start();
+  } else if (ch === '2' || ch === '\x1b') {
+    log({ kind: 'exit', reason: 'not-trusted' });
+    process.exit(1);
+  }
+});
 process.stdin.on('end', () => process.exit(0));

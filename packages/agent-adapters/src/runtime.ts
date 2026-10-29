@@ -97,6 +97,8 @@ export function createAgentRuntime(opts: AgentRuntimeOptions) {
       approvals?.onStatusEvent(e);
     },
     destructivePatterns: opts.destructivePatterns,
+    // IS-06：认 claude 的信任提示（terminals 没有 lastLines 时不认）
+    ...(opts.terminals.lastLines ? { screen: (id: TerminalId) => opts.terminals.lastLines!(id, 40) } : {}),
     // AH3（IS-74）：钩子该来没来 → 报告里 status 写 “Hooks didn't report at the last launch”；钩子来了就清掉
     onDegraded: (d) => agentsRef?.noteLaunch(d.agent, "Hooks didn't report at the last launch"),
     onHooksAlive: (d) => agentsRef?.noteLaunch(d.agent, null),

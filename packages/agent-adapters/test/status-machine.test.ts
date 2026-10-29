@@ -484,3 +484,122 @@ describe('hooks that never report (AH3, IS-74)', () => {
     expect(snap().degraded).toBeUndefined();
   });
 });
+
+describe('IS-06: claude waiting on its trust prompt (rows 24–26)', () => {
+  // 2026-10-29 本机 claude 安装包里的原文
+  const TRUST = [
+    ' Accessing workspace:',
+    '',
+    ' /Users/me/new-repo',
+    '',
+    ' Quick safety check: Is this a project you created or one you trust? (Like your own code, a well-known open',
+    ' source project, or work from your team). If not, take a moment to review what’s in this folder first.',
+    '',
+    ' Claude Code’ll be able to read, edit, and execute files here.',
+    '',
+    ' Security guide',
+    '',
+    ' ❯ 1. Yes, I trust this folder',
+    '   2. No, exit',
+    '',
+    ' Enter to confirm · Esc to cancel',
+  ];
+  let screen: string[];
+  let degradedNotes: string[];
+  const flush = () => vi.advanceTimersByTimeAsync(0);
+  beforeEach(() => {
+    vi.useFakeTimers();
+    screen = TRUST;
+    degradedNotes = [];
+    m = new StatusMachine({
+      emit: (e) => events.push(e),
+      destructivePatterns: () => DEFAULT_DESTRUCTIVE_PATTERNS,
+      now: () => new Date(clock),
+      screen: async () => screen,
+      onDegraded: (d) => degradedNotes.push(d.reason),
+    });
+    m.track(T, { agent: 'claude', workspaceId: WS, hooks: true, watchHooks: 'startup' });
+    events = [];
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it('24: no hook yet and the screen stops on the trust prompt → needs-reply “Trust this folder?”, and the hook watch pauses', async () => {
+    activity();
+    silence();
+    await flush();
+    expect(m.get(T)).toMatchObject({ status: 'needs-reply', pending: { kind: 'question', summary: 'Trust this folder?' } });
+    // 你一直没点：不算钩子坏了
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(degradedNotes).toEqual([]);
+    // 屏幕又停一次：还是同一条，不重新提醒
+    const id = m.get(T)!.pending!.id;
+    silence();
+    await flush();
+    expect(m.get(T)!.pending!.id).toBe(id);
+  });
+
+  it('25: trusting the folder brings SessionStart → idle, pending cleared', async () => {
+    activity();
+    silence();
+    await flush();
+    hook({ type: 'session-start', sessionId: 's-1' as AgentSessionId });
+    expect(m.get(T)).toMatchObject({ status: 'idle', pending: null, sessionId: 's-1' });
+  });
+
+  it('26: the prompt is gone but no hook came → idle and the hook watch starts again', async () => {
+    activity();
+    silence();
+    await flush();
+    screen = [' ❯ ', '', ' ? for shortcuts'];
+    silence();
+    await flush();
+    expect(m.get(T)).toMatchObject({ status: 'idle', pending: null });
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(degradedNotes).toEqual([HOOKS_DIDNT_REPORT]);
+  });
+
+  it('a normal start (no trust prompt on screen) stays idle; after the first hook the screen is not read any more', async () => {
+    let reads = 0;
+    m = new StatusMachine({
+      emit: (e) => events.push(e),
+      destructivePatterns: () => DEFAULT_DESTRUCTIVE_PATTERNS,
+      screen: async () => {
+        reads++;
+        return [' ❯ ', '', ' ? for shortcuts'];
+      },
+    });
+    m.track(T, { agent: 'claude', workspaceId: WS, hooks: true });
+    activity();
+    silence();
+    await flush();
+    expect(status()).toBe('idle');
+    hook({ type: 'session-start', sessionId: 's-2' as AgentSessionId });
+    silence();
+    await flush();
+    expect(reads).toBe(1);
+  });
+
+  it('only claude: codex and agents without hooks are never read for it', async () => {
+    let reads = 0;
+    m = new StatusMachine({ emit: () => {}, destructivePatterns: () => [], screen: async () => (reads++, TRUST) });
+    m.track(T, { agent: 'codex', workspaceId: WS, hooks: true });
+    activity();
+    silence();
+    await flush();
+    expect(reads).toBe(0);
+    expect(status()).toBe('idle');
+  });
+});
+
+describe('matchTrustPrompt', () => {
+  it('needs the title and the trust option; older wording too; not other agents', async () => {
+    const { matchTrustPrompt } = await import('../src/status/screens.ts');
+    expect(matchTrustPrompt('claude', [' Quick safety check: Is this a project …', ' ❯ 1. Yes, I trust this folder', '   2. No, exit'])).toBe('Trust this folder?');
+    expect(matchTrustPrompt('claude', [' Do you trust the files in this folder?', ' ❯ 1. Yes, proceed', '   2. No, exit'])).toBe('Trust this folder?');
+    expect(matchTrustPrompt('claude', [' ❯ 1. Yes, I trust this folder'])).toBeNull();
+    expect(matchTrustPrompt('claude', [' Quick safety check: …'])).toBeNull();
+    expect(matchTrustPrompt('codex', [' Quick safety check: …', ' ❯ 1. Yes, I trust this folder'])).toBeNull();
+    // 被后面的输出顶上去了：不是当前的提示
+    expect(matchTrustPrompt('claude', [' Quick safety check: …', ' ❯ 1. Yes, I trust this folder', ...Array.from({ length: 12 }, (_, i) => `line ${i}`)])).toBeNull();
+  });
+});
