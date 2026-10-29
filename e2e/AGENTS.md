@@ -163,11 +163,16 @@ app.test 像 github 带登录和第三方登录弹窗、auth.test 是授权页�
 | IS-16（TC-18 的键盘部分） | is16-keyboard-in-browser | 焦点在网页（跨源 iframe）里用 page.keyboard 按 ⌘J ⌘B ⌘W ⌘0 ⌘1：都进了网页、白板页面收不到、没被网页和小桥 preventDefault（对照 ⌘[ 被拦）；⌘R 只刷新网页（dev server 多一个请求、应用没重载）。键盘到应用菜单这一段 CDP 按不出来（合成的按键没有系统事件），要人用真键盘试 |
 | IS-157 | is157-zoom-idle-shell | 空闲的 shell 捏合缩到 50% 以下再放大、⌘- ⌘= ⌘0 ⌘1、zoomTo：标题栏一直 Idle、状态机没变、tmux 大小没变（没复现）；刚开的 shell 打出提示符后 Running 约 3 秒才 Idle（只记录） |
 | TC-148（ERROR 一组） | tc148-error-group | 6 个散放的假 claude（crash 退出码 3、等批准、两个在跑、刚做完、一直空闲）+ 2 个 shell：分组 ERROR · 1、NEEDS YOU · 1、RUNNING · 2、IDLE · 2，组里按位置，shell 不列；灯和 “exit 3 · now” 是 --status-error、Waiting 是 --attention、其余灰字只写时间；⌥⌘1 跳到出错的、⌥⌘3 跳到第一个在跑的 |
+| IS-124 | is124-local-pdf | 沙盒里现写的 6 页 PDF，右键 New browser、地址栏真键盘：现在沙盒化的 iframe 起不了 Chromium 的 PDF 查看器（“can’t be shown”，Show it here 还是同一页）；地址里带 #page=N 当成文件名（File not found）；去掉 sandbox（改 DOM）后查看器显示 1/6、只改 # 不跳页、`?r=2#page=5` 跳到第 5 页（主进程里读查看器的页码）。.pptx 变成下载（主进程拦下、不弹保存框），窗口一直 Loading… |
+| IS-14 | is14-notify-click | agent 调 MCP notify：前台只出白板提示；关窗口后弹系统通知 “claude · <工作区>”（Notification.show 换成记录）→ 单击：窗口回来、视口移回那个终端、选中、键盘焦点在它的 xterm（打的字进了 claude）。设置里关掉通知时后台不发。真通知中心弹出要人工 |
+| IS-15 | is15-system-terminal-apps | Settings 的 Terminal app 填 iTerm（osascript create window … command）、Ghostty（写 run/attach-<id>.command、`open -a`）：截下命令在伪终端里跑，接上沙盒 socket 上同一个会话、两个客户端、打字进 claude。真的弹出 App 要人工 |
 
 `test.fail` 标着的是**已知缺口**（现在失败才算通过；修好后会报“意外通过”，那时去掉 `test.fail`）：
 
 - TC-01：选子文件夹时界面不提示“用了仓库根目录”（`ProjectProbe.usedRepoRoot` 有，`addProject` 没用）。
 - TC-06：第二次单击同一个地址只聚焦、不刷新（终端打开网页时没带 `reloadToken`）。
+- IS-124：本地 PDF 在沙盒化的 iframe 里显示不了；地址里的 #page=N 传不进去（两条）。
+- IS-15：系统终端 App 打不开（osascript / open 退出码非 0）时界面什么也不说。
 
 TC-48、TC-81 的两条（IS-153～IS-155）2026-10-29 修好，已经是普通测试。
 
