@@ -167,11 +167,12 @@ describe('createSender', () => {
     // 第一次故意慢一点：后面的必须等它跑完才发
     writeFileSync(notify, `#!/bin/sh\n[ "$2" = SessionStart ] && sleep 0.3\nprintf '%s %s %s\\n' "$1" "$2" "$(cat)" >> '${log}'\n`);
     chmodSync(notify, 0o755);
-    const send = ext.createSender(notify, 'omp', { PATH: process.env.PATH ?? '' });
+    // 机器很忙时起一个 sh 就可能超过默认的 3 秒（那时这条会被丢掉，是有意的）；这里测的是顺序，给足时间
+    const send = ext.createSender(notify, 'omp', { PATH: process.env.PATH ?? '' }, 20_000);
     void send({ hookName: 'SessionStart', payload: { session_id: 's1' } });
     await send({ hookName: 'UserPromptSubmit', payload: {} });
     expect(readFileSync(log, 'utf8')).toBe('omp SessionStart {"session_id":"s1"}\nomp UserPromptSubmit {}\n');
-  });
+  }, 30_000);
 
   it('keeps going when notify is missing', async () => {
     const send = ext.createSender(join(dir, 'missing'), 'pi', {});

@@ -1,11 +1,12 @@
 // IS-06：claude 第一次在某个目录启动时停在“信任这个文件夹吗”，这时还没有任何钩子。以前显示 Idle，像是 claude 空着；
 // 现在认出屏幕上的提示，显示等你（Needs reply · Trust this folder?），顶栏算一个 waiting；点了信任、SessionStart 到了回到 Idle。
 // 假 claude 在当前目录有 .fake-claude-untrusted 时先画真 claude 的提示原文（e2e/fake-agent/fake-claude.mjs）。
+import type { Page } from '@playwright/test';
 import { expect, test } from '../support/fixtures.ts';
 import { openTerminal, setupWorktree } from '../support/flows.ts';
 import { makeRepo } from '../support/repo.ts';
 
-const pendingOf = (page: import('@playwright/test').Page, id: string) =>
+const pendingOf = (page: Page, id: string) =>
   page.evaluate(
     (id) =>
       (window as unknown as { __board: { state: { statuses: Record<string, { pending: { summary: string } | null }> } } }).__board.state.statuses[id]

@@ -356,7 +356,8 @@ describe.skipIf(!tmuxOk)('TmuxHost with real tmux', () => {
       // Stop all and quit / 电脑重启：tmux 服务没了
       events.length = 0;
       tmux('kill-server');
-      await waitFor(() => events.some((e) => e.type === 'terminal.host-lost'), 3000);
+      // 机器很忙时发现 tmux 服务没了要几秒
+      await waitFor(() => events.some((e) => e.type === 'terminal.host-lost'), 10_000);
       expect(await host.list()).toEqual([]);
 
       // Restore：同一个目录、新的终端 id，把会留下痕迹的命令填进输入行
