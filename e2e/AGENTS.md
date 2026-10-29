@@ -82,6 +82,7 @@ app.test 像 github 带登录和第三方登录弹窗、auth.test 是授权页�
 `deck.launch({ args, waitForBoard })`：额外的 Chromium 参数；`waitForBoard: false` 不等白板（TC-19 的 tmux 说明页）。
 `support/g4-env.ts`：`shieldRealAgents`（见下面「已知问题」）、zsh 的登录配置、读进程环境（TC-20）。
 `fake-agent/fake-codex-mini.mjs`（TC-17）：`--version` 报 `codex-cli 0.1.0`（老版本，不起 app-server），运行时只画 “Fake Codex”、回显输入；测试用 `support/g1.ts` 的 `installFake(sb, 'codex', …)` 在启动前放进沙盒的 fakebin。
+`fake-agent/key-probe.mjs`（IS-05）记下程序真正收到的每一段字节（kind bytes，hex）和 bracketed paste 的整段（kind paste），`colors` 画颜色和框线、`bell` 发响铃和 OSC 9；`--ext` 申请扩展按键、`--mouse` 要鼠标。工具在 `support/h2.ts`（日志、读 xterm 每格的样式、截图取色、系统剪贴板存取、`focusTerminal` 等 xterm 输入框真拿到焦点）。
 `fake-agent/emoji-stream.mjs`（TC-25）一行行打带 ✅ ❌ 🚀 🧪 的列表，最后 `END`；`fake-agent/theme-probe.mjs`（TC-26）像 claude 的 auto 主题：打开 ?2031，收到 `CSI ? 997 ; 1|2 n` 就记下并重新问 OSC 11 背景色。
 `support/g1.ts` 是 g1 这几条（白板、窗口、面板）用的小工具：从 React fiber 读 xterm 的选项和屏幕（`xtermOf`）、数主进程 IPC 调用、触发应用菜单的 accelerator、记 `status.changed`。
 
@@ -158,6 +159,10 @@ app.test 像 github 带登录和第三方登录弹窗、auth.test 是授权页�
 | IS-23（TC-09 补充） | is23-summary-restore | Shell（80 行输出）和假 claude 都拉成摘要卡（Shell 卡上正好最后 3 行，tmux 没有客户端）→ 卡片期间 claude 出字 → 两个都单击恢复：原大小、聚焦、各一个客户端，xterm 行列数和拉小前一样、tmux 窗格同大小、屏幕和 capture-pane 一行对一行；之后输入照常 |
 | IS-27（TC-10 的强杀版） | is27-sigkill-restore | 真鼠标拖开 Shell、等自动保存进库 → kill -9 主进程 → 渲染 / GPU / utilityProcess 都退出（ps 里没有沙盒 user-data-dir 的进程）、tmux 会话在、客户端断开，应用不在时 claude 的 Stop 钩子照跑不卡 → 再打开：没有 Restore 提示、框和窗口位置不变、每个会话一个客户端、历史在、钩子（等批准 → 1 → Running → done）和 Shell 输入照常 → 再 ⌘Q 重开布局还在 |
 | TC-110 | tc110-hide-from-agents | 窗口数据 hideFromAgents（LA1 的勾还没做）→ list_terminals / list_windows 不列，read / send 报 “The user hid this terminal from agents”，一个键都没进；lazysql 照常；返回里没有密码 |
+| IS-05 | is05-terminal-feel | 终端手感里机器能核对的：key-probe 画 16 / 256 / 真彩色、粗体下划线斜体、中文和框线 → xterm 缓冲区每格的字、宽度、颜色，tmux 里还是真彩色，截图取色；Esc、Shift+Enter（申请扩展按键的收到 CSI 13;2u，没申请的收到回车）、Option+字母、方向键、⌃C、⌘V 多行 bracketed paste 不提交；刚接回显示按 Esc 的延迟；聚焦终端里滚轮进 tmux 回滚、打字退出、滚回底部退出；申请了鼠标的程序（像 codex）自己收到 SGR 滚轮；拖选松手进系统剪贴板（OSC 52）、⌘V 到别的终端，Option 拖 + ⌘C；测试自己经沙盒 socket attach 第二个客户端，两边互相看得到、大小跟最近输入的；响铃和透传的 OSC 9 到 xterm、假 claude 做完 Idle · now。触控板手感、真 claude 的配色和 / 菜单、iTerm2 / Terminal.app 里的颜色、从访达拖文件要人看 |
+| IS-16（TC-18 的键盘部分） | is16-keyboard-in-browser | 焦点在网页（跨源 iframe）里用 page.keyboard 按 ⌘J ⌘B ⌘W ⌘0 ⌘1：都进了网页、白板页面收不到、没被网页和小桥 preventDefault（对照 ⌘[ 被拦）；⌘R 只刷新网页（dev server 多一个请求、应用没重载）。键盘到应用菜单这一段 CDP 按不出来（合成的按键没有系统事件），要人用真键盘试 |
+| IS-157 | is157-zoom-idle-shell | 空闲的 shell 捏合缩到 50% 以下再放大、⌘- ⌘= ⌘0 ⌘1、zoomTo：标题栏一直 Idle、状态机没变、tmux 大小没变（没复现）；刚开的 shell 打出提示符后 Running 约 3 秒才 Idle（只记录） |
+| TC-148（ERROR 一组） | tc148-error-group | 6 个散放的假 claude（crash 退出码 3、等批准、两个在跑、刚做完、一直空闲）+ 2 个 shell：分组 ERROR · 1、NEEDS YOU · 1、RUNNING · 2、IDLE · 2，组里按位置，shell 不列；灯和 “exit 3 · now” 是 --status-error、Waiting 是 --attention、其余灰字只写时间；⌥⌘1 跳到出错的、⌥⌘3 跳到第一个在跑的 |
 
 `test.fail` 标着的是**已知缺口**（现在失败才算通过；修好后会报“意外通过”，那时去掉 `test.fail`）：
 
