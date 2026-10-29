@@ -34,7 +34,7 @@ test('TC-147 select multi-line SQL with the mouse, Send selection to ▸ another
   const source = await openTerminal(deck, null, 'shell', undefined, { x: 40, y: 40 });
   const target = await openTerminal(deck, null, 'custom', 'zsh -f', { x: 660, y: 40 });
   await deck.waitForPane(target.terminalId, /[%$] *$/m);
-  // 100% 缩放：白板缩放不是 100% 时 xterm 的鼠标坐标会偏（IS-82），拖选会选到上面几行
+  // 100% 缩放下拖选（别的缩放见 is82-zoomed-mouse；IS-82 修之前缩放下会选偏）
   await page.keyboard.press('Meta+0');
 
   await deck.focusWindow(source.windowId);

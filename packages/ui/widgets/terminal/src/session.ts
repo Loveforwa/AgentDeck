@@ -19,6 +19,7 @@ import { FONT_SIZE, LINE_HEIGHT, termSizeFor } from './metrics.ts';
 import { installQueryAnswers, type QueryAnswers } from './queries.ts';
 import { routerFor } from './router.ts';
 import { readColors, type TermColors } from './theme.ts';
+import { fixMouseForZoom } from './zoom.ts';
 
 /** 内容区大小变了以后，盯着容器实际大小的时长（IS-49）。 */
 const FIT_WINDOW_MS = 1000;
@@ -129,6 +130,8 @@ export class TerminalSession {
       }),
     );
     this.term.open(opts.container);
+    // 白板不在 100% 时点链接、拖选、双击不偏（IS-82）
+    fixMouseForZoom(this.term);
     // 调试和端到端测试用：从 DOM 拿到这个终端（document.querySelector('.ad-terminal__xterm').agentdeckSession）
     Object.defineProperty(opts.container, 'agentdeckSession', { value: this, configurable: true });
 

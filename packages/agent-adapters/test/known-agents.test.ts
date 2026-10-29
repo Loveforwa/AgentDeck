@@ -80,7 +80,8 @@ describe('known agents table', () => {
       version: null,
       path: null,
     });
-  });
+    // 连着起几个进程读版本号，机器很忙时会超过默认的 5 秒
+  }, 20_000);
 
   it('tries the command names in order and launches the one it found', async () => {
     const adapter = new KnownAgentAdapter({ ...def('kimi'), commands: ['kimi-code', 'kimi'] }, { env: () => ({ PATH: bin }) });

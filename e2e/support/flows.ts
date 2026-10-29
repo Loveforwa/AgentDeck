@@ -80,10 +80,6 @@ export async function openTerminal(
   /** 白板坐标里放在哪（不给时白板自己找位置）。 */
   at?: { x: number; y: number },
 ): Promise<{ windowId: string; terminalId: string }> {
-  // IS-07：500ms 内连开两个终端，第二个可能误显示 “Previous session ended”（复用了 terminals.list() 的缓存）。
-  // 这里测的不是它，两次之间隔开 600ms
-  await deck.page.waitForTimeout(Math.max(0, 600 - (Date.now() - lastOpen)));
-  lastOpen = Date.now();
   const windowId = await deck.page.evaluate(
     async ({ workspaceId, agent, command, at }) => {
       const c = (window as unknown as { __board: { newTerminal(o: object): Promise<string | null> } }).__board;
@@ -95,8 +91,6 @@ export async function openTerminal(
   const terminalId = await deck.terminalIdOf(windowId);
   return { windowId, terminalId };
 }
-
-let lastOpen = 0;
 
 /** 在终端窗口里开一个假 claude，等它报 SessionStart（状态 idle）。 */
 export async function openFakeClaude(deck: Deck, workspaceId: string | null): Promise<{ windowId: string; terminalId: string }> {

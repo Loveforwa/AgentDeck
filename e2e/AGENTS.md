@@ -170,6 +170,9 @@ app.test 像 github 带登录和第三方登录弹窗、auth.test 是授权页�
 | IS-124 | is124-local-pdf | 沙盒里现写的 6 页 PDF，右键 New browser、地址栏真键盘：本地 PDF 的 iframe 不带 sandbox，Chromium 的 PDF 查看器显示 1/6（主进程里读查看器的页码）；`file://…pdf#page=4` 打开在第 4 页；开着时地址栏换 #page=5、#page=2 都跳过去（界面带 ?r=n 重新载入，存下的地址不带 ?r）；.pptx 不载入，写 “This file can’t be shown on the board.” + Open in default app，没有下载（主进程照样记下载、不弹保存框） |
 | IS-14 | is14-notify-click | agent 调 MCP notify：前台只出白板提示；关窗口后弹系统通知 “claude · <工作区>”（Notification.show 换成记录）→ 单击：窗口回来、视口移回那个终端、选中、键盘焦点在它的 xterm（打的字进了 claude）。设置里关掉通知时后台不发。真通知中心弹出要人工 |
 | IS-15 | is15-system-terminal-apps | Settings 的 Terminal app 填 iTerm（osascript create window … command）、Ghostty（写 run/attach-<id>.command、`open -a`）：截下命令在伪终端里跑，接上沙盒 socket 上同一个会话、两个客户端、打字进 claude。真的弹出 App 要人工 |
+| IS-06 | is06-trust-prompt | 假 claude 在带 .fake-claude-untrusted 的工作区里先画真 claude 的信任提示（不发钩子）→ 状态 needs-reply、摘要 Trust this folder?、顶栏 1 waiting，11 秒不点也不降级成“钩子没来”→ 回车信任 → SessionStart → Idle、pending 清掉 |
+| IS-07 | is07-back-to-back-terminals | 同时连开 5 个 shell（openTerminal 不再隔 600ms），等 2 秒：每个都接上显示、没有 “Previous session ended” |
+| IS-82 | is82-zoomed-mouse | 白板 60%、140% 缩放下：单击第 7 行的 localhost 地址打开的是 p07（不是上一行）；拖选第 4 行的 “row-04” 选中的就是这几个字（去掉修复时两条都失败） |
 | IS-26（B1 T2 G4，要 `AGENTDECK_E2E_PERF=1`） | is26-performance | B1：30 个窗口（20 个终端有输出、其中 3 个一直打印，10 个网页）6 × 5 排开，100% 和 60% 缩放各真鼠标拖空白处平移 12 次，rAF 记帧间隔：掉帧 ≤ 5%、p95 ≤ 1.5 个刷新间隔、最长 ≤ 100ms，另记 LoAF、attach / detach 次数。T2：4 个假 claude + 2 个 bash 都在视口里，真键盘一个字一个字打，keydown 到达页面 → 回显进 xterm 缓冲区 → xterm 画出来，p95 ≤ 50ms；第二段两个 bash 一直打印再量。G4：框里 6 个空闲终端 + 网页、面板开着，最后一次输入后先等 40 秒（Clawd 30 秒没输入就睡，IS-161），静置 60 秒、期间 Clawd 不出现，`app.getAppMetrics()` 每个进程的 CPU 和 tmux 那一串（ps）：合计 ≤ 2%、每个 ≤ 1% 一个核，空闲时不调 git；再拿掉 Clawd、开 reduced motion 各量 30 秒找原因 |
 
 `test.fail` 标着的是**已知缺口**（现在失败才算通过；修好后会报“意外通过”，那时去掉 `test.fail`）：
@@ -187,7 +190,7 @@ TC-48、TC-81 的两条（IS-153～IS-155）2026-10-29 修好，已经是普通�
 - **Playwright 下第一个页面的 preload 跑两次**：主进程开了两条终端输出端口，preload 拿第一条，utilityProcess 用第二条，终端没有输出、输入一直扣着。
   只在 Playwright 接管时见到（直接启动只有一次）。`support/app.ts` 启动后先刷新一次页面绕开。根上的问题是 preload 只认第一条端口（`ipcRenderer.once`），收到新端口时不会换。
 - **Playwright 默认的单击（按下和抬起之间没有间隔）点没聚焦的终端**：按下时聚焦、窗口重排，click 落到白板空白处又把焦点清掉。`deck.focusWindow` 用 80ms 的按压绕开；真人点击没见到这个问题。
-- **IS-07**：500ms 内连开两个终端，第二个可能显示 “Previous session ended”。`openTerminal` 两次之间隔 600ms。
+- **IS-07**（已修，X6）：以前 500ms 内连开两个终端，第二个可能显示 “Previous session ended”，`openTerminal` 两次之间隔 600ms 绕开；2026-10-29 去掉了这个间隔，`is07-back-to-back-terminals` 专门连开 5 个。
 - **登录 PATH 末尾补的常见目录**：AgentDeck 在读到的 PATH 后面补 /opt/homebrew/bin、/usr/local/bin 等（login-env.ts 的 withCommonPaths），
   本机这些目录里装着真的 codex、pi、omp，检测时会跑它们的 `--version`。2026-10-28 起沙盒默认就挡住它们（`support/sandbox.ts` 的 `SHIELDED_AGENTS`，`shieldRealAgents(sb)` 留作兼容）（fakebin 里放同名的假程序挡住）。
 - **Playwright 的键盘进不了 webview**：CDP 的按键只到白板页面，网页里收不到、主进程的 before-input-event 也不触发。TC-28 的 ⌘[ ⌘] ⌘R

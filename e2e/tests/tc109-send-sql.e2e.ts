@@ -51,7 +51,7 @@ test('TC-109 select multi-line SQL in codex, titlebar › Send selection to ▸ 
   // codex 输出一段 SQL
   sendLine(sb, codex.terminalId, 'sql');
   await deck.waitForPane(codex.terminalId, /^WHERE o\.created_at/m);
-  // 100% 缩放（IS-82：别的缩放下 xterm 的拖选会偏），把 codex 挪进视口
+  // 100% 缩放（别的缩放见 is82-zoomed-mouse），把 codex 挪进视口
   await page.keyboard.press('Meta+0');
   await page.evaluate((id) => (window as unknown as { __board: { focusWindow(id: string): void } }).__board.focusWindow(id), codex.windowId);
   await expect(deck.windowEl(codex.windowId).locator('.xterm-screen')).toBeInViewport({ ratio: 0.9 });

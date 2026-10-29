@@ -190,8 +190,9 @@ export function usageReport(ctx, sessionId) {
  * @param {string} notify
  * @param {string} agent
  * @param {NodeJS.ProcessEnv} env
+ * @param {number} [timeoutMs] 每次最多等多久，默认 SEND_TIMEOUT_MS（测试在很忙的机器上给长一点）
  */
-export function createSender(notify, agent, env) {
+export function createSender(notify, agent, env, timeoutMs = SEND_TIMEOUT_MS) {
   let chain = Promise.resolve();
   /** @param {Hook} hook */
   const runOne = (hook) =>
@@ -201,7 +202,7 @@ export function createSender(notify, agent, env) {
       const timer = setTimeout(() => {
         child?.kill();
         resolve(undefined);
-      }, SEND_TIMEOUT_MS);
+      }, timeoutMs);
       const done = () => {
         clearTimeout(timer);
         resolve(undefined);
