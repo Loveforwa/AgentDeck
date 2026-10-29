@@ -1,7 +1,8 @@
 """生成验收报告：docs/status/index.html（截图在 shots/）。
 
 数据来源：
-- data.py：功能清单、烟测、39 项 P0 的证据、14 条验收场景的现状、验货步骤、下一步
+- data.py：已完成的需求分组、架构、功能清单、烟测、v1 39 项 P0 的证据、验货步骤、下一步
+- done.py：做完的任务（从任务表搬过来的，含完成标准）
 - tracking.py：端到端用例（TC-xx）和问题清单（IS-xx）
 - ../research/entries.py：调研记录（DR-xx），这里只放索引
 
@@ -12,6 +13,7 @@
 """
 import html
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -19,6 +21,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent / 'research'))
 import data as D  # noqa: E402
+from done import DONE  # noqa: E402
 from tracking import ACCEPTED, CASES, ISSUES, RESOLVED  # noqa: E402
 from entries import ENTRIES as RESEARCH, STAGES  # noqa: E402
 
@@ -32,7 +35,7 @@ SMOKE_LABEL = {'ok': '通过', 'skip': '没跑', 'none': '没有'}
 CASE_ORDER = ['⚠ 当前有问题', '未验证', '部分验证', '已验证', '未实现']
 CASE_CLASS = {'⚠ 当前有问题': 'prob', '未验证': 'no', '部分验证': 'part', '已验证': 'ok', '未实现': 'todo'}
 P_ORDER = ['P0', 'P1', 'P2', 'P3']
-P_LABEL = {'P0': '阻塞 MVP 验收', 'P1': '主要流程，交付前要处理', 'P2': '次要体验、完整性、性能', 'P3': '清理'}
+P_LABEL = {'P0': '阻塞验收', 'P1': '主要流程，交付前要处理', 'P2': '次要体验、完整性、性能', 'P3': '清理'}
 RESULTS = ['通过', '不通过', '阻塞', '跳过']
 # 用例按验收结果分三组：没填的在最上面，阻塞和不通过其次，通过和跳过收起来
 GROUPS = [('todo', '等你验收'), ('stuck', '阻塞 / 不通过'), ('done', '已通过')]
@@ -151,7 +154,46 @@ def issue_html(i):
 </article>'''
 
 
+def cases_for(tid):
+    pat = re.compile(r'(?<![A-Za-z0-9])' + re.escape(tid) + r'(?![0-9])')
+    return [k for k in CASES if pat.search(k['scene'] + ' ' + k['issue'])]
+
+
+def done_group_html(g):
+    tasks = [t for t in DONE if t['m'] in g['ms']]
+    retired = set(g.get('retired', []))
+    rows = ''
+    tcs = {}
+    for t in tasks:
+        ks = [] if t['id'] in retired else cases_for(t['id'])
+        for k in ks:
+            tcs[k['id']] = k
+        state = chip('todo', '退役') if t['id'] in retired else chip('ok', '做完')
+        case_refs = ' '.join(f'<a class="ref" href="#{k["id"].lower()}">{k["id"]}</a>' for k in ks)
+        rows += (f'<tr><td class="mono b">{t["id"]}</td><td><b>{E(t["name"])}</b>{state}'
+                 f'<details><summary>要做的事和完成标准</summary><p class="small">{E(t["what"])}</p>'
+                 f'<p class="small"><span class="label">完成标准</span>{E(t["criteria"])}</p>'
+                 f'<p class="small muted">模块 {E(t["module"])}{" · 画板 " + E(t["req"]) if t["req"] and t["req"] != "—" else ""}</p></details></td>'
+                 f'<td>{case_refs}</td></tr>')
+    ok = sum(1 for k in tcs.values() if k['status'] == '已验证')
+    n = len(tasks) - len(retired & {t['id'] for t in tasks})
+    return f'''<section class="req" id="done-{g["key"]}">
+  <h3>{E(g["title"])}</h3>
+  <p class="req-meta"><span>{E(g["when"])}</span><span>{n} 项任务做完{f"，{len(retired)} 项退役" if retired else ""}</span><span>相关用例 {len(tcs)} 条，已验证 {ok} 条</span><span>设计画布：{E(g["canvas"])}</span></p>
+  <p>{E(g["summary"])}</p>
+  <details><summary>做完的任务（{len(tasks)} 项）</summary>
+    <div class="tbl" style="margin-top:8px"><table class="wide"><thead><tr><th>编号</th><th>任务</th><th>相关用例</th></tr></thead><tbody>{rows}</tbody></table></div>
+  </details>
+</section>'''
+
+
 def page():
+    done_groups = ''.join(done_group_html(g) for g in D.DONE_GROUPS)
+    done_total = sum(1 for t in DONE if not any(t['id'] in g.get('retired', []) for g in D.DONE_GROUPS))
+    arch_stack = ''.join(f'<tr><td class="b">{E(a)}</td><td>{E(b)}</td><td class="muted">{E(c)}</td></tr>' for a, b, c in D.ARCH_STACK)
+    arch_flow = ''.join(f'<li>{E(x)}</li>' for x in D.ARCH_FLOW)
+    arch_pkgs = ''.join(f'<tr><td class="mono b">{E(a)}</td><td>{E(b)}</td></tr>' for a, b in D.ARCH_PACKAGES)
+    arch_rules = ''.join(f'<li>{E(x)}</li>' for x in D.ARCH_RULES)
     feats = ''.join(
         f'<section class="feat"><h3>{E(g)}</h3><ul>' + ''.join(f'<li>{E(x)}</li>' for x in items) + '</ul></section>'
         for g, items in D.FEATURES)
@@ -192,7 +234,7 @@ def page():
     meta = json.dumps({'cases': [k['id'] for k in CASES], 'issues': [i[0] for i in ISSUES],
                        'defaults': {iid: {'status': '已解决', 'note': n} for iid, n in RESOLVED.items()}}, ensure_ascii=False)
 
-    return f'''<title>AgentDeck MVP 验收报告</title>
+    return f'''<title>AgentDeck 验收报告</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&display=swap">
@@ -319,6 +361,15 @@ details summary {{ cursor: pointer; font-size: 12.5px; color: var(--muted) }}
 .collapse > summary {{ font-size: 19px; font-weight: 600; color: var(--ink); list-style: none }}
 .collapse > summary::after {{ content: "  展开"; font-size: 12.5px; font-weight: 400; color: var(--muted) }}
 .collapse[open] > summary::after {{ content: "  收起" }}
+.reqs {{ display: flex; flex-direction: column; gap: 12px }}
+.req {{ border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 14px 16px }}
+.req h3 {{ margin: 0 }}
+.req > p {{ margin: 6px 0 0; font-size: 13.5px }}
+.req .req-meta {{ display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--muted) }}
+.req details {{ margin-top: 8px }}
+.req td details {{ margin-top: 4px }}
+.req td .st {{ margin-left: 8px }}
+.small {{ font-size: 12.5px; margin: 4px 0 0 }}
 @media (max-width: 900px) {{
   .bars, .shots, .spec {{ grid-template-columns: minmax(0, 1fr) }}
   .feats {{ grid-template-columns: minmax(0, 1fr) }}
@@ -330,12 +381,12 @@ details summary {{ cursor: pointer; font-size: 12.5px; color: var(--muted) }}
 
 <div class="wrap">
 <header>
-  <span class="eyebrow">AgentDeck · MVP 验收报告 · {D.DATE} · main {D.COMMIT}</span>
-  <h1>AgentDeck MVP 验收报告</h1>
-  <p class="lede">第一个能打开、能用的版本已经组装好：白板、tmux 托管的真终端、工作区和 Git 面板、agent 状态提醒、网页窗口接在了一起。下面的端到端用例可以直接在这页上验收，问题清单可以直接改处理状态，填的内容会保存下来。{acc_line}</p>
+  <span class="eyebrow">AgentDeck · 验收报告 · {D.DATE} · main {D.COMMIT}</span>
+  <h1>AgentDeck 验收报告</h1>
+  <p class="lede">AgentDeck 做完了什么、怎么证明做完了、还有哪些问题，都在这一页。做完的需求从设计画布和任务表沉淀到下面“已完成的需求”（{done_total} 项任务，都已合进 main）；设计画布和任务表只留还要做的。端到端用例可以直接在这页上验收，问题清单可以直接改处理状态，填的内容会保存下来。{acc_line}</p>
   <p class="rules">编号：<b>TC-xx</b> 端到端用例（TC-01 到 TC-14 是 14 条验收场景）· <b>IS-xx</b> 问题 · <b>DR-xx</b> 调研记录 · <b>F1、T2</b> 等是任务编号。</p>
   <div class="bars">
-    <div class="barbox"><span class="t">39 项基础功能（P0 任务）</span><div class="bar">{bar}</div>
+    <div class="barbox"><span class="t">v1 的 39 项基础功能（P0 任务）</span><div class="bar">{bar}</div>
       <div class="legend"><span><i class="dot seg-auto"></i>有自动测试 <b>{P0C["auto"]}</b></span><span><i class="dot seg-manual"></i>只有手动验证 <b>{P0C["manual"]}</b></span><span><i class="dot seg-partial"></i>部分完成 / 未做 <b>{P0C["partial"]}</b></span></div></div>
     <div class="barbox"><span class="t">{len(CASES)} 条端到端用例的现状</span><div class="bar">{case_bar}</div>
       <div class="legend"><span><i class="dot seg-prob"></i>当前有问题 <b>{CASEC["⚠ 当前有问题"]}</b></span><span><i class="dot seg-no"></i>未验证 <b>{CASEC["未验证"]}</b></span><span><i class="dot seg-part"></i>部分验证 <b>{CASEC["部分验证"]}</b></span><span><i class="dot seg-ok"></i>已验证 <b>{CASEC["已验证"]}</b></span><span><i class="dot seg-todo"></i>未实现 <b>{CASEC["未实现"]}</b></span></div></div>
@@ -345,7 +396,12 @@ details summary {{ cursor: pointer; font-size: 12.5px; color: var(--muted) }}
 </header>
 
 <section class="block">
-  <div class="head"><h2>启动后的样子</h2><p>在 main 上启动 Electron 后由应用自己截的整窗图（深色跟随系统）。</p></div>
+  <div class="head"><h2>已完成的需求</h2><p>按需求分组。每组写做了什么、对应的设计画布（已归档到“已完成”的页）、做完的任务和它们的完成标准、相关的端到端用例。</p></div>
+  <div class="reqs">{done_groups}</div>
+</section>
+
+<section class="block">
+  <div class="head"><h2>启动后的样子</h2><p>2026-10-23 v1 组装时在 main 上由应用自己截的整窗图（深色跟随系统）。</p></div>
   <div class="shots">
     <figure><img src="shots/demo.png" alt="AgentDeck 演示模式：顶栏、agenduck 工作区框里的 zsh 和 claude 终端、右侧源代码管理面板"><figcaption>演示模式：本仓库作为项目，框里两个真终端（zsh 跑了 git status 和 git log；claude 停在它的信任提示），右侧面板显示 main 的状态、所有 worktree 和提交记录。</figcaption></figure>
     <figure><img src="shots/reopen.png" alt="退出后重开：同样的框和两个终端，输出完整"><figcaption>退出后重开：框和窗口位置不变，tmux 里的会话接回，历史输出都在。右侧提示“isn’t in a workspace”是因为还没有聚焦窗口（IS-22）。</figcaption></figure>
@@ -373,14 +429,24 @@ details summary {{ cursor: pointer; font-size: 12.5px; color: var(--muted) }}
 </section>
 
 <details class="block collapse">
-  <summary>已经实现的基础功能</summary>
+  <summary>已经实现的基础功能（v1）</summary>
   <div class="feats" style="margin-top:14px">{feats}</div>
 </details>
 
 <details class="block collapse">
-  <summary>烟测和 39 项基础功能的证据</summary>
+  <summary>烟测和 v1 39 项基础功能的证据</summary>
   <div class="tbl" style="margin-top:14px"><table><thead><tr><th>烟测</th><th>结果</th><th>说明</th></tr></thead><tbody>{smoke}</tbody></table></div>
   <div class="tbl" style="margin-top:14px"><table class="wide"><thead><tr><th>编号</th><th>功能</th><th>状态</th><th>自动测试</th><th>真窗口里验证</th><th>备注</th></tr></thead><tbody>{p0}</tbody></table></div>
+</details>
+
+<details class="block collapse">
+  <summary>架构</summary>
+  <p class="muted" style="margin:10px 0 0;font-size:13px">原《实施方案》（2026-10-23）里仍然成立的部分，按现在的代码改写；当时的风险验证结果在调研记录里，并行开发的规矩在仓库 AGENTS.md。原文留在仓库 docs/design/agentdeck-plan.html，不再更新。</p>
+  <div class="tbl" style="margin-top:12px"><table class="wide"><thead><tr><th>层</th><th>选择</th><th>为什么</th></tr></thead><tbody>{arch_stack}</tbody></table></div>
+  <h3 style="margin:18px 0 6px">进程和数据流</h3><ul class="list">{arch_flow}</ul>
+  <h3 style="margin:18px 0 6px">包</h3>
+  <div class="tbl"><table class="wide"><thead><tr><th>包</th><th>管什么</th></tr></thead><tbody>{arch_pkgs}</tbody></table></div>
+  <h3 style="margin:18px 0 6px">改一个模块不牵动全身</h3><ul class="list">{arch_rules}</ul>
 </details>
 
 <details class="block collapse">

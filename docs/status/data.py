@@ -1,9 +1,83 @@
-# MVP 验收报告的数据（用例和问题在 tracking.py，调研在 ../research/entries.py）（2026-10-23 晚的快照）。改这里，然后运行 `python3 docs/status/build.py`。
+# 验收报告的数据（用例和问题在 tracking.py，调研在 ../research/entries.py，做完的任务在 done.py）。FEATURES、SMOKE 的旧行、P0 是 2026-10-23 晚 v1 的快照。改这里，然后运行 `python3 docs/status/build.py`。
 # 证据来自：各包测试、组装时记下的问题（已并进 tracking.py 的问题清单）、提交 3c42908 的说明、shots/ 下的截图，
 # 以及当晚在 main（372434a）上重跑的 pnpm check 和两次 Electron 启动。
 
-DATE = '2026-10-25'
-COMMIT = '4f95b94'
+DATE = '2026-10-29'
+COMMIT = '5246c6e'
+
+# 已完成的需求（2026-10-29 从设计画布和任务表沉淀过来）。canvas 是设计画布里归档的那一页
+DONE_GROUPS = [
+    dict(key='base', title='基础：白板、终端、工作区和 Git、状态提醒、网页窗口', ms=['M0', 'M1', 'M2', 'M3', 'M4'], when='v1 · 2026-10-23～25',
+         canvas='已完成 · 基础需求 · 流程（画板 0–10）',
+         summary='一整块白板上放 tmux 托管的真终端，每个框是一个工作区（worktree + 分支），右侧源代码管理面板跟着聚焦的窗口走；'
+                 'claude、codex 的状态来自它们自己的钩子，在等你的窗口一眼看得出、⌘J 跳过去；终端里的 localhost 链接在同一个框里开网页窗口。'
+                 '关掉应用 agent 继续跑，重开原样接回。具体能做什么见下面“已经实现的基础功能”。'),
+    dict(key='v2', title='v2：少占地方、互不遮挡、一眼看出状态', ms=['M5'], when='2026-10-24 第一轮验收后',
+         canvas='已完成 · v2 · v3（画板 11）',
+         summary='顶栏并进系统标题栏；颜色只表达状态（运行中绿、等你黄、出错红）；拖动窗口、改框大小时有对齐线，框不重叠；'
+                 '左边 BOARD 列表单击跳到窗口。'),
+    dict(key='v3', title='v3：agent 指挥白板、子 agent、提交图、后台 agent、历史会话、项目框排版', ms=['M6'], when='2026-10-25～27',
+         canvas='已完成 · v2 · v3（画板 12–15）',
+         summary='白板上的 agent 通过 AgentDeck 的 MCP 开窗口、读别的终端；子 agent 窗口成组；源代码管理面板有提交图；'
+                 'claude 的后台 agent 在主终端底边一个小提示，点开只读查看（N10 目前只认 claude）；左边栏按工作路径再按 agent 列历史会话，'
+                 '没开着的点 Resume 接回；项目框一键排版（Tidy / Columns / Rows），新建时自动排。'),
+    dict(key='plugins', title='插件：Auto-approve、Usage、Auto-resume', ms=['M7'], when='2026-10-25～28',
+         canvas='已完成 · 插件（PL0、PL1、PL2、PL4）',
+         summary='插件能贴在白板、框、终端上，规矩统一（终端单独的设置优先）。Auto-approve 替你按“允许一次”，红色书签；'
+                 'Usage 在终端上方一条显示 token 和额度；Auto-resume 在撞上额度的终端上挂书签，恢复后替你续跑，续跑的话能改。'
+                 'PL3 Prompt queue 2026-10-28 试用后退役，剩下的并进 Auto-resume。还没做的 PL7（收件箱里的 Usage limit，等 CR1）和 PL9（omp、pi、kimi 撞额度的调研）在任务表。',
+         retired=['PL3']),
+    dict(key='early', title='高级需求里先做完的任务（第 0、1 波）', ms=['M8', 'M9', 'M10', 'M11', 'M15', 'M18', 'M19'], when='2026-10-28 · integrate/W0-W1',
+         canvas='各高级需求的页（需求本身还没做完，仍在画布上）',
+         summary='这些需求整体还在设计画布和任务表里，只是先做完了地基和几项能直接用的：各需求的 contracts、Session 表和 SessionService、'
+                 '每家 agent 都送得到第一条消息、适配器合格测试和按 compat 降级、MCP 收紧（不往等你的终端里打字、Hide from agents、遮掉密码）、'
+                 'agentdeck 命令行和每个终端一把钥匙、git 的 blame 和 worktree 重叠计算、doc-service、Send selection to ▸、BOARD 的 Agents 视图、清理旧的 skill-sets 目录；'
+                 '还有 CR12、AH5、DC11 三项实测。'),
+]
+
+# 架构（原《实施方案》2026-10-23 里仍然成立的部分，2026-10-29 按现在的代码改写）
+ARCH_STACK = [
+    ('桌面外壳', 'Electron + electron-vite', '主进程能改写 localhost 的响应头，网页窗口才能嵌进白板；xterm.js 是最成熟的终端组件。只支持 macOS 和 Linux（tmux 没有原生 Windows 版）。'),
+    ('仓库', 'TypeScript，pnpm 单仓多包', '每个模块一个包，边界清楚，agent 好分工。'),
+    ('界面', 'React 18 + Zustand，白板用 React Flow（@xyflow/react）', '节点就是普通 React 组件，自带平移缩放、拖角缩放和分组节点。'),
+    ('终端进程', 'AgentDeck 自己的 tmux 实例（tmux -L agentdeck）', '关掉应用 agent 继续跑，重开直接接上，历史输出由 tmux 保存；你也能在自己的终端里 tmux attach。'),
+    ('终端显示', 'xterm.js，连接放在 utilityProcess（tmux-host）', '只为视口里的终端接上显示，移出就断开；出问题不拖垮界面。'),
+    ('Git', '直接调系统 git，不监听文件', '只在切换聚焦、agent 一轮结束、你自己操作之后刷新。'),
+    ('本地数据', 'SQLite（better-sqlite3，packages/store）', '白板布局、终端对应的 tmux 会话、Session 记录；终端历史由 tmux 保存。'),
+    ('网页窗口', 'iframe + 主进程去掉 localhost 的 X-Frame-Options / frame-ancestors；本地文件走自定义协议', '能跟着白板一起缩放。'),
+    ('agent 状态', 'agent 自带的钩子（启动时临时注入，不改你的配置），没有钩子的看 tmux 的输出活动', '比正则匹配输出准，各家 TUI 改版也不怕。'),
+    ('测试和边界', 'Vitest + Playwright（Electron 模式）；dependency-cruiser', 'pnpm check 跑类型、lint、颜色、模块边界和全部单元测试；pnpm e2e 驱动真应用。'),
+]
+ARCH_FLOW = [
+    '界面进程（React）只负责显示和交互：白板、窗口（终端、网页）、面板（源代码管理、历史会话、BOARD），通过 window.agentdeck 的类型化 IPC 调主进程。',
+    '主进程（apps/desktop）只做组装：把各服务接起来、改写响应头、提供自定义协议、接收 agent 钩子的本地回调端口、跑 AgentDeck 的 MCP 服务。',
+    'tmux-host 在独立的 utilityProcess 里管 AgentDeck 自己的 tmux 实例；agent 进程跑在 tmux 里，不在 AgentDeck 的任何进程里。',
+    '服务包（git-service、workspace-service、agent-adapters、port-watch、store、mcp-server、doc-service）只被主进程用；界面不碰服务，服务不碰界面。',
+]
+ARCH_PACKAGES = [
+    ('contracts', '模块之间唯一的约定（接口、IPC 消息、事件），改它要单独提交、只加不删（现在 0.1.23）'),
+    ('design-tokens', '颜色、字号、间距、圆角；界面上的样子只在这里定'),
+    ('tmux-host', 'AgentDeck 自己的 tmux 实例：会话、显示、最后几行、输出抄送'),
+    ('agent-adapters', '每个 agent 一个适配器：启动、钩子、状态机、用量、额度（limits）、Session、Skill'),
+    ('git-service / workspace-service', 'git 操作；工作区 = 仓库 + worktree + 分支'),
+    ('port-watch', '从终端输出里找 localhost 地址'),
+    ('store', 'SQLite 和迁移'),
+    ('mcp-server', '给白板上的 agent 用的 MCP 和 agentdeck 命令行的 /cli 入口'),
+    ('doc-service', '文档的底层（DC2）'),
+    ('ui/canvas', '白板、框、右键菜单、设置、插件（plugins/）'),
+    ('ui/window-shell、ui/topbar、ui/kit', '窗口外框、顶栏、基础零件'),
+    ('ui/widgets/terminal、ui/widgets/browser', '终端窗口、网页窗口'),
+    ('ui/panels/scm、history、board-nav', '源代码管理面板、历史会话、BOARD 列表'),
+    ('tools/fakes', '每个服务的假实现，界面和服务可以各自单独开发和测试'),
+    ('tools/agentdeck-cli、agentdeck-notify', 'agentdeck 命令行；钩子回调的小程序'),
+]
+ARCH_RULES = [
+    '只通过 contracts 通信：界面和服务都只认它，换掉一个服务的实现，界面一行不动。',
+    '注册表代替 if/else：窗口类型、agent、插件都通过注册表接入，加一种就是加一个文件夹再加一行注册。',
+    '数据单向流动：服务发事件，store 更新，组件只读 store；组件之间不互相调用。',
+    '依赖方向写成规则：dependency-cruiser 在 pnpm check 和 CI 里检查，规则表在 AGENTS.md「检查和模块边界」。',
+    '每个服务自带假实现，每个包一份 AGENTS.md（职责、对外接口、不许碰的目录、怎么跑测试）。',
+]
 
 # 已经实现的基础功能，按用户能看到的东西分组
 FEATURES = [
@@ -50,8 +124,10 @@ FEATURES = [
     ]),
 ]
 
-# 当晚跑过的烟测
+# 烟测（前两行是 2026-10-29 合进 main 后在 main 上跑的，其余是 2026-10-23 晚 v1 的）
 SMOKE = [
+    ('pnpm check（main，2026-10-29）', 'ok', '合并后在 main（代码同 integrate/W0-W1 5246c6e）上：类型检查、ESLint、颜色检查、模块边界全部通过；Vitest 1982 个通过、115 个跳过（122 个测试文件通过、4 个跳过）。'),
+    ('端到端 pnpm e2e（main，2026-10-29）', 'ok', '__E2E__'),
     ('pnpm check（main，372434a）', 'ok', '类型检查、ESLint、颜色检查、模块边界全部通过；Vitest 719 个通过、4 个跳过（需要真 agent 的那 4 个）。其中约 15 个用真 tmux、约 68 个用真 git 临时仓库。'),
     ('演示模式启动（AGENTDECK_DEMO=1）', 'ok', '在 main 上启动 Electron：自动加本仓库为项目、建主目录工作区、开 zsh 和 claude 两个真终端，2 个终端都有输出后截图并正常退出。'),
     ('退出后重开', 'ok', '不带演示模式再启动一次：框、两个窗口位置不变，tmux 里的会话还在，历史输出完整接回。'),
@@ -60,7 +136,7 @@ SMOKE = [
     ('GitHub Actions', 'none', '仓库没推送，没跑过；而且工作流里没装 tmux，真 tmux 的测试在 CI 上会被跳过。'),
 ]
 
-# 39 项基础 MVP（P0）
+# v1 的 39 项基础功能（P0）
 # status: auto 完成且有自动测试 / manual 完成但只有手动或组装验证 / partial 部分完成或未做
 P0 = [
     ('F1', '单仓骨架', 'manual', '只有 pnpm check', 'pnpm dev 能打开窗口', ''),
@@ -110,27 +186,18 @@ P0 = [
 
 # 明天验货的步骤
 TRY = [
-    ('启动', 'cd /Users/liu/2026/agenduck && pnpm dev', '开发数据在 .agentdeck-dev/，不碰你真实的 ~/.agentdeck。上次的演示终端还在 dev 的 tmux 里，会直接接回。'),
-    ('让 claude 真的跑起来', '在 claude 窗口里选 “Yes, I trust this folder”', '这一步会写进你的 ~/.claude.json，所以我没替你点。之后发一句话，看标题栏从 Idle 变 Running 再回到 Idle。'),
-    ('看批准提醒', '让 claude 运行一个需要批准的命令（例如 “run ls in a new shell”）', '应该 2 秒内变橙，框和顶栏出现“1 waiting”；切到别的应用会收到系统通知。按 1 批准。'),
-    ('新建一个工作区', '右键 › New workspace…，基于 main 新建一个分支', '框出现，里面开的终端在新 worktree 里；右侧面板显示这个分支。用完可以右键框删除，选连目录一起删。'),
-    ('网页窗口', '在 Shell 里运行 python3 -m http.server 8765，点输出里的地址', '网页窗口出现在终端右边、同一个框里。'),
-    ('摘要卡和快捷键', '把终端右下角往里拉到很小；试 ⌘J、⌘B、⌘0、⌘1', '变摘要卡，单击恢复；快捷键在网页窗口里也要有效。'),
-    ('退出再打开', '⌘Q，再 pnpm dev', '框和窗口位置不变，终端输出都在。'),
-    ('清理开发数据（可选）', 'tmux -L agentdeck-desktop-dev kill-server && rm -rf .agentdeck-dev', '先退出应用再执行。'),
+    ('启动', 'cd /Users/liu/2026/agenduck && git switch main && pnpm install && pnpm dev', '主目录现在停在 feat/PL3-prompt-queue，上面有没提交的 PL3 改动（已退役，备份过），切 main 之前先决定丢掉还是留着。开发数据在 .agentdeck-dev/，不碰你真实的 ~/.agentdeck。'),
+    ('看在等你的提醒', '让 claude 运行一个需要批准的命令', '窗口、框、顶栏一起变黄，⌘J 跳过去；切到别的应用会收到系统通知。'),
+    ('新建一个工作区', '右键 › New workspace…，基于 main 新建一个分支', '框出现，里面开的终端在新 worktree 里；右侧面板显示这个分支。'),
+    ('网页窗口', '在 Shell 里运行 python3 -m http.server 8765，点输出里的地址', '网页窗口出现在终端旁边、同一个框里。'),
+    ('插件', '右键终端 › Auto-approve / Usage；右键白板空白处 › Auto-resume', '书签挂在终端底边，Usage 条在终端上方。'),
+    ('退出再打开', '⌘Q，再 pnpm dev', '框和窗口位置不变，终端还在跑，输出都在。'),
 ]
 
 NEXT = [
-    'N11 左边栏历史会话已合进 main：点顶栏最左边的按钮打开 HISTORY，看自己项目下的会话分得对不对（项目 → 分支 / 目录 → agent）、标题是不是认得出；点一个没开着的 Resume，看它在对应的框里接着那段对话。',
-    'N12 项目框一键排版已合进 main：在一个框里开几个终端，点框标题右上角的 Tidy / Columns / Rows，看排得齐不齐、框是不是缩到正好装下，⌘Z 能不能回去；打开 Auto-arrange 后新开、关掉终端看会不会自动重排。',
-    'N10 后台 agent（claude）已合进 main：让 claude 用自带的 Agent 工具开几个后台 agent，看主终端底边右侧的小提示、点开的侧边栏和记录窗口，打开时项目框是否跟着长、收起时是否缩回。',
-    'MVP v3（N1、N2、N5、N6、N7、N9）和插件（PL0 入口、PL1 Auto-approve、PL2 Usage、X3 Approve all）都已合进 main，请按 TC-34～TC-42 在真应用里验收；这些都只在 dev 页面和测试里看过，没跑过真 agent。',
-    'v2 的五处缺口（IS-63～IS-67）已修，请顺便在真窗口里试：顶上 34px 能点到窗口、空白处能拖动应用窗口；拖窗口靠近别的框、改框大小时的对齐线。',
-    'MVP v2（M5）五项都已合进 main（5845172），请按 TC-29～TC-33 在真窗口里验收：红黄绿按钮的位置、拖动手感、单击 BOARD 列表跳转是截图看不到的。',
-    '重新验收 2026-10-24 修好的 TC-05、TC-15、TC-17，以及合进来的 M1（白板上的 agent 自动连上 AgentDeck 的 MCP）。',
-    'R2 已写（pnpm e2e，TC-01 TC-02 TC-05 TC-06 TC-07 TC-09 TC-10 TC-12 TC-30）：改动后跑一遍；还没写的 TC-03 TC-04 TC-08 TC-11 TC-13 见 e2e/AGENTS.md。',
-    '修组装时记下的 9 条（IS-06～IS-10、IS-19～IS-22，多数是一两行的事），尤其是 tmux-host 的变量重名（IS-09）和“信任提示显示 Idle”（IS-06）。',
-    '整理 contracts 0.1.4，并让线 2–5 把 0.1.3 的新字段用起来。',
-    '补三项性能测量：30 个窗口平移、Electron 里 6 个终端打字延迟、空闲 CPU。',
-    '给 CI 装 tmux，推到 GitHub 跑一次（需要你给仓库名）。',
+    '用审查台（https://claude.ai/artifact/ChBaxMte5BCt6RQJPCus4s）审还没做的高级需求和这份报告；审完我按结果统一整改，标“不做”的需求从设计画布和任务表删掉。',
+    '决定主目录里 feat/PL3-prompt-queue 上没提交的 PL3 改动（已退役）：丢掉还是留着；之后主目录切回 main。',
+    'main 还没推送到 GitHub：推之前要你点头；推了以后 CI（check.yml、e2e.yml）才会在 macOS 和 Ubuntu 上跑。',
+    'TC-81 偶尔失败一次（重跑 9 次都过），还没查原因。',
+    '下一波要做的任务见任务表：第一期是 CR1 收件箱（PL7 也等它）、Session 的界面（SE3–SE6）和 Agent 接入剩下的几项。',
 ]

@@ -2,79 +2,6 @@
  "v": 3,
  "attachments": {},
  "boards": {
-  "Board.dc.html": {
-   "expand": "fill",
-   "h": 900,
-   "page": "v1",
-   "title": "D · 看板视图",
-   "w": 1440,
-   "x": 1520,
-   "y": 1130
-  },
-  "Canvas.dc.html": {
-   "h": 900,
-   "is_interactive": true,
-   "page": "v2",
-   "title": "1 · 白板：原地对话，Git 跟随焦点",
-   "w": 1440,
-   "x": 0,
-   "y": 0
-  },
-  "Focus.dc.html": {
-   "expand": "fill",
-   "h": 1010,
-   "is_interactive": true,
-   "page": "v1",
-   "title": "B · 聚焦单会话 + Git 时间线",
-   "w": 1440,
-   "x": 1520,
-   "y": 0
-  },
-  "Frames.dc.html": {
-   "h": 1008,
-   "page": "v2",
-   "title": "2 · 工作区框：拖进去即切换目录、同步配置",
-   "w": 1507,
-   "x": 1520,
-   "y": 0
-  },
-  "Launch.dc.html": {
-   "expand": "fill",
-   "h": 960,
-   "is_interactive": true,
-   "page": "v1",
-   "title": "E · 新建会话",
-   "w": 1440,
-   "x": 0,
-   "y": 2310
-  },
-  "Main.dc.html": {
-   "expand": "fill",
-   "h": 1010,
-   "is_interactive": true,
-   "page": "v1",
-   "title": "A · 网格总览（主界面）",
-   "w": 1440,
-   "x": 0,
-   "y": 0
-  },
-  "Merge.dc.html": {
-   "expand": "fill",
-   "h": 1060,
-   "page": "v1",
-   "title": "C · 同仓多 Agent 合并台",
-   "w": 1440,
-   "x": 0,
-   "y": 1130
-  },
-  "Overview.dc.html": {
-   "h": 979,
-   "page": "v2",
-   "title": "3 · 缩小看全局",
-   "w": 1440,
-   "x": 0,
-   "y": 1020
-  },
   "spec/SpecOverview.dc.html": {
    "h": 1280,
    "page": "spec",
@@ -314,14 +241,6 @@
    "w": 1760,
    "x": 0,
    "y": 10860
-  },
-  "spec/PluginQueue.dc.html": {
-   "h": 3180,
-   "page": "plugins",
-   "title": "PL3 · Prompt queue：额度用完后到点接着发排好的提示词（2026-10-28 退役，并进 PL6）",
-   "w": 1760,
-   "x": 0,
-   "y": 4630
   },
   "spec/CrewOverview.dc.html": {
    "h": 2060,
@@ -670,29 +589,11 @@
   "view": "canvas"
  },
  "notes": {
-  "head": {
-   "kind": "title1",
-   "maxW": 2960,
-   "page": "v1",
-   "text": "AgentDeck · 多 Agent 并行开发工作台",
-   "w": 240,
-   "x": 0,
-   "y": -300
-  },
-  "head2": {
-   "kind": "title1",
-   "maxW": 2960,
-   "page": "v2",
-   "text": "第二版 · 白板式工作台",
-   "w": 240,
-   "x": 0,
-   "y": -300
-  },
   "head3": {
    "kind": "title1",
    "maxW": 1760,
    "page": "spec",
-   "text": "AgentDeck MVP 需求 · 结构图与操作流程",
+   "text": "已完成（2026-10-29 归档）· AgentDeck 基础需求 · 结构图与操作流程。验收证据见验收报告“已完成的需求”",
    "x": 0,
    "y": -300
   },
@@ -708,7 +609,7 @@
    "kind": "title1",
    "maxW": 1760,
    "page": "round2",
-   "text": "MVP v2（M5）与 MVP v3（M6）· 需求",
+   "text": "已完成（2026-10-29 归档）· v2（M5）与 v3（M6）需求。N10 后台 agent 目前只认 claude",
    "x": 0,
    "y": -300
   },
@@ -716,7 +617,7 @@
    "kind": "title1",
    "maxW": 1760,
    "page": "plugins",
-   "text": "MVP 插件 · Auto-approve、Usage、Prompt queue、Auto-resume",
+   "text": "已完成（2026-10-29 归档）· 插件 Auto-approve、Usage、Auto-resume。PL3 Prompt queue 已退役；PL7（等 CR1）、PL9 还没做",
    "x": 0,
    "y": -300
   },
@@ -810,14 +711,6 @@
   }
  },
  "order": [
-  "Main.dc.html",
-  "Focus.dc.html",
-  "Merge.dc.html",
-  "Board.dc.html",
-  "Launch.dc.html",
-  "Canvas.dc.html",
-  "Frames.dc.html",
-  "Overview.dc.html",
   "spec/SpecOverview.dc.html",
   "spec/SpecLayout.dc.html",
   "spec/SpecProject.dc.html",
@@ -848,7 +741,6 @@
   "spec/PluginOverview.dc.html",
   "spec/PluginApprove.dc.html",
   "spec/PluginUsage.dc.html",
-  "spec/PluginQueue.dc.html",
   "spec/PluginResume.dc.html",
   "spec/CrewOverview.dc.html",
   "spec/CrewNew.dc.html",
@@ -894,18 +786,6 @@
  ],
  "pages": [
   {
-   "id": "spec",
-   "name": "MVP 需求 · 流程"
-  },
-  {
-   "id": "round2",
-   "name": "MVP v2 · v3"
-  },
-  {
-   "id": "plugins",
-   "name": "MVP 插件"
-  },
-  {
    "id": "crew",
    "name": "Agent 集群"
   },
@@ -950,12 +830,16 @@
    "name": "学习和辅助"
   },
   {
-   "id": "v2",
-   "name": "第二版 · 白板"
+   "id": "spec",
+   "name": "已完成 · 基础需求 · 流程"
   },
   {
-   "id": "v1",
-   "name": "第一版"
+   "id": "round2",
+   "name": "已完成 · v2 · v3"
+  },
+  {
+   "id": "plugins",
+   "name": "已完成 · 插件"
   },
   {
    "id": "parts",

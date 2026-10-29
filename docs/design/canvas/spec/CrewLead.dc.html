@@ -130,7 +130,7 @@ claude hit its 5-hour limit at 03:10, so T8 started
       <span class="td"><b>AgentDeck 做什么</b></span><span class="td">不另做一套记忆，也不往每个终端注入（那是每轮都要付的 token）。只做两件小事：集群不改仓库里的说明文件；集群里的 Worker、Reviewer、QA 启动时关掉 claude 的 auto memory，免得三个并行的任务把“T4 做到一半”写进你的长期记忆（已定）。<br><b>例外</b>：反复踩的坑（Lessons），经你确认后由 AgentDeck 按项目存，开 session 时追加进每个终端的系统提示（每条一句，项目上限 1,000 token），见“长期运行 · Lessons”页 W1。</span><span class="td">存下来，生成进度摘要（第 3 节）给 Lead；Worker 只拿到自己的任务卡和相关的 Decisions，不拿整张表。</span>
       <span class="td"><b>短期变长期</b></span><span class="td" style="grid-column: span 2">汇报里的 Decisions 和 notes，值得一直留的（比如“恢复会话一律在原来的框里”）由你自己抄进 AGENTS.md（Copy as Markdown）。AgentDeck 不自动写你的仓库和 agent 配置；Lessons 的 Move to AGENTS.md 也是你点了才写，AgentDeck 不提交（W1）。</span>
     </div>
-    <span style="font-size: 13px; line-height: 1.65; color: #5F5F5A; max-width: 1632px">第二版画板 2（工作区设置）里 “Share with every agent · Instructions · AGENTS.md · Also links CLAUDE.md and GEMINI.md” 一直没做。现在 claude（2.1.277 起）在没有 CLAUDE.md 时自己读 AGENTS.md，codex、pi、omp、kimi 本来就读，“链接”这件事基本不用做了。剩下有用的是把不进 git 的个人说明（<span class="mono">CLAUDE.local.md</span>、<span class="mono">AGENTS.override.md</span>）带进新开的 worktree，和那一行的 <span class="mono">.env.local</span> 一样，算工作区设置，不算记忆功能，以后再做。</span>
+    <span style="font-size: 13px; line-height: 1.65; color: #5F5F5A; max-width: 1632px">原来第二版画板 2（工作区设置，2026-10-29 已删）里 “Share with every agent · Instructions · AGENTS.md · Also links CLAUDE.md and GEMINI.md” 一直没做。现在 claude（2.1.277 起）在没有 CLAUDE.md 时自己读 AGENTS.md，codex、pi、omp、kimi 本来就读，“链接”这件事基本不用做了。剩下有用的是把不进 git 的个人说明（<span class="mono">CLAUDE.local.md</span>、<span class="mono">AGENTS.override.md</span>）带进新开的 worktree，和那一行的 <span class="mono">.env.local</span> 一样，算工作区设置，不算记忆功能，以后再做。</span>
   </div>
 
   <div style="display: flex; flex-direction: column; gap: 14px">
@@ -241,7 +241,7 @@ Since 02:05: T6 merged · T8 started · claude hit the 5-hour limit at 03:10</di
     <div class="decide" style="max-width: 1500px">
       <b>1</b><span><b>进度放哪</b>：推荐<b>两处，任务表为准</b>，Lead 的上下文当缓存，丢了从摘要恢复。只放 Lead 的上下文（文章的做法）会被压缩冲掉、跟着额度一起停；只放任务表就没人跟你聊。</span>
       <b>2</b><span><b>Lead 能不能替你答</b>：推荐第一期只建议，第二期按集群授权、只答 worker 的问题。批准和关卡永远不交给它。</span>
-      <b>3</b><span><b>长期记忆</b>：推荐 AgentDeck <b>不做自己的记忆</b>，用各家的 AGENTS.md / CLAUDE.md / memory；第二版画板 2 的 Instructions 同步降成“把不进 git 的说明带进新 worktree”，以后再做。</span>
+      <b>3</b><span><b>长期记忆</b>：推荐 AgentDeck <b>不做自己的记忆</b>，用各家的 AGENTS.md / CLAUDE.md / memory；原第二版画板 2 的 Instructions 同步降成“把不进 git 的说明带进新 worktree”，以后再做。</span>
       <b>4</b><span><b>集群里 Worker、Reviewer、QA 的 claude 关不关 auto memory</b>：推荐关（启动时设 <span class="mono">CLAUDE_CODE_DISABLE_AUTO_MEMORY=1</span>）；Lead 照你自己的设置。</span>
       <b>5</b><span><b>send_to_terminal 不许往等你的终端里打字</b>：推荐现在就修，不依赖集群。</span>
     </div>
