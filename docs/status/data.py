@@ -197,7 +197,7 @@ TRY = [
 NEXT = [
     '用审查台（https://claude.ai/artifact/ChBaxMte5BCt6RQJPCus4s）审还没做的高级需求和这份报告；审完我按结果统一整改，标“不做”的需求从设计画布和任务表删掉。',
     '决定主目录里 feat/PL3-prompt-queue 上没提交的 PL3 改动（已退役）：丢掉还是留着；之后主目录切回 main。',
-    'main 还没推送到 GitHub：推之前要你点头；推了以后 CI（check.yml、e2e.yml）才会在 macOS 和 Ubuntu 上跑。',
+    '2026-10-29 main 推到了 GitHub。CI 的 e2e 第一次跑红了：Ubuntu 的 tmux 只有 3.4（e2e 改成只在 macOS 跑），macOS 机器屏幕 1024×768 窗口太小（e2e 固定 1440×900），brew 的 tmux 3.8 让 Esc 慢 500ms（IS-162，已修）。修好后在 CI 上确认一遍。',
     'TC-81 偶尔失败一次（重跑 9 次都过），还没查原因。',
     '下一波要做的任务见任务表：第一期是 CR1 收件箱（PL7 也等它）、Session 的界面（SE3–SE6）和 Agent 接入剩下的几项。',
 ]

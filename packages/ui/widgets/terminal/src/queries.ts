@@ -58,7 +58,9 @@ export function installQueryAnswers(parser: ParserLike, write: (data: string) =>
   return {
     dispose: () => handlers.forEach((h) => h.dispose()),
     themeChanged: () => {
-      if (themeUpdates) write(themeReport());
+      // 先把新的前景、背景色报给 tmux，再发 997：tmux 3.8 收到 997 就转给窗格，这时它还没重新问到背景色，
+      // 窗格里的程序（claude 的 auto 主题）马上问背景色会拿到旧的。tmux 收颜色回答不看自己问没问过
+      if (themeUpdates) write(`\x1b]10;${colors().fg}\x1b\\\x1b]11;${colors().bg}\x1b\\${themeReport()}`);
     },
   };
 }

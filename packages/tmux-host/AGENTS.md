@@ -300,6 +300,8 @@ direct = node-pty + xterm 直接跑；tmux = 经过 `tmux -L agentdeck`。两者
    - `registerCsiHandler({ prefix: '>', final: 'q' })` → 回 `ESC P >|xterm.js ESC \`
    - `registerOscHandler(10 / 11)`，参数是 `?` 时 → 回 `ESC ] 10;rgb:rrrr/gggg/bbbb ESC \`（颜色取 design-tokens 里终端的前景、背景）
    - 顺手回答 `CSI ? 996 n`（深浅色主题）→ `CSI ? 997 ; 1|2 n`
+   - **tmux 3.8 起**还要回答窗口大小：pty 没给像素大小时 attach 会问 `CSI 18t` / `CSI 14t`，收到像素大小（`CSI 4 ; 高 ; 宽 t`）之前单独的 Esc 一律扣 500ms（IS-162）。终端窗口打开 xterm 的 `windowOptions.getWinSizeChars` / `getWinSizePixels` 让它自己回答
+   - **tmux 3.8 起**换深浅色时要先报颜色：tmux 收到 `CSI ? 997` 就转给窗格，这时还没重新问到背景色，程序马上问会拿到旧的（IS-163）。`themeChanged` 先发 `OSC 10` / `OSC 11` 的新颜色再发 997
 2. **attach 还没出首屏就写入的键会和终端回答粘在一起，漏给 agent**（T2）。pty 还没被 tmux 读走时写进去的 Esc，会和 xterm 的 DA 回答拼成 `ESC ESC [ ? 1 ; 2 c` 一起交给 agent（实测 5/5 次）。办法：attach 后先缓存用户输入，收到 pty 的第一段输出后再写。
 3. **claude 在 tmux 里主动降到 256 色**。claude 的代码里看到 `$TMUX` 就把颜色级别降到 256，除非有 `CLAUDE_CODE_TMUX_TRUECOLOR`。已在 `tmux.conf` 里 `set-environment -g CLAUDE_CODE_TMUX_TRUECOLOR 1`。以后别的 agent 有类似行为，也在这里加。
 4. **attach 必须带 `-u` 和 `-T`**（T2 的 attach 命令；`attachCommand()` 给系统终端用的命令只带 `-u`）。

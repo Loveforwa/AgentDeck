@@ -13,7 +13,7 @@ AGENTDECK_E2E_PERF=1 pnpm --filter @agentdeck/e2e exec playwright test is26   # 
 ```
 
 - 要求：`tmux`、`git`、`node` 在 PATH 里；Electron 二进制下好了（`node apps/desktop/node_modules/electron/install.js`）。Playwright 不用下浏览器。
-- **不在 `pnpm check` 里**（慢，要 tmux 和图形环境）。CI 是单独的 `.github/workflows/e2e.yml`（macOS + Ubuntu，Linux 用 `xvfb-run`）。
+- **不在 `pnpm check` 里**（慢，要 tmux 和图形环境）。CI 是单独的 `.github/workflows/e2e.yml`，只在 macOS 上跑（Ubuntu 24.04 的 tmux 只有 3.4，不够）。GitHub 的 macOS 机器屏幕只有 1024×768，沙盒设了 `AGENTDECK_WINDOW_SIZE=1440x900` 让窗口和本机一样大；`AGENTDECK_E2E_WINDOW_SIZE=1024x677 pnpm e2e` 能在本机复现 CI 的小窗口。沙盒还设了 `AGENTDECK_BACKGROUND=1`：应用窗口照常显示，但用 showInactive，从不 focus、不跳到最前面，跑 e2e 时可以照常用电脑（需要“应用在前台 / 后台”的用例自己给 getFocusedWindow 打桩，不靠真焦点）。
 - 测试跑时会弹出 AgentDeck 窗口（macOS 上会抢一下焦点）。键盘、鼠标事件走 CDP，不需要窗口在前台。
 - **性能测量（IS-26，`is26-performance`）默认跳过**：一轮约 5 分钟（G4 要静置 2 分多钟），数字受机器负载影响，设 `AGENTDECK_E2E_PERF=1` 才跑。
   每项打印一行 `[IS-26] {...}`（也附在报告里 `is26-*.json`），旁边带当时的机器负载（整机 CPU 忙的比例、loadavg、同时开着的别的 AgentDeck e2e 实例数）；

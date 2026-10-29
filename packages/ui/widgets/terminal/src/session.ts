@@ -106,6 +106,9 @@ export class TerminalSession {
       macOptionClickForcesSelection: true,
       // macOS 上默认右键会选中指针下的词：会盖掉 tmux 刚复制的那段、凭空多出一个“选中”，Send selection to ▸ 就送错了（CO3）
       rightClickSelectsWord: false,
+      // tmux 3.8 起：pty 没给像素大小时 attach 会问 CSI 18t / 14t，没收到像素大小的回答之前，单独按 Esc 一律扣 500ms
+      // （tty-keys.c 的 TTY_WINSIZEQUERY）。xterm 默认不回答窗口查询，打开这两项只回答大小，不许程序改窗口
+      windowOptions: { getWinSizeChars: true, getWinSizePixels: true },
       theme: this.colors.theme,
       linkHandler: {
         allowNonHttpProtocols: true,

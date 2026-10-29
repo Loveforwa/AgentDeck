@@ -128,6 +128,10 @@ export function createSandbox(name: string): Sandbox {
     AGENTDECK_DATA_DIR: dataDir,
     AGENTDECK_TMUX_SOCKET: tmuxSocket,
     AGENTDECK_E2E_LOG_DIR: agentLogDir,
+    // 窗口固定 1440×900，CI 的小屏幕（1024×768）也一样大，白板上的位置和本机一致；AGENTDECK_E2E_WINDOW_SIZE 可以改（例如 1024x677 复现 CI）
+    AGENTDECK_WINDOW_SIZE: process.env['AGENTDECK_E2E_WINDOW_SIZE'] ?? '1440x900',
+    // 窗口不抢焦点、不跳到最前面：跑 e2e 时可以照常用电脑（测试里的焦点由各自的桩决定，不靠真焦点）
+    AGENTDECK_BACKGROUND: '1',
   };
   // Linux（CI 里的 xvfb-run）要 DISPLAY；有 Wayland 也照传
   for (const k of ['DISPLAY', 'WAYLAND_DISPLAY', 'XAUTHORITY', 'XDG_RUNTIME_DIR']) {

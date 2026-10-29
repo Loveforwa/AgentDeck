@@ -109,7 +109,7 @@ describe('query answers on a real xterm parser', () => {
     const term = new Terminal({ allowProposedApi: true });
     const out: string[] = [];
     let dark = false;
-    const q = installQueryAnswers(term.parser, (d) => out.push(d), () => ({ fg: '', bg: '', dark }));
+    const q = installQueryAnswers(term.parser, (d) => out.push(d), () => (dark ? { fg: 'rgb:eeee/eeee/eeee', bg: 'rgb:1111/1111/1111', dark } : { fg: 'rgb:1111/1111/1111', bg: 'rgb:eeee/eeee/eeee', dark }));
     const write = (d: string) => new Promise<void>((r) => term.write(d, r));
     dark = true;
     q.themeChanged();
@@ -119,7 +119,11 @@ describe('query answers on a real xterm parser', () => {
     q.themeChanged();
     dark = false;
     q.themeChanged();
-    expect(out).toEqual(['\x1b[?997;1n', '\x1b[?997;2n']);
+    // 新的前景、背景色先报给 tmux，再发 997（tmux 3.8 收到 997 就转给窗格，IS-163）
+    expect(out).toEqual([
+      '\x1b]10;rgb:eeee/eeee/eeee\x1b\\\x1b]11;rgb:1111/1111/1111\x1b\\\x1b[?997;1n',
+      '\x1b]10;rgb:1111/1111/1111\x1b\\\x1b]11;rgb:eeee/eeee/eeee\x1b\\\x1b[?997;2n',
+    ]);
     // 其他模式照常生效
     expect(term.modes.sendFocusMode).toBe(true);
     await write('\x1b[?2031l');
