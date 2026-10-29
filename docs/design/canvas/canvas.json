@@ -577,6 +577,14 @@
    "h": 3560,
    "page": "session",
    "title": "S3 · 记忆系统：一条 Session 断了接得上，新的 Session 一开始就知道坑"
+  },
+  "spec/ManagerPanel.dc.html": {
+   "h": 2560,
+   "page": "manager",
+   "title": "MP0 · 左边管理面板：HISTORY 和 BOARD 合成一个",
+   "w": 1760,
+   "x": 0,
+   "y": 0
   }
  },
  "createdOnFiles": {
@@ -585,7 +593,7 @@
  },
  "designSystems": [],
  "launch": {
-  "page": "crew",
+  "page": "manager",
   "view": "canvas"
  },
  "notes": {
@@ -708,9 +716,18 @@
    "text": "学习和辅助 · 课程学习环境、/teach 和数据库终端",
    "x": 0,
    "y": -300
+  },
+  "head_manager": {
+   "kind": "title1",
+   "maxW": 1760,
+   "page": "manager",
+   "text": "左边管理面板 · HISTORY 和 BOARD 合成一个（2026-10-29 概念，待你确认）",
+   "x": 0,
+   "y": -300
   }
  },
  "order": [
+  "spec/ManagerPanel.dc.html",
   "spec/SpecOverview.dc.html",
   "spec/SpecLayout.dc.html",
   "spec/SpecProject.dc.html",
@@ -785,6 +802,10 @@
   "spec/LearnAssist.dc.html"
  ],
  "pages": [
+  {
+   "id": "manager",
+   "name": "左边管理面板"
+  },
   {
    "id": "crew",
    "name": "Agent 集群"

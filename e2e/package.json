@@ -6,6 +6,7 @@
   "scripts": {
     "build:app": "node scripts/build-app.mjs",
     "e2e": "node scripts/build-app.mjs && playwright test",
+    "e2e:affected": "node scripts/affected.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {

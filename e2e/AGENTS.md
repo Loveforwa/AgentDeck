@@ -185,6 +185,15 @@ TC-48、TC-81 的两条（IS-153～IS-155）2026-10-29 修好，已经是普通�
 
 2026-10-28 起，TC-01–TC-148 里已经实现的用例都有脚本；只能人工的步骤写在上表各行（真 claude、真登录、真重启、触控板手感、系统通知弹窗等）。
 
+## 只跑受影响的（`pnpm e2e:affected`）
+
+2026-10-29 用户定：改完只跑可能被影响到的 e2e，不每次全跑（全量 55 个文件、92 条，约 12 分钟）。
+
+- `pnpm e2e:affected`：和 main 的分叉点比（`-- --base <ref>` 换基准），加上还没提交、没跟踪的文件；打印选中的 spec 和每条是被哪个文件带进来的，然后构建并跑。`-- --list` 只打印；其余参数交给 playwright（`-- --retries=0 --repeat-each=3`）。
+- 规则在 `e2e/affected.mjs`：路径前缀或正则 → spec 文件名 / ALL / NONE，每个文件按顺序找第一条命中的。文档、各包的单元测试、AGENTS.md → 不跑；改了哪个 spec → 跑它；contracts、`apps/desktop` 的组装、白板的控制器和 store、ui/kit、e2e 支撑代码和假 agent、依赖 → 全跑；没有规则认领的源码 → 全跑并提示补规则。只改了注释的文件不算。选中了任何一条时另加冒烟的 TC-01 / TC-02。
+- **新加 spec 时在 `e2e/affected.mjs` 里挂上它覆盖的代码**：`pnpm check` 里跑 `node e2e/scripts/affected.mjs --check`，有 spec 没挂上、或规则里写了不存在的 spec 就不过。
+- 合进 main 之前、CI 上照旧全跑。
+
 ## 已知问题（测试里绕开的，见各处注释）
 
 - **Playwright 下第一个页面的 preload 跑两次**：主进程开了两条终端输出端口，preload 拿第一条，utilityProcess 用第二条，终端没有输出、输入一直扣着。

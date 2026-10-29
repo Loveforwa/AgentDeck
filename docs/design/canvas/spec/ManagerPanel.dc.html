@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>左边管理面板</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.at{position:absolute}
+.cap{margin:0;font-size:13px;line-height:1.55}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1240px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.tag{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;background:#F2F2EF;color:#5F5F5A}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.win{box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;overflow:hidden;font-size:11px}
+.wt{display:flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-bottom:1px solid #EEEEEB}
+.wb{padding:6px 9px;font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.7;color:#6B6B6B}
+.dot{width:7px;height:7px;border-radius:50%;flex:none;box-sizing:border-box}
+.side{box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:11.5px;display:flex;flex-direction:column}
+.sh{display:flex;align-items:center;height:30px;padding:0 10px;border-bottom:1px solid #EEEEEB;font-size:10.5px;font-weight:600;letter-spacing:0.05em;color:#3D3D3A}
+.srch{margin:8px 10px 6px;height:24px;border:1px solid #E3E3E0;border-radius:6px;display:flex;align-items:center;padding:0 8px;color:#A3A39E;font-size:11px}
+.chips{display:flex;gap:4px;padding:0 10px 8px;flex-wrap:wrap}
+.chip{height:18px;padding:0 7px;border-radius:999px;border:1px solid #E3E3E0;font-size:10px;display:inline-flex;align-items:center;color:#5F5F5A;font-family:'IBM Plex Mono',monospace}
+.chip.on{background:#1A1A1A;border-color:#1A1A1A;color:#FFFFFF}
+.proj{display:flex;align-items:baseline;gap:6px;padding:8px 10px 2px;font-weight:600;font-size:12px}
+.path{display:flex;align-items:center;gap:6px;padding:3px 10px 3px 14px;font-size:11px;white-space:nowrap}
+.ag{display:flex;align-items:center;gap:6px;padding:4px 10px 2px 26px;font-size:10px;font-weight:600;color:#8A8A85;letter-spacing:0.03em}
+.row{display:flex;align-items:center;gap:7px;padding:3px 10px 3px 28px;white-space:nowrap}
+.rt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.time{color:#8A8A85;font-size:10px;font-variant-numeric:tabular-nums}
+.muted{color:#8A8A85}
+.btn{display:inline-flex;align-items:center;height:18px;padding:0 6px;border:1px solid #D6D6D2;border-radius:5px;font-size:10px;background:#FFFFFF;color:#1A1A1A}
+.state{font-size:12px;font-weight:600;color:#3D3D3A}
+.act{display:flex;align-items:center;gap:8px;height:26px;padding:0 10px;font-size:12px;color:#1A1A1A}
+.act svg{flex:none}
+.sec{display:flex;align-items:center;gap:6px;padding:10px 10px 3px;font-size:10.5px;font-weight:600;letter-spacing:0.05em;color:#8A8A85}
+.sq{width:7px;height:7px;border-radius:2px;flex:none}
+.pinrow{display:flex;align-items:center;gap:7px;padding:3px 10px 3px 14px;white-space:nowrap}
+.menu{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,0.10);padding:4px 0;font-size:11.5px}
+.mi{display:flex;align-items:center;gap:8px;height:24px;padding:0 10px;white-space:nowrap}
+.mi.on{background:#EDEDEA}
+.msep{height:1px;background:#EEEEEB;margin:4px 0}
+.mhead{padding:6px 10px 2px;font-size:10px;font-weight:600;letter-spacing:0.05em;color:#8A8A85}
+</style>
+</helmet>
+<div style="width: 1760px; height: 2560px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">MP0 · 左边管理面板：HISTORY 和 BOARD 合成一个</h1>
+      <span class="concept">概念 · 2026-10-29 待你确认</span>
+      <span class="mono" style="font-size: 12px; color: #6B6B6B">取代 N11 HistoryPanel、V5 / CO4 BoardNav</span>
+    </div>
+    <p class="lead">现在左边 HISTORY 列会话，右边 BOARD 列白板上的窗口，同一个终端两边各出现一次，功能重叠。合成左边一个管理面板，样子照 Claude 应用的左边栏（新建、搜索、置顶、按项目分组），风格还是我们的：暖灰墨黑、颜色只表达状态、agent 身份色只在小方块上。右边面板只留源代码管理。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 整体：左边管理面板 + 白板 + 右边源代码管理</span>
+    <p class="lead">一个终端在面板里只有一行：开着的有状态灯，单击跳到它的窗口；关掉的（历史会话）写时间，单击在它的工作区框里 Resume。顶栏最左的按钮开关面板（⌘\）。</p>
+    <div class="fig" style="width: 1632px; height: 700px; background-color: #FAFAF8">
+      <div class="at" style="left: 0; top: 0; right: 0; height: 36px; display: flex; align-items: center; gap: 12px; padding: 0 14px; font-size: 12px; border-bottom: 1px solid #EEEEEB; background: #FFFFFF">
+        <span style="display: flex; gap: 6px"><span class="dot" style="background: #E3E3E0"></span><span class="dot" style="background: #E3E3E0"></span><span class="dot" style="background: #E3E3E0"></span></span>
+        <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 5px; background: #EDEDEA"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#1A1A1A" stroke-width="1.3"><rect x="1.5" y="2" width="11" height="10" rx="1.5"></rect><line x1="5" y1="2" x2="5" y2="12"></line></svg></span>
+        <b>My Board ▾</b><span class="muted">1 workspace · 4 windows</span>
+        <span style="flex: 1"></span>
+        <span style="color: #1A7F37">● 2 running</span><span style="color:#BF8700">● 2 waiting</span>
+        <span class="muted">⚙</span>
+      </div>
+      <div class="at side" style="left: 12px; top: 48px; width: 300px; height: 640px">
+        <div class="sh">My Board<span style="flex: 1"></span><span class="muted" style="font-weight: 400">|←</span></div>
+        <div style="padding: 6px 0 4px">
+          <div class="act"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="#1A1A1A" stroke-width="1.4"><line x1="7" y1="2" x2="7" y2="12"/><line x1="2" y1="7" x2="12" y2="7"/></svg>New<span style="flex:1"></span><span class="muted" style="font-size:10.5px">⌘N</span></div>
+          <div class="act"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="#1A1A1A" stroke-width="1.3"><circle cx="6" cy="6" r="4"/><line x1="9" y1="9" x2="12.5" y2="12.5"/></svg>Search<span style="flex:1"></span><span class="muted" style="font-size:10.5px">⌘K</span></div>
+        </div>
+        <div style="flex: 1; overflow: hidden; border-top: 1px solid #EEEEEB">
+          <div class="sec">NEEDS YOU · 2</div>
+          <div class="row" style="padding-left:14px;background:#FFF7E6;"><span class="dot" style="background:#BF8700"></span><span class="sq" style="background:#2F5E9E"></span><span class="rt">Fix the failing login test</span><span class="time">Waiting · 2m</span></div>
+          <div class="row" style="padding-left:14px;background:#FFF7E6;"><span class="dot" style="background:#CF222E"></span><span class="sq" style="background:#A8503A"></span><span class="rt">Migrate the store to SQLite</span><span class="time">exit 1 · 5m</span></div>
+          <div class="sec"><svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="#8A8A85" stroke-width="1.3"><path d="M5 1.5h4l-.6 4 2.6 2.5H3l2.6-2.5z"/><line x1="7" y1="8" x2="7" y2="12.5"/></svg>PINNED</div>
+          <div class="row" style="padding-left:14px;"><span class="dot" style="background:#1A7F37"></span><span class="sq" style="background:#A8503A"></span><span class="rt">Weather comparison Beijing</span><span class="time">4m</span></div>
+          <div class="row" style="padding-left:14px;"><span style="width:7px;flex:none"></span><span class="sq" style="background:#2F5E9E"></span><span class="rt">Release checklist</span><span class="time">3d</span></div>
+          <div class="pinrow"><span class="muted">▸</span><b style="font-size:11.5px">shop</b><span class="muted" style="font-size:10px">project</span></div>
+          <div class="proj" style="padding-top:12px">agenduck<span style="flex:1"></span><span class="muted" style="font-weight:400;font-size:10px">▾</span></div>
+          <div class="path"><span class="muted">▾</span><span class="mono">main</span><span class="muted">main folder</span><span style="flex: 1"></span><span class="time">23</span></div>
+          <div class="row" style="padding-left:28px;"><span class="dot" style="border:1px solid #8A8A85"></span><span class="sq" style="background:#A8503A"></span><span class="rt">Explain the ui/canvas package</span><span class="time">idle</span></div>
+          <div class="row" style="padding-left:28px;"><span class="dot" style="background:#1A7F37"></span><span class="sq" style="background:#2F5E9E"></span><span class="rt">Review the commit graph</span><span class="time">1m</span></div>
+          <div class="row" style="padding-left:28px;"><span style="width:7px;flex:none"></span><span class="sq" style="background:#A8503A"></span><span class="rt">Publish to GitHub</span><span class="time">17h</span></div>
+          <div class="row" style="padding-left:28px;"><span style="width:7px;flex:none"></span><span class="sq" style="background:#4A4F7A"></span><span class="rt">Translate the README</span><span class="time">2d</span></div>
+          <div class="row muted" style="padding-left: 28px; font-size: 10.5px">Show 19 more</div>
+          <div class="path"><span class="muted">▸</span><span class="mono">feat/N10-background-agents</span><span style="flex: 1"></span><span class="time">9</span></div>
+          <div class="path"><span class="muted">▸</span><span class="mono">feat/N9-skills-mcp</span><span style="flex: 1"></span><span class="time">4</span></div>
+          <div class="proj" style="padding-top:12px">shop<span style="flex:1"></span><span class="muted" style="font-weight:400;font-size:10px">▸</span></div>
+          <div class="proj" style="padding-top:12px">Other folders<span class="muted" style="font-weight: 400; font-size: 10px">not in AgentDeck</span><span style="flex:1"></span><span class="time">524</span></div>
+        </div>
+      </div>
+      <div class="at" style="left: 330px; top: 70px; width: 900px; height: 600px; border: 1px solid #DCDCD8; border-radius: 8px; background: rgba(255,255,255,0.55)">
+        <div style="padding: 7px 10px; font-size: 11px"><b>agenduck</b> <span class="mono muted" style="font-size: 10px">main</span></div>
+        <div class="at win" style="left: 16px; top: 36px; width: 420px; height: 260px"><div class="wt"><span class="dot" style="border:1px solid #8A8A85"></span><span class="mono" style="font-weight:500">claude</span><span class="muted">· Explain the ui/canvas package</span><span style="flex:1"></span><span class="muted">Idle · 4h</span></div><div class="wb">● The canvas package draws the board…</div></div>
+        <div class="at win" style="left: 456px; top: 36px; width: 420px; height: 260px; border: 1.5px solid #1A1A1A"><div class="wt"><span class="dot" style="background:#1A7F37"></span><span class="mono" style="font-weight:500">codex</span><span class="muted">· Review the commit graph</span><span style="flex:1"></span><span style="color:#1A7F37">Running · 1m</span></div><div class="wb">• Reading packages/ui/panels/scm…</div></div>
+      </div>
+      <div class="at side" style="left: 1244px; top: 48px; width: 376px; height: 640px">
+        <div class="sh">SOURCE CONTROL<span style="flex: 1"></span><span class="muted" style="font-weight: 400">→|</span></div>
+        <div style="padding:10px;font-size:12px"><b>agenduck · main</b><div class="mono muted" style="font-size:10.5px;margin-top:2px">~/2026/agenduck</div></div>
+        <div style="padding:0 10px;font-size:11px" class="muted">Changes 2 · Graph · Skills · MCP</div>
+        <div style="margin:auto 10px 12px;font-size:11px" class="muted">Nothing focused: “Focus a terminal to see its changes.”</div>
+      </div>
+    </div>
+    <span class="cap muted">从上到下：标题（白板名）· New、Search 两行 · NEEDS YOU（有在等你、出错的才出现）· PINNED · 各项目 → 工作路径（主目录、各 worktree）→ 会话 · Other folders。</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · New 菜单、右键一行</span>
+    <div class="fig" style="width: 1632px; height: 330px; background-color: #FAFAF8">
+      <div class="at side" style="left: 12px; top: 20px; width: 300px; height: 290px">
+        <div class="sh">My Board</div>
+        <div style="padding: 6px 0 4px"><div class="act" style="background:#EDEDEA"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="#1A1A1A" stroke-width="1.4"><line x1="7" y1="2" x2="7" y2="12"/><line x1="2" y1="7" x2="12" y2="7"/></svg>New</div><div class="act"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="#1A1A1A" stroke-width="1.3"><circle cx="6" cy="6" r="4"/><line x1="9" y1="9" x2="12.5" y2="12.5"/></svg>Search</div></div>
+      </div>
+      <div class="menu" style="left: 316px; top: 50px; width: 210px">
+        <div class="mhead">NEW</div>
+        <div class="mi on">Terminal<span style="flex:1"></span><span class="muted">▸</span></div>
+        <div class="mi">Browser</div>
+        <div class="mi">Workspace…<span style="flex:1"></span><span class="muted">⌘⇧N</span></div>
+        <div class="msep"></div>
+        <div class="mi">Add project…</div>
+      </div>
+      <div class="menu" style="left: 530px; top: 50px; width: 160px">
+        <div class="mi"><span class="sq" style="background:#A8503A"></span>claude</div><div class="mi"><span class="sq" style="background:#2F5E9E"></span>codex</div><div class="mi"><span class="sq" style="background:#7347A8"></span>pi</div><div class="mi"><span class="sq" style="background:#0F6F7F"></span>omp</div><div class="mi"><span class="sq" style="background:#4A4F7A"></span>kimi</div><div class="msep"></div><div class="mi">Shell</div>
+      </div>
+      <div class="at side" style="left: 760px; top: 20px; width: 300px; height: 290px">
+        <div class="sh">My Board</div>
+        <div class="sec">PINNED</div>
+        <div class="row" style="padding-left:14px;"><span class="dot" style="background:#1A7F37"></span><span class="sq" style="background:#A8503A"></span><span class="rt">Weather comparison Beijing</span><span class="time">4m</span></div>
+        <div class="proj">agenduck</div>
+        <div class="row" style="padding-left:28px;background:#EDEDEA;"><span class="dot" style="border:1px solid #8A8A85"></span><span class="sq" style="background:#A8503A"></span><span class="rt">Explain the ui/canvas package</span><span class="muted" style="font-size:10px">⋯</span><span class="time">idle</span></div>
+        <div class="row" style="padding-left:28px;"><span style="width:7px;flex:none"></span><span class="sq" style="background:#A8503A"></span><span class="rt">Publish to GitHub</span><span class="time">17h</span></div>
+      </div>
+      <div class="menu" style="left: 1060px; top: 120px; width: 200px">
+        <div class="mi">Open<span style="flex:1"></span><span class="muted">↩</span></div>
+        <div class="mi on">Pin</div>
+        <div class="mi">Rename…</div>
+        <div class="mi">Copy session id</div>
+        <div class="msep"></div>
+        <div class="mi">Close terminal</div>
+      </div>
+      <div class="at" style="left: 1290px; top: 30px; width: 320px; font-size: 12px; line-height: 1.7; color: #5F5F5A">悬停一行：右边出现 ⋯；右键或点 ⋯ 弹菜单。开着的：Open、Pin / Unpin、Rename…、Copy session id、Close terminal；关掉的：Resume、Pin / Unpin、Copy session id、Delete from history…（只删 AgentDeck 的记录，不碰 agent 自己的会话文件）。项目、工作路径也能右键 Pin。</div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · 每一部分</span>
+    <div class="tbl" style="grid-template-columns: 200px minmax(0, 1fr)">
+      <span class="th">部分</span><span class="th">内容和规则</span>
+      <span class="td"><b>New</b></span><span class="td">菜单：Terminal ▸（装了的 agent + Shell）、Browser、Workspace…（⌘⇧N）、Add project…。新开的放在当前聚焦的工作区框里，没有聚焦就是白板视口中间。和右键白板的菜单是同一份。</span>
+      <span class="td"><b>Search</b>（⌘K）</span><span class="td">面板顶上变成输入框，搜会话标题、第一条消息、分支、窗口名；搜索时全部展开、只留命中的；Esc 退出。</span>
+      <span class="td"><b>NEEDS YOU</b></span><span class="td">有在等你（黄）或出错（红）的终端才出现，按等的时间排，行底 <span class="mono">--attention-soft</span>。⌘J 依次跳这里的行；⌥⌘1–9 跳到这一段的第 1–9 行（原来 Agents 视图的快捷键搬过来）。</span>
+      <span class="td"><b>PINNED</b></span><span class="td">你置顶的会话、项目、工作路径，按置顶的先后，拖动可以换顺序。随白板保存。会话被关掉了照样留着（变成可以 Resume 的一行）。</span>
+      <span class="td"><b>项目 → 工作路径</b></span><span class="td">和现在的 HISTORY 一样：项目（可折叠）→ 主目录和各 worktree（▾ / ▸ + 分支 + 数量）→ 会话，最近的在前，每组 5 条后 “Show n more”。不再按 agent 分小标题：每行前面一个 agent 身份色的小方块。开着的会话在前、带灯；Other folders（不在项目里的）在最后。</span>
+      <span class="td"><b>一行</b></span><span class="td">灯（开着才有：运行中绿、等你黄、出错红、空闲空心）· agent 小方块 · 标题 · 右边时间（开着的写状态和时长，像 “Waiting · 2m”）。单击：开着的跳到窗口（同 ⌘J 的走法），关掉的在它的工作区框里 Resume。</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · 原来的两个面板去哪了</span>
+    <div class="tbl" style="grid-template-columns: 260px minmax(0, 1fr)">
+      <span class="th">原来</span><span class="th">合并以后</span>
+      <span class="td">右边 BOARD（Board 视图：项目 → 工作区 → 窗口）</span><span class="td">并进左边面板：开着的窗口就是带灯的那几行。网页窗口也列在它所在的工作路径下（小窗口图标，不写时间）。</span>
+      <span class="td">右边 Agents 视图（按状态分组）</span><span class="td">变成顶上的 NEEDS YOU 一段；RUNNING、IDLE 不再单独分组，看每行的灯。</span>
+      <span class="td">左边 HISTORY</span><span class="td">就是这个面板的主体；标题改成白板名。</span>
+      <span class="td">右边面板</span><span class="td">只留源代码管理。什么都没聚焦时写 “Focus a terminal to see its changes.”，⌘B 照旧开关。</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">5 · 待你确认（按推荐先定）</span>
+    <div class="tbl" style="grid-template-columns: 40px 260px 420px minmax(0, 1fr)">
+      <span class="th">#</span><span class="th">问题</span><span class="th">推荐</span><span class="th">别的选法</span>
+      <span class="td">1</span><span class="td">面板放哪边</span><span class="td"><b>左边</b>，右边只留源代码管理</span><span class="td">右边（和源代码管理用 tab 切换）</span>
+      <span class="td">2</span><span class="td">能置顶什么</span><span class="td"><b>会话、项目、工作路径</b>都能 Pin</span><span class="td">只能置顶会话</span>
+      <span class="td">3</span><span class="td">Agents 视图</span><span class="td"><b>只留 NEEDS YOU 一段</b>，其余看灯</span><span class="td">面板顶上加 By project / By status 切换</span>
+      <span class="td">4</span><span class="td">按 agent 分小标题</span><span class="td"><b>不分</b>，行首身份色小方块</span><span class="td">照现在 HISTORY 那样分 CLAUDE · 14 这些小标题</span>
+      <span class="td">5</span><span class="td">New 菜单</span><span class="td"><b>Terminal ▸、Browser、Workspace…、Add project…</b>，和右键白板同一份</span><span class="td">只放 New terminal ▸</span>
+      <span class="td">6</span><span class="td">置顶存在哪</span><span class="td"><b>随白板保存</b>（contracts 加 <span class="mono">BoardState.pins</span>）</span><span class="td">存在应用设置里，所有白板共用</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">6 · 任务（确认后加进任务表）</span>
+    <div class="tbl" style="grid-template-columns: 90px minmax(0, 1fr) 320px">
+      <span class="th">编号</span><span class="th">做什么</span><span class="th">模块</span>
+      <span class="td mono">MP1</span><span class="td">contracts：<span class="mono">BoardState.pins</span>（会话 / 项目 / 工作路径的引用，有先后），单独提交</span><span class="td mono">packages/contracts、tools/fakes</span>
+      <span class="td mono">MP2</span><span class="td">面板：标题、New、Search、NEEDS YOU、PINNED、项目 → 工作路径 → 会话；开着的窗口和历史会话合成一行</span><span class="td mono">packages/ui/panels/history（改名 manager）、ui/canvas</span>
+      <span class="td mono">MP3</span><span class="td">右边面板只留源代码管理；BoardNav 退役，⌥⌘1–9 和 ⌘J 搬到 NEEDS YOU；组件库、docs/components.md 同步</span><span class="td mono">ui/canvas、panels/board-nav、apps/desktop</span>
+      <span class="td mono">MP4</span><span class="td">e2e：TC-16、TC-33、TC-148 改写，新加 Pin、New、Search 的用例；挂进 e2e/affected.mjs</span><span class="td mono">e2e</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

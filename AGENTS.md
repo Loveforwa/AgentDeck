@@ -46,7 +46,7 @@ Electron + TypeScript + React 18 + Zustand，白板用 React Flow（@xyflow/reac
 
 - 配置都在根目录，各包不要再放自己的：`eslint.config.js`、`.dependency-cruiser.cjs`、`vitest.config.ts`、`.prettierrc.json`。
 - `pnpm test` 把 `pnpm-workspace.yaml` 里每个有 package.json 的包当作一个 Vitest project；包里有自己的 `vitest.config.*` 就用它（界面包要 jsdom 时自己写一个）。单跑一个包：`pnpm --filter <包名> test`。
-- 端到端测试（R2）：`pnpm e2e`，Playwright 的 Electron 模式驱动真应用，要 tmux；不在 `pnpm check` 里，CI 是单独的 `.github/workflows/e2e.yml`。改了界面或组装后跑一遍。跑法、隔离和假 agent 见 `e2e/AGENTS.md`。
+- 端到端测试（R2）：`pnpm e2e`，Playwright 的 Electron 模式驱动真应用，要 tmux；不在 `pnpm check` 里，CI 是单独的 `.github/workflows/e2e.yml`。**平时只跑受这次改动影响的：`pnpm e2e:affected`**（和 main 比，按 `e2e/affected.mjs` 的规则挑 spec，打印每条为什么被选中；只改注释、文档、单元测试的不算）。全量 `pnpm e2e` 只在改了 contracts、组装、白板核心、e2e 支撑代码（这些规则本来就会选全部）或合进 main 之前跑。跑法、隔离和假 agent 见 `e2e/AGENTS.md`。
 - Prettier 是可选的：`pnpm format` / `pnpm format:check`，不在 `pnpm check` 里（contracts 目前没按它排版）。
 - `pnpm boundaries` 直接调 dependency-cruiser 的 API（`scripts/boundaries.mjs`），因为 `depcruise` 命令行拒绝在 node 25 上跑。
 

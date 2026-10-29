@@ -10,8 +10,9 @@
     "lint": "eslint . --max-warnings 0",
     "boundaries": "node scripts/boundaries.mjs",
     "test": "vitest run",
-    "check": "pnpm typecheck && pnpm lint && pnpm colors && pnpm boundaries && pnpm test",
+    "check": "pnpm typecheck && pnpm lint && pnpm colors && pnpm boundaries && node e2e/scripts/affected.mjs --check && pnpm test",
     "e2e": "pnpm --filter @agentdeck/e2e e2e",
+    "e2e:affected": "pnpm --filter @agentdeck/e2e e2e:affected",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "colors": "pnpm --filter @agentdeck/design-tokens lint:colors"
