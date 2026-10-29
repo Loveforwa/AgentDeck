@@ -393,13 +393,13 @@ CASES = [
          expect='UI：Agents 页顶上写 “18.12.6 · newer than checked (18.0.4)”（muted 文字，不用颜色）；Approve keys 一行写 Off · “Untested on 18.12.6”；状态、历史、用量照常是 Yes。PLUGINS 里 Auto-approve 灰掉，hint 写 “Untested on 18.12.6”；终端底边的书签变成 Needs you；omp 停在确认框，黄灯亮，等你自己按。\n后台：适配器读 compat/omp.json 的 verifiedUpTo；超过时 approve-keys、screen 两类能力的 level 降为 no，reason 是 Untested on <版本>；ApprovalService 不发键，发 approval.needs-you（reason unsupported）。',
          result='agent 升级不会让 AgentDeck 在你不知道时乱按键',
          issue='已实现（AH3，分支 integrate/W0-W1，未合进 main）：2026-10-28 单元测试覆盖；真 agent 升级的情况没在应用里试过；2026-10-28 Claude 自动化验收（e2e tc48-untested-version，假 agent、真 tmux 和 git，连跑 3 次通过，分支 integrate/W0-W1 d51382e，未合进 main）。主进程不发键、omp 停在确认框等你（report 写 Off · Untested on 18.12.6）通过；Settings › Agents 页还没做（第 2 步）；PLUGINS 里 Auto-approve 不灰（IS-153）、书签不变 Needs you（IS-154）2026-10-29 已修（3cff348），原来标 test.fail 的那条改成普通测试、全量 e2e 通过。人工：Agents 页做好后看第 2 步', rel='IS-75 IS-77 IS-93 IS-153 IS-154'),
-    dict(id='TC-49', p='P2', status='部分验证',
+    dict(id='TC-49', p='P2', status='已验证',
          scene='新增或升级一家 agent 时，跑一遍适配器合格测试，结果进 compat 记录（AH2）',
          pre='装好 tmux、claude、codex、pi、omp；仓库在 main',
          steps='1. 跑 pnpm --filter @agentdeck/agent-adapters test（L1）\n2. 跑 AGENTDECK_REAL_AGENTS=1 pnpm --filter @agentdeck/agent-adapters conformance --agent pi（L2）\n3. 打开 packages/agent-adapters/compat/pi.json\n4. 故意把 known.ts 里 pi 的 resume 参数改错，再跑第 2 步',
          expect='UI：（命令行）L1 列出每家 agent × K1–K17，声明 no 的项显示 skip 和原因，没写原因的算失败；L2 对 pi 逐项输出 pass / fail / skip，用本地假模型服务，不花额度。\n后台：compat/pi.json 写入版本 0.83.0、日期、每项结果；第 4 步 K9 失败，compat 里 resume 记 fail，verifiedUpTo 不前进；pnpm check 只跑 L1。',
          result='每次加 agent 或升级都有同一把尺子，结果能提交、能对比',
-         issue='已实现（AH2，分支 integrate/W0-W1，未合进 main）：2026-10-28 L1 进 pnpm check，L2 五家真程序跑过；“故意改错参数时对应 K 失败”只在 L1 验证过；2026-10-28 Claude 自动化验收（L1 加了故意改错参数的测试：pi 的 resume 参数写错时 K9 失败、K10 通过，进 pnpm check，分支 integrate/W0-W1 d51382e，未合进 main）。人工：L2 用真 pi 跑（第 2、4 步）', rel='IS-91'),
+         issue='已实现（AH2，分支 integrate/W0-W1，未合进 main）：2026-10-28 L1 进 pnpm check，L2 五家真程序跑过；“故意改错参数时对应 K 失败”只在 L1 验证过；2026-10-28 Claude 自动化验收（L1 加了故意改错参数的测试：pi 的 resume 参数写错时 K9 失败、K10 通过，进 pnpm check，分支 integrate/W0-W1 d51382e，未合进 main）。人工：L2 用真 pi 跑（第 2、4 步）；2026-10-29 Claude 用真 pi 0.83.0 跑了 L2（第 2、4 步），整个运行包在 sandbox-exec 里：HOME 指向临时目录、读写不到 ~/.pi 和 ~/.omp、出站只放行 localhost（本机代理也挡掉），不花额度。第 2 步 12 pass、0 fail、6 skip；第 4 步把 resume 参数改成 --sesion，K9 失败（K18 连带失败，它用 K9 关掉的终端），compat 里 K9 记 fail；把 verifiedUpTo 先改成 0.82.0 再跑，通过的 K1 前进到 0.83.0，失败的 K9 和整体 verifiedUpTo 停在 0.82.0。改动全部恢复，compat 没提交', rel='IS-91'),
     # ---- 2026-10-28 Session（M9，SE0–SE6），需求见设计画布“Session”页（S0、S1） ----
     dict(id='TC-50', p='P1', status='未实现',
          scene='Lead 开的子 session 在白板上看得出是谁开的，关掉 Lead 后关系还在（SE3、SE4）',
@@ -1137,20 +1137,20 @@ CASES = [
          expect='UI：第 2 步 codex 停在确认框，黄灯，确认框里写 “AgentDeck: claude (lead) has uncommitted changes in 2 files here (db/pool.ts, db/pool.test.ts). git stash would take them.”，收件箱出现同样一条；第 3 步 codex 收到拒绝，claude 的改动还在；第 4 步不拦（只有自己的改动）；第 5 步同样要你批准，原因写 commit -a 会把 claude 的文件一起提交。\n后台：PreToolUse（claude 的 Bash、codex 的 Bash，codex 能不能拦待核对）认出 stash、checkout -- / checkout .、restore、reset --hard、clean -f、commit -a、add -A / add . 这几种；只有同目录别的活着的终端在改动表里有没提交的文件时才返回 ask；不支持钩子的 agent 不拦，只在 SCM 面板里显示。',
          result='一个 agent 的 git 操作不会把另一个 agent 没提交的活抹掉',
          issue='未实现（CO2）', rel='IS-141'),
-    dict(id='TC-147', p='P3', status='部分验证',
+    dict(id='TC-147', p='P3', status='已验证',
          scene='把一个终端里选中的文字发给另一个终端；codex 里第一次拖选没选上时有提示（CO3，画板 O0 第 3、4 节）',
          pre='白板上两个框：api 里一个 claude、web 里一个 claude 和一个 codex；web 的 codex 正在等你批准',
          steps='1. 在 api 的 claude 输出里拖选两行，松手\n2. 在选中处右键 › Send selection to ▸\n3. 选 web 下的 claude\n4. 在 web 的 codex 窗口里直接拖动选字\n5. 按住 Option 再拖，⌘C，到别处 ⌘V',
          expect='UI：第 1 步松手就进了剪贴板（不用 ⌘C）；第 2 步子菜单按框分组列出别的终端，正在等你的 codex 不在里面（底下一行 “Waiting terminals are skipped”）；第 3 步文字出现在 web 那个 claude 的输入框里，没有按回车，焦点跳到它；第 4 步第一次没选上时出一条 Toast “Hold Option to select text”，以后不再出；第 5 步能粘出来。\n后台：Send selection 用目标终端的 paste（bracketed paste），不经过 send_to_terminal；目标在等你时不列（和 AH7 同一条规矩）；组件库 TerminalWindow 的复制说明改成实际行为。',
          result='一个 agent 的结论交给另一个 agent 只要一次右键',
-         issue='已实现（CO3，分支 integrate/W0-W1，未合进 main）：2026-10-28 真 tmux 测试和 e2e 跑过，还没在应用里验收', rel='IS-143'),
-    dict(id='TC-148', p='P3', status='部分验证',
+         issue='已实现（CO3，分支 integrate/W0-W1，未合进 main）：2026-10-28 真 tmux 测试和 e2e 跑过，还没在应用里验收；2026-10-29 Claude 自动化验收（e2e tc147-send-selection，假 agent、真 tmux 和 git，连跑 3 次通过，分支 integrate/W0-W1 b35f5fd，未合进 main）', rel='IS-143'),
+    dict(id='TC-148', p='P3', status='已验证',
          scene='右边 BoardNav 的 Agents 视图：按状态列出所有 agent，悬停看最后一条回复（CO4，画板 O0 第 4 节；Unseen 2026-10-28 按用户决定去掉）',
          pre='白板上两个项目、6 个 agent 终端和 2 个 shell；一个 claude 刚做完一轮',
          steps='1. 看刚做完一轮的 claude 的标题栏\n2. 点白板空白处（没有聚焦的窗口），右边出现 BoardNav，点顶上的 Agents\n3. 悬停 IDLE 下刚做完一轮的 claude\n4. 按 ⌥⌘3\n5. 回到 Agents 视图',
          expect='UI：第 1 步标题栏写 “Idle · now”（过几分钟 “Idle · 5m”），灰色，没有别的标记。第 2 步只列 6 个 agent 终端（不列 shell），分组顺序是 ERROR（有的话）、NEEDS YOU、RUNNING、IDLE，每组写个数；颜色只在灯上，IDLE 的行右边只写时间；刚做完的和一直空闲的都在 IDLE，组里按白板位置。第 3 步出黑色提示，第一行 “claude · Idle · now”，写这个终端的最后一条回复和 “Click to jump · ⌥⌘3”。第 4 步跳到第 3 行的终端并聚焦。第 5 步记住了上次选的 Agents，分组不变。\n后台：分组只看状态；TerminalWindowData.unseen 留在 contracts（只加不改），界面不再读写，老白板里带着它的照常按状态分组；最后一条回复和 agentdeck session result 用同一段读会话记录的代码，读不到时退回屏幕最后几行。',
          result='同时跑很多 agent 时，一眼看出谁在等你、谁在跑',
-         issue='已实现（CO4，分支 integrate/W0-W1，未合进 main）：2026-10-28 用户试用后去掉 Unseen（状态不用点进去就看得见，4a22f5e），之后 e2e tc148-agents-view 跑过（4 个假 claude + 1 个 shell，没造出 ERROR 一组）；还没在应用里验收。原来的 DONE · UNSEEN 一组、“Idle · Unseen” 作废', rel='DR-116'),
+         issue='已实现（CO4，分支 integrate/W0-W1，未合进 main）：2026-10-28 用户试用后去掉 Unseen（状态不用点进去就看得见，4a22f5e），之后 e2e tc148-agents-view 跑过（4 个假 claude + 1 个 shell，没造出 ERROR 一组）；还没在应用里验收。原来的 DONE · UNSEEN 一组、“Idle · Unseen” 作废；2026-10-29 Claude 自动化验收（e2e tc148-agents-view、tc148-error-group，假 agent、真 tmux 和 git，连跑 3 次通过，分支 integrate/W0-W1 b35f5fd，未合进 main）：补上了 ERROR 一组（假 claude 以退出码 3 崩掉），分组 ERROR · 1、NEEDS YOU · 1、RUNNING · 2、IDLE · 2，shell 不列，组里按白板位置；出错那行的灯和 “exit 3 · now” 是出错红、Waiting 是等你黄，其余只写时间；⌥⌘1 跳到出错的、⌥⌘3 跳到第一个在跑的', rel='DR-116'),
 ]
 
 # ---------------- 问题清单 ----------------
@@ -1163,7 +1163,7 @@ ISSUES = [
     ('IS-02', 'P0', '未验证', 'workspace-service · 白板', '从界面新建 worktree 工作区、在框里开终端，从没在真窗口里走过', '按 TC-01、TC-02 走一遍', '多分支并行的基础，没走过就不能说 MVP 可用', '手动验收 TC-01/TC-02', 'TC-01 TC-02'),
     ('IS-03', 'P0', '未验证', '整体', '同一仓库两个工作区、两个 claude 并行改代码，从没试过', '按 TC-03 走一遍', '这是产品的核心卖点', '手动验收 TC-03', 'TC-03'),
     ('IS-04', 'P0', '缺失', 'e2e', '没有端到端自动测试（任务 R2）：仓库里没有 Playwright、没有 e2e 目录；14 条验收场景都没自动化', '—', '以后每次改动都要靠人工回归', '用 Playwright 的 Electron 模式，先做能完全自动的 TC-01 TC-02 TC-06 TC-07 TC-09 TC-10 TC-12', '全部'),
-    ('IS-05', 'P0', '未验证', 'tmux-host · 终端窗口', 'F7 列的 9 项终端手感只能人看，都还没确认：颜色和框线字符、Esc / Shift+Enter / 多行粘贴、触控板滚动和回滚、拖选复制、和系统终端同时接上、claude 完成提醒等', '照 packages/tmux-host/AGENTS.md「需要人工确认」逐项试', '终端是天天用的东西，手感不对很快就不想用', '验收时逐项打勾，有问题记成新的 Q', ''),
+    ('IS-05', 'P0', '未验证', 'tmux-host · 终端窗口', 'F7 列的 9 项终端手感只能人看，都还没确认：颜色和框线字符、Esc / Shift+Enter / 多行粘贴、触控板滚动和回滚、拖选复制、和系统终端同时接上、claude 完成提醒等。2026-10-29 Claude 自动化验收（e2e is05-terminal-feel，假 agent、真 tmux 和 git，连跑 3 次通过，分支 integrate/W0-W1 b35f5fd，未合进 main）：部分。机器能核对的都过了：16 / 256 / 真彩色经过 tmux 还是真彩色，粗体、下划线、斜体、中文两格、框线对齐（截图看过）；Esc 单独到达，Shift+Enter 在程序申请扩展按键时是 CSI 13;2u、否则回车，Option+字母、方向键、⌃C 对，⌘V 三行是一整段 bracketed paste 不提交；平移出视口再回来按 Esc 5–18ms 到程序；滚轮进 tmux 回滚、打字退出、滚回底部退出，程序要鼠标时（像 codex）滚轮交给程序；拖选松手进剪贴板、Option 拖 + ⌘C 也能复制；经 tmux socket 接第二个客户端两边同步；响铃和 OSC 9 到 xterm，做完一轮 “Idle · now”。要人看：触控板手感、真 claude 的配色和 / 菜单和 Shift+Enter 换行、iTerm2 / Terminal.app 里的颜色、从访达拖文件进终端、打字延迟感。顺带看到的滚动条另记 IS-160', '照 packages/tmux-host/AGENTS.md「需要人工确认」逐项试', '终端是天天用的东西，手感不对很快就不想用', '验收时逐项打勾，有问题记成新的 Q', ''),
     ('IS-06', 'P1', '缺陷', 'agent-adapters', 'claude 停在“信任这个文件夹”提示时，状态显示 Idle，应该算在等你', '打开一个没信任过的目录里的 claude', '用户以为 claude 在空闲，其实它卡着等你', '状态机把启动后迟迟没有 SessionStart、且屏幕停住的情况算 needs-reply，或识别信任提示', 'TC-04'),
     ('IS-07', 'P1', '缺陷', '终端窗口', '连着新建两个终端时，第二个可能误显示 “Previous session ended”（它复用了 500 毫秒内的 terminals.list() 结果）', '快速连开两个终端', '用户以为终端没起来', '新建后强制刷新列表，或按 terminalId 精确查询', 'TC-03'),
     ('IS-09', 'P1', '技术债', 'tmux-host', 'pty.ts 自己声明了顶层 const require，和 electron-vite 注入的重名，终端进程一启动就崩；组装时在构建配置里绕过', '去掉桌面构建配置里的绕过插件后启动', '换构建工具或打包时会再炸', '在 tmux-host 里改名，去掉绕过', ''),
@@ -1172,7 +1172,7 @@ ISSUES = [
     ('IS-12', 'P1', '需求不一致', '需求 · agent-adapters', '验收场景 5 写“直接按 y 批准”，claude 实测“允许一次”是 1 或回车，y 能不能用不确定', '在 claude 的批准提示里按 y 试一次', '按错键可能选到别的选项', '改需求写法为“按 agent 的允许一次键（claude 是 1）”，或实测 y 后定下', 'TC-05'),
     ('IS-13', 'P1', '缺失', '白板 · apps/desktop', '没有 Settings 界面：设置存在 settings.json，点 Settings 用系统程序打开它；需求里的 Settings › Projects、Settings › Agents 都没有', '点顶栏 Settings', '项目设置、agent 启动参数、破坏性命令名单都只能手改 JSON', '先做 Projects 和 Agents 两页', 'TC-15'),
     ('IS-14', 'P1', '未验证', 'apps/desktop', '系统通知真弹出、单击后窗口回来并跳到终端，没验证', '按 TC-13 走一遍', '后台提醒是“不用盯着”的关键', '手动验收 TC-13', 'TC-04 TC-13'),
-    ('IS-16', 'P1', '未验证', 'apps/desktop · 白板', '焦点在网页窗口里时，用真键盘按应用快捷键没验证过（只用菜单项触发过）', '按 TC-18 走一遍', '快捷键失灵会很烦', '手动验收 TC-18', 'TC-18'),
+    ('IS-16', 'P1', '未验证', 'apps/desktop · 白板', '焦点在网页窗口里时，用真键盘按应用快捷键没验证过（只用菜单项触发过）。2026-10-29 Claude 自动化验收（e2e is16-keyboard-in-browser、tc18-shortcuts-in-browser，假 agent、真 tmux 和 git，连跑 3 次通过，分支 integrate/W0-W1 b35f5fd，未合进 main）：部分。焦点在网页里时按 ⌘J ⌘B ⌘W ⌘0 ⌘1，网页和 AgentDeck 注入网页的转发脚本都不拦（对照 ⌘[ 被拦）；⌘R 只刷新这个网页，应用不重载、白板不变；菜单项那一段 tc18 覆盖。要人用真键盘按一次 ⌘B / ⌘J：Playwright 合成的按键不是系统事件，到不了应用菜单', '按 TC-18 走一遍', '快捷键失灵会很烦', '手动验收 TC-18', 'TC-18'),
     ('IS-17', 'P1', '技术债', 'contracts', '线 1 的 13 条接口意见没整理成 0.1.4：关闭确认不知道进程在不在跑、⌘K 只发 Ctrl+L 没清历史、拖入文件拿不到路径、没有打开外部链接、没有终端配色 token 等', '看 packages/tmux-host/CONTRACT_NOTES.md', '这些地方现在是各包自己临时处理', '出 contracts 0.1.4 并跟进实现', ''),
     ('IS-24', 'P1', '未验证', '白板 · workspace-service', '在真窗口里删除工作区并删目录没走过（会真删磁盘目录）', '在测试仓库上按 TC-12 走一遍', '删除是不可逆操作，必须先验证', '手动验收 TC-12', 'TC-12'),
     ('IS-08', 'P2', '缺陷', 'agent-adapters · contracts', '重开应用后终端状态都显示 “Idle · now”，开始时间没接上', '有终端在跑时 ⌘Q 再打开', '计时不准，但不影响使用', '状态机接受恢复时的真实开始时间', 'TC-10'),
@@ -1292,7 +1292,7 @@ ISSUES = [
     ('IS-121', 'P3', '缺失', '集群 · 定期跑', 'AgentDeck 没有“到点自动开一次”的能力（仓库里没有定时任务，只有自动保存和用量轮询），收论文、新闻这类要每天跑的事只能你每天手动开', '想每天 7 点收一次 arXiv cs.SE', '每天要记得开；漏一天就断', '集群框 ⋯ › Repeat…：AgentDeck 开着时到点用同一套设置新开一个集群；错过的下次打开时补一次；额度受限就等；跑完不进 Needs you（RS9）', 'TC-91'),
     ('IS-122', 'P3', '未验证', '研究 · 视频', '各家 agent 能不能直接看视频没有核对过：网上查到 Claude Code 没有视频输入（2025-11-29 的功能请求还开着）、Codex CLI 没找到支持的说明、Kimi Code CLI 文档写了能粘贴视频片段（看模型有没有 video_in）、pi 和 omp 看接的模型；yt-dlp 取 B 站 AI 字幕要登录 cookies（社区说法）、抖音能不能取待核对；下载要守平台条款', '抖音链接 yt-dlp 取不到，要用浏览器的登录态', '视频流程在某些平台或某家 agent 上走不通', '标准路线一律走字幕或转写加关键帧（五家都能用）；能看视频的只做可选的 viewer；AH0 加 image-input、video-input 两项；用浏览器 cookies 每次问你；调研任务实测（RS14）；抖音、B 站链接待用户给', 'TC-94'),
     ('IS-123', 'P2', '风险', '研究 · 复现环境', 'AgentDeck 只支持 macOS（docs/decisions.md），Mac 没有 CUDA，Docker 在 Mac 上用不了 GPU、x86 镜像要模拟；agent 搭环境时常常 pip install 进全局 Python 或改你的 base conda 环境', '复现一篇要 CUDA 11.8 的论文，agent 在 Mac 上反复装 torch 失败，顺手把全局 Python 装乱', '复现跑不起来；污染你自己的环境', '环境建在 worktree 里（.venv 或 conda 前缀），研究集群终端加 PIP_REQUIRE_VIRTUALENV=1 等护栏；要 CUDA 的作为 Job 去 SSH 机器；Plan 里估算 GPU 需求，Mac 跑不了的写 Not run 和原因（RS2、RS13）', 'TC-90 TC-93'),
-    ('IS-124', 'P3', '未验证', '白板 · 网页窗口', '网页窗口能开本地 HTML（packages/ui/widgets/browser/AGENTS.md），但本地 PDF 走 agentdeck-file:// 的 iframe 时能不能用 Chromium 自带的 PDF 查看、#page= 能不能跳页没核对；pptx 不能直接显示', 'Read with agent 打开 paper.pdf，窗口一片空白', '读论文和看 PPT 要切到别的应用', '实测 iframe 和 webview 两种方式显示 PDF 和 #page=；不行就让 PDF 在 webview 里开；pptx 由 agent 另出一份 PDF 预览（RS8、RS14）。2026-10-28 实测（RS14）：沙箱化 iframe 显示本地 PDF 被挡（ERR_BLOCKED_BY_CLIENT，空白）；不加沙箱的 iframe 和 webview 都能显示并认 #page=；只改 # 不跳页，要带上变化的 query（?r=2#page=5）再载入', 'TC-92'),
+    ('IS-124', 'P2', '缺陷', '白板 · 网页窗口', '网页窗口打不开本地 PDF：本地文件走沙盒化的 iframe，Chromium 不在里面起 PDF 查看器，窗口显示 “This page can’t be shown on the board.”；点 Show it here 只把 mode 改成 webview，本地文件仍走 iframe，还是同一页。地址里带 #page=N（或 ?…）的本地文件打不开：address.ts 转成路径时留着 # 后缀，主进程当成文件名的一部分，File not found。.pptx 被当成下载（will-download），窗口一直 Loading…，Electron 默认会弹保存框（2026-10-29 e2e is124-local-pdf 核对，两处用 test.fail 标着，分支 integrate/W0-W1 b35f5fd）', '右键 New browser，地址栏输入一个本地 PDF 的路径；再输入 file://…/paper.pdf#page=4', '读论文要切到别的应用；TC-92 的 Read with agent 和点页码跳页做不了', '本地 PDF 用不带 sandbox 的 iframe 或 webview（测试里去掉 sandbox 后查看器显示 1/6）；转路径时去掉 # 和 ? 后缀；跳页时带一个变化的 query 重新载入（?r=2#page=5 实测跳到第 5 页，只改 # 不跳）；pptx 拦下下载，由 agent 另出一份 PDF 预览（RS8、RS14）', 'TC-92'),
     # ---- 2026-10-28 文档（M15，DC0–DC11），需求见设计画布“文档”页（D0–D2） ----
     ('IS-125', 'P3', '设计', 'ui/widgets/terminal · 终端链接', '终端里单击 .md 路径只能交给外部编辑器（packages/ui/widgets/terminal/src/TerminalWindow.tsx:243-247 的 file 分支 → app.openInEditor），白板上看不到渲染后的文档，也没法评论；agent 写的需求和设计文档只能切到别的程序看', '在 claude 里让它写 docs/design/x.md，单击输出里的路径：VS Code 打开源码；没装编辑器时交给系统默认程序（apps/desktop/src/main/app-service.ts:123-134）', '写文档的 agent 和文档不在一处，看改动、给意见都要来回切', 'M15 文档窗口（DC3、DC4）：.md 开成文档窗口，⌥ 单击仍用编辑器', 'TC-96'),
     ('IS-126', 'P2', '文档', '项目文档 · agent 写的报告', 'agent 写的文档里代码引用少，而且常写短路径，对不到唯一文件：第一轮 9 份报告（83,727 字符）只有 13 处带行号，第 3、5、6、7、8、9 点一处都没有；13 处里 5 处是短路径（claude.ts:80-83 对到 adapters/、subagents/、usage/ 三个 claude.ts，index.ts:296 对到 3 个 index.ts）', '2026-10-28 用 p11/measure/refs.py、paths.py 统计；按内容挑出对的文件后 13 处都说得对（人工逐条看过），问题在写法不在内容', '核查要靠读的人猜是哪个文件；文档放久了更没法核对；工具也没法自动检查', 'agentdeck-docs skill 要求从仓库根写全路径、讲代码的每段至少一处引用、写完跑 agentdeck doc check（DC7、DC5）；根目录 AGENTS.md 的规矩里加一句（待用户确认）', 'TC-101、TC-104'),
@@ -1334,11 +1334,19 @@ ISSUES = [
     ('IS-155', 'P2', '缺陷', 'apps/desktop · LimitService · 终端书签', '额度了结时最后的状态和去掉它的列表同一刻发出（LimitService 同一个 tick），“Not resumed · you took over”、“Resumed” 书签一帧都停不住（e2e tc80-tc81-codex-limits 里用 test.fail 标着）', 'codex 撞额度、书签 Paused 后，恢复前自己在终端里打一句回车', '用户看不到 AgentDeck 为什么没续、或者已经续了', '了结后留几秒再从列表去掉，或界面按最后状态停几秒再收起', 'TC-81 TC-78'),
     ('IS-156', 'P3', '缺陷', '白板 · 吸附', '拖角改宽度吸附后存的宽度不是整数（559.9999999999999 而不是 560）（2026-10-28 TC-31 的 e2e 发现）', '拖终端右下角改宽，吸到旁边 560 宽的终端，看保存的白板数据', '看不出来；比较尺寸、存的数据带浮点误差', '吸附后按白板坐标取整', 'TC-31'),
     ('IS-157', 'P3', '未验证', '终端窗口 · 状态', '待核对：空闲的 shell 在白板缩放以后显示 Running（g1 一次截图里看到，没复现、没断言；TC-31 的备注里记过改大小时类似的现象，IS-72 修的是改大小）', '开一个空闲的 shell，缩放白板，看标题栏状态', '误以为 shell 在跑', '先复现；是的话看缩放触发的重画是不是被算成了输出（同 IS-72 的 1 秒窗口）', 'TC-31'),
+    # ---- 2026-10-29 第二轮 e2e 验收（h1–h4）时发现 ----
+    ('IS-158', 'P3', '缺陷', '白板 · 工作区框 · workspace-service', '新建工作区失败时框上直接显示 node 的原始报错，带两段很长的绝对路径（例如 EACCES: permission denied, copyfile …/.env -> …/.env）（2026-10-29 e2e is02-worktree-rollback 发现）', '把仓库里的 .env 设成读不了（chmod 000），右键 New workspace…', '用户看不懂哪里出错、该怎么改', '框上写一句人话（Couldn’t copy .env into the new workspace），原始报错放进详情或悬停', 'TC-02'),
+    ('IS-159', 'P3', '缺陷', '终端窗口 · apps/desktop', 'Open in system terminal 打不开 App 时没有任何提示：run() 只等进程起来、不看退出码，界面也把错误吞掉（2026-10-29 e2e is15-system-terminal-apps 发现，用 test.fail 标着）', 'Settings 的 Terminal app 填 NoSuchTerm，标题栏右键 › Open in system terminal', '点了没反应，用户不知道是设置写错还是没给权限', '等 osascript / open 退出，非 0 时出 Toast 写原因（App 找不到、没有自动化权限）', 'TC-11'),
+    ('IS-160', 'P3', '缺陷', '终端窗口 · xterm', '程序输出让屏幕滚动后，鼠标悬停在终端上时右边出现一条几乎满高的灰色滚动条，移开约 1.5 秒后淡出：备用屏的缓冲区比屏幕多 1 行（19 比 18），和修 IS-39 时设的 scrollback: 1000 有关（2026-10-29 e2e is05-terminal-feel 时看到）', '在 claude 这类全屏程序里让输出滚动，鼠标移到终端上', '只是难看，滚轮照常交给 tmux', '备用屏时隐藏 xterm 的滚动条，或查清多出的那一行', 'TC-25'),
+    ('IS-161', 'P2', '缺陷', '白板 · Clawd · 性能', '空闲时 CPU 不接近 0（G4 不达标）：白板放着不动，应用合计 3.0–4.6% 一个核（标准 ≤ 2%），界面进程 1.4–2.3%、GPU 1.2–1.9%（标准每个 ≤ 1%）。原因是左下角的 Clawd：每约 10 秒冒出来一次、待 6 秒，第一次出现后一直挂在页面上，两帧交替的 ad-clawd-flip（SVG opacity，infinite）露着、缩回去都在跑，界面和 GPU 一直出帧；把 Clawd 拿掉降到约 1.0%，reduced motion 下 0.8–1.2%（2026-10-29 e2e is26-performance 量 4 次，用 test.fail 标着）', 'AGENTDECK_E2E_PERF=1 pnpm --filter @agentdeck/e2e exec playwright test is26 -g G4', '笔记本放着 AgentDeck 不动也一直耗电', '缩回去后卸掉精灵或暂停动画；露着时只在头一两秒动，或者一次一次触发；修好后去掉 spec 里的 test.fail', ''),
 ]
 
 # 用户在验收报告网页上填的验收结果（2026-10-24 从网页数据库同步的快照）。网页打开后以数据库为准；
 # 这里决定生成的网页里每条用例默认在哪一组（等你验收 / 阻塞或不通过 / 已通过）。
 ACCEPTED = {
+    'TC-49': '通过',
+    'TC-147': '通过',
+    'TC-148': '通过',
     'TC-14': '通过',
     'TC-05': '通过',
     'TC-29': '通过',
@@ -1382,6 +1390,16 @@ ACCEPTED = {
 
 # 已经处理的问题：处理状态和备注
 RESOLVED = {
+    'IS-02': '2026-10-29 Claude 自动化验收（e2e tc01-tc02-project-workspace、is02-worktree-rollback，假 agent、真 tmux 和 git，连跑 3 次通过，分支 integrate/W0-W1 b35f5fd，未合进 main）：通过。真右键 Add project… / New workspace… 建 feat/oauth，框出现在右键处，setup Shell 跑了初始化命令，worktree、分支、.env 都建好；.env 复制失败（EACCES）时框上有 Retry，worktree、分支、refs、目录、.git/worktrees 都回到原样，改好后 Retry 建成。选子文件夹时不提示用了仓库根目录仍是 TC-01 的已知缺口；失败时的报错文字另记 IS-158',
+    'IS-03': '2026-10-29 Claude 自动化验收（e2e tc03-tc08-two-worktrees（TC-03），假 agent、真 tmux 和 git，连跑 3 次通过，分支 integrate/W0-W1 b35f5fd，未合进 main）：通过。同一仓库两个框各开一个假 claude，各改一个文件，面板随聚焦只显示自己的改动、暂存只进自己的暂存区，两边 HEAD、git status、tmux 工作目录、钩子报的 cwd 各是各的。真 claude 并行改代码要你试',
+    'IS-23': '2026-10-29 Claude 自动化验收（e2e tc06-tc09-tc10-terminals（TC-09）、is23-summary-restore，假 agent、真 tmux 和 git，连跑 3 次通过，分支 integrate/W0-W1 b35f5fd，未合进 main）：通过。Shell 和假 claude 拉成摘要卡（卡上正好最后 3 行，卡片期间 tmux 没有客户端），单击恢复后大小和拉小前一样、聚焦、各接回一个客户端，xterm 行列数等于 tmux 窗格，屏幕和 capture-pane 一行对一行相同；截图看过没有错位、残影',
+    'IS-24': '2026-10-29 Claude 自动化验收（e2e tc07-tc12-git（TC-12），假 agent、真 tmux 和 git，连跑 3 次通过，分支 integrate/W0-W1 b35f5fd，未合进 main）：通过。右键框 › Delete workspace… 选连目录一起删，有未提交改动时要勾上再确认；删完框消失、沙盒里的目录没了、分支还在、终端结束',
+    'IS-25': '2026-10-29 Claude 自动化验收（e2e tc03-tc08-two-worktrees（TC-08），假 agent、真 tmux 和 git，连跑 3 次通过，分支 integrate/W0-W1 b35f5fd，未合进 main）：通过。被占用的分支灰显 “in fix/rate-limit”，单击后选中那个框、白板平移到它，refs、reflog、HEAD、worktree list 都没变（没执行 git 操作）',
+    'IS-27': '2026-10-29 Claude 自动化验收（e2e is27-sigkill-restore，假 agent、真 tmux 和 git，连跑 3 次通过，分支 integrate/W0-W1 b35f5fd，未合进 main）：通过。等布局存进库后对主进程发 SIGKILL：渲染、GPU、终端子进程都退出，tmux 会话还在，应用不在时 Stop 钩子照跑；再打开没有 Restore 提示，框和窗口位置不变，每个会话接回一个客户端，历史输出在，钩子照常收到。自动保存有 500ms 防抖，杀之前最后半秒的改动会丢（预期内）；强杀时在跑的终端重开后显示 Idle 见 IS-08',
+    'IS-157': '2026-10-29 Claude 自动化验收（e2e is157-zoom-idle-shell，假 agent、真 tmux 和 git，连跑 3 次通过，分支 integrate/W0-W1 b35f5fd，未合进 main）：没复现，了结。空闲 shell 缩到 50% 以下再放大、⌘- ⌘= ⌘0 ⌘1、直接设 30% / 150% / 100%，标题栏一直 Idle、状态和 tmux 大小都没变。截图里的 Running 最可能是刚开的 shell 打出提示符后约 3 秒才变 Idle（实测 3038–3045ms）',
+    'IS-14': '2026-10-29 Claude 自动化验收（e2e tc04-tc13-notify、is14-notify-click，假 agent、真 tmux 和 git，连跑 3 次通过，分支 integrate/W0-W1 b35f5fd，未合进 main）：通过（到系统通知为止）。批准请求和 agent 调 MCP notify 两条来源：前台只出白板提示；关窗口后主进程造出系统通知（标题 “claude · shop · feat/report”、正文 “Tests passed”），触发它的 click 后窗口回来、视口回到那个终端、选中、键盘焦点在它的 xterm（打的字进了 claude）；设置里关掉通知时不发。要人看：通知真的弹出来、用鼠标点它',
+    'IS-15': '2026-10-29 Claude 自动化验收（e2e tc11-system-terminal、is15-system-terminal-apps，假 agent、真 tmux 和 git，连跑 3 次通过，分支 integrate/W0-W1 b35f5fd，未合进 main）：部分。截下交给 osascript / open 的命令（Terminal.app 的 AppleScript、iTerm 的 create window … command、Ghostty 写 attach-<id>.command 再 open -a），在伪终端里跑都接上沙盒 socket 上同一个会话，两边打字同步；没有真开 App。要人看：三个 App 真的弹出来，以及第一次用时 macOS 的“自动化”权限对话框。打不开 App 时没提示另记 IS-159',
+    'IS-26': '2026-10-29 Claude 自动化测量（e2e is26-performance，要 AGENTDECK_E2E_PERF=1，假 agent、真 tmux，组装好的应用，连跑 3 轮加 1 轮试跑，分支 integrate/W0-W1 b35f5fd，未合进 main；当时别的验收线同时在跑，整机 CPU 忙 22–81%）：部分。B1 通过：20 个终端（3 个一直打印）加 10 个网页窗口，100% 和 60% 缩放下真鼠标平移，帧间隔 p50 16.7ms、p95 17.3–18.6ms、最长 48–83ms，掉帧 0.5–1.6%（标准 ≤ 5%、p95 ≤ 25ms、最长 ≤ 100ms；标准原文是 30 个空窗口，这里更严）。T2 通过：4 个假 claude 加 2 个 bash，按键到 xterm 画出来 p50 21.4–24.5ms、p95 32.6–33.6ms（标准 p95 ≤ 50ms，不含系统到 Chromium、合成到屏幕两段），2 个 bash 同时输出时不变。G4 不通过：空闲时应用合计 3.0–4.6% 一个核，原因是 Clawd 的动画，另记 IS-161',
     'IS-151': '2026-10-28 已修（fix(W3) 083f2cf，分支 integrate/W0-W1，未合进 main）：主进程回答 startup 前先等第一次 tmux 启动的结果，最多 5 秒；e2e tc19-tmux-missing 覆盖',
     'IS-153': '2026-10-29 已修（3cff348，分支 integrate/W0-W1，未合进 main）：界面拿到检测完的 agent 列表后再取一次 autoApproveSupport，PLUGINS 不用刷新就灰掉、写原因；e2e tc48-untested-version 第二条（原 test.fail）通过',
     'IS-154': '2026-10-29 已修（3cff348，分支 integrate/W0-W1，未合进 main）：启动时用 restoreTerminalAutoApprove 恢复，现在不支持的也保留开关、不按键；本来支持、被降级的 agent 照样挂书签，要批准时变 Needs you（Not supported），卡片里能 Turn off；单元测试和 e2e tc48 覆盖',
