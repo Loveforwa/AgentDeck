@@ -1,7 +1,7 @@
 // 历史会话（MVP v3 · N11，需求见设计画布画板 14，调研 DR-62）：这台电脑上各 agent 自己存的会话记录，
 // 在普通终端里开的也算。左边栏按项目 → 工作路径 → agent 列出来，单击跳到白板上开着的，没开着的 Resume / Fork。
 // 实现：packages/agent-adapters 的 history 模块（主进程），只读各 agent 的会话文件，按修改时间缓存。
-// 调用：packages/ui/panels/history（左边栏）。
+// 调用：packages/ui/panels/manager（左边管理面板，MP2）。
 //
 // 不列：脚本里跑的（claude 的 sdk-*、codex 的 exec / mcp）和子 agent 的记录。
 

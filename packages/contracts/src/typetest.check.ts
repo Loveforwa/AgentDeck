@@ -9,8 +9,9 @@ import type {
   CrewId, CrewMembership, CrewSession, InboxItem, InboxItemId, CliRequest, CliResponse, InjectionEstimate,
   CodeRef, DocVerifyService, DocWindowData, DocWriteResult, LineMapHunk, ResolvedRef, WorkspaceOverlap,
   AgentLastReply, SelfResumeState, AgentService,
+  AgentSessionId, ProjectId,
 } from './index.ts';
-import { effectiveSkillSelection, FIRE_AND_FORGET, isAutoApproveOn, skillsRestartNeeded, findInlineSecret, redactCommand, capabilitiesFromReport, cliCommandAllowed, TERMINAL_KEY_ENV, API_ENDPOINT_FILE, parseCodeRefs } from './index.ts';
+import { boardPinKey, effectiveSkillSelection, FIRE_AND_FORGET, isAutoApproveOn, skillsRestartNeeded, findInlineSecret, redactCommand, capabilitiesFromReport, cliCommandAllowed, TERMINAL_KEY_ENV, API_ENDPOINT_FILE, parseCodeRefs } from './index.ts';
 
 declare const api: AgentDeckApi;
 api.on('status.changed', (e) => {
@@ -248,3 +249,11 @@ void api.limits.setMessage?.('t1' as TerminalId, null);
 const oldLimits: Omit<LimitService, 'setMessage'> = {} as LimitService;
 const asLimits: LimitService = oldLimits;
 void asLimits;
+// MP1：左边管理面板的置顶随白板保存，可选字段
+const pins: BoardState['pins'] = [
+  { kind: 'session', agent: 'claude', sessionId: 's1' as AgentSessionId },
+  { kind: 'window', windowId: 'w1' as WindowId },
+  { kind: 'project', projectId: 'p1' as ProjectId },
+  { kind: 'workspace', workspaceId: 'ws1' as WorkspaceId },
+];
+void pins.map(boardPinKey);

@@ -6,6 +6,7 @@ import type {
   AgentSessionId,
   CrewId,
   IsoTime,
+  ProjectId,
   Rect,
   SessionId,
   Size,
@@ -235,7 +236,35 @@ export interface BoardState {
   autoResume?: boolean;
   /** CR0：集群框（在项目框里，和工作区框并列）。老数据没有它，按空数组。 */
   crews?: CrewFrameNode[];
+  /** MP1：左边管理面板 PINNED 一段，按置顶的先后（拖动可以换）。老数据没有它，按空数组。 */
+  pins?: BoardPin[];
   savedAt: IsoTime;
+}
+
+/**
+ * MP1：左边管理面板（MP0，取代 N11 的历史会话和 V5 / CO4 的 BoardNav）里置顶的一项。
+ * - session：agent 的一段会话（开着时是它的终端窗口，关掉了照样留着，变成可以 Resume 的一行）。
+ * - window：还没有会话 id 的窗口（Shell、网页、刚启动的 agent）。窗口关掉后这一项不再显示。
+ * - project、workspace：项目、工作路径（主目录或 worktree）。
+ */
+export type BoardPin =
+  | { kind: 'session'; agent: AgentKind; sessionId: AgentSessionId }
+  | { kind: 'window'; windowId: WindowId }
+  | { kind: 'project'; projectId: ProjectId }
+  | { kind: 'workspace'; workspaceId: WorkspaceId };
+
+/** 一项置顶的身份，用来判断“已经置顶了没有”、去重：“session:claude:abc”“window:w1”“project:p1”“workspace:ws1”。 */
+export function boardPinKey(pin: BoardPin): string {
+  switch (pin.kind) {
+    case 'session':
+      return `session:${pin.agent}:${pin.sessionId}`;
+    case 'window':
+      return `window:${pin.windowId}`;
+    case 'project':
+      return `project:${pin.projectId}`;
+    case 'workspace':
+      return `workspace:${pin.workspaceId}`;
+  }
 }
 
 export interface BoardStore {
