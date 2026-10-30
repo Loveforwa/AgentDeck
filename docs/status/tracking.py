@@ -1151,7 +1151,7 @@ CASES = [
          expect='UI：第 2 步 NEEDS YOU · 2：出错的（灯红、“exit 3 · now” 红字）在前，等批准的（灯黄、“Waiting · now” 黄字、浅黄底）在后；其余 6 个在 “Not in a workspace” 按白板位置，每个终端只一行，灯写状态（Running · …、Idle · … 灰字）。第 3 步出黑色提示：第一行 “claude · Idle · now”，Last reply 和回复，“Click to jump”；NEEDS YOU 第 2 行写 “Click to jump · ⌥⌘2”。第 4 步 ⌥⌘1 跳到出错的、⌥⌘2 跳到等批准的，⌥⌘3 没有这一行不动。\n后台：⌥⌘1–9 的顺序由 manager-panel 的 needsYouOrder 算，和面板一样；最后一条回复先读会话记录，读不到退回屏幕最后几行。',
          result='同时跑很多 agent 时，一眼看出谁在等你',
          issue='CO4 的 Agents 视图（ERROR、NEEDS YOU、RUNNING、IDLE 分组）2026-10-29 e2e 通过、用户验收过；2026-10-30 按用户决定只留 NEEDS YOU 一段（MP0 第 5 节第 3 条），RUNNING、IDLE 看每行的灯（分支 feat/MP-manager-panel，未合进 main），e2e tc148-needs-you 通过，要重新验收', rel='DR-116'),
-    dict(id='TC-149', p='P2', status='已验证',
+    dict(id='TC-155', p='P2', status='已验证',
          scene='左边管理面板：Pin（随白板保存）、New 菜单、Search（MP2，画板“左边管理面板”MP0）',
          pre='两个项目各一个工作区框，各有一个 Shell',
          steps='1. 打开左边管理面板，右键 shop 的 Shell › Pin，右键 api · feat/pool 的标题 › Pin\n2. 重开应用\n3. 单击 PINNED 里的 api · feat/pool\n4. 单击 PINNED 里的 Shell，New › Terminal › Shell\n5. Search，输入 feat/pool，再按 Esc\n6. 右键 PINNED 里的 api · feat/pool › Unpin',
