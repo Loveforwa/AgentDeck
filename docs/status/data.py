@@ -184,9 +184,9 @@ P0 = [
 
 
 
-# 明天验货的步骤
+# 怎么验收的步骤
 TRY = [
-    ('启动', 'cd /Users/liu/2026/agenduck && git switch main && pnpm install && pnpm dev', '主目录现在停在 feat/PL3-prompt-queue，上面有没提交的 PL3 改动（已退役，备份过），切 main 之前先决定丢掉还是留着。开发数据在 .agentdeck-dev/，不碰你真实的 ~/.agentdeck。'),
+    ('启动', 'pnpm install && pnpm dev（在一个停在 main 上的 checkout 里）', '试用版已经开着：代码是 main 82b60e4，数据和 tmux（agentdeck-mp-review）都是隔离的，直接用它就行。要自己开，就在停在 main 上的 checkout 里跑这一行；别用主目录 /Users/liu/2026/agenduck，它还停在 feat/PL3-prompt-queue，上面有没提交的 PL3 改动。开发数据在 .agentdeck-dev/，不碰你真实的 ~/.agentdeck。'),
     ('看在等你的提醒', '让 claude 运行一个需要批准的命令', '窗口、框、顶栏一起变黄，⌘J 跳过去；切到别的应用会收到系统通知。'),
     ('新建一个工作区', '右键 › New workspace…，基于 main 新建一个分支', '框出现，里面开的终端在新 worktree 里；右侧面板显示这个分支。'),
     ('网页窗口', '在 Shell 里运行 python3 -m http.server 8765，点输出里的地址', '网页窗口出现在终端旁边、同一个框里。'),
@@ -195,9 +195,11 @@ TRY = [
 ]
 
 NEXT = [
-    '用审查台（https://claude.ai/artifact/ChBaxMte5BCt6RQJPCus4s）审还没做的高级需求和这份报告；审完我按结果统一整改，标“不做”的需求从设计画布和任务表删掉。',
-    '决定主目录里 feat/PL3-prompt-queue 上没提交的 PL3 改动（已退役）：丢掉还是留着；之后主目录切回 main。',
-    '2026-10-29 main 推到了 GitHub。CI 的 e2e 第一次跑红了：Ubuntu 的 tmux 只有 3.4（e2e 改成只在 macOS 跑），macOS 机器屏幕 1024×768 窗口太小（e2e 固定 1440×900），brew 的 tmux 3.8 让 Esc 慢 500ms（IS-162，已修）。修好后 CI 的 e2e：86 条通过，TC-07 是测试自己的时序（已修），TC-26、TC-41 偶尔要重跑（IS-164）。',
-    'TC-81 偶尔失败一次（重跑 9 次都过），还没查原因。',
-    '下一波要做的任务见任务表：第一期是 CR1 收件箱（PL7 也等它）、Session 的界面（SE3–SE6）和 Agent 接入剩下的几项。',
+    '在这份报告里开始验收。只剩要你自己上手的：TC-16、TC-33、TC-148、TC-155（左边管理面板），TC-37（触控板的手感）。别的能代验的已经用真 agent 验过了。',
+    '碰上了再验：真用到额度上限时验 TC-78、TC-79、TC-82；agent 真升级版本时验 TC-48。',
+    '审查台（https://claude.ai/artifact/ChBaxMte5BCt6RQJPCus4s）不是必看的，只在决定以后做什么时用；它的“上手试”那一页已经由这份报告取代。',
+    '决定主目录里 feat/PL3-prompt-queue 上没提交的 PL3 改动（已退役，备份过）：丢掉还是留着；之后主目录切回 main。',
+    'CI 在 main 上是绿的。TC-26、TC-41 偶尔要重跑（IS-164）；TC-81 偶尔失败一次，还没查原因。',
+    '新登记的 IS-165～IS-168（kimi 信任提示时的状态、窗口组把别的框里的窗口藏起来、adoptPath 没实现、Usage 卡片不跟着白板走）还没修。',
+    '下一波要做的任务见任务表：CR1 收件箱（PL7 也等它）、Session 的界面（SE3–SE6）。',
 ]
