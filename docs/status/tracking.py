@@ -356,7 +356,7 @@ CASES = [
          steps='1. 看顶栏\n2. 按 ⌘J\n3. 在列表里直接点 claude 那条的 Approve\n4. 回车跳到 codex 那条的终端',
          expect='UI：顶栏有 “Needs you · 2” 按钮；⌘J 打开收件箱，按项目分组列出两条（什么事、哪个终端、等了多久），每条带能直接点的动作；Approve 后那条消失、claude 接着跑、按钮变成 “Needs you · 1”；↑↓ 选、回车跳到对应终端。没有等你的事时按钮是灰的 “Needs you”；没有集群时不显示分组小标题（集群的分组见 TC-66）。\n后台：条目来自各终端现有的状态（needs-approval、needs-reply、error），集群的关卡以后也进这里（CR6）；每次处理记下 resolved（谁、答了什么、几点）。',
          result='不用满白板找谁在等你，也不用一个个跳过去看',
-         issue='未实现（CR1）', rel='IS-90'),
+         issue='未实现（CR1）；2026-10-30 Claude 截图验收（通过，main b9951e7 的代码，隔离实例、真 claude 2.1.291 和 codex 0.166.0）：右键标题栏开 Auto-approve 先问一句再挂红书签；claude（本会话切成 manual mode，没改你的设置）mkdir + touch 时终端写 Allowed by PermissionRequest hook、没进等待；rm -rf 照常停下，书签变橙 Needs you，悬停 Destructive command: rm -rf acc-tmp/demo，按 1 批准后变回；右键框开：框标题红标签，claude、codex 挂书签，shell 不挂（10-25 要改的那处已修）；codex 带提权的 curl 也自动放行。Approval history 两条都记成 auto-approve；2026-10-30 Claude 截图验收（通过，main b9951e7，真 claude、codex）：条上的数和 agent 自己显示的一致：claude /context 53.1k/1m (5%)，条 53.1k / 1m、5%；codex /status 95% left (24.2K used / 258K)，条 24.2K / 258K、95% left（各按各的写法，IS-69）。再跑一轮后条跟着更新（73.5k、7%）；拖把手到下边贴住并存进白板；卡片：claude-opus-5-5、Context window 1m、Last request、Requests；codex 的卡片有 5h limit 99% left、Weekly limit 80% left 和重置时间（10-25 的 0% used / 99% left 出入已修）。85% 变黄真机没到，靠 e2e。另发现 IS-168', rel='IS-90'),
     dict(id='TC-44', p='P2', status='未实现',
          scene='用 Contract-first build 模板开一个集群，从目标做到合进集群分支（CR2–CR6）',
          pre='AgentDeck 自己的仓库；claude、codex 都登录着；Auto-approve 关着',
@@ -378,7 +378,7 @@ CASES = [
          steps='1. 对 claude 说“用 open_terminals 开一个 pi、一个 omp、一个 kimi，每个的第一条消息都是：reply with the word PELICAN”\n2. 等三个终端启动\n3. 再对 claude 说“用 open_terminals 开一个 kimi，第一条消息以 @README.md 开头”\n4. 让 claude 开一个 shell 并给 prompts',
          expect='UI：三个终端各自出现那条消息并回答 PELICAN；pi、omp 的消息在启动参数里，kimi 的在界面准备好后才出现，没有丢字；以 @ 开头的那条按原文送到（pi、omp 不把它当成文件）。给 shell 的 prompt 不会悄悄丢掉：claude 收到工具错误 “Shell can\'t take a first message”。\n后台：每个适配器的 launch 报 consumed.prompt；kimi 走“启动后发送”（终端安静后 send-keys -l 加回车）；没吃掉 prompt 又不能启动后发送的，AgentService.start 抛 unsupported，不开终端。',
          result='让 agent 开别家 agent 派活时，任务一定送到，送不到会说',
-         issue='已实现（AH1，分支 integrate/W0-W1，未合进 main）：2026-10-28 pi、omp、kimi 真程序各收到一次暗号（第一条消息）；还没在应用里验收；2026-10-28 Claude 自动化验收（e2e tc46-first-message，假 agent、真 tmux 和 git，连跑 3 次通过，分支 integrate/W0-W1 d51382e，未合进 main）', rel='IS-76'),
+         issue='已实现（AH1，分支 integrate/W0-W1，未合进 main）：2026-10-28 pi、omp、kimi 真程序各收到一次暗号（第一条消息）；还没在应用里验收；2026-10-28 Claude 自动化验收（e2e tc46-first-message，假 agent、真 tmux 和 git，连跑 3 次通过，分支 integrate/W0-W1 d51382e，未合进 main）；2026-10-30 Claude 截图验收（部分，main b9951e7）：claude 用 open_terminals 分三次开 pi、omp、kimi（工具一次只开一种 agent），pi、omp 都收到 reply with the word PELICAN 并回答 PELICAN；开 shell 带 prompt 时 claude 收到 Shell can’t take a first message yet…，没开终端。kimi（2.4.1）在 frame-tags 和临时文件夹里都先弹 Trust this folder?，选了会写你的 ~/.kimi-code，所以没选：第一条消息没被打进提示里，但信任以后能不能收到、@README.md 那步都没验（IS-165）；kimi 开到别的框时被收进窗口组看不见（IS-166）', rel='IS-76'),
     dict(id='TC-47', p='P2', status='未实现',
          scene='Settings › Agents 一眼看出每家 agent 能做什么、靠什么做、核对到哪个版本（AH4，画板 A0）',
          pre='本机装了 claude、codex、pi、omp、kimi；compat 记录里 claude 核对到 2.1.291',
@@ -830,7 +830,7 @@ CASES = [
          steps='1. 在 codex 终端里用鼠标选中那段 SQL\n2. 右键 codex 的标题栏 › Send selection to ▸\n3. 选 harlequin · shop dev\n4. 再试一次：不选任何东西，右键标题栏',
          expect='UI：子菜单按框分组，列出 Shell、自定义命令终端和 agent 终端（CO3 定的，散放的也列）；选了以后 harlequin 的编辑器里出现原样的多行 SQL（换行、-- 注释都在），没有被执行，焦点转到 harlequin 窗口；第 4 步 Send selection to 灰掉。\n后台：用 bracketed paste 送进去（目标程序没开 bracketed paste 时照原样贴），不发 Enter；不经过 MCP 的 send_to_terminal。',
          result='agent 写的 SQL 由你在自己的数据库工具里看过再跑',
-         issue='已实现（CO3，分支 integrate/W0-W1，未合进 main；和第 16 点的 Send selection 合成一个任务，入口和细节以 CO3 为准）：2026-10-28 真 tmux 测试和 e2e 跑过，还没在应用里验收；2026-10-28 Claude 自动化验收（e2e tc109-send-sql，假 agent、真 tmux 和 git，连跑 3 次通过，分支 integrate/W0-W1 d51382e，未合进 main）', rel='IS-129'),
+         issue='已实现（CO3，分支 integrate/W0-W1，未合进 main；和第 16 点的 Send selection 合成一个任务，入口和细节以 CO3 为准）：2026-10-28 真 tmux 测试和 e2e 跑过，还没在应用里验收；2026-10-28 Claude 自动化验收（e2e tc109-send-sql，假 agent、真 tmux 和 git，连跑 3 次通过，分支 integrate/W0-W1 d51382e，未合进 main）；2026-10-30 Claude 截图验收（通过，换成 sqlite3：本机没装 harlequin，不往你电脑上装东西）：codex 里拖选 5 行带 -- 注释的 SELECT（选中原样），右键标题栏 › Send selection to ▸ 按框分组（FRAME-TAGS · FEAT/MP-MANAGER-PANEL、PLAIN · PLAIN），列 zsh、claude、pi、omp、sqlite3 shop dev、kimi，不列 codex 自己；选 sqlite3 后焦点过去、没执行（没有查询结果）；macOS 的 sqlite3 不支持 bracketed paste，画面边收边重画显得乱，但手动回车后算出 ann 19.5、bob 40.0，说明收到的 SQL 完整原样；不选文字时 Send selection to 灰掉。harlequin 本身要你装了再看', rel='IS-129'),
     dict(id='TC-110', p='P1', status='部分验证',
          scene='数据库终端对 agent 隐藏；命令里带密码时挡住',
          pre='TC-108 的 harlequin 终端开着（Hide from agents 勾着）；另开一个 Shell 终端，命令是 lazysql（没勾 Hide from agents）；同一个框里有一个 claude',
@@ -1349,11 +1349,18 @@ ISSUES = [
     ('IS-162', 'P1', '缺陷', 'tmux-host · 终端窗口', 'tmux 3.8 上单独按 Esc 慢 500ms：pty 没给像素大小时，tmux 3.8 attach 会问窗口大小（CSI 18t / 14t），没收到像素大小的回答之前，单独的 Esc 一律扣 500ms（tty-keys.c 的 TTY_WINSIZEQUERY）；xterm.js 默认不回答窗口查询。brew 现在装的就是 3.8，本机 3.6a 没有这个问题。2026-10-29 GitHub CI（macOS，tmux 3.8）上 e2e IS-05 量到 544–589ms，本机用自己编的 tmux 3.8 复现到 507ms', 'PATH 里放 tmux 3.8，pnpm e2e tests/is05-terminal-feel.e2e.ts -g "keys reach"', 'claude 里按 Esc 打断要等半秒，升级 tmux 的人都会碰到', 'xterm 打开 windowOptions 的 getWinSizeChars、getWinSizePixels，只回答大小', 'IS-05'),
     ('IS-163', 'P2', '缺陷', '终端窗口 · 深浅色', 'tmux 3.8 上白板换深浅色，窗格里的程序偶尔拿到旧的背景色：tmux 3.8 收到我们发的 CSI ? 997 就转给窗格（打开了 ?2031 的程序，像 claude 的 auto 主题），这时它还没重新问到新的背景色，程序马上问 OSC 11 就拿到旧的。e2e TC-26 在 tmux 3.8 上 3 次挂 1 次（切回深色那一步），3.6a 上不出现', 'PATH 里放 tmux 3.8，pnpm exec playwright test tests/tc26-dark-theme.e2e.ts --repeat-each=5', 'claude 的 auto 主题偶尔配错色（深色白板上浅色配色）', '换深浅色时先把新的 OSC 10/11 颜色报给 tmux，再发 997', 'TC-26 IS-42'),
     ('IS-164', 'P2', '测试', 'e2e · CI', 'GitHub CI（macOS，tmux 3.8）上两条 e2e 第一次偶尔失败、重跑通过：TC-26 启动时窗格里的程序问背景色（OSC 11）20 秒没收到回答（tmux 3.8 刚 attach、还没拿到我们的颜色时窗格来问，可能是 tmux 3.8 的时序；真 claude 启动时也问一次，要查会不会影响它的 auto 主题）；TC-41 右键菜单里的 Usage 30 秒点不到。本机 tmux 3.8 上 TC-26 连跑 5 次都过', '看 GitHub e2e 的 flaky 计数；本机：PATH 里放 tmux 3.8，pnpm exec playwright test tests/tc26-dark-theme.e2e.ts --repeat-each=20', 'CI 偶尔红；如果是 tmux 3.8 的时序，claude 刚启动时可能配错色', 'TC-26：tmux -vv 的日志看那次 OSC 11 去哪了；TC-41：截图看菜单开没开', 'TC-26 TC-41 IS-163'),
+    ('IS-165', 'P2', '缺陷', 'agent-adapters · kimi', 'kimi 停在 “Trust this folder?” 提示时状态显示 Idle，不算在等你（和 IS-06 的 claude 同一类；kimi 没有钩子，状态只看屏幕活动）。open_terminals 给它的第一条消息没打进提示里（对），但信任以后会不会再送进去没验证', '2026-10-30 验收 TC-46：claude 用 open_terminals 在没信任过的文件夹里开 kimi（kimi 2.4.1）', '用户看不出 kimi 在等自己点信任，第一条消息可能悄悄丢掉', '照 IS-06 的做法读屏认出 kimi 的信任提示，算 needs-reply；信任以后照常发第一条消息', 'TC-46 IS-06'),
+    ('IS-166', 'P2', '缺陷', '白板 · 窗口组', 'agent 用 open_terminals 往另一个工作区开的终端也进了 lead 的窗口组；组只显示一个（view one）时它被藏起来，它所在的框写着 1 window 却是空的', '2026-10-30 验收 TC-46：frame-tags 框里的 claude 往 plain 工作区开 kimi，plain 框里看不到窗口', '开到别的框里的终端找不到，以为没开出来', '不在 lead 那个框里的成员不收进组的单个显示，照常在自己的框里画；或者组只收同一个框里的', 'TC-46'),
+    ('IS-167', 'P3', '缺失', 'workspace-service', 'CreateWorkspaceRequest.adoptPath（把已有的 worktree 登记成工作区）在 contracts 里有，服务端没实现：传了也报 Choose a branch for the new worktree，白板上留下一个标题只有 “agenduck ·” 的失败框（Retry / Delete）', '用 __board.createWorkspace({ mode: worktree, adoptPath }) 登记一个已有的 worktree', '面板 Repository 区 “not on board” 的 worktree 没法放上白板（git-service CONTRACT_NOTES 第 2 条待线 3 跟进）', '在 workspace-service 的 worktree() 里先处理 adoptPath：核对它在 git worktree list 里，读出分支，不跑 worktree add', ''),
+    ('IS-168', 'P3', '缺陷', 'Usage 插件 · 卡片', 'Usage 的小卡片开着时白板平移到别的框，卡片还浮在原来的屏幕位置，盖在不相干的框上；单击空白处才关', '2026-10-30 验收 TC-41：点开 codex 的 Usage 卡片，再聚焦另一个框里的窗口（白板平移过去）', '卡片和它的终端分开，看着像别的框的东西', '白板平移、缩放或者聚焦别的窗口时关掉卡片（和别的弹出菜单一样）', 'TC-41'),
 ]
 
 # 用户在验收报告网页上填的验收结果（2026-10-24 从网页数据库同步的快照）。网页打开后以数据库为准；
 # 这里决定生成的网页里每条用例默认在哪一组（等你验收 / 阻塞或不通过 / 已通过）。
 ACCEPTED = {
+    'TC-40': '通过',
+    'TC-41': '通过',
+    'TC-109': '通过',
     'TC-49': '通过',
     'TC-147': '通过',
     'TC-14': '通过',
