@@ -1,17 +1,17 @@
 // 终端的对话主题（TerminalInfo.title，程序自己设的终端标题，claude 的 “Check local git history” 之类）。
-// 列表开着时：一打开取一次，之后每隔几秒取一次，收到 status.changed 时也取（合并成一次）。列表关掉就停。
+// 管理面板（MP2）开着时：一打开取一次，之后每隔几秒取一次，收到 status.changed 时也取（合并成一次）。列表关掉就停。
 
 import { useEffect, useState } from 'react';
 import type { AgentDeckApi } from '@agentdeck/contracts';
 
-export type BoardNavApi = Pick<AgentDeckApi, 'terminals' | 'on'>;
+export type TopicsApi = Pick<AgentDeckApi, 'terminals' | 'on'>;
 
-/** 定时刷新的间隔。主题不发事件，只能轮询；列表只在没聚焦窗口时显示，开销很小。 */
+/** 定时刷新的间隔。主题不发事件，只能轮询；面板收起时不取。 */
 export const TOPIC_REFRESH_MS = 3000;
 /** 一串状态事件合成一次 terminals.list()。 */
 const EVENT_DEBOUNCE_MS = 200;
 
-export function useTopics(api: BoardNavApi, refreshMs = TOPIC_REFRESH_MS): Readonly<Record<string, string>> {
+export function useTopics(api: TopicsApi, refreshMs = TOPIC_REFRESH_MS): Readonly<Record<string, string>> {
   const [topics, setTopics] = useState<Record<string, string>>({});
 
   useEffect(() => {

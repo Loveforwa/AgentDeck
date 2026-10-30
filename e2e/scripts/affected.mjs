@@ -12,16 +12,19 @@ import { checkRules, selectSpecs } from '../affected.mjs';
 
 const E2E = join(dirname(fileURLToPath(import.meta.url)), '..');
 const ROOT = execFileSync('git', ['rev-parse', '--show-toplevel'], { cwd: E2E, encoding: 'utf8' }).trim();
-const git = (...args) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }).trim();
+/** @type {(...args: string[]) => string} */
+const git = (...args) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'ignore'] }).trim();
 const specs = readdirSync(join(E2E, 'tests')).filter((f) => f.endsWith('.e2e.ts'));
 
 const args = process.argv.slice(2);
+/** @type {(flag: string) => string | null} */
 const take = (flag) => {
   const i = args.indexOf(flag);
   if (i < 0) return null;
   const [, v] = args.splice(i, 2);
   return v ?? null;
 };
+/** @type {(name: string) => boolean} */
 const flag = (name) => {
   const i = args.indexOf(name);
   if (i < 0) return false;
@@ -59,6 +62,7 @@ const files = [
 
 // 只改了注释（和空行）的源码文件不影响行为，不算
 const COMMENT = /^\s*(\/\/|\/\*|\*|\*\/|<!--)|^\s*$/;
+/** @type {(file: string) => boolean} */
 const commentOnly = (file) => {
   if (!/\.(ts|tsx|mjs|js|cjs|css)$/.test(file)) return false;
   let diff;
@@ -71,6 +75,7 @@ const commentOnly = (file) => {
   return lines.length > 0 && lines.every((l) => COMMENT.test(l.slice(1)));
 };
 // package.json 只改了 scripts（比如加了个命令）也不影响应用
+/** @type {(file: string) => boolean} */
 const scriptsOnly = (file) => {
   if (!file.endsWith('package.json')) return false;
   try {
@@ -99,6 +104,7 @@ if (all) {
 }
 if (listOnly) process.exit(0);
 
+/** @type {(cmd: string, cmdArgs: string[]) => void} */
 const run = (cmd, cmdArgs) => {
   const r = spawnSync(cmd, cmdArgs, { cwd: E2E, stdio: 'inherit' });
   if (r.status !== 0) process.exit(r.status ?? 1);

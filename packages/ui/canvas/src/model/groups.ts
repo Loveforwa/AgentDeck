@@ -115,7 +115,7 @@ export function groupOf(windows: readonly WindowNode[], id: WindowId): WindowGro
   return listGroups(windows).find((g) => g.lead.id === id || g.members.some((m) => m.id === id));
 }
 
-/** 侧边栏一行的名字：“sub-2 · ui”（第几个子终端 · open_terminals 给的名字）。右侧 BOARD 列表（board-nav 的 groupNames）照抄这条规则，改时一起改。 */
+/** 侧边栏一行的名字：“sub-2 · ui”（第几个子终端 · open_terminals 给的名字）。左边管理面板（panels/manager 的 board.ts `groupNames`）照抄这条规则，改时一起改。 */
 export function memberName(g: WindowGroup, member: WindowNode): string {
   const i = g.members.findIndex((m) => m.id === member.id);
   const label = member.group?.label?.trim();

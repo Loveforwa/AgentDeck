@@ -135,7 +135,7 @@ export function buildMenuTemplate(appName: string, actions: MenuActions): MenuIt
         sc('next-window', 'Next Window'),
         sc('prev-window', 'Previous Window'),
         { type: 'separator' },
-        // CO4：右侧 BoardNav 的 Agents 视图（ERROR、NEEDS YOU、RUNNING、IDLE）从上到下第 n 行
+        // CO4 / MP3：左边管理面板 NEEDS YOU 一段（出错、在等你，等得最久的在前）从上到下第 n 行
         {
           label: 'Jump to Agent',
           submenu: AGENT_ROWS.map((n) => sc(`jump-agent-${n}`, `Row ${n}`)),

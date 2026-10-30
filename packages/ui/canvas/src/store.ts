@@ -6,6 +6,7 @@ import type {
   AgentDeckErrorData,
   AgentInfo,
   BackgroundAgent,
+  BoardPin,
   BoardState,
   CreateWorkspaceRequest,
   Project,
@@ -81,9 +82,11 @@ export type SavedBoard = Pick<BoardState, 'viewport' | 'frames' | 'windows' | 'p
   leftPanel: { open: boolean; width: number };
   /** PL6：白板上的 Auto-resume（BoardState.autoResume，默认关）。contracts 里是可选的，这里总有。 */
   autoResume: boolean;
+  /** MP1：左边管理面板置顶的几项（BoardState.pins），按置顶的先后。contracts 里是可选的，这里总有。 */
+  pins: BoardPin[];
 };
 
-/** 左边栏默认收着、宽 280。 */
+/** 左边栏（MP2 管理面板）默认收着、宽 280。 */
 export const DEFAULT_LEFT_PANEL = { open: false, width: 280 } as const;
 
 export interface BoardStoreState extends SavedBoard {
@@ -133,6 +136,7 @@ export function initialState(): BoardStoreState {
     panel: { open: true, width: 320 },
     leftPanel: { ...DEFAULT_LEFT_PANEL },
     autoResume: false,
+    pins: [],
     loaded: false,
     focusedId: null,
     selectedFrame: null,
@@ -165,9 +169,9 @@ export function createBoardStore(init: Partial<BoardStoreState> = {}): BoardStor
 
 /** 要保存的那部分。引用没变就是没改。 */
 export function savedPart(s: BoardStoreState): SavedBoard {
-  return { viewport: s.viewport, frames: s.frames, windows: s.windows, panel: s.panel, leftPanel: s.leftPanel, autoResume: s.autoResume };
+  return { viewport: s.viewport, frames: s.frames, windows: s.windows, panel: s.panel, leftPanel: s.leftPanel, autoResume: s.autoResume, pins: s.pins };
 }
 
 export function savedPartChanged(a: BoardStoreState, b: BoardStoreState): boolean {
-  return a.viewport !== b.viewport || a.frames !== b.frames || a.windows !== b.windows || a.panel !== b.panel || a.leftPanel !== b.leftPanel || a.autoResume !== b.autoResume;
+  return a.viewport !== b.viewport || a.frames !== b.frames || a.windows !== b.windows || a.panel !== b.panel || a.leftPanel !== b.leftPanel || a.autoResume !== b.autoResume || a.pins !== b.pins;
 }

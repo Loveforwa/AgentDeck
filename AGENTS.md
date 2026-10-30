@@ -35,7 +35,7 @@ Electron + TypeScript + React 18 + Zustand，白板用 React Flow（@xyflow/reac
 - 只改你的任务负责的目录。要改 `packages/contracts` 先停下，单独提交，见它的 AGENTS.md。
 - 界面依赖方向：`packages/ui/*` 只能依赖 contracts 和 design-tokens；服务不能依赖 ui；各 widget、各 adapter 之间不互相引用。机器检查的完整规则见下面「检查和模块边界」。
 - 产品界面上的所有文字用英文；注释、文档、提交说明里的解释用中文也可以。
-- 组件里不写颜色值，样子只在 `packages/design-tokens` 里定。界面风格：暖灰加墨黑；颜色只表达状态（v2 · V2 红绿灯）：运行中绿（`--status-running`）、等你黄（`--status-waiting` / `--attention`）、出错红（`--status-error`）；插件 Auto-approve 开着时的书签用红色（`--plugin-auto-approve`）；每种 code agent 有一个身份色（`--agent-claude` `--agent-codex` `--agent-pi` `--agent-omp` `--agent-kimi`，2026-10-26 定），只用在区分 agent 的小标记上（左边栏历史会话的 agent 小标题），别处不用彩色；不用渐变、发光、emoji。
+- 组件里不写颜色值，样子只在 `packages/design-tokens` 里定。界面风格：暖灰加墨黑；颜色只表达状态（v2 · V2 红绿灯）：运行中绿（`--status-running`）、等你黄（`--status-waiting` / `--attention`）、出错红（`--status-error`）；插件 Auto-approve 开着时的书签用红色（`--plugin-auto-approve`）；每种 code agent 有一个身份色（`--agent-claude` `--agent-codex` `--agent-pi` `--agent-omp` `--agent-kimi`，2026-10-26 定），只用在区分 agent 的小标记上（左边管理面板每行开头的小方块），别处不用彩色；不用渐变、发光、emoji。
 - 分支名和提交信息带任务编号，例如 `feat/F6-fakes`、`F6: add fake TerminalHost`。
 - 提交前：`pnpm check`（含所有包的测试）。
 - 每个包有自己的 AGENTS.md：职责、对外接口、不许碰的目录、怎么跑测试。新建包时一起写。

@@ -33,7 +33,7 @@ src/utility/
   tmux-host.ts      utilityProcess 入口：startTmuxHost + port-watch，输出按 viewId 写进窗口端口
 src/preload/        window.agentdeck（contracts 的 AgentDeckApi）、window.agentdeckDesktop、window.agentdeckFiles
 src/shared/         方法名单、线路工具、主进程 ↔ utilityProcess 协议、应用壳自己的 IPC（desktop-bridge.ts）
-src/renderer/       顶栏 + 白板（ui-canvas）+ 源代码管理面板（scm-panel），什么都没选中时换成快速定位列表（board-nav-panel，V5；CO4 的 Agents 视图的顺序 `agentOrder` 交给 BoardController，⌥⌘1–9 用）；注册终端、网页两种窗口；演示模式（demo.ts）
+src/renderer/       顶栏 + 左边管理面板（manager-panel，MP2：`ManagerSidebar.tsx` 接白板状态、置顶 `BoardState.pins`、New 菜单 `newMenuItems`；NEEDS YOU 的顺序 `needsYouOrder` 交给 BoardController 的 `agentOrder`，⌥⌘1–9 用）+ 白板（ui-canvas）+ 源代码管理面板（scm-panel，MP3 起右边只放它，什么都没聚焦时写 “Focus a terminal to see its changes.”）；注册终端、网页两种窗口；演示模式（demo.ts）
 test/               Vitest：注册表、preload 代理、主进程接线、组装用到的纯逻辑（assembly.test.ts）、browser
 ```
 

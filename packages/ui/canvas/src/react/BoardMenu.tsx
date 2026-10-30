@@ -51,6 +51,38 @@ export function terminalItems(agents: readonly AgentInfo[], onPick: (agent: Agen
   return items;
 }
 
+/**
+ * MP2：左边管理面板的 New 菜单，和右键白板空白处是同一份：Terminal ▸、Browser、Workspace…、Add project…。
+ * 新开的放在当前聚焦的工作区框里（没有聚焦的就在白板上找空位），然后跳过去。
+ */
+export function newMenuItems(c: BoardController): MenuEntry[] {
+  const s = c.state;
+  const available = { terminal: !!c.registry.get(TERMINAL_TYPE), browser: !!c.registry.get(BROWSER_TYPE) };
+  const ws = c.activeWorkspaceId(s);
+  return [
+    {
+      id: 'new-terminal',
+      label: 'Terminal',
+      disabled: !available.terminal,
+      items: terminalItems(s.agents, (agent) => {
+        void c.newTerminal({ agent, workspaceId: ws }).then((id) => id && c.jumpAndFlash(id));
+      }),
+    },
+    {
+      id: 'new-browser',
+      label: 'Browser',
+      shortcut: SHORTCUT_LABELS['new-browser'],
+      disabled: !available.browser,
+      onSelect: () => {
+        const id = c.newBrowser({ workspaceId: ws });
+        if (id) c.jumpAndFlash(id);
+      },
+    },
+    { id: 'new-workspace', label: 'Workspace…', shortcut: SHORTCUT_LABELS['new-workspace'], onSelect: () => c.openNewWorkspace() },
+    { id: 'add-project', label: 'Add project…', onSelect: () => void c.addProject() },
+  ];
+}
+
 export function menuItems(c: BoardController, menu: MenuState, available: { terminal: boolean; browser: boolean }): MenuEntry[] {
   const { target, flow } = menu;
   const s = c.state;

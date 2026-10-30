@@ -51,6 +51,8 @@ export interface ScmPanelProps {
    * 不传（undefined）就不显示这一节。
    */
   skills?: SkillsTarget | null;
+  /** workspaceId 为 null 时的说明。默认 “This window isn’t in a workspace.”；什么都没聚焦时组装方传 “Focus a terminal to see its changes.”（MP3）。 */
+  emptyText?: string;
 }
 
 const COMMIT_ALL_KEY = 'agentdeck.scm.commitAllConfirmed';
@@ -97,7 +99,7 @@ interface Picker {
   anchor: PopoverAnchor;
 }
 
-export function ScmPanel({ workspaceId, onGoToWorkspace, openTerminals, runningAgents, api: apiProp, headerActions, skills }: ScmPanelProps) {
+export function ScmPanel({ workspaceId, onGoToWorkspace, openTerminals, runningAgents, api: apiProp, headerActions, skills, emptyText }: ScmPanelProps) {
   const terminalsHere = openTerminals ?? runningAgents ?? NONE;
   const api = apiProp ?? window.agentdeck;
   const dir = useDirectory(api);
@@ -225,7 +227,7 @@ export function ScmPanel({ workspaceId, onGoToWorkspace, openTerminals, runningA
   // ---- 画面 ----
 
   let body;
-  if (workspaceId === null) body = <Empty>This window isn’t in a workspace.</Empty>;
+  if (workspaceId === null) body = <Empty>{emptyText ?? 'This window isn’t in a workspace.'}</Empty>;
   else if (dir.workspaces === null) body = <Empty muted>Loading…</Empty>;
   else if (!workspace) body = <Empty>This workspace is no longer on the board.</Empty>;
   else if (workspace.missing || project?.missing)

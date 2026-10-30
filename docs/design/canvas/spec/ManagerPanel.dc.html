@@ -58,7 +58,7 @@ body{margin:0}
   <div style="display: flex; flex-direction: column; gap: 10px">
     <div style="display: flex; align-items: center; gap: 10px">
       <h1 style="margin: 0; font-size: 28px; font-weight: 600">MP0 · 左边管理面板：HISTORY 和 BOARD 合成一个</h1>
-      <span class="concept">概念 · 2026-10-29 待你确认</span>
+      <span class="concept">2026-10-30 已确认（第 5 节全按推荐）· 已实现，分支 feat/MP-manager-panel</span>
       <span class="mono" style="font-size: 12px; color: #6B6B6B">取代 N11 HistoryPanel、V5 / CO4 BoardNav</span>
     </div>
     <p class="lead">现在左边 HISTORY 列会话，右边 BOARD 列白板上的窗口，同一个终端两边各出现一次，功能重叠。合成左边一个管理面板，样子照 Claude 应用的左边栏（新建、搜索、置顶、按项目分组），风格还是我们的：暖灰墨黑、颜色只表达状态、agent 身份色只在小方块上。右边面板只留源代码管理。</p>
@@ -161,7 +161,7 @@ body{margin:0}
     <div class="tbl" style="grid-template-columns: 200px minmax(0, 1fr)">
       <span class="th">部分</span><span class="th">内容和规则</span>
       <span class="td"><b>New</b></span><span class="td">菜单：Terminal ▸（装了的 agent + Shell）、Browser、Workspace…（⌘⇧N）、Add project…。新开的放在当前聚焦的工作区框里，没有聚焦就是白板视口中间。和右键白板的菜单是同一份。</span>
-      <span class="td"><b>Search</b>（⌘K）</span><span class="td">面板顶上变成输入框，搜会话标题、第一条消息、分支、窗口名；搜索时全部展开、只留命中的；Esc 退出。</span>
+      <span class="td"><b>Search</b>（没有快捷键：⌘K 是清屏）</span><span class="td">面板顶上变成输入框，搜会话标题、第一条消息、分支、窗口名；搜索时全部展开、只留命中的；Esc 退出。</span>
       <span class="td"><b>NEEDS YOU</b></span><span class="td">有在等你（黄）或出错（红）的终端才出现，按等的时间排，行底 <span class="mono">--attention-soft</span>。⌘J 依次跳这里的行；⌥⌘1–9 跳到这一段的第 1–9 行（原来 Agents 视图的快捷键搬过来）。</span>
       <span class="td"><b>PINNED</b></span><span class="td">你置顶的会话、项目、工作路径，按置顶的先后，拖动可以换顺序。随白板保存。会话被关掉了照样留着（变成可以 Resume 的一行）。</span>
       <span class="td"><b>项目 → 工作路径</b></span><span class="td">和现在的 HISTORY 一样：项目（可折叠）→ 主目录和各 worktree（▾ / ▸ + 分支 + 数量）→ 会话，最近的在前，每组 5 条后 “Show n more”。不再按 agent 分小标题：每行前面一个 agent 身份色的小方块。开着的会话在前、带灯；Other folders（不在项目里的）在最后。</span>
@@ -181,7 +181,7 @@ body{margin:0}
   </div>
 
   <div style="display: flex; flex-direction: column; gap: 14px">
-    <span class="h2">5 · 待你确认（按推荐先定）</span>
+    <span class="h2">5 · 已定（2026-10-30 用户：全按推荐）</span>
     <div class="tbl" style="grid-template-columns: 40px 260px 420px minmax(0, 1fr)">
       <span class="th">#</span><span class="th">问题</span><span class="th">推荐</span><span class="th">别的选法</span>
       <span class="td">1</span><span class="td">面板放哪边</span><span class="td"><b>左边</b>，右边只留源代码管理</span><span class="td">右边（和源代码管理用 tab 切换）</span>
@@ -194,7 +194,7 @@ body{margin:0}
   </div>
 
   <div style="display: flex; flex-direction: column; gap: 14px">
-    <span class="h2">6 · 任务（确认后加进任务表）</span>
+    <span class="h2">6 · 任务（2026-10-30 做完，分支 feat/MP-manager-panel，未合进 main）</span>
     <div class="tbl" style="grid-template-columns: 90px minmax(0, 1fr) 320px">
       <span class="th">编号</span><span class="th">做什么</span><span class="th">模块</span>
       <span class="td mono">MP1</span><span class="td">contracts：<span class="mono">BoardState.pins</span>（会话 / 项目 / 工作路径的引用，有先后），单独提交</span><span class="td mono">packages/contracts、tools/fakes</span>
@@ -202,6 +202,7 @@ body{margin:0}
       <span class="td mono">MP3</span><span class="td">右边面板只留源代码管理；BoardNav 退役，⌥⌘1–9 和 ⌘J 搬到 NEEDS YOU；组件库、docs/components.md 同步</span><span class="td mono">ui/canvas、panels/board-nav、apps/desktop</span>
       <span class="td mono">MP4</span><span class="td">e2e：TC-16、TC-33、TC-148 改写，新加 Pin、New、Search 的用例；挂进 e2e/affected.mjs</span><span class="td mono">e2e</span>
     </div>
+    <p style="margin: 0; font-size: 13px; line-height: 1.7; color: #5F5F5A">做的时候和上面不一样的地方：Search 没有 ⌘K（⌘K 已经是清屏），也没有加 ⌘\ 开关面板（顶栏最左的按钮照旧）；New 那一行不写 ⌘N（⌘N 是直接开默认 agent，不是开这个菜单）；关掉的会话的菜单里没有 Delete from history…（要另存一份“隐藏的会话”，没做），保留了原来的 Fork into ▸ 和 Reveal in Finder；⌘J 照旧只在在等你的窗口之间跳，⌥⌘1–9 跳 NEEDS YOU 的行；左边面板新白板默认还是收着。</p>
   </div>
 </div>
 </x-dc>

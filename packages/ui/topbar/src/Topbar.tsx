@@ -78,9 +78,9 @@ export function Topbar(props: TopbarProps) {
           size="sm"
           variant="ghost"
           className="ad-topbar-icon"
-          aria-label={props.leftPanelOpen ? 'Hide history' : 'Show history'}
+          aria-label={props.leftPanelOpen ? 'Hide sidebar' : 'Show sidebar'}
           aria-pressed={props.leftPanelOpen === true}
-          title={props.leftPanelOpen ? 'Hide history' : 'Show history'}
+          title={props.leftPanelOpen ? 'Hide sidebar' : 'Show sidebar'}
           onClick={() => props.onToggleLeftPanel?.()}
         >
           <SidebarIcon />

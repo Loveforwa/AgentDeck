@@ -5,7 +5,7 @@ Use this system to build any AgentDeck screen, spec drawing or plugin. Read a co
 ## The five rules
 
 1. **Warm grey and ink.** Surfaces are `ground`, `surface`, `raised`; text is `ink` and `muted`; lines are `line`, `line-strong`, `line-subtle`. Dark is warm dark grey, never pure black, and shows "lifted" by `raised` being one step lighter than `surface`.
-2. **Colour means status, plus agent identity.** Green `status-running` = running. Yellow `status-waiting` (lamp, border) with `attention` (words) = waiting for you. Red `status-error` = error. The only other colours: red `plugin-auto-approve` for the Auto-approve bookmark and frame tag, blue `guide` for layout feedback while you drag or select, Clawd's `mascot*` tokens, and one identity colour per code agent: `agent-claude`, `agent-codex`, `agent-pi`, `agent-omp`, `agent-kimi` (decided 2026-10-26). Agent colours appear only on marks that say which agent this is: today, the small square and the text of each agent heading in the HISTORY sidebar. The mark is a square, not a dot, so it never reads as a status lamp; the colour is never a fill, border or status anywhere else. Branches, projects and file types get no colour.
+2. **Colour means status, plus agent identity.** Green `status-running` = running. Yellow `status-waiting` (lamp, border) with `attention` (words) = waiting for you. Red `status-error` = error. The only other colours: red `plugin-auto-approve` for the Auto-approve bookmark and frame tag, blue `guide` for layout feedback while you drag or select, Clawd's `mascot*` tokens, and one identity colour per code agent: `agent-claude`, `agent-codex`, `agent-pi`, `agent-omp`, `agent-kimi` (decided 2026-10-26). Agent colours appear only on marks that say which agent this is: today, the 7×7 square at the start of each row in the left manager panel (MP2). The mark is a square, not a dot, so it never reads as a status lamp; the colour is never a fill, border or status anywhere else. Branches, projects and file types get no colour.
 3. **No gradients, glow, blur or emoji.** Separate with 1px lines. Only floating things (menus, popovers, dialogs, toasts, a focused or dragged window) get `shadow-float`; marks stuck to a window get the lighter `shadow-mark`. Text glyphs such as ✓ ▸ · ⌘ are fine; pictographic emoji are not.
 4. **Product text is English.** Comments, docs and commit messages may be Chinese.
 5. **No colour literals in components.** `.ts`/`.tsx` and `.css` under `packages/ui/**` use only `var(--token)`; `pnpm colors` and ESLint reject hex, `rgb()`, `hsl()` and the rest. A new colour is a new token in `packages/design-tokens/src/index.ts` with a value for both themes (text tokens join the contrast test), then `pnpm --filter @agentdeck/design-tokens gen`.
@@ -40,7 +40,7 @@ Use this system to build any AgentDeck screen, spec drawing or plugin. Read a co
 - The window is one row: a transparent 34px top bar floats over the board, left 76px reserved for the macOS buttons.
 - The board is a React Flow canvas on `ground` with a 20px dot grid in `line-strong`, hidden below 50% zoom; zoom runs 25–200%.
 - Frames have a 36px header. Windows have a 28px title bar. Windows and frames keep a 20px gap; snapping engages within 6 screen px.
-- The left HISTORY panel (toggled from the far left of the top bar) takes its own column 4px in from the edges, 240–480 wide, with `radius-panel`; the board narrows beside it.
+- The left manager panel (MP2; toggled from the far left of the top bar) takes its own column 4px in from the edges, 240–480 wide, with `radius-panel`; the board narrows beside it.
 - The right panel floats 4px in from the edges, is 280–480 wide (⌘B toggles), and collapses to a 28px rail.
 - A window group's sidebar is 168 wide, 8px right of its lead.
 - Plugin marks hang outside the window frame. The bookmarks (left: the red Auto-approve, then the white Auto-resume with its status lamp, 4px apart) and the background hint (right) hang from the bottom edge; the Usage strip sits 6px above or below, below the bookmarks when both are at the bottom. They never cover terminal content.
@@ -54,7 +54,7 @@ Use this system to build any AgentDeck screen, spec drawing or plugin. Read a co
 
 ## Iconography
 
-Icons are inline SVG in the components, never an icon font or images: 12–15px, `fill="none"`, `stroke="currentColor"`, stroke width 1.3, round caps. They take `muted` and turn `ink` on hover. The set lives in `WindowShell.tsx` (maximize, restore, close), `Topbar.tsx` (chevron, gear), `FrameNodeView.tsx` (Tidy, Columns, Rows, Auto-arrange), `BoardNav.tsx` (window), `panels/scm/src/icons.tsx` and the browser widget; the Icons card shows them. Status is never an icon: it is a lamp (a dot, a hollow ring, or a short line for exited). No logo exists in the repository; the product name is set in plain type.
+Icons are inline SVG in the components, never an icon font or images: 12–15px, `fill="none"`, `stroke="currentColor"`, stroke width 1.3, round caps. They take `muted` and turn `ink` on hover. The set lives in `WindowShell.tsx` (maximize, restore, close), `Topbar.tsx` (chevron, gear), `FrameNodeView.tsx` (Tidy, Columns, Rows, Auto-arrange), `ManagerPanel.tsx` (window, folder, plus, search, pin), `panels/scm/src/icons.tsx` and the browser widget; the Icons card shows them. Status is never an icon: it is a lamp (a dot, a hollow ring, or a short line for exited). No logo exists in the repository; the product name is set in plain type.
 
 ## Where things live
 
@@ -66,7 +66,7 @@ Icons are inline SVG in the components, never an icon font or images: 12–15px,
 | Top bar | `packages/ui/topbar` | looks only; used only by canvas |
 | Board | `packages/ui/canvas` | frames, window nodes, plugin marks, sidebars, menus, dialogs, panel shell |
 | Windows | `packages/ui/widgets/terminal`, `widgets/browser` | register through `@agentdeck/ui-canvas/registry` only |
-| Panels | `packages/ui/panels/scm`, `panels/board-nav`, `panels/history` | no panel imports another |
+| Panels | `packages/ui/panels/scm`, `panels/manager` | no panel imports another |
 
 UI packages import only contracts, design-tokens, `ui/kit` and the canvas registry; widgets never import each other; only `apps/desktop` wires services to UI (`pnpm boundaries`). Plugins follow `docs/plugins.md` and `.claude/skills/agentdeck-plugin/SKILL.md`.
 

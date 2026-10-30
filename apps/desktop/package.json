@@ -17,8 +17,7 @@
   },
   "dependencies": {
     "@agentdeck/agent-adapters": "workspace:*",
-    "@agentdeck/board-nav-panel": "workspace:*",
-    "@agentdeck/history-panel": "workspace:*",
+    "@agentdeck/manager-panel": "workspace:*",
     "@agentdeck/contracts": "workspace:*",
     "@agentdeck/design-tokens": "workspace:*",
     "@agentdeck/doc-service": "workspace:*",

@@ -33,10 +33,10 @@ const GIT = [
   'tc07-tc12-git.e2e.ts',
   'tc23-tc24-panel-stage-switch.e2e.ts',
   'tc36-commit-graph.e2e.ts',
-  'tc16-tc33-board-nav.e2e.ts',
+  'tc16-tc33-manager.e2e.ts',
 ];
 const WORKSPACES = ['tc01-tc02-project-workspace.e2e.ts', 'is02-worktree-rollback.e2e.ts', 'tc03-tc08-two-worktrees.e2e.ts', 'tc07-tc12-git.e2e.ts', 'tc15-project-settings.e2e.ts', 'tc23-tc24-panel-stage-switch.e2e.ts'];
-const STATUS = ['tc04-tc13-notify.e2e.ts', 'tc05-tc30-agent-status.e2e.ts', 'is06-trust-prompt.e2e.ts', 'is14-notify-click.e2e.ts', 'tc42-approve-all.e2e.ts', 'tc148-agents-view.e2e.ts', 'tc148-error-group.e2e.ts'];
+const STATUS = ['tc04-tc13-notify.e2e.ts', 'tc05-tc30-agent-status.e2e.ts', 'is06-trust-prompt.e2e.ts', 'is14-notify-click.e2e.ts', 'tc42-approve-all.e2e.ts', 'tc148-needs-you.e2e.ts'];
 const AGENTS = ['tc17-tc21-tc22-new-terminal.e2e.ts', 'tc46-first-message.e2e.ts', 'tc48-untested-version.e2e.ts', 'tc20-dock-launch-env.e2e.ts', 'is06-trust-prompt.e2e.ts'];
 const MCP = ['tc34-tc35-subagent-group.e2e.ts', 'tc68-send-to-waiting.e2e.ts', 'tc110-hide-from-agents.e2e.ts', 'tc46-first-message.e2e.ts', 'cr15-agentdeck-command.e2e.ts', 'is14-notify-click.e2e.ts'];
 const RESTORE = ['tc06-tc09-tc10-terminals.e2e.ts', 'is27-sigkill-restore.e2e.ts', 'tc14-restore-after-reboot.e2e.ts', 'tc52-tc55-sessions.e2e.ts'];
@@ -45,11 +45,15 @@ const AUTO_RESUME = ['tc78-auto-resume.e2e.ts', 'tc80-tc81-codex-limits.e2e.ts']
 const USAGE = ['tc41-usage.e2e.ts'];
 const SETTINGS = ['tc15-project-settings.e2e.ts', 'tc39-skills-mcp.e2e.ts', 'is14-notify-click.e2e.ts', 'is15-system-terminal-apps.e2e.ts', 'tc26-dark-theme.e2e.ts'];
 const LAYOUT = ['tc29-topbar.e2e.ts', 'tc31-snap-avoid.e2e.ts', 'tc32-panel-collapse.e2e.ts', 'tc37-gestures.e2e.ts', 'tc40-auto-approve.e2e.ts'];
-const NAV = ['tc16-tc33-board-nav.e2e.ts', 'tc148-agents-view.e2e.ts', 'tc148-error-group.e2e.ts', 'tc32-panel-collapse.e2e.ts', 'tc147-send-selection.e2e.ts'];
+const NAV = ['tc16-tc33-manager.e2e.ts', 'tc148-needs-you.e2e.ts', 'mp2-pin-new-search.e2e.ts', 'tc32-panel-collapse.e2e.ts', 'tc147-send-selection.e2e.ts'];
 // 性能（IS-26）要 AGENTDECK_E2E_PERF=1 才跑，默认跳过；选中它只是提醒
 const PERF = ['is26-performance.e2e.ts'];
 
 /** @type {{ match: string | RegExp, run: string | string[] }[]} */
+/**
+ * @typedef {{ match: string | RegExp, run: string[] | typeof ALL | typeof NONE | '$1' }} Rule
+ * @type {Rule[]}
+ */
 export const RULES = [
   // 不用跑
   { match: /^docs\//, run: NONE },
@@ -102,7 +106,7 @@ export const RULES = [
   { match: 'packages/agent-adapters/src/skills/', run: ['tc39-skills-mcp.e2e.ts', 'tc77-skill-sets-cleanup.e2e.ts'] },
   { match: 'packages/agent-adapters/src/history/', run: ['tc52-tc55-sessions.e2e.ts', 'tc14-restore-after-reboot.e2e.ts'] },
   { match: 'packages/agent-adapters/src/subagents/', run: ['tc34-tc35-subagent-group.e2e.ts'] },
-  { match: 'packages/agent-adapters/src/replies/', run: ['tc148-agents-view.e2e.ts'] },
+  { match: 'packages/agent-adapters/src/replies/', run: ['tc148-needs-you.e2e.ts'] },
   { match: 'packages/agent-adapters/src/first-message', run: ['tc46-first-message.e2e.ts'] },
   { match: 'packages/agent-adapters/src/status/', run: STATUS },
   { match: /^packages\/agent-adapters\/src\/(hook|approve)/, run: [...STATUS, ...AUTO_APPROVE] },
@@ -113,8 +117,8 @@ export const RULES = [
   { match: 'packages/ui/widgets/terminal/', run: TERMINAL },
   { match: 'packages/ui/widgets/browser/', run: BROWSER },
   { match: 'packages/ui/panels/scm/', run: [...GIT, 'tc39-skills-mcp.e2e.ts', 'tc38-outside-workspace.e2e.ts'] },
-  { match: 'packages/ui/panels/board-nav/', run: NAV },
-  { match: 'packages/ui/panels/history/', run: ['tc32-panel-collapse.e2e.ts', 'tc52-tc55-sessions.e2e.ts'] },
+  // 左边管理面板（MP2，取代 history 和 board-nav）
+  { match: 'packages/ui/panels/manager/', run: [...NAV, 'tc52-tc55-sessions.e2e.ts'] },
   { match: 'packages/ui/topbar/', run: ['tc29-topbar.e2e.ts', 'tc32-panel-collapse.e2e.ts', 'tc05-tc30-agent-status.e2e.ts'] },
   { match: 'packages/ui/window-shell/', run: ['tc25-resize-emoji.e2e.ts', 'tc31-snap-avoid.e2e.ts', 'is23-summary-restore.e2e.ts', 'tc05-tc30-agent-status.e2e.ts'] },
   { match: /^packages\/ui\/canvas\/src\/plugins\/auto-approve/, run: AUTO_APPROVE },
@@ -140,6 +144,11 @@ export const RULES = [
   { match: /^packages\//, run: ALL },
 ];
 
+/**
+ * @param {Rule} rule
+ * @param {string} file
+ * @returns {string[] | RegExpExecArray | null}
+ */
 function matches(rule, file) {
   if (typeof rule.match === 'string') return file.startsWith(rule.match) ? [file] : null;
   return rule.match.exec(file);
@@ -152,14 +161,19 @@ function matches(rule, file) {
  * @returns {{ all: boolean, specs: string[], reasons: Map<string, string[]>, unmatched: string[] }}
  */
 export function selectSpecs(files, specs) {
+  /** @type {Set<string>} */
   const picked = new Set();
+  /** @type {Map<string, string[]>} */
   const reasons = new Map();
+  /** @type {string[]} */
   const unmatched = [];
   let all = false;
+  /** @type {(spec: string, file: string) => void} */
   const add = (spec, file) => {
     picked.add(spec);
-    if (!reasons.has(spec)) reasons.set(spec, []);
-    reasons.get(spec).push(file);
+    const list = reasons.get(spec) ?? [];
+    list.push(file);
+    reasons.set(spec, list);
   };
   for (const file of files) {
     let hit = null;
@@ -182,12 +196,12 @@ export function selectSpecs(files, specs) {
     if (run === NONE) continue;
     if (run === ALL) {
       all = true;
-      if (!reasons.has('*')) reasons.set('*', []);
-      reasons.get('*').push(file);
+      reasons.set('*', [...(reasons.get('*') ?? []), file]);
       continue;
     }
     if (run === '$1') {
-      if (specs.includes(hit.m[1])) add(hit.m[1], file); // 删掉的 spec 不用跑
+      const spec = hit.m[1];
+      if (spec && specs.includes(spec)) add(spec, file); // 删掉的 spec 不用跑
       continue;
     }
     for (const spec of run) add(spec, file);
@@ -196,10 +210,15 @@ export function selectSpecs(files, specs) {
   return { all, specs: all ? [...specs] : [...picked].filter((s) => specs.includes(s)).sort(), reasons, unmatched };
 }
 
-/** 每个 spec 至少被一条规则挂上；规则里写的 spec 都存在。返回问题列表（空 = 没问题）。 */
+/**
+ * 每个 spec 至少被一条规则挂上；规则里写的 spec 都存在。返回问题列表（空 = 没问题）。
+ * @param {string[]} specs
+ * @returns {string[]}
+ */
 export function checkRules(specs) {
   const mentioned = new Set(SMOKE);
   for (const rule of RULES) if (Array.isArray(rule.run)) for (const s of rule.run) mentioned.add(s);
+  /** @type {string[]} */
   const problems = [];
   for (const s of mentioned) if (!specs.includes(s)) problems.push(`rule names ${s}, but e2e/tests has no such spec`);
   for (const s of specs) if (!mentioned.has(s)) problems.push(`${s} is not covered by any rule in e2e/affected.mjs`);

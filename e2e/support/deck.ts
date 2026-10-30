@@ -17,6 +17,8 @@ export interface BoardSnapshot {
   workspaces: Record<string, { id: string; projectId: string; name: string; path: string; branch: string | null; mode: string }>;
   projects: { id: string; name: string; kind: string; path: string; repos: { name: string; path: string; baseBranch: string }[]; setupCommand: string | null }[];
   statuses: Record<string, { terminalId: string; status: string; agent: string; pending?: unknown }>;
+  /** MP1：左边管理面板的置顶。 */
+  pins: { kind: string }[];
 }
 export interface Rect {
   x: number;
@@ -103,6 +105,7 @@ export class Deck {
         workspaces: s['workspaces'],
         projects: s['projects'],
         statuses: s['statuses'],
+        pins: s['pins'],
       };
       return JSON.parse(JSON.stringify(pick)) as BoardSnapshot;
     });

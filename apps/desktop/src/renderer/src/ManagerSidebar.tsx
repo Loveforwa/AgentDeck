@@ -1,24 +1,26 @@
-// 左边栏：历史会话（MVP v3 · N11，画板 14）。把白板的状态和动作接到 @agentdeck/history-panel 上：
-// 白板上开着的会话（按终端窗口的 agent + 会话 id）带状态灯，单击跳过去；Resume / Fork 在白板上新开终端，
-// 用 agent 自己的接回参数（X4、X6 那一套）。
+// 左边管理面板（MP2，画板“左边管理面板”MP0）。把白板的状态和动作接到 @agentdeck/manager-panel 上：
+// 开着的窗口和历史会话合成一行，单击开着的跳过去，单击关掉的 Resume（用 agent 自己的接回参数，X4、X6 那一套）；
+// 置顶存在 BoardState.pins（随白板保存）；New 菜单和右键白板是同一份（ui-canvas 的 newMenuItems）。
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import type { SessionSummary, TerminalWindowData, WindowId, WindowNode, WorkspaceId } from '@agentdeck/contracts';
-import { navWindow } from '@agentdeck/board-nav-panel';
-import { HistoryPanel, sessionKey, type OpenSession, type PathGroup } from '@agentdeck/history-panel';
-import { useBoardState, type BoardController } from '@agentdeck/ui-canvas';
+import type { SessionSummary, WindowId, WorkspaceId } from '@agentdeck/contracts';
+import { agentReplyReader, ManagerPanel, type PathRef } from '@agentdeck/manager-panel';
+import { newMenuItems, useBoardState, type BoardController } from '@agentdeck/ui-canvas';
 
-export function HistorySidebar({ controller, headerActions }: { controller: BoardController; headerActions?: ReactNode }) {
+export function ManagerSidebar({ controller, title, headerActions }: { controller: BoardController; title: string; headerActions?: ReactNode }) {
   const projects = useBoardState((s) => s.projects);
   const workspaces = useBoardState((s) => s.workspaces);
   const frames = useBoardState((s) => s.frames);
   const windows = useBoardState((s) => s.windows);
   const statuses = useBoardState((s) => s.statuses);
   const badges = useBoardState((s) => s.badges);
+  const pins = useBoardState((s) => s.pins);
   const activeProjectId = useBoardState((s) => {
     const id = controller.activeWorkspaceId(s);
     return id ? (s.workspaces[id]?.projectId ?? null) : null;
   });
+  // 悬停提示的最后一条回复：先读会话记录（agents.lastReply，contracts 0.1.22），读不到再认屏幕
+  const lastReply = useMemo(() => agentReplyReader(controller.api), [controller]);
 
   // 家目录：Other folders 里的目录写成 ~ 开头
   const [home, setHome] = useState<string | null>(null);
@@ -26,19 +28,6 @@ export function HistorySidebar({ controller, headerActions }: { controller: Boar
     void window.agentdeck.app.homeDir().then(setHome, () => undefined);
   }, []);
 
-  const onBoard = useMemo(() => new Set<string>(frames.map((f) => f.workspaceId)), [frames]);
-  // 白板上开着的会话：终端窗口记着的会话 id，没有时看状态机报的（codex、omp 启动后才知道 id）
-  const open = useMemo(() => {
-    const out: Record<string, OpenSession> = {};
-    for (const w of windows) {
-      if (w.type !== 'terminal') continue;
-      const data = w.data as TerminalWindowData;
-      const id = data.sessionId ?? (data.terminalId ? statuses[data.terminalId]?.sessionId : null) ?? null;
-      if (!id) continue;
-      out[sessionKey(data.agent, id)] = { windowId: w.id, lamp: navWindow(w as WindowNode, { statuses, badges }).lamp ?? 'idle' };
-    }
-    return out;
-  }, [windows, statuses, badges]);
   const forkTargets = useMemo(
     () =>
       frames.flatMap((f) => {
@@ -58,7 +47,7 @@ export function HistorySidebar({ controller, headerActions }: { controller: Boar
     return ws ? id : null;
   };
 
-  const resume = (s: SessionSummary, path: PathGroup) => {
+  const resume = (s: SessionSummary, path: PathRef) => {
     const workspaceId = ensureFrame(path.workspaceId);
     const cwd = s.cwd ?? path.cwd ?? undefined;
     void controller.newTerminal({ agent: s.agent, workspaceId, ...(cwd ? { cwd } : {}), mode: { kind: 'resume', sessionId: s.id } }).then((id) => {
@@ -73,19 +62,37 @@ export function HistorySidebar({ controller, headerActions }: { controller: Boar
     });
   };
 
+  const openWorkspace = (id: WorkspaceId) => {
+    if (!ensureFrame(id)) return;
+    controller.selectFrame(id);
+    controller.fitFrame(id);
+  };
+
   return (
-    <HistoryPanel
+    <ManagerPanel
+      title={title}
       projects={projects}
       workspaces={workspaces}
-      onBoard={onBoard}
+      frames={frames}
+      windows={windows}
+      statuses={statuses}
+      badges={badges}
+      pins={pins}
       activeProjectId={activeProjectId}
-      open={open}
+      newMenu={() => newMenuItems(controller)}
       forkTargets={forkTargets}
+      onTogglePin={(pin) => controller.togglePin(pin)}
+      onMovePin={(from, to) => controller.movePin(from, to)}
       onJump={(id) => controller.jumpAndFlash(id as WindowId)}
       onResume={resume}
       onFork={fork}
-      onCopyId={(s) => void navigator.clipboard?.writeText(s.id)}
+      onCopyId={(id) => void navigator.clipboard?.writeText(id)}
       onReveal={(s) => void window.agentdeck.app.revealInFinder(s.file)}
+      onRename={(id) => controller.openDialog({ kind: 'rename-window', windowId: id as WindowId })}
+      onClose={(id) => controller.closeWindow(id as WindowId)}
+      onOpenWorkspace={openWorkspace}
+      api={controller.api}
+      lastReply={lastReply}
       headerActions={headerActions}
       home={home}
     />

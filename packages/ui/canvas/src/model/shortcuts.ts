@@ -23,9 +23,9 @@ export type ShortcutId =
   | 'redo' // ⌘⇧Z
   | 'delete-selection' // Delete / Backspace
   | 'escape' // Esc
-  | JumpAgentShortcut; // ⌥⌘1–9（CO4：BoardNav 的 Agents 视图里第 1–9 行）
+  | JumpAgentShortcut; // ⌥⌘1–9（CO4 / MP3：左边管理面板 NEEDS YOU 的第 1–9 行）
 
-/** CO4：⌥⌘1–9 跳到 Agents 视图（BoardNav）的第 n 行。 */
+/** CO4 / MP3：⌥⌘1–9 跳到左边管理面板 NEEDS YOU 的第 n 行。 */
 export type JumpAgentShortcut = `jump-agent-${1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9}`;
 
 export const JUMP_AGENT_SHORTCUTS: readonly JumpAgentShortcut[] = [1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => `jump-agent-${n}` as JumpAgentShortcut);

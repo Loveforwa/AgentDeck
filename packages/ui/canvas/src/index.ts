@@ -5,6 +5,7 @@ export { listGroups, dissolveGroups, type WindowGroup } from './model/groups.ts'
 export { createBoardStore, type BoardStore, type BoardStoreState, type DialogState, type MenuState, type PendingFrame, type SettingsSection } from './store.ts';
 export { Workbench, type LeftPanelContext, type PanelContext, type WorkbenchProps } from './react/Workbench.tsx';
 export { Board } from './react/Board.tsx';
+export { newMenuItems } from './react/BoardMenu.tsx';
 export { BoardProvider, useBoardState, useController } from './react/context.tsx';
 export { useShortcuts } from './react/useShortcuts.ts';
 export { matchShortcut, resolveShortcut, shouldHandle, textUndoTarget, jumpAgentRow, JUMP_AGENT_SHORTCUTS, SHORTCUT_LABELS, type JumpAgentShortcut, type ShortcutId } from './model/shortcuts.ts';

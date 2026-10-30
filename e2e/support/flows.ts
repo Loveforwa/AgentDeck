@@ -101,3 +101,12 @@ export async function openFakeClaude(deck: Deck, workspaceId: string | null): Pr
   await expect(deck.windowEl(t.windowId).locator('.ad-terminal__notice')).toHaveCount(0);
   return t;
 }
+
+/** 打开左边管理面板（MP2，顶栏最左边的按钮；开着就不动），返回面板。 */
+export async function openManager(deck: Deck) {
+  const page = deck.page;
+  const manager = page.getByRole('navigation', { name: 'Manager' });
+  if (!(await manager.isVisible())) await page.getByRole('button', { name: 'Show sidebar' }).click();
+  await expect(manager).toBeVisible();
+  return manager;
+}

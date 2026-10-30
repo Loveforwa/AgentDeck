@@ -137,8 +137,8 @@ app.test 像 github 带登录和第三方登录弹窗、auth.test 是授权页�
 | TC-52（SE2 后台） | tc52-tc55-sessions | 假 claude 聊两轮 → `clear` → 同一条 Session 两段（start、clear）、只有一条 Session；关窗口后 stopped、两段都在。界面等 SE4、SE5 |
 | TC-55（SE1 后台） | 同上 | 新库降成 schema 1（迁移 1 的 SQL 从 migrations.ts 原文读）+ 白板加 open_terminals 的 group → 重开：每个终端窗口一条 Session、data.session 写回、子终端 parentId 是 Lead、origin spawn · open_terminals、label；tmux 里没有的旧终端记录清掉；关 Lead 后子终端 group 去掉、父子关系还在。界面等 SE4、SE5 |
 | TC-77（SK5） | tc77-skill-sets-cleanup | skill-sets/ 里 8 天前没人用的删掉；在用的、1 天前的、名字不是 AgentDeck 起的不动；终端退出后下次清理删掉它那个；沙盒 HOME 的 skill 目录和配置一个字节没变。其余等 SK2 |
-| TC-16 | tc16-tc33-board-nav | 重开应用、没聚焦：右侧是 BoardNav（不是 “isn’t in a workspace”）→ 单击框里的终端：Source Control 显示分支；git.status 只调一次，同框换终端不再调 |
-| TC-33 | 同上 | 两个项目三个工作区、终端 + 网页、一个在等批准：单击空白处 → BOARD 项目 → 分支 → 窗口（灯、名字、OSC 2 设的主题、网页图标、等你的行 `--attention-soft`）→ 单击那行：视口移过去、闪、聚焦、回到 Source Control |
+| TC-16 | tc16-tc33-manager | 重开应用、没聚焦：右侧写 “Focus a terminal to see its changes.”（不是 “isn’t in a workspace”），左边管理面板列着项目 → 工作路径 → 两个终端 → 单击框里的终端：Source Control 显示分支、管理面板还在；git.status 只调一次，同框换终端不再调 |
+| TC-33 | 同上 | 两个项目三个工作区、终端 + 网页、一个在等批准，缩到 40%：打开左边管理面板（MP2）→ 项目 → 分支 → 每个窗口一行（灯、agent 小方块、Shell 的标题是 OSC 2 设的主题、网页是窗口图标）；等批准的在 NEEDS YOU · 1（浅黄底、“Waiting · …”、写 “api · feat/pool”），下面不再出现 → 单击它：平移放大、闪一下、聚焦，右侧换成 feat/pool 的源代码管理 |
 | TC-17 | tc17-tc21-tc22-new-terminal | 假 codex：New terminal ▸ 按名字列出 `agents.list()` 装了的 + Shell，没装的不出现 → 选 Codex 开在右键处 |
 | TC-21 | 同上 | 右键 › New terminal › Shell：开在右键处、散放、cwd 是 ~、窗格有 AGENTDECK_TERM → 打 `git status`：tmux 和 xterm 里都有输出，状态 running → idle |
 | TC-22 | 同上 | `sleep 300` → 标题栏 × → 窗口里的 “Stop bash?” → Stop and close → 窗口没了、tmux 会话没了 |
@@ -166,7 +166,8 @@ app.test 像 github 带登录和第三方登录弹窗、auth.test 是授权页�
 | IS-05 | is05-terminal-feel | 终端手感里机器能核对的：key-probe 画 16 / 256 / 真彩色、粗体下划线斜体、中文和框线 → xterm 缓冲区每格的字、宽度、颜色，tmux 里还是真彩色，截图取色；Esc、Shift+Enter（申请扩展按键的收到 CSI 13;2u，没申请的收到回车）、Option+字母、方向键、⌃C、⌘V 多行 bracketed paste 不提交；刚接回显示按 Esc 的延迟；聚焦终端里滚轮进 tmux 回滚、打字退出、滚回底部退出；申请了鼠标的程序（像 codex）自己收到 SGR 滚轮；拖选松手进系统剪贴板（OSC 52）、⌘V 到别的终端，Option 拖 + ⌘C；测试自己经沙盒 socket attach 第二个客户端，两边互相看得到、大小跟最近输入的；响铃和透传的 OSC 9 到 xterm、假 claude 做完 Idle · now。触控板手感、真 claude 的配色和 / 菜单、iTerm2 / Terminal.app 里的颜色、从访达拖文件要人看 |
 | IS-16（TC-18 的键盘部分） | is16-keyboard-in-browser | 焦点在网页（跨源 iframe）里用 page.keyboard 按 ⌘J ⌘B ⌘W ⌘0 ⌘1：都进了网页、白板页面收不到、没被网页和小桥 preventDefault（对照 ⌘[ 被拦）；⌘R 只刷新网页（dev server 多一个请求、应用没重载）。键盘到应用菜单这一段 CDP 按不出来（合成的按键没有系统事件），要人用真键盘试 |
 | IS-157 | is157-zoom-idle-shell | 空闲的 shell 捏合缩到 50% 以下再放大、⌘- ⌘= ⌘0 ⌘1、zoomTo：标题栏一直 Idle、状态机没变、tmux 大小没变（没复现）；刚开的 shell 打出提示符后 Running 约 3 秒才 Idle（只记录） |
-| TC-148（ERROR 一组） | tc148-error-group | 6 个散放的假 claude（crash 退出码 3、等批准、两个在跑、刚做完、一直空闲）+ 2 个 shell：分组 ERROR · 1、NEEDS YOU · 1、RUNNING · 2、IDLE · 2，组里按位置，shell 不列；灯和 “exit 3 · now” 是 --status-error、Waiting 是 --attention、其余灰字只写时间；⌥⌘1 跳到出错的、⌥⌘3 跳到第一个在跑的 |
+| TC-148（MP3） | tc148-needs-you | 6 个散放的假 claude（crash 退出码 3、等批准、两个在跑、刚做完一轮、一直空闲）+ 2 个 shell：左边管理面板 NEEDS YOU · 2 = 出错的、等批准的（等得最久的在前），其余在 “Not in a workspace” 按位置、每个终端一行；灯和右边的字（exit 3 · …、Waiting · …、Running · …、Idle · …）颜色对 token；悬停刚做完的出提示（Last reply、回复、Click to jump），悬停 NEEDS YOU 第 2 行写 ⌥⌘2；⌥⌘1 跳出错的、⌥⌘2 跳等批准的、⌥⌘3 没有这一行不动 |
+| MP2 | mp2-pin-new-search | 右键 Shell 一行 › Pin、右键 api · feat/pool › Pin → PINNED 两项，下面不再重复；重开应用还在、顺序不变；单击置顶的工作路径选中那个框；单击置顶的 Shell 跳过去 → New › Terminal › Shell 开在 shop · feat/cart 的框里并聚焦；Search 按分支只留命中的、Esc 退出；右键置顶的工作路径 › Unpin |
 | IS-124 | is124-local-pdf | 沙盒里现写的 6 页 PDF，右键 New browser、地址栏真键盘：本地 PDF 的 iframe 不带 sandbox，Chromium 的 PDF 查看器显示 1/6（主进程里读查看器的页码）；`file://…pdf#page=4` 打开在第 4 页；开着时地址栏换 #page=5、#page=2 都跳过去（界面带 ?r=n 重新载入，存下的地址不带 ?r）；.pptx 不载入，写 “This file can’t be shown on the board.” + Open in default app，没有下载（主进程照样记下载、不弹保存框） |
 | IS-14 | is14-notify-click | agent 调 MCP notify：前台只出白板提示；关窗口后弹系统通知 “claude · <工作区>”（Notification.show 换成记录）→ 单击：窗口回来、视口移回那个终端、选中、键盘焦点在它的 xterm（打的字进了 claude）。设置里关掉通知时后台不发。真通知中心弹出要人工 |
 | IS-15 | is15-system-terminal-apps | Settings 的 Terminal app 填 iTerm（osascript create window … command）、Ghostty（写 run/attach-<id>.command、`open -a`）：截下命令在伪终端里跑，接上沙盒 socket 上同一个会话、两个客户端、打字进 claude。真的弹出 App 要人工 |

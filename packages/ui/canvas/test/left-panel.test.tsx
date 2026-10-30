@@ -44,10 +44,10 @@ describe('left panel', () => {
   it('is closed by default; the top bar button opens it, its own button closes it, and both are saved', async () => {
     await mount(true);
     expect(document.querySelector('.ad-left-panel')).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Show history' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Show sidebar' }));
     await waitFor(() => expect(document.querySelector('.ad-left-panel .test-history')).not.toBeNull());
     expect(c.state.leftPanel).toEqual({ open: true, width: 280 });
-    expect(screen.getByRole('button', { name: 'Hide history', pressed: true })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Hide sidebar', pressed: true })).toBeTruthy();
 
     act(() => c.setLeftPanelWidth(900));
     expect(c.state.leftPanel.width).toBe(480);
@@ -64,7 +64,7 @@ describe('left panel', () => {
 
   it('without content there is no left panel and no button', async () => {
     await mount(false);
-    expect(screen.queryByRole('button', { name: 'Show history' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Show sidebar' })).toBeNull();
     act(() => c.toggleLeftPanel());
     expect(document.querySelector('.ad-left-panel')).toBeNull();
   });

@@ -5,7 +5,7 @@ import './styles.css';
 
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { agentOrder } from '@agentdeck/board-nav-panel';
+import { needsYouOrder } from '@agentdeck/manager-panel';
 import { BoardController } from '@agentdeck/ui-canvas';
 import { registerWindow } from '@agentdeck/ui-canvas/registry';
 import { browserWindowType } from '@agentdeck/ui-widget-browser';
@@ -28,8 +28,8 @@ async function boot(): Promise<void> {
     desktop?.startup().then((s) => s ?? FALLBACK_STARTUP) ?? Promise.resolve(FALLBACK_STARTUP),
     api.app.homeDir(),
   ]);
-  // ⌥⌘1–9（CO4）按右侧 BoardNav 的 Agents 视图的顺序跳
-  const controller = new BoardController({ api, homeDir, agentOrder });
+  // ⌥⌘1–9（CO4 / MP3）按左边管理面板 NEEDS YOU 一段的顺序跳
+  const controller = new BoardController({ api, homeDir, agentOrder: needsYouOrder });
   // 退出前主进程调它把白板存掉（窗口销毁时 pagehide 来不及等保存完成）
   (window as Window & { __agentdeckFlush?: () => Promise<void> }).__agentdeckFlush = () => controller.flush();
   if (desktop) installMenuShortcuts(controller, desktop);

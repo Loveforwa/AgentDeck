@@ -1,4 +1,4 @@
-// Agents 视图悬停提示里的“最后一条回复”（CO4）。
+// 管理面板（MP2）开着的 agent 一行悬停提示里的“最后一条回复”（CO4 的 Agents 视图搬过来）。
 //
 // 需求是和 `agentdeck session result`（CrewService.result，C7）用同一段读会话记录的代码，读不到再退回屏幕最后几行。
 // contracts 0.1.22 有了 agents.lastReply（agent-adapters 读 claude、codex、pi、omp 的会话记录）：组装方传 agentReplyReader(api)，

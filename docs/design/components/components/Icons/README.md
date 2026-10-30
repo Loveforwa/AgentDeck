@@ -8,7 +8,7 @@ Icons are the inline line icons copied from the components. They are SVG with `s
 - `kit/src/Menu.tsx`: menu check and submenu arrow.
 - `canvas/src/react/FrameNodeView.tsx`: Tidy, Columns, Rows, Auto-arrange (14px).
 - `panels/scm/src/icons.tsx`: Branch, Refresh, Stage, Unstage, Discard, Back, Disclosure, Caret, Check (14px on a 16 grid, stroke 1.4).
-- `panels/board-nav/src/BoardNav.tsx`: Window (10px).
+- `panels/manager/src/ManagerPanel.tsx`: Window and Folder (10px), Plus and Search (12px), Pin (9px).
 
 **Rules**
 - Draw new icons the same way: 12–15px, `fill="none"`, stroke 1.3–1.4, round caps and joins, `aria-hidden="true"`. Give the button an `aria-label`.

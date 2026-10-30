@@ -1,0 +1,394 @@
+/* 左边管理面板（MP2）。只用 design-tokens 的变量：颜色只给状态灯、在等你的浅黄底，agent 身份色只在行首的小方块上。 */
+
+.mgr {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  height: 100%;
+  min-width: 0;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  line-height: var(--leading);
+}
+
+.mgr-top {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-xs);
+  height: var(--control-md);
+  padding: 0 var(--space-xs) 0 var(--space-md);
+  border-bottom: 1px solid var(--line-subtle);
+}
+
+.mgr-title {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-strong);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mgr-spacer {
+  flex: 1;
+}
+
+.mgr-mono {
+  font-family: var(--font-mono);
+}
+
+.mgr-muted {
+  color: var(--muted);
+}
+
+.mgr-strong {
+  font-weight: var(--weight-strong);
+}
+
+.mgr-icon {
+  flex: none;
+  color: var(--muted);
+}
+
+/* New、Search 两行 */
+.mgr-actions {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  padding: var(--space-xs) var(--space-sm);
+}
+
+.mgr-action,
+.mgr-search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--row);
+  padding: 0 var(--space-sm);
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mgr-action:hover {
+  background: var(--hover);
+}
+
+.mgr-search {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  cursor: text;
+}
+
+.mgr-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0 var(--space-sm) var(--space-sm);
+}
+
+.mgr-note {
+  margin: var(--space-xs);
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.mgr-indent {
+  padding-left: 22px;
+}
+
+.mgr-section,
+.mgr-project {
+  margin-top: var(--space-sm);
+}
+
+/* NEEDS YOU、PINNED 的小标题 */
+.mgr-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  margin: 0;
+  padding: var(--space-2xs) var(--space-sm);
+  color: var(--muted);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-strong);
+  letter-spacing: 0.3px;
+}
+
+.mgr-project-name {
+  margin: 0;
+}
+
+.mgr-project-row,
+.mgr-path-row,
+.mgr-row-main,
+.mgr-more {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--row);
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mgr-project-row {
+  padding: 0 var(--space-xs) 0 var(--space-sm);
+  font-weight: var(--weight-strong);
+  white-space: nowrap;
+}
+
+.mgr-project-label,
+.mgr-path-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mgr-path-row {
+  padding: 0 var(--space-xs) 0 var(--space-sm);
+  white-space: nowrap;
+}
+
+.mgr-project-row:hover,
+.mgr-path-row:hover,
+.mgr-row:hover,
+.mgr-more:hover {
+  background: var(--hover);
+}
+
+.mgr-action:focus-visible,
+.mgr-search:focus-visible,
+.mgr-project-row:focus-visible,
+.mgr-path-row:focus-visible,
+.mgr-row-main:focus-visible,
+.mgr-more:focus-visible,
+.mgr-more-btn:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.mgr-caret {
+  flex: none;
+  width: 10px;
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.mgr-detail,
+.mgr-where,
+.mgr-group {
+  flex: none;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-regular);
+}
+
+.mgr-where {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mgr-count,
+.mgr-time {
+  flex: none;
+  color: var(--muted);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-regular);
+  font-variant-numeric: tabular-nums;
+}
+
+.mgr-time--waiting {
+  color: var(--attention);
+}
+
+.mgr-time--error {
+  color: var(--status-error);
+}
+
+.mgr-rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* 一行：灯 · agent 小方块 · 标题 · 右边时间；悬停时右边出 ⋯ */
+.mgr-row {
+  position: relative;
+  border-radius: var(--radius-control);
+}
+
+.mgr-row-main {
+  padding: 0 var(--space-xs) 0 var(--space-sm);
+}
+
+.mgr-path .mgr-row-main,
+.mgr-path .mgr-more {
+  padding-left: 22px;
+}
+
+.mgr-row-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mgr-row--waiting,
+.mgr-row--waiting:hover {
+  background: var(--attention-soft);
+}
+
+.mgr-more-btn {
+  position: absolute;
+  top: 50%;
+  right: var(--space-2xs);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 18px;
+  transform: translateY(-50%);
+  border: 0;
+  border-radius: var(--radius-control);
+  background: var(--hover);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.mgr-row:hover .mgr-more-btn,
+.mgr-row:focus-within .mgr-more-btn {
+  display: flex;
+}
+
+.mgr-row:hover .mgr-time,
+.mgr-row:focus-within .mgr-time {
+  visibility: hidden;
+}
+
+.mgr-more {
+  padding: 0 var(--space-xs) 0 var(--space-sm);
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+/* 状态灯（和终端标题栏一套）：圆的。agent 身份色是方的，不混 */
+.mgr-lamp,
+.mgr-lamp-space {
+  flex: none;
+  box-sizing: border-box;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.mgr-lamp--running {
+  background: var(--status-running);
+}
+
+.mgr-lamp--waiting {
+  background: var(--status-waiting);
+}
+
+.mgr-lamp--error {
+  background: var(--status-error);
+}
+
+.mgr-lamp--idle {
+  border: 1px solid var(--muted);
+}
+
+.mgr-lamp--exited {
+  height: 2px;
+  border-radius: 1px;
+  background: var(--muted);
+}
+
+.mgr-agent {
+  flex: none;
+  box-sizing: border-box;
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  background: var(--agent-color, transparent);
+}
+
+/* Shell、自定义命令：空心方块 */
+.mgr-agent[data-agent='shell'],
+.mgr-agent[data-agent='custom'] {
+  border: 1px solid var(--muted);
+}
+
+.mgr-agent[data-agent='claude'] {
+  --agent-color: var(--agent-claude);
+}
+
+.mgr-agent[data-agent='codex'] {
+  --agent-color: var(--agent-codex);
+}
+
+.mgr-agent[data-agent='pi'] {
+  --agent-color: var(--agent-pi);
+}
+
+.mgr-agent[data-agent='omp'] {
+  --agent-color: var(--agent-omp);
+}
+
+.mgr-agent[data-agent='kimi'] {
+  --agent-color: var(--agent-kimi);
+}
+
+/* 悬停提示（CO4 搬过来）：墨色底 */
+.mgr-tip {
+  position: fixed;
+  z-index: var(--z-popover);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  box-sizing: border-box;
+  width: max-content;
+  max-width: 320px;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-control);
+  background: var(--ink);
+  box-shadow: var(--shadow-float);
+  color: var(--on-ink);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  line-height: var(--leading);
+  pointer-events: none;
+}
+
+.mgr-tip-title {
+  font-weight: var(--weight-strong);
+  overflow-wrap: anywhere;
+}
+
+.mgr-tip-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.mgr-tip-dim {
+  opacity: 0.72;
+}

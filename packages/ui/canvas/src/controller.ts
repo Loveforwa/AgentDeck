@@ -1,7 +1,8 @@
 // BoardController：白板的全部行为。React 组件只负责画和把手势交给它；它只通过 window.agentdeck（AgentDeckApi）调服务。
 // 不依赖 React，测试里直接拿 createFakeApi() 跑。
 
-import type { AgentDeckApi, AgentDeckErrorData, BackgroundAgent, FrameArrange, FrameLayout, AgentKind, BoardState, LaunchMode, CreateWorkspaceRequest, ErrorCode, FrameNode, OpenWindowRequest, ProjectId, ProjectPatch, Rect, Settings, Size, TerminalId, TerminalWindowData, Unsubscribe, Viewport, WindowCommand, WindowGroupId, WindowGroupMemberRequest, WindowId, WindowNode, WindowStatusBadge, Workspace, WorkspaceId } from '@agentdeck/contracts';
+import type { AgentDeckApi, AgentDeckErrorData, BackgroundAgent, BoardPin, FrameArrange, FrameLayout, AgentKind, BoardState, LaunchMode, CreateWorkspaceRequest, ErrorCode, FrameNode, OpenWindowRequest, ProjectId, ProjectPatch, Rect, Settings, Size, TerminalId, TerminalWindowData, Unsubscribe, Viewport, WindowCommand, WindowGroupId, WindowGroupMemberRequest, WindowId, WindowNode, WindowStatusBadge, Workspace, WorkspaceId } from '@agentdeck/contracts';
+import { boardPinKey } from '@agentdeck/contracts';
 import { TITLE_BAR_HEIGHT, resizeRect, type ResizeEdge } from '@agentdeck/ui-window-shell';
 import { isSummarySize, windowContents, windowRegistry, type WindowContentRegistry, type WindowDefinition, type WindowRegistry } from './registry.ts';
 import { ApprovalsModel } from './approvals/model.ts';
@@ -101,7 +102,7 @@ export interface BoardControllerOptions {
   /** 换掉默认的 Add project… 流程（选文件夹 → probe → add）。返回新加的项目，取消返回 null。 */
   addProject?(): Promise<ProjectId | null>;
   /**
-   * CO4：⌥⌘1–9 跳到第几个窗口。是 BoardNav 的 Agents 视图从上到下的顺序（board-nav-panel 的 agentOrder），
+   * CO4 / MP3：⌥⌘1–9 跳到第几个窗口。是左边管理面板 NEEDS YOU 一段从上到下的顺序（manager-panel 的 needsYouOrder），
    * 白板不能 import 面板，由组装方（apps/desktop）传进来。不给时 ⌥⌘1–9 不处理。
    */
   agentOrder?(state: BoardStoreState): readonly WindowId[];
@@ -323,6 +324,7 @@ export class BoardController {
       panel: board.panel,
       leftPanel: board.leftPanel ?? { ...DEFAULT_LEFT_PANEL },
       autoResume: board.autoResume === true,
+      pins: Array.isArray(board.pins) ? board.pins : [],
       workspaces: Object.fromEntries(workspaces.map((w) => [w.id, w])),
       projects,
       agents,
@@ -1152,7 +1154,7 @@ export class BoardController {
     return target;
   }
 
-  /** CO4：⌥⌘n 跳到 Agents 视图的第 n 行（和单击那一行一样：跳过去、闪一下、聚焦）。没有这一行返回 null。 */
+  /** CO4 / MP3：⌥⌘n 跳到管理面板 NEEDS YOU 的第 n 行（和单击那一行一样：跳过去、闪一下、聚焦）。没有这一行返回 null。 */
   jumpToAgentRow(n: number): WindowId | null {
     const order = this.opts.agentOrder?.(this.state);
     const id = order?.[n - 1] ?? null;
@@ -1163,7 +1165,7 @@ export class BoardController {
     return null;
   }
 
-  /** 跳过去、闪一下并聚焦（⌘J 的效果）。面板的快速定位列表（V5）也用它。 */
+  /** 跳过去、闪一下并聚焦（⌘J 的效果）。左边管理面板（MP2）单击开着的一行也用它。 */
   jumpAndFlash(id: WindowId): void {
     this.flashWindow(id);
     this.jumpToWindow(id);
@@ -1180,6 +1182,29 @@ export class BoardController {
   /** 左边栏（N11 历史会话）：顶栏最左边的按钮开关，随白板保存。 */
   toggleLeftPanel(): void {
     this.set((s) => ({ leftPanel: { ...s.leftPanel, open: !s.leftPanel.open } }));
+  }
+
+  // ---- MP1：左边管理面板的置顶（BoardState.pins，随白板保存） ----
+
+  isPinned(pin: BoardPin): boolean {
+    const key = boardPinKey(pin);
+    return this.state.pins.some((p) => boardPinKey(p) === key);
+  }
+
+  /** 置顶放在最后；已经置顶了就取消。 */
+  togglePin(pin: BoardPin): void {
+    const key = boardPinKey(pin);
+    this.set((s) => ({ pins: s.pins.some((p) => boardPinKey(p) === key) ? s.pins.filter((p) => boardPinKey(p) !== key) : [...s.pins, pin] }));
+  }
+
+  /** 拖动换顺序：第 from 项挪到第 to 项的位置。 */
+  movePin(from: number, to: number): void {
+    const pins = this.state.pins;
+    if (from === to || from < 0 || to < 0 || from >= pins.length || to >= pins.length) return;
+    const next = [...pins];
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved!);
+    this.set({ pins: next });
   }
 
   /** 左边栏宽度 240–480（画板 14）。 */

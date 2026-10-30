@@ -156,7 +156,7 @@ function BoardTopbar({ boardName, trafficLights, hasLeftPanel }: { boardName: st
   );
 }
 
-/** 左边栏（N11，画板 14）：和右边栏一个样子，在白板左边占一列（白板跟着变窄）；收起时整个不画，只剩顶栏最左边的按钮。 */
+/** 左边栏（N11，画板 14；MP2 起是管理面板）：和右边栏一个样子，在白板左边占一列（白板跟着变窄）；收起时整个不画，只剩顶栏最左边的按钮。 */
 function LeftPanel({ renderLeftPanel }: { renderLeftPanel: WorkbenchProps['renderLeftPanel'] }) {
   const c = useController();
   const open = useBoardState((s) => s.leftPanel.open);
@@ -171,14 +171,14 @@ function LeftPanel({ renderLeftPanel }: { renderLeftPanel: WorkbenchProps['rende
   if (!renderLeftPanel || !open) return null;
   const collapse = () => c.toggleLeftPanel();
   const collapseButton = (
-    <button type="button" className="ad-panel-toggle" aria-label="Hide history" title="Hide history" onClick={collapse}>
+    <button type="button" className="ad-panel-toggle" aria-label="Hide sidebar" title="Hide sidebar" onClick={collapse}>
       <ExpandIcon />
     </button>
   );
   return (
-    <aside className="ad-left-panel" style={{ width }} aria-label="History panel">
+    <aside className="ad-left-panel" style={{ width }} aria-label="Sidebar">
       <div className="ad-panel-body">{renderLeftPanel({ collapseButton, collapse })}</div>
-      <div className="ad-left-panel-resizer" onPointerDown={onPointerDown} role="separator" aria-orientation="vertical" aria-label="Resize history panel" />
+      <div className="ad-left-panel-resizer" onPointerDown={onPointerDown} role="separator" aria-orientation="vertical" aria-label="Resize sidebar" />
     </aside>
   );
 }

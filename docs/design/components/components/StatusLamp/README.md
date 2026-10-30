@@ -1,6 +1,6 @@
 # StatusLamp
 
-StatusLamp is the traffic light (MVP v2 · V2): one coloured dot plus one word, used identically in window title bars, the top bar, frame headers, the group sidebar, BoardNav and history rows.
+StatusLamp is the traffic light (MVP v2 · V2): one coloured dot plus one word, used identically in window title bars, the top bar, frame headers, the group sidebar and the rows of the left manager panel (MP2).
 
 **Code:** title bar `StatusDot` in `packages/ui/window-shell/src/WindowShell.tsx` (`.ad-window-dot--*`), status text from `packages/ui/widgets/terminal/src/status.ts` (`badgeFor`), list lamps `.ad-group-lamp--*`, `.bnav-lamp--*`, `.hist-lamp--*`, top bar `.ad-topbar-lamp`, frame `.ad-frame-lamp`, background `.ad-bg-lamp--*`.
 

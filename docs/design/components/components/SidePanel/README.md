@@ -1,6 +1,6 @@
 # SidePanel
 
-SidePanel is the floating right panel shell: 280–480 wide, rounded `radius-panel`, inset from the window edges. It shows source control for the focused window or selected frame, BoardNav when nothing is focused, and collapses to a 28px rail (MVP v2 · V4).
+SidePanel is the floating right panel shell: 280–480 wide, rounded `radius-panel`, inset from the window edges. It shows source control for the focused window or selected frame, and “Focus a terminal to see its changes.” when nothing is focused (MP3: the board list moved to the left manager panel), and collapses to a 28px rail (MVP v2 · V4).
 
 **Code:** `packages/ui/canvas/src/react/Workbench.tsx` (panel, rail, resizer, `renderPanel`), styles in `canvas.css` (`.ad-panel*`). The content packages are `panels/scm` and `panels/board-nav`.
 
@@ -9,4 +9,4 @@ SidePanel is the floating right panel shell: 280–480 wide, rounded `radius-pan
 **Interaction**
 - ⌘B toggles. The header button reads Collapse panel; the rail button reads Expand panel. Width and open state are saved with the board.
 - The panel floats over the board, so the dot grid shows around it. Fit, center and ⌘1 never place content under it.
-- The panel follows focus: focused window → its workspace's source control; nothing focused → BoardNav.
+- The panel follows focus: focused window → its workspace's source control; nothing focused → “Focus a terminal to see its changes.” Only source control lives here since MP3.

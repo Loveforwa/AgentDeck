@@ -1,17 +1,16 @@
-// 应用页面：顶栏 + 左边栏历史会话（@agentdeck/history-panel，N11）+ 白板（@agentdeck/ui-canvas）+ 右侧源代码管理面板（@agentdeck/scm-panel；什么都没选中时是 @agentdeck/board-nav-panel 的快速定位列表）。
+// 应用页面：顶栏 + 左边管理面板（@agentdeck/manager-panel，MP2）+ 白板（@agentdeck/ui-canvas）+ 右侧源代码管理面板（@agentdeck/scm-panel，MP3 起只放它）。
 // tmux 起不来时显示说明页和 Retry；读登录 shell 环境失败等提示显示在左下角。
 // AGENTDECK_DEMO=1 时自动把本仓库加成项目、建主目录工作区、开一个 Shell 和一个 claude（见 demo.ts）。
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { AgentDeckErrorData, SkillItemId, TerminalWindowData, WindowNode, Workspace, WorkspaceId } from '@agentdeck/contracts';
-import { agentReplyReader, BoardNav } from '@agentdeck/board-nav-panel';
 import { ScmPanel, type SkillsTarget } from '@agentdeck/scm-panel';
 import { useBoardState, Workbench, type BoardController } from '@agentdeck/ui-canvas';
 import { Button } from '@agentdeck/ui-kit';
 import { OPEN_SETTINGS_EVENT } from '@agentdeck/ui-widget-terminal';
 import type { StartupInfo } from '../../shared/desktop-bridge.ts';
 import { reportBoardReady, runDemo } from './demo.ts';
-import { HistorySidebar } from './HistorySidebar.tsx';
+import { ManagerSidebar } from './ManagerSidebar.tsx';
 
 /** 进程已经结束的状态。其余（starting / running / 在等你 / idle）都算“开着”。 */
 const ENDED = new Set(['exited', 'error']);
@@ -23,31 +22,6 @@ function terminalLabel(data: TerminalWindowData): string {
   return cmd === '' ? 'shell' : cmd;
 }
 
-
-/** 什么都没选中时的快速定位列表（V5）：整块白板的目录，单击一行和 ⌘J 一样跳过去。 */
-function BoardNavPanel({ controller, headerActions }: { controller: BoardController; headerActions?: ReactNode }) {
-  const projects = useBoardState((s) => s.projects);
-  const workspaces = useBoardState((s) => s.workspaces);
-  const frames = useBoardState((s) => s.frames);
-  const windows = useBoardState((s) => s.windows);
-  const statuses = useBoardState((s) => s.statuses);
-  const badges = useBoardState((s) => s.badges);
-  // 悬停提示的最后一条回复：先读会话记录（agents.lastReply，contracts 0.1.22），读不到再认屏幕
-  const lastReply = useMemo(() => agentReplyReader(controller.api), [controller]);
-  return (
-    <BoardNav
-      projects={projects}
-      workspaces={workspaces}
-      frames={frames}
-      windows={windows}
-      statuses={statuses}
-      badges={badges}
-      onJump={(id) => controller.jumpAndFlash(id)}
-      headerActions={headerActions}
-      lastReply={lastReply}
-    />
-  );
-}
 
 /**
  * SKILLS · MCP 小节（N9）跟着聚焦的终端窗口：勾选存进这个窗口的 TerminalWindowData.skills（随白板保存），
@@ -76,7 +50,7 @@ function useSkillsTarget(controller: BoardController, workspace: Workspace | nul
   }, [focused, workspace?.name, controller]);
 }
 
-/** 右侧面板：跟着聚焦的窗口（或选中的框）所在的工作区；什么都没选中时是快速定位列表。 */
+/** 右侧面板：跟着聚焦的窗口（或选中的框）所在的工作区，只放源代码管理（MP3：快速定位搬进了左边管理面板）。 */
 function SidePanel({ workspace, controller, headerActions }: { workspace: Workspace | null; controller: BoardController; headerActions?: ReactNode }) {
   const nothingSelected = useBoardState((s) => s.focusedId === null && s.selectedFrame === null);
   const wsId = workspace?.id ?? null;
@@ -101,8 +75,16 @@ function SidePanel({ workspace, controller, headerActions }: { workspace: Worksp
     controller.selectFrame(id);
     controller.fitFrame(id);
   };
-  if (nothingSelected) return <BoardNavPanel controller={controller} headerActions={headerActions} />;
-  return <ScmPanel workspaceId={wsId} onGoToWorkspace={goTo} openTerminals={openTerminals} headerActions={headerActions} skills={skills} />;
+  return (
+    <ScmPanel
+      workspaceId={wsId}
+      onGoToWorkspace={goTo}
+      openTerminals={openTerminals}
+      headerActions={headerActions}
+      skills={skills}
+      {...(nothingSelected ? { emptyText: 'Focus a terminal to see its changes.' } : {})}
+    />
+  );
 }
 
 function TmuxMissing({ error, onRetry }: { error: AgentDeckErrorData; onRetry: () => void }) {
@@ -176,7 +158,7 @@ export function App({ controller, loaded, startup }: { controller: BoardControll
         onOpenSettingsFile={openSettingsFile}
         trafficLights={startup.trafficLights === true}
         renderPanel={({ workspace, collapseButton }) => <SidePanel workspace={workspace} controller={controller} headerActions={collapseButton} />}
-        renderLeftPanel={({ collapseButton }) => <HistorySidebar controller={controller} headerActions={collapseButton} />}
+        renderLeftPanel={({ collapseButton }) => <ManagerSidebar controller={controller} title="My Board" headerActions={collapseButton} />}
       />
       {notices.length > 0 ? (
         <div className="app-notices" role="status">
