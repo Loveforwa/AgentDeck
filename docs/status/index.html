@@ -147,7 +147,7 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
 <header>
   <span class="eyebrow">AgentDeck · 验收报告 · 2026-10-29 · main 5246c6e</span>
   <h1>AgentDeck 验收报告</h1>
-  <p class="lede">AgentDeck 做完了什么、怎么证明做完了、还有哪些问题，都在这一页。做完的需求从设计画布和任务表沉淀到下面“已完成的需求”（98 项任务，都已合进 main）；设计画布和任务表只留还要做的。端到端用例可以直接在这页上验收，问题清单可以直接改处理状态，填的内容会保存下来。2026-10-24 第一轮验收：42 条通过，0 条阻塞或不通过（在调研），113 条等你验收。</p>
+  <p class="lede">AgentDeck 做完了什么、怎么证明做完了、还有哪些问题，都在这一页。做完的需求从设计画布和任务表沉淀到下面“已完成的需求”（98 项任务，都已合进 main）；设计画布和任务表只留还要做的。端到端用例可以直接在这页上验收，问题清单可以直接改处理状态，填的内容会保存下来。2026-10-24 第一轮验收：43 条通过，0 条阻塞或不通过（在调研），112 条等你验收。</p>
   <p class="rules">编号：<b>TC-xx</b> 端到端用例（TC-01 到 TC-14 是 14 条验收场景）· <b>IS-xx</b> 问题 · <b>DR-xx</b> 调研记录 · <b>F1、T2</b> 等是任务编号。</p>
   <div class="bars">
     <div class="barbox"><span class="t">v1 的 39 项基础功能（P0 任务）</span><div class="bar"><span class="seg seg-auto" style="flex:34" title="完成，有自动测试 34"></span><span class="seg seg-manual" style="flex:2" title="完成，只有手动验证 2"></span><span class="seg seg-partial" style="flex:3" title="部分完成 / 未做 3"></span></div>
@@ -443,24 +443,6 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
   </details>
   <p class="links">关联问题 <a class="ref" href="#is-56">IS-56</a></p>
   <label class="field note"><span>验收备注</span><textarea id="note-TC-33" data-tc="TC-33" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
-</article><article class="case c-ok" id="tc-46" data-case="TC-46" data-status="ok" data-result="">
-  <div class="case-head">
-    <span class="mono cid">TC-46</span><span class="pri pri-P1">P1</span><span class="st st-ok">已验证</span>
-    <h4>agent 用 MCP 开 pi、omp、kimi 并给第一条消息，每个都收到（IS-76，AH1）</h4>
-    <label class="field result"><span>验收结果</span><select id="res-TC-46" data-tc="TC-46" class="res"><option value="" selected>未验收</option><option>通过</option><option>不通过</option><option>阻塞</option><option>跳过</option></select></label>
-  </div>
-  <p class="now"><span class="label">当前情况</span>已实现（AH1，分支 integrate/W0-W1，未合进 main）：2026-10-28 pi、omp、kimi 真程序各收到一次暗号（第一条消息）；还没在应用里验收；2026-10-28 Claude 自动化验收（e2e tc46-first-message，假 agent、真 tmux 和 git，连跑 3 次通过，分支 integrate/W0-W1 d51382e，未合进 main）；2026-10-30 Claude 截图验收（部分，main b9951e7）：claude 用 open_terminals 分三次开 pi、omp、kimi（工具一次只开一种 agent），pi、omp 都收到 reply with the word PELICAN 并回答 PELICAN；开 shell 带 prompt 时 claude 收到 Shell can’t take a first message yet…，没开终端。kimi（2.4.1）在 frame-tags 和临时文件夹里都先弹 Trust this folder?，选了会写你的 ~/.kimi-code，所以没选：第一条消息没被打进提示里，但信任以后能不能收到、@README.md 那步都没验（IS-165）；kimi 开到别的框时被收进窗口组看不见（IS-166）</p>
-  <details>
-    <summary>前置要求、操作步骤和预期</summary>
-    <div class="spec">
-      <div><span class="label">前置要求</span><p>白板上一个 claude 终端在工作区框里；本机装了 pi、omp、kimi；AgentDeck 的 MCP 起来了</p></div>
-      <div><span class="label">操作步骤</span><ol><li>对 claude 说“用 open_terminals 开一个 pi、一个 omp、一个 kimi，每个的第一条消息都是：reply with the word PELICAN”</li><li>等三个终端启动</li><li>再对 claude 说“用 open_terminals 开一个 kimi，第一条消息以 @README.md 开头”</li><li>让 claude 开一个 shell 并给 prompts</li></ol></div>
-      <div class="wide-cell"><span class="label">UI / 后台预期表现</span><p>UI：三个终端各自出现那条消息并回答 PELICAN；pi、omp 的消息在启动参数里，kimi 的在界面准备好后才出现，没有丢字；以 @ 开头的那条按原文送到（pi、omp 不把它当成文件）。给 shell 的 prompt 不会悄悄丢掉：claude 收到工具错误 “Shell can&#x27;t take a first message”。</p><p>后台：每个适配器的 launch 报 consumed.prompt；kimi 走“启动后发送”（终端安静后 send-keys -l 加回车）；没吃掉 prompt 又不能启动后发送的，AgentService.start 抛 unsupported，不开终端。</p></div>
-      <div class="wide-cell"><span class="label">最终效果</span><p>让 agent 开别家 agent 派活时，任务一定送到，送不到会说</p></div>
-    </div>
-  </details>
-  <p class="links">关联问题 <a class="ref" href="#is-76">IS-76</a></p>
-  <label class="field note"><span>验收备注</span><textarea id="note-TC-46" data-tc="TC-46" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
 </article><article class="case c-ok" id="tc-155" data-case="TC-155" data-status="ok" data-result="">
   <div class="case-head">
     <span class="mono cid">TC-155</span><span class="pri pri-P2">P2</span><span class="st st-ok">已验证</span>
@@ -2837,6 +2819,24 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
   </details>
   
   <label class="field note"><span>验收备注</span><textarea id="note-TC-42" data-tc="TC-42" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
+</article><article class="case c-ok" id="tc-46" data-case="TC-46" data-status="ok" data-result="通过">
+  <div class="case-head">
+    <span class="mono cid">TC-46</span><span class="pri pri-P1">P1</span><span class="st st-ok">已验证</span>
+    <h4>agent 用 MCP 开 pi、omp、kimi 并给第一条消息，每个都收到（IS-76，AH1）</h4>
+    <label class="field result"><span>验收结果</span><select id="res-TC-46" data-tc="TC-46" class="res"><option value="">未验收</option><option selected>通过</option><option>不通过</option><option>阻塞</option><option>跳过</option></select></label>
+  </div>
+  <p class="now"><span class="label">当前情况</span>已实现（AH1，分支 integrate/W0-W1，未合进 main）：2026-10-28 pi、omp、kimi 真程序各收到一次暗号（第一条消息）；还没在应用里验收；2026-10-28 Claude 自动化验收（e2e tc46-first-message，假 agent、真 tmux 和 git，连跑 3 次通过，分支 integrate/W0-W1 d51382e，未合进 main）；2026-10-30 Claude 截图验收（通过，main b9951e7，真 pi、omp、kimi 2.4.1）：claude 用 open_terminals 分三次开（工具一次只开一种 agent），pi、omp 收到 reply with the word PELICAN 并回答 PELICAN；kimi 在临时文件夹先弹 Trust this folder?，第一条消息没被打进提示里，按你的允许点了信任（~/.kimi-code/workspace-trust 多了这个临时文件夹一条）后消息原样送到、回答 PELICAN；第一条消息 @notes.txt reply with the single word in this file 原文送到，kimi 读了文件回答 notes；开 shell 带 prompt 时 claude 收到 Shell can’t take a first message yet…，没开终端。另发现 IS-165（信任提示时显示 Starting / Idle）、IS-166（开到别的框时被收进窗口组看不见）</p>
+  <details>
+    <summary>前置要求、操作步骤和预期</summary>
+    <div class="spec">
+      <div><span class="label">前置要求</span><p>白板上一个 claude 终端在工作区框里；本机装了 pi、omp、kimi；AgentDeck 的 MCP 起来了</p></div>
+      <div><span class="label">操作步骤</span><ol><li>对 claude 说“用 open_terminals 开一个 pi、一个 omp、一个 kimi，每个的第一条消息都是：reply with the word PELICAN”</li><li>等三个终端启动</li><li>再对 claude 说“用 open_terminals 开一个 kimi，第一条消息以 @README.md 开头”</li><li>让 claude 开一个 shell 并给 prompts</li></ol></div>
+      <div class="wide-cell"><span class="label">UI / 后台预期表现</span><p>UI：三个终端各自出现那条消息并回答 PELICAN；pi、omp 的消息在启动参数里，kimi 的在界面准备好后才出现，没有丢字；以 @ 开头的那条按原文送到（pi、omp 不把它当成文件）。给 shell 的 prompt 不会悄悄丢掉：claude 收到工具错误 “Shell can&#x27;t take a first message”。</p><p>后台：每个适配器的 launch 报 consumed.prompt；kimi 走“启动后发送”（终端安静后 send-keys -l 加回车）；没吃掉 prompt 又不能启动后发送的，AgentService.start 抛 unsupported，不开终端。</p></div>
+      <div class="wide-cell"><span class="label">最终效果</span><p>让 agent 开别家 agent 派活时，任务一定送到，送不到会说</p></div>
+    </div>
+  </details>
+  <p class="links">关联问题 <a class="ref" href="#is-76">IS-76</a></p>
+  <label class="field note"><span>验收备注</span><textarea id="note-TC-46" data-tc="TC-46" class="tc-note" rows="1" placeholder="哪里不对、怎么复现"></textarea></label>
 </article><article class="case c-ok" id="tc-08" data-case="TC-08" data-status="ok" data-result="通过">
   <div class="case-head">
     <span class="mono cid">TC-08</span><span class="pri pri-P2">P2</span><span class="st st-ok">已验证</span>
@@ -3724,7 +3724,7 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
   </details>
   <p class="links">相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-119" target="_blank" rel="noopener">DR-119</a></p>
   <label class="field note"><span>处理备注</span><textarea id="isnote-IS-82" data-is="IS-82" class="is-note" rows="1" placeholder="处理到哪了">2026-10-29 已修（75d96f3，合进 integrate/W0-W1 5246c6e，未合进 main）：白板用 CSS transform 缩放，xterm 算鼠标位置时用缩放后的元素位置除以没缩放的格子宽高；现在包一层 xterm 的 MouseService（链接、选字、tmux 鼠标上报都走它），把坐标按缩放比换回来。e2e is82-zoomed-mouse 在 60%、140% 下点链接、拖选都对（去掉修复时失败）</textarea></label>
-</article></section><section class="pgroup"><h3><span class="pri pri-P2">P2</span>次要体验、完整性、性能<span class="muted"> · 79 条</span></h3><article class="issue" id="is-08" data-issue="IS-08" data-state="待处理">
+</article></section><section class="pgroup"><h3><span class="pri pri-P2">P2</span>次要体验、完整性、性能<span class="muted"> · 78 条</span></h3><article class="issue" id="is-08" data-issue="IS-08" data-state="待处理">
   <div class="case-head">
     <span class="mono cid">IS-08</span><span class="pri pri-P2">P2</span><span class="tag">缺陷</span><span class="mod">agent-adapters · contracts</span>
     <label class="field result"><span>处理状态</span><select id="st-IS-08" data-is="IS-08" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
@@ -4332,22 +4332,6 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
   </details>
   <p class="links">关联用例 <a class="ref" href="#tc-26">TC-26</a> <a class="ref" href="#tc-41">TC-41</a> <a class="ref" href="#is-163">IS-163</a></p>
   <label class="field note"><span>处理备注</span><textarea id="isnote-IS-164" data-is="IS-164" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
-</article><article class="issue" id="is-165" data-issue="IS-165" data-state="待处理">
-  <div class="case-head">
-    <span class="mono cid">IS-165</span><span class="pri pri-P2">P2</span><span class="tag">缺陷</span><span class="mod">agent-adapters · kimi</span>
-    <label class="field result"><span>处理状态</span><select id="st-IS-165" data-is="IS-165" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
-  </div>
-  <p class="desc">kimi 停在 “Trust this folder?” 提示时状态显示 Idle，不算在等你（和 IS-06 的 claude 同一类；kimi 没有钩子，状态只看屏幕活动）。open_terminals 给它的第一条消息没打进提示里（对），但信任以后会不会再送进去没验证</p>
-  <details>
-    <summary>怎么复现、影响、建议处理</summary>
-    <div class="spec">
-      <div><span class="label">怎么复现 / 验证</span><p>2026-10-30 验收 TC-46：claude 用 open_terminals 在没信任过的文件夹里开 kimi（kimi 2.4.1）</p></div>
-      <div><span class="label">影响</span><p>用户看不出 kimi 在等自己点信任，第一条消息可能悄悄丢掉</p></div>
-      <div class="wide-cell"><span class="label">建议处理</span><p>照 IS-06 的做法读屏认出 kimi 的信任提示，算 needs-reply；信任以后照常发第一条消息</p></div>
-    </div>
-  </details>
-  <p class="links">关联用例 <a class="ref" href="#tc-46">TC-46</a> <a class="ref" href="#is-06">IS-06</a></p>
-  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-165" data-is="IS-165" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
 </article><article class="issue" id="is-166" data-issue="IS-166" data-state="待处理">
   <div class="case-head">
     <span class="mono cid">IS-166</span><span class="pri pri-P2">P2</span><span class="tag">缺陷</span><span class="mod">白板 · 窗口组</span>
@@ -4988,7 +4972,7 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
   </details>
   <p class="links">关联用例 <a class="ref" href="#tc-57">TC-57</a> · 相关调研 <a class="ref" href="https://claude.ai/artifact/M9eSh1RhsiZhP9FCPbmnwK#dr-71" target="_blank" rel="noopener">DR-71</a></p>
   <label class="field note"><span>处理备注</span><textarea id="isnote-IS-99" data-is="IS-99" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
-</article></section><section class="pgroup"><h3><span class="pri pri-P3">P3</span>清理<span class="muted"> · 44 条</span></h3><article class="issue" id="is-100" data-issue="IS-100" data-state="已解决">
+</article></section><section class="pgroup"><h3><span class="pri pri-P3">P3</span>清理<span class="muted"> · 45 条</span></h3><article class="issue" id="is-100" data-issue="IS-100" data-state="已解决">
   <div class="case-head">
     <span class="mono cid">IS-100</span><span class="pri pri-P3">P3</span><span class="tag">技术债</span><span class="mod">mcp-server · agent-adapters</span>
     <label class="field result"><span>处理状态</span><select id="st-IS-100" data-is="IS-100" class="ist"><option>待处理</option><option>处理中</option><option selected>已解决</option><option>不处理</option></select></label>
@@ -5324,6 +5308,22 @@ details summary { cursor: pointer; font-size: 12.5px; color: var(--muted) }
   </details>
   <p class="links">关联用例 <a class="ref" href="#tc-25">TC-25</a></p>
   <label class="field note"><span>处理备注</span><textarea id="isnote-IS-160" data-is="IS-160" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
+</article><article class="issue" id="is-165" data-issue="IS-165" data-state="待处理">
+  <div class="case-head">
+    <span class="mono cid">IS-165</span><span class="pri pri-P3">P3</span><span class="tag">缺陷</span><span class="mod">agent-adapters · kimi</span>
+    <label class="field result"><span>处理状态</span><select id="st-IS-165" data-is="IS-165" class="ist"><option selected>待处理</option><option>处理中</option><option>已解决</option><option>不处理</option></select></label>
+  </div>
+  <p class="desc">kimi 停在 “Trust this folder?” 提示时状态显示 Starting，过一阵变 Idle，不算在等你（和 IS-06 的 claude 同一类；kimi 没有钩子，状态只看屏幕活动）。第一条消息没丢：AgentDeck 等着，信任以后照常送进去（2026-10-30 验过）</p>
+  <details>
+    <summary>怎么复现、影响、建议处理</summary>
+    <div class="spec">
+      <div><span class="label">怎么复现 / 验证</span><p>2026-10-30 验收 TC-46：claude 用 open_terminals 在没信任过的文件夹里开 kimi（kimi 2.4.1）</p></div>
+      <div><span class="label">影响</span><p>用户看不出 kimi 在等自己点信任，以为它还在启动</p></div>
+      <div class="wide-cell"><span class="label">建议处理</span><p>照 IS-06 的做法读屏认出 kimi 的信任提示，算 needs-reply</p></div>
+    </div>
+  </details>
+  <p class="links">关联用例 <a class="ref" href="#tc-46">TC-46</a> <a class="ref" href="#is-06">IS-06</a></p>
+  <label class="field note"><span>处理备注</span><textarea id="isnote-IS-165" data-is="IS-165" class="is-note" rows="1" placeholder="处理到哪了"></textarea></label>
 </article><article class="issue" id="is-167" data-issue="IS-167" data-state="待处理">
   <div class="case-head">
     <span class="mono cid">IS-167</span><span class="pri pri-P3">P3</span><span class="tag">缺失</span><span class="mod">workspace-service</span>
