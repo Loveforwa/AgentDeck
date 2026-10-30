@@ -18,10 +18,25 @@ export function usesInsetTitleBar(platform: NodeJS.Platform): boolean {
   return platform === 'darwin';
 }
 
-export function mainWindowOptions(platform: NodeJS.Platform, preload: string): BrowserWindowConstructorOptions {
+/**
+ * AGENTDECK_WINDOW_SIZE=1440x900：窗口固定这么大，屏幕更小也不缩（只给 e2e 用）。GitHub 的 macOS 机器屏幕只有 1024×768，
+ * macOS 默认把窗口高度压到屏幕里，白板一小，源代码管理面板就盖住了别的窗口，测试点不到。格式不对时返回 null。
+ */
+export function fixedWindowSize(value: string | undefined): { width: number; height: number } | null {
+  const m = /^(\d{3,5})x(\d{3,5})$/.exec(value?.trim() ?? '');
+  return m ? { width: Number(m[1]), height: Number(m[2]) } : null;
+}
+
+export function mainWindowOptions(
+  platform: NodeJS.Platform,
+  preload: string,
+  fixedSize: { width: number; height: number } | null = null,
+): BrowserWindowConstructorOptions {
   return {
-    width: 1440,
-    height: 900,
+    width: fixedSize?.width ?? 1440,
+    height: fixedSize?.height ?? 900,
+    // 只有 macOS 认这一项（其他平台本来就不压）
+    ...(fixedSize ? { enableLargerThanScreen: true } : {}),
     minWidth: 720,
     minHeight: 480,
     show: false,

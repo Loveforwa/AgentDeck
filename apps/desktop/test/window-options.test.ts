@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mainWindowOptions, TOPBAR_HEIGHT, TRAFFIC_LIGHT_POSITION, usesInsetTitleBar } from '../src/main/window-options.ts';
+import { fixedWindowSize, mainWindowOptions, TOPBAR_HEIGHT, TRAFFIC_LIGHT_POSITION, usesInsetTitleBar } from '../src/main/window-options.ts';
 
 describe('main window options (MVP v2 · V1)', () => {
   it('macOS: hiddenInset title bar, traffic lights centred in the 34px top bar', () => {
@@ -34,5 +34,13 @@ describe('main window options (MVP v2 · V1)', () => {
       webviewTag: true,
     });
     expect(o).toMatchObject({ width: 1440, height: 900, minWidth: 720, minHeight: 480, show: false, title: 'AgentDeck' });
+  });
+
+  it('AGENTDECK_WINDOW_SIZE fixes the size and lets the window be larger than the screen (e2e on small CI screens)', () => {
+    expect(fixedWindowSize('1440x900')).toEqual({ width: 1440, height: 900 });
+    for (const bad of [undefined, '', '1440', '1440×900', 'axb', '10x10']) expect(fixedWindowSize(bad)).toBeNull();
+    const o = mainWindowOptions('darwin', '/x/preload/index.cjs', { width: 1600, height: 1000 });
+    expect(o).toMatchObject({ width: 1600, height: 1000, enableLargerThanScreen: true });
+    expect(mainWindowOptions('darwin', '/x/preload/index.cjs').enableLargerThanScreen).toBeUndefined();
   });
 });

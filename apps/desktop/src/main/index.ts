@@ -72,10 +72,12 @@ import { emit as broadcast, registry } from './services.ts';
 import { defaultSettings, openSettingsFile } from './settings.ts';
 import { createTerminalProxy } from './terminal-service.ts';
 import { createTerminalPortBroker } from './terminal-ports.ts';
-import { mainWindowOptions, usesInsetTitleBar } from './window-options.ts';
+import { fixedWindowSize, mainWindowOptions, usesInsetTitleBar } from './window-options.ts';
 
 const isDev = !app.isPackaged;
 const screenshotPath = process.env['AGENTDECK_SCREENSHOT'] || null;
+// AGENTDECK_BACKGROUND=1（e2e 的沙盒设）：窗口照常显示，但从不抢焦点、不跳到最前面，跑测试时不打断正在用电脑的人
+const background = process.env['AGENTDECK_BACKGROUND'] === '1';
 const demo = process.env['AGENTDECK_DEMO'] === '1';
 
 app.setName('AgentDeck');
@@ -630,8 +632,10 @@ async function main(): Promise<void> {
   // ---- 窗口 ----
   function createWindow(): BrowserWindow {
     // 选项在 window-options.ts（macOS 上 hiddenInset 标题栏，和顶栏合成一行，MVP v2 · V1）
-    const win = new BrowserWindow(mainWindowOptions(process.platform, join(import.meta.dirname, '../preload/index.cjs')));
-    win.once('ready-to-show', () => (screenshotPath ? win.showInactive() : win.show()));
+    const win = new BrowserWindow(
+      mainWindowOptions(process.platform, join(import.meta.dirname, '../preload/index.cjs'), fixedWindowSize(process.env['AGENTDECK_WINDOW_SIZE'])),
+    );
+    win.once('ready-to-show', () => (screenshotPath || background ? win.showInactive() : win.show()));
     win.on('focus', () => alerts.focusChanged());
     win.on('blur', () => alerts.focusChanged());
 
@@ -674,9 +678,10 @@ async function main(): Promise<void> {
     if (!mainWindow || mainWindow.isDestroyed()) mainWindow = createWindow();
     else {
       if (!mainWindow.isVisible()) broadcast({ type: 'app.window-shown' });
-      mainWindow.show();
+      if (background) mainWindow.showInactive();
+      else mainWindow.show();
     }
-    mainWindow.focus();
+    if (!background) mainWindow.focus();
   }
 
   mainWindow = createWindow();
