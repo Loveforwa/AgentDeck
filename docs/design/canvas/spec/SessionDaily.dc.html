@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>按天的记忆</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1300px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.tag{display:inline-flex;align-items:center;height:18px;padding:0 7px;border-radius:999px;font-size:10.5px;background:#F2F2EF;color:#5F5F5A;white-space:nowrap}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#8A8A85}
+.am{width:6px;height:6px;border-radius:1.5px;flex:none;display:inline-block}
+.btn{display:inline-flex;align-items:center;height:22px;padding:0 8px;border:1px solid #D6D6D2;border-radius:6px;font-size:11px;background:#FFFFFF;color:#1A1A1A;white-space:nowrap}
+.panel{position:absolute;box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,0.08);font-size:12px;overflow:hidden}
+.nr{display:grid;grid-template-columns:84px 1fr 96px;gap:8px;padding:6px 12px;border-top:1px solid #F0F0ED;line-height:1.45;align-items:baseline}
+.nr.ag{background:#FBFBFA}
+.k{font-size:10px;font-weight:600;letter-spacing:0.05em;color:#6B6B6B}
+.src{font-size:10.5px;color:#8A8A85;text-align:right}
+.code{box-sizing:border-box;background:#1A1A1A;color:#EDEDEA;border-radius:8px;padding:12px 14px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.6;white-space:pre}
+.ex{display:flex;flex-direction:column;gap:10px;font-size:13.5px;line-height:1.65}
+.note{font-size:12.5px;line-height:1.6;color:#5F5F5A}
+</style>
+</helmet>
+<div style="width: 1760px; height: 3800px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">S4 · 按天的记忆：每天一页日志，第二天 agent 缺上下文时自己来取</h1>
+      <span class="concept">2026-10-31 提议，待你确认</span>
+      <span class="tag">记忆系统（S3）的一个特色</span>
+    </div>
+    <p class="lead">你 10-31 说的：昨天学了什么、开发任务推进到哪，按天存下来；第二天开新会话，agent 发现缺上下文时，能通过 skill 把前几天、和这个任务或工作区绑定的记忆找回来。S3 现在做不到，差四处：笔记挂在一条 Session 上，<b>第二天新开一条 Session 什么都拿不到</b>；没有按天看的一条线；只记确定的事件，<b>记不下“学到了什么”“为什么这么改”</b>；只在固定时刻推给 agent，<b>agent 自己没法去取</b>。这一页加一层<b>日志</b>（工作区 × 天），取法学 claude-mem 和 Anthropic 记忆工具：开头只给一行目录，缺什么 agent 自己按目录去拿。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 别人怎么做（2026-10-31 查）</span>
+    <div class="tbl" style="grid-template-columns: 220px minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 0.9fr); max-width: 1632px">
+      <span class="th">参考</span><span class="th">怎么记、怎么取</span><span class="th">借什么</span><span class="th">不借什么</span>
+      <span class="td"><b>claude-mem</b><br><span class="muted">Claude Code 插件，开源</span></span><span class="td">钩子把每次用了什么工具记下来，让 AI 压缩成一条条观察，存 SQLite 加向量库；取的时候三层：先给每条 50–100 token 的目录，再给时间线，最后按编号取全文（mem-search skill），相关不相关由 agent 自己判断</span><span class="td">三层取法；agent 自己判断要不要取</span><span class="td">什么都记（越记越乱）；只管几家</span>
+      <span class="td"><b>Cline Memory Bank</b></span><span class="td">仓库里几份 Markdown：projectbrief、activeContext（现在做什么、最近改了什么、下一步）、progress（什么能用、剩什么、已知问题）；每次会话后更新，“update memory bank” 让它全部重看</span><span class="td">固定几栏、人能读：做到哪、剩什么、从哪接</span><span class="td">放在仓库里，跟着分支走；agent 整份重写</span>
+      <span class="td"><b>Anthropic 记忆工具</b><br><span class="muted mono">memory_20250818</span></span><span class="td">客户端执行：agent 对一个 <span class="mono">/memories</span> 目录 view、create、str_replace；开始时先 view 目录，再打开要的文件；存在哪由应用决定</span><span class="td">“先看目录再取”的习惯；存储归我们</span><span class="td">它是 API 工具，我们的 agent 是各家命令行，用 skill + 命令行做同一件事</span>
+      <span class="td"><b>Letta sleep-time agent</b></span><span class="td">另一个后台 agent 在用户不等的时候整理记忆：去重、总结、把被推翻的作废，主 agent 不用分心</span><span class="td">夜里整理一次，不占干活的那条</span><span class="td">让它自由改记忆</span>
+      <span class="td"><b>Generative Agents</b><br><span class="muted">Park 等，2023</span></span><span class="td">记忆流按时间存，取的时候按“新近 + 重要 + 相关”排；隔一段时间做一次反思，从具体经历里提炼出更高一层的结论</span><span class="td">一天结束做一次“反思”；取的时候近的、相关的排前面</span><span class="td">给每条打重要度分（我们用确定的事件代替）</span>
+      <span class="td"><b>各家自带</b>（W1 核对过）</span><span class="td">claude auto memory 记偏好和“正在做的事”，不保证；codex memories 默认关、几小时后才有；都不跨家</span><span class="td">—</span><span class="td">不读不写它们（S3 第 4 节第 6 条不变）</span>
+      <span class="td"><b>Obsidian 每日笔记</b><br><span class="muted">你自己的习惯</span></span><span class="td">一天一份笔记；你的学习手册用 /next、/check 按节记进度</span><span class="td">能导出成一天一份 Markdown，放进你的库</span><span class="td">—</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 一天一页：工作区 × 天</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start">
+      <div class="fig" style="width: 1100px; height: 700px">
+        <div class="panel" style="left: 24px; top: 24px; width: 700px">
+          <div style="display: flex; align-items: center; gap: 8px; padding: 10px 12px"><b>Oct 30 · agenduck</b><span class="muted">feat/MP-manager-panel · 3 sessions</span><span style="flex: 1"></span><span class="btn">‹ Oct 29</span><span class="btn">Oct 31 ›</span></div>
+          <div class="nr"><span class="k">SESSIONS</span><span><span class="am" style="background: #A8503A"></span> claude · acceptance 5h · <span class="am" style="background: #2F5E9E"></span> codex · review 40m · <span class="am" style="background: #4A4F7A"></span> kimi · TC-46 20m</span><span class="src">AgentDeck</span></div>
+          <div class="nr"><span class="k">DONE</span><span>TC-40, TC-41, TC-109, TC-46 accepted · 3 commits <span class="mono">8d61537</span> <span class="mono">8b6a99b</span> <span class="mono">82b60e4</span></span><span class="src">git · report</span></div>
+          <div class="nr"><span class="k">DECIDED</span><span>“允许你点信任” · kimi may trust the scratch folder</span><span class="src">you · 15:20</span></div>
+          <div class="nr"><span class="k">OPENED</span><span>IS-165 – IS-168 (groups hide windows across frames, adoptPath missing, …)</span><span class="src">report</span></div>
+          <div class="nr ag"><span class="k">LEARNED</span><span>Drag-select in xterm needs the end column at c1 − 0.3 to include the last char. focusWindow doesn’t pan; call fitFrame first.</span><span class="src">claude · summary</span></div>
+          <div class="nr ag"><span class="k">WHY</span><span>Used the frame-tags checkout as the project because trusting the scratch repo would change your claude and codex configs.</span><span class="src">claude · summary</span></div>
+          <div class="nr ag"><span class="k">OPEN</span><span>TC-16, 33, 148, 155 need your own hands; IS-166 is a P2.</span><span class="src">claude · summary</span></div>
+          <div class="nr ag"><span class="k">RESUME</span><span>Start acceptance with the manager panel cases; the trial app runs on tmux agentdeck-mp-review.</span><span class="src">claude · summary</span></div>
+          <div style="display: flex; gap: 6px; padding: 9px 12px; border-top: 1px solid #F0F0ED"><span class="btn">Edit…</span><span class="btn">Copy as Markdown</span><span class="btn">Export to Obsidian</span><span style="flex: 1"></span><span class="muted" style="font-size: 11px; align-self: center">Grey lines were written by an agent</span></div>
+        </div>
+        <div style="position: absolute; left: 750px; top: 24px; width: 326px; display: flex; flex-direction: column; gap: 10px; font-size: 11.5px; line-height: 1.6; color: #5F5F5A">
+          <span><b style="color: #1A1A1A">白底的</b>是 AgentDeck 从确定的事拼的：当天的 Session（S0）、Session 笔记（S3）、git 提交、收件箱的回答、验收报告里改了状态的 TC 和问题。和 S3 一样不花 token、不会编。</span>
+          <span><b style="color: #1A1A1A">灰底的</b>是 agent 写的“当天小结”：LEARNED、WHY、OPEN、RESUME 四栏，每栏一两句。这是 S3 记不下、你最想要的那部分（学到了什么、为什么这么做、从哪接）。标明是哪一家写的，你能改能删。</span>
+          <span><b style="color: #1A1A1A">学习的工作区</b>（L1 的课程）LEARNED 多记几条：这一节的概念、过了哪几个测试，和你的学习手册（/next、/check）对得上。</span>
+          <span><b style="color: #1A1A1A">绑定</b>：一页属于一个工作区（worktree 和分支）的一天；同时挂上当天碰过的 issue 号、集群任务、TC 编号，搜索时按这些也能找到。</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · agent 写的那几句什么时候写</span>
+    <div class="tbl" style="grid-template-columns: 260px minmax(0, 1fr) minmax(0, 1fr); max-width: 1632px">
+      <span class="th">时刻</span><span class="th">怎么写</span><span class="th">为什么</span>
+      <span class="td"><b>Session 收尾</b>：你关窗口、Hand off、/clear 之前</span><span class="td">agent 空闲时 AgentDeck 发一句：“Before this ends, add today’s summary with agentdeck day add (≤ 8 lines: learned, why, open, resume).”</span><span class="td">上下文还在，几百 token 就写完；忙着或在等你时不发（AH7 的规矩）</span>
+      <span class="td"><b>空闲 30 分钟</b>，当天还没写过</span><span class="td">同上，一天一条 Session 最多问一次</span><span class="td">很多会话不会正式“结束”，只是放着</span>
+      <span class="td"><b>夜里整理</b>（23:30，可关）</span><span class="td">一个便宜的 headless Run（U0）只读当天的 Session 笔记和会话记录路径，给没写小结的 Session 补一份，再把同一个工作区几条 Session 的去重、合成一页</span><span class="td">Letta 的做法：不占干活的那条；补的标 “nightly”</span>
+      <span class="td"><b>你自己</b></span><span class="td">日志页上 Edit…，或在任何终端里 <span class="mono">agentdeck day add --you "…"</span></span><span class="td">你记的最可靠</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · 第二天怎么取：开头只给一行目录，缺什么 agent 自己拿</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start; max-width: 1632px">
+      <div style="width: 620px; flex: none; display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 11px; font-weight: 600; color: #8A8A85; letter-spacing: 0.04em">APPENDED TO THE SYSTEM PROMPT · ≤ 120 TOKENS</span>
+        <div class="code"># Earlier work here (from AgentDeck)
+Day logs for agenduck · feat/MP-manager-panel:
+Oct 30 · 4 TCs accepted, 4 issues opened, 1 resume note
+Oct 29 · manager panel merged, CI green
+If the user mentions earlier work, or you lack
+context, run: agentdeck recall</div>
+        <span style="font-size: 11px; font-weight: 600; color: #8A8A85; letter-spacing: 0.04em; margin-top: 8px">THE NEXT MORNING · A NEW SESSION</span>
+        <div class="code">› 接着昨天的做
+
+● Bash(agentdeck recall)
+  ⎿ Oct 30 · RESUME Start acceptance with the
+      manager panel cases; trial app on tmux
+      agentdeck-mp-review
+    Oct 30 · OPEN TC-16, 33, 148, 155 need the
+      user's hands; IS-166 is a P2
+    Oct 29 · DONE manager panel merged
+● Bash(agentdeck recall show 2026-10-30)
+  ⎿ 14 lines
+
+Yesterday ended with the manager panel cases
+left for you. Want me to start the trial app
+and walk you through TC-16 first?</div>
+      </div>
+      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+        <div class="tbl" style="grid-template-columns: 330px minmax(0, 1fr)">
+          <span class="th">命令（agentdeck-recall skill 教 agent 怎么用）</span><span class="th">给什么</span>
+          <span class="td mono">agentdeck recall</span><span class="td">最近 3 天的目录，每天 2–3 行（RESUME、OPEN、DONE 的计数），约 60 token 一天</span>
+          <span class="td mono">agentdeck recall show &lt;date&gt;</span><span class="td">那一天的整页，≤ 800 token</span>
+          <span class="td mono">agentdeck recall search "&lt;words&gt;"</span><span class="td">30 天里命中的行，带日期和工作区；也能按 <span class="mono">#18231</span>、<span class="mono">TC-41</span>、集群任务名搜</span>
+          <span class="td mono">agentdeck recall session &lt;id&gt;</span><span class="td">某条 Session 的笔记（S3），原来只给 Lead，现在只读地给所有终端</span>
+          <span class="td mono">agentdeck day add "…"</span><span class="td">往今天这一页的 agent 栏追加一条（标来源）；改不了白底的</span>
+        </div>
+        <div class="ex">
+          <span><b>找的先后</b>：这条 Session → 这个工作区（worktree、分支）→ 这个项目 → 绑定的 issue、集群任务、TC。别的项目不给，除非加 <span class="mono">--all</span>。</span>
+          <span><b>什么时候 agent 会去取</b>：你说“昨天”“上次”“接着”；它碰到一个不知道来历的决定；交接、Reopen 接不上时（S3 的 brief 末尾多一句“run agentdeck recall for earlier days”）。skill 的描述里写明这几种。</span>
+          <span><b>五家都能用</b>：走 agentdeck 命令行，不靠哪一家的记忆功能；kimi 没有追加系统提示的参数时，那一行目录放进第一条消息（W1 同一个问题）。</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">5 · 放进 S3 的分层、不越记越乱</span>
+    <div class="tbl" style="grid-template-columns: 170px minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1.2fr) 150px; max-width: 1632px">
+      <span class="th">层</span><span class="th">记什么</span><span class="th">谁写</span><span class="th">谁读、什么时候</span><span class="th">活多久</span>
+      <span class="td">1 · 对话</span><span class="td">各家的会话记录</span><span class="td">agent</span><span class="td">resume 时它自己读</span><span class="td">各家定</span>
+      <span class="td">2 · Session 笔记</span><span class="td">一条线的目标、做完、定了、卡住、下一步</span><span class="td">AgentDeck（确定事件）</span><span class="td">Fresh、交接、Reopen 时的 brief</span><span class="td">跟着 Session</span>
+      <span class="td"><b>2½ · 日志</b> <span class="tag">新</span></span><span class="td">工作区 × 天：确定的骨架 + agent 写的四栏小结</span><span class="td">AgentDeck 拼骨架；agent 写小结；夜里整理；你改</span><span class="td">新 Session 开头一行目录；agent 用 recall 自己取；你在日志页看</span><span class="td">90 天整页，之后只留每周一行；Pin 的一直留</span>
+      <span class="td">3 · Lessons</span><span class="td">反复踩的坑</span><span class="td">提候选，你 Accept</span><span class="td">每个新 Session 的系统提示</span><span class="td">到你归档</span>
+      <span class="td">4 · 偏好</span><span class="td">你的习惯</span><span class="td">你、各家 memory</span><span class="td">各家自己读</span><span class="td">长期</span>
+    </div>
+    <div class="ex" style="max-width: 1500px">
+      <span>1. <b>两种来源分开标</b>：白底的只有 AgentDeck 写（确定的事），agent 只能往灰底那几栏追加，改不了白底的；你都能改。</span>
+      <span>2. <b>有上限</b>：一条 Session 一天的小结 ≤ 8 行；开头的目录 ≤ 120 token；<span class="mono">recall show</span> 一页 ≤ 800 token。</span>
+      <span>3. <b>不收原文</b>：不存对话原文和推理；存之前查一遍像令牌的字符串（I2 那套），查到的换成 [redacted]。</span>
+      <span>4. <b>小结里的“学到了”可以升级</b>：同一条在几天里反复出现，夜里整理时提成 Lesson 候选（W1），你 Accept 才进系统提示。</span>
+      <span>5. <b>存在数据目录</b>，不写仓库；Export to Obsidian 由你选一个文件夹，一天一份 <span class="mono">2026-10-30 agenduck.md</span>，只导出，不读回来。</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">6 · 原来的页改了什么、待你确认</span>
+    <div class="tbl" style="grid-template-columns: 200px minmax(0, 1fr) minmax(0, 1fr); max-width: 1632px">
+      <span class="th">页</span><span class="th">原来</span><span class="th">现在（提议）</span>
+      <span class="td">S3 第 4 节第 1 条</span><span class="td">只记确定的事；不让 agent 总结</span><span class="td">确定的事照旧由 AgentDeck 记；另开一栏让 agent 写当天小结，分开标</span>
+      <span class="td">S3 第 3 节</span><span class="td">只在 Fresh、交接、额度恢复、Reopen 时推一条 brief</span><span class="td">加两样：新 Session 开头一行目录；agent 用 recall 自己取</span>
+      <span class="td">DR-74</span><span class="td">两条例外：Lessons、Session 的进度</span><span class="td">第三条：按天的日志（含 agent 写的小结）归 AgentDeck</span>
+      <span class="td">W2 报告</span><span class="td">只给 Day run</span><span class="td">Day run 的报告是那一天日志页的一节，同一份数据</span>
+      <span class="td">MP 左边管理面板</span><span class="td">工作路径下面列会话</span><span class="td">工作路径一行悬停多一项 Day log ›，打开最近一天的日志页</span>
+    </div>
+    <div class="tbl" style="grid-template-columns: 40px minmax(0, 1fr) minmax(0, 1fr) 420px; font-size: 12.5px; max-width: 1632px">
+      <span class="th">#</span><span class="th">问题</span><span class="th">选项</span><span class="th">推荐</span>
+      <span class="td mono">1</span><span class="td">当天小结谁写</span><span class="td">不要 / agent 收尾时写 / 再加夜里整理</span><span class="td">agent 收尾时写；夜里只给没写的补，可关</span>
+      <span class="td mono">2</span><span class="td">第二天怎么给</span><span class="td">把昨天整页塞进系统提示 / 一行目录 + agent 自己 recall</span><span class="td">一行目录 + recall</span>
+      <span class="td mono">3</span><span class="td">按什么分</span><span class="td">按 Session / 按工作区 × 天 / 按项目 × 天</span><span class="td">工作区 × 天；搜索能跨到项目</span>
+      <span class="td mono">4</span><span class="td">留多久</span><span class="td">30 天 / 90 天 / 一直</span><span class="td">90 天整页，之后每周一行</span>
+      <span class="td mono">5</span><span class="td">导出到 Obsidian</span><span class="td">不做 / 手动导出 / 每天自动导出</span><span class="td">先做手动 Export，你要了再加自动</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":3800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

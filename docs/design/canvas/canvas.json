@@ -585,6 +585,54 @@
    "w": 1760,
    "x": 0,
    "y": 0
+  },
+  "spec/RunsOverview.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1760,
+   "h": 3700,
+   "page": "runs",
+   "title": "U0 · 不是每件事都要一个终端：后台任务（Run）和任务面板"
+  },
+  "spec/RunsIssues.dc.html": {
+   "x": 0,
+   "y": 3860,
+   "w": 1760,
+   "h": 3800,
+   "page": "runs",
+   "title": "U1 · 全自动处理 issue：借 Sandcastle，打了标签的夜里自己做完，早上一起看"
+  },
+  "spec/RunsContainers.dc.html": {
+   "x": 0,
+   "y": 7820,
+   "w": 1760,
+   "h": 3400,
+   "page": "runs",
+   "title": "U2 · 容器：每个后台任务一个容器，代码、凭据、网络怎么给"
+  },
+  "spec/SessionDaily.dc.html": {
+   "x": 3840,
+   "y": 5840,
+   "w": 1760,
+   "h": 3800,
+   "page": "session",
+   "title": "S4 · 按天的记忆：每天一页日志，第二天 agent 缺上下文时自己来取"
+  },
+  "spec/MultiTestRelease.dc.html": {
+   "x": 0,
+   "y": 6700,
+   "w": 1760,
+   "h": 3800,
+   "page": "multi",
+   "title": "O2 · 需求驱动的测试和发布：同仓协作的一种集群任务"
+  },
+  "spec/ResearchVideoTask.dc.html": {
+   "x": 0,
+   "y": 15720,
+   "w": 1760,
+   "h": 3300,
+   "page": "research",
+   "title": "E4 · 视频任务：手机上发一个链接加一句话，结果回到手机"
   }
  },
  "createdOnFiles": {
@@ -724,6 +772,14 @@
    "text": "左边管理面板 · HISTORY 和 BOARD 合成一个（2026-10-30 已确认、已实现）",
    "x": 0,
    "y": -300
+  },
+  "head_runs": {
+   "x": 0,
+   "y": -300,
+   "text": "后台任务 · 容器 · 任务面板 · 不是每件事都要一个终端",
+   "kind": "title1",
+   "maxW": 1760,
+   "page": "runs"
   }
  },
  "order": [
@@ -799,7 +855,13 @@
   "spec/MultiShepherd.dc.html",
   "spec/MultiConflicts.dc.html",
   "spec/LearnEnv.dc.html",
-  "spec/LearnAssist.dc.html"
+  "spec/LearnAssist.dc.html",
+  "spec/RunsOverview.dc.html",
+  "spec/RunsIssues.dc.html",
+  "spec/RunsContainers.dc.html",
+  "spec/SessionDaily.dc.html",
+  "spec/MultiTestRelease.dc.html",
+  "spec/ResearchVideoTask.dc.html"
  ],
  "pages": [
   {
@@ -809,6 +871,10 @@
   {
    "id": "crew",
    "name": "Agent 集群"
+  },
+  {
+   "id": "runs",
+   "name": "后台任务 · 容器 · 任务面板"
   },
   {
    "id": "session",

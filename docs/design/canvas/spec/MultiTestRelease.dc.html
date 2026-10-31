@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>需求驱动的测试和发布</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1300px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.tag{display:inline-flex;align-items:center;height:18px;padding:0 7px;border-radius:999px;font-size:10.5px;background:#F2F2EF;color:#5F5F5A;white-space:nowrap}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#8A8A85}
+.dot{width:7px;height:7px;border-radius:50%;flex:none;box-sizing:border-box;display:inline-block}
+.am{width:6px;height:6px;border-radius:1.5px;flex:none;display:inline-block}
+.btn{display:inline-flex;align-items:center;height:22px;padding:0 8px;border:1px solid #D6D6D2;border-radius:6px;font-size:11px;background:#FFFFFF;color:#1A1A1A;white-space:nowrap}
+.btn.pri{background:#1A1A1A;border-color:#1A1A1A;color:#FFFFFF}
+.win{box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,0.08);font-size:12px;overflow:hidden;display:flex;flex-direction:column}
+.wt{display:flex;align-items:center;gap:7px;height:30px;padding:0 10px;border-bottom:1px solid #EEEEEB;font-size:11.5px;flex:none}
+.row{display:grid;align-items:center;gap:8px;padding:6px 12px;border-top:1px solid #F0F0ED;font-size:11.5px}
+.step{flex:1;min-width:0;box-sizing:border-box;display:flex;flex-direction:column;gap:6px;padding:12px;border:1px solid #E3E3E0;border-radius:10px;background:#FFFFFF;font-size:12px;line-height:1.55}
+.step.you{border:1.5px dashed #BF8700;background:#FFFBF0}
+.step.ad{border:2px solid #1A1A1A}
+.arr{flex:none;align-self:center;color:#8A8A85;font-size:16px}
+.who{font-size:10.5px;color:#8A8A85}
+.ex{display:flex;flex-direction:column;gap:10px;font-size:13.5px;line-height:1.65}
+.note{font-size:12.5px;line-height:1.6;color:#5F5F5A}
+.ck{display:flex;gap:10px;align-items:baseline;padding:7px 12px;border-top:1px solid #F0F0ED;font-size:12px}
+</style>
+</helmet>
+<div style="width: 1760px; height: 3800px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">O2 · 需求驱动的测试和发布：同仓协作的一种集群任务</h1>
+      <span class="concept">2026-10-31 提议，待你确认</span>
+    </div>
+    <p class="lead">你 10-31 说的：需求驱动的集成测试，agent 完成全量发布；设计序列图、看覆盖、回看代码覆盖率和复杂代码的覆盖与实现；按设计序列图调试；把设计序列图和代码关联起来。这是<b>集群的另一种任务</b>：几个 agent 在同一个仓库里分工，从需求一路做到能发版。代码理解页（F0–F2）已经有“从代码画出带锚点的序列图”和三种覆盖；这里补三样：<b>先画设计图再写代码</b>（方向反过来）；<b>跑测试时录下真实的调用顺序，和设计图对，指出第一处偏离</b>（调试）；<b>一道发布关卡</b>，全过了 agent 把版本号、发布说明、tag 都备好，你点 Publish。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 一个“从需求到发版”的集群：谁、先后</span>
+    <div style="display: flex; gap: 8px; max-width: 1632px">
+      <div class="step"><b>1 · 需求</b><span>Analyst 把这一版要做的写成 TC（<span class="mono">tracking.py</span>）：步骤、预期，一条一句“当……时，应该……”。</span><span class="who">agent · Lead 派</span></div>
+      <span class="arr">→</span>
+      <div class="step"><b>2 · 设计图</b><span>Designer 为每条要动的流程画<b>设计图</b>：每一步先标 Planned，主路、分支、出错路都画上，写明哪几条 TC 管哪条路径。</span><span class="who">agent</span></div>
+      <span class="arr">→</span>
+      <div class="step you"><b>Approve design</b><span>你看设计图和 TC 的对应，点通过。改接口的照旧走 contracts 关卡。</span><span class="who">你</span></div>
+      <span class="arr">→</span>
+      <div class="step"><b>3 · 测试 ‖ 实现</b><span>Test writer 按图上每条路径写集成测试和 e2e（先是红的）；几个 Implementer 各在自己的 worktree 实现，补上锚点。两边是不同的 agent，最好不同家。</span><span class="who">agent · 并行</span></div>
+      <span class="arr">→</span>
+      <div class="step ad"><b>4 · 跑 + 录 + 对</b><span>AgentDeck 跑测试，在几个关口录下真实顺序，和设计图逐步对；指出第一处偏离，连同那一刻的日志交给 Debugger。</span><span class="who">AgentDeck · Debugger</span></div>
+      <span class="arr">→</span>
+      <div class="step"><b>5 · 覆盖复查</b><span>QA 看路径覆盖、行覆盖、复杂又没测到的函数、“跑到了但没断言”的步骤，补测试或打回。</span><span class="who">agent</span></div>
+      <span class="arr">→</span>
+      <div class="step you"><b>6 · 发布</b><span>发布关卡全绿后，Release manager 备好版本号、CHANGELOG、tag 和 Release 草稿；你点 Publish。</span><span class="who">agent 备 · 你点</span></div>
+    </div>
+    <p class="note" style="max-width: 1500px">这是集群模板（C5）里新的一种：<b>Requirements to release</b>。Lead 照旧拆任务、派活；Test writer 和 Implementer 的活可以是终端，也可以是后台 Run（U0），默认后台、Lead 和 Debugger 是终端。测试由另一个 agent 写，是为了让测试照需求和设计写，而不是照着刚写好的代码写（和 F1 “换一家核对”同一个道理）。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 同一个仓库里怎么分工不打架</span>
+    <div class="tbl" style="grid-template-columns: 180px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); max-width: 1632px">
+      <span class="th">角色</span><span class="th">只能改（owns）</span><span class="th">不能碰</span><span class="th">交回什么</span>
+      <span class="td">Designer</span><span class="td mono">docs/flows/*.seq.json（kind: design）</span><span class="td">代码、测试</span><span class="td">设计图 + TC ↔ 路径的对应</span>
+      <span class="td">Test writer</span><span class="td mono">e2e/tests/tcXX-*.e2e.ts、packages/*/test/</span><span class="td">实现代码；看不到 Implementer 还没合的 diff</span><span class="td">每个测试写明走哪条路径（<span class="mono">@flow open-terminals#cancel</span>）</span>
+      <span class="td">Implementer × n</span><span class="td">自己任务的 src</span><span class="td">测试文件（改测试要走关卡，写理由）、设计图</span><span class="td">提交 + 补好的锚点</span>
+      <span class="td">Debugger</span><span class="td">只读；修复交回对应的 Implementer</span><span class="td">直接改别人的任务</span><span class="td">“第 9 步偏离：…，证据锚点 …”</span>
+      <span class="td">QA</span><span class="td">只读；能提新测试给 Test writer</span><span class="td">—</span><span class="td">覆盖复查表、建议的 TC</span>
+      <span class="td">Release manager</span><span class="td mono">CHANGELOG.md、各 package.json 的 version、docs/status</span><span class="td">代码</span><span class="td">发布草稿</span>
+    </div>
+    <p class="note" style="max-width: 1500px">合的先后固定：设计图 → 测试（红的，带 <span class="mono">test.fail</span> 标记）→ 各实现任务 → 集成。每一步合之前用 O1 的 L3 预演，几个 worktree 之间用 L2 提前看重叠。“Implementer 不能改测试”是这个模板最要紧的一条：测试不过就改代码，不改测试；真觉得测试错了，提给 Lead，你在关卡里定。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · 按设计图调试：设计和真实跑出来的并排</span>
+    <div class="fig" style="width: 1632px; height: 560px">
+      <div class="win" style="position: absolute; left: 24px; top: 24px; width: 1060px">
+        <div class="wt"><b>flow · open-terminals</b><span class="muted">design vs run · tc34-open-terminals › launch fails mid-loop</span><span style="flex: 1"></span><span style="color: #8A6700">diverged at step 9</span></div>
+        <div class="row" style="grid-template-columns: 34px 1fr 190px 1fr 90px; border-top: none; font-size: 10.5px; color: #8A8A85; font-weight: 600"><span>#</span><span>DESIGN (approved Oct 30)</span><span>ANCHOR</span><span>RECORDED IN THIS RUN</span><span>STATE</span></div>
+        <div class="row" style="grid-template-columns: 34px 1fr 190px 1fr 90px"><span class="mono">4</span><span>resolveWorkspace</span><span class="mono">tools.ts:320</span><span>resolveWorkspace · ws-2</span><span style="color: #1A7F37">matches</span></div>
+        <div class="row" style="grid-template-columns: 34px 1fr 190px 1fr 90px"><span class="mono">6</span><span>agents.start via registry</span><span class="mono">tools.ts:526</span><span>registry.invoke agents.start</span><span style="color: #1A7F37">matches</span></div>
+        <div class="row" style="grid-template-columns: 34px 1fr 190px 1fr 90px"><span class="mono">8</span><span>start (terminal service)</span><span class="mono">index.ts:317</span><span>start · pi</span><span style="color: #1A7F37">matches</span></div>
+        <div class="row" style="grid-template-columns: 34px 1fr 190px 1fr 90px; background: #FFF7E6"><span class="mono">9</span><span>adapter.launch with the first prompt in argv</span><span class="mono">agent-service.ts:123</span><span>adapter.launch · argv has no prompt (generic.ts)</span><span style="color: #8A6700">diverged</span></div>
+        <div class="row" style="grid-template-columns: 34px 1fr 190px 1fr 90px"><span class="mono">9a</span><span class="muted">(error path) a launch fails → group opens with the rest</span><span class="mono">tools.ts:345</span><span class="muted">not reached</span><span class="muted">not run</span></div>
+        <div class="row" style="grid-template-columns: 34px 1fr 190px 1fr 90px"><span class="mono">13</span><span>new-session in tmux</span><span class="mono">host.ts:260</span><span>new-session t-8f2a</span><span style="color: #1A7F37">matches</span></div>
+        <div class="row" style="grid-template-columns: 34px 1fr 190px 1fr 90px"><span class="mono">16</span><span>emit board.open-group</span><span class="mono">tools.ts:350</span><span>emit board.open-group</span><span style="color: #1A7F37">matches</span></div>
+        <div style="display: flex; gap: 6px; padding: 10px 12px; border-top: 1px solid #EEEEEB"><span class="btn">Open step 9 in editor</span><span class="btn">Log around step 9</span><span class="btn">Send to Debugger</span><span class="btn">Mark design as wrong…</span></div>
+      </div>
+      <div style="position: absolute; left: 1110px; top: 24px; width: 498px; display: flex; flex-direction: column; gap: 10px; font-size: 11.5px; line-height: 1.6; color: #5F5F5A">
+        <span><b style="color: #1A1A1A">设计图</b>就是 F0 的 Flow，多一种 <span class="mono">kind: design</span>：步骤先是 Planned（没有锚点），实现时补锚点。还没锚点的步骤 = 还没做完，这本身就是进度。</span>
+        <span><b style="color: #1A1A1A">真实顺序</b>从五个关口录：服务注册表、IPC、TerminalProxy、MCP、钩子 socket（F2 的 CU8）。只录跨进程的那几步，进程内的直接调用靠锚点和行覆盖补。</span>
+        <span><b style="color: #1A1A1A">怎么对</b>：按设计图的顺序逐步找对应的记录；第一处对不上的标 diverged，后面的照样列出来但不算。没跑到的分支写 not run（不是错）。</span>
+        <span><b style="color: #1A1A1A">只能说“这次跑的符合”</b>：只看了跑过的那几次，不能证明所有情况都符合（Runde 等 2013 年的结论：只有部分运行记录时，只能说“大概符合 / 大概不符合”）。所以还要第 4 节的路径覆盖。</span>
+        <span>示例里第 9 步是真的：generic 适配器不读 ctx.prompt，就是 IS-76。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · 覆盖：四个数一起看，只有两个挡发布</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start; max-width: 1632px">
+      <div class="tbl" style="grid-template-columns: 200px minmax(0, 1fr) 150px; width: 900px; flex: none">
+        <span class="th">数</span><span class="th">怎么算</span><span class="th">挡不挡发布</span>
+        <span class="td"><b>需求覆盖</b></span><span class="td">这一版的每条 TC 至少对上设计图的一条路径；每条路径至少有一条 TC</span><span class="td">挡</span>
+        <span class="td"><b>路径覆盖</b></span><span class="td">设计图上的路径（主路、分支、出错路）被测试真跑到、并且和设计一致的比例，来自第 3 节的记录</span><span class="td">挡（默认 ≥ 85%，可改）</span>
+        <span class="td">行和分支覆盖</span><span class="td">V8 覆盖（<span class="mono">@vitest/coverage-v8</span>，F1 的 CU5），按文件和函数</span><span class="td">只报告</span>
+        <span class="td">复杂又没测到</span><span class="td">锚点所在函数里，圈复杂度 ≥ 10 且分支覆盖 &lt; 60% 的列出来，按复杂度排</span><span class="td">只报告，QA 必须看</span>
+      </div>
+      <div class="win" style="flex: 1; min-width: 0">
+        <div class="wt"><b>Complex and under-tested</b><span class="muted">QA · release 0.3.0</span></div>
+        <div class="row" style="grid-template-columns: 1fr 70px 80px 80px; border-top: none; font-size: 10.5px; color: #8A8A85; font-weight: 600"><span>FUNCTION</span><span>COMPLEX.</span><span>BRANCHES</span><span>IN FLOWS</span></div>
+        <div class="row" style="grid-template-columns: 1fr 70px 80px 80px"><span class="mono">buildManager · model.ts</span><span>24</span><span style="color: #CF222E">41%</span><span>2</span></div>
+        <div class="row" style="grid-template-columns: 1fr 70px 80px 80px"><span class="mono">openGroup · controller.ts</span><span>17</span><span>58%</span><span>1</span></div>
+        <div class="row" style="grid-template-columns: 1fr 70px 80px 80px"><span class="mono">launch · tools.ts</span><span>12</span><span>55%</span><span>1</span></div>
+        <div class="row" style="grid-template-columns: 1fr 70px 80px 80px"><span class="muted">+5 more</span><span></span><span></span><span></span></div>
+        <div style="padding: 10px 12px; border-top: 1px solid #EEEEEB" class="note">QA 对每一行写一句：补测试（交给 Test writer）、拆函数（新任务）、或者“这样就行”加理由。示例里的数是编的，只为看样子。</div>
+      </div>
+    </div>
+    <p class="note" style="max-width: 1500px">“跑到了”不等于“测过了”：QA 对跑到的步骤再查一遍是哪个测试的哪一行断言了结果，没有断言的标 Run · not asserted（F1 第 4 节同一条规矩）。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">5 · 发布关卡：全绿了 agent 备好，你点 Publish</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start; max-width: 1632px">
+      <div class="win" style="width: 760px; flex: none">
+        <div class="wt"><b>Release 0.3.0 · agenduck</b><span class="muted">prepared by codex · release manager</span><span style="flex: 1"></span><span style="color: #8A6700">1 check left</span></div>
+        <div class="ck"><span style="color: #1A7F37">✓</span><span style="flex: 1">TCs for 0.3.0: 41 accepted or verified</span><span class="muted">tracking.py</span></div>
+        <div class="ck"><span style="color: #BF8700">●</span><span style="flex: 1">2 TCs blocked by work not built (TC-52, TC-55) · move them to 0.4.0?</span><span class="btn">Move to 0.4.0</span></div>
+        <div class="ck"><span style="color: #1A7F37">✓</span><span style="flex: 1">Design flows: 0 stale anchors · path coverage 92% (needs 85%)</span><span class="muted">docs/flows</span></div>
+        <div class="ck"><span style="color: #1A7F37">✓</span><span style="flex: 1">pnpm check and the full e2e suite green on CI (macOS) for 4c1d2e9</span><span class="muted">GitHub Actions</span></div>
+        <div class="ck"><span style="color: #1A7F37">✓</span><span style="flex: 1">No open P0 or P1 issues</span><span class="muted">tracking.py</span></div>
+        <div class="ck"><span style="color: #1A7F37">✓</span><span style="flex: 1">Drafted: versions bumped in 14 packages, CHANGELOG (12 items), tag v0.3.0, GitHub Release notes</span><span class="btn">Review…</span></div>
+        <div style="display: flex; gap: 6px; padding: 10px 12px; border-top: 1px solid #EEEEEB"><span class="btn">Open acceptance report</span><span style="flex: 1"></span><span class="btn pri">Publish 0.3.0</span></div>
+      </div>
+      <div style="flex: 1; min-width: 0" class="ex">
+        <span><b>agent 做到哪</b>：跑检查、改版本号、写 CHANGELOG 和发布说明、建本地 tag、在发布分支上提交、更新验收报告。都是本地的，可以撤。</span>
+        <span><b>你点的那一下做什么</b>：推送发布提交和 tag、建 GitHub Release、触发打包的 CI。这是对外动作，照 I2 的规矩只在你点时做，手机上也不行。</span>
+        <span><b>关卡读的都是确定的数据</b>：TC 状态读 <span class="mono">tracking.py</span> 和验收报告的数据库，CI 读 GitHub 的检查结果，路径覆盖读第 3 节的记录；agent 说“都过了”不算。</span>
+        <span><b>阈值和哪几项挡</b>在项目设置 › Release 里改；默认挡：TC、路径覆盖、CI、P0/P1。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">6 · 参考（2026-10-31 查）</span>
+    <div class="tbl" style="grid-template-columns: 240px minmax(0, 1.3fr) minmax(0, 1fr); max-width: 1632px">
+      <span class="th">参考</span><span class="th">是什么</span><span class="th">借什么</span>
+      <span class="td"><b>Kiro 的 specs</b>（AWS）</span><span class="td"><span class="mono">.kiro/specs/</span> 下三份：requirements.md（用户故事 + EARS 写法的验收标准 “WHEN … THE SYSTEM SHALL …”）、design.md（架构、序列图、实现考虑）、tasks.md（分波执行，波内并行）；可以先需求后设计，也可以先设计</span><span class="td">需求 → 设计（含序列图）→ 任务的顺序；TC 用“当……时，应该……”一句话写</span>
+      <span class="td"><b>AppMap</b></span><span class="td">包住 node / jest / vitest 录函数调用，出序列图（F0 第 3 节查过）</span><span class="td">运行时录顺序；我们只在五个关口录，跨进程那几步</span>
+      <span class="td"><b>Trajectly</b></span><span class="td">录一次基准，之后每次跑按合约对比，指出最早出错的那一步</span><span class="td">“第一处偏离”的展示方式</span>
+      <span class="td"><b>Runde、Refsdal、Stølen 2013</b>（SINTEF）</span><span class="td">只用运行记录检查系统是否符合序列图；记录不全时只能得出“大概符合 / 大概不符合”</span><span class="td">界面上不说“已验证符合”，只说“这次跑的符合”，再配路径覆盖</span>
+      <span class="td"><b>F0–F2</b>（本画布）</span><span class="td">从代码画出带锚点的序列图、三种覆盖、集群里 Reviewer 和 QA 怎么用</span><span class="td">锚点、Verifier、Tests 和 Requirements 两层都直接用</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">7 · 原来的页改了什么、待你确认</span>
+    <div class="tbl" style="grid-template-columns: 200px minmax(0, 1fr) minmax(0, 1fr); max-width: 1632px">
+      <span class="th">页</span><span class="th">原来</span><span class="th">现在（提议）</span>
+      <span class="td">F0 Flow 窗口</span><span class="td">只有从代码画的图</span><span class="td">多一种 <span class="mono">kind: design</span>：步骤先 Planned，实现时补锚点；Show 里多一层 Run（第 3 节）</span>
+      <span class="td">F1 第 4 节 · F2 第 5 节</span><span class="td">e2e 覆盖和关口记录（CU8）在第三期</span><span class="td">提前到这个模板这一期；只录五个关口</span>
+      <span class="td">C5 模板</span><span class="td">Contract-first build 等</span><span class="td">多一个 Requirements to release；角色多 Designer、Test writer、Debugger、Release manager</span>
+      <span class="td">验收报告（tracking.py）</span><span class="td">TC 有步骤、预期、状态</span><span class="td">TC 多一列：对上哪张设计图的哪条路径；多一个字段：属于哪一版</span>
+      <span class="td">O1 同仓协作</span><span class="td">隔离、重叠提示、合并预演</span><span class="td">加一条分工规矩：Implementer 不能改测试，改测试走关卡</span>
+    </div>
+    <div class="tbl" style="grid-template-columns: 40px minmax(0, 1fr) minmax(0, 1fr) 420px; font-size: 12.5px; max-width: 1632px">
+      <span class="th">#</span><span class="th">问题</span><span class="th">选项</span><span class="th">推荐</span>
+      <span class="td mono">1</span><span class="td">测试谁写</span><span class="td">实现的 agent 自己写 / 另一个 agent 写</span><span class="td">另一个 agent，最好另一家；Implementer 不能改测试</span>
+      <span class="td mono">2</span><span class="td">设计图从哪来</span><span class="td">先画设计图 / 从代码倒推</span><span class="td">新功能先画设计图；已有代码照 F0 倒推，两种并存</span>
+      <span class="td mono">3</span><span class="td">关口记录（CU8）</span><span class="td">留在第三期 / 提前</span><span class="td">提前，只做五个关口</span>
+      <span class="td mono">4</span><span class="td">哪几个数挡发布</span><span class="td">全都挡 / 需求和路径覆盖挡，其余只报告</span><span class="td">TC、路径覆盖、CI、P0/P1 挡；行覆盖和复杂度只报告</span>
+      <span class="td mono">5</span><span class="td">Publish</span><span class="td">agent 全做 / 你点</span><span class="td">你点；之前的都由 agent 备好</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":3800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

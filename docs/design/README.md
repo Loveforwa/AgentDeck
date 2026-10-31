@@ -4,7 +4,7 @@
 
 | 目录 / 文件 | 线上版本 | 内容 |
 | --- | --- | --- |
-| `canvas/` | 设计画布 https://claude.ai/artifact/2GtB5izXeQSV3NecUYuLAo | 需求和配图。`canvas.json` 是页和画板的排列（哪一页、哪个画板、位置、大小），`spec/*.dc.html` 是各画板（Spec* 需求页、Plugin* 插件、Crew* Agent 集群、Session* Session、Agents* Agent 接入、Skills* Skill 管理、Remote* 手机和远程，Arrow / Note / Term 等是画图用的零件）。只放还要做的需求；做完的页改名“已完成 · …”挪到后面（2026-10-29 起），最早的第一版、第二版原型已删（git 历史里有） |
+| `canvas/` | 设计画布 https://claude.ai/artifact/2GtB5izXeQSV3NecUYuLAo | 需求和配图。`canvas.json` 是页和画板的排列（哪一页、哪个画板、位置、大小），`spec/*.dc.html` 是各画板（Spec* 需求页、Plugin* 插件、Crew* Agent 集群、Session* Session、Agents* Agent 接入、Skills* Skill 管理、Remote* 手机和远程，Runs* 后台任务、容器和任务面板，Arrow / Note / Term 等是画图用的零件）。只放还要做的需求；做完的页改名“已完成 · …”挪到后面（2026-10-29 起），最早的第一版、第二版原型已删（git 历史里有） |
 | `components/` | 组件库 https://claude.ai/artifact/MhtbtWuttcdQ4b7uEjvbPN | 设计系统：`README.md` 总规则，`tokens.json` 颜色、字号、间距，`components/<名字>/README.md` 每个零件的样子、状态和代码位置，`preview.html` 是预览，`bundle.css` 是从 `packages/design-tokens` 和 `packages/ui/**` 抄过去的样式。文字版是 `docs/components.md` |
 | `agentdeck-plan.html` | 已退役（2026-10-29） | 2026-10-23 的实施方案，只留作历史，不再更新；还成立的部分并进了验收报告的“架构” |
 | `agentdeck-mvp-plan.html` | https://claude.ai/artifact/6A1xdERmHFXrg3p9Bi4ujo | 任务表（只有还要做的任务） |

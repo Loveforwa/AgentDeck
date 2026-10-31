@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>后台任务和任务面板</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1300px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.tag{display:inline-flex;align-items:center;height:18px;padding:0 7px;border-radius:999px;font-size:10.5px;background:#F2F2EF;color:#5F5F5A;white-space:nowrap}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#8A8A85}
+.dot{width:7px;height:7px;border-radius:50%;flex:none;box-sizing:border-box;display:inline-block}
+.am{width:6px;height:6px;border-radius:1.5px;flex:none;display:inline-block}
+.btn{display:inline-flex;align-items:center;height:22px;padding:0 8px;border:1px solid #D6D6D2;border-radius:6px;font-size:11px;background:#FFFFFF;color:#1A1A1A;white-space:nowrap}
+.btn.pri{background:#1A1A1A;border-color:#1A1A1A;color:#FFFFFF}
+.win{box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,0.08);font-size:12px;overflow:hidden;display:flex;flex-direction:column}
+.new{border:1.5px dashed #8A8A85;box-shadow:none}
+.wt{display:flex;align-items:center;gap:7px;height:30px;padding:0 10px;border-bottom:1px solid #EEEEEB;font-size:11.5px;flex:none}
+.term{background:#1A1A1A;color:#EDEDEA;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.6;padding:10px 12px;white-space:pre;flex:1}
+.row{display:grid;align-items:center;gap:8px;padding:6px 10px;border-top:1px solid #F0F0ED;font-size:11.5px}
+.gh{display:flex;align-items:center;gap:6px;padding:6px 10px;border-top:1px solid #E3E3E0;background:#FBFBFA;font-size:10px;font-weight:600;color:#8A8A85;letter-spacing:0.05em}
+.code{box-sizing:border-box;background:#1A1A1A;color:#EDEDEA;border-radius:8px;padding:12px 14px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.6;white-space:pre}
+.ex{display:flex;flex-direction:column;gap:10px;font-size:13.5px;line-height:1.65}
+.note{font-size:12.5px;line-height:1.6;color:#5F5F5A}
+.card3{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px;padding:16px;border:1px solid #E3E3E0;border-radius:10px;background:#FFFFFF}
+.bar{height:5px;border-radius:3px;background:#EEEEEB;overflow:hidden;flex:1}
+.bar span{display:block;height:100%;background:#1A7F37}
+</style>
+</helmet>
+<div style="width: 1760px; height: 3700px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">U0 · 不是每件事都要一个终端：后台任务（Run）和任务面板</h1>
+      <span class="concept">2026-10-31 提议，待你确认</span>
+    </div>
+    <p class="lead">你 10-31 说的：如果每件事都要在白板上开一个 code agent 终端，白板上就全是终端，集群也摆不下、看不清；有的人只想要一个对话窗口，后台一队 agent 在跑，对话只用来问进度、改方向。所以把“白板上放真终端”从<b>必须</b>改成<b>三种露面方式之一</b>：要聊、要盯的开终端；只要结果的做成<b>后台任务（Run）</b>，在容器或 tmux 里用 agent 的非交互模式跑，白板上只是一张卡片，或者干脆不上白板；看进度用<b>任务面板</b>：agent 按这个场景从一套固定零件里拼出来，数据由 AgentDeck 实时填，你要改样子时才再花 token。骨架不变：每一件事仍然是一条 Session（S0），有父子、有笔记、能交接。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 三种露面方式：同一条 Session，选一种给你看</span>
+    <div style="display: flex; gap: 20px; max-width: 1632px">
+      <div class="card3">
+        <div style="display: flex; align-items: center; gap: 8px"><b style="font-size: 15px">终端窗口</b><span class="tag">现在就有</span></div>
+        <div class="win" style="height: 150px">
+          <div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="am" style="background: #A8503A"></span><b>claude</b><span class="muted">shop · feat/cart</span><span style="flex: 1"></span><span class="muted">Running · 4m</span></div>
+          <div class="term">● Update(src/cart.ts)
+  ⎿ +12 −3
+● Bash(pnpm test cart)
+  ⎿ 14 passed
+› </div>
+        </div>
+        <span class="note"><b style="color: #1A1A1A">什么时候用</b>：你要跟它聊、要看它每一步、要批准命令。真 TUI 跑在 <span class="mono">tmux -L agentdeck</span> 里，规矩不变。</span>
+      </div>
+      <div class="card3" style="border: 1.5px dashed #8A8A85">
+        <div style="display: flex; align-items: center; gap: 8px"><b style="font-size: 15px">后台任务卡片（Run）</b><span class="tag">新</span></div>
+        <div class="win" style="height: 150px">
+          <div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="am" style="background: #2F5E9E"></span><b>#18231 HMR drops CSS</b><span style="flex: 1"></span><span class="muted">container · 12m</span></div>
+          <div style="display: flex; flex-direction: column; gap: 7px; padding: 10px 12px; font-size: 11.5px">
+            <div style="display: flex; gap: 8px; align-items: center"><span class="muted" style="width: 60px">Step</span><span>2 of 3 · implement</span></div>
+            <div style="display: flex; gap: 8px; align-items: center"><span class="muted" style="width: 60px">Check</span><span>pnpm test-unit css · 2 failed</span></div>
+            <div style="display: flex; gap: 8px; align-items: center"><span class="muted" style="width: 60px">Branch</span><span class="mono">afk/18231-hmr-css · 2 commits</span></div>
+            <div style="display: flex; gap: 6px"><span class="btn">Log</span><span class="btn">Open a shell</span><span class="btn">Take over</span><span class="btn">Stop</span></div>
+          </div>
+        </div>
+        <span class="note"><b style="color: #1A1A1A">什么时候用</b>：只要结果。agent 用非交互模式跑（<span class="mono">claude -p</span>、<span class="mono">codex exec</span>，其余几家待核对），在容器（U2）或 tmux 里，没有 TUI。<b style="color: #1A1A1A">Take over</b>：停掉后台的这一轮，在终端窗口里用它自己的 resume 接上同一段对话，你接着聊。</span>
+      </div>
+      <div class="card3" style="border: 1.5px dashed #8A8A85">
+        <div style="display: flex; align-items: center; gap: 8px"><b style="font-size: 15px">不上白板</b><span class="tag">新</span></div>
+        <div class="win" style="height: 150px">
+          <div class="wt"><b>Overnight issues</b><span class="muted">panel</span><span style="flex: 1"></span><span class="muted">7 runs</span></div>
+          <div class="row" style="grid-template-columns: 10px 1fr 80px; border-top: none"><span class="dot" style="background: #1A7F37"></span><span>#18231 HMR drops CSS</span><span class="muted">implement</span></div>
+          <div class="row" style="grid-template-columns: 10px 1fr 80px"><span class="dot" style="background: #BF8700"></span><span>#18197 SSR .json on Windows</span><span style="color: #8A6700">needs you</span></div>
+          <div class="row" style="grid-template-columns: 10px 1fr 80px"><span class="dot" style="border: 1.5px solid #8A8A85"></span><span>#18252 Docs build.lib</span><span class="muted">queued</span></div>
+        </div>
+        <span class="note"><b style="color: #1A1A1A">什么时候用</b>：一批几十个的事（夜里的 issue、视频、集群里的 worker）。只出现在任务面板、左边管理面板、收件箱和报告里；要看哪一个，点开再变成卡片或终端。</span>
+      </div>
+    </div>
+    <p class="note" style="max-width: 1500px">三种可以互相换：终端 → Send to background（交给后台继续，窗口收掉，变成卡片）；卡片 → Take over（变回终端）；卡片 → Hide（只留在面板里）。换的是露面方式，Session、笔记、分支都不变。等你的事（批准、提问、要你点的对外动作）不管哪种露面方式，都照旧进收件箱，顶栏 Needs you 照旧算。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 只要一个对话窗口：Chat-only 布局</span>
+    <div class="fig" style="width: 1632px; height: 640px">
+      <div class="win" style="position: absolute; left: 24px; top: 24px; width: 640px; height: 592px">
+        <div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="am" style="background: #A8503A"></span><b>claude</b><span class="muted">vite · lead · 7 runs under it</span><span style="flex: 1"></span><span class="muted">Idle · now</span></div>
+        <div class="term">› how is the overnight batch going?
+
+● Bash(agentdeck runs list --label afk)
+  ⎿ 7 runs · 4 done · 1 needs you · 1 running · 1 queued
+
+4 of 7 are done and merged into afk/2026-10-31.
+#18197 stopped: the Windows path test needs a
+C:\ drive, and it asked whether to mock it.
+#18231 is still implementing (2 tests failing).
+
+› mock it for 18197. and give 18231 to codex if
+  it's still red after this round
+
+● Bash(agentdeck runs answer 18197 "mock the drive")
+  ⎿ answered · run resumed
+● Bash(agentdeck runs on-fail 18231 --handoff codex)
+  ⎿ rule added: after round 3, hand off to codex
+
+Done. I'll update the panel when 18231 finishes.
+› </div>
+      </div>
+      <div class="win new" style="position: absolute; left: 688px; top: 24px; width: 920px; height: 592px; background: #FFFFFF">
+        <div class="wt"><b>Overnight issues · vitejs/vite</b><span class="muted">panel made by claude · 23:10 · live</span><span style="flex: 1"></span><span class="btn">Edit layout…</span><span class="btn">Save as view</span></div>
+        <div style="display: flex; gap: 12px; padding: 12px">
+          <div style="flex: 1; border: 1px solid #EEEEEB; border-radius: 8px; padding: 10px"><div class="muted" style="font-size: 10.5px">DONE</div><div style="font-size: 22px; font-weight: 600">4 <span class="muted" style="font-size: 13px">of 7</span></div></div>
+          <div style="flex: 1; border: 1px solid #EEEEEB; border-radius: 8px; padding: 10px; background: #FFF7E6"><div style="font-size: 10.5px; color: #8A6700">NEEDS YOU</div><div style="font-size: 22px; font-weight: 600">1</div></div>
+          <div style="flex: 1; border: 1px solid #EEEEEB; border-radius: 8px; padding: 10px"><div class="muted" style="font-size: 10.5px">BRANCH</div><div class="mono" style="font-size: 12.5px; margin-top: 6px">afk/2026-10-31 · 9 commits</div></div>
+          <div style="flex: 1; border: 1px solid #EEEEEB; border-radius: 8px; padding: 10px"><div class="muted" style="font-size: 10.5px">TOKENS</div><div style="font-size: 22px; font-weight: 600">3.4M</div></div>
+        </div>
+        <div class="gh" style="border-top: 1px solid #EEEEEB">ISSUE · STEP · CHECK · AGENT</div>
+        <div class="row" style="grid-template-columns: 10px 230px 1fr 150px 90px"><span class="dot" style="background: #1A7F37"></span><span>#18231 HMR drops CSS after @import</span><div style="display: flex; align-items: center; gap: 6px"><div class="bar"><span style="width: 66%"></span></div><span class="muted">implement · round 2</span></div><span style="color: #CF222E">2 tests failing</span><span><span class="am" style="background: #2F5E9E"></span> codex</span></div>
+        <div class="row" style="grid-template-columns: 10px 230px 1fr 150px 90px; background: #FFF7E6"><span class="dot" style="background: #BF8700"></span><span>#18197 SSR .json on Windows</span><span style="color: #8A6700">asked: mock the C:\ drive?</span><span class="muted">—</span><span><span class="am" style="background: #A8503A"></span> claude</span></div>
+        <div class="row" style="grid-template-columns: 10px 230px 1fr 150px 90px"><span class="dot" style="background: #1A7F37"></span><span>#18209 optimizeDeps nested</span><span class="muted">review by codex</span><span>passed</span><span><span class="am" style="background: #A8503A"></span> claude</span></div>
+        <div class="row" style="grid-template-columns: 10px 230px 1fr 150px 90px"><span class="dot" style="border: 1.5px solid #8A8A85"></span><span>#18252 Docs build.lib</span><span class="muted">queued</span><span class="muted">—</span><span class="muted">—</span></div>
+        <div class="row" style="grid-template-columns: 10px 230px 1fr 150px 90px"><span style="font-size: 11px">✓</span><span>#18190 · #18263 · #18265</span><span class="muted">merged into afk/2026-10-31</span><span>passed</span><span class="muted">3 runs</span></div>
+        <div style="display: flex; gap: 8px; padding: 12px; border-top: 1px solid #EEEEEB; margin-top: auto"><span class="btn">Open a run…</span><span class="btn">Answer #18197</span><span style="flex: 1"></span><span class="muted" style="align-self: center; font-size: 11px">Buttons only call AgentDeck actions; anything that posts to GitHub still goes to the inbox.</span></div>
+      </div>
+    </div>
+    <p class="note" style="max-width: 1500px">左边是你唯一要盯的对话（一个 Lead，哪家都行，还是真终端）；右边是它拼的面板。你问“进度怎样”，它读 <span class="mono">agentdeck runs</span> 回答，不用你翻七个终端；你改主意（“换 codex”“mock 掉”），它用命令改 Run 的规则。白板可以整个收起，只留这两块（View › Chat only），也可以照常放在框里。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · 面板怎么来：agent 用固定零件拼一份说明，AgentDeck 画、实时填数</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start; max-width: 1632px">
+      <div style="width: 640px; flex: none; display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 11px; font-weight: 600; color: #8A8A85; letter-spacing: 0.04em">WHAT THE AGENT WRITES · agentdeck panel save overnight.json</span>
+        <div class="code">{ "title": "Overnight issues · vitejs/vite",
+  "scope": { "project": "vite", "label": "afk" },
+  "blocks": [
+    { "type": "stats", "items": [
+      { "label": "Done", "value": "runs.done",
+        "of": "runs.total" },
+      { "label": "Needs you", "value": "runs.waiting" },
+      { "label": "Branch", "value": "runs.targetBranch" },
+      { "label": "Tokens", "value": "runs.tokens" } ] },
+    { "type": "table", "rows": "runs",
+      "columns": ["lamp", "title", "step",
+                  "check", "agent"],
+      "group": "state" },
+    { "type": "actions", "items": [
+      "run.open", "run.answer" ] } ] }</div>
+        <span class="note">英文（给 agent 写的）。只写“摆什么、绑哪份数据”，不写数，也不写颜色和样式。</span>
+      </div>
+      <div style="flex: 1; min-width: 0" class="ex">
+        <span><b>零件是固定的一套</b>：stats、table、list、progress、log-tail、diff-summary、checklist、markdown、actions。样子全来自组件库（design-tokens），颜色只表达状态，和别处一致；agent 不能写 HTML、CSS、脚本。</span>
+        <span><b>数据是绑定，不是抄进去</b>：<span class="mono">runs</span>、<span class="mono">crew.tasks</span>、<span class="mono">issues</span>、<span class="mono">sessions</span>、<span class="mono">flows</span>、<span class="mono">usage</span> 这些数据源由 AgentDeck 实时填。面板画好以后不再花 token，只有你说“换个样子”时 agent 才再写一份。</span>
+        <span><b>按钮只能调 AgentDeck 的动作</b>：打开、回答、停、交接、重排。每个动作走它原来的关卡：对外发言照样进收件箱，Merge into main 照样只有你点，Auto-approve 碰不到。</span>
+        <span><b>谁能写</b>：AgentDeck 里的任何终端都能 <span class="mono">agentdeck panel save</span>（只是存一份草稿）；你点 Save as view 才进左边栏，Pin 了每次打开都在。也能存进仓库 <span class="mono">.agentdeck/panels/</span>，团队共用。</span>
+        <span><b>手机上也能看</b>：同一份说明，手机页（R1）按窄屏排一遍，不用另做一套。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · 现成的做法（2026-10-31 查）</span>
+    <div class="tbl" style="grid-template-columns: 220px minmax(0, 1.3fr) minmax(0, 1fr) 260px; max-width: 1632px">
+      <span class="th">做法</span><span class="th">是什么</span><span class="th">对我们</span><span class="th">结论</span>
+      <span class="td"><b>A2UI</b>（Google，开源）</span><span class="td">agent 发一份声明式的 UI 说明（用哪些零件、绑哪些数据），客户端用自己的原生零件画；不传可执行代码</span><span class="td">和我们“只能用组件库零件、颜色只从 tokens 来”的规矩最合；agent 写不出越权的按钮</span><span class="td">照这个路子做，格式自己定一份更小的</span>
+      <span class="td"><b>MCP Apps</b>（MCP 扩展，Anthropic、OpenAI 都支持）</span><span class="td">MCP 服务器给一段 HTML（<span class="mono">ui://</span>），宿主放进沙箱 iframe 里显示</span><span class="td">什么都能画，但样子和颜色管不住；agent 现写 HTML 要花很多 token，每次刷新都要重写</span><span class="td">不选；以后有人做了现成的 MCP App，可以当一种窗口开</span>
+      <span class="td"><b>AG-UI</b>（CopilotKit）</span><span class="td">agent 和界面之间的双向传输协议，不管画什么</span><span class="td">我们的 agent 和界面在同一台机器，走 AgentDeck 自己的命令行和事件就够</span><span class="td">不用</span>
+      <span class="td"><b>GitHub Mission Control</b>（Agent HQ，2025-10）</span><span class="td">一个地方派活、盯进度、改方向、看结果，网页、VS Code、手机、命令行都有</span><span class="td">说明“一个总控视图 + 后台一堆 agent”是对的方向；它是固定的页面，不按场景变</span><span class="td">对标它的“一处看全”，再加上按场景拼</span>
+      <span class="td"><b>Sandcastle</b>（mattpocock，MIT）</span><span class="td">agent 在沙箱里用非交互模式跑，结果是分支上的提交；Claude Code、Codex、Pi 能接着上一段会话 resume</span><span class="td">证明“不开 TUI 也能做完一整件事”；Take over 用的就是各家的 resume</span><span class="td">见 U1、U2</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">5 · 数据：Run 是 Session 的一种，面板是一份说明</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start; max-width: 1632px">
+      <div class="tbl" style="grid-template-columns: 220px minmax(0, 1fr); width: 900px; flex: none">
+        <span class="th">字段（contracts，单独提交，只加不改）</span><span class="th">意思</span>
+        <span class="td mono">Session.runtime</span><span class="td"><span class="mono">tmux</span>（现在）或 <span class="mono">container</span>（U2）</span>
+        <span class="td mono">Session.mode</span><span class="td"><span class="mono">interactive</span>（真 TUI）或 <span class="mono">headless</span>（非交互模式，一轮一轮跑）</span>
+        <span class="td mono">Session.surface</span><span class="td"><span class="mono">terminal</span> · <span class="mono">card</span> · <span class="mono">hidden</span>：白板上怎么露面，随时能换</span>
+        <span class="td mono">Run</span><span class="td">headless Session 的一次执行：第几轮、完成信号、检查结果、日志文件、目标分支、提交、token</span>
+        <span class="td mono">RunRule</span><span class="td">卡住了怎么办：重试几轮、交给哪一家、停下来问你</span>
+        <span class="td mono">PanelSpec</span><span class="td">标题、范围（项目 / 集群 / 标签）、零件列表、谁写的、版本；存在数据目录，可存进仓库</span>
+      </div>
+      <div style="flex: 1; min-width: 0" class="ex">
+        <span>headless 的 Session 照样有 Session 笔记（S3）、按天的日志（S4）、父子关系（谁派的）、交接（SE6），所以“后台跑的”不是另一套东西，只是没开窗口。</span>
+        <span>左边管理面板（MP）照样一行一个：开着窗口的有灯、单击跳过去；后台跑的也有灯，单击打开它的卡片；不上白板的单击打开它所在的面板。</span>
+        <span>集群（C2）的模板模式里，Worker 默认是卡片，Lead 和要你看的 Reviewer 是终端；白板上一个集群框不再塞满终端。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">6 · 原来的页改了什么、待你确认</span>
+    <div class="tbl" style="grid-template-columns: 200px minmax(0, 1fr) minmax(0, 1fr); max-width: 1632px">
+      <span class="th">页</span><span class="th">原来</span><span class="th">现在（提议）</span>
+      <span class="td">AGENTS.md 第一句、C9 定位</span><span class="td">白板上放真实的 TUI 终端</span><span class="td">每件事是一条 Session，要聊的开真终端，只要结果的在后台跑，进度看任务面板</span>
+      <span class="td">S0 Session</span><span class="td">一条 Session 停了就没有进程，有就是终端窗口</span><span class="td">加 runtime、mode、surface；Send to background 从“以后再说”提前</span>
+      <span class="td">C2 白板上的集群</span><span class="td">每个任务一个 worktree 一个终端</span><span class="td">Worker 默认卡片；集群框里放一个任务面板</span>
+      <span class="td">I0–I2 Issue · PR</span><span class="td">一个 issue 一个工作区框加一个终端</span><span class="td">另加无人值守的一条线（U1）；有人盯的照旧</span>
+      <span class="td">R1 手机页</span><span class="td">收件箱、集群进度、汇报、终端最后 40 行</span><span class="td">多一种：任务面板（同一份说明按窄屏排）</span>
+    </div>
+    <div class="tbl" style="grid-template-columns: 40px minmax(0, 1fr) minmax(0, 1fr) 420px; font-size: 12.5px; max-width: 1632px">
+      <span class="th">#</span><span class="th">问题</span><span class="th">选项</span><span class="th">推荐</span>
+      <span class="td mono">1</span><span class="td">一条 Session 能不能没有终端</span><span class="td">不能 / 能（headless，卡片或不上白板）</span><span class="td">能；要聊的时候 Take over 变回终端</span>
+      <span class="td mono">2</span><span class="td">面板怎么描述</span><span class="td">固定零件 + 数据绑定 / agent 现写 HTML（MCP Apps 那种）</span><span class="td">固定零件 + 数据绑定</span>
+      <span class="td mono">3</span><span class="td">面板谁来拼</span><span class="td">AgentDeck 内置几种 / agent 按场景拼 / 两样都有</span><span class="td">两样都有：集群、Issues、Runs 有默认的，你让 agent 改</span>
+      <span class="td mono">4</span><span class="td">面板放哪</span><span class="td">白板上一个窗口 / 右边面板的页签 / Chat only 布局</span><span class="td">白板窗口；另加 Chat only 布局（对话 + 面板，白板收起）</span>
+      <span class="td mono">5</span><span class="td">第一期支持哪几家的非交互模式</span><span class="td">只 claude / claude + codex / 五家</span><span class="td">claude + codex；pi、omp、kimi 核对参数后加</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":3700}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

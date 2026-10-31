@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>全自动处理 issue</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1300px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.tag{display:inline-flex;align-items:center;height:18px;padding:0 7px;border-radius:999px;font-size:10.5px;background:#F2F2EF;color:#5F5F5A;white-space:nowrap}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#8A8A85}
+.dot{width:7px;height:7px;border-radius:50%;flex:none;box-sizing:border-box;display:inline-block}
+.am{width:6px;height:6px;border-radius:1.5px;flex:none;display:inline-block}
+.btn{display:inline-flex;align-items:center;height:22px;padding:0 8px;border:1px solid #D6D6D2;border-radius:6px;font-size:11px;background:#FFFFFF;color:#1A1A1A;white-space:nowrap}
+.btn.pri{background:#1A1A1A;border-color:#1A1A1A;color:#FFFFFF}
+.win{box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,0.08);font-size:12px;overflow:hidden;display:flex;flex-direction:column}
+.wt{display:flex;align-items:center;gap:7px;height:30px;padding:0 10px;border-bottom:1px solid #EEEEEB;font-size:11.5px;flex:none}
+.row{display:grid;align-items:center;gap:8px;padding:6px 12px;border-top:1px solid #F0F0ED;font-size:11.5px}
+.gh{display:flex;align-items:center;gap:6px;padding:6px 12px;border-top:1px solid #E3E3E0;background:#FBFBFA;font-size:10px;font-weight:600;color:#8A8A85;letter-spacing:0.05em}
+.code{box-sizing:border-box;background:#1A1A1A;color:#EDEDEA;border-radius:8px;padding:12px 14px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.6;white-space:pre}
+.ex{display:flex;flex-direction:column;gap:10px;font-size:13.5px;line-height:1.65}
+.note{font-size:12.5px;line-height:1.6;color:#5F5F5A}
+.step{flex:1;min-width:0;box-sizing:border-box;display:flex;flex-direction:column;gap:6px;padding:12px;border:1px solid #E3E3E0;border-radius:10px;background:#FFFFFF;font-size:12px;line-height:1.55}
+.step.you{border:1.5px dashed #BF8700;background:#FFFBF0}
+.step.ad{border:2px solid #1A1A1A}
+.arr{flex:none;align-self:center;color:#8A8A85;font-size:16px}
+.who{font-size:10.5px;color:#8A8A85}
+</style>
+</helmet>
+<div style="width: 1760px; height: 3800px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">U1 · 全自动处理 issue：借 Sandcastle，打了标签的夜里自己做完，早上一起看</h1>
+      <span class="concept">2026-10-31 提议，待你确认</span>
+    </div>
+    <p class="lead"><b>Sandcastle</b>（github.com/mattpocock/sandcastle，npm 包 <span class="mono">@ai-hero/sandcastle</span>，MIT，TypeScript）是一个库：<span class="mono">run()</span> 把一个 agent 放进 Docker、Podman 或 Vercel 微虚拟机里，挂一个 git worktree，用非交互模式一轮轮跑到完成信号，提交合回分支。它自带的模板只处理打了 <span class="mono">Sandcastle</span> 标签的 issue（用 <span class="mono">gh issue list</span> 取），有一条条做、做完一条审一条、先规划再并行、并行加逐分支审查四种。你要的就是这个：<b>挑好的 issue 交出去，夜里自己做完，不用每个都开一个终端盯</b>。AgentDeck 在它外面补四样它没有的：任务面板和报告（U0、W2）、换一家审、撞额度和卡住的规则、对外发言的一道关。规矩拆成两半：<b>容器里面全自动</b>；<b>对外的话攒成一批，早上你看一眼一次点</b>。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 一晚上的流程</span>
+    <div style="display: flex; gap: 8px; max-width: 1632px">
+      <div class="step you"><b>0 · 挑</b><span>给 issue 打 <span class="mono">agentdeck</span> 标签，或在 Issues &amp; PRs 窗口里选几条点 <b>Queue for tonight</b>。</span><span class="who">你</span></div>
+      <span class="arr">→</span>
+      <div class="step"><b>1 · 规划</b><span>Planner（headless）读这批 issue 和代码：哪些能并行、先后、每条的 Done when（检查命令）。写成计划，面板上可看。</span><span class="who">agent · 一个容器</span></div>
+      <span class="arr">→</span>
+      <div class="step"><b>2 · 实现</b><span>一条 issue 一个容器、一个分支 <span class="mono">afk/18231-hmr-css</span>。一轮轮跑到完成信号；AgentDeck 自己跑检查，过了才算完。</span><span class="who">agent · 并行，默认 3 个</span></div>
+      <span class="arr">→</span>
+      <div class="step"><b>3 · 换一家审</b><span>另一家在新的只读容器里看 diff 和检查结果。不过就退回第 2 步，最多 2 轮。</span><span class="who">agent · 另一家</span></div>
+      <span class="arr">→</span>
+      <div class="step ad"><b>4 · 合进暂存分支</b><span>先用 <span class="mono">git merge-tree</span> 预演（O1 L3），干净才合进 <span class="mono">afk/2026-10-31</span>；冲突的留在自己的分支上写明。</span><span class="who">AgentDeck</span></div>
+      <span class="arr">→</span>
+      <div class="step you"><b>5 · 早上</b><span>收件箱一条 “Overnight run · 6 of 7 ready”：报告、暂存分支的 diff、攒好的草稿（开 PR、评论、关 issue），<b>Post 6</b>；合回 main 也是你点。</span><span class="who">你</span></div>
+    </div>
+    <p class="note" style="max-width: 1500px">灰框 agent 做，墨色粗框是 AgentDeck 的确定动作（不花 token），黄色虚线是你。卡住时按 RunRule：同一家再试一轮 → 交给另一家（撞额度也走这条，PL5 的 LimitService）→ 停下来，把问题放进收件箱（“mock the C:\ drive?”），你回一句它接着跑。规划那一步可以加一道 <b>Approve plan</b>：第一次在这个项目里跑时默认开，之后你可以关。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 四种排法（照 Sandcastle 的模板，做成 Run 的模板）</span>
+    <div class="tbl" style="grid-template-columns: 220px minmax(0, 1.3fr) minmax(0, 1fr) 260px; max-width: 1632px">
+      <span class="th">模板</span><span class="th">怎么跑</span><span class="th">适合</span><span class="th">在 AgentDeck 里</span>
+      <span class="td"><b>One by one</b><br><span class="muted mono">simple-loop</span></span><span class="td">一个容器，按顺序一条条做，做完一条接下一条</span><span class="td">小修小补、文档、标签清理；互相有关联的</span><span class="td">一个 Run，计划是一串条目（W0 的 Plan）</span>
+      <span class="td"><b>One by one, reviewed</b><br><span class="muted mono">sequential-reviewer</span></span><span class="td">每做完一条，另一家审一遍再做下一条</span><span class="td">怕错的、要人信得过的</span><span class="td">同上，每条多一个审查步</span>
+      <span class="td"><b>Plan, then in parallel</b><br><span class="muted mono">parallel-planner</span></span><span class="td">先规划能并行的，分到几个分支同时做，最后合</span><span class="td">一批互不相干的 bug</span><span class="td">一个 Planner + N 个实现 Run</span>
+      <span class="td"><b>Plan, parallel, reviewed</b><br><span class="muted mono">parallel-planner-with-review</span></span><span class="td">同上，每个分支合之前先审</span><span class="td">默认推荐</span><span class="td">上面的流程图就是这一种</span>
+    </div>
+    <p class="note" style="max-width: 1500px">这四种和集群（C5）的模板是同一个东西的两种跑法：集群里 Worker 是终端，这里是后台 Run。所以模板文件格式共用，多一个字段 <span class="mono">surface: card</span>。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · 什么自动、什么还要你点</span>
+    <div class="tbl" style="grid-template-columns: 300px 200px 200px minmax(0, 1fr); max-width: 1632px">
+      <span class="th">动作</span><span class="th">默认</span><span class="th">自己的仓库 <span class="muted">（项目设置）</span></span><span class="th">为什么</span>
+      <span class="td">在容器里改代码、提交、跑测试</span><span class="td">自动</span><span class="td">自动</span><span class="td">只动容器和它自己的分支</span>
+      <span class="td">合进暂存分支 <span class="mono">afk/&lt;日期&gt;</span></span><span class="td">自动（预演干净才合）</span><span class="td">自动</span><span class="td">本地分支，不碰 main，不对外</span>
+      <span class="td">推送 <span class="mono">afk/*</span> 分支到你的远端</span><span class="td">早上一次点</span><span class="td">自动</span><span class="td">只有你一个人维护的仓库，推自己的分支不算对外发言</span>
+      <span class="td">开 Draft PR</span><span class="td">草稿进收件箱</span><span class="td">检查和审查都过了就自动开</span><span class="td">Draft 不会被合；你仍然要看</span>
+      <span class="td">在 issue 下评论、问复现</span><span class="td">草稿进收件箱，整批 Post</span><span class="td">同左</span><span class="td">以你的名义说话，给别人看的</span>
+      <span class="td">关 issue</span><span class="td">不单独关；PR 里写 Closes #n，合并时由 GitHub 关</span><span class="td">同左</span><span class="td">Sandcastle 的 simple-loop 让 agent 拿令牌自己关；我们不把 gh 令牌放进容器</span>
+      <span class="td">合进 main</span><span class="td">永远你点</span><span class="td">永远你点</span><span class="td">最后一道关，手机上也不行（R0）</span>
+    </div>
+    <p class="note" style="max-width: 1500px">“自己的仓库”这一档只在仓库的 owner 是你、并且你在 Project settings 里打开时才有；别人的仓库、开源项目照 I0–I2 的规矩。Auto-approve 对容器里的 agent 没有意义（它本来就不问），关在容器里就是这一档的安全边界，见 U2。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · 早上看到什么：收件箱一条，报告一张</span>
+    <div class="fig" style="width: 1632px; height: 600px">
+      <div class="win" style="position: absolute; left: 24px; top: 24px; width: 520px">
+        <div class="wt"><b>Needs you · 2</b><span style="flex: 1"></span><span class="muted">⌘J</span></div>
+        <div class="gh" style="border-top: none">WAITING FOR YOU</div>
+        <div style="display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-top: 1px solid #F0F0ED; background: #FFF7E6">
+          <div style="display: flex; align-items: center; gap: 6px"><span class="dot" style="background: #BF8700"></span><b>Overnight run finished</b><span class="muted">vitejs/vite · 06:40</span></div>
+          <span>6 of 7 ready on <span class="mono">afk/2026-10-31</span> · 1 asked a question</span>
+          <span class="muted">3 drafts to post: 2 Draft PRs, 1 comment</span>
+          <div style="display: flex; gap: 6px"><span class="btn">Open report</span><span class="btn">Review drafts</span><span class="btn pri">Post 3</span></div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-top: 1px solid #F0F0ED">
+          <div style="display: flex; align-items: center; gap: 6px"><span class="dot" style="background: #BF8700"></span><b>Question</b><span class="muted">#18197 · claude · 02:12</span></div>
+          <span>“The Windows path test needs a C:\ drive. Mock it, or skip the test on macOS?”</span>
+          <div style="display: flex; gap: 6px"><span class="btn">Mock it</span><span class="btn">Skip on macOS</span><span class="btn">Reply…</span></div>
+        </div>
+      </div>
+      <div class="win" style="position: absolute; left: 568px; top: 24px; width: 1040px">
+        <div class="wt"><b>Overnight run · vitejs/vite</b><span class="muted">23:00 – 06:40 · Plan, parallel, reviewed</span><span style="flex: 1"></span><span class="btn">View diff</span><span class="btn">Copy as Markdown</span></div>
+        <div class="row" style="grid-template-columns: 70px 1fr 120px 150px 110px 70px; border-top: none; font-size: 10.5px; color: #8A8A85; font-weight: 600"><span>ISSUE</span><span>RESULT</span><span>CHECK</span><span>REVIEW</span><span>CHANGES</span><span>TOKENS</span></div>
+        <div class="row" style="grid-template-columns: 70px 1fr 120px 150px 110px 70px"><span class="mono">#18231</span><span>Merged into afk · Draft PR drafted</span><span>passed on round 3</span><span>codex · approved</span><span>2 commits · +41</span><span>610k</span></div>
+        <div class="row" style="grid-template-columns: 70px 1fr 120px 150px 110px 70px"><span class="mono">#18209</span><span>Merged into afk</span><span>passed</span><span>codex · approved</span><span>1 commit · +18</span><span>240k</span></div>
+        <div class="row" style="grid-template-columns: 70px 1fr 120px 150px 110px 70px"><span class="mono">#18197</span><span style="color: #8A6700">Waiting for your answer</span><span>2 failed</span><span class="muted">—</span><span>uncommitted · +77</span><span>380k</span></div>
+        <div class="row" style="grid-template-columns: 70px 1fr 120px 150px 110px 70px"><span class="mono">#18252</span><span>Merged into afk · comment drafted</span><span>docs build</span><span>claude · approved</span><span>1 commit · +12</span><span>90k</span></div>
+        <div class="row" style="grid-template-columns: 70px 1fr 120px 150px 110px 70px"><span class="mono">#18260</span><span>Not merged: conflicts with #18231 in css.ts</span><span>passed</span><span>codex · approved</span><span>branch kept</span><span>300k</span></div>
+        <div class="row" style="grid-template-columns: 70px 1fr 120px 150px 110px 70px"><span class="muted">+2</span><span class="muted">merged · see all</span><span></span><span></span><span></span><span></span></div>
+        <div style="padding: 10px 12px; border-top: 1px solid #EEEEEB; display: flex; flex-direction: column; gap: 4px">
+          <span class="muted" style="font-size: 10.5px; font-weight: 600; letter-spacing: 0.04em">USAGE LIMITS · 1</span>
+          <span>03:10 claude hit its 5-hour limit during #18260 · handed off to codex (RunRule) · 03:12</span>
+        </div>
+        <div style="display: flex; gap: 6px; padding: 10px 12px; border-top: 1px solid #EEEEEB"><span class="btn">Re-queue #18260 on top of afk</span><span class="btn">Open #18197 as a terminal</span><span style="flex: 1"></span><span class="btn">Merge afk/2026-10-31 into main…</span></div>
+      </div>
+    </div>
+    <p class="note" style="max-width: 1500px">报告由代码按固定格式拼（W2 同一套）：结果来自 Run，检查是 AgentDeck 跑的，提交和 diff 来自 git，token 来自 Usage 的读取器。冲突的那条不硬合，Re-queue 时基于暂存分支重做。想跟某一条聊，<b>Open as a terminal</b> 就是 U0 的 Take over。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">5 · 和 Sandcastle 本身怎么相处：三条路</span>
+    <div class="tbl" style="grid-template-columns: 240px minmax(0, 1.2fr) minmax(0, 1fr) 240px; max-width: 1632px">
+      <span class="th">做法</span><span class="th">怎么做</span><span class="th">代价</span><span class="th">结论</span>
+      <span class="td"><b>A · 兼容</b>：跑你仓库里的 <span class="mono">.sandcastle/</span></span><span class="td">仓库里有 <span class="mono">.sandcastle/main.mts</span> 时，项目框菜单多一项 Run Sandcastle：作为一个 Run 起，读 <span class="mono">.sandcastle/logs/</span> 显示进度，它开的分支和 worktree 认成卡片</span><span class="td">只能看，进度、额度、审查都是它自己的；它的 <span class="mono">.env</span> 里有 agent 令牌，我们不碰</span><span class="td">先做，便宜</span>
+      <span class="td"><b>B · 当引擎</b>：主进程里用 <span class="mono">@ai-hero/sandcastle</span> 的 <span class="mono">run()</span></span><span class="td">我们的 RunService 调它：容器供应、worktree 分支策略、完成信号、会话 resume 都用它的；外面套我们的计划、规则、面板、报告</span><span class="td">它还在 0.x，接口会变；它管不到 tmux 和我们的状态灯；要在主进程里多一个依赖</span><span class="td">先做一次试验（调研记录一条），再定</span>
+      <span class="td"><b>C · 自己写</b></span><span class="td">RunService 自己起容器、跑非交互模式、收结果</span><span class="td">重写它已经做好的那部分（容器、分支、resume、日志）</span><span class="td">B 的试验不过再选</span>
+    </div>
+    <p class="note" style="max-width: 1500px">B 值得试的原因：它和我们同一套技术（TypeScript、Node），供应商能换（Docker、Podman、Vercel、不用沙箱），claude、codex、pi 的 resume 已经接好，正好是 U0 的 Take over 要的东西。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">6 · 原来的页改了什么、待你确认</span>
+    <div class="tbl" style="grid-template-columns: 200px minmax(0, 1fr) minmax(0, 1fr); max-width: 1632px">
+      <span class="th">页</span><span class="th">原来</span><span class="th">现在（提议）</span>
+      <span class="td">I0 主流程</span><span class="td">一个 issue 一个工作区框加一个终端，每一步你在场</span><span class="td">多一条“无人值守”的线：标签 → Run 模板 → 暂存分支 → 早上一批</span>
+      <span class="td">I0 第 4 节、第 5 节</span><span class="td">学到的：Sweep 说全自动 issue → PR 不可靠；不当机器人、不自动发</span><span class="td">不可靠靠三样补：AgentDeck 自己跑检查、换一家审、只合进暂存分支；对外发言仍然你点，只是攒成一批</span>
+      <span class="td">I1 Issues &amp; PRs 窗口</span><span class="td">页签 Triage · Up next · Working · My PRs · Review requests</span><span class="td">多一个 Tonight：打了标签的、排进今晚的；Queue for tonight 按钮</span>
+      <span class="td">I2 防注入</span><span class="td">从 issue 开的终端去掉 gh 登录和推送凭据（“这不是沙箱”）</span><span class="td">无人值守的一律在容器里（U2），凭据根本不进容器</span>
+      <span class="td">W0 一天的计划</span><span class="td">一个 agent 一串条目</span><span class="td">条目可以是“跑一个 Run 模板”；定时（Weekdays 23:00）照用</span>
+    </div>
+    <div class="tbl" style="grid-template-columns: 40px minmax(0, 1fr) minmax(0, 1fr) 420px; font-size: 12.5px; max-width: 1632px">
+      <span class="th">#</span><span class="th">问题</span><span class="th">选项</span><span class="th">推荐</span>
+      <span class="td mono">1</span><span class="td">无人值守的做进哪里</span><span class="td">直接进 main / 进暂存分支 / 各留各的分支</span><span class="td">进暂存分支 <span class="mono">afk/&lt;日期&gt;</span>，冲突的各留各的</span>
+      <span class="td mono">2</span><span class="td">“自己的仓库”这一档</span><span class="td">不要 / 要（推 afk 分支、开 Draft PR 不问）</span><span class="td">要，只给 owner 是你的仓库，默认关</span>
+      <span class="td mono">3</span><span class="td">Approve plan</span><span class="td">每次都要 / 第一次要 / 不要</span><span class="td">这个项目第一次跑时要，之后你可以关</span>
+      <span class="td mono">4</span><span class="td">和 Sandcastle 的关系</span><span class="td">A 兼容 / B 当引擎 / C 自己写</span><span class="td">先 A；B 做一次试验再定</span>
+      <span class="td mono">5</span><span class="td">一晚上同时几个容器</span><span class="td">1 / 3 / 按机器算</span><span class="td">默认 3，项目设置里改；开新的之前看额度</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":3800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

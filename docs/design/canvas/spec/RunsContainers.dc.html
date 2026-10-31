@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>容器</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1300px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.tag{display:inline-flex;align-items:center;height:18px;padding:0 7px;border-radius:999px;font-size:10.5px;background:#F2F2EF;color:#5F5F5A;white-space:nowrap}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#8A8A85}
+.dot{width:7px;height:7px;border-radius:50%;flex:none;box-sizing:border-box;display:inline-block}
+.am{width:6px;height:6px;border-radius:1.5px;flex:none;display:inline-block}
+.btn{display:inline-flex;align-items:center;height:22px;padding:0 8px;border:1px solid #D6D6D2;border-radius:6px;font-size:11px;background:#FFFFFF;color:#1A1A1A;white-space:nowrap}
+.win{box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E3E0;border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,0.08);font-size:12px;overflow:hidden;display:flex;flex-direction:column}
+.wt{display:flex;align-items:center;gap:7px;height:30px;padding:0 10px;border-bottom:1px solid #EEEEEB;font-size:11.5px;flex:none}
+.box{position:absolute;box-sizing:border-box;border-radius:10px;padding:12px 14px;font-size:12px;line-height:1.55;display:flex;flex-direction:column;gap:6px}
+.lbl{font-size:10.5px;font-weight:600;letter-spacing:0.05em;color:#8A8A85}
+.item{display:flex;gap:8px;align-items:baseline}
+.ok{font-size:11px;color:#1A7F37;width:14px;flex:none}
+.no{font-size:11px;color:#CF222E;width:14px;flex:none}
+.alab{position:absolute;font-size:11px;color:#5F5F5A;background:#F7F7F5;padding:0 4px;line-height:1.4}
+.ex{display:flex;flex-direction:column;gap:10px;font-size:13.5px;line-height:1.65}
+.note{font-size:12.5px;line-height:1.6;color:#5F5F5A}
+</style>
+</helmet>
+<div style="width: 1760px; height: 3400px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">U2 · 容器：每个后台任务一个容器，代码、凭据、网络怎么给</h1>
+      <span class="concept">2026-10-31 提议，待你确认</span>
+    </div>
+    <p class="lead">无人值守的 agent 不会停下来问你“能不能跑这个命令”，所以边界不能靠批准，要靠它<b>够不着</b>。I2 里我们自己写过“去掉 gh 登录和推送凭据，这不是沙箱：agent 有 shell 时仍可能读 ~/.ssh”。这一页把它补成真的隔离：每个 Run 一个容器，只挂它自己那个 worktree，只给调模型要的那一个登录，推不出去、看不到你的家目录，网络默认只放行模型和包仓库。现成的三家都是这个路子：Sandcastle（Docker、Podman、Vercel 微虚拟机）、Docker Sandboxes（每个 agent 一台微虚拟机、自带 Docker，2026-01 起 macOS 可用）、Dagger 的 container-use（每个环境一个容器加一条 <span class="mono">container-use/&lt;名字&gt;</span> 分支）。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 一个 Run 的容器里有什么、没有什么</span>
+    <div class="fig" style="width: 1632px; height: 600px">
+      <div class="box" style="left: 24px; top: 24px; width: 470px; height: 552px; background: #FFFFFF; border: 1px solid #E3E3E0">
+        <span class="lbl">YOUR MAC</span>
+        <b>AgentDeck 主进程 · RunService</b>
+        <span class="muted">起容器、跑检查、合进暂存分支、写报告；只有它拿你的 git 凭据和 gh 登录</span>
+        <div style="height: 8px"></div>
+        <b>项目仓库</b>
+        <span class="mono" style="font-size: 11px">~/vite · .git</span>
+        <span class="mono" style="font-size: 11px">~/vite-afk/18231-hmr-css <span class="muted">(worktree)</span></span>
+        <div style="height: 8px"></div>
+        <b>不进容器的</b>
+        <div class="item"><span class="no">✕</span><span>gh / glab 登录、<span class="mono">GH_TOKEN</span></span></div>
+        <div class="item"><span class="no">✕</span><span><span class="mono">~/.ssh</span>、<span class="mono">SSH_AUTH_SOCK</span>、git credential helper</span></div>
+        <div class="item"><span class="no">✕</span><span>家目录、别的仓库、<span class="mono">~/.claude</span> <span class="mono">~/.codex</span> 的配置和记忆</span></div>
+        <div class="item"><span class="no">✕</span><span>带密钥的环境变量（<span class="mono">*_TOKEN</span> <span class="mono">*_KEY</span> <span class="mono">*_SECRET</span>）</span></div>
+      </div>
+      <div class="box" style="left: 640px; top: 24px; width: 600px; height: 552px; background: #FFFFFF; border: 1.5px dashed #8A8A85">
+        <span class="lbl">CONTAINER · afk-18231 · image vite-dev:3f2a</span>
+        <div class="item"><span class="ok">✓</span><span><span class="mono">/work</span> = 只挂这一个 worktree（读写）；<span class="mono">.git</span> 里只有这个分支能写</span></div>
+        <div class="item"><span class="ok">✓</span><span>agent 的命令行（镜像里装好），非交互模式跑：<span class="mono">claude -p</span> / <span class="mono">codex exec</span></span></div>
+        <div class="item"><span class="ok">✓</span><span>调模型要的一个登录：环境变量里的长期令牌（claude 用 <span class="mono">setup-token</span> 生成的那种；codex、其他几家待核对）</span></div>
+        <div class="item"><span class="ok">✓</span><span><span class="mono">agentdeck</span> 命令行：经挂进来的 socket 报进度、提问、存草稿，带这个 Run 自己的钥匙（CR14）；不能开终端、不能合并、不能发</span></div>
+        <div class="item"><span class="ok">✓</span><span>网络：默认只放行模型的 API、npm / PyPI 这类包仓库、github.com 只读；其余拒绝（怎么拦待核对：代理还是 Docker Sandboxes 的网络策略）</span></div>
+        <div class="item"><span class="ok">✓</span><span>资源上限：CPU 2 核、内存 4 GB、磁盘 20 GB（项目设置可改）</span></div>
+        <div class="item"><span class="ok">✓</span><span>dev server 的端口：映射到 Mac 上一个空端口，白板上照样开网页窗口</span></div>
+        <div style="height: 6px"></div>
+        <span class="muted">提交留在 worktree 的分支上；推送、开 PR、评论都不在这里做。容器停了，worktree 和分支还在。</span>
+      </div>
+      <div class="box" style="left: 1290px; top: 24px; width: 318px; height: 260px; background: #FFFFFF; border: 1px solid #E3E3E0">
+        <span class="lbl">OUT OF THE MAC</span>
+        <span>模型 API（Anthropic、OpenAI……）</span>
+        <span>npm、PyPI、crates.io</span>
+        <span>github.com（只读 clone、下载）</span>
+        <span class="muted" style="margin-top: 6px">别的一律拒绝；被拒的地址记进 Run 的日志，报告里列出来，你可以加进放行名单</span>
+      </div>
+      <div class="box" style="left: 1290px; top: 316px; width: 318px; height: 260px; background: #FFFBF0; border: 1.5px dashed #BF8700">
+        <span class="lbl" style="color: #8A6700">YOU</span>
+        <span>早上点 Post / Merge 时，由主进程用你平时的 git 凭据和 gh 登录推送、开 PR、评论</span>
+        <span class="muted">（U1 第 3 节；“自己的仓库”一档时推 afk 分支由主进程自动做，也不在容器里）</span>
+      </div>
+      <svg width="1632" height="600" style="position: absolute; left: 0; top: 0; pointer-events: none" aria-hidden="true">
+        <path d="M494 200 L640 200" stroke="#1A1A1A" stroke-width="1.5" fill="none"></path><path d="M632 195 L640 200 L632 205" stroke="#1A1A1A" stroke-width="1.5" fill="none"></path>
+        <path d="M640 420 L494 420" stroke="#1A1A1A" stroke-width="1.5" fill="none" stroke-dasharray="4 4"></path><path d="M502 415 L494 420 L502 425" stroke="#1A1A1A" stroke-width="1.5" fill="none"></path>
+        <path d="M1240 150 L1290 150" stroke="#1A1A1A" stroke-width="1.5" fill="none"></path><path d="M1282 145 L1290 150 L1282 155" stroke="#1A1A1A" stroke-width="1.5" fill="none"></path>
+      </svg>
+      <span class="alab" style="left: 512px; top: 178px">bind-mount worktree</span>
+      <span class="alab" style="left: 506px; top: 428px">agentdeck socket</span>
+      <span class="alab" style="left: 1244px; top: 128px">allowlist</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 镜像从哪来</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start; max-width: 1632px">
+      <div class="tbl" style="grid-template-columns: 60px 300px minmax(0, 1fr); width: 980px; flex: none">
+        <span class="th">先后</span><span class="th">找什么</span><span class="th">说明</span>
+        <span class="td mono">1</span><span class="td mono">.agentdeck/Dockerfile</span><span class="td">项目专门给 AgentDeck 写的</span>
+        <span class="td mono">2</span><span class="td mono">.sandcastle/Dockerfile</span><span class="td">已经在用 Sandcastle 的仓库，直接用它的</span>
+        <span class="td mono">3</span><span class="td mono">.devcontainer/devcontainer.json</span><span class="td">VS Code / Codespaces 的开发容器，很多项目都有</span>
+        <span class="td mono">4</span><span class="td">AgentDeck 自带的默认镜像</span><span class="td">git、node、python、五家 agent 的命令行；装依赖由 agent 在容器里自己跑</span>
+      </div>
+      <div style="flex: 1; min-width: 0" class="ex">
+        <span>第一次要建镜像，几分钟；卡片上写 <b>Building image · 2m</b>，建好缓存，之后几秒起一个。</span>
+        <span>依赖装一次存成一层（按 lockfile 的哈希），不然每个 Run 都重装一遍。</span>
+        <span>项目设置 › Containers 里能看到用的是哪一份、什么时候建的、多大，点 Rebuild 重建。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · 用哪个容器运行时</span>
+    <div class="tbl" style="grid-template-columns: 260px minmax(0, 1.2fr) minmax(0, 1fr) 220px; max-width: 1632px">
+      <span class="th">运行时</span><span class="th">隔离</span><span class="th">代价</span><span class="th">结论</span>
+      <span class="td"><b>Docker 兼容的</b>：Docker Desktop、OrbStack、Colima</span><span class="td">普通容器，共用 Linux 虚拟机的内核；在 Mac 上本来就隔着一层虚拟机</span><span class="td">最常见，大多数人已经装了</span><span class="td">默认</span>
+      <span class="td"><b>Podman</b></span><span class="td">同上，不用常驻守护进程</span><span class="td">命令基本一样</span><span class="td">支持</span>
+      <span class="td"><b>Docker Sandboxes</b></span><span class="td">每个 agent 一台微虚拟机，自带 Docker，回不到宿主（Docker 2026-01 的说法）</span><span class="td">要新版 Docker Desktop；挂 worktree、端口怎么映射待核对</span><span class="td">有就优先用（无人值守）</span>
+      <span class="td"><b>Apple container</b>（macOS 26）</span><span class="td">每个容器一台轻量虚拟机</span><span class="td">较新，和 Docker 命令不完全一样，待核对</span><span class="td">以后再看</span>
+      <span class="td"><b>都没有</b></span><span class="td">—</span><span class="td">不偷偷退回到直接在 Mac 上跑</span><span class="td">告诉你装什么（像 gh 那样），无人值守的这一项灰掉</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · 卡片上能做什么</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start; max-width: 1632px">
+      <div class="win" style="width: 520px; flex: none">
+        <div class="wt"><span class="dot" style="background: #1A7F37"></span><span class="am" style="background: #2F5E9E"></span><b>#18231 HMR drops CSS</b><span style="flex: 1"></span><span class="muted">container · running · 12m</span></div>
+        <div style="display: flex; flex-direction: column; gap: 7px; padding: 10px 12px; font-size: 11.5px">
+          <div style="display: flex; gap: 8px"><span class="muted" style="width: 70px">Image</span><span class="mono">vite-dev:3f2a · from .devcontainer</span></div>
+          <div style="display: flex; gap: 8px"><span class="muted" style="width: 70px">Step</span><span>implement · round 2 of 3</span></div>
+          <div style="display: flex; gap: 8px"><span class="muted" style="width: 70px">Ports</span><span class="mono">5173 → localhost:49301</span></div>
+          <div style="display: flex; gap: 8px"><span class="muted" style="width: 70px">Blocked</span><span>1 request · registry.example.com <span class="btn" style="height: 18px">Allow…</span></span></div>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px"><span class="btn">Log</span><span class="btn">Open a shell</span><span class="btn">Take over</span><span class="btn">Open 5173</span><span class="btn">Stop</span></div>
+        </div>
+      </div>
+      <div class="tbl" style="grid-template-columns: 160px minmax(0, 1fr); flex: 1; min-width: 0">
+        <span class="th">按钮</span><span class="th">做什么</span>
+        <span class="td">Log</span><span class="td">只读终端窗口里看这个 Run 的输出（非交互模式的 stdout 和工具调用），跟着滚</span>
+        <span class="td">Open a shell</span><span class="td">开一个终端窗口，里面是这个容器的 shell（<span class="mono">docker exec -it</span>），你自己看文件、跑命令；不碰 agent</span>
+        <span class="td">Take over</span><span class="td">停掉后台这一轮，在同一个容器里用交互模式接上同一段会话（<span class="mono">claude --resume &lt;id&gt;</span>），变成一个真终端窗口</span>
+        <span class="td">Open 5173</span><span class="td">dev server 映射到 Mac 上的端口，在白板上开网页窗口（和 localhost 链接一样）</span>
+        <span class="td">Allow…</span><span class="td">把被拦的地址加进这个项目的放行名单；只对新起的容器生效</span>
+        <span class="td">Stop · Discard</span><span class="td">停容器；Discard 才删 worktree 和分支，要确认。合进暂存分支或 main 以后，容器自动删，镜像留着</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">5 · 什么时候用容器</span>
+    <div class="tbl" style="grid-template-columns: 300px 200px minmax(0, 1fr); max-width: 1632px">
+      <span class="th">场景</span><span class="th">容器</span><span class="th">说明</span>
+      <span class="td">无人值守的 Run（U1、W0 夜里的计划）</span><span class="td">必须</span><span class="td">没有容器运行时就不能开</span>
+      <span class="td">跑别人 PR 的代码（I2 的 Run this PR’s code）</span><span class="td">默认用</span><span class="td">原来写“沙箱第二期”，提前到这里；作者不是成员时只能在容器里跑</span>
+      <span class="td">集群里的 Worker（C2）</span><span class="td">可选</span><span class="td">模板里一项 <span class="mono">runtime: container</span>；Lead 留在 Mac 上</span>
+      <span class="td">你自己开的终端</span><span class="td">不用</span><span class="td">照旧在 Mac 上的 tmux 里；想要的话新建菜单里选 Open in container</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">6 · 待你确认</span>
+    <div class="tbl" style="grid-template-columns: 40px minmax(0, 1fr) minmax(0, 1fr) 420px; font-size: 12.5px; max-width: 1632px">
+      <span class="th">#</span><span class="th">问题</span><span class="th">选项</span><span class="th">推荐</span>
+      <span class="td mono">1</span><span class="td">无人值守能不能不用容器</span><span class="td">能（直接在 Mac 上跑）/ 不能</span><span class="td">不能；没有运行时就灰掉，告诉你装什么</span>
+      <span class="td mono">2</span><span class="td">网络默认</span><span class="td">全放开 / 放行名单 / 全关</span><span class="td">放行名单（模型、包仓库、github.com 只读）</span>
+      <span class="td mono">3</span><span class="td">agent 的登录怎么进容器</span><span class="td">挂你的 <span class="mono">~/.claude</span> / 环境变量里的长期令牌</span><span class="td">长期令牌（单独生成、能吊销）；不挂配置目录</span>
+      <span class="td mono">4</span><span class="td">镜像</span><span class="td">只用默认的 / 按 .agentdeck、.sandcastle、.devcontainer 的先后找</span><span class="td">按先后找，都没有用默认的</span>
+      <span class="td mono">5</span><span class="td">别人 PR 的代码</span><span class="td">你点了在 Mac 上跑 / 只在容器里跑</span><span class="td">有容器运行时就只在容器里跑</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":3400}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

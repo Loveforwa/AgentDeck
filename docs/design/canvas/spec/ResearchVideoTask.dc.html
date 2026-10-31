@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>视频任务</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fig{position:relative;flex:none;box-sizing:border-box;overflow:hidden;border:1px solid #E3E3E0;border-radius:10px;background-color:#F7F7F5;background-image:radial-gradient(#D9D9D5 1px,transparent 1px);background-size:14px 14px}
+.h2{font-size:20px;font-weight:600;margin:0}
+.lead{margin:0;font-size:14px;line-height:1.7;color:#5F5F5A;max-width:1300px}
+.tbl{display:grid;border:1px solid #E3E3E0;border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55}
+.th{padding:8px 12px;background:#F2F2EF;font-size:12px;color:#6B6B6B;font-weight:600}
+.td{padding:8px 12px;border-top:1px solid #E3E3E0}
+.tag{display:inline-flex;align-items:center;height:18px;padding:0 7px;border-radius:999px;font-size:10.5px;background:#F2F2EF;color:#5F5F5A;white-space:nowrap}
+.concept{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;border:1px dashed #8A8A85;color:#5F5F5A}
+.mono{font-family:'IBM Plex Mono',monospace}
+.muted{color:#8A8A85}
+.btn{display:inline-flex;align-items:center;justify-content:center;height:22px;padding:0 8px;border:1px solid #D6D6D2;border-radius:6px;font-size:11px;background:#FFFFFF;color:#1A1A1A;white-space:nowrap}
+.btn.pri{background:#1A1A1A;border-color:#1A1A1A;color:#FFFFFF}
+.phone{position:absolute;box-sizing:border-box;width:300px;height:600px;border:1px solid #CFCFCA;border-radius:28px;background:#FFFFFF;overflow:hidden;display:flex;flex-direction:column;font-size:12px}
+.ph{padding:14px 16px 8px;font-size:11px;color:#8A8A85}
+.pb{padding:0 16px;display:flex;flex-direction:column;gap:10px}
+.field{border:1px solid #D6D6D2;border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.5}
+.thumb{width:72px;height:44px;flex:none;border-radius:4px;background:#EEEEEB;border:1px solid #E3E3E0;display:flex;align-items:center;justify-content:center;font-size:9px;color:#8A8A85}
+.step{flex:1;min-width:0;box-sizing:border-box;display:flex;flex-direction:column;gap:6px;padding:12px;border:1px solid #E3E3E0;border-radius:10px;background:#FFFFFF;font-size:12px;line-height:1.55}
+.step.you{border:1.5px dashed #BF8700;background:#FFFBF0}
+.step.ad{border:2px solid #1A1A1A}
+.arr{flex:none;align-self:center;color:#8A8A85;font-size:16px}
+.who{font-size:10.5px;color:#8A8A85}
+.ex{display:flex;flex-direction:column;gap:10px;font-size:13.5px;line-height:1.65}
+.note{font-size:12.5px;line-height:1.6;color:#5F5F5A}
+</style>
+</helmet>
+<div style="width: 1760px; height: 3300px; box-sizing: border-box; padding: 64px; background: #FFFFFF; color: #1A1A1A; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; display: flex; flex-direction: column; gap: 52px">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">E4 · 视频任务：手机上发一个链接加一句话，结果回到手机</h1>
+      <span class="concept">2026-10-31 提议，待你确认</span>
+    </div>
+    <p class="lead">你 10-31 说的：发一个视频链接，自动提炼细节；最好能按提示词起一个任务；能抽截图；能照着视频做出一个一模一样、测过的 skill；结果发回手机。E2 第 5–6 节已经有“视频转 PPT”（第三期的模板），这里把它放宽成<b>视频任务</b>：链接加你的一句话，产物不只 PPT，还可以是笔记、步骤、一个 skill。还补两头：<b>从手机发起</b>（R0 现在不许手机开新任务）和<b>结果回手机</b>。中间照 U0：固定的几步由代码做，不花 token；按你那句话做事的是一个后台 Run，在容器里跑。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">1 · 流程</span>
+    <div style="display: flex; gap: 8px; max-width: 1632px">
+      <div class="step you"><b>0 · 手机上发</b><span>在 B 站、YouTube 里点分享 › <b>Send to AgentDeck</b>，写一句要什么，选一个模板。</span><span class="who">你</span></div>
+      <span class="arr">→</span>
+      <div class="step ad"><b>1 · 取下来</b><span>下载；先用字幕，没有字幕再本机转写；按镜头变化截关键帧，每张带时间点。进资料库（E2）一条。</span><span class="who">AgentDeck · Job</span></div>
+      <span class="arr">→</span>
+      <div class="step"><b>2 · 照你那句话做</b><span>一个后台 Run 读字幕和关键帧：提炼、列步骤、出 PPT……每个说法带时间点。</span><span class="who">agent · 容器里</span></div>
+      <span class="arr">→</span>
+      <div class="step"><b>3 · 照着做一遍（可选）</b><span>把视频里的操作写成 skill，在容器里真跑一遍，每一步截图，和视频的关键帧并排。</span><span class="who">agent</span></div>
+      <span class="arr">→</span>
+      <div class="step"><b>4 · 换一家核对</b><span>另一家逐步看“视频里是什么、做出来是什么”，对不上的标出来，带截图证据。</span><span class="who">agent · 另一家</span></div>
+      <span class="arr">→</span>
+      <div class="step you"><b>5 · 回到手机</b><span>推送一条，点开是结果页：摘要、带截图的笔记、对照表；skill 要你 Accept 才进 Skill 库。</span><span class="who">你</span></div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">2 · 手机上的三屏</span>
+    <div class="fig" style="width: 1632px; height: 660px">
+      <div class="phone" style="left: 40px; top: 30px">
+        <div class="ph">Share · Send to AgentDeck</div>
+        <div class="pb">
+          <div class="field"><span class="muted" style="font-size: 10.5px">LINK</span><br><span class="mono" style="font-size: 11px">bilibili.com/video/BV1x…</span></div>
+          <div class="field" style="min-height: 110px"><span class="muted" style="font-size: 10.5px">WHAT YOU WANT</span><br>提炼里面的 Claude Code 工作流，做成一个 skill，照视频跑一遍，对不上的标出来</div>
+          <div class="field"><span class="muted" style="font-size: 10.5px">TEMPLATE</span><br>Video → skill, tested ▾</div>
+          <div class="field"><span class="muted" style="font-size: 10.5px">PROJECT</span><br>Inbox tasks ▾</div>
+          <span class="muted" style="font-size: 11px">Runs in a container on your Mac. Budget: 1M tokens.</span>
+          <span class="btn pri" style="height: 44px; font-size: 13px">Send</span>
+        </div>
+      </div>
+      <div class="phone" style="left: 380px; top: 30px">
+        <div class="ph">Lock screen</div>
+        <div class="pb">
+          <div style="border-radius: 14px; background: #F2F2EF; padding: 10px 12px; display: flex; flex-direction: column; gap: 3px">
+            <div style="display: flex; justify-content: space-between"><b>AgentDeck</b><span class="muted">21:48</span></div>
+            <span>Video task done · 9 of 11 steps matched</span>
+            <span class="muted">1 skill waiting for your OK</span>
+          </div>
+          <span class="muted" style="font-size: 11px; line-height: 1.6">默认只写种类和数（RM1 的规矩），不写视频标题；Include details 打开才带。</span>
+        </div>
+      </div>
+      <div class="phone" style="left: 720px; top: 30px">
+        <div class="ph">AgentDeck · Video task</div>
+        <div class="pb">
+          <b style="font-size: 13px">Claude Code 多 agent 工作流</b>
+          <span class="muted" style="font-size: 11px">28:14 · captions · 32 keyframes</span>
+          <div style="display: flex; gap: 8px; align-items: center"><span class="thumb">03:12</span><span>Sets up a worktree per task</span></div>
+          <div style="display: flex; gap: 8px; align-items: center"><span class="thumb">07:40</span><span>Writes a plan file before coding</span></div>
+          <div style="display: flex; gap: 8px; align-items: center"><span class="thumb">15:05</span><span>Runs two agents and compares diffs</span></div>
+          <div style="border-top: 1px solid #EEEEEB; padding-top: 8px; display: flex; flex-direction: column; gap: 4px">
+            <b>Reproduced · 9 of 11 matched</b>
+            <span style="color: #8A6700">Step 6 differs: the video’s CLI flag no longer exists</span>
+            <span class="muted">Step 9 not tried: needs a paid account</span>
+          </div>
+          <div style="display: flex; gap: 8px"><span class="btn" style="flex: 1; height: 44px">Open notes</span><span class="btn pri" style="flex: 1; height: 44px">Accept skill</span></div>
+        </div>
+      </div>
+      <div style="position: absolute; left: 1060px; top: 30px; width: 548px; display: flex; flex-direction: column; gap: 10px; font-size: 12px; line-height: 1.6; color: #5F5F5A">
+        <span><b style="color: #1A1A1A">怎么从分享菜单发进来</b>：一个 iOS 快捷指令（Shortcuts），把链接和你写的那句话发给 Mac 上的 remote-server（R0：只听 127.0.0.1，经 Tailscale 进来，带设备令牌）。安卓用分享到浏览器里的手机页，同一个接口。</span>
+        <span><b style="color: #1A1A1A">Inbox tasks</b>：一个专门的项目和工作区，手机发起的任务都放在这里，不碰你正在做的仓库。</span>
+        <span><b style="color: #1A1A1A">Accept skill</b> 只是把 skill 放进 Skill 库（K0），不发给任何人；手机上也只能做这一类不对外的事。</span>
+        <span><b style="color: #1A1A1A">另一条路</b>：Claude Code 的 Channels（Telegram、Discord、iMessage）能从手机往开着的 claude 里发消息，但只管 claude 一家、要 claude.ai 登录、还是研究预览；不当主路。</span>
+        <span>手机上的样子和数都是示意。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">3 · 固定的几步（代码做，不花 token）</span>
+    <div class="tbl" style="grid-template-columns: 160px minmax(0, 1.3fr) minmax(0, 1fr); max-width: 1632px">
+      <span class="th">步</span><span class="th">怎么做</span><span class="th">注意</span>
+      <span class="td">下载</span><span class="td"><span class="mono">yt-dlp</span>：YouTube、B 站都行</span><span class="td">B 站完整清晰度要登录 cookie：每次问你，默认不用（DR-91）。抖音、小红书 yt-dlp 不能直接下：先让你在手机上存成文件再分享（待核对别的工具）</span>
+      <span class="td">字幕 / 转写</span><span class="td">先取平台字幕；没有才转写：默认本机 whisper-cpp，项目设置里可以换成 API</span><span class="td">本机转写慢但不出 Mac；28 分钟的视频约几分钟（待实测）</span>
+      <span class="td">关键帧</span><span class="td"><span class="mono">ffmpeg</span> 按镜头变化截图，最多 40 张，每张带时间点；屏幕录制类的视频按“画面变化够大”再筛一遍</span><span class="td">截帧给模型看要这家能看图（A0 的 image-input）；不能看的只给字幕</span>
+      <span class="td">存</span><span class="td">资料库（E2）一条：链接、字幕、转写、关键帧、时间点；同一个链接不重复下</span><span class="td">文件在数据目录，不进仓库</span>
+    </div>
+    <p class="note" style="max-width: 1500px">现成的同类：claude-video 的 <span class="mono">/watch</span>（yt-dlp + ffmpeg 截帧，字幕优先，没有再用 Whisper）、video-context-plugin（本机 whisper-cpp）。我们做的是同一套，只是放在 AgentDeck 里当固定步骤，五家都能用它的产物。</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">4 · “照着视频做出一个一模一样、测过的 skill”是什么意思</span>
+    <div style="display: flex; gap: 40px; align-items: flex-start; max-width: 1632px">
+      <div class="tbl" style="grid-template-columns: 44px 70px minmax(0, 1fr) minmax(0, 1fr) 110px; width: 1000px; flex: none; font-size: 12px">
+        <span class="th">#</span><span class="th">视频里</span><span class="th">视频里做了什么</span><span class="th">照着做出来</span><span class="th">对得上吗</span>
+        <span class="td mono">1</span><span class="td mono">03:12</span><span class="td">每个任务开一个 worktree</span><span class="td"><span class="mono">git worktree add</span> 成功，截图里的目录一样</span><span class="td" style="color: #1A7F37">Matches</span>
+        <span class="td mono">2</span><span class="td mono">07:40</span><span class="td">先写 plan.md 再改代码</span><span class="td">plan.md 写出，结构和视频里三节一样</span><span class="td" style="color: #1A7F37">Matches</span>
+        <span class="td mono">6</span><span class="td mono">13:20</span><span class="td">用 <span class="mono">--fast-mode</span> 起第二个 agent</span><span class="td">这个参数现在报错 unknown option；换成设置里打开</span><span class="td" style="color: #8A6700">Differs</span>
+        <span class="td mono">9</span><span class="td mono">19:02</span><span class="td">连到一个付费的服务</span><span class="td">没试：要账号</span><span class="td muted">Not tried</span>
+        <span class="td mono">…</span><span class="td"></span><span class="td muted">还有 7 步</span><span class="td"></span><span class="td"></span>
+      </div>
+      <div style="flex: 1; min-width: 0" class="ex">
+        <span><b>我们理解的是</b>：视频里演示了一套做法，agent 把它写成一个 skill（SKILL.md 加脚本），然后在容器里真的照着跑一遍，每一步截图或记输出，和视频的关键帧并排比。所以“一模一样”是<b>逐步对照</b>，不是像素级一样。<b>这个理解对不对，要你确认。</b></span>
+        <span><b>谁判对不对</b>：另一家 agent 看每一对截图和输出，给 Matches / Differs / Not tried，必须带证据（截图或输出的那一行）；界面上的差别可以加一个图像差异做参考。</span>
+        <span><b>skill 里记来源</b>：视频链接和每一步的时间点；这次跑的对照表存成这个 skill 的测试，以后可以再跑一遍看还对不对（比如工具升级以后）。</span>
+        <span><b>进 Skill 库</b>（K0）要你 Accept；Differs 的步骤写进 skill 的说明里（“视频里的参数已经没有了，改用……”）。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span class="h2">5 · 原来的页改了什么、待你确认</span>
+    <div class="tbl" style="grid-template-columns: 200px minmax(0, 1fr) minmax(0, 1fr); max-width: 1632px">
+      <span class="th">页</span><span class="th">原来</span><span class="th">现在（提议）</span>
+      <span class="td">E2 第 5–6 节、E3 模板</span><span class="td">视频转 PPT：哪几个视频、给谁看、多少页</span><span class="td">视频任务：链接 + 一句话；产物选笔记、步骤、PPT、skill；Video to slides 是其中一个模板</span>
+      <span class="td">R0 第 5 节</span><span class="td">手机上不行：开新终端</span><span class="td">多一档权限 Start from a template：只能用你勾过的模板，放在 Inbox tasks，后台 Run 在容器里，带 token 上限，记审计；默认关</span>
+      <span class="td">R1 手机页</span><span class="td">收件箱、集群进度、汇报、终端最后几行</span><span class="td">多一页 Results：视频任务、Run 的结果（U0 的面板按窄屏排）</span>
+      <span class="td">K0 Skill 管理</span><span class="td">skill 从哪来：你装的、各家的</span><span class="td">多一种来源：从视频学来的，带来源和对照测试</span>
+    </div>
+    <div class="tbl" style="grid-template-columns: 40px minmax(0, 1fr) minmax(0, 1fr) 420px; font-size: 12.5px; max-width: 1632px">
+      <span class="th">#</span><span class="th">问题</span><span class="th">选项</span><span class="th">推荐</span>
+      <span class="td mono">1</span><span class="td">“一模一样的测试 skill”</span><span class="td">逐步对照、截图并排 / 别的意思</span><span class="td">按逐步对照做，等你确认</span>
+      <span class="td mono">2</span><span class="td">手机能不能发起任务</span><span class="td">不能 / 只能用勾过的模板 / 随便发</span><span class="td">只能用勾过的模板，默认关</span>
+      <span class="td mono">3</span><span class="td">转写</span><span class="td">本机 / API</span><span class="td">默认本机 whisper-cpp，可换</span>
+      <span class="td mono">4</span><span class="td">下载要登录的视频</span><span class="td">用浏览器的 cookie / 每次问 / 不支持</span><span class="td">每次问，默认不用（DR-91 不变）</span>
+      <span class="td mono">5</span><span class="td">这一项放第几期</span><span class="td">跟研究第三期 / 提前</span><span class="td">依赖 U0、U2 和 RM2；跟 U0 同一期做最小版（笔记 + 截图），skill 对照放下一期</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":3300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
